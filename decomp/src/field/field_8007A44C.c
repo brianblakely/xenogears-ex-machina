@@ -673,7 +673,6 @@ done:
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* The attribute-aware floor search: walk the actor's collision layer from
  * its current triangle toward `position` moved by `probe` (at most 32
  * steps), stopping at triangles whose attribute blocks the actor (its flag
@@ -681,12 +680,7 @@ done:
  * at ledges (attribute 400000 above the actor, unless it started on one or
  * `mode` is 0x80). Returns 0 with the floor point (and, unless `mode` is -1,
  * its plane height) in `floor`, else -1 with the crossed edge in `edge`.
- * The masked attribute of the last triangle goes to `attribute`.
- * NON_MATCHING: everything matches except the first block of the walk
- * set-up: ours reads position[0] through the incoming a1 (still holding the
- * argument) where the original reloads `position` from its stack slot
- * (0x28) into t1 and then loads position[0] after the probe words (four
- * instructions scheduled differently). */
+ * The masked attribute of the last triangle goes to `attribute`. */
 s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
                   s32 *attribute) {
     VECTOR normal;
@@ -708,141 +702,139 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     current = actor->triangle[actor->layer];
     triangles = D_800AF880.components.collision_triangles[actor->layer];
     vertices = D_800AF880.components.collision_vertices[actor->layer];
-    if (current != -1) {
-        point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
-        origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
-        floor->vx = (position[0] + probe->vx) >> 16;
-        floor->vz = (position[2] + probe->vz) >> 16;
-        mask = 0;
-        floor->vy = 0;
-        if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
-            mask = -(D_800B2078.party_processing_mode == 0);
+    if (current == -1) {
+        return -1;
+    }
+    point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+    floor->vx = (position[0] + probe->vx) >> 16;
+    floor->vz = (position[2] + probe->vz) >> 16;
+    mask = 0;
+    floor->vy = 0;
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
+    if ((bits & 0x400000) || mode == 0x80) {
+        on_ledge = 1;
+    } else {
+        on_ledge = 0;
+    }
+    steps = 0;
+    do {
+        previous = current;
+        a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
+        b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
+        c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
         }
-        bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
-        if ((bits & 0x400000) || mode == 0x80) {
-            on_ledge = 1;
-        } else {
-            on_ledge = 0;
-        }
-        steps = 0;
-        do {
-            previous = current;
-            a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
-            b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
-            c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
-            side = (u32)func_8004A70C(a, b, point) >> 31;
-            if (func_8004A70C(b, c, point) < 0) {
-                side |= 2;
-            }
-            if (func_8004A70C(c, a, point) < 0) {
-                side |= 4;
-            }
-            switch (side) {
-            case 0:
-                steps = 0xFF;
-                break;
-            case 1:
-                current = triangles[current].unk00[3];
-                break;
-            case 2:
-                current = triangles[current].unk00[4];
-                break;
-            case 3:
-                if (func_8004A70C(b, point, origin) < 0) {
-                    current = triangles[current].unk00[3];
-                    side = 1;
-                } else {
-                    current = triangles[current].unk00[4];
-                    side = 2;
-                }
-                break;
-            case 4:
-                current = triangles[current].unk00[5];
-                break;
-            case 5:
-                if (func_8004A70C(a, point, origin) >= 0) {
-                    current = triangles[current].unk00[3];
-                    side = 1;
-                } else {
-                    current = triangles[current].unk00[5];
-                    side = 4;
-                }
-                break;
-            case 6:
-                if (func_8004A70C(c, point, origin) < 0) {
-                    current = triangles[current].unk00[4];
-                    side = 2;
-                } else {
-                    current = triangles[current].unk00[5];
-                    side = 4;
-                }
-                break;
-            case 7:
-                current = -1;
-                break;
-            }
-            bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
-            *attribute = bits;
-            if ((actor->flags >> 8) & ((bits >> 5) & 7)) {
-                current = -1;
-                break;
-            }
-            if ((bits & 0x800000) && actor->layer == 0) {
-                current = -1;
-                break;
-            }
-            if ((bits & 0x400000) && on_ledge == 0) {
-                func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
-                              &vertices[triangles[current].unk00[2]], floor, &normal);
-                if (floor->vy < WHOLE(position[1])) {
-                    current = -1;
-                    break;
-                }
-            }
-            if (current == -1) {
-                break;
-            }
-        } while (++steps < 0x20);
-        if (current != -1 && steps != 0x20) {
-            if (mode == -1) {
-                return 0;
-            }
-            func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
-                          &vertices[triangles[current].unk00[2]], floor, &normal);
-            return 0;
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
         }
         switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
         case 1:
-            edge[0].vx = vertices[triangles[previous].unk00[0]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[0]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[0]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[1]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[1]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[1]].vz;
+            current = triangles[current].unk00[3];
             break;
         case 2:
-            edge[0].vx = vertices[triangles[previous].unk00[1]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[1]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[1]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[2]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[2]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[2]].vz;
+            current = triangles[current].unk00[4];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) < 0) {
+                current = triangles[current].unk00[3];
+                side = 1;
+            } else {
+                current = triangles[current].unk00[4];
+                side = 2;
+            }
             break;
         case 4:
-            edge[0].vx = vertices[triangles[previous].unk00[2]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[2]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[2]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[0]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[0]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[0]].vz;
+            current = triangles[current].unk00[5];
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) >= 0) {
+                current = triangles[current].unk00[3];
+                side = 1;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                current = triangles[current].unk00[4];
+                side = 2;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 7:
+            current = -1;
             break;
         }
+        bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
+        *attribute = bits;
+        if ((actor->flags >> 8) & ((bits >> 5) & 7)) {
+            current = -1;
+            break;
+        }
+        if ((bits & 0x800000) && actor->layer == 0) {
+            current = -1;
+            break;
+        }
+        if ((bits & 0x400000) && on_ledge == 0) {
+            func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
+                          &vertices[triangles[current].unk00[2]], floor, &normal);
+            if (floor->vy < WHOLE(position[1])) {
+                current = -1;
+                break;
+            }
+        }
+        if (current == -1) {
+            break;
+        }
+    } while (++steps < 0x20);
+    if (current != -1 && steps != 0x20) {
+        if (mode == -1) {
+            return 0;
+        }
+        func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
+                      &vertices[triangles[current].unk00[2]], floor, &normal);
+        return 0;
+    }
+    switch (side) {
+    case 1:
+        edge[0].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[0]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[1]].vz;
+        break;
+    case 2:
+        edge[0].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[1]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[2]].vz;
+        break;
+    case 4:
+        edge[0].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[2]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[0]].vz;
+        break;
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007BEF4);
-#endif
 
 /* The floor range: `high` is `low` raised by a nonnegative extent. */
 void func_8007C670(s32 *low, s32 *high, s32 extent) {
