@@ -2589,7 +2589,11 @@ void func_800A4CF8(s32 index) {
  * each front-facing tile textured from the scroll position. Differs in the
  * tile loop's register allocation: the original also copies half (for the
  * multiplies) and u0 before the rows and loads the tag masks per row; here
- * the masks and the row copy of half are hoisted out of both loops. */
+ * the masks and the row copy of half are hoisted out of both loops. The
+ * original's row loop was not loop-optimized at all (the masks hoisted out
+ * of the tile loop stay in the row body); a goto row loop reproduces that,
+ * but then ot loses its loop-weighted references and swaps $s4/$s5 with
+ * &turn, so the for loop stays here. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2730,8 +2734,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 u = (col & 1) * half + u0;
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
-                sky->tiles[n].u1 = u + halfU - 1;
-                sky->tiles[n].u3 = u + halfU - 1;
+                sky->tiles[n].u3 = sky->tiles[n].u1 = u + halfU - 1;
                 addPrim(ot, &sky->tiles[n]);
             }
             n++;
@@ -3451,7 +3454,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer. Nonmatching: loop invariant motion
  * hoists addPrim's 0x00FFFFFF mask out of the triangle loop (into $t2),
- * which the original computes per triangle; the rest is identical. */
+ * which the original computes per triangle; the rest is identical. (cc1
+ * 2.6.3 moves an invariant when threshold * savings * life >= the loop's
+ * insns, the threshold starting at 52 and dropping 3 per moved register: here
+ * 37 * 10 >= 291, so the original's loop must differ in length or order.) */
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
@@ -3694,23 +3700,22 @@ void func_800A8B0C(void) {
     }
 }
 
-#ifdef NON_MATCHING
+/* Read a stage object's description through a stream pointer. */
+#define OBJECT_DESC(p) ((ObjectDesc *)(p))
+
 /* Create stage object index (unless it exists) from its script and model
  * files with its images placed at x, y, z, w (flag 1: the model file is
  * already set up, no images; 4: no script file; 0x40: a plain object with no
  * scripts; 0x80: the script file is shared; 2: its models stay in the loaded
- * group), its root at position when given. Nonmatching: the saved
- * registers are assigned in a different order (the original has modelFile
- * $s2, object $s3, the counter $s4, images $s5, models $s6, position $s7;
- * here object $s2, modelFile and the counter $s3, images $s4, models $s5,
- * position $s6), and the surface loop's increments are ordered differently. */
+ * group), its root at position when given. One pointer reads the object's
+ * description and then walks its mesh stream (the original keeps both in one
+ * variable). */
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
     ObjectScripts *scripts;
     struct ObjectData *data;
     ObjectHeader *header;
-    ObjectDesc *desc;
     void *images;
     u8 *models;
     u16 *hierarchy;
@@ -3721,6 +3726,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
     s16 *stream;
     s32 keyCount;
     u8 *copy;
+    s32 copySize;
 
     func_80032498(4, 0);
     if (index < 32 && D_800D3368[index] == NULL) {
@@ -3744,16 +3750,16 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             }
         }
         header = modelFile->header;
-        desc = header->desc;
+        stream = (s16 *)header->desc;
         images = modelFile->images;
         models = modelFile->models;
         hierarchy = modelFile->hierarchy;
         D_800D3368[index] = object;
-        object->scale24 = desc->scale24;
-        object->scale26 = desc->scale26;
-        object->scale28 = desc->scale28;
-        object->field2A = desc->field2A;
-        object->flags4A = desc->flags;
+        object->scale24 = OBJECT_DESC(stream)->scale24;
+        object->scale26 = OBJECT_DESC(stream)->scale26;
+        object->scale28 = OBJECT_DESC(stream)->scale28;
+        object->field2A = OBJECT_DESC(stream)->field2A;
+        object->flags4A = OBJECT_DESC(stream)->flags;
         size = (u8 *)hierarchy - models;
         if (object->flags4A & 0x200) {
             func_80030988(2, 2, 0x40, 0x40);
@@ -3821,13 +3827,13 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             object->shadow[i].v3 = 0xFE;
         }
         if (!(flags & 0x40)) {
-            object->scale1C = desc->scale * D_800658C8->objectScale >> 12;
+            object->scale1C = OBJECT_DESC(stream)->scale * D_800658C8->objectScale >> 12;
         } else {
-            object->scale1C = desc->scale;
+            object->scale1C = OBJECT_DESC(stream)->scale;
         }
-        object->channelCount = desc->channelCount;
+        object->channelCount = OBJECT_DESC(stream)->channelCount;
         func_800AA6E0(object);
-        object->imageCount = desc->imageAnimCount;
+        object->imageCount = OBJECT_DESC(stream)->imageAnimCount;
         if (object->imageCount != 0) {
             object->images = func_80031BDC(object->imageCount * sizeof(ImageAnim), 0);
             for (i = 0; i < object->imageCount; i++) {
@@ -3837,12 +3843,12 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
                 object->images[i].work = NULL;
             }
         }
-        object->surfaceCount = desc->meshCount;
+        object->surfaceCount = OBJECT_DESC(stream)->meshCount;
         if (object->surfaceCount != 0) {
-            stream = desc->meshes;
+            stream = OBJECT_DESC(stream)->meshes;
             surface = func_80031BDC(object->surfaceCount * sizeof(Surface), 0);
             object->surfaces = surface;
-            for (i = 0; i < object->surfaceCount; i++) {
+            for (i = 0; i < object->surfaceCount; i++, surface++) {
                 keyCount = stream[17];
                 surface->h0 = *stream++;
                 func_800A7064(surface, header->meshData[i], *stream++, *stream++, *stream++, *stream++, *stream++,
@@ -3856,11 +3862,10 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
                     surface->entries[j].h2 = *stream++;
                     surface->entries[j].h4 = *stream++;
                 }
-                surface++;
             }
         }
-        object->field22 = 0;
         object->slot = index;
+        object->field22 = 0;
         if (D_800C3EB4[index].hidden && index < 11) {
             object->active = 0;
         } else {
@@ -3876,9 +3881,9 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
         if (!(flags & 2)) {
             func_8002C644(D_800C3B70);
             func_8002C4BC(D_800C3B70);
-            size = func_80031894(D_800C3B70);
-            copy = func_80031BDC(size, 0);
-            memcpy(copy, D_800C3B70, size);
+            copySize = func_80031894(D_800C3B70);
+            copy = func_80031BDC(copySize, 0);
+            memcpy(copy, D_800C3B70, copySize);
             func_800320E8(D_800C3B70);
             func_8009F794(object->field0, 0);
             func_8009EBA8(copy, object->field0);
@@ -3888,9 +3893,6 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8BF0);
-#endif
 
 /* Read the files of combatant slot's gear from directory 0x28 (D_800C3508)
  * into new buffers, listed in D_800C3B78: base + 1, base + 2 and, when the
@@ -3969,7 +3971,9 @@ void func_800A96B4(s32 set) {
  * file and images) at x, y, z, facing angle; with a variant file, also its
  * extra parts as objects 2 * index + 13 + k attached to parts of the gear,
  * then free the files. Nonmatching: GCC hoists index * 2 + 13 out of the
- * loop and spills angle instead of y and z. */
+ * loop and spills angle instead of y and z. Forms that keep index * 2 in the
+ * loop (k + 13 first) let the threshold also hoist y's sign extension; the
+ * original hoists only x's. */
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
     GearPartFile *parts;
     s16 *entry;
@@ -4548,7 +4552,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
 
     running = 1;
     pc = (u16 *)object->script;
-    if (OBJECT_AT_SCRIPT(object) != NULL && OBJECT_AT_DISTANCE(object) >= func_800AEEF8(object)) {
+    if (OBJECT_AT_SCRIPT(object) != NULL && func_800AEEF8(object) <= OBJECT_AT_DISTANCE(object)) {
         pc = OBJECT_AT_SCRIPT(object);
         OBJECT_AT_SCRIPT(object) = NULL;
     } else {
@@ -4581,8 +4585,8 @@ chosen:
         func_800AEF68(object);
     }
 
-    start = pc;
     while (running) {
+        start = pc;
         arg = (word = *pc++) >> 8;
         op = word;
         switch (op) {
@@ -5900,7 +5904,6 @@ chosen:
             running = 0;
             break;
         }
-        start = pc;
     }
     object->script = (u8 *)pc;
     if (reloadScene) {
