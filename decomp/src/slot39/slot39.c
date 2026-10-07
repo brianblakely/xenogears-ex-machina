@@ -2429,9 +2429,6 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
  * header (title 801ca8c0) and the checksummed payload (801cba4c) to a
  * temporary file and renames it to the prefix and digit, then reports 5c or
  * 35 and refreshes the listing. With `kind` 0 one save ends it. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: the original keeps ff in a saved register
- * (and so spills `again`). */
 u8 func_801CBD90(u8 kind) {
     char finalName[64];
     char tempName[64];
@@ -2651,10 +2648,10 @@ u8 func_801CBD90(u8 kind) {
             }
             D_800625A0->markers->unk144[0] = 1;
             D_800625A0->sounds = 1;
-            if (!kind) {
-                again = 0;
+            if (kind) {
+                break;
             }
-            break;
+            /* fall through: a single save ends it */
         case 2:
             again = 0;
             break;
@@ -2664,9 +2661,6 @@ u8 func_801CBD90(u8 kind) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
-#endif
 
 /* The file screen's copy command: pick a file and copy it to the other
  * card (asking first; no card, a full card or an existing file there
