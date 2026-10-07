@@ -8864,20 +8864,17 @@ void func_8009E574(s32 x, s32 z) {
     D_800B0078->flags = (D_800B0078->flags & ~0x40000) | 0x400000;
 }
 
-#ifdef NON_MATCHING
-/* Set the current actor's height `y` (whole units).
- * NON_MATCHING: the original opens an empty 0x18-byte frame with no saved
- * registers and computes `y << 16` before loading D_800B0078 (load delay
- * left as a nop); an unused 0x18-byte local reproduces the frame but not
- * that order. */
-void func_8009E810(s32 y) {
+/* Set the current actor's height `y` (whole units). Defined K&R: callers
+ * pass the operand unconverted and only its low halfword is used. */
+void func_8009E810(y)
+    s16 y;
+{
+    SVECTOR unused[3]; /* unused in the original; reserves 0x18 bytes */
+
     D_800B0078->position[1] = y << 16;
     D_800B0078->unkEC = y;
     D_800B0078->unk72 = y;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009E810);
-#endif
 
 /* Set the current actor's extents from non-zero operand bytes (doubled). */
 void func_8009E83C(void) {
