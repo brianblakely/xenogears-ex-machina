@@ -774,29 +774,6 @@ void func_801DE474(u8 wide, u8 page) {
  * class, or accessories whose groups are free or held by the replaced one
  * (entry 0 of the accessory list stays empty for removing). Returns the
  * scroll limit. */
-#ifdef NON_MATCHING
-/* Remaining: the gear switch's `< 50` tails are cross-jumped into the
- * character switch's (the original keeps both; from the sltiu on the four
- * insns are identical in both, the loads differing only in s6 / s3, so at
- * cross-jump time the original's two tails must still have differed, e.g.
- * in their branch targets), and the drawing loop keeps
- * `kind` in a hoisted register and forms &D_801EA7F8[top + i] from a hoisted
- * (spilled) address where the original reloads kind and uses %hi/%lo.
- * Jump2 dump: the tails differ only in the branch RTL. `if (A && B && id <
- * 50) ok = 1;` gives (eq v0 0)(label)(pc), `if (!A || .. || id >= 50)
- * break; ok = 1;` gives (ne v0 0)(pc)(label) (mips inverts GEU by swapping
- * the arms); both print beqz. Either switch's case 0 in the second form
- * keeps both case-0 tails (119 -> 113). Case 1-4's bnez has the forms
- * (eq)(pc)(label) (if form) and (ne)(label)(pc) (break form), and the
- * latter equals gear case 5's last test, which precedes the shared ok = 1,
- * so that tail is cross-jumped into case 5 instead; 16 pairings of six
- * condition forms (and/or chains, nested ifs, separate breaks) score
- * 101-131 and none keeps both 1-4 tails. So some other source difference
- * separates the original's tails.
- * Loop dump (drawing loop, 182 insns): kind's zero-extension (two matching
- * movables, life 4) and the D_801EA7F8 address (savings 2, life 4) weigh
- * about 28 * 2 * 4 >= 182 and move; staying needs fewer matching uses,
- * shorter lives or a loop of about 225 insns. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     RECT rect;
     u8 codes[4];
@@ -816,7 +793,6 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     u8 tens;
     u8 ok;
     u8 *image;
-    u8 *name;
 
     codes[1] = 0;
     codes[3] = 0;
@@ -890,7 +866,9 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
                 break;
             case 5:
                 if (func_801C865C(accessory->users, D_800625A0->party->ids[slot])) {
-                    if (accessory->groups == 0 || (own & accessory->groups) || !(used & accessory->groups)) {
+                    if (accessory->groups == 0 || (own & accessory->groups)) {
+                        ok = 1;
+                    } else if (!(used & accessory->groups)) {
                         ok = 1;
                     }
                 }
@@ -915,8 +893,9 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
                 break;
             case 5:
                 if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
-                    if (gearAccessory->groups == 0 || (own & gearAccessory->groups) ||
-                        !(used & gearAccessory->groups)) {
+                    if (gearAccessory->groups == 0 || (own & gearAccessory->groups)) {
+                        ok = 1;
+                    } else if (!(used & gearAccessory->groups)) {
                         ok = 1;
                     }
                 }
@@ -947,16 +926,15 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (D_801EA730[top + i] != 0) {
             if (!gear) {
                 if (kind != 5) {
-                    name = func_80033848(D_801EA730[top + i]);
+                    D_800625A0->block434->names[i].width = func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
                 } else {
-                    name = func_800337E8(D_801EA730[top + i]);
+                    D_800625A0->block434->names[i].width = func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
                 }
             } else if (kind != 5) {
-                name = func_80033A5C(D_801EA730[top + i]);
+                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
             } else {
-                name = func_80033A2C(D_801EA730[top + i]);
+                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
             }
-            D_800625A0->block434->names[i].width = func_80034EAC(name, image, 0x24, 0);
             tens = D_801EA7F8[top + i] / 10;
             codes[0] = tens != 0 ? tens + 0x10 : 0xc3;
             codes[2] = D_801EA7F8[top + i] % 10 + 0x10;
@@ -990,9 +968,6 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     }
     return length;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5CC);
-#endif
 
 /* Commit the equipment change of part `part` of party slot `slot` (with
  * `special` a special part, with `gear` the gear's): the newly equipped part
