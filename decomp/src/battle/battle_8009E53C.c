@@ -4612,19 +4612,19 @@ chosen:
             steps = 0;
             break;
         case 0x02:
-            if (object->field35 == 0) {
+            if (object->field35 != 0) {
+                if (func_800BF6F8() != 0) {
+                    pc = start;
+                    running = 0;
+                    break;
+                }
+                D_80059464 = 0;
+                D_800591AC = 0;
+                object->field35 = 0;
+                func_80080C6C(object->slot);
+            } else {
                 reloadScene = 1;
-                break;
             }
-            if (func_800BF6F8() != 0) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            D_80059464 = 0;
-            D_800591AC = 0;
-            object->field35 = 0;
-            func_80080C6C(object->slot);
             break;
         case 0x03:
             if (object->field35 != 0) {
@@ -4938,8 +4938,7 @@ chosen:
                 s32 mode;
                 u8 flagsB;
                 FrameCurve curve;
-                s16 *parameters;
-                u16 x, y, z, x2, y2, z2, x3, y3;
+                s16 x, y, z, x2, y2, z2, x3, y3;
 
                 word = *pc++;
                 if ((u8)word != 0xFF && (u8)word < object->imageCount) {
@@ -4979,11 +4978,9 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                parameters = (s16 *)pc;
-                pc += 5;
                 func_800A3640(&object->images[arg], target, mode & 0x7F, flagsB | 0x700, colors, x, y, z,
-                              x2, y2, z2, x3, y3, parameters[0], parameters[1], parameters[2], parameters[3],
-                              parameters[4], curve);
+                              x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
+                              (s16)*pc++, curve);
             } else {
                 pc += 15;
             }
