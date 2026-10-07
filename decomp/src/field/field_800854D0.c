@@ -10244,12 +10244,13 @@ void func_800A2714(void) {
     }
 }
 
-#ifdef NON_MATCHING
+/* When D_8004F30C is set: rebuild every actor's sprite and animation state,
+ * swap in the party models and rerun the actors' setup scripts. Each sprite
+ * table pointer is a block-local variable. */
 void func_800A28D4(void) {
     s32 i;
     FieldModel *model;
     FieldActor *actor;
-    s32 *sprites;
 
     if (D_8004F30C != 0) {
         func_800A3474();
@@ -10260,7 +10261,8 @@ void func_800A28D4(void) {
                               actor->unk134 & 0xF, D_800AF880.components.descriptors[i].actor->unk126,
                               (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
             } else {
-                sprites = D_800AF880.components.sprites;
+                s32 *sprites = D_800AF880.components.sprites;
+
                 func_80076AC0(i, actor->unk127, (u8 *)(sprites[(actor->unk126 & 0x7F) + 1] + (s32)sprites),
                               actor->sprite_kind & 3, actor->unk134 & 0xF,
                               D_800AF880.components.descriptors[i].actor->unk126,
@@ -10322,16 +10324,14 @@ void func_800A28D4(void) {
             D_800B0078 = D_800B06B8->actor;
             func_800A1EC8(0xFFFF);
             if (D_800AFC74 == 0) {
-                sprites = D_800AF880.components.sprites;
+                s32 *sprites = D_800AF880.components.sprites;
+
                 func_80076AC0(i, 0, (u8 *)(sprites[1] + (s32)sprites), 0, 0, 0x80, 0);
                 D_800B0078->layer_flags |= 0x800;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A28D4);
-#endif
 
 /* Advance one byte. */
 void func_800A2FC0(void) {
