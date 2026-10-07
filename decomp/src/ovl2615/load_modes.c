@@ -295,9 +295,13 @@ void func_801E893C(void) {
 
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
- * loops over the 2x14x20 grid are left from removed work. */
+ * loops over the 2x14x20 grid are left from removed work.
+ * NON_MATCHING: frame and size now match; the original keeps the task in a1
+ * and loads each field after the previous store (here the loads are hoisted
+ * and the frame counter takes a0). */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     BurstTask *burst = node->object;
     s32 frame;
     s32 i, j, k;
