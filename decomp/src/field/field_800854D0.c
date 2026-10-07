@@ -9528,19 +9528,15 @@ void func_800A06E8(void) {
     D_800B0078->pc += 3;
 }
 
-#ifdef NON_MATCHING
 /* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script.
- * NON_MATCHING: the original reuses the 800b2268 value loaded for the test in
- * the sprite index, adding it after sprites + (index + 1); this form reloads
- * it and folds the + 1 into the load offset. (Writing the sum as
- * `sprites + (index + 1) - -alt` reproduces both, apart from a v0/v1 swap,
- * but is not plausible source.) */
+ * The alternate sprite's offset entry is addressed before the call. */
 void func_800A08B8(void) {
     FieldDescriptor *descriptor;
     s32 character;
     s32 slot;
     FieldModel *model;
     s32 *sprites;
+    s32 *entry;
 
     descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
     character = func_8008CF3C(func_800ACDEC(1));
@@ -9556,8 +9552,8 @@ void func_800A08B8(void) {
         D_8005A444[slot] = D_800AFD1C;
         if (D_800B2078.unk2268 != 0) {
             sprites = D_800AF880.components.sprites;
-            func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268,
-                          (u8 *)(*(sprites + D_800AE294[character] + 1 + D_800B2078.unk2268) + (s32)sprites),
+            entry = &sprites[D_800AE294[character] + 1] + D_800B2078.unk2268;
+            func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268, (u8 *)(*entry + (s32)sprites),
                           0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
             D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
             if (D_8005A39C->unk22B1[slot] != 0) {
@@ -9586,9 +9582,6 @@ void func_800A08B8(void) {
     D_800B0078->layer_flags |= 0x400;
     D_800B0078->pc += 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A08B8);
-#endif
 
 /* Set flag 0x80 on the controlled actor. */
 void func_800A0C4C(void) {
