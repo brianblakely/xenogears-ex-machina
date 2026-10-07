@@ -365,12 +365,10 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     }
 }
 
-#ifdef NON_MATCHING
 /* Step a particle: while delayed count down and at launch place it and
  * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
  * owner's transform, 3 owner-facing and scaled); afterwards move it,
- * fade its colour, draw it and count its life down. Differs only in the
- * scheduling of the unk38 update (the original loads unk38.vx first). */
+ * fade its colour, draw it and count its life down. */
 void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     VECTOR v;
     SVECTOR sv;
@@ -479,12 +477,12 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
         particle->velocity.vx += particle->unk28.vx;
         particle->velocity.vy += particle->unk28.vy;
         particle->velocity.vz += particle->unk28.vz;
-        particle->unk38.vy += particle->unk40.vy;
-        particle->unk38.vx += particle->unk40.vx;
-        particle->unk38.vz += particle->unk40.vz;
         particle->position.vx += particle->velocity.vx;
         particle->position.vy += particle->velocity.vy;
         particle->position.vz += particle->velocity.vz;
+        particle->unk38.vx += particle->unk40.vx;
+        particle->unk38.vy += particle->unk40.vy;
+        particle->unk38.vz += particle->unk40.vz;
         particle->unk48[0] = func_800A9B1C(particle->unk48[0], particle->unk4C[0]);
         particle->unk48[1] = func_800A9B1C(particle->unk48[1], particle->unk4C[1]);
         particle->unk48[2] = func_800A9B1C(particle->unk48[2], particle->unk4C[2]);
@@ -500,9 +498,6 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800A9F18);
-#endif
 
 extern u8 D_800AF474[8]; /* spawn offset per view octant */
 
@@ -908,42 +903,33 @@ void func_800AB808(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AB808);
 #endif
 
-#ifdef NON_MATCHING
 /* Show the current map's picture while its item is held: park the VRAM
  * at (300, 100), load the picture, fade it in, hold until the button, fade
- * it out and restore the VRAM. Differs in addressing the entry: the
- * original keeps the table base and the entry offset apart. */
+ * it out and restore the VRAM. */
 void func_800ABA98(void) {
     RECT rect;
-    Picture *table;
-    Picture *entry;
     u8 *saved;
     u32 *file;
     s32 picture;
     s32 i;
 
-    table = D_800AF47C;
-    i = 0;
-    entry = table;
-    for (;;) {
-        if (entry->map == 0xFFFF) {
+    for (i = 0;; i++) {
+        if (D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP] == 0xFFFF) {
             return;
         }
-        if ((D_8004F34C & 0x3FFF) == entry->map) {
+        if ((D_8004F34C & 0x3FFF) == D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP]) {
             break;
         }
-        entry++;
-        i++;
     }
-    if (func_800AB328(table[i].item) == -1) {
+    if (func_800AB328(D_800AF47C[i * PICTURE_WORDS + PICTURE_ITEM]) == -1) {
         return;
     }
-    picture = table[i].picture;
+    D_800C3914 = D_800AF47C[i * PICTURE_WORDS + PICTURE_UNK04];
+    D_800C3A18 = D_800AF47C[i * PICTURE_WORDS + PICTURE_UNK08];
+    picture = D_800AF47C[i * PICTURE_WORDS + PICTURE_FILE];
+    D_800AFE78 = D_800AF47C[i * PICTURE_WORDS + PICTURE_X];
+    D_800AFE7C = D_800AF47C[i * PICTURE_WORDS + PICTURE_Y];
     setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
-    D_800C3914 = table[i].unk04;
-    D_800C3A18 = table[i].unk08;
-    D_800AFE78 = table[i].x;
-    D_800AFE7C = table[i].y;
     saved = func_80031BDC(0x14000, 0);
     StoreImage(&rect, (u_long *)saved);
     DrawSync(0);
@@ -954,7 +940,7 @@ void func_800ABA98(void) {
     func_80028A60(0);
     func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
     func_800320E8(file);
-    if (table[i].pieces == 1) {
+    if (D_800AF47C[i * PICTURE_WORDS + PICTURE_PIECES] == 1) {
         func_800AB808();
     }
     func_800AAF80();
@@ -981,9 +967,6 @@ void func_800ABA98(void) {
     DrawSync(0);
     func_800320E8(saved);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800ABA98);
-#endif
 
 typedef struct {
     DR_MODE modes[5][2];
@@ -1151,8 +1134,11 @@ void func_800AC308(void) {
 
 #ifdef NON_MATCHING
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
- * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
- * the scheduler loads the constants 0x280 and 0x80. */
+ * tall at 0 and c8) and the 16 lines of sprites.
+ * NON_MATCHING: differs only in when the scheduler loads the constant
+ * 0x280: the original loads it with 0xff at the top of the block, this
+ * after the colour stores (moving the x stores or holding 0x280 in a
+ * local does not change it). */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
@@ -1214,10 +1200,10 @@ void func_800AC3AC(void) {
         setRGB0(sprite, 0x80, 0x80, 0x80);
         SetSemiTrans(sprite, 0);
         sprite->clut = GetClut(0, 0x1FF);
-        sprite->h = 0x10;
         sprite->u0 = 0;
         sprite->v0 = i * 16;
         sprite->w = 0x80;
+        sprite->h = 0x10;
         sprite->x0 = 0x40;
         sprite->y0 = i * 16;
         sprite[4] = *sprite;

@@ -952,7 +952,18 @@ typedef struct GameData {
     u8 unk1648[0x78]; /* 1648 (8006ec7c) */
     GameRecordECF4 records[11]; /* 16C0 (8006ecf4, D_8006ECF4) */
     u8 unk1820[0x100]; /* 1820 (8006ee54) */
-    u8 unk1920[0x996]; /* 1920 (8006ef54) */
+    u8 unk1920[0x418]; /* 1920 (8006ef54) */
+    u8 weaponCounts[100]; /* 1D38 (8006f36c, D_8006F36C): equipment lists, counts then ids */
+    u8 weaponIds[100]; /* 1D9C (8006f3d0, D_8006F3D0) */
+    u8 accessoryCounts[200]; /* 1E00 (8006f434, D_8006F434) */
+    u8 accessoryIds[200]; /* 1EC8 (8006f4fc, D_8006F4FC) */
+    u8 itemCounts[150]; /* 1F90 (8006f5c4, D_8006F5C4) */
+    u8 itemIds[150]; /* 2026 (8006f65a, D_8006F65A) */
+    u8 gearPartCounts[100]; /* 20BC (8006f6f0, D_8006F6F0) */
+    u8 gearPartIds[100]; /* 2120 (8006f754, D_8006F754) */
+    u8 gearAccessoryCounts[150]; /* 2184 (8006f7b8, D_8006F7B8) */
+    u8 gearAccessoryIds[150]; /* 221A (8006f84e, D_8006F84E) */
+    u8 unk22B0[6]; /* 22B0 (8006f8e4) */
     u16 flags; /* 22B6 (8006f8ea, D_8006F8EA) */
 } GameData;
 
@@ -1139,8 +1150,8 @@ extern s32 D_801EA578[];         /* label image x per row pair */
 extern s32 D_801EA5C4[];         /* label image y per row pair */
 extern s32 D_801EA590[];         /* view name image x (D_801EA578 from row 6) */
 extern s32 D_801EA5DC[];         /* view name image y */
-extern u16 D_801E9894[32][2];    /* image block x */
-extern u16 D_801E9914[32][2];    /* image block y */
+extern s16 D_801E9894[32][2];    /* image block x */
+extern s16 D_801E9914[32][2];    /* image block y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9A00[]; /* highlight positions: x */
@@ -1294,14 +1305,6 @@ typedef struct MenuResources {
     s32 count;
     void *files[8]; /* packed files, relocated by 8003342c */
 } MenuResources;
-
-/* Texture of a sprite sheet entry (80026338's six outputs). */
-typedef struct SheetEntry {
-    s32 unk0;
-    s32 mode;
-    s32 clutX, clutY;
-    s32 pageX, pageY;
-} SheetEntry;
 
 extern MenuResources *D_8005945C; /* the menu resources */
 extern void *D_8006259C;          /* the menu effect bank */
@@ -1584,7 +1587,7 @@ void func_801DA5BC(s32 row);
 void func_801DC3D8(u8 slot, u8 kind);
 void func_801DCE60(u8 slot, u8 row, u8 kind);
 void func_801DD790(u8 slot, s32 row, u8 kind);
-void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear);
+void func_801E35BC();
 void func_801DA9A8(s32 entry, s32 row);
 void func_801DB39C(u8 mode);
 u8 func_801DB920(s32 row, s32 entry);

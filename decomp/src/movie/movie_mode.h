@@ -221,7 +221,6 @@ extern s32 D_801D68B4;          /* movie library: split display */
 
 extern s32 D_800773B8[32];      /* VSync(1) before and after each decode step */
 extern s32 D_80077454;          /* library output mode (bit 0: 24-bit) */
-extern u8 D_8004FE46;           /* request: the next mode */
 extern const RECT D_800704E0;   /* the screen area */
 
 /* Movie library (disc file 19 at 0x801d3000, see decomp/src/mdec). */
@@ -314,9 +313,9 @@ void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6,
 void *func_8002A260(s32 blocks, s32 mode);                /* allocate a stream ring */
 
 /* Mode entry and menu. */
-extern u8 D_8004FE44;           /* request: movie kind (bit 7: last frame from 80062514) */
-extern u8 D_8004FE45;           /* request: movie index */
-extern u8 D_8004FE47;           /* request: buttons do not end the movie */
+/* Movie request: kind (bit 7: last frame from 80062514), index, the next
+ * mode, and whether buttons do not end the movie. */
+extern u8 D_8004FE44[4];
 extern u16 D_80062514;          /* the requested movie's last frame */
 extern s16 D_8005A4B8;
 extern s32 D_801E89D4;          /* movie library: frames skipped */

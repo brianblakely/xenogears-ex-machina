@@ -41,12 +41,11 @@ void func_8007334C(u32 *ot, Matrix *view) {
 }
 
 /* Fire a projectile of the given kind from a point toward the actor's
- * target (or away from origin when given), in the first free slot.
- * Nonmatching: the original reserves eight more frame bytes. */
-#ifdef NON_MATCHING
+ * target (or away from origin when given), in the first free slot. */
 void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
     Vector toward;
     Vector aim;
+    SVector unused; /* unused in the original; reserves 8 bytes */
     Actor *opponent;
     ShotKind *info;
     Shot *shot;
@@ -89,9 +88,6 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     shot->prev = shot->pos;
     shot->active = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073424);
-#endif
 
 /* Move an actor's shots: expire, hit the floor, home in on the opponent's
  * core, draw the trail for their look and update speed and homing. */
@@ -260,20 +256,18 @@ void func_80073CEC(Vector *a, Vector *b, s32 flip, HitSpec *hit, Trail *trail, s
     D_80092650++;
 }
 
-#ifdef NON_MATCHING
 /* Whether an actor can take amount more: always below 0x1000 total,
- * otherwise only while the excess / 20 is below its HP. Does not match:
- * the loaded field lands in v0 instead of v1. */
+ * otherwise only while the excess / 20 is below its HP. */
 s32 func_80073DE4(Actor *actor, s32 amount) {
-    amount += actor->charge;
-    if (amount > 0x1000) {
-        return (amount - 0xFF1) / 20 < actor->hp;
+    s32 total = actor->charge + amount;
+
+    if (total > 0x1000) {
+        if ((total - 0xFF1) / 20 >= actor->hp) {
+            return 0;
+        }
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073DE4);
-#endif
 
 /* Add charge to an actor. Past full charge the excess / 20 is spent from
  * its HP-bound reserve (and counted by kind); if it cannot be, the charge
@@ -347,12 +341,11 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
 }
 
 /* Resolve a hit on an actor's model: impact effects at the hit points and,
- * when it lands, a charged shot, a projectile or a trail segment.
- * Nonmatching: the original reserves sixteen more frame bytes. */
-#ifdef NON_MATCHING
+ * when it lands, a charged shot, a projectile or a trail segment. */
 void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     Vector a;
     Vector b;
+    Vector unused; /* unused in the original; reserves 16 bytes */
     s32 style;
     s32 power;
     s32 single;
@@ -445,29 +438,23 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800740E4);
-#endif
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
-#ifdef NON_MATCHING
 /* Run the frame events of an actor's current move for count frames from
  * frame (once per frame): hits (flagged 0x4000000 on their first frame),
  * one pair of sound effects, trails (each spec once), return home, and
  * showing or hiding model parts. An unknown event kind stalls the loop, as
- * in the original.
- * Does not match: the anim byte, the trail search index and pointer, and the sound-flag store get other registers or slots. */
+ * in the original. */
 void func_80074678(Actor *actor, s16 frame, s16 count) {
-    Vector unused; /* keeps the original's 16-byte frame slot */
+    Vector unused; /* unused in the original; reserves 16 bytes */
     HitSpec *trails[20];
     u8 sounded;
     FrameEvent *events;
     FrameEvent *event;
     HitSpec *spec;
     s32 trail_count;
-    s32 offset;
-    s32 i;
+    s32 offset; /* the event list offset, then the trail search index */
 
     if (count == 0) {
         count = 1;
@@ -476,7 +463,8 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
         return;
     }
     actor->event_frame = frame;
-    offset = ((s16 *)actor->unk900)[actor->anim];
+    offset = actor->anim;
+    offset = ((s16 *)actor->unk900)[offset];
     if (offset != 0) {
         sounded = 0;
         D_80092650 = 0;
@@ -500,14 +488,14 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                     break;
                 case 1:
                     if (!sounded) {
-                        sounded = 1;
                         func_8008EB88(actor, spec->part_a, &actor->pos, 2);
+                        sounded = 1;
                         func_8008EB88(actor, spec->part_b, &actor->pos, 2);
                     }
                     break;
                 case 2:
-                    for (i = 0; i < trail_count; i++) {
-                        if (trails[i] == spec) {
+                    for (offset = 0; offset < trail_count; offset++) {
+                        if (trails[offset] == spec) {
                             goto next;
                         }
                     }
@@ -536,9 +524,6 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
     }
     func_80073CA4(actor);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
-#endif
 
 /* Show the model objects of the current move: unhide every kind-1 object,
  * then hide the listed ones (and object 13 in mode 0xD). */
@@ -584,17 +569,15 @@ void func_80074AB4(Actor *actor) {
 /* Step an actor's animation player by the elapsed animation steps and
  * record the frame; stepped/done go to the pose record. */
 #define ANIM_ADVANCE(actor, player, steps)                                     \
+    ACTOR_FLAG_BITS(actor)->flag11 = func_8008B730(player, steps, actor->anim_speed); \
     stepped = (steps);                                                         \
-    actor->flags = (actor->flags & ~0x800) |                                   \
-                   ((func_8008B730(player, steps, actor->anim_speed) & 1) << 11); \
     speed = actor->anim_speed
 
-#ifdef NON_MATCHING
 /* Record an actor's pose for this frame and run its animation: a new move
  * (or a forced restart) resets the player, speed and parts; then advance
  * by the accumulated speed and apply the move's end rule (stop, chain to
- * the next move, hold, or loop).
- * Does not match: the original keeps the step count in a saved register ($s1, one more saved register and a larger frame), which shifts the register choice throughout. */
+ * the next move, hold, or loop). The end-of-animation result goes to flag
+ * 11 through a bit-field store. */
 void func_80074BA4(Actor *actor) {
     s32 steps;
     Pose *pose = actor->pose;
@@ -624,8 +607,8 @@ void func_80074BA4(Actor *actor) {
             actor->flags &= ~0x2000000;
         }
         actor->unk4F = ((u8 *)actor->unk7C)[actor->anim * 2 + 1] * actor->unk15F2 / 256;
-        func_80074998(actor);
         player = &((ModelSet *)actor->node->data)->players[actor->anim];
+        func_80074998(actor);
         func_8008B0D8(player);
         actor->unk99E = 0;
         actor->event_frame = -1;
@@ -638,13 +621,13 @@ void func_80074BA4(Actor *actor) {
         }
     }
     {
-        s16 before = actor->unk99E;
+        s32 before = actor->unk99E;
 
         actor->unk99E += actor->unk4F + actor->unk52;
         steps = (actor->unk99E >> 4) - (before >> 4);
     }
-    actor->unk99A = steps;
     actor->unk998 = player->frame;
+    actor->unk99A = steps;
     for (i = 0; i < steps; i++) {
         if (actor->anim_speed != 1) {
             if (--actor->anim_speed <= 0) {
@@ -666,7 +649,6 @@ void func_80074BA4(Actor *actor) {
         }
         break;
     case 1:
-        stepped = steps;
         actor->flags &= ~0x1000;
         ANIM_ADVANCE(actor, player, steps);
         if (actor->flags & 0x800) {
@@ -699,9 +681,6 @@ void func_80074BA4(Actor *actor) {
     ((Move *)pose)->unk9 = stepped;
     ((Move *)pose)->unkA = speed;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074BA4);
-#endif
 
 /* Record the outcome of a bout from the player's side: how it was lost,
  * or which limit the win stayed within and how the opponent ended. */
@@ -899,10 +878,8 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     return along <= len + radius ? hit : 0;
 }
 
-#ifdef NON_MATCHING
 /* Like func_80075750, and on a hit store where the segment enters the
- * circle around the point in D_80092654/D_80092658. Does not match: the
- * segment length and the products are allocated to other registers. */
+ * circle around the point in D_80092654/D_80092658. */
 s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     Vector d;
     Vector sq;
@@ -942,15 +919,12 @@ s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
         if (diff < 0) {
             diff = -diff;
         }
-        along -= SquareRoot0(diff);
-        D_80092654 = along * ux / 4096 + x0;
-        D_80092658 = along * uz / 4096 + z0;
+        diff = along - SquareRoot0(diff); /* the entry distance along the segment */
+        D_80092654 = diff * ux / 4096 + x0;
+        D_80092658 = diff * uz / 4096 + z0;
     }
     return hit;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80075888);
-#endif
 
 /* Whether a point comes within radius of any edge of a quad given as four
  * corner vectors; clears the crossing point to the point first. */
@@ -965,18 +939,18 @@ s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
     return func_80075750(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
 }
 
-/* Point of the body axis (home to upper anchor) at a height between them. */
-#define AXIS_POINT(out, home, top, y)                                           \
+/* Point of the body axis (home to upper anchor) at a height between them;
+ * frac is the scratch variable that holds the 4.12 fraction. */
+#define AXIS_POINT(out, home, top, y, frac)                                     \
     frac = (((y) - (home).vy) << 12) / ((top).vy - (home).vy);                  \
     (out).vx = ((frac * ((top).vx - (home).vx)) >> 12) + (home).vx;             \
     (out).vy = ((frac * ((top).vy - (home).vy)) >> 12) + (home).vy;             \
     (out).vz = ((frac * ((top).vz - (home).vz)) >> 12) + (home).vz
 
-#ifdef NON_MATCHING
 /* Test the opponent's shots and trails against an actor's body axis; the
  * first shot or trail that hits sets the hit point, effect, glow, damage and
- * reaction. Returns 0.
- * Does not match: draft; the register allocation differs (the original keeps the hit kind in $fp and the 1/3 constant in $s7) and it is 20 bytes shorter. */
+ * reaction. Returns 0. One variable serves as the damage and as the
+ * scratch value before it (the axis fraction, the distance to the top). */
 s32 func_80075B50(Actor *actor) {
     Vector home;
     Vector top;
@@ -985,18 +959,18 @@ s32 func_80075B50(Actor *actor) {
     Shot *shot;
     Trail *trail;
     s32 hits = 0;
-    s32 best = 0;
-    s32 kind = 0;
+    s32 best;
+    s32 kind;
     s32 damage;
-    s32 frac;
     s32 hit;
-    s32 dt;
     s32 dh;
     s32 dm;
     s32 i;
 
     home = actor->home;
     top = actor->unk92C;
+    best = 0;
+    kind = 0;
     for (i = 0; i < 8; i++) {
         shot = &actor->opponent->shots[i];
         if (!shot->active) {
@@ -1004,15 +978,15 @@ s32 func_80075B50(Actor *actor) {
         }
         hit = 0;
         if (top.vy < shot->pos.vy && shot->pos.vy < home.vy) {
-            AXIS_POINT(point, home, top, shot->pos.vy);
+            AXIS_POINT(point, home, top, shot->pos.vy, damage);
             hit = func_80075888(shot->prev.vx, shot->prev.vz, shot->pos.vx, shot->pos.vz, point.vx, point.vz,
                                 actor->header->unk13);
         } else if (shot->dist < actor->header->unk13) {
-            dt = abs(top.vy - shot->prev.vy);
+            damage = abs(top.vy - shot->prev.vy);
             dh = abs(home.vy - shot->prev.vy);
             dm = abs(shot->pos.vy - shot->prev.vy);
-            if (dt < dh) {
-                if (dt < dm) {
+            if (damage < dh) {
+                if (damage < dm) {
                     point = top;
                     hit = 1;
                 }
@@ -1027,15 +1001,17 @@ s32 func_80075B50(Actor *actor) {
         actor->glow = 0xFF;
         actor->unkD4 |= 0x20;
         damage = shot->unk3C;
-        if ((u32)(((ratan2(shot->velocity.vx, shot->velocity.vz) - actor->angle) & 0xFFF) - 0x601) < 0x3FF) {
+        if ((u32)(((ratan2(shot->velocity.vx, shot->velocity.vz) - actor->angle) & 0xFFF) - 0x601) >= 0x3FF) {
+            if (actor->flags & 4) {
+                func_8008EBD0(actor, 0xF, &point, 1);
+                damage /= 2;
+                actor->glow = 0x80;
+            } else {
+                func_8008EBD0(actor, 0xC, &point, 1);
+            }
+        } else {
             damage *= 2;
             kind = 3;
-            func_8008EBD0(actor, 0xC, &point, 1);
-        } else if (actor->flags & 4) {
-            func_8008EBD0(actor, 0xF, &point, 1);
-            damage /= 2;
-            actor->glow = 0x80;
-        } else {
             func_8008EBD0(actor, 0xC, &point, 1);
         }
         actor->unkE8 += damage * 2 / 3;
@@ -1045,29 +1021,32 @@ s32 func_80075B50(Actor *actor) {
             hits++;
         }
         D_80092A24 = point;
-        best = damage;
         D_80092648 = 0x10;
         actor->unkC8 = damage / 3 + 0xC;
+        best = damage;
         from = point;
         shot->active = 0;
         break;
     }
     for (i = 0; i < 16; i++) {
         trail = &actor->opponent->trails[i];
-        if (trail->state != 1 || trail->unk44_0) {
+        if (trail->state != 1) {
+            continue;
+        }
+        if (trail->unk44_0) {
             continue;
         }
         hit = 0;
         if (trail->flip) {
             if (top.vy < trail->a.vy && trail->a.vy < home.vy) {
-                AXIS_POINT(point, home, top, trail->a.vy);
+                AXIS_POINT(point, home, top, trail->a.vy, damage);
                 hit = func_80075888(trail->a_prev.vx, trail->a_prev.vz, trail->a.vx, trail->a.vz, point.vx,
                                     point.vz, actor->header->unk13);
             }
         } else {
             damage = (trail->a.vy + trail->a_prev.vy + trail->b.vy + trail->b_prev.vy) / 4;
             if (top.vy < damage && damage < home.vy) {
-                AXIS_POINT(point, home, top, damage);
+                AXIS_POINT(point, home, top, damage, damage);
                 hit = func_80075A4C((Vector *)trail, point.vx, point.vz, actor->header->unk13);
             }
         }
@@ -1079,10 +1058,10 @@ s32 func_80075B50(Actor *actor) {
         point.vz = D_80092658;
         if (actor->flags & 4) {
             func_8008EBD0(actor, 0xF, &point, 1);
+            damage = trail->unk47 >> 1;
             D_80092A24 = point;
             D_80092648 = 4;
             actor->glow = 0xC0;
-            damage = trail->unk47 >> 1;
             actor->unkD4 |= 0x20;
         } else {
             func_8008EBD0(actor, trail->effect, &point, 1);
@@ -1094,8 +1073,8 @@ s32 func_80075B50(Actor *actor) {
             damage = trail->unk47;
         }
         actor->unkC8 = damage;
-        actor->unk916 += damage * 6 / 10;
-        actor->unkE8 += damage * 6 / 10;
+        actor->unkE8 += damage * 6 / 5;
+        actor->unk916 += damage * 6 / 5;
         actor->hit_point = point;
         if (damage != 0) {
             hits++;
@@ -1118,9 +1097,6 @@ s32 func_80075B50(Actor *actor) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80075B50);
-#endif
 
 /* Queue a pad input for an actor (dropped when 32 are pending). */
 void func_8007639C(Actor *actor, u8 input) {
@@ -1275,11 +1251,10 @@ s32 func_800767C8(Actor *actor) {
         }                                                                      \
     }
 
-#ifdef NON_MATCHING
 /* Read a player's pad (analog sticks or the d-pad) and turn it into the
  * actor's commands, guard/dash flags and its four directional speeds,
- * giving the move speed and heading.
- * Does not match: only the side flag update swaps a0/v1 (the mask and the flag word). Declared s32 with a bare return so the early exit keeps the original's empty delay slot. */
+ * giving the move speed and heading. Declared s32 with a bare return so
+ * the early exit keeps the original's empty delay slot. */
 s32 func_80076884(Actor *actor) {
     u8 stick_y;
     u8 stick_x;
@@ -1327,8 +1302,8 @@ s32 func_80076884(Actor *actor) {
         } else {
             actor->unkCE = actor->unkCC;
         }
-        actor->flags = (actor->flags & ~0x20000) | ((D_800928F4 & 1) << 17);
         actor->unk648 += 0x800;
+        ACTOR_FLAG_BITS(actor)->flag17 = D_800928F4;
         actor->unkFC += 0x800;
     }
     if (pressed & 0x10) {
@@ -1424,18 +1399,13 @@ s32 func_80076884(Actor *actor) {
         actor->flags |= 0x80000;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
-#endif
 
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
- * gauge and knock it out when the hit points run out.
- * Does not match: the charge is tested in its load register and copied,
- * and the knock-out block rereads the flags after each store. */
-#ifdef NON_MATCHING
-void func_80077038(Actor *actor) {
-    s32 charge;
+ * gauge and knock it out when the hit points run out. Declared int without
+ * a return value, as the original's unfilled delay slots in the knock-out
+ * test show. */
+s32 func_80077038(Actor *actor) {
     u8 state;
     u8 gauge;
     u32 stance;
@@ -1475,23 +1445,22 @@ void func_80077038(Actor *actor) {
     if (actor->unkCA != 0) {
         actor->unkCA--;
     }
-    charge = actor->charge;
-    if (charge != 0) {
+    if (actor->charge != 0) {
         if (actor->unkC4 & 1) {
             stance = actor->flags & 0x60000000;
             if (stance == 0x60000000) {
                 if (actor->kind & 4) {
-                    actor->charge = charge - 8;
+                    actor->charge -= 8;
                 } else {
-                    actor->charge = charge - 2;
+                    actor->charge -= 2;
                 }
             } else if (stance == 0x20000000) {
-                actor->charge = charge - 6;
+                actor->charge -= 6;
             } else {
-                actor->charge = charge - 4;
+                actor->charge -= 4;
             }
         } else {
-            actor->charge = charge - 8;
+            actor->charge -= 8;
         }
         if (actor->charge < 0) {
             actor->charge = 0;
@@ -1567,10 +1536,10 @@ void func_80077038(Actor *actor) {
         actor->anim = 0xD;
         actor->unk4E = 0xFF;
         actor->unkC4 = 5;
-        actor->unkC5 = 0;
         actor->flags |= 0x1000;
-        actor->velocity.vy -= 0x50;
+        actor->unkC5 = 0;
         actor->flags |= 0x400;
+        actor->velocity.vy -= 0x50;
         if (actor->flags & 0x08000000) {
             actor->push.vx -= func_8003F8B0(D_80092934) >> 9;
             actor->push.vz -= func_8003F8CC(D_80092934) >> 9;
@@ -1583,9 +1552,6 @@ void func_80077038(Actor *actor) {
         actor->unk100 = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077038);
-#endif
 
 /* Push an actor along an angle (scaled down by shift) and let it rise by
  * lift, never faster than 0x82 upward. */
@@ -1721,13 +1687,13 @@ void func_80077A88(Actor *actor) {
     actor->flags |= 0x80000;
 }
 
+/* Debug trace of a started special move, compiled out of the release. */
+#define MOVE_TRACE() do { } while (0)
+
 /* Per-frame actor action: unless busy or stunned, start the move for the
  * decoded command (combo attacks by button, the charged shot, the jump,
  * the dash), then set the animation, drift and turn for the current
- * stance, derive the walking speed and let a dash use up charge.
- * Does not match: in the charged-shot case bounce = 1 is scheduled
- * before the 0x1000 flag update instead of after it. */
-#ifdef NON_MATCHING
+ * stance, derive the walking speed and let a dash use up charge. */
 void func_80077A9C(Actor *actor) {
     MoveSlot *slot;
     s32 bounce;
@@ -1796,6 +1762,7 @@ void func_80077A9C(Actor *actor) {
                 }
                 actor->unk4E = 0xFF;
                 actor->flags |= 0x1000;
+                MOVE_TRACE();
                 bounce = 1;
                 actor->unkC5 = 2;
                 actor->flags |= 1;
@@ -1914,9 +1881,6 @@ done:
         actor->flags &= ~0x8000;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077A9C);
-#endif
 
 /* Put an actor back at its home position, idle. */
 void func_80078154(Actor *actor) {
@@ -2095,14 +2059,14 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
     return 3;
 }
 
-#ifdef NON_MATCHING
 /* Keep two close actors apart: when their bodies overlap in height, take
  * each one's anchor across the line between their start positions, and if
  * those are closer than the actors' radii, push both apart along the line
  * between them, each by the other's share of their combined speed.
- * Does not match: only the delay slot of the last height test's first branch: the original leaves it empty (a nop); declaring the function s32 reproduces that but rotates the registers of the anchor point arithmetic. */
-void func_80078920(Actor *first, Actor *second) {
-    Vector unused; /* keeps the original's 16-byte frame slot */
+ * Declared int without a return value, as the original's unfilled delay
+ * slot in the last height test shows. */
+s32 func_80078920(Actor *first, Actor *second) {
+    Vector unused; /* unused in the original; reserves 16 bytes */
     Vector point_a;
     Vector point_b;
     Vector mid;
@@ -2112,8 +2076,8 @@ void func_80078920(Actor *first, Actor *second) {
     s32 radius_a;
     s32 radius_b;
     s32 dist;
-    s32 push;
-    s32 angle;
+    s32 sum;
+    s32 angle; /* first the reach to the first anchor, then the push angle */
     s32 speed_a;
     s32 speed_b;
     s32 total;
@@ -2147,23 +2111,23 @@ void func_80078920(Actor *first, Actor *second) {
         dist = func_80088838(&point_a, &point_b);
         total = radius_a + radius_b;
         if (dist < total) {
-            push = func_80088838(&first->start, &point_a);
-            if (func_80088838(&first->start, &point_b) < push) {
-                push = dist + total;
+            angle = func_80088838(&first->start, &point_a);
+            if (func_80088838(&first->start, &point_b) < angle) {
+                dist += total;
             } else {
-                push = total - dist;
+                dist = total - dist;
             }
             angle = ratan2(first->start.vx - second->start.vx, first->start.vz - second->start.vz);
             speed_a = func_80088754(&first->velocity);
             speed_b = func_80088754(&second->velocity);
-            total = speed_a + speed_b;
-            if (total == 0) {
+            sum = speed_a + speed_b;
+            if (sum == 0) {
                 speed_b = 1;
                 speed_a = 1;
-                total = 2;
+                sum = 2;
             }
-            speed_a = (speed_a * push << 8) / total;
-            speed_b = (speed_b * push << 8) / total;
+            speed_a = (speed_a * dist << 8) / sum;
+            speed_b = (speed_b * dist << 8) / sum;
             first->pos.vx += (func_8003F8B0(angle) * speed_b) >> 20;
             first->pos.vz += (func_8003F8CC(angle) * speed_b) >> 20;
             second->pos.vx -= (func_8003F8B0(angle) * speed_a) >> 20;
@@ -2171,9 +2135,6 @@ void func_80078920(Actor *first, Actor *second) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
-#endif
 
 /* Move an actor by its velocity: take the floor height and cell kind (bits
  * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
@@ -2231,11 +2192,10 @@ void func_80078ED4(s16 *params) {
     params[6] = 0x30;
 }
 
-#ifdef NON_MATCHING
 /* Reset an actor for a new round: position and motion, model scale,
  * movement and health values, shots, trails, pose and flags, its side's hit
- * record and the combo, brain and effect state.
- * Does not match: the original keeps flag word 0xd4 in a register across the pose flag updates but reloads the flag word 0xd0 after each group, and schedules the header copies earlier. */
+ * record and the combo, brain and effect state. The stance fields are
+ * cleared as bit-fields (one read-modify-write of word 0xd4). */
 void func_80078F00(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 i;
@@ -2276,14 +2236,15 @@ void func_80078F00(Actor *actor) {
     actor->unk4E = 0xFF;
     actor->anim = 0;
     actor->unkC3 = 0;
-    actor->unkD4 &= ~0xC;
-    actor->unkD4 &= ~3;
     actor->flags &= ~0x1000;
     actor->flags |= 0x2000000;
     actor->flags |= 0x20000;
     actor->unkCE = actor->unkCC + 0x800;
+    ACTOR_STANCE_BITS(actor)->prev_stance = 0;
+    ACTOR_STANCE_BITS(actor)->stance = 0;
     actor->flags &= ~0x800000;
     actor->unk15F0 = header->unkF;
+    actor->unk15F2 = actor->unk15F4 = header->unkC;
     actor->unk15F6 = 0x100;
     actor->unk15F8 = 0;
     actor->unk1654 = 0;
@@ -2294,7 +2255,6 @@ void func_80078F00(Actor *actor) {
     actor->flags &= ~4;
     actor->flags &= ~2;
     actor->flags &= ~0x38;
-    actor->unk15F2 = actor->unk15F4 = header->unkC;
     actor->unkD4 &= ~0x10;
     actor->unk84 = D_8009264C;
     D_8009264C[2] = 1;
@@ -2310,16 +2270,12 @@ void func_80078F00(Actor *actor) {
     actor->unk1668 = 0;
     actor->unkD4 &= ~0x40;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
-#endif
 
-#ifdef NON_MATCHING
 /* Per-frame anchors of an actor: home between its feet, dust when landing
  * or skidding, cells thrown up while it stands in deep ground, the upper
  * anchor and core, the charged glow and its effect, and the stance effects
- * (7 and 9) when the stance changes.
- * Does not match: the stance word and the flag word swap v0/v1 in the stance-1 branch, and the final flag update uses a0/a1 instead of v1/a0. */
+ * (7 and 9) when the stance changes. The stance state and last frame's
+ * flag 15 are stored through bit-fields. */
 void func_8007920C(Actor *actor) {
     Vector foot_a;
     Vector foot_b;
@@ -2369,19 +2325,19 @@ void func_8007920C(Actor *actor) {
     }
     if (actor->unkC5 != 4) {
         if (actor->unkC4 != 1) {
-            actor->unkD4 &= ~3;
+            ACTOR_STANCE_BITS(actor)->stance = 0;
         } else {
-            actor->unkD4 = (actor->unkD4 & ~3) | 1;
+            ACTOR_STANCE_BITS(actor)->stance = 1;
             if (actor->flags & 0x8000) {
-                actor->unkD4 = (actor->unkD4 & ~3) | 2;
+                ACTOR_STANCE_BITS(actor)->stance = 2;
             }
         }
         if (actor->unkC5 == 2) {
-            actor->unkD4 |= 3;
+            ACTOR_STANCE_BITS(actor)->stance = 3;
         }
     }
-    state = actor->unkD4 & 3;
-    if (state != ((actor->unkD4 >> 2) & 3)) {
+    state = ACTOR_STANCE_BITS(actor)->stance;
+    if (state != ACTOR_STANCE_BITS(actor)->prev_stance) {
         switch (state) {
         case 0:
         case 3:
@@ -2398,13 +2354,10 @@ void func_8007920C(Actor *actor) {
             break;
         }
     }
+    ACTOR_FLAG_BITS(actor)->flag16 = ACTOR_FLAG_BITS(actor)->flag15;
     actor->unkC6 = actor->unkC4;
-    actor->flags = (actor->flags & ~0x10000) | (((actor->flags >> 15) & 1) << 16);
-    actor->unkD4 = (actor->unkD4 & ~0xC) | ((actor->unkD4 & 3) << 2);
+    ACTOR_STANCE_BITS(actor)->prev_stance = ACTOR_STANCE_BITS(actor)->stance;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
-#endif
 
 /* Frame both actors with the camera: look at their midpoint, choose the
  * side (left or right of the line between them) whose eye point is nearer
@@ -2563,25 +2516,25 @@ void func_80079DE0(void) {
     D_80092640 = 0;
 }
 
-#ifdef NON_MATCHING
-/* One frame of the bout (every D_80099D9A + 1 frames): record the pose
- * slot, read the pads (letting a player on the free port take over while
- * the pause is open), then run both actors' frame: moves, AI, physics,
- * separation, model placement, anchors and frame events.
- * Does not match: only the pose slot setup is scheduled differently: the original loads the slot index and the frame delay (and sets the first call's argument) before the pose stores, one instruction shorter. */
+/* One frame of the bout (every frame rate setting + 1 frames): record the
+ * pose slot, read the pads (letting a player on the free port take over
+ * while the pause is open), then run both actors' frame: moves, AI,
+ * physics, separation, model placement, anchors and frame events. The
+ * settings are read through the Settings struct, which keeps the rate
+ * load ahead of the pose stores. */
 void func_80079DF0(Actor *first, Actor *second) {
     if (D_80092664 != 0) {
         D_80092664--;
         return;
     }
-    D_80092664 = D_80099D9A;
+    D_80092664 = D_80099D98.rate;
     first->pose = (Pose *)first->unk9CC + D_800928C0;
     second->pose = (Pose *)second->unk9CC + D_800928C0;
     first->move = (Move *)first->pose;
     D_800928C0++;
     second->move = (Move *)second->pose;
-    first->flags = (first->flags & ~0x40) | ((D_80099D9D & 1) << 6);
-    second->flags = (second->flags & ~0x40) | ((D_80099D9E & 1) << 6);
+    first->flags = (first->flags & ~0x40) | ((D_80099D98.com1 & 1) << 6);
+    second->flags = (second->flags & ~0x40) | ((D_80099D98.driven & 1) << 6);
     func_80073644(first);
     func_80073644(second);
     func_800764CC(first);
@@ -2666,9 +2619,6 @@ void func_80079DF0(Actor *first, Actor *second) {
         func_8007D65C(&first->core, &second->core, 0x13);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
-#endif
 
 /* Save both actors' positions and homes (at height 0x100) and set the
  * countdown from the given frame count. */
@@ -2783,10 +2733,8 @@ void func_8007A730(Actor *actor) {
     actor->flags |= 0x2000400;
 }
 
-#ifdef NON_MATCHING
 /* Point the camera at an actor for its victory view: height and distance
- * from its move header, a random direction around it. Does not match: GCC
- * folds the look-at height into y - (D_80092670 + 0x400). */
+ * from its move header, a random direction around it. */
 void func_8007A768(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 angle;
@@ -2798,17 +2746,14 @@ void func_8007A768(Actor *actor) {
     D_80092674 = header->unk2A;
     SetGeomScreen(0x200);
     angle = rand();
-    y = actor->pos.vy;
-    D_8009867C.vy = y;
+    D_8009867C.vy = actor->pos.vy;
     D_8009867C.vx = actor->pos.vx;
-    D_8009871C.vy = y - 0x400 - D_80092670;
     D_8009867C.vz = actor->pos.vz;
+    y = D_8009867C.vy - 0x400;
+    D_8009871C.vy = y - D_80092670;
     D_8009871C.vx = D_8009867C.vx + (((func_8003F8B0(angle) << 2) * D_80092674) >> 12);
     D_8009871C.vz = D_8009867C.vz + (((func_8003F8CC(angle) << 2) * D_80092674) >> 12);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A768);
-#endif
 
 /* End the bout's effects and pick the next stage from the winner's move
  * header; both actors are lifted to the start height. */
@@ -3402,12 +3347,9 @@ void func_8007C124(SVector *pos, s32 kind) {
     sparkle->prim[1] = *prim;
 }
 
-#ifdef NON_MATCHING
 /* Draw the trail sparkles as quads from the previous segment's edge to an
  * edge across the direction of travel on screen (vertical for the first
- * segment), sized by the trail and shaded by age.
- * Does not match: the square root result is copied to $a1 and the scaled
- * offsets land in $a0/$v1 in the original. */
+ * segment), sized by the trail and shaded by age. */
 void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
@@ -3416,12 +3358,11 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
     s32 i;
     s32 dx;
     s32 dy;
-    s32 length;
+    s32 tmp; /* the segment length, then the shade, then the link address */
     s32 nx;
     s32 ny;
     s32 side;
     u32 prevlink;
-    u32 addr;
 
     scratch->from.vx = 0;
     scratch->from.vz = 0;
@@ -3445,9 +3386,9 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
             prev = &sparkle->u.trail.prev->u.trail;
             dx = sparkle->u.trail.screen[4] - prev->screen[4];
             dy = sparkle->u.trail.screen[5] - prev->screen[5];
-            length = SquareRoot0(dx * dx + dy * dy);
-            nx = dx * sparkle->u.trail.size / length;
-            ny = dy * sparkle->u.trail.size / length;
+            tmp = SquareRoot0(dx * dx + dy * dy);
+            nx = dx * sparkle->u.trail.size / tmp;
+            ny = dy * sparkle->u.trail.size / tmp;
             scratch->point.vz = 0;
             scratch->point.vy = -nx;
             scratch->point.vx = ny;
@@ -3512,27 +3453,21 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
             prim->x2 = prev->screen[2];
             prim->y2 = prev->screen[3];
         }
-        /* the shade shares its register with the link address */
-        addr = 0x40 - sparkle->frame * 8;
-        prim->r0 = addr;
-        prim->g0 = addr;
-        prim->b0 = addr;
+        tmp = 0x40 - sparkle->frame * 8;
+        prim->r0 = tmp;
+        prim->g0 = tmp;
+        prim->b0 = tmp;
         prevlink = ot[scratch->depth >> 4];
-        addr = (u32)prim & 0xFFFFFF;
-        ot[scratch->depth >> 4] = addr;
+        tmp = (u32)prim & 0xFFFFFF;
+        ot[scratch->depth >> 4] = tmp;
         prevlink |= 0x09000000;
-        *(u32 *)addr = prevlink;
+        *(u32 *)tmp = prevlink;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C280);
-#endif
 
-#ifdef NON_MATCHING
 /* Start a trail segment of a key at a position for the current owner
  * (once per key and owner), with the given texture column and size, linked
- * to the segment started on the previous frame.
- * Does not match: the texture and header stores are scheduled in a different order. */
+ * to the segment started on the previous frame. */
 void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     Sparkle *sparkle;
     Sparkle *other;
@@ -3556,9 +3491,9 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     prim = sparkle->prim;
     prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
     prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
-    prim->code &= ~1;
     prim->tpage = D_80092694;
     prim->clut = D_800926A0;
+    prim->code &= ~1;
     sparkle->prim[1] = *prim;
     sparkle->frame_count = 7;
     sparkle->type = 1;
@@ -3566,22 +3501,19 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     sparkle->frame = 0;
     sparkle->x = pos->vx;
     sparkle->y = pos->vy;
+    sparkle->z = pos->vz;
     sparkle->u.trail.owner = D_800928E8;
     sparkle->u.trail.key = key;
     sparkle->u.trail.prev = NULL;
     sparkle->u.trail.stamp = D_800926A4;
-    sparkle->z = pos->vz;
     sparkle->u.trail.size = D_80091228[size];
-    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.trail.key == key && other != sparkle && other->type == 1 &&
             other->u.trail.stamp == (u16)(D_800926A4 - 1)) {
             sparkle->u.trail.prev = other;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C880);
-#endif
 
 /* Draw the line sparkles that continue last frame's segment as quads
  * joining both segments, fading with their age. */
@@ -3634,11 +3566,9 @@ u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
     return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
 }
 
-#ifdef NON_MATCHING
 /* Start a line segment of a key between two positions for the current
  * owner (once per key and owner), with the given texture column, linked to
- * the segment started on the previous frame.
- * Does not match: loads are scheduled ahead of the original statement order. */
+ * the segment started on the previous frame. */
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
     Sparkle *sparkle;
     Sparkle *other;
@@ -3665,31 +3595,28 @@ void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
     sparkle->frame = 0;
     sparkle->x = from->vx;
     sparkle->y = from->vy;
-    sparkle->u.line.owner = D_800928E8;
     sparkle->z = from->vz;
+    sparkle->u.line.owner = D_800928E8;
     sparkle->u.line.x = to->vx;
     sparkle->u.line.y = to->vy;
+    sparkle->u.line.z = to->vz;
+    sparkle->u.line.stamp = D_800926A4;
     prim = sparkle->prim;
     prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
     prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
     sparkle->u.line.key = key;
     sparkle->u.line.prev = NULL;
-    sparkle->u.line.stamp = D_800926A4;
-    sparkle->u.line.z = to->vz;
     prim->tpage = D_80092694;
     prim->clut = D_800926A0;
     prim->code &= ~1;
     sparkle->prim[1] = *prim;
-    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.line.key == key && other != sparkle && other->type == 2 &&
             other->u.line.stamp == (u16)(D_800926A4 - 1)) {
             sparkle->u.line.prev = other;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CD44);
-#endif
 
 /* Draw the scene effects: the passes that need the view and its derived
  * matrix, then the screen-space passes under the view matrix. */
@@ -3876,10 +3803,8 @@ void func_8007D6B8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Spawn up to count ground particles in free cells around a position: on
- * the ground below a random point within 32 units, rising for 20 frames.
- * Does not match: the x coordinate is kept pre-shifted for the map index. */
+ * the ground below a random point within 32 units, rising for 20 frames. */
 void func_8007D7A8(Vector *pos, s32 count) {
     SceneCell10 *cell = D_800926BC;
     s32 i;
@@ -3893,18 +3818,17 @@ void func_8007D7A8(Vector *pos, s32 count) {
         if (cell->unk6 == 0) {
             x = pos->vx + (rand() % 64 - 32);
             cell->unk0 = x;
+            x = (s16)x;
             z = pos->vz + (rand() % 64 - 32);
             cell->unk4 = z;
-            cell->unk2 = cell->unk8 = D_800928DC[((s16)z >> 8) * 128 + ((s16)x >> 8)].height;
+            z = (s16)z;
+            cell->unk2 = cell->unk8 = D_800928DC[(x >> 8) + (z >> 8) * 128].height;
             cell->unk7 = -(rand() % 10 + 10);
             count--;
             cell->unk6 = 20;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
-#endif
 
 /* Draw and advance this buffer's half of the ground particles: project
  * them three at a time into point tiles, then let each fall (accelerating)

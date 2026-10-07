@@ -73,6 +73,12 @@ segments:
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
       - [0x927C, .rodata, main2]
+      # 80036718's jump table (80018B58) is at 0 mod 8 while 80033DF0's
+      # (80018A7C, main2's first rodata) is at 4 mod 8, so a unit starts
+      # between them: at 800365FC or later (its strings from 80018AE0) and
+      # no later than 80036718 (its strings at 80018B30). 800366E0, the
+      # formatter's output hook, is chosen.
+      - [0x9330, .rodata, main2_800366E0]
       # Sound driver unit (GCC 2.6.3): its opcode-table jump table.
       - [0x93DC, .rodata, sound]
       # Hand-written rotation helpers and the PsyQ library objects.
@@ -127,7 +133,14 @@ segments:
       # (8002C3D8 compiles identically under both).
       - [0x1CBE8, c, main_8002C3E8]
       - [0x22094, c, heap]
+      # Heap report file unit: 80032E04 stores D_800592B8 absolutely, which
+      # the heap unit (80032BDC) loads through $gp, so a unit starts after
+      # 80032C18 (its own $gp stores); 80032DCC, the first user of the
+      # report file handle D_80059348, is chosen (80032CB8/80032D60 address
+      # no small globals and compile identically either way).
+      - [0x235CC, c, heap_80032DCC]
       - [0x2367C, c, main2]
+      - [0x26EE0, c, main2_800366E0]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
       # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
       # only under 2.6.3, and the functions between compile identically.

@@ -294,69 +294,70 @@ void func_801C5C98(void) {
     D_800625A0->buffer = 0;
 }
 
-/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`). */
+/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`).
+ * NON_MATCHING: same code as ovl2600 func_801C5ABC (see there): index and
+ * column swap callee-saved registers and the CLUT store lacks the original's
+ * v1 copy of poly. */
 #ifdef NON_MATCHING
 void func_801C5CA8(Label *label, s32 index, s32 row, s32 mode) {
     POLY_FT4 *poly;
-    s32 i;
-    s32 semi;
     s32 column;
     s32 line;
     s32 u;
-    s32 v;
+    s32 i;
+    u8 dim;
 
     column = index & 1;
+    i = 0;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
-    i = 0;
+
 loop:
-        semi = 0;
-        SetPolyFT4(poly);
-        SetSemiTrans(poly, 0);
-        SetShadeTex(poly, 0);
-        poly->r0 = 0x80;
-        poly->g0 = 0x80;
-        poly->b0 = 0x80;
-        if ((u8)mode == 0) {
-            label->highlight = column;
-            poly->tpage = GetTPage(0, 0, 0x140, 0);
-            poly->u0 = u;
-            v = ((index + row) / 4) * 13;
-            poly->v0 = v;
-            poly->u1 = u + label->width;
-            poly->v1 = v;
-            poly->u2 = u;
-            poly->v2 = v + 13;
-            poly->u3 = u + label->width;
-            poly->v3 = v + 13;
-        } else {
-            if (!(mode & 0x80)) {
-                semi = 0x20;
-                SetSemiTrans(poly, 1);
-                poly->r0 = semi;
-                poly->g0 = semi;
-                poly->b0 = semi;
-            }
-            label->highlight = (mode & 0x7F) - 1;
-            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-            poly->u0 = column * 0x60;
-            v = line * 13 + row;
-            poly->v0 = v;
-            poly->v1 = v;
-            poly->u2 = column * 0x60;
-            poly->v2 = v + 13;
-            poly->u1 = column * 0x60 + label->width;
-            poly->v3 = v + 13;
-            poly->u3 = column * 0x60 + label->width;
+    dim = 0;
+    SetPolyFT4(poly);
+    SetSemiTrans(poly, 0);
+    SetShadeTex(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+    if ((u8)mode == 0) {
+        label->highlight = column;
+        poly->tpage = GetTPage(0, 0, 0x140, 0);
+        poly->u0 = u;
+        poly->v0 = ((index + row) / 4) * 13;
+        poly->u1 = u + label->width;
+        poly->v1 = ((index + row) / 4) * 13;
+        poly->u2 = u;
+        poly->v2 = ((index + row) / 4) * 13 + 13;
+        poly->u3 = u + label->width;
+        poly->v3 = ((index + row) / 4) * 13 + 13;
+    } else {
+        if (!(mode & 0x80)) {
+            dim = 0x20;
+            SetSemiTrans(poly, 1);
+            poly->r0 = dim;
+            poly->g0 = dim;
+            poly->b0 = dim;
         }
-        if (label->highlight) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
-        i++;
-        poly++;
+        label->highlight = (u8)(mode & 0x7F) - 1;
+        poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+        poly->u0 = column * 0x60;
+        poly->v0 = line * 13 + row;
+        poly->u1 = column * 0x60 + label->width;
+        poly->v1 = line * 13 + row;
+        poly->u2 = column * 0x60;
+        poly->v2 = line * 13 + row + 13;
+        poly->u3 = column * 0x60 + label->width;
+        poly->v3 = line * 13 + row + 13;
+    }
+    if (label->highlight) {
+        poly->clut = D_80059414;
+    } else {
+        poly->clut = D_800595D4;
+    }
+    i++;
+    poly++;
     if (i < 2) {
         goto loop;
     }
@@ -1728,14 +1729,15 @@ void func_801CB690(void) {
 /*
  * Advance the camera move one update: x and y move the model's depth and
  * height, z the model code's camera distance; each axis stops (clears its
- * motion bit) at its target. Nonmatching: register allocation of the
- * division temporaries, and z does not address from[2] off offset[2].
+ * motion bit) at its target. Nonmatching: x and y keep the 16.16 offset in
+ * v1 and the whole part in a0 where the original has the offset in a0 and
+ * divides into v1; z does not address from[2] off offset[2] (the original's
+ * a3 = &offset[2], from[2] at -36(a3)).
  */
 #ifdef NON_MATCHING
 void func_801CBA2C(void) {
     s32 i;
     s32 travelled;
-    s32 pos;
     s32 distance;
 
     if (D_800625A0->view_motion & 1) {
@@ -1744,23 +1746,21 @@ void func_801CBA2C(void) {
         }
         if (D_801D9050.negative[0] == 0) {
             travelled = D_801D9050.offset[0];
-            pos = travelled / 0x10000;
-            pos += D_801D9050.from[0];
-            if (pos >= D_801D9050.to[0]) {
+            distance = travelled / 0x10000;
+            if (distance + D_801D9050.from[0] >= D_801D9050.to[0]) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = pos;
+                D_800625A0->model_translation.vz = distance + D_801D9050.from[0];
             }
         } else {
             travelled = D_801D9050.offset[0];
-            pos = travelled / 0x10000;
-            pos = D_801D9050.from[0] - pos;
-            if (D_801D9050.to[0] >= pos) {
+            distance = travelled / 0x10000;
+            if (D_801D9050.to[0] >= D_801D9050.from[0] - distance) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = pos;
+                D_800625A0->model_translation.vz = D_801D9050.from[0] - distance;
             }
         }
     }
@@ -1770,23 +1770,21 @@ void func_801CBA2C(void) {
         }
         if (D_801D9050.negative[1] == 0) {
             travelled = D_801D9050.offset[1];
-            pos = travelled / 0x10000;
-            pos += D_801D9050.from[1];
-            if (pos >= D_801D9050.to[1]) {
+            distance = travelled / 0x10000;
+            if (distance + D_801D9050.from[1] >= D_801D9050.to[1]) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = pos;
+                D_800625A0->model_translation.vy = distance + D_801D9050.from[1];
             }
         } else {
             travelled = D_801D9050.offset[1];
-            pos = travelled / 0x10000;
-            pos = D_801D9050.from[1] - pos;
-            if (D_801D9050.to[1] >= pos) {
+            distance = travelled / 0x10000;
+            if (D_801D9050.to[1] >= D_801D9050.from[1] - distance) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = pos;
+                D_800625A0->model_translation.vy = D_801D9050.from[1] - distance;
             }
         }
     }

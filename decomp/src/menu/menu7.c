@@ -809,7 +809,12 @@ void func_8008B0D8(Player *player) {
 #ifdef NON_MATCHING
 /* Bind an animation to a model set node: its constant keys and streamed
  * channels drive node angle (short way round) or 0x2C components.
- * Does not match: the data pointer's register copies (t1/s0/s1) differ. */
+ * Does not match: only the copies of the data pointer differ (4 bytes
+ * short). The original copies $a0 to $t1 and $t1 to $s0 (the header) at
+ * entry and copies $s0 to $s1 after the allocation for the channel
+ * streams; here `data` itself lives in $s1 from entry ($s1 = $a0,
+ * $s0 = $s1). A separate base pointer set after the allocation gets a
+ * caller-saved register instead. */
 void func_8008B13C(u8 *data, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim = (AnimHeader *)data;
@@ -824,7 +829,8 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
     key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
     record = anim->records;
-    channel = player->channels = (Channel *)(key + anim->keys);
+    channel = (Channel *)(key + anim->keys);
+    player->channels = channel;
     for (i = 0; i < anim->keys; i++) {
         node = nodes[record->node];
         key->value = record->value;
@@ -896,27 +902,26 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B13C);
 #endif
 
-#ifdef NON_MATCHING
 /* Build a model set node tree from a model set file: a node per hierarchy
  * record (with its model, parent, angle and offset) and a player per
- * animation. Returns the root node. Does not match: register allocation
- * spills the models pointer where the original spills the animations. */
+ * animation. Returns the root node. One pointer serves first as the model
+ * file and then as the animation table, as the original's register use
+ * shows. */
 Node *func_8008B38C(ModelSetFile *file) {
+    Node *root;
     u32 i;
-    u8 *models = file->models;
+    u32 *data = (u32 *)file->models;
     u32 *hierarchy = file->hierarchy;
     u32 *animations = file->animations;
     u32 count = hierarchy[0];
     HierarchyRecord *records = (HierarchyRecord *)(hierarchy + 1);
     Node **nodes;
     ModelSet *set;
-    Node *root;
     Node *node;
     Model *model;
     Player *player;
-    Node *parent;
 
-    func_8002C3E8(models);
+    func_8002C3E8((u8 *)data);
     func_800324B8(0x12);
     nodes = func_80031BDC(count * 4, 0);
     set = func_80089E74();
@@ -931,14 +936,13 @@ Node *func_8008B38C(ModelSetFile *file) {
         if (records[i].model != -1) {
             model = func_80089FC4();
             func_80089E2C(node, model);
-            func_8008A184(model, (ModelFile *)(models + (records[i].model * 0x38 + 0x10)));
+            func_8008A184(model, (ModelFile *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
         }
         if (records[i].parent == -1) {
-            parent = root;
+            func_80089C88(root, node);
         } else {
-            parent = nodes[records[i].parent];
+            func_80089C88(nodes[records[i].parent], node);
         }
-        func_80089C88(parent, node);
         node->unk44.vx = records[i].angle.vx;
         node->unk44.vy = records[i].angle.vy;
         node->unk44.vz = records[i].angle.vz;
@@ -947,23 +951,20 @@ Node *func_8008B38C(ModelSetFile *file) {
         node->rotation.vz = records[i].offset[2];
     }
     if (animations != NULL) {
+        data = animations;
         func_800324B8(0x11);
-        player = set->players = func_80031BDC(animations[0] * sizeof(Player), 0);
-        set->count = animations[0];
-        for (i = 0; i < animations[0]; i++) {
-            if (animations[i + 1] != 0) {
-                func_8008B13C((u8 *)animations[i + 1], player, root);
+        player = set->players = func_80031BDC(data[0] * sizeof(Player), 0);
+        set->count = data[0];
+        for (i = 0; i < data[0]; i++) {
+            if (data[i + 1] != 0) {
+                func_8008B13C((u8 *)data[i + 1], &player[i], root);
             } else {
-                player->header = NULL;
+                player[i].header = NULL;
             }
-            player++;
         }
     }
     return root;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B38C);
-#endif
 
 /* Advance a player by some frames, snapping to the keys. */
 s32 func_8008B5DC(Player *player, s32 frames) {
@@ -1012,15 +1013,13 @@ s32 func_8008B650(s32 from, s32 to, s32 step) {
     return angle;
 }
 
-#ifdef NON_MATCHING
 /* Advance a player by some frames (clamped to the animation's end) and
  * move every target 1/steps of the way to its key or channel value.
  * Channel streams hold a byte per frame: 0xxxxxxx a 7-bit delta, 10xxxxxx
  * hold the previous delta for x following frames, 11xxxxxx plus a byte
  * a signed 14-bit delta.
  * Returns whether the end was reached in a final step (1 without an
- * animation). Nonmatching: the first tag copy and the completion
- * comparison use different registers. */
+ * animation). */
 s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     Key *key;
     Channel *channel;
@@ -1077,7 +1076,7 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
                         channel->hold = value;
                     }
                 } else {
-                    channel->delta = (command << 25) >> 25;
+                    channel->delta = ((u8)command << 25) >> 25; /* 7-bit signed delta */
                 }
             }
             channel->value += channel->delta;
@@ -1094,13 +1093,12 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
         }
     }
     if (player->frame == player->header->frames) {
-        return steps == 1;
+        if (steps == 1) {
+            return 1;
+        }
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B730);
-#endif
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
@@ -1137,9 +1135,9 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
-#ifdef NON_MATCHING
 void func_8008BCC8(Mesh *mesh, u8 *work) {
     Vector direction;
+    Vector unused; /* unused in the original; reserves 16 bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1150,9 +1148,6 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vz <<= 4;
     func_8008C3A8(mesh->data, work, mesh->count);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BCC8);
-#endif
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
@@ -1743,8 +1738,8 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
-#ifdef NON_MATCHING
 void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
+    SVector unused[5]; /* unused in the original; reserves 40 bytes */
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
@@ -1774,18 +1769,13 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
         spark = (Spark *)((u8 *)spark + emitter->size);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DA48);
-#endif
 
 /* Copy one model part's local transform. */
-#ifdef NON_MATCHING
 void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
+    Matrix unused; /* unused in the original; reserves 32 bytes */
+
     *out = model->list->parts[part]->matrix;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DBC0);
-#endif
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
 void func_8008DC28(void) {
@@ -1905,28 +1895,31 @@ void func_8008E0C8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Advance the glow field one step: seed the two bottom rows with random
  * heat, let every cell take the cooled average of its neighbours below,
- * then keep the result for the next step.
- * Does not match: GCC does not strength-reduce the five neighbour loads
- * into separate pointers as the original does. */
+ * then keep the result for the next step. The seeding loop and the
+ * source index share i. */
 void func_8008E120(void) {
     s16 *new;
     s16 *old;
     s16 *seed;
     s32 heat;
     s32 value;
-    s32 row;
     s32 i;
     s32 x;
     s32 y;
+    s16 *up;
+    s16 *right;
+    s16 *left;
+    s16 *down_right;
+    s16 *down_left;
+    s16 *dst;
 
     if (D_80092844 != NULL) {
         heat = 0;
         new = D_80092840;
         seed = &new[47 * 0x70];
-        for (x = 0; x < 0x70; x++) {
+        for (i = 0; i < 0x70; i++) {
             switch (rand() & 3) {
             case 0:
                 heat = 0x180;
@@ -1935,26 +1928,29 @@ void func_8008E120(void) {
                 heat = 0;
                 break;
             }
-            seed[x] = seed[x + 0x70] = heat;
+            seed[i] = seed[i + 0x70] = heat;
         }
         old = D_8009283C;
+        up = old - 0x70;
+        right = old + 1;
+        left = old - 1;
+        down_right = old + 0x71;
+        down_left = old + 0x6F;
         for (y = 0x2F; y > 1; y--) {
+            i = y * 0x70 + 1;
+            dst = &new[(y - 1) * 0x70];
             for (x = 1; x < 0x70; x++) {
-                value = (old[(y - 1) * 0x70 + x] + old[y * 0x70 + x + 1] + old[y * 0x70 + x - 1] +
-                         old[(y + 1) * 0x70 + x + 1] + old[(y + 1) * 0x70 + x - 1]) /
-                        5;
+                value = (up[i] + right[i] + left[i] + down_right[i] + down_left[i]) / 5;
+                i++;
                 if (value > 3) {
                     value -= 3;
                 }
-                new[(y - 1) * 0x70 + x] = value;
+                dst[x] = value;
             }
         }
         func_8008E0C8();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008E120);
-#endif
 
 /* Draw a full-screen grey tile of the given level, additive or subtractive,
  * with the draw mode that selects the blend. */
@@ -2199,33 +2195,26 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Play one of a character's command sounds (random 1-6 when index is 0):
- * up to two effects from the shared pair table.
- * Nonmatching: the frame size and saved-register allocation differ. */
+ * up to two effects from the shared pair table. */
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
     s32 entry;
-    SoundPair *table;
 
     if (index == 0) {
         index = rand() % 6 + 1;
     }
     entry = owner->sounds[index];
     if (entry != 0xFF) {
-        table = D_80091EE0;
-        index = D_80091EE0[entry].first;
+        index = D_80091EE0[entry * 2];
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        index = table[entry].second;
+        index = D_80091EE0[entry * 2 + 1];
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EBD0);
-#endif
 
 /* Stop every voice started with the given tag. */
 void func_8008ECEC(u8 tag) {
@@ -2241,35 +2230,28 @@ void func_8008ECEC(u8 tag) {
     }
 }
 
-/* Stop the sounds a character's command sound entry started. Does not
- * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. The original also
- * reserves eight more frame bytes. */
-#ifdef NON_MATCHING
-void func_8008ED6C(Actor *owner, s32 index) {
+/* Stop the sounds a character's command sound entry started. Declared int
+ * without a return value, as the original's unfilled last delay slot shows. */
+s32 func_8008ED6C(Actor *owner, s32 index) {
     s32 entry;
-    SoundPair *table;
 
     entry = owner->sounds[index];
     if (entry != 0xFF) {
-        table = D_80091EE0;
-        if (D_80091EE0[entry].first != 0) {
-            func_8008ECEC((D_80091EE0[entry].first & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = D_80091EE0[entry * 2];
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        if (table[entry].second != 0) {
-            func_8008ECEC((table[entry].second & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = D_80091EE0[entry * 2 + 1];
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
-#endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
- * when not guarding) for two ticks, and turn it toward a heading.
- * Nonmatching: the original reserves sixteen more frame bytes. */
-#ifdef NON_MATCHING
+ * when not guarding) for two ticks, and turn it toward a heading. */
 void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
+    s32 unused[4]; /* unused in the original; reserves 16 bytes */
     s32 brake = actor->brake;
     s32 accel = actor->accel;
     s32 moving;
@@ -2297,9 +2279,6 @@ void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
     actor->target_angle = func_8008B650(actor->target_angle, heading, 0x40);
     actor->unkCE = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EE1C);
-#endif
 
 /* Opponent command: act, then wait a second. */
 void func_8008EF00(Actor *actor, Brain *brain) {

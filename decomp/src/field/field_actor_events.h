@@ -26,7 +26,7 @@ extern s32 D_800ADB64;         /* jump contact, 0xff none */
 extern s32 D_800ADB68;         /* pad input polled this pass */
 extern u16 D_800ADF68[16];     /* d-pad direction per button state */
 extern u16 D_800ADF88[16];     /* alternate d-pad directions */
-extern void func_80079288(void);
+extern s32 func_80079288(void);
 
 extern s32 D_8006F990[3];    /* descriptor of each party slot's actor */
 void func_8009E574(s32 x, s32 z);
@@ -68,7 +68,7 @@ typedef struct {
 
 /* The screen distortion (800a484c). */
 extern s32 D_800ADB24;         /* distortion buffers allocated */
-extern RECT D_800AEB24[15];    /* saved strip sources */
+extern DVECTOR D_800AEB24[15]; /* saved strip sources (x, y) */
 
 
 

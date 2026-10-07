@@ -346,6 +346,30 @@ typedef struct Actor {
     s16 unk1668;
 } Actor;
 
+/* An actor's flag word as bit-fields (8007920c): bit 16 keeps last
+ * frame's bit 15 (the 0x8000 dash flag). */
+typedef struct {
+    u32 unk0 : 11;
+    u32 flag11 : 1;    /* the animation reached its end */
+    u32 unk12 : 3;
+    u32 flag15 : 1;
+    u32 flag16 : 1;
+    u32 flag17 : 1;    /* the actor faces the other way (D_800928F4) */
+    u32 unk18 : 14;
+} ActorFlagBits;
+
+/* The low bits of an actor's unkD4 word as bit-fields (8007920c): the
+ * stance effect shown (0 none, 1 stance 1, 2 stance 1 dashing, 3 move)
+ * and last frame's. */
+typedef struct {
+    u32 stance : 2;
+    u32 prev_stance : 2;
+    u32 unk4 : 28;
+} ActorStanceBits;
+
+#define ACTOR_FLAG_BITS(actor) ((ActorFlagBits *)&(actor)->flags)
+#define ACTOR_STANCE_BITS(actor) ((ActorStanceBits *)&(actor)->unkD4)
+
 
 /* A move's frame event: runs its spec (header offset) on frames first..last. */
 typedef struct {
@@ -574,7 +598,7 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
 void func_8007D7A8(Vector *pos, s32 count);
-void func_8008ED6C(Actor *owner, s32 index);
+s32 func_8008ED6C(Actor *owner, s32 index);
 void func_8007E528(s32 state);
 s32 func_8007D190(Vector *pos, u32 kind);
 s32 func_8007D25C(s32 type);

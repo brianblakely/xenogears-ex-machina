@@ -11,13 +11,18 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
  * the target cell is walkable (step[0] = target), else the boundary result. */
-#ifdef NON_MATCHING /* crossing and corner-value lifetimes still differ */
+/* NON_MATCHING: size and instructions now line up (corner cases test the
+ * first neighbour and return its nonzero result directly; the scale
+ * argument is reused for the result as the original allocates it; the
+ * walkable-cell test passes `from` as a temporary), but in the prologue the
+ * original keeps `crossing` in t0 (here a3), its product temp in t1 (here t0)
+ * and loads the from corner straight into a1 (here through v0). */
+#ifdef NON_MATCHING
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     CellProbe *probe;
     s32 from;
     s32 to;
     u32 crossing;
-    s32 result;
     s32 side;
 
     SCRATCH_VECTOR[1].vx = position->vx + ((direction->vx * scale) >> 12);
@@ -26,11 +31,11 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     from = position->vx >> 19;
     to = SCRATCH_VECTOR[1].vx >> 19;
     ((SVECTOR *)0x1F8000A0)->vx = from;
+    ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
     ((SVECTOR *)0x1F8000A8)->vx = to;
     ((SVECTOR *)0x1F8000A8)->vz = SCRATCH_VECTOR[1].vz >> 19;
-    ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
     probe = CELL_PROBE;
-    result = 0;
+    scale = 0;
     if (to < from) {
         crossing = 2;
     } else if (from < to) {
@@ -47,127 +52,136 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     case 7:
         break;
     case 1:
-        result = func_8009443C(position, direction, probe->step, mode);
+        scale = func_8009443C(position, direction, probe->step, mode);
         break;
     case 2:
-        result = func_800945C8(position, direction, probe->step, mode);
+        scale = func_800945C8(position, direction, probe->step, mode);
         break;
     case 4:
-        result = func_80094750(position, direction, probe->step, mode);
+        scale = func_80094750(position, direction, probe->step, mode);
         break;
     case 8:
-        result = func_800948D8(position, direction, probe->step, mode);
+        scale = func_800948D8(position, direction, probe->step, mode);
         break;
     case 5:
         probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
         probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            result = func_8009443C(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_80094750(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_80094750(position, direction, probe->step, mode);
         } else if (side > 0) {
-            result = func_80094750(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_8009443C(position, direction, probe->step, mode);
         } else {
-            result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
         }
         break;
     case 6:
         probe->step[0].vx = (position->vx & 0xFFF80000);
         probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            result = func_800945C8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_80094750(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_80094750(position, direction, probe->step, mode);
         } else if (side < 0) {
-            result = func_80094750(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800945C8(position, direction, probe->step, mode);
         } else {
-            result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
         }
         break;
     case 9:
         probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
         probe->step[0].vz = (position->vz & 0xFFF80000);
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            result = func_8009443C(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800948D8(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800948D8(position, direction, probe->step, mode);
         } else if (side < 0) {
-            result = func_800948D8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_8009443C(position, direction, probe->step, mode);
         } else {
-            result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
         }
         break;
     case 10:
         probe->step[0].vx = (position->vx & 0xFFF80000);
         probe->step[0].vz = (position->vz & 0xFFF80000);
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            result = func_800945C8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800948D8(position, direction, probe->step, mode);
         } else if (side > 0) {
-            result = func_800948D8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800945C8(position, direction, probe->step, mode);
         } else {
-            result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
         }
         break;
     }
-    if (result == 0) {
+    if (scale == 0) {
         func_80093354(&probe->step[1]);
-        if (func_80094060(mode, func_80093F18(&probe->step[1])) == 0) {
+        from = func_80093F18(&probe->step[1]);
+        if (func_80094060(mode, from) == 0) {
             probe->step[0] = probe->step[1];
             return 1;
         }
         return 0;
     }
-    return result;
+    return scale;
 }
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
@@ -278,7 +292,11 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-#ifdef NON_MATCHING /* neighbor copies and nested switch tails still differ */
+/* NON_MATCHING: 16 bytes short. The original copies each neighbour face
+ * (loaded with lh) into a0 before testing it against -1 and sets face from
+ * that copy; here face (u16) reloads it with lhu. Declaring face s32 gives
+ * the copies but loses the original's 0xb8 frame (its 0x30-0x8f spill area). */
+#ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
     WalkScratch *scratch;
@@ -1578,16 +1596,14 @@ void func_800981C8(Camera *camera) {
 
 /* Classify the 5x5 terrain blocks around the camera: test each block's
  * quad for visibility, and its four quarters when partly visible; blocks
- * near the camera are always visible. */
-#ifdef NON_MATCHING /* frame and structure match; the block pointer is spilled instead of an address */
+ * near the camera are always visible. The block pointer, row and column
+ * are reused for the always-visible pass, as the original does. */
 void func_800983A0(Camera *camera) {
     s16 *block;
     u32 *quarters;
-    u32 *always;
     u32 visible;
     s32 row;
     s32 column;
-    s32 quadrant;
     s16 result;
     GridScratch *scratch;
 
@@ -1599,6 +1615,7 @@ void func_800983A0(Camera *camera) {
     block = D_8009D618;
     quarters = (u32 *)D_8009D650[0];
     GRID_SCRATCH->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
+    GRID_SCRATCH->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
     GRID_SCRATCH->v[8].vy = 0;
     GRID_SCRATCH->v[7].vy = 0;
     GRID_SCRATCH->v[6].vy = 0;
@@ -1608,29 +1625,28 @@ void func_800983A0(Camera *camera) {
     GRID_SCRATCH->v[2].vy = 0;
     GRID_SCRATCH->v[1].vy = 0;
     GRID_SCRATCH->v[0].vy = 0;
-    GRID_SCRATCH->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
     GRID_SCRATCH->v[0].vz = -GRID_SCRATCH->z0;
     for (row = 0; row < 5; row++) {
         scratch->v[0].vx = scratch->x0;
-        for (column = 0; column < 5; quarters += 2, column++, scratch->v[0].vx += 0x800, block++) {
+        for (column = 0; column < 5; quarters += 2, scratch->v[0].vx += 0x800, block++, column++) {
             scratch->v[1].vx = scratch->v[0].vx + 0x800;
-            scratch->v[2].vz = scratch->v[0].vz - 0x800;
             scratch->v[1].vz = scratch->v[0].vz;
             scratch->v[2].vx = scratch->v[0].vx;
+            scratch->v[2].vz = scratch->v[0].vz - 0x800;
             scratch->v[3].vx = scratch->v[0].vx + 0x800;
             scratch->v[3].vz = scratch->v[0].vz - 0x800;
             result = func_800987AC(&scratch->v[0], &scratch->v[1], &scratch->v[2],
                                    &scratch->v[3]);
             *block = result;
             if (result == 0) {
-                scratch->v[5].vz = scratch->v[0].vz - 0x400;
                 scratch->v[4].vx = scratch->v[0].vx + 0x400;
-                scratch->v[5].vx = scratch->v[0].vx;
-                scratch->v[6].vx = scratch->v[1].vx;
                 scratch->v[4].vz = scratch->v[0].vz;
-                scratch->v[7].vz = scratch->v[2].vz;
+                scratch->v[5].vx = scratch->v[0].vx;
+                scratch->v[5].vz = scratch->v[0].vz - 0x400;
+                scratch->v[6].vx = scratch->v[1].vx;
                 scratch->v[6].vz = scratch->v[5].vz;
                 scratch->v[7].vx = scratch->v[4].vx;
+                scratch->v[7].vz = scratch->v[2].vz;
                 scratch->v[8].vx = scratch->v[4].vx;
                 scratch->v[8].vz = scratch->v[5].vz;
                 visible = func_800987AC(&scratch->v[0], &scratch->v[4], &scratch->v[5],
@@ -1651,36 +1667,42 @@ void func_800983A0(Camera *camera) {
         }
         scratch->v[0].vz -= 0x800;
     }
-    quadrant = ((camera->target.vx >> 12) & 0x7FF) >= 0x400;
-    if (((camera->target.vz >> 12) & 0x7FF) >= 0x400) {
-        quadrant |= 2;
+    /* The camera's quadrant within its block picks the always-visible set. */
+    column = 0;
+    if (((camera->target.vx >> 12) & 0x7FF) >= 0x400) {
+        column = 1;
     }
-    always = D_8009B7A8[quadrant][0];
+    if (((camera->target.vz >> 12) & 0x7FF) >= 0x400) {
+        column |= 2;
+    }
+    block = (s16 *)D_8009B7A8[column][0];
     quarters = (u32 *)D_8009D650[0];
     for (row = 0; row < 25; row++) {
-        quarters[0] |= always[0];
-        quarters[1] |= always[1];
-        always += 2;
+        quarters[0] |= ((u32 *)block)[0];
+        quarters[1] |= ((u32 *)block)[1];
+        block += 4;
         quarters += 2;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800983A0);
-#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800987AC);
 
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
  * column-major file; corners from whichever edge changed. */
-#ifdef NON_MATCHING /* register allocation of the edge loops */
+/* Each edge loop starts its first cell index in block (the original keeps
+ * both in s0).
+ * NON_MATCHING: register allocation of the edge loops: the original hoists
+ * the cell array and the block table addresses (fp/s7) into each edge loop's
+ * preheader and loads -1 for the inner test every iteration; here -1 is
+ * hoisted instead and the cell array address is rebuilt per row. */
+#ifdef NON_MATCHING
 void func_80098CC0(void) {
     s32 first;
     s32 second;
     s32 i;
     s32 j;
     s32 k;
-    s32 start;
     s16 *cell;
     s32 block;
     s32 sector;
@@ -1707,9 +1729,9 @@ void func_80098CC0(void) {
     second = func_8002C3D8();
     if ((first == 0) | (second == -1)) {
         sector = func_800289D0(D_8009BCD8);
-        start = 1;
+        block = 1;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell++) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1719,12 +1741,12 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            start = 0x49;
+            block = 0x49;
         }
         sector = func_800289D0(D_8009BD08);
-        start = 9;
+        block = 9;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell += 9) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1735,7 +1757,7 @@ void func_80098CC0(void) {
                                   0x710, (s32)buffer);
                 }
             }
-            start = 0x11;
+            block = 0x11;
         }
         for (i = 0; i < 4; i++) {
             block = D_8009D570.cells[D_8009BBAC[i]];
@@ -1754,9 +1776,9 @@ void func_80098CC0(void) {
         func_80096328();
     } else {
         path = func_80028998(D_8009BCD8);
-        start = 1;
+        block = 1;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell++) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1766,12 +1788,12 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            start = 0x49;
+            block = 0x49;
         }
         path = func_80028998(D_8009BD08);
-        start = 9;
+        block = 9;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell += 9) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1783,7 +1805,7 @@ void func_80098CC0(void) {
                                   0x710, (s32)buffer);
                 }
             }
-            start = 0x11;
+            block = 0x11;
         }
         for (i = 0; i < 4; i++) {
             block = D_8009D570.cells[D_8009BBAC[i]];

@@ -145,7 +145,28 @@ typedef struct {
     u8 unk35;
 } BattleObject;
 extern BattleObject *D_800D3368[11];
-extern u8 D_800C4000[];
+/* A presentation event queue slot (0x48 bytes; the battle overlay's queue
+ * at 800c3fe8). */
+typedef struct {
+    u16 amounts[11];
+    u16 targetMask;          /* 0x16 */
+    u8 codes[11];            /* 0x18: per slot */
+    u8 actor;                /* 0x23 */
+    u16 accumulated[11];     /* 0x24 */
+    u16 parameter;           /* 0x3A */
+    u8 accumulatedCodes[11]; /* 0x3C */
+    u8 type;                 /* 0x47 */
+} BattleEvent;
+
+/* The battle work area at 800c3eb0: the presentation event queue at 0x138
+ * and the actor table at 0x8c8c. */
+typedef struct {
+    u8 pad0[0x138];
+    BattleEvent events[32];
+    u8 padA38[0x8C8C - 0xA38];
+    struct BattleActor *actors[16];
+} BattleWork;
+extern BattleWork D_800C3EB0;
 extern u8 D_801E9C20[16]; /* actor action started by the script */
 extern BattleState *D_800C3EAC;
 

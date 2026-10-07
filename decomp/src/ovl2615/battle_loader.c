@@ -16,7 +16,14 @@ void func_801E62E0(u8 *data) {
  * first image column, then 12-byte entries. The data after the table is
  * copied; sprite entries upload their image list (or reuse an earlier one)
  * and fill their slot's row; model entries place the model on every enemy
- * slot of their type, and of later model entries sharing their data. */
+ * slot of their type, and of later model entries sharing their data.
+ * The placement mode reuses j: its unknown bits keep the original's
+ * andi 0xffff after the ori.
+ * NON_MATCHING: the original loads a sprite entry's image offset into a0
+ * and copies it to index (s0) in the branch delay slot (here it loads
+ * straight into s0; an else branch assigning index reproduces the load but
+ * adds a jump over it), and schedules the mode's ori before moving enemy
+ * into a0 for func_800A8BF0 (here after the placed++ arithmetic). */
 #ifdef NON_MATCHING
 void func_801E6314(u8 *data) {
     s32 count;
@@ -26,13 +33,14 @@ void func_801E6314(u8 *data) {
     u8 *base;
     s16 columns[16];
     s32 types[SLOT_COUNT];
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     EnemyEntry *entry;
     EnemyEntry *other;
     s32 table;
     s32 j, s, i;
     s32 column;
     u32 index;
-    s32 type, same, placed, mode;
+    s32 type, same, placed;
     s32 enemy;
 
     images = 0;
@@ -56,12 +64,11 @@ void func_801E6314(u8 *data) {
                  * original). */
                 continue;
             }
-            column += 0x40;
-            same = 0;
             type = slot - 3;
             D_800C3EB0.rows[slot].data = NULL;
-            for (i = 3; i != SLOT_COUNT; i++) {
-                if (type == types[i]) {
+            column += 0x40;
+            for (j = 3, same = 0; j != SLOT_COUNT; j++) {
+                if (type == types[j]) {
                     same++;
                 }
             }
@@ -77,16 +84,15 @@ void func_801E6314(u8 *data) {
                 }
             }
             for (s = 3; s != SLOT_COUNT; s++) {
-                if (types[s] < 8 && types[s] == type && s != 0) {
-                    enemy = s;
-                    mode = (same >= 2) ? 2 : 0;
+                if (types[s] < 8 && types[s] == type && (enemy = s) != 0) {
+                    j = (same >= 2) ? 2 : 0;
                     if (placed != 0) {
-                        mode = 7;
+                        j = 7;
                         if (same == placed + 1) {
-                            mode = 5;
+                            j = 5;
                         }
                     }
-                    func_800A8BF0(enemy, (u16)(mode | 0x80), (u8 *)(entry->offset + (s32)base),
+                    func_800A8BF0(enemy, (u16)(j | 0x80), (u8 *)(entry->offset + (s32)base),
                                   (u8 *)(entry->images + (s32)data), (s16)(column - 0x40), 0x100, 0,
                                   (s16)(enemy - (s16)(placed++ - 0x1C0)), 0);
                     func_800BB350(enemy);
@@ -103,8 +109,8 @@ void func_801E6314(u8 *data) {
                     column = 0;
                 }
             }
-            D_800C3EB0.rows[slot].y = 0x100;
             D_800C3EB0.rows[slot].data = (u8 *)(entry->offset + (s32)base);
+            D_800C3EB0.rows[slot].y = 0x100;
             D_800C3EB0.rows[slot].x = columns[index];
             D_800C3EB0.rows[slot].variant = entry->variant;
         }
