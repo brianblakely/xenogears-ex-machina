@@ -2186,21 +2186,33 @@ void func_801E1880(Actor **actors) {
  * then `count` zeroed entries. On an allocation failure the record is left
  * empty. The original keeps the loop state in caller-saved registers across
  * SetPolyGT3 (saved on the stack).
- * NON_MATCHING (4 bytes shorter): register allocation and spills differ
- * throughout (the original keeps `record` in a stack slot at 0x10 and
- * reloads it at each use; this C gives it a caller-saved register). In the
- * strip loop the original multiplies v_step by k and k + 1 at each use,
- * reloading v_step from its stack home, and computes first + 1 per triangle;
- * this C strength-reduces them (a `goto`-formed strip loop reproduces that
- * but not the rest). Its triangle loops also leave v_step * (k + 1) inside. */
+ * NON_MATCHING: the shared centre cursor and primitive setup group recover
+ * the original 0x130-byte frame and first centre-loop cursor and counter,
+ * but the table/scale/angle registers and strip-loop spills still differ.
+ * The original reloads v_step before each triangle loop, computes
+ * its first row before the first loop, and keeps the second triangle
+ * multiplications inside its buffer loop; this C strength-reduces them. */
 #ifdef NON_MATCHING
+/* Initialize one buffer's textured triangle, whose vertices are filled when drawn. */
+#define SET_RING_TRIANGLE(_p, _page, _clut, _u0, _v0, _u1, _v1, _u2, _v2) \
+    do { \
+        SetPolyGT3(_p); \
+        (_p)->tpage = (_page); \
+        (_p)->u0 = (_u0); \
+        (_p)->v0 = (_v0); \
+        (_p)->clut = (_clut); \
+        (_p)->u1 = (_u1); \
+        (_p)->v1 = (_v1); \
+        (_p)->u2 = (_u2); \
+        (_p)->v2 = (_v2); \
+    } while (0)
+
 void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
-    SVECTOR *centres;
     SVECTOR *centre;
     RingPoint **rings;
-    RingPoint *points;
+    RingPoint *points_base;
     RingPoint *point;
     RingPoly *polys;
     u16 *counts;
@@ -2222,16 +2234,16 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     record->polys = *table * 2;
     func_80032498(4, 0);
     table++;
-    centres = func_80031BDC(record->rings * sizeof(SVECTOR), 0);
-    if (centres == NULL) {
+    centre = func_80031BDC(record->rings * sizeof(SVECTOR), 0);
+    if (centre == NULL) {
         record->centres = NULL;
         return;
     }
-    record->centres = centres;
-    for (i = 0; i < record->rings; i++, centres++) {
-        centres->vx = (*table++ + ox) * scale / 4096;
-        centres->vy = (*table++ + oy) * scale / 4096;
-        centres->vz = (*table++ + oz) * scale / 4096;
+    record->centres = centre;
+    for (i = 0; i < record->rings; i++, centre++) {
+        centre->vx = (*table++ + ox) * scale / 4096;
+        centre->vy = (*table++ + oy) * scale / 4096;
+        centre->vz = (*table++ + oz) * scale / 4096;
     }
     total = table[record->rings];
     record->points = total + record->rings;
@@ -2245,15 +2257,15 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     counts = table;
     radii = table + record->rings + 1;
     angles = (u8 *)(radii + total);
-    points = func_80031BDC((total + record->rings) * sizeof(RingPoint), 0);
-    if (points == NULL) {
+    point = func_80031BDC((total + record->rings) * sizeof(RingPoint), 0);
+    if (point == NULL) {
         record->centres = NULL;
         func_800320E8(NULL);
         func_800320E8(record->block1C);
         return;
     }
     centre = record->centres;
-    point = points;
+    points_base = point;
     for (i = 0; i < record->rings; i++, counts++, centre++) {
         *rings++ = point;
         for (k = 0; k < *counts; k++, point++) {
@@ -2275,7 +2287,7 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     if (polys == NULL) {
         record->centres = NULL;
         func_800320E8(record->block1C);
-        func_800320E8(points);
+        func_800320E8(points_base);
         return;
     }
     record->block20 = polys;
@@ -2300,30 +2312,24 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
             polys->index[1] = first + counts[0] + 1;
             polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                SetPolyGT3(&polys->prim[b]);
-                polys->prim[b].tpage = tpage;
-                polys->prim[b].u0 = u_base + u;
-                polys->prim[b].v0 = v_base + v_step * k;
-                polys->prim[b].clut = clut;
-                polys->prim[b].u1 = u_base + u_next;
-                polys->prim[b].v1 = v_base + v_step * k;
-                polys->prim[b].u2 = u_base + u;
-                polys->prim[b].v2 = v_base + v_step * (k + 1);
+                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
+                                  u_base + u, v_base + v_step * k,
+                                  u_base + u_next, v_base + v_step * k,
+                                  u_base + u, v_base + v_step * (k + 1));
             }
             polys++;
-            polys->index[0] = first + counts[0] + 1;
-            polys->index[1] = first + counts[0] + 2;
-            polys->index[2] = first + 1;
+            {
+                s32 next_index = first + 1;
+
+                polys->index[0] = next_index + counts[0];
+                polys->index[1] = next_index + counts[0] + 1;
+                polys->index[2] = next_index;
+            }
             for (b = 0; b < 2; b++) {
-                SetPolyGT3(&polys->prim[b]);
-                polys->prim[b].tpage = tpage;
-                polys->prim[b].u0 = u_base + u_next;
-                polys->prim[b].v0 = v_base + v_step * k;
-                polys->prim[b].clut = clut;
-                polys->prim[b].u1 = u_base + u_next;
-                polys->prim[b].v1 = v_base + v_step * (k + 1);
-                polys->prim[b].u2 = u_base + u;
-                polys->prim[b].v2 = v_base + v_step * (k + 1);
+                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
+                                  u_base + u_next, v_base + v_step * k,
+                                  u_base + u_next, v_base + v_step * (k + 1),
+                                  u_base + u, v_base + v_step * (k + 1));
             }
             polys++;
         }
@@ -2357,6 +2363,8 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
         record->block18 = NULL;
     }
 }
+
+#undef SET_RING_TRIANGLE
 #else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
 #endif
