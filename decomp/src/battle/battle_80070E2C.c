@@ -518,7 +518,12 @@ void func_80072324(void) {
  * acting together, run their pass instead.
  * Nonmatching: the original loads the first slot before the loop and jumps
  * to its ready test, the loop starting at the position wrap (332 bytes);
- * this lays the loop out from the slot load (300 bytes). */
+ * this lays the loop out from the slot load (300 bytes). An inner
+ * `while (ready[slot = order[position]] != 1) { advance; exit at the
+ * cursor }` reproduces that inner loop exactly (duplicated first load, wrap
+ * at the top, the +1/-1 pair around the ready test), but its found path
+ * keeps its own advance and exit test where the original jumps back into
+ * the inner loop's wrap. */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
@@ -565,7 +570,9 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
  * first. The outcome is the battle area's member, so the mask is reloaded
  * after it is set. Nonmatching: in the enemy loop the original walks a
  * pointer from &D_800C3D18[0].unk3 (la $s5) where this keeps an index, and
- * its $s3/$s4 induction registers are swapped. */
+ * its $s3/$s4 induction registers are swapped. An explicit EnemyReaction
+ * pointer (or pointer arithmetic on D_800C3D18) makes ready[] the walked
+ * pointer instead. */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
@@ -1271,7 +1278,9 @@ void func_80075168(void) {
  * the upright party-wide one instead, showing the fuel of a member in a
  * gear.
  * Nonmatching: the original loads the bar width with lw in u1/u3 (only the
- * page x byte is narrowed). */
+ * page x byte is narrowed). `<< 1` lets the u8 store narrow the width to
+ * lbu; `* 2` (not narrowed through a multiply) keeps lw but swaps the sum to
+ * page + width, since the width is still a memory operand at expansion. */
 #ifdef NON_MATCHING
 void func_80075938(void) {
     s32 widths[3];

@@ -1679,7 +1679,11 @@ u16 func_80084D28(void) {
  * enemies (80084750). Sets the current target 800c3e2c and returns the
  * selection. Nonmatching: the selection lives in $s5 here, $s6 in the
  * original, and in the downed loop the original keeps the slot byte in $s2
- * across both calls (and the counters in other registers). */
+ * across both calls (and the counters in other registers). Writing the
+ * release call once per branch (`if (!(...status7C & 0x8000)) { release;
+ * continue; }` for pilot and gear) reproduces the shared $s2 byte and the
+ * $s6 selection, but cross-jumping then merges the two tests and places the
+ * release before the found block. */
 #ifdef NON_MATCHING
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
@@ -2738,7 +2742,11 @@ u8 func_80087AF0(u8 member, u8 cost) {
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
  * member place and stand at that place of the group's area. (Nonmatching:
- * the original computes the enemy offset before testing the target.) */
+ * the original computes the enemy offset (actor >= 3) << 3 before testing
+ * the target and keeps the branch: 0 in the delay slot, the offset copied on
+ * the fall-through. Every precomputed form tried (a temporary, if/else, a
+ * reused base, D_800C3EB0.slots) lets jump.c fold the branch into a
+ * store-flag mask; this ternary computes the offset inside the branch.) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
