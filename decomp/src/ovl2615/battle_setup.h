@@ -549,6 +549,9 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+/* PsyQ libgte. */
+#define copyVector(v0, v1) (v0)->vx = (v1)->vx, (v0)->vy = (v1)->vy, (v0)->vz = (v1)->vz
+
 typedef struct {
     u32 tag;
     u32 code[15];

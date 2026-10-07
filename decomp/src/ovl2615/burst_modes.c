@@ -171,11 +171,13 @@ BurstTask *func_801E8DB8(void) {
  * is also moved out of the column loop (loop.c: threshold 20 * life 97 >=
  * 1440, the count doubled per already-moved insn; one more doubling would
  * keep it, e.g. v moved once from an inner loop, but that breaks the k-loop
- * moves), and (v - 101) * 16 written with v moves both insns out; (2) the
- * corner copies use a pointer (addiu v1, s0, 0x54 then 2(v1)/4(v1)) for vy
- * and vz in the original: a corner pointer variable makes it a separate giv;
- * (3) register allocation follows: v s6 / col fp / 0x80 s7 in the original,
- * here fp / s7 / s6, and u_right/v_bottom swap s3/s4. */
+ * moves), and (v - 101) * 16 written with v moves both insns out (the
+ * corner copies are PsyQ copyVector, whose &corner[k] address gives the
+ * original's addiu v1, s0, 0x54 with 2(v1)/4(v1)); (2) register allocation
+ * follows: v s6 / col fp / 0x80 s7 in the original, here fp / s7 / s6,
+ * u_right/v_bottom swap s3/s4, the row and cell spill slots swap, and the
+ * original's x copy (0x34, x computed in the second k loop and combined with
+ * a column giv) is missing: x computed there is not reduced here. */
 #ifdef NON_MATCHING
 BurstTask *func_801E8DF0(BurstTask *burst) {
     BurstCell *cell;
@@ -213,9 +215,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801E9684 : D_801E969C;
                 for (k = 0; k != 3; k++) {
-                    cell->corner[k].vx = triangle[k].vx;
-                    cell->corner[k].vy = triangle[k].vy;
-                    cell->corner[k].vz = triangle[k].vz;
+                    copyVector(&cell->corner[k], &triangle[k]);
                     if (half == 0) {
                         cell->corner[k].vx += (s16)(col * 0x100 - 0x9B0);
                         cell->corner[k].vy += (s16)((v - 107) * 16);
@@ -223,9 +223,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                         cell->corner[k].vx += (s16)(col * 0x100 - 0x950);
                         cell->corner[k].vy += (s16)(row * 0x100 - 0x650);
                     }
-                    square.vx = cell->corner[k].vx;
-                    square.vy = cell->corner[k].vy;
-                    square.vz = cell->corner[k].vz;
+                    copyVector(&square, &cell->corner[k]);
                     func_8004A414(&square, &square);
                     if (D_801E9680 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
