@@ -1533,10 +1533,9 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
 /* Nonmatching: same size, frame, case layout and tail sharing as the
- * original; left (about 14 instructions): case 38 loads the motion word
+ * original; left (about 10 instructions): case 38 loads the motion word
  * before the frame bits (with the frame bits operand first the loads are in
- * order but take $v1/$v0 swapped), 0xF5 accumulates the model address in $s0
- * (the original in $a0, copied to $s0 in the call's delay slot), 0xAC sets
+ * order but take $v1/$v0 swapped), 0xAC sets
  * $a0 before loading the direction (which then goes through $a0, original
  * through $s3 with $a0 set after the load), 0xBD loads the code byte before
  * the D_8006BE20 pointer, and 0xB8 reads the code byte with lbu after the
@@ -2209,24 +2208,29 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
-    case 0xF5:
+    case 0xF5: {
+        s32 offset;
+        ModelBuffer *data;
+
         func_80032498(5, 0);
-        buffer = (s8)code[2];
-        buffer <<= 16;
-        buffer += code[1] << 8;
-        buffer += code[0];
-        buffer += (s32)code;
-        func_8002C59C((SpriteModel *)buffer);
+        offset = (s8)code[2];
+        offset <<= 16;
+        offset += code[1] << 8;
+        offset += code[0];
+        offset += (s32)code;
+        data = (ModelBuffer *)offset;
+        func_8002C59C((SpriteModel *)offset);
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
             func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        func_8002CB54(data, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC(data, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
-               ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
-        ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], data->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = data;
         break;
+    }
     case 0xF6:
         func_80032498(5, 0);
         buffer = (s8)code[2];
