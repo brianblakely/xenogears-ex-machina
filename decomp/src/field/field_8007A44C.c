@@ -1388,24 +1388,24 @@ void func_8007DA44(u32 *ot, s32 buffer) {
     }
 }
 
-/* Move a displayed window's choice (+382 over +380 lines) with the pad and
- * light its line; a window with +410 set lights none. */
+/* Move a displayed window's choice (index over count lines) with the pad
+ * and light its line; a window with +410 set lights none. */
 void func_8007DCF8(s32 window, u32 *ot, s32 buffer) {
-    if (D_800C2698[window].status == 0 && D_800C2698[window].timer == 0) {
+    if (D_800C2698[window].choice.status == 0 && D_800C2698[window].timer == 0) {
         if (D_800C2698[window].age == 0) {
             if (D_800C3900 & 0x4000) {
-                D_800C2698[window].unk382++;
-                if (D_800C2698[window].unk380 - 1 < D_800C2698[window].unk382) {
-                    D_800C2698[window].unk382 = 0;
+                D_800C2698[window].choice.index++;
+                if (D_800C2698[window].choice.count - 1 < D_800C2698[window].choice.index) {
+                    D_800C2698[window].choice.index = 0;
                 }
             }
             if (D_800C3900 & 0x1000) {
-                D_800C2698[window].unk382--;
-                if (D_800C2698[window].unk382 < 0) {
-                    D_800C2698[window].unk382 = D_800C2698[window].unk380 - 1;
+                D_800C2698[window].choice.index--;
+                if (D_800C2698[window].choice.index < 0) {
+                    D_800C2698[window].choice.index = D_800C2698[window].choice.count - 1;
                 }
             }
-            func_80034874(&D_800C2698[window].text, D_800C2698[window].unk382 + D_800C2698[window].unk37E);
+            func_80034874(&D_800C2698[window].text, D_800C2698[window].choice.index + D_800C2698[window].choice.first);
         } else {
             func_8003487C(&D_800C2698[window].text);
         }
@@ -1439,8 +1439,8 @@ void func_8007DECC(void) {
     for (i = 0; i < 4; i++) {
         D_800C2698[i].owner = 0xFF;
         D_800C2698[i].unk418 = 0xFF;
-        D_800C2698[i].status = -1;
-        D_800C2698[i].unk3C4 = -1;
+        D_800C2698[i].choice.status = -1;
+        D_800C2698[i].prompt.status = -1;
         D_800C2698[i].busy = -1;
         D_800C2698[i].cleared = -1;
         D_800C2698[i].age = 0xFFFF;
@@ -1491,10 +1491,14 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * NON_MATCHING (849 edits): x/y/width/height spill as in the original, but
- * the original also spills `buffer` (0x20) and more values to a 0xa8-byte
- * frame (ours 0x80) and keeps `ot` in fp and `w` in $s7; the layout of the
- * statements is otherwise as here. */
+ * NON_MATCHING (444 edits, was 849): the nested choice/prompt structs give
+ * the original's +37c/+3c4 bases and the RECT copies go field by field as
+ * in the original. Left: the original spills `buffer` (0x20) and about six
+ * more values to a 0xa8-byte frame (ours 0x78); in the opening branch it
+ * divides both (width << 16) and (height << 16) by the step count before
+ * the (text_speed - timer) factor, ours interleaves them; the prompt's
+ * left/top call results and the border coordinates land in other
+ * registers. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
@@ -1542,17 +1546,20 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         y += D_800C2698[w].slide[1].value >> 16;
         x += D_800C2698[w].slide[0].s.whole;
     }
-    if (D_800C2698[w].unk3C4 == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
-        && !(D_800C2698[w].style & 0x40) && D_800C2698[w].status != 0) {
+    if (D_800C2698[w].prompt.status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
+        && !(D_800C2698[w].style & 0x40) && D_800C2698[w].choice.status != 0) {
         if (D_800C2698[w].prompt_delay == 0) {
             left = func_800347AC(&D_800C2698[w].text);
             top = func_800347C0(&D_800C2698[w].text);
-            area = D_800ADF04[D_800ADE94];
-            SetDrawMode(&D_800C2698[w].prompt_modes[buffer], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
-            D_800C2698[w].prompt[buffer].x0 = left;
-            D_800C2698[w].prompt[buffer].y0 = top + 4;
-            addPrim(ot, &D_800C2698[w].prompt[buffer]);
-            addPrim(ot, &D_800C2698[w].prompt_modes[buffer]);
+            area.x = D_800ADF04[D_800ADE94].x;
+            area.y = D_800ADF04[D_800ADE94].y;
+            area.w = D_800ADF04[D_800ADE94].w;
+            area.h = D_800ADF04[D_800ADE94].h;
+            SetDrawMode(&D_800C2698[w].prompt.modes[buffer], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+            D_800C2698[w].prompt.sprite[buffer].x0 = left;
+            D_800C2698[w].prompt.sprite[buffer].y0 = top + 4;
+            addPrim(ot, &D_800C2698[w].prompt.sprite[buffer]);
+            addPrim(ot, &D_800C2698[w].prompt.modes[buffer]);
         } else {
             D_800C2698[w].prompt_delay--;
         }
@@ -1610,17 +1617,20 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         addPrim(ot, &D_800C2698[w].icon[buffer]);
         addPrim(ot, &D_800C2698[w].icon_modes[buffer]);
     }
-    if (D_800C2698[w].status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0) {
+    if (D_800C2698[w].choice.status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0) {
         if (D_800C2698[w].unk494 == 1 && !(D_800C2698[w].style & 0x20)) {
-            D_800C2698[w].choice[buffer].x0 = x + 0x5A;
+            D_800C2698[w].choice.cursor[buffer].x0 = x + 0x5A;
         } else {
-            D_800C2698[w].choice[buffer].x0 = x + 0x16;
+            D_800C2698[w].choice.cursor[buffer].x0 = x + 0x16;
         }
-        D_800C2698[w].choice[buffer].y0 = (D_800C2698[w].unk382 + D_800C2698[w].unk37E) * 0xE + y + 8;
-        area = D_800ADEDC[D_800ADE94];
-        SetDrawMode(&D_800C2698[w].choice_modes[buffer], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
-        addPrim(ot, &D_800C2698[w].choice[buffer]);
-        addPrim(ot, &D_800C2698[w].choice_modes[buffer]);
+        D_800C2698[w].choice.cursor[buffer].y0 = (D_800C2698[w].choice.index + D_800C2698[w].choice.first) * 0xE + y + 8;
+        area.x = D_800ADEDC[D_800ADE94].x;
+        area.y = D_800ADEDC[D_800ADE94].y;
+        area.w = D_800ADEDC[D_800ADE94].w;
+        area.h = D_800ADEDC[D_800ADE94].h;
+        SetDrawMode(&D_800C2698[w].choice.modes[buffer], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+        addPrim(ot, &D_800C2698[w].choice.cursor[buffer]);
+        addPrim(ot, &D_800C2698[w].choice.modes[buffer]);
     }
     D_800C2698[w].frame.back[buffer].x0 = x;
     D_800C2698[w].frame.back[buffer].y0 = y + 1;
@@ -1645,13 +1655,19 @@ extern RECT D_800ADF04[];   /* prompt frames */
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
  * 800ade9c) and the portrait quad.
- * NON_MATCHING (415 edits, was 652): the nested DialogueFrame (window + 0ac)
- * now gives the original's 800c2744 base, setRGB0 on the packet addresses
- * keeps them in $s1 and the fixed-frame RECT copies go field by field.
- * Left: the choice and prompt packets are addressed from window + 37c and
- * + 3c4 bases (suggesting further nested structs, which would move status,
- * unk380/382 used by field_800854D0.c), $s0/$s5 and $s1/$s0 swap, and the
- * 0xc/8 width/height constants are kept the other way round. */
+ * NON_MATCHING (538 edits; 1864 bytes, original 1952): the nested
+ * DialogueFrame (+0ac), DialogueChoice (+37c) and DialoguePrompt (+3c4)
+ * give all of the original's packet bases, setRGB0 on the packet addresses
+ * keeps them in $s1 and the RECT copies go field by field (the border loop
+ * reads x, y, w and h of 800ade9c[i] separately, as the original does).
+ * Left: the original's border loop recomputes w * 0x498 every iteration
+ * and strength-reduces only the i-based offsets (0x50/0xc8/0x140 + i * k,
+ * spilled to 0x20-0x40); ours has 92 insns at loop time (below loop.c's
+ * 4 * threshold), so the multiply chain is hoisted and folded into
+ * window-relative induction values. Before the loop the window offset is in
+ * $s5 (original $s0, w in $s6 not $s2), and the 0xc/8 width/height
+ * constants are kept the other way round ($s4 0xc vs the original's $s3 8,
+ * 0xc rematerialised in $t2). */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
@@ -1666,37 +1682,40 @@ void func_8007EE0C(s32 w) {
     area.y = D_800ADF04[0].y;
     area.w = D_800ADF04[0].w;
     area.h = D_800ADF04[0].h;
-    SetDrawMode(&D_800C2698[w].prompt_modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
-    SetDrawMode(&D_800C2698[w].prompt_modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
-    SetSprt(&D_800C2698[w].prompt[0]);
-    setRGB0(&D_800C2698[w].prompt[0], 0x80, 0x80, 0x80);
-    D_800C2698[w].prompt[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].prompt[0].w = 0xC;
-    D_800C2698[w].prompt[0].u0 = 0x80;
-    D_800C2698[w].prompt[0].v0 = 0xC0;
-    D_800C2698[w].prompt[0].h = 8;
-    D_800C2698[w].prompt[0].x0 = 0;
-    D_800C2698[w].prompt[0].y0 = 0;
-    D_800C2698[w].prompt[1] = D_800C2698[w].prompt[0];
+    SetDrawMode(&D_800C2698[w].prompt.modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+    SetDrawMode(&D_800C2698[w].prompt.modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+    SetSprt(&D_800C2698[w].prompt.sprite[0]);
+    setRGB0(&D_800C2698[w].prompt.sprite[0], 0x80, 0x80, 0x80);
+    D_800C2698[w].prompt.sprite[0].clut = GetClut(0x100, 0xF6);
+    D_800C2698[w].prompt.sprite[0].w = 0xC;
+    D_800C2698[w].prompt.sprite[0].u0 = 0x80;
+    D_800C2698[w].prompt.sprite[0].v0 = 0xC0;
+    D_800C2698[w].prompt.sprite[0].h = 8;
+    D_800C2698[w].prompt.sprite[0].x0 = 0;
+    D_800C2698[w].prompt.sprite[0].y0 = 0;
+    D_800C2698[w].prompt.sprite[1] = D_800C2698[w].prompt.sprite[0];
     area.x = D_800ADEDC[0].x;
     area.y = D_800ADEDC[0].y;
     area.w = D_800ADEDC[0].w;
     area.h = D_800ADEDC[0].h;
-    SetDrawMode(&D_800C2698[w].choice_modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
-    SetDrawMode(&D_800C2698[w].choice_modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
-    SetSprt(&D_800C2698[w].choice[0]);
-    setRGB0(&D_800C2698[w].choice[0], 0x80, 0x80, 0x80);
-    D_800C2698[w].choice[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].choice[0].w = 0xC;
-    D_800C2698[w].choice[0].u0 = 0x80;
-    D_800C2698[w].choice[0].v0 = 0xC0;
-    D_800C2698[w].choice[0].h = 8;
-    D_800C2698[w].choice[0].x0 = 0;
-    D_800C2698[w].choice[0].y0 = 0;
-    D_800C2698[w].choice[1] = D_800C2698[w].choice[0];
+    SetDrawMode(&D_800C2698[w].choice.modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+    SetDrawMode(&D_800C2698[w].choice.modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+    SetSprt(&D_800C2698[w].choice.cursor[0]);
+    setRGB0(&D_800C2698[w].choice.cursor[0], 0x80, 0x80, 0x80);
+    D_800C2698[w].choice.cursor[0].clut = GetClut(0x100, 0xF6);
+    D_800C2698[w].choice.cursor[0].w = 0xC;
+    D_800C2698[w].choice.cursor[0].u0 = 0x80;
+    D_800C2698[w].choice.cursor[0].v0 = 0xC0;
+    D_800C2698[w].choice.cursor[0].h = 8;
+    D_800C2698[w].choice.cursor[0].x0 = 0;
+    D_800C2698[w].choice.cursor[0].y0 = 0;
+    D_800C2698[w].choice.cursor[1] = D_800C2698[w].choice.cursor[0];
     D_800C2698[w].prompt_delay = 2;
     for (i = 0; i < 8; i++) {
-        area = D_800ADE9C[i];
+        area.x = D_800ADE9C[i].x;
+        area.y = D_800ADE9C[i].y;
+        area.w = D_800ADE9C[i].w;
+        area.h = D_800ADE9C[i].h;
         SetDrawMode(&D_800C2698[w].frame.border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
         SetDrawMode(&D_800C2698[w].frame.border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
         SetSprt(&D_800C2698[w].frame.border[0][i]);
@@ -1758,7 +1777,7 @@ s32 func_8007F6F8(s16 window) {
         func_80034614(&D_800C2698[window].text);
         func_800345E0(&D_800C2698[window].text);
         func_800346D4(&D_800C2698[window].text);
-        D_800C2698[window].status = -1;
+        D_800C2698[window].choice.status = -1;
         D_800C2698[window].busy = -1;
         D_800C2698[window].cleared = -1;
         D_800C2698[window].age = 0xFFFF;
@@ -1865,7 +1884,7 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         D_800C2698[w].unk495 = 0x80;
         D_800C2698[w].unk494 = 0;
     }
-    D_800C2698[w].status = -1;
+    D_800C2698[w].choice.status = -1;
     func_8007E114(w, x, y, columns * 4 + 0x10, rows * 14 + 0x10);
     extra = 0;
     if (D_800AF880.components.descriptors[owner].actor->character != 0xFF) {
@@ -1955,15 +1974,15 @@ void func_8008004C(u32 *ot, s32 buffer) {
     for (i = 0; i < 4; i++) {
         if (D_800C2698[i].busy == 0 && D_800C2698[i].unk412 != 0) {
             text = &D_800C2698[i].text;
-            D_800C2698[i].unk3C4 = -1;
+            D_800C2698[i].prompt.status = -1;
             if (D_800C2698[i].timer == 0) {
-                if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
-                    D_800C2698[i].unk3C4 = 0;
+                if (func_80033CD0(text) != 0 && D_800C2698[i].choice.status != 0) {
+                    D_800C2698[i].prompt.status = 0;
                 }
                 if (D_800C2694 & 0x20) {
-                    D_800C2698[i].status = -1;
+                    D_800C2698[i].choice.status = -1;
                     D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
-                        D_800C2698[i].unk382 + D_800C2698[i].unk37E;
+                        D_800C2698[i].choice.index + D_800C2698[i].choice.first;
                     func_800345E0(text);
                 }
                 if (text->unk82 == 0) {
@@ -1981,21 +2000,21 @@ void func_8008004C(u32 *ot, s32 buffer) {
             if (D_800C2698[i].age == rank) {
                 order[i] = next++;
                 if (D_800C2698[i].busy == 0 && i != selected) {
-                    D_800C2698[i].unk3C4 = -1;
+                    D_800C2698[i].prompt.status = -1;
                     text = &D_800C2698[i].text;
                     if (D_800C2698[i].timer == 0) {
                         if ((D_800C2694 & 0x20) && D_800C2698[i].age == 0) {
-                            D_800C2698[i].status = -1;
+                            D_800C2698[i].choice.status = -1;
                             D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
-                                D_800C2698[i].unk382 + D_800C2698[i].unk37E;
+                                D_800C2698[i].choice.index + D_800C2698[i].choice.first;
                             func_800345E0(text);
                         }
                         if (text->unk82 == 0) {
                             func_80034714(text, D_800C2698[i].text.unk90);
                         }
                         func_80034888(text, ot, buffer);
-                        if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
-                            D_800C2698[i].unk3C4 = 0;
+                        if (func_80033CD0(text) != 0 && D_800C2698[i].choice.status != 0) {
+                            D_800C2698[i].prompt.status = 0;
                         }
                     }
                     addPrim(ot, &D_800C2698[i].modes[buffer]);

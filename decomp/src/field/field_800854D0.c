@@ -7773,12 +7773,12 @@ void func_8009BC98(void) {
         D_800AFC7C += 8;
         if (func_80033CD0(&D_800C2698[window].text) == 1 ||
             ((&D_800C2698[window].text)->unk84 != 0 && (&D_800C2698[window].text)->unk6C != 0)) {
-            D_800C2698[window].status = 0;
+            D_800C2698[window].choice.status = 0;
             D_800B0078->unk081 = 0xFF;
             first = EVENT_OPERAND_BYTE(1) >> 4;
-            D_800C2698[window].unk37E = first;
-            D_800C2698[window].unk380 = (EVENT_OPERAND_BYTE(1) & 0xF) - first + 1;
-            D_800C2698[window].unk382 = 0;
+            D_800C2698[window].choice.first = first;
+            D_800C2698[window].choice.count = (EVENT_OPERAND_BYTE(1) & 0xF) - first + 1;
+            D_800C2698[window].choice.index = 0;
             func_80034800(&D_800C2698[window].text, 0xEF, 0x1E, 0xF0);
             D_800B0078->pc += 2;
         }
@@ -9107,7 +9107,7 @@ void func_8009F5F4(void) {
 
     if (D_800B0078->flags & 0x4000) {
         for (i = 0; i < 4; i++) {
-            if (D_800C2698[i].status == 0) {
+            if (D_800C2698[i].choice.status == 0) {
                 break;
             }
         }
