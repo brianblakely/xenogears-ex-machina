@@ -1690,7 +1690,9 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
  * column-major file; corners from whichever edge changed. */
-/* NON_MATCHING: register allocation of the edge loops: the original hoists
+/* Each edge loop starts its first cell index in block (the original keeps
+ * both in s0).
+ * NON_MATCHING: register allocation of the edge loops: the original hoists
  * the cell array and the block table addresses (fp/s7) into each edge loop's
  * preheader and loads -1 for the inner test every iteration; here -1 is
  * hoisted instead and the cell array address is rebuilt per row. */
@@ -1701,7 +1703,6 @@ void func_80098CC0(void) {
     s32 i;
     s32 j;
     s32 k;
-    s32 start;
     s16 *cell;
     s32 block;
     s32 sector;
@@ -1728,9 +1729,9 @@ void func_80098CC0(void) {
     second = func_8002C3D8();
     if ((first == 0) | (second == -1)) {
         sector = func_800289D0(D_8009BCD8);
-        start = 1;
+        block = 1;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell++) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1740,12 +1741,12 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            start = 0x49;
+            block = 0x49;
         }
         sector = func_800289D0(D_8009BD08);
-        start = 9;
+        block = 9;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell += 9) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1756,7 +1757,7 @@ void func_80098CC0(void) {
                                   0x710, (s32)buffer);
                 }
             }
-            start = 0x11;
+            block = 0x11;
         }
         for (i = 0; i < 4; i++) {
             block = D_8009D570.cells[D_8009BBAC[i]];
@@ -1775,9 +1776,9 @@ void func_80098CC0(void) {
         func_80096328();
     } else {
         path = func_80028998(D_8009BCD8);
-        start = 1;
+        block = 1;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell++) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1787,12 +1788,12 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            start = 0x49;
+            block = 0x49;
         }
         path = func_80028998(D_8009BD08);
-        start = 9;
+        block = 9;
         for (j = 1; j != -1; j--) {
-            cell = &D_8009D570.cells[start];
+            cell = &D_8009D570.cells[block];
             for (k = 6; k != -1; k--, cell += 9) {
                 block = *cell;
                 if (D_8009C184[block] == NULL) {
@@ -1804,7 +1805,7 @@ void func_80098CC0(void) {
                                   0x710, (s32)buffer);
                 }
             }
-            start = 0x11;
+            block = 0x11;
         }
         for (i = 0; i < 4; i++) {
             block = D_8009D570.cells[D_8009BBAC[i]];
