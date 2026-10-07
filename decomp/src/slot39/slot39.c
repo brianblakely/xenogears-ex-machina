@@ -6677,8 +6677,10 @@ void func_801DB5E4(u8 mode) {
  * addresses D_8006F65A directly (INVENTORY->ids lets CSE fold it into
  * 150(&counts[idx]) or hoists the whole address). The original also uses
  * 801e31c0's result unmasked, as an implicitly declared (int) function
- * would be: without the menu.h prototype in this unit 13 instructions
- * differ (local scorer). */
+ * would be: without the menu.h prototype in this unit 11 instructions
+ * differ (local scorer). With *(INVENTORY->ids + idx) and a do/while (0)
+ * block around the case-4 target loop the clear is formed from the
+ * INVENTORY base as in the original, but its whole address is hoisted. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6706,7 +6708,6 @@ u8 func_801DB920(s32 row, s32 entry) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
         while (running) {
             func_801C7BF4();
-            marks = 0;
             if (redraw) {
                 redraw = 0;
                 func_801DA5BC(row);
@@ -6714,6 +6715,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 func_801DB39C(1);
                 func_801DB5E4(0);
             }
+            marks = 0;
             D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
             if (all) {
                 for (i = 0; i < 3; i++) {
