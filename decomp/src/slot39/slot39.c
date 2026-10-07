@@ -9,6 +9,9 @@
  */
 #include "menu.h"
 
+/* Declared here only: slot39_801DBE54.c calls it without a prototype. */
+void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
+
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
  * 9 reset), then restore the command window. Returns 0 when the menu ends. */
@@ -6684,15 +6687,15 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
- * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly (INVENTORY->ids lets CSE fold it into
- * 150(&counts[idx]) or hoists the whole address). The original also uses
- * 801e31c0's result unmasked, as an implicitly declared (int) function
- * would be: without the menu.h prototype in this unit 11 instructions
- * differ (local scorer). With *(INVENTORY->ids + idx) and a do/while (0)
- * block around the case-4 target loop the clear is formed from the
- * INVENTORY base as in the original, but its whole address is hoisted. */
+/* Remaining: two commutative operand orders. The original adds the index
+ * first (addu s7,fp,t0 for &counts[idx] and addu v0,fp,v0 for the cleared
+ * id), this build the base first. Everything else matches (2 differing
+ * instructions, local scorer): the inventory base is one pointer set once
+ * (spilled and rematerialised into t0 for both uses), the id is cleared
+ * through inv->ids taken after the count reaches zero, and 801e31c0 is
+ * called without a prototype (its result is used unmasked). With
+ * INVENTORY used directly CSE knows the base and orders the adds as the
+ * original, but the clear folds into 150(&counts[idx]). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6702,7 +6705,10 @@ u8 func_801DB920(s32 row, s32 entry) {
     s32 all;
     s32 i;
     MenuItem *item;
+    Inventory *inv;
+    u8 *ids;
 
+    inv = INVENTORY;
     marks = 0;
     running = 1;
     slot = D_800625A0->firstMember;
@@ -6741,7 +6747,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 D_800625A0->markers->visible[slot] = 1;
             }
             D_800625A0->party->unk2F = 1;
-            if (INVENTORY->counts[row * 2 + entry] == 0) {
+            if (inv->counts[row * 2 + entry] == 0) {
                 running = 0;
             }
             if (!running) {
@@ -6759,8 +6765,9 @@ u8 func_801DB920(s32 row, s32 entry) {
                 if (used) {
                     func_801C8574(0x37);
                     redraw = 1;
-                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        D_8006F65A[row * 2 + entry] = 0;
+                    if (--inv->counts[row * 2 + entry] == 0) {
+                        ids = inv->ids;
+                        ids[row * 2 + entry] = 0;
                     }
                 } else {
                     func_801C8574(4);

@@ -2002,9 +2002,11 @@ void func_801E2368(void) {
  * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
  * switching members with 9/10, until cancelled. The first 801d9704 call
- * passes the slot before it is set, as the original does. Nonmatching: the
- * slot and the shown slot take each other's saved registers, and the
- * original calls 801d7cfc with the slot unmasked (as without a prototype). */
+ * passes the slot before it is set, as the original does; 801d7cfc is
+ * called without a prototype in this unit (the slot goes unmasked).
+ * Nonmatching: the slot and the shown slot take each other's saved
+ * registers (s2/s1 in the original; global-alloc priority 6896 for the slot
+ * against 2008 for the shown slot here). */
 #ifdef NON_MATCHING
 u8 func_801E23CC(void) {
     s32 slot;
