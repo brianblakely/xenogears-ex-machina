@@ -947,13 +947,13 @@ s32 func_80034F98(u16 first, u16 second) {
     image[2] &= keep; \
     image[0] &= keep; \
     image[1] &= keep; \
-    middle = image + stride; \
-    last = middle + 2; \
-    lower = middle + stride; \
-    upper = middle - stride; \
-    middle[0] &= keep; \
-    middle[2] &= keep; \
-    middle[1] &= keep; \
+    image += stride; \
+    last = image + 2; \
+    lower = image + stride; \
+    upper = image - stride; \
+    image[0] &= keep; \
+    image[2] &= keep; \
+    image[1] &= keep; \
     do { \
         lower[0] &= keep; \
         lower[2] &= keep; \
@@ -970,9 +970,9 @@ s32 func_80034F98(u16 first, u16 second) {
         if (bits & 0x40) centre |= 0x2120 << shift; \
         edge = centre; \
         if (bits & 0x20) edge |= 0x1200 << shift; \
-        previous = middle[0]; \
-        if (bits & 0x10) middle[0] = previous | (0x2000 << shift) | edge; \
-        else middle[0] = previous | edge; \
+        previous = image[0]; \
+        if (bits & 0x10) image[0] = previous | (0x2000 << shift) | edge; \
+        else image[0] = previous | edge; \
         spread = 0x222 << shift; \
         if (!(bits & 8)) { \
             if (!(bits & 0x10)) spread = (bits >> (4 - shift)) & (2 << shift); \
@@ -1017,13 +1017,12 @@ s32 func_80034F98(u16 first, u16 second) {
         lower += stride; \
         upper += stride; \
         row++; \
-        middle += stride; \
+        image += stride; \
     } while (row < 11); \
 } while (0)
 
 void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane) {
     u16 *glyph;
-    u16 *middle;
     u16 *last;
     u16 *lower;
     u16 *upper;
