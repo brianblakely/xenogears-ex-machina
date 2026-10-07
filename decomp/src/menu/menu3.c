@@ -1414,12 +1414,8 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
  * this frame's damage to its hit points (with the hit sound), update its
  * gauge and knock it out when the hit points run out. Declared int without
  * a return value, as the original's unfilled delay slots in the knock-out
- * test show. Does not match: only the charge test: the original tests the
- * loaded value and copies it to $a0 in the branch delay slot. */
-#ifdef NON_MATCHING
+ * test show. */
 s32 func_80077038(Actor *actor) {
-    s32 unused[2]; /* unused in the original; reserves 8 bytes */
-    s32 charge;
     u8 state;
     u8 gauge;
     u32 stance;
@@ -1459,23 +1455,22 @@ s32 func_80077038(Actor *actor) {
     if (actor->unkCA != 0) {
         actor->unkCA--;
     }
-    charge = actor->charge;
-    if (charge != 0) {
+    if (actor->charge != 0) {
         if (actor->unkC4 & 1) {
             stance = actor->flags & 0x60000000;
             if (stance == 0x60000000) {
                 if (actor->kind & 4) {
-                    actor->charge = charge - 8;
+                    actor->charge -= 8;
                 } else {
-                    actor->charge = charge - 2;
+                    actor->charge -= 2;
                 }
             } else if (stance == 0x20000000) {
-                actor->charge = charge - 6;
+                actor->charge -= 6;
             } else {
-                actor->charge = charge - 4;
+                actor->charge -= 4;
             }
         } else {
-            actor->charge = charge - 8;
+            actor->charge -= 8;
         }
         if (actor->charge < 0) {
             actor->charge = 0;
@@ -1567,9 +1562,6 @@ s32 func_80077038(Actor *actor) {
         actor->unk100 = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077038);
-#endif
 
 /* Push an actor along an angle (scaled down by shift) and let it rise by
  * lift, never faster than 0x82 upward. */
