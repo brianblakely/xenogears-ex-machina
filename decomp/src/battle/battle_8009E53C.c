@@ -5175,32 +5175,31 @@ chosen:
                 ModelPart *part;
                 s32 frames;
                 s32 found;
-                u8 kind;
 
                 if (object->field8E == 0) {
                     object->field8E = 1;
                 }
                 word = *pc++;
-                kind = word >> 8;
+                b1 = word >> 8;
                 part = &object->hierarchy[(u8)word];
                 frames = distance / object->field8E;
                 found = 0;
                 if (part->effects[0] != NULL) {
-                    found = kind == (s16)part->effects[0]->field10;
-                } else if (part->effects[1] != NULL && (s16)part->effects[1]->field10 == kind) {
+                    found = b1 == (s16)part->effects[0]->field10;
+                } else if (part->effects[1] != NULL && (s16)part->effects[1]->field10 == b1) {
                     found = 1;
                 }
-                if (!found) {
-                    pc = start;
-                    running = 0;
-                    break;
-                }
-                if (op == 0x28) {
-                    if (frames >= arg) {
+                if (found) {
+                    if (op == 0x28) {
+                        if (frames >= arg) {
+                            pc = start;
+                            running = 0;
+                        }
+                    } else if (frames < arg) {
                         pc = start;
                         running = 0;
                     }
-                } else if (frames < arg) {
+                } else {
                     pc = start;
                     running = 0;
                 }
@@ -5351,38 +5350,34 @@ chosen:
             }
             break;
         case 0x3E: /* jump when the targets were all hit so */
-            {
-                s32 all = 1;
-                u8 result;
-
-                for (i = 0; i < 13; i++) {
-                    if ((D_800C3E30 >> i) & 1) {
-                        switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
-                        case 0:
-                        case 1:
-                            result = 0;
-                            break;
-                        case 2:
-                        case 3:
-                        case 5:
-                            result = 5;
-                            break;
-                        default:
-                            result = 4;
-                            break;
-                        }
-                        if (result != arg && arg < 8) {
-                            all = 0;
-                        }
-                        if (arg == 8 && (D_800D3368[i] == NULL || !(D_800D3368[i]->flags4A & 2))) {
-                            all = 0;
-                        }
+            b0 = 1;
+            for (i = 0; i < 13; i++) {
+                if ((D_800C3E30 >> i) & 1) {
+                    switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
+                    case 0:
+                    case 1:
+                        b1 = 0;
+                        break;
+                    case 2:
+                    case 3:
+                    case 5:
+                        b1 = 5;
+                        break;
+                    default:
+                        b1 = 4;
+                        break;
+                    }
+                    if (b1 != arg && arg < 8) {
+                        b0 = 0;
+                    }
+                    if (arg == 8 && (D_800D3368[i] == NULL || !(D_800D3368[i]->flags4A & 2))) {
+                        b0 = 0;
                     }
                 }
-                word = *pc++;
-                if (all) {
-                    pc = SCRIPT_JUMP(start, (s16)word);
-                }
+            }
+            word = *pc++;
+            if (b0) {
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x3F:
@@ -5578,15 +5573,15 @@ chosen:
             break;
         case 0x59:
             object->field58 = 0;
-            object->position[0] = SCENE_CAMERAS(D_800658C8)[arg].eye[0];
-            object->position[1] = SCENE_CAMERAS(D_800658C8)[arg].eye[1];
-            object->position[2] = SCENE_CAMERAS(D_800658C8)[arg].eye[2];
+            object->position[0] = D_800658C8->cameras[arg].eye[0];
+            object->position[1] = D_800658C8->cameras[arg].eye[1];
+            object->position[2] = D_800658C8->cameras[arg].eye[2];
             break;
         case 0x5A:
             object->field58 = 0;
-            object->position[0] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[0];
-            object->position[1] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[1];
-            object->position[2] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[2];
+            object->position[0] = D_800658C8->cameras[arg].lookAt[0];
+            object->position[1] = D_800658C8->cameras[arg].lookAt[1];
+            object->position[2] = D_800658C8->cameras[arg].lookAt[2];
             break;
         case 0x5B: /* set the queue mode; 2 replays the queue */
             word = object->queueCount;
@@ -5628,11 +5623,11 @@ chosen:
             break;
         case 0x60: /* the centre of the slot's area */
             {
-                SceneArea *area = &SCENE_AREAS(D_800658C8)[D_800C3EB4[object->slot].group];
+                s32 group = D_800C3EB4[object->slot].group;
 
+                object->position[0] = (D_800658C8->areas[group].x0 + D_800658C8->areas[group].x1) >> 1;
                 object->position[1] = 0;
-                object->position[0] = (area->x0 + area->x1) >> 1;
-                object->position[2] = (area->z0 + area->z1) >> 1;
+                object->position[2] = (D_800658C8->areas[group].z0 + D_800658C8->areas[group].z1) >> 1;
             }
             break;
         case 0x61:
@@ -5642,14 +5637,7 @@ chosen:
             }
             break;
         case 0x62:
-            {
-                s16 part = *pc++;
-                s16 x = *pc++;
-                s16 y = *pc++;
-                s16 z = *pc++;
-
-                func_800AFD98(object, &object->hierarchy[part], arg, x, y, z);
-            }
+            func_800AFD98(object, &object->hierarchy[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
         case 0x63: /* start the object's own animation */
             word = *pc++;
@@ -5661,8 +5649,7 @@ chosen:
             pc = SCRIPT_JUMP(start, (s16)word);
             break;
         case 0x64:
-            word = *pc++;
-            OBJECT_FIELD3E(object) = word;
+            OBJECT_FIELD3E(object) = *pc++;
             break;
         case 0x65:
         case 0x66: /* start a camera effect */
@@ -5694,13 +5681,13 @@ chosen:
                     y = object->position[2];
                     value += object->position[1];
                 } else if (b1 == 0xF5) {
-                    x = SCENE_CAMERAS(D_800658C8)[b2].lookAt[0];
-                    y = SCENE_CAMERAS(D_800658C8)[b2].lookAt[2];
-                    value += SCENE_CAMERAS(D_800658C8)[b2].lookAt[1];
+                    x = D_800658C8->cameras[b2].lookAt[0];
+                    y = D_800658C8->cameras[b2].lookAt[2];
+                    value += D_800658C8->cameras[b2].lookAt[1];
                 } else if (b1 == 0xF4) {
-                    x = SCENE_CAMERAS(D_800658C8)[b2].eye[0];
-                    y = SCENE_CAMERAS(D_800658C8)[b2].eye[2];
-                    value += SCENE_CAMERAS(D_800658C8)[b2].eye[1];
+                    x = D_800658C8->cameras[b2].eye[0];
+                    y = D_800658C8->cameras[b2].eye[2];
+                    value += D_800658C8->cameras[b2].eye[1];
                 } else if (D_800D3368[x] != NULL) {
                     value = func_800AA600(x) * (s16)value / 4096;
                     mode = 0;
@@ -5741,32 +5728,24 @@ chosen:
                     base = object->hierarchy->rotation.vy;
                 }
                 arg &= 0x1F;
-                switch (b1) {
-                case 0:
+                if (b1 == 0) {
                     from = D_800C3B90 & 0xFFF;
-                    break;
-                case 1:
+                } else if (b1 == 1) {
                     from = D_800C3BA0 & 0xFFF;
-                    break;
-                case 2:
+                } else if (b1 == 2) {
                     from = D_800C3B94 & 0xFFF;
-                    break;
-                case 3:
-                    from = D_800C3B98;
-                    goto scaled;
-                case 4:
-                    from = D_800C3BA4;
-                    goto scaled;
-                case 5:
-                    from = D_800C3BA8;
-                    goto scaled;
-                case 6:
-                    from = D_800C3B9C;
-                default:
-                scaled:
+                } else {
+                    if (b1 == 3) {
+                        from = D_800C3B98;
+                    } else if (b1 == 4) {
+                        from = D_800C3BA4;
+                    } else if (b1 == 5) {
+                        from = D_800C3BA8;
+                    } else if (b1 == 6) {
+                        from = D_800C3B9C;
+                    }
                     angle = (s16)angle * D_800658C8->objectScale >> 12;
                     word = (s16)word * D_800658C8->objectScale >> 12;
-                    break;
                 }
                 if (b2 & 0x20) {
                     from += angle;
@@ -5777,24 +5756,26 @@ chosen:
                 } else {
                     from = angle;
                 }
+                to = from;
                 if (b2 & 0x40) {
-                    to = from + word;
+                    to += (u16)word;
                 } else if (b1 < 3) {
-                    s32 turn;
                     u16 start2;
+                    s32 turn;
 
                     if (b1 < 2) {
                         start2 = (angle + base) & 0xFFF;
                     } else {
                         start2 = angle & 0xFFF;
                     }
-                    turn = (word - angle) & 0xFFF;
+                    turn = (u16)(word - angle) & 0xFFF;
+                    to = turn;
                     if (turn >= 0x800) {
-                        turn |= 0xF000;
+                        to = turn | 0xF000;
                     }
-                    to = turn + start2;
+                    to += start2;
                 } else {
-                    to = word;
+                    to = (u16)word;
                 }
                 ((void (*)())func_800B0164)(pool, b1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, b3);
             }

@@ -109,9 +109,26 @@ typedef struct {
     u32 dataOffset; /* 0x14 */
 } Animation;
 
+/* A rectangle of the scene's ground (8 bytes; the scene data's areas at
+ * 0x100, one per formation group). */
+typedef struct {
+    u16 x0;
+    u16 z0;
+    u16 x1;
+    u16 z1;
+} SceneArea;
+
+/* A camera preset of the scene data (12 bytes). */
+typedef struct {
+    s16 lookAt[3];
+    s16 eye[3];
+} SceneCamera;
+
 /* The battle scene data (fields as far as recovered). */
 typedef struct {
-    u8 pad0[0x344];
+    u8 pad0[0x100];
+    SceneArea areas[1]; /* 0x100: one per formation group (count not recovered) */
+    u8 pad108[0x344 - 0x108];
     s16 objectScale; /* 0x344: 4.12 */
     u8 pad346[2];
     s16 effectCount; /* 0x348 */
@@ -127,9 +144,7 @@ typedef struct {
     u8 pad477;
     u8 shadow[3]; /* 0x478: the shadow sprites' colour */
     u8 pad47B;
-    s16 lookAt[3]; /* 0x47C: the camera's look-at point */
-    s16 eye[3];    /* 0x482: the camera's eye */
-    u8 pad488[0x4DC - 0x488];
+    SceneCamera cameras[8]; /* 0x47C: camera 0 is the battle's start view */
     SVECTOR centre; /* 0x4DC */
 } BattleSceneData;
 
