@@ -562,61 +562,54 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
  * with their model parts, step image animations and extend sprite trails.
  * When a trail's signed age becomes zero (including its initial -1 to 0),
  * it keeps the same channel cursor for the next iteration, matching the
- * original's conditional pointer advance.
- * Nonmatching: the frame size agrees, but scratch-pointer registers, spill
- * slots and instruction scheduling differ. */
-#ifdef NON_MATCHING
+ * original's conditional pointer advance. */
 void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
                    s32 buffer) {
-    MATRIX *scratch = (MATRIX *)0x1F800000;
-    MATRIX *lighting = (MATRIX *)0x1F800020;
-    MATRIX *camera = (MATRIX *)0x1F800040;
+    u32 count;
     ModelList *models;
     ModelPart *part;
     ModelPart *root;
-    s16 *intensity;
+    u16 scale;
+    MATRIX *scratch = (MATRIX *)0x1F800000;
+    MATRIX *lighting = (MATRIX *)0x1F800020;
+    MATRIX *camera = (MATRIX *)0x1F800040;
     SVECTOR point;
     VECTOR forward;
     VECTOR origin;
-    VECTOR transformed;
-    SVECTOR wind;
+    s32 depth;
+    s32 nextDepth;
     Surface *surface;
     SurfaceEntry *entry;
     ImageAnim *image;
     ColorFade *channel;
-    DVECTOR *screen0;
-    DVECTOR *screen1;
     VECTOR *world0;
     VECTOR *world1;
+    VECTOR *prev0;
+    VECTOR *prev1;
     POLY_FT4 *shadow;
     s16 dx, dy, dz;
     s32 distance;
     s32 shadowScale;
-    s32 depth;
-    s32 nextDepth;
     s32 index;
     s32 slot;
-    u16 scale;
-    u32 count;
     s32 i;
     s32 j;
 
     if (object->active) {
         models = object->field0;
-        scale = object->scale1C;
         part = object->hierarchy;
+        scale = object->scale1C;
         root = part;
         count = part->index;
-        intensity = &D_800D3304[0].active;
-        for (i = 0; i < 2; i++, intensity += sizeof(Tracker) / sizeof(s16)) {
-            if (*intensity != 0) {
-                dx = D_800D3304[i].x - root->translation[0];
-                dy = D_800D3304[i].y - ((root->translation[1] - object->scale24 * (scale * root->scale[1] >> 12)) >> 13);
-                dz = D_800D3304[i].z - root->translation[2];
+        for (i = 0; i < 2; i++) {
+            if (D_800D3304[i].active != 0) {
+                dx = D_800D3304[i].x - part->translation[0];
+                dy = D_800D3304[i].y - ((part->translation[1] - object->scale24 * (scale * part->scale[1] >> 12)) >> 13);
+                dz = D_800D3304[i].z - part->translation[2];
                 distance = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-                light->m[i + 1][0] = ((dx << 12) / distance) * *intensity / (*intensity + distance);
-                light->m[i + 1][1] = ((dy << 12) / distance) * *intensity / (*intensity + distance);
-                light->m[i + 1][2] = ((dz << 12) / distance) * *intensity / (*intensity + distance);
+                light->m[i + 1][0] = ((dx << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
+                light->m[i + 1][1] = ((dy << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
+                light->m[i + 1][2] = ((dz << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
             } else {
                 light->m[i + 1][0] = 0;
                 light->m[i + 1][1] = 0;
@@ -645,8 +638,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             point.vz = 0;
             func_8003F738(&point, lighting);
             lighting->t[0] = origin.vx;
-            lighting->t[2] = origin.vz;
             lighting->t[1] = object->groundY;
+            lighting->t[2] = origin.vz;
             CompMatrix(view, lighting, lighting);
             shadowScale = object->scale1C - (object->groundY - object->hierarchy->translation[1]) / 4;
             if (shadowScale < 0) {
@@ -664,8 +657,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             func_80049ACC(lighting, scratch);
             SetRotMatrix(lighting);
             SetTransMatrix(lighting);
-            point.vy = 0;
             point.vx = object->scale26;
+            point.vy = 0;
             point.vz = object->scale28;
             gte_ldv0(&point);
             gte_rtps();
@@ -698,7 +691,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 depth = nextDepth;
             }
             depth >>= D_80050100;
-            addPrim(ot + depth, shadow);
+            addPrim(ot + depth, &object->shadow[buffer]);
             if (depth >= 0x2D9) {
                 depth = 0x2D8;
             }
@@ -712,20 +705,20 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 SetLightMatrix(scratch);
                 CompMatrix(camera, &part->world, scratch);
                 if ((s16)part->field52 > 0) {
+                    scratch->m[0][0] = object->scale1C;
                     scratch->m[0][2] = 0;
                     scratch->m[1][0] = 0;
                     scratch->m[1][2] = 0;
                     scratch->m[2][0] = 0;
-                    scratch->m[0][0] = object->scale1C;
                     scratch->m[2][2] = object->scale1C;
-                    if (part->field52 == 1) {
+                    if ((s16)part->field52 == 1) {
                         scratch->m[0][1] = camera->m[0][1];
                         scratch->m[1][1] = camera->m[1][1];
                         scratch->m[2][1] = camera->m[2][1];
                     } else {
                         scratch->m[0][1] = 0;
-                        scratch->m[2][1] = 0;
                         scratch->m[1][1] = object->scale1C;
+                        scratch->m[2][1] = 0;
                     }
                 }
                 SetRotMatrix(scratch);
@@ -734,8 +727,11 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             }
         }
         surface = object->surfaces;
-        for (i = 0; i < object->surfaceCount; i++, surface++) {
+        for (i = 0; i < object->surfaceCount; surface++, i++) {
             if ((s16)surface->h0 >= 0) {
+                VECTOR transformed;
+                SVECTOR wind;
+
                 wind.vx = -D_800D39E8 * func_8003F8CC(root->rotation.vy + 0x400) / 0x1000;
                 wind.vz = D_800D39E8 * func_8003F8B0(root->rotation.vy + 0x400) / 0x1000;
                 wind.vy = OBJECT_FIELD3E(object);
@@ -800,17 +796,15 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                         channel->sprite->fade[1] = channel->step[1];
                         channel->sprite->fade[2] = channel->step[2];
                         index = (channel->time + channel->field5E) & 7;
-                        screen0 = &channel->history.screen.first[index];
-                        screen1 = &channel->history.screen.second[index];
-                        channel->sprite->x0 = screen0->vx;
-                        channel->sprite->y0 = screen0->vy;
-                        channel->sprite->x2 = screen1->vx;
-                        channel->sprite->y2 = screen1->vy;
+                        channel->sprite->x0 = (channel->history.screen.first + index)->vx;
+                        channel->sprite->y0 = (channel->history.screen.first + index)->vy;
+                        channel->sprite->x2 = (channel->history.screen.second + index)->vx;
+                        channel->sprite->y2 = (channel->history.screen.second + index)->vy;
                     }
-                    channel->sprite->x1 = channel->history.screen.first[channel->time].vx;
-                    channel->sprite->y1 = channel->history.screen.first[channel->time].vy;
-                    channel->sprite->x3 = channel->history.screen.second[channel->time].vx;
-                    channel->sprite->y3 = channel->history.screen.second[channel->time].vy;
+                    channel->sprite->x1 = (channel->history.screen.first + channel->time)->vx;
+                    channel->sprite->y1 = (channel->history.screen.first + channel->time)->vy;
+                    channel->sprite->x3 = (channel->history.screen.second + channel->time)->vx;
+                    channel->sprite->y3 = (channel->history.screen.second + channel->time)->vy;
                 } else {
                     CompMatrix(&root->transform, &root[channel->field0].world, scratch);
                     SetRotMatrix(scratch);
@@ -840,12 +834,14 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                         channel->sprite->fade[0] = channel->step[0];
                         channel->sprite->fade[1] = channel->step[1];
                         channel->sprite->fade[2] = channel->step[2];
-                        channel->sprite->x0 = channel->history.world.first[1 - slot].vx;
-                        channel->sprite->y0 = channel->history.world.first[1 - slot].vy;
-                        channel->sprite->z0 = channel->history.world.first[1 - slot].vz;
-                        channel->sprite->x2 = channel->history.world.second[1 - slot].vx;
-                        channel->sprite->y2 = channel->history.world.second[1 - slot].vy;
-                        channel->sprite->z2 = channel->history.world.second[1 - slot].vz;
+                        prev0 = &channel->history.world.first[1 - slot];
+                        prev1 = &channel->history.world.second[1 - slot];
+                        channel->sprite->x0 = prev0->vx;
+                        channel->sprite->y0 = prev0->vy;
+                        channel->sprite->z0 = prev0->vz;
+                        channel->sprite->x2 = prev1->vx;
+                        channel->sprite->y2 = prev1->vy;
+                        channel->sprite->z2 = prev1->vz;
                     }
                     channel->sprite->x1 = world0->vx;
                     channel->sprite->y1 = world0->vy;
@@ -859,9 +855,6 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F844);
-#endif
 
 #ifdef NON_MATCHING
 /* Apply one packed delta of a tween track to dst (computed as `type`): a
