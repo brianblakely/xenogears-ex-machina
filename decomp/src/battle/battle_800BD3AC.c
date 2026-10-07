@@ -601,16 +601,11 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
     text[0] = count + 1;
 }
 
-#ifdef NON_MATCHING
 /* Run one battle frame: swap the display buffers, read the controllers,
  * update the sprites, the stage and the effects (the skipped frames once
  * more each) with the stack in the scratchpad, draw, time the frame and
  * present it; the outermost frame also runs the battle menu, a pending sound
- * request and the deferred free of the objects' extra files. Nonmatching:
- * the original stores the frame ticks through a temporary base and
- * rematerialises &BATTLE_AREA + 0x8000 after the VSync call (and builds its
- * argument straight in $a0); this keeps the base in $s0 across the call and
- * builds the argument in $a2. */
+ * request and the deferred free of the objects' extra files. */
 void func_800BE790(void) {
     BattleArea *frame;
     FrameBuffer *buffer;
@@ -668,7 +663,11 @@ void func_800BE790(void) {
         D_80059494 = 4;
     }
     BATTLE_AREA.frameTicks = D_80059494 + D_80059198;
-    VSync(D_80059198 != 0 ? D_80059198 + 1 : 0);
+    if (D_80059198 != 0) {
+        VSync(D_80059198 + 1);
+    } else {
+        VSync(0);
+    }
     PutDispEnv(&BATTLE_AREA.current->dispEnv);
     PutDrawEnv(&BATTLE_AREA.current->drawEnv);
     func_80025044();
@@ -691,9 +690,6 @@ void func_800BE790(void) {
     }
     D_800C37D0--;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BE790);
-#endif
 
 /* Load the requested battle module (D_800591B3) into 0x801FC000 when it
  * changed, around the module switch 800B8354, and mark it loaded. */
