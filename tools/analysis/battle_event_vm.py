@@ -471,6 +471,44 @@ def entry_points(script: EventScript):
 
 
 @dataclass
+class Unreached:
+    """Bytecode that no thread reaches: runs before the last reached instruction
+    (decoded on their own, kept out of the use counts) and the nonzero bytes
+    after it."""
+
+    runs: int = 0
+    instructions: int = 0
+    errors: list[str] = field(default_factory=list)
+    tail_bytes: int = 0
+
+
+def unreached(code: bytes, listing: EventListing) -> Unreached:
+    result = Unreached()
+    covered = bytearray(len(code))
+    for insn in listing.instructions.values():
+        covered[insn.offset : insn.offset + insn.length] = b"\1" * insn.length
+    last = max((i.offset + i.length for i in listing.instructions.values()), default=0)
+    position = 0
+    while position < last:
+        if covered[position] or not code[position]:
+            position += 1
+            continue
+        run = disassemble(code, [position])
+        if run.errors:
+            result.errors.append(f"0x{position:x}: {run.errors[0]}")
+            while position < last and not covered[position]:
+                position += 1
+            continue
+        fresh = [i for i in run.instructions.values() if not covered[i.offset]]
+        result.runs += 1
+        result.instructions += len(fresh)
+        for insn in fresh:
+            covered[insn.offset : insn.offset + insn.length] = b"\1" * insn.length
+    result.tail_bytes = sum(1 for byte in code[last:] if byte)
+    return result
+
+
+@dataclass
 class EventSweep:
     identical: bool = False  # both discs hold the same archive
     sets: int = 0
@@ -478,6 +516,8 @@ class EventSweep:
     instructions: int = 0
     opcodes: Counter = field(default_factory=Counter)
     errors: list[str] = field(default_factory=list)
+    unreached: Unreached = field(default_factory=Unreached)
+    tail_sets: int = 0  # sets with nonzero bytes after their last instruction
 
 
 def sweep(root: Path = ROOT) -> EventSweep:
@@ -493,6 +533,12 @@ def sweep(root: Path = ROOT) -> EventSweep:
             result.instructions += len(listing.instructions)
             result.opcodes.update(i.opcode for i in listing.instructions.values())
             result.errors.extend(f"{name} set {n}: {e}" for e in listing.errors)
+            extra = unreached(script.code, listing)
+            result.unreached.runs += extra.runs
+            result.unreached.instructions += extra.instructions
+            result.unreached.errors.extend(f"{name} set {n}: {e}" for e in extra.errors)
+            result.unreached.tail_bytes += extra.tail_bytes
+            result.tail_sets += extra.tail_bytes > 0
             for insn in listing.instructions.values():
                 if insn.opcode in (0x03, 0x04, 0x05):
                     thread, request = (
@@ -555,6 +601,14 @@ def main() -> None:
     print(f"  unused: {' '.join(f'{op:02x}' for op in sorted(set(OPCODES) - set(used)))}")
     print(f"  unknown/undecodable: {len(result.errors)}")
     for error in result.errors:
+        print(f"    {error}")
+    dead = result.unreached
+    print(
+        f"  no thread reaches: {dead.runs} runs decoding as {dead.instructions} instructions; "
+        f"{dead.tail_bytes} nonzero bytes after the last instruction of {result.tail_sets} sets"
+    )
+    print(f"  unreached bytes that do not decode: {len(dead.errors)}")
+    for error in dead.errors:
         print(f"    {error}")
 
 

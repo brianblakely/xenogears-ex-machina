@@ -32,8 +32,13 @@ bytecode.
 `python3 -m tools.analysis.battle_event_vm --sweep` decodes every set on both
 discs, which hold identical archives: 96 sets (48 per disc), 468 threads and
 9200 instructions. 50 of 76 opcodes are used; 0 are unknown or undecodable,
-and no request (03-05) names an entry outside the thread tables.
+and no request (03-05) names an entry outside the thread tables. No thread
+reaches 18 runs, which decode as 26 instructions, kept out of the use counts.
+70 sets end in 112 nonzero bytes, at most 7 per set, after their last
+instruction. No unreached byte fails to decode.
 `--list FILE [--set N]` prints the disassembly. Keep listings under `.local/`.
+`tests/test_battle_event_vm.py` checks the table against 801E879C's cases and
+the lengths that its handlers return.
 
 Open: 26 opcodes (04 07-0C 0F-17 19 2C-2E 30 32-34 3D 47) have no use in the
 data. They are decoded from their handlers only.

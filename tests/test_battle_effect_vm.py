@@ -1,7 +1,10 @@
-"""Invented effect scripts exercise the effect VM's lengths, flow and containers."""
+"""Invented effect scripts exercise the effect VM's lengths, flow and containers;
+the tables are checked against the recovered interpreters in decomp/src."""
 
+import re
 import struct
 import unittest
+from pathlib import Path
 
 from tools.analysis.battle_effect_vm import (
     BATTLE,
@@ -19,7 +22,10 @@ from tools.analysis.battle_effect_vm import (
     file_tables,
     script_file,
     sweep_table,
+    unreached,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def words(*values):
@@ -171,6 +177,96 @@ class ContainerTests(unittest.TestCase):
         self.assertEqual((result.animations, result.not_animations), (1, 2))
         self.assertEqual(result.events, {("animation", 7): 1, ("animation", 6): 1})
         self.assertEqual(result.instructions, {"extra": 1})
+
+    def test_words_nothing_starts_are_reported_apart(self):
+        # a started script, its 7777 separator, a script no table names, a
+        # separator, an unknown word, then the data block
+        code = (
+            command(0x0C)
+            + command(0x00)
+            + b"\x77\x77"
+            + command(0x0C)
+            + command(0x00)
+            + b"\x77\x77"
+            + command(0x80)
+            + bytes(2)
+        )
+        data = struct.pack("<IIIIII", 2, 0x0C, 0x2C, 2, 0x0C, 0x10) + bytes(4) + code + bytes(4)
+        table = script_file(data)
+        self.assertEqual(table, ScriptTable([0x1C], 0x18, 0x2C))
+        found = unreached(data, table, disassemble(data, table.scripts), "battle")
+        self.assertEqual((found.separators, found.scripts, found.instructions), (2, 1, 2))
+        self.assertEqual(found.errors, ["0x28: unknown battle opcode 0x80 at 0x28"])
+
+
+def case_bodies(path: str, head: str, label: str) -> dict:
+    """The case bodies of the switch in the function starting with head, by the
+    label pattern's group; a label without statements takes the next body."""
+    text = (ROOT / path).read_text()
+    body = text[text.index(head) :]
+    body = re.sub(r"/\*.*?\*/", "", body[: body.index("\n}\n")], flags=re.S)
+    parts = re.split(label, body)
+    cases, pending = {}, []
+    for name, code in zip(parts[1::2], parts[2::2], strict=True):
+        pending.append(name)
+        if code.strip():
+            cases.update(dict.fromkeys(pending, code))
+            pending = []
+    return cases
+
+
+CASE = r"\n {8}(?:case 0x([0-9A-F]{2})|default):"
+
+
+class SourceTests(unittest.TestCase):
+    """The tables follow the recovered interpreters in decomp/src."""
+
+    def check_parameter_words(self, path, head, table):
+        cases = case_bodies(path, head, CASE)
+        cases.pop(None)
+        self.assertEqual(sorted(int(code, 16) for code in cases), sorted(table))
+        for code, body in cases.items():
+            spec = table[int(code, 16)]
+            self.assertEqual(spec.handler.split()[-1], code.lower())
+            self.assertEqual(len(re.findall(r"\*pc\b", body)), len(spec.operands), code)
+
+    def test_battle_commands_read_their_parameter_words(self):
+        self.check_parameter_words(
+            "decomp/src/battle/battle_8009E53C.c", "void func_800AAD54(", BATTLE
+        )
+
+    def test_model_viewer_commands_read_their_parameter_words(self):
+        self.check_parameter_words(
+            "decomp/src/ovl2143/ovl2143.c", "void func_801E39F0(", MODEL_VIEWER
+        )
+
+    def test_event_records_follow_the_runners(self):
+        viewer = case_bodies(
+            "decomp/src/ovl2143/ovl2143.c", "void func_801E5D44(", r"\n {8}case (\d):"
+        )
+        self.assertEqual(sorted(map(int, viewer)), sorted(MODEL_VIEWER_EVENTS))
+        for kind, body in viewer.items():
+            spec = MODEL_VIEWER_EVENTS[int(kind)]
+            steps = {int(n, 0) for n in re.findall(r"anim_pos \+= (0x[0-9A-F]+|\d+);", body)}
+            self.assertEqual(steps, {spec.length, spec.short} - {None}, kind)
+        records = {1: "SpriteCommand", 2: "LightEvent", 3: "ChannelEvent", 4: "ChannelEvent"}
+        records.update({5: "SoundEvent", 8: "SlotEvent", 9: "ImageEvent"})
+        battle = case_bodies(
+            "decomp/src/battle/battle_8009E53C.c", "void func_800AE2A4(", r"\n {16}case (\d):"
+        )
+        self.assertEqual(sorted(map(int, battle)), sorted(BATTLE_EVENTS))
+        for kind, body in battle.items():
+            spec = BATTLE_EVENTS[int(kind)]
+            steps = re.findall(r"animationStart \+= (?:sizeof\((\w+)\)|(\d+));", body)
+            names = {name for name, _ in steps if name}
+            numbers = {int(n) for _, n in steps if n}
+            self.assertEqual(names, {records[int(kind)]} if int(kind) in records else set(), kind)
+            expected = {spec.short} if spec.short else set()
+            if int(kind) not in records:
+                expected = {spec.length}
+            self.assertEqual(numbers, expected, kind)
+            viewer_spec = MODEL_VIEWER_EVENTS[int(kind)]
+            self.assertEqual((spec.length, spec.short), (viewer_spec.length, viewer_spec.short))
 
 
 if __name__ == "__main__":

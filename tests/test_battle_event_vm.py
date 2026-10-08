@@ -1,9 +1,14 @@
-"""Invented battle event scripts exercise operand forms, lengths and flow."""
+"""Invented battle event scripts exercise operand forms, lengths and flow; the
+table is checked against the recovered interpreter in decomp/src."""
 
+import re
 import struct
 import unittest
+from pathlib import Path
 
 from tools.analysis.battle_event_vm import (
+    END,
+    JUMP,
     OPCODES,
     EventError,
     archive_scripts,
@@ -11,7 +16,10 @@ from tools.analysis.battle_event_vm import (
     disassemble,
     entry_points,
     parse_script,
+    unreached,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def literal_block(data: bytes) -> bytes:
@@ -75,6 +83,36 @@ class ScriptTests(unittest.TestCase):
             [i.name for _, i in sorted(listing.instructions.items())],
             ["speaker", "end", "last_pass", "end"],
         )
+
+    def test_bytes_no_thread_reaches_are_reported_apart(self):
+        # end, a jump nothing reaches, an unknown byte, the last end, a tail
+        code = bytes([0x00, 0x01, 0x00, 0x00, 0x4C, 0x00, 0xD9, 0x00])
+        listing = disassemble(code, [0, 5])
+        found = unreached(code, listing)
+        self.assertEqual((found.runs, found.instructions), (1, 1))
+        self.assertEqual(found.errors, ["0x4: unknown opcode 0x4c at 0x4"])
+        self.assertEqual(found.tail_bytes, 1)
+
+
+class SourceTests(unittest.TestCase):
+    """The table follows 801e879c's cases and its handlers' returns."""
+
+    def test_cases_call_the_table_handlers_and_their_lengths(self):
+        text = (ROOT / "decomp/src/ovl3087/ovl3087.c").read_text()
+        body = text[text.index("void func_801E879C(void) {") :]
+        body = body[: body.index("\n}\n")]
+        cases = re.findall(r"case 0x([0-9A-F]{2}):\s*\n\s*length = (func_[0-9A-F]{8})\(", body)
+        self.assertEqual(sorted(int(code, 16) for code, _ in cases), sorted(OPCODES))
+        for code, function in cases:
+            spec = OPCODES[int(code, 16)]
+            self.assertEqual(function.lower(), "func_" + spec.handler)
+            handler = re.search(rf"\ns32 {function}\([^)]*\) \{{.*?\n\}}", text, re.S).group(0)
+            lengths = re.findall(
+                r"return (\d+);|length = (\d+);|\) \* (\d+);|\? (\d+) : 0;", handler
+            )
+            steps = {int(n) for found in lengths for n in found if n} - {0}
+            expected = set() if spec.flow in (END, JUMP) else {spec.length}
+            self.assertEqual(steps, expected, code)
 
 
 if __name__ == "__main__":

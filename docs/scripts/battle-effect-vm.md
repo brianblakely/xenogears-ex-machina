@@ -14,7 +14,8 @@ objects, 3D enemies and their copies) run effect scripts.
 - Command: an s16 word (opcode in the low byte, argument in the high byte),
   then the opcode's u16 parameter words. Jump offsets are signed bytes from the
   command's start. 31 loops back past the 30 command it names. An unknown
-  opcode stops the script on itself.
+  opcode stops the script on itself. The files put a word 7777 after each
+  script, and no handler reads it.
 - Animation events: 63 gives the object animation the `arg` events after its
   operand and jumps past them; an animation gives its own list (count at 0x12,
   offset at 0x14, 800AE1BC). Each frame 800AE2A4 (ovl2143: 801E5D44) runs the
@@ -26,7 +27,7 @@ objects, 3D enemies and their copies) run effect scripts.
 - Script tables are relocatable blocks (8003342C). An object script file holds
   a count, its script table and its data block; the script table's first
   offset is the animation table, the others are scripts (0 marks an empty
-  id). Ids from 0x50 come from the object's extra file, animations from 0x40.
+  id). Script ids from 0x50 and animation ids from 0x40 are the extra file's.
   Unused animation ids repeat an entry that points at a script or the data
   block. A stage scene's motion block holds the stage motions first, and the
   stage model gets no animation table (801E7210).
@@ -58,9 +59,16 @@ both discs, which hold identical files. The counts below are summed:
   used. 5 event types (1, 4, 5, 7, 8) are used: 190 events in 928 animations,
   none in 63 commands; 4 entries are unused ids.
 - 0 unknown or undecodable commands or events in either dialect.
+- Nothing starts, in the script areas (the first script up to the data block
+  or the file end): 5422 battle and 338 ovl2143 separator words, and 40
+  battle runs that decode as scripts of 288 commands. These are left out of
+  the use counts. No unreached word fails to decode.
 
 `--list FILE --kind script|gear_part|enemy|scene [--dialect ovl2143]` prints
 one file's animations, events and disassembly. Keep listings under `.local/`.
+`tests/test_battle_effect_vm.py` checks the tables against the parameter
+words that each case of 800AAD54 and 801E39F0 reads, and against the steps of
+800AE2A4 and 801E5D44.
 
 Data notes. Three 63 commands per disc, in enemy sets 19 and 61, count one
 event fewer than they hold, so their last event (8 bytes of sound) never

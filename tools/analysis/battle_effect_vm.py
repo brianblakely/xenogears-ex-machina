@@ -914,6 +914,62 @@ def disc_tables(disc: Disc):
             )
 
 
+# The word the original tools put after each script; no handler reads it.
+SEPARATOR = b"\x77\x77"
+
+
+def mark(covered: bytearray, insn: Instruction) -> None:
+    stop = insn.data[1] if insn.data else insn.offset + insn.length
+    covered[insn.offset : stop] = b"\1" * (stop - insn.offset)
+
+
+@dataclass
+class Unreached:
+    """The words of a script area that no started script reaches."""
+
+    separators: int = 0  # 7777 words after scripts
+    scripts: int = 0  # runs that decode as scripts nothing starts
+    instructions: int = 0
+    errors: list[str] = field(default_factory=list)
+
+
+def unreached(data: bytes, table: ScriptTable, listing: Listing, dialect: str) -> Unreached:
+    """Scan the table's script area (its first script up to the data block or the
+    file end) for words no decoded command covers: count the 7777 separators and
+    decode every other run as scripts of its own, kept out of the use counts."""
+    result = Unreached()
+    live = [s for s in table.scripts if s]
+    if not live:
+        return result
+    first = min(live)
+    end = table.block if table.block is not None and table.block > first else len(data)
+    area = data[:end]
+    covered = bytearray(len(area))
+    for insn in listing.instructions.values():
+        mark(covered, insn)
+    position = first
+    while position + 2 <= end:
+        word = area[position : position + 2]
+        if covered[position] or word == b"\0\0":
+            position += 2
+        elif word == SEPARATOR:
+            result.separators += 1
+            position += 2
+        else:
+            run = disassemble(area, [position], dialect)
+            if run.errors:
+                result.errors.append(f"0x{position:x}: {run.errors[0]}")
+                while position < end and not covered[position]:
+                    position += 2
+                continue
+            fresh = [i for i in run.instructions.values() if not covered[i.offset]]
+            result.scripts += 1
+            result.instructions += len(fresh)
+            for insn in fresh:
+                mark(covered, insn)
+    return result
+
+
 @dataclass
 class Sweep:
     tables: Counter = field(default_factory=Counter)
@@ -926,12 +982,15 @@ class Sweep:
     animations: int = 0  # distinct animation entries with their event lists
     not_animations: int = 0  # entries of unused ids (a script or the data block)
     events: Counter = field(default_factory=Counter)  # (63 or "animation", type)
+    unstarted: Unreached = field(default_factory=Unreached)
     errors: list[str] = field(default_factory=list)
 
 
-def sweep_table(result: Sweep, family: str, dialect: str, data: bytes, table: ScriptTable):
-    """Count one table's scripts, their 63 events and its animations' events into
-    result; return the errors."""
+def sweep_table(
+    result: Sweep, family: str, dialect: str, data: bytes, table: ScriptTable, where: str = ""
+):
+    """Count one table's scripts, their 63 events, its animations' events and the
+    words nothing starts into result; return the errors (prefixed by where)."""
     live = [s for s in table.scripts if s]
     result.tables[family] += 1
     result.scripts[family] += len(live)
@@ -947,25 +1006,30 @@ def sweep_table(result: Sweep, family: str, dialect: str, data: bytes, table: Sc
             tail = insn.data[1] - (last.offset + last.length if last else insn.data[0])
             if tail:
                 result.event_tails.append(tail)
+    extra = unreached(data, table, listing, dialect)
+    result.unstarted.separators += extra.separators
+    result.unstarted.scripts += extra.scripts
+    result.unstarted.instructions += extra.instructions
+    result.unstarted.errors.extend(where + e for e in extra.errors)
     errors = list(listing.errors)
-    if table.animations is None:
-        return errors
-    try:
-        entries = animation_entries(data, table)
-    except EffectError as error:
-        return errors + [str(error)]
-    for entry, animation in entries:
-        if not animation:
-            result.not_animations += 1
-            continue
+    if table.animations is not None:
         try:
-            events = animation_events(data, entry, dialect)
+            entries = animation_entries(data, table)
         except EffectError as error:
-            errors.append(f"animation at 0x{entry:x}: {error}")
-            continue
-        result.animations += 1
-        result.events.update(("animation", e.type) for e in events)
-    return errors
+            entries = []
+            errors.append(str(error))
+        for entry, animation in entries:
+            if not animation:
+                result.not_animations += 1
+                continue
+            try:
+                events = animation_events(data, entry, dialect)
+            except EffectError as error:
+                errors.append(f"animation at 0x{entry:x}: {error}")
+                continue
+            result.animations += 1
+            result.events.update(("animation", e.type) for e in events)
+    return [where + e for e in errors]
 
 
 def sweep(root: Path = ROOT) -> tuple[dict[str, Sweep], bool]:
@@ -976,8 +1040,10 @@ def sweep(root: Path = ROOT) -> tuple[dict[str, Sweep], bool]:
         digest = hashlib.sha256()
         for dialect, family, label, data, table in disc_tables(Disc(root, name)):
             digest.update(f"{family} {label}".encode() + data)
-            errors = sweep_table(results[dialect], family, dialect, data, table)
-            results[dialect].errors.extend(f"{name} {family} {label}: {e}" for e in errors)
+            where = f"{name} {family} {label}: "
+            results[dialect].errors.extend(
+                sweep_table(results[dialect], family, dialect, data, table, where)
+            )
         digests.append(digest.digest())
     return results, digests[0] == digests[1]
 
@@ -1070,6 +1136,14 @@ def main() -> None:
         )
         print(f"  unknown/undecodable: {len(result.errors)}")
         for error in result.errors:
+            print(f"    {error}")
+        unstarted = result.unstarted
+        print(
+            f"  nothing starts: {unstarted.separators} separator words (7777) after scripts; "
+            f"{unstarted.scripts} runs decode as scripts of {unstarted.instructions} commands"
+        )
+        print(f"  unreached words that do not decode: {len(unstarted.errors)}")
+        for error in unstarted.errors:
             print(f"    {error}")
 
 
