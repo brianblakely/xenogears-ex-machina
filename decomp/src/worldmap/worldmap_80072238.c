@@ -1691,7 +1691,12 @@ s32 func_80076A1C(void) {
     return 1;
 }
 
-/* Run an actor's script until an opcode yields. */
+/* Run an actor's script until an opcode yields. The script is a stream of
+ * halfwords: the word at the script position holds the opcode (low half, an
+ * unchecked index into D_8009A3C0) and the first argument (high half); the
+ * next two halfwords are passed as the other two arguments whatever the
+ * opcode. A handler returns the halfwords to advance, 0 to yield until the
+ * next update. tools/analysis/overlay_scripts.py disassembles the scripts. */
 s32 func_80076B34(s32 index) {
     s32 unused[2]; /* unreferenced; the original frame reserves it */
     WorldmapActor *actor;
@@ -1708,14 +1713,17 @@ s32 func_80076B34(s32 index) {
     return 1;
 }
 
-/* Script opcode 0: end the world map. */
+/* Script opcode 0 (2 halfwords, never advances): end the world-map loop
+ * (D_8009D554) with exit 0 (D_8009D7CC); the script stays on it. */
 s32 func_80076BC4(void) {
     D_8009D554 = 0;
     D_8009D7CC = 0;
     return 0;
 }
 
-/* Script opcode 1: wait `frames` frames. */
+/* Script opcode 1 (2 halfwords: frames): wait. The first update loads the
+ * actor's wait counter and yields; later updates count it down and advance
+ * once it reaches 0. */
 s32 func_80076BDC(WorldmapActor *actor, s16 frames) {
     if (actor->wait == 0) {
         actor->wait = frames;
@@ -1727,13 +1735,16 @@ s32 func_80076BDC(WorldmapActor *actor, s16 frames) {
     return 0;
 }
 
-/* Script opcode 2. */
+/* Script opcode 2 (4 halfwords: actor a, argument b, unused): send command 1
+ * with argument b to actor slot a (func_80097770; dropped while that actor
+ * has an argument pending). */
 s32 func_80076C18(WorldmapActor *actor, s32 a, s32 b) {
     func_80097770(a, b);
     return 4;
 }
 
-/* Script opcode 3: place the player (world units). */
+/* Script opcode 3 (4 halfwords: x, y, z): place the player at x, y, z world
+ * units (D_8009C5AC, 20.12). */
 s32 func_80076C3C(WorldmapActor *actor, s32 x, s32 y, s32 z) {
     D_8009C5AC.vx = x << 12;
     D_8009C5AC.vy = y << 12;
@@ -1741,7 +1752,8 @@ s32 func_80076C3C(WorldmapActor *actor, s32 x, s32 y, s32 z) {
     return 4;
 }
 
-/* Script opcode 4: set the script vector. */
+/* Script opcode 4 (4 halfwords: x, y, z): set the scratchpad script vector,
+ * where opcode 5 places emitters. */
 s32 func_80076C68(WorldmapActor *actor, s16 x, s16 y, s16 z) {
     SCRIPT_VECTOR->vx = x;
     SCRIPT_VECTOR->vy = y;
@@ -1749,43 +1761,54 @@ s32 func_80076C68(WorldmapActor *actor, s16 x, s16 y, s16 z) {
     return 4;
 }
 
-/* Script opcode 5. */
+/* Script opcode 5 (2 halfwords: group a): place emitter group a at the
+ * script vector, unrotated, and start it unless one of its emitters is live
+ * (func_80089160). */
 s32 func_80076C88(WorldmapActor *actor, s32 a) {
     func_80089160(a, SCRIPT_VECTOR, 0);
     return 2;
 }
 
-/* Script opcode 6. */
+/* Script opcode 6 (2 halfwords: group a): deactivate emitter group a
+ * (func_800894C8). */
 s32 func_80076CB4(WorldmapActor *actor, s32 a) {
     func_800894C8(a);
     return 2;
 }
 
-/* Script opcode 7. */
+/* Script opcode 7 (2 halfwords: group a): stop the live effects of emitter
+ * group a (func_80089514). */
 s32 func_80076CD4(WorldmapActor *actor, s32 a) {
     func_80089514(a);
     return 2;
 }
 
-/* Script opcode 8: music control. */
+/* Script opcode 8 (4 halfwords: level a, frames b, unused): fade the music
+ * sequence D_80062528 to level a over b frames, at once when b is 0
+ * (func_8003A89C). */
 s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b) {
     func_8003A89C(D_80062528, a, b);
     return 4;
 }
 
-/* Script opcode 9: play a sound of the area bank. */
+/* Script opcode 9 (2 halfwords: sound): play effect `sound` of the area
+ * sound bank at the default volume and pan (func_80039E60). */
 s32 func_80076D1C(WorldmapActor *actor, s32 sound) {
     func_80039E60((D_8006259C->id << 16) | sound);
     return 2;
 }
 
-/* Script opcode 10: play a sound of the area bank with parameters. */
+/* Script opcode 10 (4 halfwords: sound, volume b, frames c): slide the volume
+ * of the channels playing area-bank effect `sound` to b over c frames
+ * (func_8003A3B8). */
 s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c) {
     func_8003A3B8((D_8006259C->id << 16) | sound, b, c);
     return 4;
 }
 
-/* Script opcode 11. */
+/* Script opcode 11 (4 halfwords: rate a, step b, unused): set the screen
+ * fade's semi-transparency rate (D_8009CCA4, of its draw-mode page) and its
+ * per-frame brightness step (D_8009D3CC). */
 s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b) {
     D_8009CCA4 = a;
     D_8009D3CC = b;

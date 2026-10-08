@@ -218,7 +218,7 @@ typedef struct Actor {
     Vector unk30;        /* 0x30: bounce step */
     s32 unk40;           /* 0x40: forward speed */
     s32 unk44;           /* 0x44: bounce speed */
-    s32 state;           /* 0x48 */
+    s32 state;           /* 0x48: stick speed, up to 0x100 */
     u8 anim;             /* 0x4C */
     u8 unk4D;
     u8 unk4E;
@@ -227,7 +227,7 @@ typedef struct Actor {
     u8 unk52;
     u8 unk53;
     s32 angle;           /* 0x54: facing, 4096 = full turn */
-    s32 target_angle;    /* 0x58 */
+    s32 target_angle;    /* 0x58: stick heading from the facing toward the opponent */
     Node *node;          /* 0x5C: model set node */
     void *object;        /* 0x60 */
     u8 unk64[0x8];
@@ -423,29 +423,29 @@ extern u8 *D_8009105C[]; /* scene scripts */
 extern u8 D_80090F38[];
 extern u8 D_800910C4[];
 
-extern s32 D_800925D4;
+extern s32 D_800925D4; /* message the scene shows */
 extern s32 D_800925D8;
 extern s32 D_800925DC;
-extern s32 D_800925E0; /* screen offset x, y */
+extern s32 D_800925E0; /* marker sprite x, y */
 extern s32 D_800925E4;
-extern s32 D_800925E8;
+extern s32 D_800925E8; /* marker sprite target x, y */
 extern s32 D_800925EC;
-extern s32 D_800925FC;
-extern s16 D_80092600;
+extern s32 D_800925FC; /* scene script frame counter */
+extern s16 D_80092600; /* scene script charge hold */
 extern s8 D_80092604; /* scene choice cursor */
 extern u8 D_80092608;
-extern s32 D_8009284C;
+extern s32 D_8009284C; /* horizontal distance between the actors */
 extern s32 D_80092880;
 extern u8 D_80092884;
 extern s32 D_800928C8; /* menu mode */
 extern u8 D_800928D4;
-extern s32 D_80092900;
-extern s32 D_80092904;
+extern s32 D_80092900; /* bout-end sequence step */
+extern s32 D_80092904; /* camera view */
 extern s32 D_80092934;
 extern u8 D_8009293C;
 extern s32 D_80092948;
 extern u8 D_800929BC;
-extern u8 D_800925F0;
+extern u8 D_800925F0; /* marker sprite shown */
 extern FloorStep D_80091084[8];
 extern u16 D_8005948C; /* pad buttons newly pressed */
 extern u16 D_800594A4; /* pad buttons repeating */
