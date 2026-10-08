@@ -45,5 +45,5 @@ segments:
       - [0x0, .rodata, ovl3087]
       - [0x160, c, ovl3087]
       - [0x43e8, c, script_actor]
-      - [0x4b5c, data, ovl3087_data]
+      - [0x4b5c, .data, ovl3087]
   - [0x4c3c]
