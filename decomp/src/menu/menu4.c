@@ -26,7 +26,7 @@ Glyph D_80091230[] = {
     { 0x60, 0x13, 3, 7 },
 };
 
-s32 D_800912DC = 0x100; /* glyph advance scale (0x100: 1) */
+s32 D_800912DC = 0x100; /* text width scale (0x100 = 1) */
 
 /* Neighbour offsets and slide of the selection wheel portraits, per row. */
 s16 D_800912E0[2][4] = { { 1, -1, 2, 0x24 }, { -1, -2, 1, -0x24 } };

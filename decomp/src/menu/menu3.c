@@ -17,7 +17,7 @@ ShotKind D_800910F4[] = {
     { 0x0000, 5, 0x20, 0x80, 2, 0x00, 0 },
 };
 
-/* Combo name of a finishing combo. */
+/* Attack name shown for an ether attack (the combos' are D_80091198). */
 s32 D_8009112C = (s32)D_8006FC10; /* "ETHER" */
 
 /* Per animation: kind and next animation (-1: none). Rules 10 and 16 are

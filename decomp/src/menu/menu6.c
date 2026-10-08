@@ -65,7 +65,7 @@ ListEntry D_80091964[49] = {
     { 0x30, &D_80070284[0xC], D_80070284 },            /* sol_13 EG-BLADE */
 };
 
-/* Heap block tag names for the debug display (func_80032498 kind 6). */
+/* Names of the menu's heap block kinds (owner tag 6, func_80032498). */
 char *D_80091BB0[] = {
     &D_80070284[0x424], /* "" */
     &D_80070284[0x41C], /* OBJECT */

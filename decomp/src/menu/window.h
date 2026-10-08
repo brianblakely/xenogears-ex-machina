@@ -46,7 +46,6 @@ struct Menu {
 extern s32 D_800911D4; /* second actor also posed by func_8007661C */
 extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 
-
 /* Bout-end sequence effects. */
 extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
 extern s16 D_8009260C;       /* knock-down flash level */

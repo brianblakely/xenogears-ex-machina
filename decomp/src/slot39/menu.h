@@ -1119,11 +1119,11 @@ extern u8 D_801EA530[];
 extern u8 D_801EA534[];  /* party label layout */
 extern s32 D_801E9E4C[3]; /* party label positions: x */
 extern s32 D_801E9E58[3]; /* y */
-extern u8 D_801EA53C[];  /* save file screen command labels */
+extern u8 D_801EA53C[];  /* file screen command labels: save, then (6) load */
 extern u8 D_801EA550[];  /* item target labels */
 extern u8 D_801EA558[];
 extern u8 D_801EA564[];  /* 801e1014 screen labels */
-extern u8 D_801EA568[];  /* title file screen command labels */
+extern u8 D_801EA568[];  /* status screen labels: a character's page, then (6) a gear's */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA574[];  /* sound mode labels */
 extern s32 D_801E9F88[];  /* sound mode label x offsets */
