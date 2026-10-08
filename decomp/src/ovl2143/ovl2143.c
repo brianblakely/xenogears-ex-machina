@@ -12,9 +12,9 @@
  * GCC 2.6.3 (see func_801DF7A8) and ASPSX-style checked divisions. */
 #include "ovl2143.h"
 
-/* The battle overlay's extra file bases (800c3530) and gear file table
- * (800c3508, base and variant count per gear); this module never reads
- * them. */
+/* Copies of the battle overlay's extra file bases (800c3530) and gear file
+ * table (800c3508, base and variant count per gear; the last gear's base is
+ * 102 here, 0 there); this module never reads them. */
 u8 D_801E8590[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
 u8 D_801E85A4[] = {
     1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,

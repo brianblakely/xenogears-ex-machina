@@ -22,6 +22,55 @@
 #include "highlight.h"
 #include "battle_flow.h"
 
+s32 D_800C35D8 = 0;
+BattleSound D_800C35DC[] = {
+    {0x1F, 0x0F}, {0x26, 0x13}, {0x2F, 0x12}, {0x36, 0x0D}, {0x3E, 0x11}, {0x44, 0x1B},
+    {0x4A, 0x16}, {0x50, 0x12}, {0x57, 0x01}, {0x59, 0x01}, {0x5B, 0x02},
+};
+u16 D_800C3608 = 0;
+s32 D_800C360C = 0;
+BattleMenu *D_800C3610 = NULL;
+s16 D_800C3614 = 0;
+void *D_800C3618 = NULL;
+s32 D_800C361C = 0;
+u8 D_800C3620 = 0;
+u8 D_800C3621 = 0;
+u8 D_800C3622 = 0;
+u8 D_800C3623 = 0;
+u8 D_800C3624 = 0;
+s16 D_800C3626 = 0;
+s32 D_800C3628 = 0;
+u8 D_800C362C = 0;
+s16 D_800C3630[] = {0, 0x16, 0x2F, 0x4A, 0x5E, 0x71, 0x7C, 0x8F, 0x97, 0x2F, 0x7C};
+s16 D_800C3648[] = {6, 0x1A, 0x37, 0x4E, 0x61, 0x74, 0x83, 0x8F, 0x97, 0x37, 0x83};
+s32 D_800C3660 = 0;
+u8 D_800C3664 = 0;
+u16 D_800C3666 = 0;
+ImagePlace D_800C3668[3] = {{0x340, 0}, {0x2C0, 0x100}, {0x300, 0x100}};
+s32 D_800C3674 = 0x200;
+s32 D_800C3678 = -1;
+s32 D_800C367C = 1;
+ActorTask *D_800C3680 = NULL;
+ActorTask *D_800C3684 = NULL;
+u8 D_800C3688 = 0;
+/* A box's corners and its twelve edges; nothing reads them. */
+SVECTOR D_800C368C[8] = {
+    {-1500, -768, 0},    {1500, -768, 0},    {1500, 0, 0},    {-1500, 0, 0},
+    {-1500, -768, 1536}, {1500, -768, 1536}, {1500, 0, 1536}, {-1500, 0, 1536},
+};
+SVECTOR *D_800C36CC[12][2] = {
+    {&D_800C368C[3], &D_800C368C[7]}, {&D_800C368C[2], &D_800C368C[3]}, {&D_800C368C[2], &D_800C368C[6]},
+    {&D_800C368C[0], &D_800C368C[1]}, {&D_800C368C[1], &D_800C368C[2]}, {&D_800C368C[0], &D_800C368C[3]},
+    {&D_800C368C[6], &D_800C368C[7]}, {&D_800C368C[4], &D_800C368C[5]}, {&D_800C368C[5], &D_800C368C[6]},
+    {&D_800C368C[4], &D_800C368C[7]}, {&D_800C368C[1], &D_800C368C[5]}, {&D_800C368C[0], &D_800C368C[4]},
+};
+u8 D_800C372C = 0;
+SVECTOR D_800C3730 = {0, 0x1000, 0};
+s32 D_800C3738 = 0x200;
+s16 D_800C373C = 0xC0;
+SVECTOR D_800C3740 = {0xC0, 0, 0};
+SlotPulse *D_800C3748 = NULL;
+
 /* Start the battle in mode (1-4 the battle module's intros, 801E8588..;
  * others 800B7870): the display, the frame state and the formation's
  * background colour. */

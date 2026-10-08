@@ -20,6 +20,14 @@
 #include "stage.h"
 #include "sprite_script.h"
 
+u8 D_800C3564 = 0;
+BattleSprite *D_800C3568 = NULL;
+u8 D_800C356C[5] = {1, 2, 3, 5, 6};
+MATRIX D_800C3574 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+SVECTOR D_800C3594[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
+SVECTOR D_800C35AC[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
+VECTOR D_800C35C4 = {0, 0, -1536 << 16};
+
 /* Run battle sprite script command (1-107) on sprite with its argument
  * bytes: motion, velocity and gravity settings, render flags, camera and
  * display switches, sounds, target highlights and the helpers 800B4EDC-

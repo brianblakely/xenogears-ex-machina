@@ -22,6 +22,16 @@
 #include "objects.h"
 #include "effect_vm.h"
 
+/* Per gear: its first extra file in directory 0x28 and its variant count. */
+u8 D_800C3508[] = {
+    1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,
+    34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 0,   0,
+};
+u8 D_800C3530[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
+s16 D_800C3542 = -1;
+s16 D_800C3544 = 0x7D00;
+s16 D_800C3546 = -1;
+
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
     BattlePart *part = &D_800C34B0->lists.parts.members[index];
