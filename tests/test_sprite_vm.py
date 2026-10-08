@@ -157,10 +157,11 @@ def hex_cases(text: str) -> set[int]:
     return {int(value, 16) for value in re.findall(r"case 0x([0-9A-Fa-f]+):", text)}
 
 
-def block(*scripts: bytes, directory_high: int = 0) -> bytes:
+def block(*scripts: bytes, directory_high: int = 0, sections: int = 3) -> bytes:
     """An invented resource block: one six-byte header per script."""
+    first = 8 + 4 * sections  # after the count, the section offsets and the size
     count = len(scripts)
-    headers = 0x16 + 2 * count
+    headers = first + 2 + 2 * count
     table = headers + 6 * count  # an empty frame table
     at = table + 2
     section = bytearray(struct.pack("<H", count | directory_high << 6))
@@ -169,13 +170,13 @@ def block(*scripts: bytes, directory_high: int = 0) -> bytes:
         starts.append(at)
         at += len(script)
     for index in range(count):
-        section += struct.pack("<H", headers + 6 * index - 0x14)
+        section += struct.pack("<H", headers + 6 * index - first)
     for index, start in enumerate(starts):
         header = headers + 6 * index
         section += struct.pack("<3H", 0, start - (header + 2), table - (header + 4))
     section += bytes(2) + b"".join(scripts)
-    end = 0x14 + len(section)
-    return struct.pack("<5I", 3, 0x14, end, end, end) + bytes(section)
+    end = first + len(section)
+    return struct.pack(f"<{sections + 2}I", sections, first, *[end] * sections) + bytes(section)
 
 
 class SpriteDisassemblyTests(unittest.TestCase):
@@ -288,7 +289,7 @@ class SpriteDisassemblyTests(unittest.TestCase):
         self.assertEqual((c3.command, c3.overread), ("set_direction", 1))
         retry = vm.disassemble(bytes([0xEC, 0x50, 0x00, 0x80]), [0], vm.BATTLE)
         self.assertEqual(retry.instructions[0].reentry, 1)
-        self.assertIn("wait_counter resumes inside its command at +0x1", retry.errors[0][1])
+        self.assertIn("wait_hit resumes inside its command at +0x1", retry.errors[0][1])
         coherent = vm.decode(bytes([0xC3, 0x67]), 0, vm.BATTLE)
         self.assertEqual((coherent.command, coherent.reentry), ("wait_camera", None))
         e8 = vm.decode(bytes([0xE8, 0x17, 0x81]), 0, vm.BATTLE)
@@ -329,6 +330,18 @@ class SpriteDisassemblyTests(unittest.TestCase):
         broken[0x16] = 0xFF  # a header offset past the section
         self.assertIsNone(vm.resource_block(bytes(broken), 0))
         self.assertIsNone(vm.resource_block(bytes(4) + block(bytes([0x80])), 2))
+
+    def test_blocks_take_any_section_count_and_headers_point_past_themselves(self):
+        # 80022224 reads only the first three section offsets; battle sprite
+        # files carry more sections, so section 1 starts later.
+        data = bytes(4) + block(bytes([0x31, 0x80]), sections=5)
+        found = list(vm.resource_blocks(data))
+        self.assertEqual([(b.offset, b.count, b.sections[0]) for b in found], [(4, 5, 0x1C)])
+        listing = vm.block_listing(data, found[0], vm.BATTLE)
+        self.assertEqual([i.name for i in listing.instructions], ["wait", "end"])
+        inside = bytearray(block(bytes([0x80])))
+        inside[0x1A:0x1C] = bytes(2)  # commands from the header's own second halfword
+        self.assertIsNone(vm.resource_block(bytes(inside), 0))
 
     def test_offset_tables_and_packed_files_become_views(self):
         table = struct.pack("<4I", 2, 16, 20, 24) + b"abcdwxyz"

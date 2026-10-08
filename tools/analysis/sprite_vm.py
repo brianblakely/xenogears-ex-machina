@@ -456,9 +456,9 @@ BATTLE_COMMANDS = {
         0x0E: ("set_direction", ("s8",)),
         0x0F: ("unmirror_face_zero", ()),
         0x10: ("place_at_look_point", ()),
-        0x11: ("hide_sprites", ()),
+        0x11: ("pause_sprites", ()),
         0x12: ("black_background", ()),
-        0x13: ("show_sprites", ()),
+        0x13: ("resume_sprites", ()),
         0x14: ("restore_background", ()),
         0x15: ("own_placement", ()),
         0x16: ("draw_at_back", ()),
@@ -474,7 +474,7 @@ BATTLE_COMMANDS = {
         0x20: ("orbit", ()),
         0x21: ("set_velocity_z", ("s8",)),
         0x22: ("add_velocity_z", ("s8",)),
-        0x23: ("face_target", ()),
+        0x23: ("face_target_point", ()),
         0x24: ("module_801fc7b0", ()),
         0x25: ("module_801fc6fc", ()),
         0x26: ("slot_animation", ("u8", "u8")),
@@ -483,7 +483,7 @@ BATTLE_COMMANDS = {
         0x29: ("add_velocity_x", ("s8",)),
         0x2A: ("set_velocity_y", ("s8",)),
         0x2B: ("add_velocity_y", ("s8",)),
-        0x2C: ("draw_model", ()),
+        0x2C: ("draw_unlit_model", ()),
         0x2D: ("set_position", ("data",)),
         0x2E: ("set_target", ("data",)),
         0x2F: ("mark_sprite", ()),
@@ -494,7 +494,7 @@ BATTLE_COMMANDS = {
         0x34: ("set_gravity", ("s8",)),
         0x35: ("render_bit_27_on", ()),
         0x36: ("render_bit_27_off", ()),
-        0x37: ("set_3621", ()),
+        0x37: ("request_images", ()),
         0x38: ("upload_images", ("data",)),
         0x3A: ("fade_lights", ("data",)),
         0x3B: ("creator_depth_on", ()),
@@ -506,9 +506,9 @@ BATTLE_COMMANDS = {
         0x41: ("camera_partner_actor", ()),
         0x42: ("motion_bit_5_off", ()),
         0x43: ("screen_centred", ()),
-        0x44: ("debug_follow", ()),
-        0x45: ("debug_unfollow", ()),
-        0x46: ("load_stage_sounds", ("u8",)),
+        0x44: ("debug_select", ()),
+        0x45: ("debug_deselect", ()),
+        0x46: ("load_sound_banks", ("u8",)),
         0x47: ("show_stage_object", ("u8",)),
         0x48: ("flag_0_on", ()),
         0x49: ("add_view_angle_x", ("s8",)),
@@ -518,7 +518,7 @@ BATTLE_COMMANDS = {
         0x4D: ("stop_voice", ("u8",)),
         0x4E: ("stop_sound", ("u8",)),
         0x4F: ("voice_last", ("u8",)),
-        0x50: ("wait_counter", ()),
+        0x50: ("wait_hit", ()),
         0x51: ("free_stage_object", ()),
         0x52: ("voice_value", ("u8", "u8")),
         0x53: ("unmirror", ()),
@@ -527,8 +527,8 @@ BATTLE_COMMANDS = {
         0x56: ("gear_sound", ()),
         0x57: ("set_3b74", ()),
         0x58: ("clear_3b74", ()),
-        0x59: ("clear_3638", ()),
-        0x5A: ("set_3638", ()),
+        0x59: ("allow_fades", ()),
+        0x5A: ("block_fades", ()),
         0x5B: ("set_view_44", ("data",)),
         0x5C: ("set_view_4c", ("data",)),
         0x5D: ("add_view_44", ("data",)),
@@ -543,7 +543,7 @@ BATTLE_COMMANDS = {
         0x66: ("set_3688", ()),
         0x67: ("wait_camera", ()),
         0x68: ("bind_by_animation", ()),
-        0x69: ("swap_animations", ()),
+        0x69: ("rebind_block", ()),
         0x6A: ("fade_music", ()),
         0x6B: ("copy_vram_columns", ()),
     }.items()
@@ -816,23 +816,33 @@ def disassemble(
 # Sprite resource blocks
 # ---------------------------------------------------------------------------
 
-# A resource block: word 0 the section count (3), words 1-3 the section
-# offsets (80022224), word 4 the size. Section 1 holds the animations: a
-# directory halfword (bits 0-5 the animation count, as 800245d8 and the
-# frame map pointer +60 use it; bits 6-11 a battle value, 80022224), the
-# header offsets from the directory, the be frame map, then the headers
-# (halfword 0 flags, 1 command offset from itself, 2 frame table offset from
-# itself, 80023538) and their commands.
-BLOCK_SIGNATURE = struct.pack("<II", 3, 0x14)
+# A resource block is an offset table: word 0 the section count n, words 1
+# to n the section offsets, word n + 1 the size, so section 1 starts at
+# 8 + 4n. The sprite engine reads only words 1-3 (80022224, SpriteSource):
+# section 1 the animations, 2 the frame directory (8002435c sizes the part
+# list from its first entry), 3 the palette. The data have 3 sections, or
+# 4 to 6 in battle enemy and party sprite files (battle_loader.c passes them
+# to 800242f4). Section 1 holds the animations: a directory halfword (bits
+# 0-5 the animation count, as the frame map pointer +60 uses it, 8002435c;
+# bits 6-11 a battle value, 80022224), the header offsets from the
+# directory, the be frame map, then the headers (halfword 0 flags, 1 command
+# offset from itself, 2 frame table offset from itself, 80023538) and their
+# commands.
+SECTION_COUNTS = range(3, 16)  # n scanned; first section offsets 0x14-0x44
+
+
+def block_signature(sections: int) -> bytes:
+    return struct.pack("<II", sections, 8 + 4 * sections)
 
 
 @dataclass(frozen=True)
 class ResourceBlock:
     offset: int  # in its view
     size: int
-    sections: tuple[int, int, int]  # from the block
+    sections: tuple[int, int, int]  # offsets of sections 1-3, from the block
     directory: int  # the directory halfword
     headers: tuple[int, ...]  # view offsets of the animation headers
+    count: int = 3  # sections in the block's table
 
     @property
     def animations(self) -> tuple[int, int]:
@@ -841,15 +851,28 @@ class ResourceBlock:
 
 
 def resource_block(view: bytes, offset: int) -> ResourceBlock | None:
-    """The sprite resource block at view[offset], when its layout checks."""
-    if offset % 4 or offset + 0x16 > len(view):
+    """The sprite resource block at view[offset], when its layout checks.
+
+    Besides the offsets, each animation header must lie in section 1 and
+    start its commands and frame table there, after its first three
+    halfwords (in the data the command offset is at least 6 and the table
+    offset at least 2; only two coincidental tables elsewhere fail this).
+    """
+    if offset % 4 or offset + 8 > len(view):
         return None
-    if view[offset : offset + 8] != BLOCK_SIGNATURE:
+    sections, first = struct.unpack_from("<II", view, offset)
+    if sections not in SECTION_COUNTS or first != 8 + 4 * sections:
         return None
-    second, third, size = struct.unpack_from("<3I", view, offset + 8)
-    if not 0x14 < second <= third <= size or offset + size > len(view):
+    if offset + first + 2 > len(view):
         return None
-    directory = offset + 0x14
+    bounds = struct.unpack_from(f"<{sections + 1}I", view, offset + 4)
+    size = bounds[-1]
+    if any(b < a for a, b in zip(bounds, bounds[1:])) or offset + size > len(view):
+        return None
+    second, third = bounds[1], bounds[2]
+    if second <= first:
+        return None
+    directory = offset + first
     end = offset + second
     word = u16(view, directory)
     count = word & 0x3F
@@ -863,19 +886,24 @@ def resource_block(view: bytes, offset: int) -> ResourceBlock | None:
             return None
         start = script_start(view, header)
         table = header + 4 + u16(view, header + 4)
-        if not directory < start < end or not directory < table <= end:
+        if not header + 6 <= start < end or not header + 6 <= table <= end:
             return None
         headers.append(header)
-    return ResourceBlock(offset, size, (0x14, second, third), word, tuple(headers))
+    return ResourceBlock(offset, size, (first, second, third), word, tuple(headers), sections)
 
 
 def resource_blocks(view: bytes) -> Iterator[ResourceBlock]:
-    position = view.find(BLOCK_SIGNATURE)
-    while position != -1:
-        block = resource_block(view, position)
-        if block is not None:
-            yield block
-        position = view.find(BLOCK_SIGNATURE, position + 1)
+    """Every resource block of a view, by offset."""
+    found = []
+    for sections in SECTION_COUNTS:
+        signature = block_signature(sections)
+        position = view.find(signature)
+        while position != -1:
+            block = resource_block(view, position)
+            if block is not None:
+                found.append(block)
+            position = view.find(signature, position + 1)
+    yield from sorted(found, key=lambda block: block.offset)
 
 
 def block_listing(view: bytes, block: ResourceBlock, dialect: str) -> Listing:
@@ -994,6 +1022,7 @@ class SweepReport:
     opcodes: dict[str, Counter] = field(default_factory=lambda: {d: Counter() for d in DIALECTS})
     commands: dict[str, Counter] = field(default_factory=dict)  # c8, battle, bc
     directories: dict[str, set] = field(default_factory=lambda: {d: set() for d in DIALECTS})
+    sections: dict[str, Counter] = field(default_factory=lambda: {d: Counter() for d in DIALECTS})
     widths: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)  # undecodable, with locations
     # Decoded commands their interpreter has no case for (they advance by their
@@ -1036,6 +1065,7 @@ def sweep_disc(root: Path, disc: int, report: SweepReport, listing_dir: Path | N
                     counts["blocks without animations"] += 1
                     continue
                 counts[f"{dialect} blocks"] += 1
+                report.sections[dialect][block.count] += 1
                 report.directories[dialect].add(directory)
                 listing = block_listing(view.data, block, dialect)
                 body = view.data[block.offset : block.offset + block.size]
@@ -1058,11 +1088,11 @@ def sweep_disc(root: Path, disc: int, report: SweepReport, listing_dir: Path | N
                         report.unhandled.setdefault(kind, []).append(at)
                         report.unhandled_blocks.setdefault(kind, set()).add(digest)
                     if ins.opcode == 0xC8:
-                        _note(report, "c8 command_var commands", ins.command)
+                        _note(report, f"{dialect} c8 command_var commands", ins.command)
                     elif ins.opcode == 0xBC:
-                        _note(report, "bc place selectors", ins.command)
+                        _note(report, f"{dialect} bc place selectors", ins.command)
                     elif dialect == BATTLE and ins.opcode in (0xC3, 0xE8, 0xEC, 0xF9):
-                        _note(report, f"{ins.opcode:02x} {ins.name} commands", ins.command)
+                        _note(report, f"battle {ins.opcode:02x} {ins.name} commands", ins.command)
                         if ins.overread:
                             _note(report, "battle commands reading past their bytes", at)
                 if listing_dir is not None and fresh:
@@ -1094,9 +1124,10 @@ def print_report(report: SweepReport, out=sys.stdout) -> None:
     for dialect in DIALECTS:
         vm = INTERPRETERS[dialect]
         dirs = ",".join(str(d) for d in sorted(report.directories[dialect]))
+        widths = ", ".join(f"{n} sections {c}" for n, c in sorted(report.sections[dialect].items()))
         line(
             f"{dialect} ({vm}): blocks {counts[f'{dialect} blocks']} "
-            f"({len(report.unique[dialect])} distinct; directories {dirs}), "
+            f"({len(report.unique[dialect])} distinct; {widths}; directories {dirs}), "
             f"animations {counts[f'{dialect} animations']}, "
             f"scripts {counts[f'{dialect} scripts']} "
             f"({counts[f'{dialect} unique scripts']} in distinct blocks), "
@@ -1129,6 +1160,10 @@ def print_report(report: SweepReport, out=sys.stdout) -> None:
         line(f"{key}: {len(values)} distinct, {sum(values.values())} uses")
         if key != "battle commands reading past their bytes":
             line("  " + "; ".join(f"{name} {n}" for name, n in sorted(values.items())))
+    forms = [f"battle {op:02x} {BATTLE_SPECS[op].name} commands" for op in (0xC3, 0xE8, 0xEC, 0xF9)]
+    battle = set().union(*(report.commands.get(key, ()) for key in forms))
+    line()
+    line(f"battle commands (800b3f04) used in any form: {len(battle)} of {len(BATTLE_COMMANDS)}")
     line()
     line(f"undecodable: {len(report.errors)}")
     for text in report.errors[:50]:

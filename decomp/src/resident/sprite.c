@@ -1557,15 +1557,18 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     s16 direction;
 
     switch (op) {
+    /* 8d: model texture pages take the page at the image origin (8002cc10). */
     case 0x8D:
         /* called without a prototype: the coordinates pass as ints */
         func_8002CC10(((SpriteSource *)sprite->image)->origin.vx, ((SpriteSource *)sprite->image)->origin.vy);
         break;
+    /* c6 u8: sequencer value (+c) = u8 when the sequencer is the sprite's own. */
     case 0xC6:
         if (sprite->frame_bits.sequencer_owned == 1) {
             ((SpriteSequencer *)sprite->sequencer)->halfc = code[0];
         }
         break;
+    /* c9 s16: sequencer value (+c) = s16 when the sequencer is the sprite's own. */
     case 0xC9: {
         s32 value;
 
@@ -1575,6 +1578,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* c5 u8: move horizontally (80022cdc) u8 / (skip + 1) times. */
     case 0xC5: {
         s32 n;
 
@@ -1585,19 +1589,23 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* b9 u8: play sound u8 of the sprite's own bank (+50), if it has one. */
     case 0xB9:
         if ((SpriteVoice *)sprite->word50 != NULL) {
             func_80039E60(code[0] | (((SpriteVoice *)sprite->word50)->bank << 16));
         }
         break;
+    /* b0 u8: play sound u8 of the scripts' bank (8005919c), if any. */
     case 0xB0:
         if (D_8005919C != NULL) {
             func_80039E60(code[0] | (D_8005919C->bank << 16));
         }
         break;
+    /* cc s16: variable table (+88) = this command + s16. */
     case 0xCC:
         sprite->frames = sprite->script + ((s16)(code[1] << 8) | code[0]);
         break;
+    /* 8c: turn (direction and facing) to the target (+74) on the ground plane. */
     case 0x8C:
         other = sprite->word74;
         from.vx = sprite->x >> 16;
@@ -1608,6 +1616,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         func_80021FE0(sprite, direction);
         func_800223B0(sprite, direction);
         break;
+    /* 94: model sprites (render kind 2): renderer y angle = the creator's direction. */
     case 0x94:
         other = sprite->word70;
         if ((sprite->render.word & 3) == 2) {
@@ -1615,6 +1624,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
+    /* a7 u8 (c8 only: the interpreters run a7 themselves): bit 7 pauses the main task list
+     * for (u8 & 7f) + 1 frames, else wait u8 + 1 frames (scaled, at least 1). */
     case 0xA7: {
         s32 n;
 
@@ -1630,6 +1641,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* fc s24: upload the image list at the operand + s24 at the image origin (8001fb30, on
+     * an 8 KB heap stack). */
     case 0xFC:
         stack = func_80031BDC(0x2000, 0);
         STACK_ENTER(stack + 0x1F00);
@@ -1646,15 +1659,20 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         STACK_LEAVE();
         func_800320E8(stack);
         break;
+    /* bf u8: height (+36) = u8. */
     case 0xBF:
         sprite->height = code[0];
         break;
+    /* 96: destroy the tasks the sprite's block created (8001ce74). */
     case 0x96:
         func_8001CE74(sprite->block);
         break;
+    /* a2 u8: render byte 1 = u8: the part groups not drawn (their D_8004FAF8 bits). */
     case 0xA2:
         ((u8 *)&sprite->render)[1] = code[0];
         break;
+    /* cd u16: with a renderer, x angle (part group bits 9-11: that group's +2) set (bit 12)
+     * or added: bits 0-8 * 8. */
     case 0xCD: {
         s32 value;
         u16 bits;
@@ -1686,6 +1704,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* ce u16: as cd for the y angle (group +4), negated when mirrored. */
     case 0xCE: {
         s32 value;
         u16 bits;
@@ -1720,6 +1739,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* cf u16: as cd for the z angle (group +6), negated when mirrored. */
     case 0xCF: {
         s32 value;
         u16 bits;
@@ -1754,6 +1774,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* c0 u8: move a random distance below u8 (scaled) in a random ground direction. */
     case 0xC0: {
         s32 distance;
         s32 angle;
@@ -1767,6 +1788,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->z -= func_80022CAC(sprite, func_8003F8B0(angle)) * distance * 16;
         break;
     }
+    /* c1 u8: move to a random point a random distance below u8 (scaled) away. */
     case 0xC1: {
         s32 distance;
 
@@ -1787,6 +1809,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->z = vector.vz << 16;
         break;
     }
+    /* bc sel: bit 7 set: place at selector bits 0-5 (cases below), into the target (+a0)
+     * with bit 6, else the position, view-transformed with render bit 24 except for 22-24
+     * and 36-37; bit 7 clear: at the creator's part offset sel (one-sided). */
     case 0xBC: {
         u8 arg;
         u8 transform;
@@ -1797,6 +1822,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (arg & 0x80) {
             transform = sprite->render.bits.no_view;
             switch (index) {
+            /* 38: the formation place (800c3eb0) of its side and slot, y 0. */
             case 38: {
                 u32 slot, side;
 
@@ -1809,12 +1835,15 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vy = 0;
                 break;
             }
+            /* 36: set the block task's link bit 30, then its own position. */
             case 36:
                 ((Task *)sprite->block)->link.word |= 0x40000000;
                 goto own_position;
+            /* 37: clear that bit, then its own position. */
             case 37:
                 ((Task *)sprite->block)->link.word &= ~0x40000000;
                 goto own_position;
+            /* 23: twice the screen centre's offset from the geometry offset, its own z. */
             case 23:
                 ReadGeomOffset(&sum.vx, &sum.vy);
                 vector.vx = (0xA0 - sum.vx) * 2;
@@ -1822,6 +1851,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 transform = 0;
                 vector.vz = sprite->z >> 16;
                 break;
+            /* 24: its own position. */
             case 24:
             own_position:
                 vector.vx = sprite->x >> 16;
@@ -1829,6 +1859,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 transform = 0;
                 vector.vz = sprite->z >> 16;
                 break;
+            /* 22: the creator's position. */
             case 22:
                 other = sprite->word70;
                 vector.vx = other->x >> 16;
@@ -1836,6 +1867,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 transform = 0;
                 vector.vz = other->z >> 16;
                 break;
+            /* 32-35: as 18-21 for the acting sprite (800c3e1c). */
             case 32:
                 other = D_800C3E1C;
                 goto focus_top;
@@ -1848,6 +1880,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             case 35:
                 other = D_800C3E1C;
                 goto focus_half_depth;
+            /* 18: the target's top (y - height). */
             case 18:
                 other = sprite->word74;
             focus_top:
@@ -1856,6 +1889,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = other->z >> 16;
                 vector.vy -= other->height;
                 break;
+            /* 19: the target's middle (y - height + (height - depth) / 2). */
             case 19:
                 other = sprite->word74;
             focus_middle:
@@ -1864,6 +1898,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = other->z >> 16;
                 vector.vy -= other->height - (other->height - other->extent_depth) / 2;
                 break;
+            /* 20: the target's y - depth. */
             case 20:
                 other = sprite->word74;
             focus_depth:
@@ -1872,6 +1907,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = other->z >> 16;
                 vector.vy -= other->extent_depth;
                 break;
+            /* 21: the target's y - (depth - depth / 2). */
             case 21:
                 other = sprite->word74;
             focus_half_depth:
@@ -1880,6 +1916,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = other->z >> 16;
                 vector.vy -= other->extent_depth - (u16)other->extent_depth / 2;
                 break;
+            /* 6, 7: the points 8006f99c and 8006f9ac. */
             case 6:
                 vector.vx = D_8006F99C.vx >> 16;
                 vector.vy = D_8006F99C.vy >> 16;
@@ -1890,9 +1927,11 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vy = D_8006F9AC.vy >> 16;
                 vector.vz = D_8006F9AC.vz >> 16;
                 break;
+            /* 1: the acting sprite's position. */
             case 1:
                 other = D_800C3E1C;
                 goto focus_position;
+            /* 9, 8, 10: the target's part offsets 1, 2 and 3. */
             case 9:
                 index = 11;
                 goto own_group;
@@ -1902,6 +1941,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             case 10:
                 index = 13;
                 goto own_group;
+            /* 11-17: the creator's part offset 1-7 (none without a creator). */
             case 11:
             case 12:
             case 13:
@@ -1939,6 +1979,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 y = y * other->scale / 4096;
                 func_80021B04(&vector, x + (other->x >> 16), y + (other->y >> 16), other->z >> 16);
                 break;
+            /* 25-31: the acting sprite's part offsets 1-7. */
             case 25:
             case 26:
             case 27:
@@ -1949,6 +1990,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 other = D_800C3E1C;
                 index -= 14;
                 goto group_place;
+            /* 0: the target's position. */
             case 0:
                 other = sprite->word74;
             focus_position:
@@ -1956,6 +1998,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
                 break;
+            /* 2: the centre of the group 800d363c. */
             case 2: {
                 s32 members;
 
@@ -1973,6 +2016,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = sum.vz >> 16;
                 break;
             }
+            /* 3: halfway to the acting sprite. */
             case 3:
                 other = D_800C3E1C;
                 sum.vx = other->x;
@@ -1988,6 +2032,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vy = sum.vy >> 16;
                 vector.vz = sum.vz >> 16;
                 break;
+            /* 4: the centre of the group and this sprite. */
             case 4: {
                 s32 members;
 
@@ -2009,6 +2054,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = sum.vz >> 16;
                 break;
             }
+            /* 5: a zero sum divided by an unset count. */
             case 5:
                 func_80021B14(&sum, 0, 0, 0);
                 sum.vx /= count;
@@ -2058,32 +2104,41 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* d1 var var: a *= b (bytes, 8001fba4). */
     case 0xD1:
         *func_8001FBA4(sprite, code) *= *func_8001FBA4(sprite, code + 1);
         break;
+    /* d2, d5 var var: a /= b. */
     case 0xD2:
     case 0xD5:
         *func_8001FBA4(sprite, code) /= *func_8001FBA4(sprite, code + 1);
         break;
+    /* e5 var u8: a = (rand & ff) * u8 >> 8. */
     case 0xE5:
         p = func_8001FBA4(sprite, code);
         *p = (s32)((rand() & 0xFF) * code[1]) >> 8;
         break;
+    /* d6 var u8: a += u8. */
     case 0xD6:
         *func_8001FBA4(sprite, code) += code[1];
         break;
+    /* d7 var s8: a *= s8. */
     case 0xD7:
         *func_8001FBA4(sprite, code) *= (s8)code[1];
         break;
+    /* d8 var s8: a /= s8. */
     case 0xD8:
         *func_8001FBA4(sprite, code) /= (s8)code[1];
         break;
+    /* d9 var s8: a <<= s8. */
     case 0xD9:
         *func_8001FBA4(sprite, code) <<= (s8)code[1];
         break;
+    /* da var s8: a >>= s8, signed. */
     case 0xDA:
         *(s8 *)func_8001FBA4(sprite, code) >>= (s8)code[1];
         break;
+    /* db var s8: the halfword at a <<= s8. */
     case 0xDB:
         {
             u8 *half = func_8001FBA4(sprite, code);
@@ -2094,6 +2149,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             half[1] = value >> 8;
         }
         break;
+    /* dc var s8: the halfword at a >>= s8. */
     case 0xDC:
         {
             u8 *half = func_8001FBA4(sprite, code);
@@ -2104,18 +2160,22 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             half[1] = value >> 8;
         }
         break;
+    /* d0, d3, dd, de var var: a += b. */
     case 0xD0:
     case 0xD3:
     case 0xDD:
     case 0xDE:
         *func_8001FBA4(sprite, code) += *func_8001FBA4(sprite, code + 1);
         break;
+    /* a4 s8: the target (+74) plays animation s8 (800245d8). */
     case 0xA4:
         func_800245D8(sprite->word74, (s8)code[0]);
         break;
+    /* df var u8: a = u8. */
     case 0xDF:
         *func_8001FBA4(sprite, code) = code[1];
         break;
+    /* e6 var u8: the halfword at a = u8. */
     case 0xE6:
         {
             u8 *half = func_8001FBA4(sprite, code);
@@ -2124,17 +2184,23 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             half[1] = 0;
         }
         break;
+    /* 91: coloured parts (colour flag off, 8001f6b0). */
     case 0x91:
         sprite->colour_flags &= ~1;
         func_8001F6B0(sprite);
         break;
+    /* 92: uncoloured parts (colour flag on, 8001f6b0). */
     case 0x92:
         sprite->colour_flags |= 1;
         func_8001F6B0(sprite);
         break;
+    /* bb s8: depth bias (+30) += s8. */
     case 0xBB:
         sprite->half30 += (s8)code[0];
         break;
+    /* 93: with a creator and a render kind: type e (flags bits 13-16) unless its frames
+     * come from the sequencer; with a renderer, the creator's eight part-group entries
+     * and screen offset; then show the frame again (8001d2b0). */
     case 0x93: {
         s32 i;
 
@@ -2154,9 +2220,12 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* ba u8: blend rate u8 (80023290). */
     case 0xBA:
         func_80023290(sprite, code[0]);
         break;
+    /* f1 r g b: colour = r, g, b (model sprites: the model's too); one-sided parts are
+     * recoloured. */
     case 0xF1: {
         SpriteModelRenderer *model;
 
@@ -2174,6 +2243,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* f2 s8 s8 s8: colour += r, g, b, clamped to 0-255; model sprites add to the model's
+     * and, as type f with an unlit model, tint it (800b2aec). */
     case 0xF2:
         model = (SpriteModelRenderer *)sprite->renderer;
         sprite->red = func_80021AD8(sprite->red, (s8)code[0]);
@@ -2194,6 +2265,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                           ((SpriteModelRenderer *)sprite->renderer)->packets[1], model->red, model->green, model->blue);
         }
         break;
+    /* 90: rebind the image to the resource block (+4c, b0 bit 10 set) while the animation
+     * block (+48) is bound, else back to the animation block. */
     case 0x90:
         if (sprite->resource_block == sprite->animations) {
             func_800222BC(sprite, (s32 *)sprite->resource);
@@ -2203,6 +2276,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
+    /* f5 s24: bind the model at the operand + s24 (relocated) with new packet buffers (heap
+     * tag 5). */
     case 0xF5: {
         s32 offset;
         ModelBuffer *data;
@@ -2226,6 +2301,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         ((SpriteModelRenderer *)sprite->renderer)->model = data;
         break;
     }
+    /* f6 s24: as f5 for the model group at the operand + s24, its model 16 bytes on. */
     case 0xF6:
         func_80032498(5, 0);
         buffer = (s8)code[2];
@@ -2245,6 +2321,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
+    /* f7 s24: as f6 without the heap tag, then a word is cleared through an unset pointer. */
     case 0xF7:
         buffer = (s8)code[2];
         buffer <<= 16;
@@ -2264,6 +2341,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         *(s32 *)(loaded->unk10 + 4) = 0;
         ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
+    /* b5 u8: scale = u8 << 8 (sprites with a render kind). */
     case 0xB5:
         {
             s16 scale;
@@ -2276,9 +2354,11 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
         }
         break;
+    /* e7 s16: scale += s16 * 2 (80022000). */
     case 0xE7:
         func_80022000(sprite, sprite->scale + (s16)((code[0] | (s16)(code[1] << 8)) * 2));
         break;
+    /* e9 s16: renderer x scale += s16 * 2. */
     case 0xE9: {
         s32 value;
 
@@ -2289,6 +2369,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* ea s16: renderer y scale += s16 * 2. */
     case 0xEA: {
         s32 value;
 
@@ -2299,6 +2380,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* eb s16: renderer z scale += s16 * 2. */
     case 0xEB: {
         s32 value;
 
@@ -2309,28 +2391,37 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
+    /* bd u8: child sprite running animation u8 of the shared block (8006be10) with this
+     * sprite's image (80023b84). */
     case 0xBD: {
         SpriteSource *source = (SpriteSource *)D_8006BE10;
 
         func_80023B84(sprite, (u16 *)(source->animations[code[0] + 1] + (s32)source->animations), sprite->image);
         break;
     }
+    /* e0 s16: child sprite running the animation header at the operand + s16 with this
+     * sprite's image (80023b84). */
     case 0xE0:
         func_80023B84(sprite, (u16 *)(code + (((s8)code[1] << 8) + code[0])), sprite->image);
         break;
+    /* ad u8: bounce (frame bits 1-10) = u8. */
     case 0xAD:
         sprite->frame_bits.bounce = code[0];
         break;
+    /* b4 u8: push u8 (an e4 loop count). */
     case 0xB4:
         func_80021CA0(sprite, code[0]);
         break;
+    /* b8 s8: stack index -= s8 (reserves s8 variable bytes; negative releases). */
     case 0xB8:
         angle = (s8)code[0];
         sprite->stack_top -= angle;
         break;
+    /* b3 s8: frame index (frame bits 11-16) = s8. */
     case 0xB3:
         sprite->frame_bits.frame = (s8)code[0];
         break;
+    /* ae s8: renderer z angle += s8 * 16, negated when mirrored. */
     case 0xAE:
         angle = (s8)code[0] * 16;
         if ((sprite->motion.word >> 2) & 1) {
@@ -2341,18 +2432,21 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
+    /* b6 s8: renderer x angle += s8 * 16. */
     case 0xB6:
         if (sprite->renderer != NULL) {
             sprite->renderer->angle_x += (s16)(code[0] << 8) >> 4;
             sprite->render.bits.dirty = 1;
         }
         break;
+    /* b7 s8: renderer y angle += s8 * 16. */
     case 0xB7:
         if (sprite->renderer != NULL) {
             sprite->renderer->angle_y += (s16)(code[0] << 8) >> 4;
             sprite->render.bits.dirty = 1;
         }
         break;
+    /* af s8: renderer z angle = s8 * 16, negated when mirrored. */
     case 0xAF:
         angle = (s8)code[0] * 16;
         if ((sprite->motion.word >> 2) & 1) {
@@ -2363,6 +2457,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
+    /* c4 u8: turn the velocity about z by a random step in [-u8 / 2, u8 / 2) * 16. */
     case 0xC4: {
         s32 offset;
 
@@ -2376,6 +2471,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->speed_z = sum.vz;
         break;
     }
+    /* ac u8: direction += a random step in [-u8 / 2, u8 / 2) * 16. */
     case 0xAC: {
         s32 offset;
 
@@ -2384,6 +2480,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         SPRITE_OFFSET_DIRECTION(sprite, offset);
         break;
     }
+    /* a9 s8: x += s8 * scale / 4096 (by the speed factor), negated when mirrored. */
     case 0xA9:
         value = func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         if ((sprite->motion.word >> 2) & 1) {
@@ -2391,21 +2488,27 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         sprite->x += value;
         break;
+    /* aa s8: y += s8 * scale / 4096 (by the speed factor). */
     case 0xAA:
         sprite->y += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         break;
+    /* ab s8: z += s8 * scale / 4096 (by the speed factor). */
     case 0xAB:
         sprite->z += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         break;
+    /* a8 s8: direction += s8 * 16; the velocity follows (80022974). */
     case 0xA8:
         sprite->direction += (s16)(code[0] << 8) >> 4;
         func_80022974(sprite);
         break;
+    /* 8a: stop: x, z and walking speeds 0. */
     case 0x8A:
         sprite->speed_x = 0;
         sprite->speed_z = 0;
         sprite->speed = 0;
         break;
+    /* a3 s8: gravity (+1c) = (s8 * 64 * (+82) / 4096 << 5) * (65536 / divisor)^2 / 256 /
+     * 256 * (skip + 1)^2, or the own sequencer's word 4 when nonzero. */
     case 0xA3:
         if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word4 != 0) {
             sprite->word1c = ((SpriteSequencer *)sprite->sequencer)->word4;
@@ -2417,20 +2520,28 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->word1c *= (D_80059198 + 1) * (D_80059198 + 1);
         }
         break;
+    /* a5 s8: walking speed += s8 * 16 * (skip + 1) * (+82) / 4096 << 8; the velocity
+     * follows. */
     case 0xA5:
         sprite->speed += (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         func_80022974(sprite);
         break;
+    /* a6 s8: vertical speed += (s8 * 16 * (skip + 1) * (+82) / 4096 << 16) / divisor,
+     * unless the sequencer is the sprite's own. */
     case 0xA6:
         if (sprite->frame_bits.sequencer_owned != 1) {
             sprite->speed_y +=
                 ((((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
         }
         break;
+    /* a0 s8: walking speed = s8 * 16 * (skip + 1) * (+82) / 4096 << 8; the velocity
+     * follows. */
     case 0xA0:
         sprite->speed = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         func_80022974(sprite);
         break;
+    /* a1 s8: vertical speed = s8 * 16 * (skip + 1) * (+82) / 4096 << 8 (or the own
+     * sequencer's word 0 when nonzero), then << 8 / divisor. */
     case 0xA1:
         if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word0 != 0) {
             sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0;
@@ -2440,12 +2551,15 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->speed_y <<= 8;
         sprite->speed_y /= sprite->motion.bits.divisor;
         break;
+    /* ed s16: x = s16. */
     case 0xED:
         sprite->x = (code[0] | ((s8)code[1] << 8)) << 16;
         break;
+    /* ee s16: y = ground + s16 * scale / 4096. */
     case 0xEE:
         sprite->y = (sprite->ground + (code[0] | ((s8)code[1] << 8)) * sprite->scale / 4096) << 16;
         break;
+    /* ef s16: z = s16. */
     case 0xEF:
         sprite->z = (code[0] | ((s8)code[1] << 8)) << 16;
         break;

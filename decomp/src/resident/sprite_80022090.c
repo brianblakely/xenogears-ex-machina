@@ -197,6 +197,8 @@ next:
     {
         op = *script;
         args = script + 1;
+        /* 00-7f: the frames of 800248d4, unscaled; 40-7f add the last frame command's
+         * duration again (unset before one ran). */
         if (op < 0x80) {
             sprite->script = args;
             if (op < 0x10) {
@@ -220,6 +222,7 @@ next:
             goto next;
         }
         switch (op) {
+        /* be: frame with flip and unscaled wait; advanced by the width table's 2. */
         case 0xBE:
             value = script[1] | (script[2] << 8);
             sprite->motion.bits.frame_flip = value >> 9;
@@ -229,28 +232,34 @@ next:
             }
             sprite->countdown += ((value >> 11) & 0xF) + 1;
             break;
+        /* e2 s16: call (push the return point, jump). */
         case 0xE2:
             offset = script[1] + ((s8)args[1] << 8);
             func_80021CF8(sprite, (s32)(script + 3));
             sprite->script += offset;
             goto next;
+        /* b3 s8: frame index = s8. */
         case 0xB3:
             sprite->frame_bits.frame = (s8)script[1];
             break;
+        /* 80-82: stop. */
         case 0x80:
         case 0x81:
         case 0x82:
             return;
+        /* 86: stop at the target. */
         case 0x86:
             if (script == target) {
                 return;
             }
             break;
+        /* 87: stop at the target. */
         case 0x87:
             if (script == target) {
                 return;
             }
             break;
+        /* 97: stop at the target. */
         case 0x97:
             if (script == target) {
                 return;
