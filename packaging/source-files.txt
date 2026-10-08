@@ -306,6 +306,9 @@ decomp/src/resident/func_80032E88.s
 decomp/src/resident/func_80032EB4.s
 decomp/src/resident/func_800379B4.s
 decomp/src/resident/func_800379C8.s
+decomp/src/resident/func_8003F738.s
+decomp/src/resident/func_8003F8B0.s
+decomp/src/resident/func_8003F8CC.s
 decomp/src/resident/gpu.h
 decomp/src/resident/gte.h
 decomp/src/resident/heap.c
