@@ -1693,26 +1693,18 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
  * column-major file; corners from whichever edge changed. */
-/* Each edge loop starts its first cell index in block (the original keeps
- * both in s0) and indexes the cells with n: the extra index insns raise the
- * inner loop's insn count (26) so loop.c moves both table addresses (fp/s7)
- * but not the -1 of the exit test, as in the original. In the corner loops
- * the flag tests are long-lived invariants hoisted after i = 0; the first
+/* Each edge loop indexes the cells with n, separately from the loaded block
+ * number. Both table addresses (fp/s7) are hoisted, while the exit test's -1
+ * stays inside the loop. In the corner loops the flag tests are long-lived
+ * invariants hoisted after i = 0; the first
  * loop moves the corner table address first (reduced to a pointer, s1), the
  * second runs out of threshold and indexes it (lui at), as in the original.
- * NON_MATCHING: same instruction sequence except registers and two
- * placements: changed takes s5 and sector/path s6 (swapped), the corner
- * block takes s0 and its table slot s1 (original s4/s0) with the flags and
- * corner pointer shifted accordingly; block = 1/9 is scheduled above the
- * func_800289D0 call (the original sets it after `sector`); in the second
- * edge loop `changed |= 1` is scheduled before the division. 8 bytes short.
- * The block = 1 placement is sched1's call rule: a pseudo that crosses no
- * call gets an anti-dependence on the preceding call. Keeping the start
- * index in n itself (n = 1 / 0x49 around the edge loop, n's increments
- * eliminated by strength reduction) or in a separate variable reproduces
- * the placement exactly, but that pseudo then takes v0 instead of s0.
- * Merging sector and path into one variable changes nothing (changed still
- * outranks it: 29 refs / 156 insns vs 16 / 117). */
+ * NON_MATCHING: size and edge-start placement agree. The cell index is
+ * separate from the loaded block number, but its initial value takes v0
+ * rather than s0. changed and sector/path take s5/s6 instead of s6/s5;
+ * the corner block, table slot and flags also use different registers.
+ * In the second edge loop, changed |= 1 is still scheduled before the
+ * division. */
 #ifdef NON_MATCHING
 void func_80098CC0(void) {
     s32 first;
@@ -1749,9 +1741,8 @@ void func_80098CC0(void) {
     second = func_8002C3D8();
     if ((first == 0) | (second == -1)) {
         sector = func_800289D0(D_8009BCD8);
-        block = 1;
+        n = 1;
         for (j = 1; j != -1; j--) {
-            n = block;
             for (k = 6; k != -1; k--, n++) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
@@ -1761,12 +1752,11 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            block = 0x49;
+            n = 0x49;
         }
         sector = func_800289D0(D_8009BD08);
-        block = 9;
+        n = 9;
         for (j = 1; j != -1; j--) {
-            n = block;
             for (k = 6; k != -1; k--, n += 9) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
@@ -1777,7 +1767,7 @@ void func_80098CC0(void) {
                                   0x710, buffer);
                 }
             }
-            block = 0x11;
+            n = 0x11;
         }
         for (i = 0; i < 4; i++) {
             corner = D_8009D570.cells[D_8009BBAC[i]];
@@ -1798,9 +1788,8 @@ void func_80098CC0(void) {
         func_80096328();
     } else {
         path = func_80028998(D_8009BCD8);
-        block = 1;
+        n = 1;
         for (j = 1; j != -1; j--) {
-            n = block;
             for (k = 6; k != -1; k--, n++) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
@@ -1810,12 +1799,11 @@ void func_80098CC0(void) {
                     changed |= 2;
                 }
             }
-            block = 0x49;
+            n = 0x49;
         }
         path = func_80028998(D_8009BD08);
-        block = 9;
+        n = 9;
         for (j = 1; j != -1; j--) {
-            n = block;
             for (k = 6; k != -1; k--, n += 9) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
@@ -1827,7 +1815,7 @@ void func_80098CC0(void) {
                                   0x710, buffer);
                 }
             }
-            block = 0x11;
+            n = 0x11;
         }
         for (i = 0; i < 4; i++) {
             rows = changed & 2;
