@@ -267,8 +267,11 @@ u16 D_800C3468[16] = {
     0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 0x8, 0x4,
     0x2, 0x1,
 };
-/* Unreferenced; which unit it ends is not known, its padding holds stray
- * assembler bytes. The units up to 8008CCCC have no other data. */
+/* 00 04 77 68: no code in any image forms an address in this word
+ * (tools/data_users.py --range), so its object and padding are inferred, by
+ * analogy with ovl2596's D_801E44C0 (a byte 0 then a stray 04): a byte
+ * object whose padding holds stray assembler bytes. Which unit it ends is
+ * not known; the units up to 8008CCCC have no other data. */
 INCLUDE_ORIGINAL(".data", D_800C3488, 0x800C3488, 4);
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
