@@ -326,6 +326,15 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 - A dead loop that flow deletes leaves its exit label until the jump pass after reload:
   it still splits the scheduling blocks, and an assignment before it can be hoisted
   into the prologue.
+- A repeated signed power-of-two division (`x / 16`, whose rounding is a `bgez`
+  branch) can split a block without leaving an instruction. In slot39 801E78C8 each
+  switch case writes `0x80 + file / 16 * 16` at every use: cse1 keeps the case's first
+  division (its block starts after the loop's end note), cse2 merges it into the
+  loop's quotient but nothing deletes dead code after cse2, so flow deletes the
+  division and keeps its branch until jump2. Through allocation the case is then two
+  blocks, and its record offset became a global pseudo (v1/a0/a2) as in the original.
+  When the allocation pattern points to a missing block boundary and the draft caches
+  a repeated expression in variables, try writing it inline at every use.
 - In 2.6.3 the insn after a loop note is a scheduling barrier (2.6.0's is not).
 - reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
   was compiler-generated, not inline asm.
