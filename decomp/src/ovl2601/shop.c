@@ -7,6 +7,22 @@
  */
 #include "menu_card.h"
 
+/* The four heading sprites and the two alternative ones: ids and positions. */
+u8 D_801D2210[4] = {0xF2, 0xDE, 0xE0, 0xE5};
+u8 D_801D2214[2] = {0xF2, 0xE3};
+s32 D_801D2218[4] = {150, 48, 48, 224}; /* x */
+s32 D_801D2228[2] = {150, 224};
+s32 D_801D2230[4] = {158, 190, 198, 88}; /* y */
+s32 D_801D2240[2] = {158, 88};
+/* The three nine-digit numbers' positions. */
+s32 D_801D2248 = 232;
+s32 D_801D224C = 78;
+s32 D_801D2250 = 232;
+s32 D_801D2254 = 88;
+s32 D_801D2258 = 232;
+s32 D_801D225C = 100;
+/* D_801D2260 (u16) follows in a four-byte slot; see ovl2601.yaml. */
+
 /* This unit passes quad coordinates as words; the shared screen unit sees
  * the helper's narrow definition before its local calls. */
 void func_801C6E90();

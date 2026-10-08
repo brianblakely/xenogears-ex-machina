@@ -868,7 +868,6 @@ typedef struct {
     u16 unkB0;               /* b0 */
     u8 unkB2, unkB3, unkB4, unkB5, unkB6; /* b2 */
 } GearTable;
-extern u8 D_801D70FD;
 
 extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */
@@ -969,8 +968,8 @@ extern u16 D_801D7068[6];       /* indicator y choices */
 extern u16 D_801D7074[6];       /* flicker x choices */
 extern u16 D_801D7080[6];       /* flicker y choices */
 extern s16 D_801D6DFC[];        /* camera x per gear */
-extern s16 D_801D6E18[];        /* camera y per gear, command and list cursor (three commands of four) */
-extern s16 D_801D6FB0[];        /* camera distance per command and list cursor */
+extern s16 D_801D6E20[];        /* camera y per gear, command (1-3) and list cursor */
+extern s16 D_801D6FB8[];        /* camera distance per command (1-3) and list cursor */
 extern u16 D_801D708C[14];      /* gear parts frame sprite ids */
 extern u16 D_801D70A8[14];      /* their x */
 extern u16 D_801D70C4[14];      /* their y */

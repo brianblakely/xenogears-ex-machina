@@ -46,5 +46,8 @@ segments:
       - [0x38, .rodata, gear_shop]
       - [0x11c, c, ovl2602]
       - [0x91D0, c, gear_shop]
-      - [0x1197c, data, ovl2602_data]
+      - [0x1197c, .data, ovl2602]
+      # The gear screen unit's data, then the overlay's zero-filled
+      # uninitialized variables (see the head of gear_shop.c).
+      - [0x11d08, .data, gear_shop]
   - [0x140a0]
