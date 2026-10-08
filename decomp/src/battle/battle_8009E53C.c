@@ -4505,13 +4505,21 @@ void func_800AAB34(BattleObject *object) {
  * its commands until one waits. flags are the animation flags of the step
  * (-1 when called to start a script). The command word is signed; its
  * opcode and argument views are unsigned bytes. Jump offsets are in bytes
- * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
- * the first and second parameter words, decoded the same way by every
- * command that takes bytes; m1 is the first word's high byte of 1B, 25 and
- * the camera commands. ptr holds the looked-up animation of 11/12 and the
- * target image of 1B, and 1F looks its slot up into op. The turn towards a
- * position passes a roll that is only ever zero, and a relative camera turn
- * (67 with 0x20) ends where it started (to is the old from). */
+ * from the command's start (SCRIPT_JUMP). b0..b3 are the shared byte
+ * temporaries that most byte-taking commands decode the low/high bytes of
+ * their first and second parameter words into; 11 keeps its high byte in
+ * loop, 1D its high bytes in mode/smooth (passing the second low byte as
+ * (u8)word) and 31 its loop count in count, while 14 and 3E also keep a
+ * slot and the saved queueCount, or a flag and a code, in them. m1 is the
+ * first word's high byte of 1B, 25 and the camera commands. 11 and 12 share
+ * the looked-up animation (pointers of their own change the allocation),
+ * and 1F looks its slot up into op (a slot variable of its own spills op
+ * out of $fp at the dispatch). The camera commands pass their second high
+ * byte (b3) as a short, like their halfword arguments. The turn towards a
+ * position passes a roll that is only ever zero. A relative camera turn (67
+ * with 0x20 in b2) starts at the old angle plus angle, and its end starts
+ * at the old angle: with 0x40 the turn ends at the old angle plus word,
+ * otherwise at the computed or absolute end. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4533,7 +4541,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     u8 b1;
     u8 b2;
     u8 b3;
-    void *ptr;
+    Animation *animation;
     u8 m1;
 
     if (steps == 0 || object->script == NULL) {
@@ -4784,27 +4792,27 @@ chosen:
             {
                 u8 loop;
 
-                ptr = func_800AF518(object, arg, &i);
+                animation = (Animation *)func_800AF518(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
                     loop = word >> 8;
                     b0 = word;
-                    func_800A2434(pool, object->hierarchy, ptr, loop, b0);
+                    func_800A2434(pool, object->hierarchy, (u16 *)animation, loop, b0);
                     flags = -1;
-                    object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, ptr, loop);
+                    object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                    func_800AE1BC(object, animation, loop);
                 }
             }
             break;
         case 0x12:
-            ptr = func_800AF518(object, arg, &i);
+            animation = (Animation *)func_800AF518(object, arg, &i);
             word = *pc++;
             if (i == 0) {
                 b1 = word >> 8;
                 b0 = word;
-                func_800A2704(pool, object->hierarchy, ptr, b1, b0);
+                func_800A2704(pool, object->hierarchy, (u16 *)animation, b1, b0);
                 flags = -1;
-                object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
             break;
         case 0x13:
@@ -4934,6 +4942,7 @@ chosen:
             break;
         case 0x1B: /* start an image animation */
             if (arg < object->imageCount) {
+                ImageAnim *target;
                 ColorRow *colors;
                 FrameCurve curve;
                 s16 x, y, z, x2, y2, z2, x3, y3;
@@ -4941,9 +4950,9 @@ chosen:
                 word = *pc++;
                 b0 = word;
                 if (b0 != 0xFF && b0 < object->imageCount) {
-                    ptr = &object->images[b0];
+                    target = &object->images[b0];
                 } else {
-                    ptr = NULL;
+                    target = NULL;
                 }
                 if (((m1 = (s16)word >> 8) & 0x7F) < 4) {
                     colors = NULL;
@@ -4978,7 +4987,7 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], ptr, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
+                func_800A3640(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
