@@ -3973,16 +3973,9 @@ void func_800A96B4(s32 set) {
 /* Create stage object index from the gear files read by 800A9540 (its model
  * file and images) at x, y, z, facing angle; with a variant file, also its
  * extra parts as objects 2 * index + 13 + k attached to parts of the gear,
- * then free the files. Nonmatching: GCC hoists index * 2 + 13 out of the
- * loop and spills angle instead of y and z. Forms that keep index * 2 in the
- * loop (k + 13 first) let the threshold also hoist y's sign extension; the
- * original hoists only x's. From the -dL dump (59 real insns, threshold 26
- * with the call, -3 per moved insn, test threshold * savings * life >= insns):
- * here index * 2 and + 13 move (26 -> 20), x's two insns move (-> 14), y's
- * do not (14 * 4 < 59). With index * 2 kept in the loop and only x moved,
- * y stays only if the loop has 81..104 insns, so the original's loop body is
- * longer at loop time or differs in its movables. Writing the slot in two
- * statements does not help (CSE reassociates to (index * 2 + 13) + k). */
+ * then free the files. A nonzero count copies the shared data even when
+ * negative; only positive counts create child objects. Nonmatching:
+ * remaining operand lifetimes and loop-invariant scheduling. */
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
     GearPartFile *parts;
     s16 *entry;
@@ -4003,26 +3996,29 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
         count = *entry;
         entry += 2;
         if (count != 0) {
+            k = 0;
             size = parts->end - parts->model;
             model = func_80031BDC(size, 0);
             memcpy(model, parts->model, size);
-            for (k = 0; k < count; k++) {
-                flags = 7;
-                if (k == 0) {
-                    flags = 2;
-                }
-                if (k == count - 1) {
-                    flags -= 2;
-                }
-                slot = index * 2 + (k + 13);
-                func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end, x, y, z, angle, NULL);
-                D_800D3368[slot]->parentPart = *entry++;
-                D_800D3368[slot]->field5C = index;
-                D_800D3368[slot]->field5D = 2;
-                D_800D3368[slot]->field36 = 1;
-                D_800D3368[slot]->offset2[0] = *entry++;
-                D_800D3368[slot]->offset2[1] = *entry++;
-                D_800D3368[slot]->offset2[2] = *entry++;
+            if (count > 0) {
+                do {
+                    flags = 7;
+                    if (k == 0) {
+                        flags = 2;
+                    }
+                    if (k == count - 1) {
+                        flags -= 2;
+                    }
+                    slot = index * 2 + (k + 13);
+                    func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end, x, y, z, angle, NULL);
+                    D_800D3368[slot]->parentPart = *entry++;
+                    D_800D3368[slot]->field5C = index;
+                    D_800D3368[slot]->field5D = 2;
+                    D_800D3368[slot]->field36 = 1;
+                    D_800D3368[slot]->offset2[0] = *entry++;
+                    D_800D3368[slot]->offset2[1] = *entry++;
+                    D_800D3368[slot]->offset2[2] = *entry++;
+                } while (++k < count);
             }
         } else {
             func_8002DDE4(parts->model, 1, x, y, 1, z, angle);
