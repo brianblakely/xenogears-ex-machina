@@ -66,9 +66,10 @@ whose enemy files are identical:
   elsewhere a single record that all these ids share. They are reported, not
   decoded.
 - Battle 70, id 0, targeted script: when its last rule's condition fails
-  (`ge_b b2, 0x20` at `+0xcf6`), the skip runs past `fd`/`ff` and id 1's
-  table. The original then runs id 1's turn rule at `+0xd2a`.
-- Only battle 3, id 0 has a sub script (`+0xdc`), and no recovered code runs it.
+  (`ge_b b2, 0x20` at file offset 0xcf6), the skip runs past `fd`/`ff` and id
+  1's table. The original then runs id 1's turn rule at 0xd2a.
+- Only battle 3, id 0 has a sub script (block +0xdc), and no recovered code
+  runs it.
 - Corrected C comments: the handlers of 70-74 were labelled 6e-72, and 2b's
   attribute operand is b2.
 
