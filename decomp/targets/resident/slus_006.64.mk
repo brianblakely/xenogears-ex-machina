@@ -19,9 +19,11 @@ CLASSIFICATION := decomp/targets/resident/classification.txt
 SPLIT_ALSO := decomp/targets/resident/slus_006.69.yaml
 # The heap unit addresses its small globals through $gp.
 GP_heap := 8
-# Data-only units holding initialized small globals that other units address
-# absolutely (kernel_settings.c, sprite_settings.c): at -G8 GCC puts them in
-# .sdata.
+# Data-only units holding initialized small globals that every user loads
+# and stores absolutely (kernel_settings.c, sprite_settings.c): at -G8 GCC
+# puts them in .sdata. Their compiler is immaterial: GCC 2.6.3, 2.7.2 and
+# 2.7.2-cdk give them identical .sdata and relocations, so the target's
+# CC_VERSION, which they keep, qualifies nothing here.
 GP_kernel_settings := 8
 GP_sprite_settings := 8
 # The heap report file unit (80032DCC-80032E7C) owns its file handle as a

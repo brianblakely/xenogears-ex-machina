@@ -400,11 +400,18 @@ converted to C per unit. What converting the targets' `.data` established:
   commons among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked
   last (slot39_common.c, menu_common.c, mdec commons/). Zeros a packer added past the
   program are file padding (Compressed containers).
-- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, so a
-  one-pass ASPSX has seen every definition before any use: small data that all its
-  users address absolutely is no user's own. The resident's (80059170-80059184,
-  80059198-800591b8) is defined by data-only `-G8` units at its link positions
-  (kernel_settings.c, sprite_settings.c).
+- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
+  definition placed after its use (a probe defining `int late_var = 2;` after its
+  reader shows it under 2.6.3, 2.7.2 and 2.7.2-cdk, as does any GP 8 unit's
+  `.o.cc1.s` in the build directory), so a one-pass ASPSX has seen a unit's own
+  definitions before any use: small data that every user loads and stores absolutely
+  is no user's own (addresses, `la`, are formed absolutely even of a unit's own).
+  Only the link position constrains its owner, so the resident's (80059170-80059184,
+  80059198-800591b8) is defined by data-only `-G8` units there, the simplest owners
+  that fit (kernel_settings.c, sprite_settings.c; their compiler is immaterial).
+  Before calling shared data unreferenced, check every image
+  (`tools/data_users.py --range START:END`): four of the resident's fillers are
+  battle and ovl2596 flags.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).

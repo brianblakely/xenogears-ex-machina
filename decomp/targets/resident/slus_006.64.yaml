@@ -184,9 +184,12 @@ segments:
       # PsyQ library .data in link order (libc2 SPRINTF ... libspu S_SRMT);
       # classified sdk.
       - [0x46BF0, data, psyq_data]
-      # Small data addressed through $gp (_gp = 0x80059170). The globals the
-      # menu-support and sprite units address absolutely (80059171/78/7c,
-      # 80059198-800591b4) are no unit's own: data-only units define them.
+      # Small data addressed through $gp (_gp = 0x80059170). The globals
+      # battle_mode, the menu support and the first three sprite units
+      # load and store absolutely (80059171/78/7c, 80059198-800591b4) are
+      # no user's own; data-only units at their link positions, the
+      # simplest owners that fit, define them (kernel_settings.c,
+      # sprite_settings.c).
       - [0x49970, .sdata, kernel_settings]
       - [0x49984, .sdata, sprite]
       - [0x49998, .sdata, sprite_settings]
