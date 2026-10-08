@@ -285,19 +285,10 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-/* NON_MATCHING: 4 bytes short. Testing the neighbour field itself and then
- * stepping face to it reproduces the single-edge cases (the lh value is
- * copied instead of reloaded with lhu). In the two-edge cases, setting bit 0
- * with `if (...) edges |= 1` after `edges = 0` gives the original's xor with
- * the hoisted -1 (s7): jump converts the test to a store-flag only after
- * cse, so the -1 register survives. `second` is still loaded with lhu (the
- * original copies the lh value of the bit-1 test into a3), so `first` takes
- * t0 (v1) and the three cases' walls tails are not cross-jumped as in the
- * original. Declaring face s32 loses the original's 0xb8 frame. Assigning
- * `second` after its bit-1 test makes it a copy of the lh value (as in the
- * original) but through an extra copy (v0 then a3), and cse then carries
- * the face * 14 index (t1) into the walls tail, which the original
- * recomputes; first/second as s32 (in any combination) are further off. */
+/* NON_MATCHING: size and 0xb8 frame agree. The two-edge cases still load
+ * second with lhu before its signed -1 test; the original copies the lh
+ * result into a3 in the branch delay slot. Sharing the wall cases keeps
+ * their common first-neighbour choice and the original dispatch tails. */
 #ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
@@ -480,13 +471,11 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
+                    case 3:
                         face = faces[(s16)face].next[0];
                         break;
                     case 2:
                         face = second;
-                        break;
-                    case 3:
-                        face = faces[(s16)face].next[0];
                         break;
                     }
                     break;
@@ -537,13 +526,11 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
+                    case 3:
                         face = faces[(s16)face].next[0];
                         break;
                     case 2:
                         face = second;
-                        break;
-                    case 3:
-                        face = faces[(s16)face].next[0];
                         break;
                     }
                     break;
@@ -594,13 +581,11 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
+                    case 3:
                         face = faces[(s16)face].next[1];
                         break;
                     case 2:
                         face = second;
-                        break;
-                    case 3:
-                        face = faces[(s16)face].next[1];
                         break;
                     }
                     break;
