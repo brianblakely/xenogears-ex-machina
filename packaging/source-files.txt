@@ -342,6 +342,7 @@ decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
+decomp/src/resident/kernel_settings.c
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/main2_800366E0.c
@@ -365,6 +366,7 @@ decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/sprite_80025C04.c
+decomp/src/resident/sprite_settings.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h
