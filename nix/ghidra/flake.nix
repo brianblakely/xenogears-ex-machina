@@ -140,6 +140,8 @@
       # 2.6.3 never does, and the later battle modules come from the Cygnus CDK
       # build of 2.7.2 (cdk-gcc b18), which keeps a symbol's %hi in a register
       # (docs/matching.md). Commands are psx-cpp-/psx-cc1-<version>[-cdk].
+      # GCC 2.6.0 builds slot39's card-refresh unit (slot39_801C93A8.c) with
+      # -fno-rerun-cse-after-loop; only that combination reproduces it.
       oldGcc =
         version: variant: hash:
         let
@@ -169,6 +171,7 @@
         };
       psxGcc272 = oldGcc "2.7.2" "psx" "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
       psxGcc263 = oldGcc "2.6.3" "psx" "sha256-AeboxJM0FOo/jY47x2ah9fr9T8ARDgt10faRvXkZibE=";
+      psxGcc260 = oldGcc "2.6.0" "psx" "sha256-NY2slJ8PVmr5xq+Tu6DUrATVbKnfgMWL1m2Bu7UN7Os=";
       psxGcc272cdk = oldGcc "2.7.2" "cdk" "sha256-QrsN+W2xGptdLiPXi9yWJ5H0AEYoDT02Dak/5e728Ls=";
       maspsx = pkgs.stdenvNoCC.mkDerivation {
         pname = "maspsx";
@@ -336,6 +339,7 @@
             psxBinutils
             psxGcc272
             psxGcc263
+            psxGcc260
             psxGcc272cdk
             maspsx
             splat

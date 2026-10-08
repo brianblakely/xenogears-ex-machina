@@ -46,6 +46,9 @@ ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 # GP default of 0 and its CC_VERSION.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
 cc_of = $(or $(CC_$(basename $(notdir $(1)))),$(CC_VERSION))
+# CC1FLAGS_<file> adds unit-specific cc1 options (qualified per unit, e.g. the
+# card-refresh unit's -fno-rerun-cse-after-loop).
+cc1flags_of = $(CC1FLAGS_$(basename $(notdir $(1))))
 # ASPSX behaviour (maspsx flags): 2.34 by default; MASPSX_FLAGS per target and
 # MASPSX_<file> per unit (e.g. --expand-div where division checks are inline).
 MASPSX_FLAGS ?= --aspsx-version=2.34
@@ -69,7 +72,7 @@ $(ROOT)/$(BUILD)/%.cflags: matching-flags-force
 	@{ printf '%s\n' \
 		$(call shell_quote,CC=$(call cc_of,$*)) \
 		$(call shell_quote,CPPFLAGS=$(CPPFLAGS)) \
-		$(call shell_quote,CC1FLAGS=$(CC1FLAGS)) \
+		$(call shell_quote,CC1FLAGS=$(CC1FLAGS) $(call cc1flags_of,$*)) \
 		$(call shell_quote,GP=$(call gp_of,$*)) \
 		$(call shell_quote,MASPSX=$(MASPSX)) \
 		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
@@ -100,7 +103,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
 	@mkdir -p $(dir $@)
-	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
+	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) $(call cc1flags_of,$<) -G$(call gp_of,$<) -o $@.cc1.s
 	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call extern_of,$<) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 

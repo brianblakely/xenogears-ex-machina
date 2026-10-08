@@ -122,6 +122,7 @@ def main() -> None:
     gp = unit_setting(values, "GP", unit, "0")
     maspsx = unit_setting(values, "MASPSX", unit, values.get("MASPSX_FLAGS", "--aspsx-version=2.34"))
     absolute = unit_setting(values, "EXTERN", unit, "") == "absolute"
+    extra = unit_setting(values, "CC1FLAGS", unit, "").split()
 
     out = (args.out or ROOT / ".local/permuter" / name).resolve()
     if out.exists():
@@ -146,7 +147,7 @@ def main() -> None:
         "# Same pipeline as decomp/Makefile for this unit.\n"
         "set -eo pipefail\n"
         'IN="$1"; OUT="$3"\n'
-        f"psx-cc1-{version} {' '.join(CC1FLAGS)} -G{gp} -o \"$OUT.cc1.s\" \"$IN\"\n"
+        f"psx-cc1-{version} {' '.join(CC1FLAGS + extra)} -G{gp} -o \"$OUT.cc1.s\" \"$IN\"\n"
         f"maspsx {maspsx} -G{gp} < \"$OUT.cc1.s\"{filter_} > \"$OUT.s\"\n"
         f"psx-as {' '.join(ASFLAGS)} -G{gp} -o \"$OUT\" \"$OUT.s\"\n"
         'rm -f "$OUT.cc1.s" "$OUT.s"\n'

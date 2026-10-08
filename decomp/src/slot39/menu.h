@@ -1472,6 +1472,8 @@ typedef struct MenuSavePayload {
 /* Block 2 of state + 444 holds the card access indicator. */
 #define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);
+void func_801C8324(u8 slot);
+void func_801C90B0(u8 port, u8 file);
 void func_801C9270(s32 port);
 extern u8 D_801EA6F8;
 extern s32 D_801E981C[];          /* card slot (port * 16 + n) of each cursor position */
