@@ -7,6 +7,10 @@
 #include "window.h"
 #include "gte.h"
 
+/* The overlay's number (menu 7), its first word: the mode overlays loaded
+ * at 8006FAF0 open with theirs, ahead of their units' read-only data. */
+const s32 D_8006FAF0 = 7;
+
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
     func_80083C0C(3);
@@ -50,4 +54,3 @@ void func_800708C4(Vector *target, s32 steps) {
     D_8009871C.vz += step.vz;
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FAF0);

@@ -7,6 +7,137 @@
 #include "window.h"
 #include "gte.h"
 
+/* Menu font glyphs (func_8007E8AC maps characters to these). */
+Glyph D_80091230[] = {
+    { 0x3C, 0x13, 0x15, 0x12 }, { 0x18, 0, 5, 0x12 }, { 0x20, 0, 0xC, 0x12 },
+    { 0x30, 0, 0xC, 0x12 }, { 0x40, 0, 0xB, 0x12 }, { 0x4C, 0, 0xB, 0x12 },
+    { 0x58, 0, 0xF, 0x12 }, { 0x68, 0, 0xA, 0x12 }, { 0x74, 0, 0xF, 0x12 },
+    { 0x84, 0, 0xF, 0x12 }, { 0x94, 0, 9, 0x12 }, { 0xA0, 0, 0xA, 0x12 },
+    { 0xAC, 0, 0xB, 0x12 }, { 0xB8, 0, 0xE, 0x12 }, { 0xC8, 0, 9, 0x12 },
+    { 0xD4, 0, 9, 0x12 }, { 0xE0, 0, 0xB, 0x12 }, { 0xEC, 0, 9, 0x12 },
+    { 0, 0x13, 3, 0x12 }, { 4, 0x13, 6, 0x12 }, { 0xC, 0x13, 9, 0x12 },
+    { 0x18, 0x13, 6, 0x12 }, { 0x20, 0x13, 0xE, 0x12 }, { 0x30, 0x13, 9, 0x12 },
+    { 0x3C, 0x13, 0x15, 0x12 }, { 0x54, 0x13, 0xB, 0x12 }, { 0x60, 0x13, 0x15, 0x13 },
+    { 0x78, 0x13, 0xA, 0x12 }, { 0x84, 0x13, 8, 0x12 }, { 0x90, 0x13, 9, 0x12 },
+    { 0x9C, 0x13, 8, 0x12 }, { 0xA8, 0x13, 0xB, 0x12 }, { 0xB4, 0x13, 0x10, 0x12 },
+    { 0xC8, 0x13, 0xA, 0x12 }, { 0xD4, 0x13, 0xB, 0x12 }, { 0xE0, 0x13, 9, 0x12 },
+    { 0xF8, 0, 4, 0x12 }, { 0xEC, 0x13, 3, 0x12 }, { 0xF0, 0x13, 7, 0x12 },
+    { 0xF8, 0x13, 7, 0x12 }, { 0, 0, 0x16, 0x12 }, { 0, 0, 8, 0 },
+    { 0x60, 0x13, 3, 7 },
+};
+
+s32 D_800912DC = 0x100; /* text width scale (0x100 = 1) */
+
+/* Neighbour offsets and slide of the selection wheel portraits, per row. */
+s16 D_800912E0[2][4] = { { 1, -1, 2, 0x24 }, { -1, -2, 1, -0x24 } };
+
+s32 D_800912F0 = 0;
+
+/* Names of the game levels (strings of D_8006FE8C). */
+char *D_800912F4[] = { &D_8006FE8C[0x10], &D_8006FE8C[8], D_8006FE8C };
+
+u8 D_80091300[] = { 0x1E, 0x14, 0xF, 0xC, 0xA, 6, 5, 4, 3, 2, 1 };
+
+s32 D_8009130C[] = { 0x60, 0x80, 0xBB, 0x100, 0x180, 0x200, 0x300, 0x400 };
+
+char *D_8009132C[] = {
+    &D_8006FE8C[0xC4], &D_8006FE8C[0xB8], &D_8006FE8C[0xAC], &D_8006FE8C[0x9C],
+    &D_8006FE8C[0x90], &D_8006FE8C[0x80], &D_8006FE8C[0x70], &D_8006FE8C[0x64],
+    &D_8006FE8C[0x58], &D_8006FE8C[0x4C], &D_8006FE8C[0x40], &D_8006FE8C[0x34],
+    &D_8006FE8C[0x24], &D_8006FE8C[0x18],
+};
+
+s32 D_80091364 = 0;
+
+/* Lines of the eight menus (D_800915AC); texts are strings of D_8007008C.
+ * The handlers defined below take no argument or the menu index. */
+void func_800802A4();
+void func_80080108();
+void func_8008040C();
+void func_80080144();
+void func_80080780();
+void func_80080920();
+void func_800801F8();
+void func_80080054();
+void func_80080234();
+void func_8007F854();
+void func_80080090();
+void func_800800CC();
+void func_80080180();
+void func_800801BC();
+void func_8007F8E4();
+void func_80080268();
+void func_8007F9A0();
+void func_8007FE48();
+void func_8007FB0C();
+
+/* Vibration choices per port; the selected one's caption is set at run
+ * time. */
+MenuItem D_80091368[2] = {
+    { 1, 0x25, { 0 }, (s32)D_8006FF7C, func_800802A4 },
+    { 1, 0x29, { 0 }, (s32)D_8006FF7C, func_80080108 },
+};
+MenuItem D_80091390[2] = {
+    { 1, 0x26, { 0 }, (s32)D_8006FF7C, func_8008040C },
+    { 1, 0x29, { 0 }, (s32)D_8006FF7C, func_80080144 },
+};
+MenuItem D_800913B8[] = {
+    { 0, 1, { 0 }, (s32)&D_8007008C[0x20], func_80080964, 4 },
+    { 4, 0, { 0 }, (s32)D_8006FF7C },
+    { 0, 2, { 0 }, (s32)&D_8007008C[0x14], func_80080780, 4 },
+    { 0, 3, { 0 }, (s32)&D_8007008C[8], func_80080920 },
+    { 0, 5, { 0 }, (s32)D_8007008C, (void (*)(s32))func_800851D4 },
+};
+MenuItem D_8009141C[] = {
+    { 0, 7, { 0 }, (s32)&D_8007008C[0x78], func_80080780, 1 },
+    { 0, 8, { 0 }, (s32)&D_8007008C[0x64], func_80080780, 2 },
+    { 0, 9, { 0 }, (s32)&D_8007008C[0x58], func_80080780, 3 },
+    { 4, 0, { 0 }, (s32)D_8006FF7C },
+    { 3, 0xA, { 0 }, (s32)&D_8007008C[0x48], func_800801F8 },
+    { 3, 0xB, { 0 }, (s32)&D_8007008C[0x3C], func_80080054 },
+    { 3, 0xC, { 0 }, (s32)&D_8007008C[0x30], func_80080234 },
+};
+MenuItem D_800914A8[] = {
+    { 0, 0xD, { 0 }, (s32)&D_8007008C[0x90], func_8007F854 },
+    { 0, 0xE, { 0 }, (s32)&D_8007008C[0x88], func_80080964, 2 },
+};
+MenuItem D_800914D0[] = {
+    { 1, 0xB, { 0 }, (s32)&D_8007008C[0xCC], func_80080054 },
+    { 1, 0x13, { 0 }, (s32)&D_8007008C[0xBC], func_80080090 },
+    { 1, 0x14, { 0 }, (s32)&D_8007008C[0xB0], func_800800CC },
+    { 1, 0x23, { 0 }, (s32)&D_8007008C[0xA8], func_80080180 },
+    { 1, 0x24, { 0 }, (s32)&D_8007008C[0xA0], func_800801BC },
+};
+MenuItem D_80091534[] = {
+    { 0, 0x2A, { 0 }, (s32)&D_8007008C[0xDC], func_8007F8E4 },
+    { 0, 0x2A, { 0 }, (s32)&D_8007008C[0xD8], func_80080964 },
+};
+MenuItem D_8009155C[] = {
+    { 0, 0x10, { 0 }, (s32)&D_8007008C[0xF8], func_8007F854 },
+    { 1, 0x12, { 0 }, (s32)&D_8007008C[0xF4], func_80080268 },
+    { 1, 0x14, { 0 }, (s32)&D_8007008C[0xB0], func_800800CC },
+    { 0, 0x11, { 0 }, (s32)&D_8007008C[0xE0], func_8007F8E4 },
+};
+
+/* The menus: lines, line count, menu returned to on cancel, extra drawing. */
+Menu D_800915AC[8] = {
+    { 0, { 0 }, D_800914A8, 2, 0 },
+    { 0x20, { 0 }, D_800914D0, 5, 0, func_8007F9A0 },
+    { 0, { 0 }, D_80091534, 2, 0 },
+    { 0, { 0 }, D_800913B8, 5, 3 },
+    { 0, { 0 }, D_8009141C, 7, 3, func_8007FE48 },
+    { 0, { 0 }, D_80091368, 2, 3 },
+    { 0, { 0 }, D_80091390, 2, 3 },
+    { 1, { 0 }, D_8009155C, 4, 7, func_8007FB0C },
+};
+
+/* Stage colours. */
+Environment D_8009178C[] = {
+    { { 0x10, 0x60, 0x80 }, 0, 0x38, 0x38, 0x38, 0, { 0x70, 0x70, 0x70 }, 0, { 0x80, 0x80, 0x80 }, 0, 1 },
+    { { 0x30, 0x60, 0x40 }, 0, 0x40, 0x40, 0x40, 0, { 0xE0, 0xB0, 0x70 }, 0, { 0x90, 0x90, 0x90 }, 0, 1 },
+    { { 0x08, 0x30, 0x3F }, 0, 0x20, 0x20, 0x30, 0, { 0x40, 0x40, 0x50 }, 0, { 0x30, 0x30, 0x38 }, 0, 0 },
+};
+
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
  * and 3 replaced) and the banner image, and build the banner sprite. */
 void func_8007E634(MenuFiles *files) {
@@ -806,11 +937,11 @@ void func_80080780(s32 mode) {
     }
     ((MenuPage *)D_800915AC)[6].count = 5;
     if (mode == 3) {
-        D_80091369 = 0x27;
-        D_80091391 = 0x28;
+        D_80091368[0].caption = 0x27;
+        D_80091390[0].caption = 0x28;
     } else {
-        D_80091369 = 0x25;
-        D_80091391 = 0x26;
+        D_80091368[0].caption = 0x25;
+        D_80091390[0].caption = 0x26;
     }
     func_80083C0C(1);
     D_80092710 = 0;

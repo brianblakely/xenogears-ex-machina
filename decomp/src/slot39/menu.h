@@ -1119,15 +1119,14 @@ extern u8 D_801EA530[];
 extern u8 D_801EA534[];  /* party label layout */
 extern s32 D_801E9E4C[3]; /* party label positions: x */
 extern s32 D_801E9E58[3]; /* y */
-extern u8 D_801EA53C[];  /* save file screen command labels */
-extern u8 D_801EA542[];  /* title file screen load command labels */
+extern u8 D_801EA53C[];  /* file screen command labels: save, then (6) load */
 extern u8 D_801EA550[];  /* item target labels */
 extern u8 D_801EA558[];
 extern u8 D_801EA564[];  /* 801e1014 screen labels */
-extern u8 D_801EA568[];  /* title file screen command labels */
+extern u8 D_801EA568[];  /* status screen labels: a character's page, then (6) a gear's */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA574[];  /* sound mode labels */
-extern u8 D_801E9F88[];
+extern s32 D_801E9F88[];  /* sound mode label x offsets */
 extern u8 D_801EA8F4[];
 extern u8 *D_8004FDF0;         /* disc directory records */
 extern u8 *D_8004FDF4;
@@ -1137,8 +1136,7 @@ void func_801E9340(char *name, void *buffer, s32 size);
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u8 D_801E9778;    /* a card changed during a choice */
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
-extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes (used from 0x20); the first
-                              * 12 bytes also serve as the gear portrait v per slot (s32) */
+extern u16 D_801EA610[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
 extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */
 extern s32 D_801EA700;
 extern s32 D_801EA704;
@@ -1146,10 +1144,10 @@ extern s32 D_801EA708;
 extern s32 D_801EA70C;
 extern u8 D_801EA710;
 extern u8 D_801EA714;
-extern s32 D_801EA578[];         /* label image x per row pair */
-extern s32 D_801EA5C4[];         /* label image y per row pair */
-extern s32 D_801EA590[];         /* view name image x (D_801EA578 from row 6) */
-extern s32 D_801EA5DC[];         /* view name image y */
+/* Sheet positions of label images, x / 4 and y: per row pair, from entry 3
+ * the portrait per slot (characters, then gears), from 6 the view names. */
+extern s32 D_801EA578[19];
+extern s32 D_801EA5C4[19];
 extern s16 D_801E9894[32][2];    /* image block x */
 extern s16 D_801E9914[32][2];    /* image block y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
@@ -1163,7 +1161,6 @@ extern s32 D_801EA164[2]; /* party window sprite x */
 extern s32 D_801EA16C[]; /* party window sprite y per row */
 extern s32 D_801EA17C[]; /* portrait panel x per mode */
 extern s32 D_801EA18C[]; /* portrait panel y per mode */
-extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
 extern s32 D_801E9D78;    /* stat bar x offset */
 extern s32 D_801E9D7C;    /* stat bar y offset */
 extern s32 D_801E9D80;    /* stat digit x offset */
@@ -1177,8 +1174,6 @@ extern u8 D_801EA7F8[];  /* equipment list entry counts */  /* per character: ar
 extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
 extern u16 D_8006ECFA[];
 extern u16 D_8006ED0E[];  /* part panel row y positions */
-extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
-extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
 extern u16 D_800595D4;   /* portrait palette of even images */
 extern s32 D_801E9B18;   /* field block number offsets (x, y): +62 */
@@ -1267,17 +1262,16 @@ extern s32 D_801E9F68[2];     /* label x (mode 6) */
 extern s32 D_801E9F70[];      /* label y (mode 6) */
 extern u8 D_801E97AC[];       /* 801e1544 screen: five sheet images per row, ff none */
 extern s32 D_801E9F48[];      /* status command label x offsets (page 0 and 6) */
-extern u8 D_801EA56E[];       /* status command extra labels */
 extern u8 D_80059179;         /* forbids the status command toggle */
 extern u8 D_801E9808[20];      /* pilot character of each gear */
-extern s32 D_801EA494[9];     /* view frame images, ffff none */
+extern s32 D_801EA494[18];    /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
 extern s32 D_801E9FBC[9];     /* view frame y */
 extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
 extern s32 D_801EA01C;         /* view digit row x */
 extern s32 D_801EA020;         /* view digit row y */
-extern u16 D_801EA04C;         /* save title x, y */
-extern u16 D_801EA050;
+extern s32 D_801EA04C;         /* save title x, y */
+extern s32 D_801EA050;
 extern s32 D_801EA02C;         /* value A digits x, y */
 extern s32 D_801EA030;
 extern s32 D_801EA034;         /* value B digits x, y */

@@ -57,5 +57,19 @@ segments:
       - [0x4BCC, c, slot39_801C9BCC]
       - [0x16E54, c, slot39_801DBE54]
       - [0x23070, c, slot39_801E8070]
-      - [0x246a4, data, slot39_data]
+      # All initialized data is slot39's: the other units' tables are interleaved
+      # with its own and come before every unit's uninitialized variables.
+      # Then each unit's uninitialized variables (zero in the image), defined
+      # zero-initialized where their C layout is the original one.
+      - [0x246A4, .data, slot39]
+      # slot39's from D_801EA714: two bytes four apart, the original's 4-byte
+      # slots, are no C layout.
+      - [0x25714, data, slot39_data]
+      - [0x25730, .data, slot39_801DBE54]
+      # The icon RECTs D_801EA8E4/D_801EA8EC, whose members the assembly of
+      # the nonmatching func_801E78C8 names.
+      - [0x258E4, data, slot39_rects]
+      - [0x258F4, .data, slot39_801E8070]
+      # The common variables, allocated after every unit's own.
+      - [0x258FC, .data, slot39_common]
   - [0x25908]

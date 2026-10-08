@@ -66,7 +66,24 @@ segments:
       # menu6 opens with a data word in .text: the mode-task table D_80088BFC.
       - [0x1910C, c, menu6]
       - [0x196D0, c, menu7]
-      - [0x21448, data, menu_data]
-      # The decoded length is not word-aligned; its final bytes are zero.
+      # Initialized data of each unit in link order; menu has none.
+      - [0x21448, .data, menu2]
+      - [0x21604, .data, menu3]
+      - [0x21740, .data, menu4]
+      - [0x21CD0, .data, menu5]
+      # menu6's gear list: its strings open menu6's rodata (D_80070284).
+      - [0x21E74, .data, menu6]
+      - [0x2211C, .data, menu7]
+      # D_80091FB0, still in menu7's .data: an embedded sprite model (asset;
+      # see menu.classification.txt).
+      - [0x224C0, data, menu_model]
+      # D_800925A4, menu7's last table (15 command input triples); the original
+      # assembler padded the section with three stray bytes ("ind").
+      - [0x22AB4, data, menu_data]
+      # The units' uninitialized variables, zero in the image: each unit's in
+      # 4-byte slots (menu2 to menu7), then the common ones from D_8009284C.
+      # The decoded length is not word-aligned: the image ends five bytes into
+      # the window record D_80092954.
+      - [0x22AE4, data, menu_bss]
       - [0x22e68, databin, menu_tail]
   - [0x22e69]

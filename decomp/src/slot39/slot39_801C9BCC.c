@@ -3011,7 +3011,7 @@ void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode) {
             ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
         x = D_801EA17C[mode] - 0x30;
         func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
-                      (u8)(D_801EA584[slot] * 4), (u8)((s32 *)D_801EA5D0)[slot], w, 13);
+                      (u8)(D_801EA578[slot + 3] * 4), (u8)D_801EA5C4[slot + 3], w, 13);
     }
     func_801C851C(label->verts, x, D_801EA18C[mode], w, 13);
     label->count = D_800625A0->bufferIndex;
@@ -4326,14 +4326,14 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
                 ((POLY_FT4 *)((u8 *)D_800625A0->labels360 + packetOffset))->clut =
                     ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
             }
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u0 = D_801EA584[slot] * 4;
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v0 = ((s32 *)D_801EA5D0)[slot];
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u1 = D_801EA584[slot] * 4 + 0x60;
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v1 = ((s32 *)D_801EA5D0)[slot];
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u2 = D_801EA584[slot] * 4;
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v2 = ((s32 *)D_801EA5D0)[slot] + 0xd;
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u3 = D_801EA584[slot] * 4 + 0x60;
-            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v3 = ((s32 *)D_801EA5D0)[slot] + 0xd;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u0 = D_801EA578[slot + 3] * 4;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v0 = D_801EA5C4[slot + 3];
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u1 = D_801EA578[slot + 3] * 4 + 0x60;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v1 = D_801EA5C4[slot + 3];
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u2 = D_801EA578[slot + 3] * 4;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v2 = D_801EA5C4[slot + 3] + 0xd;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u3 = D_801EA578[slot + 3] * 4 + 0x60;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v3 = D_801EA5C4[slot + 3] + 0xd;
             D_800625A0->labels360->labels[i].width = 0x60;
         }
         func_801C851C(D_800625A0->labels360->labels[i].verts, column, D_801E9D88[i + base],
@@ -4555,7 +4555,7 @@ void func_801D9F34(void) {
     if (D_80059460 != 2) {
         func_801E8018(6, D_800625A0->fileLabels, D_801EA53C, D_800625A0->party->unk1A);
     } else {
-        func_801E8018(6, D_800625A0->fileLabels, D_801EA542, D_800625A0->party->unk1A);
+        func_801E8018(6, D_800625A0->fileLabels, &D_801EA53C[6], D_800625A0->party->unk1A);
     }
 }
 
@@ -4631,7 +4631,7 @@ u8 func_801D9F98(u8 loading, u8 save) {
             break;
         }
         if (D_800625A0->choice != D_800625A0->choiceShown) {
-            func_801E8070(6, D_800625A0->fileLabels, D_801EA542, D_801E9EA0, D_800625A0->party->unk1A,
+            func_801E8070(6, D_800625A0->fileLabels, &D_801EA53C[6], D_801E9EA0, D_800625A0->party->unk1A,
                           D_800625A0->choice, 7, 0);
             if (D_80059460 != 2) {
                 func_801E8B4C(0);

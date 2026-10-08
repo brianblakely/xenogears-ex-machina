@@ -159,6 +159,8 @@ typedef struct {
 extern char D_8006FF5C[];
 extern char D_8006FF60[];
 extern char D_8006FF7C[]; /* "" */
+extern char D_8006FE8C[]; /* level and computer command names */
+extern char D_8007008C[]; /* menu line texts */
 extern u32 D_80092710;  /* bit 0/1: controller port 1/2 unavailable */
 extern s32 D_80092754;
 extern s32 D_8009272C;  /* port 1 vibration entry selected */
@@ -201,9 +203,11 @@ void func_8007313C(void *pixels, void *end);
 
 typedef struct {
     s32 id;
-    u8 unk4[4];
+    char *model; /* 0x04: model file name */
     u8 *name;    /* 0x08 */
 } ListEntry;
+
+extern char D_80070284[]; /* the gears' model files and names, heap tag names */
 
 /* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
  * its palette row and its 30x64 image. */
@@ -235,8 +239,6 @@ extern s32 D_8009271C;
 extern s32 D_80092720;
 extern s32 D_80092724;
 extern s32 D_80092728;
-extern u8 D_80091369;
-extern u8 D_80091391;
 extern s32 D_80092748;   /* bit 0: both sides may pick the same entry */
 extern s32 D_80091364;
 void func_80085134(s32 side);

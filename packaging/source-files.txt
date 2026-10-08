@@ -372,6 +372,7 @@ decomp/src/slot39/slot39_801C93A8.c
 decomp/src/slot39/slot39_801C9BCC.c
 decomp/src/slot39/slot39_801DBE54.c
 decomp/src/slot39/slot39_801E8070.c
+decomp/src/slot39/slot39_common.c
 decomp/src/worldmap/func_8009980C.s
 decomp/src/worldmap/func_80099BFC.s
 decomp/src/worldmap/screen_bounds.s

@@ -71,7 +71,7 @@ extern u16 D_80094800[12]; /* kind 0's CLUT of each frame */
 extern u8 D_800911D8[16];
 extern u8 D_800911E8[16];
 extern u8 D_800911F8[16];
-extern u8 D_80091208[12];
+extern u8 D_80091208[16]; /* 12 used */
 extern u8 D_80091218[16];
 
 /* Other effect textures (position, CLUT, texture page). */

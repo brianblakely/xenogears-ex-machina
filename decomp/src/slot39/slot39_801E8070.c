@@ -3,6 +3,10 @@
  * boundary lies between 801E433C and 801E8070. */
 #include "menu.h"
 
+/* The unit's variable, zero in the image after slot39_801DBE54's: the
+ * CdControlB result bytes. */
+u8 D_801EA8F4[8] = { 0 };
+
 /* Place label `selected` for layout `mode` (0: window row `row`, clearing the
  * other flags first; 1-3, 5, 6: 3D label vertices from the mode's tables;
  * 4: fixed at (4c, 12)) and mark it shown in `flags`. */

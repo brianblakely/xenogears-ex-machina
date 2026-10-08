@@ -355,7 +355,7 @@ extern u16 D_80059570;   /* pad buttons held this frame */
 extern s32 D_800927F4;
 
 extern s32 D_80010000;   /* boot word: -1, 0 or other start state */
-extern u8 D_80091BB0[];
+extern char *D_80091BB0[]; /* names of the menu's heap block kinds */
 extern s32 D_800928CC;
 extern Window *D_80092868;
 extern Window *D_80092870;

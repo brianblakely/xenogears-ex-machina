@@ -7,6 +7,67 @@
 #include "window.h"
 #include "gte.h"
 
+ShotKind D_800910F4[] = {
+    { 0x0600, 0, 0x2D, 0x40, 1, 0x0B, 0 },
+    { 0x0600, 2, 0x19, 0xC0, 3, 0x00, 0 },
+    { 0x0300, 2, 0x19, 0xC0, 0, 0x00, 0 },
+    { 0x0000, 3, 0x20, 0x80, 2, 0x00, 0 },
+    { 0x0000, 2, 0x20, 0x80, 2, 0x00, 0 },
+    { 0x0000, 4, 0x20, 0x80, 2, 0x00, 0 },
+    { 0x0000, 5, 0x20, 0x80, 2, 0x00, 0 },
+};
+
+/* Attack name shown for an ether attack (the combos' are D_80091198). */
+s32 D_8009112C = (s32)D_8006FC10; /* "ETHER" */
+
+/* Per animation: kind and next animation (-1: none). Rules 10 and 16 are
+ * set at run time. */
+AnimRule D_80091130[] = {
+    { 1, -1 }, { 1, -1 }, { 2, -1 }, { 0, -1 }, { 0, -1 }, { 3, -1 },
+    { 3, -1 }, { 0, -1 }, { 0, 9 }, { 2, 0xA }, { 0, 0 }, { 0, -1 },
+    { 0, 9 }, { 0, 0xE }, { 0, -1 }, { 2, -1 }, { 2, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+};
+
+/* Per combo number: the combo reached by button A, then by button B. */
+u8 D_80091178[] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+/* Name of each combo number (the strings of D_8006FCCC, four bytes each). */
+s32 D_80091198[] = {
+    (s32)D_8006FC74,
+    (s32)&D_8006FCCC[0x34], (s32)&D_8006FCCC[0x30], (s32)&D_8006FCCC[0x2C],
+    (s32)&D_8006FCCC[0x28], (s32)&D_8006FCCC[0x24], (s32)&D_8006FCCC[0x20],
+    (s32)&D_8006FCCC[0x1C], (s32)&D_8006FCCC[0x18], (s32)&D_8006FCCC[0x14],
+    (s32)&D_8006FCCC[0x10], (s32)&D_8006FCCC[0xC], (s32)&D_8006FCCC[8],
+    (s32)&D_8006FCCC[4], (s32)D_8006FCCC,
+};
+
+s32 D_800911D4 = 0;
+
+/* Sparkle frame texel positions (u, v); the v tables get the image's y
+ * added once. */
+u8 D_800911D8[16] = {
+    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
+    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
+};
+u8 D_800911E8[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+};
+u8 D_800911F8[16] = {
+    0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
+    0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0,
+};
+u8 D_80091208[16] = { 0 };
+u8 D_80091218[16] = { 0 };
+
+s16 D_80091228[] = { 0x18, 0x30, 0x10 };
+
 /* Create the menu's glow emitter: 96 bluish tile sparks. */
 void func_800732CC(void) {
     Emitter *emitter = func_8008D3F4(3, 0);
@@ -732,8 +793,8 @@ void func_800751C8(Actor *first, Actor *second) {
     func_8007E894(0xA0, 0x64);
     if (!func_8008F4F4(first, 0x60) || !func_8008F4F4(second, 0x60)) {
         if (D_800928C4 != 0 && !func_8008F9B0(first) && !func_8008F9B0(second)) {
-            D_80091144 = 1;
-            D_80091145 = 0xA;
+            D_80091130[10].kind = 1;
+            D_80091130[10].next = 0xA;
             func_800720D4();
         }
     }
@@ -2475,8 +2536,8 @@ s32 func_80079B44(void) {
     func_800720C4();
     D_800928D4 = 0;
     D_800928F0 = 0;
-    D_80091144 = 0;
-    D_80091145 = 0;
+    D_80091130[10].kind = 0;
+    D_80091130[10].next = 0;
     D_80092664 = 0;
     D_80092950++;
     func_800346A4(&D_8009868C);
@@ -2771,11 +2832,11 @@ void func_8007A884(void) {
         header = D_8009872C.header;
     }
     if (header->unk2C != 0) {
-        D_80091150 = 1;
-        D_80091151 = 0x10;
+        D_80091130[16].kind = 1;
+        D_80091130[16].next = 0x10;
     } else {
-        D_80091150 = 2;
-        D_80091151 = -1;
+        D_80091130[16].kind = 2;
+        D_80091130[16].next = -1;
     }
     D_8009872C.pos.vy = 0x100;
     D_80097010.pos.vy = 0x100;
@@ -2915,7 +2976,7 @@ void func_8007AE10(Actor *first, Actor *second) {
         switch (D_800928C8) {
         case 1:
             func_8007EC54("YOU WERE DEFEATED");
-            sprintf(text, "     BY %s", D_8009196C[second->model_id].name);
+            sprintf(text, "     BY %s", D_80091964[second->model_id].name);
             func_8007EC54(text);
             break;
         case 2:
