@@ -1986,8 +1986,8 @@ u8 func_801E23CC(void) {
             shown = slot;
             page = D_8006F8E5[slot] ? 6 : 0;
             func_801E2324(page);
-            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
-            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
+            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
             D_800625A0->labels18E0[4].visible = 1;
             D_800625A0->labels18E0[5].visible = 1;
             if (first) {
@@ -1998,7 +1998,7 @@ u8 func_801E23CC(void) {
             }
         }
         if (D_800625A0->choice != D_800625A0->choiceShown) {
-            func_801E8070(4, D_800625A0->labels18E0, D_801EA56E, &D_801E9F48[page], D_800625A0->party->unk54,
+            func_801E8070(4, D_800625A0->labels18E0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->party->unk54,
                           D_800625A0->choice, 7, 0);
             func_801E8B4C(0);
             D_800625A0->choiceShown = D_800625A0->choice;
@@ -3355,7 +3355,7 @@ void func_801E61B0(void) {
         D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
         D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].clut = D_800595D4;
         func_801E920C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex], D_801E9F98[0] + view * 0x50,
-                      D_801E9FBC[0] + 7, D_801EA590[view] * 4, D_801EA5DC[view], 0x48, 0xd);
+                      D_801E9FBC[0] + 7, D_801EA578[view + 6] * 4, D_801EA5C4[view + 6], 0x48, 0xd);
         D_800625A0->block34C->views[view].nameBuffer = D_800625A0->bufferIndex;
     }
 }
@@ -3423,9 +3423,9 @@ u16 *func_801E65E4(u8 *s) {
     D_801EA8C0 = 1;
     if (hi < 0x80) {
         if (hi >= 0x20) {
-            lo = D_801EA5D0[hi];
+            lo = D_801EA610[hi - 0x20];
             D_801EA8C0 = 0;
-            hi = D_801EA5D0[hi] >> 8;
+            hi = D_801EA610[hi - 0x20] >> 8;
         } else {
             hi = 0x81;
             lo = 0x40;
@@ -3639,8 +3639,8 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     pixels = func_80031BDC(0x3f6, 0);
     bzero(pixels, 0x3f6);
     func_80034EAC(text, pixels, 0x24, 0);
-    rect.x = D_801EA590[index] + 0x180;
-    rect.y = D_801EA5DC[index];
+    rect.x = D_801EA578[index + 6] + 0x180;
+    rect.y = D_801EA5C4[index + 6];
     rect.w = 0x28;
     rect.h = 0xd;
     LoadImage(&rect, pixels);
