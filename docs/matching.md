@@ -216,8 +216,17 @@ the audit; they are never counted as matches. This diagnostic does not replace
   compiled-out debug macro at a plausible place.
 - Never-read locals, dead assignments or dead stores that exist only to steer CSE,
   scheduling or allocation are rejected even when they match (battle 80087EDC was
-  withdrawn for this). No new inline asm, register pinning or `.word`; the existing
-  GTE, `break` and scratchpad-stack macros are original style.
+  withdrawn for this). No new inline asm or `.word`; the existing GTE, `break` and
+  scratchpad-stack macros are original style.
+- A local register variable (`register s32 v asm("$14")`) is accepted only where the
+  evidence says the original source bound it (project owner, 2026-10-08): a scratch
+  pin of just those variables makes the function match exactly, no other compiler,
+  flag or plain-C shape reproduces the registers (a replay of global allocation shows
+  ordinary pseudos cannot reach them), and the surrounding code is register-level
+  (world map 80086798: four projected corners in t6-t9, read with the exact
+  three-`mfc2`-plus-`nop` shapes of LIBGTE.H's register-argument SXY macros).
+  The function comment states that evidence. A pin that merely forces a register
+  the plain C misses is not enough (field 80099AC0's `$a0`/`$a1` pair stays a draft).
 - Strings and data objects whose alignment padding holds stray assembler bytes stay
   original data: mark a string `force_not_migration:True`, link it with INCLUDE_RODATA
   beside the function and reference it as `extern char[]`; leave a data object in the
@@ -323,10 +332,10 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
   old-gcc releases (2.5.7-2.95.2, `-psx` and plain) and single-flag variants before more
   shuffling; compare whole units, not one function, before adopting a setting.
 - To learn whether only allocation remains, bind the disputed variables to the
-  original's registers (`register s32 v asm("$14")`) in a scratch build that is never
-  committed. World-map 80086798 then matched exactly: its four projected corners
-  (48 loop-weighted refs over ~195 insns) outrank the variables the original
-  allocated before them, which a pseudo follows only if it lives as long as they do.
+  original's registers (`register s32 v asm("$14")`) in a scratch build. Commit the
+  binding only under the evidence rule above; world map 80086798's corners (48
+  loop-weighted refs over ~195 insns) outrank every variable the original allocated
+  before them, so as pseudos they always take t1-t3/t6.
 
 ## Recovering data
 

@@ -1150,7 +1150,11 @@ typedef struct {
  * plain locals the corners (48 loop-weighted refs over 176-199 insns each) rank
  * in global allocation above layer (53 over 380), the column offset (19 over
  * 118) and quad (46 over 493) and take t1/t2/t3/t6. Bound to t6-t9 the
- * function matches exactly. */
+ * function matches exactly. No compiler release or flag places plain locals
+ * there (a replay of GCC 2.7.2's global allocation shows they cannot reach
+ * t6-t9), and the corners are read with the three-mfc2-plus-nop shapes of
+ * LIBGTE.H's register-argument read_sxsy macros, so the original most likely
+ * declared them as register variables too. */
 void func_80086798(void) {
     DriftScratch *scratch;
     PolyFT4 *quad;
