@@ -276,6 +276,9 @@ decomp/src/ovl3387/ovl3387.c
 decomp/src/resident/battle_mode.c
 decomp/src/resident/cd.h
 decomp/src/resident/console.h
+decomp/src/resident/func_80019524.s
+decomp/src/resident/func_80019548.s
+decomp/src/resident/func_80019560.s
 decomp/src/resident/gpu.h
 decomp/src/resident/gte.h
 decomp/src/resident/heap.c
