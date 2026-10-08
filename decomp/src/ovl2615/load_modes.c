@@ -5,6 +5,14 @@
  * follow in burst_modes.c. */
 #include "battle_setup.h"
 
+u8 D_801E963C = 0;
+SVECTOR D_801E9640[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
+SVECTOR D_801E9658[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
+/* A shard's launch velocity (the battle overlay's 800c35c4); this module
+ * never reads it. */
+VECTOR D_801E9670 = {0, 0, -1536 << 16};
+u32 *D_801E96B8;
+
 /* Shatter update: fade every cell and (variant 0) push it away. */
 void func_801E7F4C(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
