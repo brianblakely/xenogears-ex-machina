@@ -12,10 +12,10 @@ s32 func_80080AC4();
 s32 func_80076A14();
 s32 func_80076A1C();
 
-/* The vehicle scene's data (its mode handlers func_8007D918/func_8007DCE0 and
- * sequence start func_8007DE14 precede this unit). Per entry (D_8009D3D4):
- * the three ambient sounds, the player's start position and the resident
- * flag word set on leaving. */
+/* Data of the scene this director runs; its mode handlers func_8007D918 and
+ * func_8007DCE0 and sequence start func_8007DE14 precede this unit. Per
+ * entry (D_8009D3D4): the three ambient sounds, the player's start position
+ * and the resident flag word set on leaving. */
 u16 D_8009A5A0[3][3] = {{0x25, 0x26, 0x27}, {0x1F, 0x20, 0x21}, {0x22, 0x23, 0x24}};
 SVECTOR D_8009A5B4[3] = {{14976, -640, 11690}, {15412, -640, 11957}, {14976, -640, 11690}};
 u16 D_8009A5CC[3] = {2, 3, 4};
