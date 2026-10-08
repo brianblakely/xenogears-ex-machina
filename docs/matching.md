@@ -132,6 +132,16 @@ python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 
   .local/decomp/build/field.bin@8006faf0:8006fdec-800ada68
 ```
 
+`--targets` compares every built target's linked code range with a capture and
+lists those resident in it. Across the ten retained routes (forest/encounter/
+menu on both discs, the two painting-room smokes, the movie and Mono/Stereo/Wide
+routes) the resident images, field, slot39 and the ovl3384 battle module are
+loaded exactly as rebuilt, apart from the guard and SDK variables above.
+
+```sh
+python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --targets
+```
+
 ## Converting a function
 
 Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
