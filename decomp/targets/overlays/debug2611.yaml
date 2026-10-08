@@ -48,5 +48,5 @@ segments:
       - [0x88, .rodata, debug2611]
       - [0x22c, c, pages]
       - [0x844, c, debug2611]
-      - [0x2034, data, debug2611_data]
+      - [0x2034, .data, debug2611]
   - [0x20f0]

@@ -42,12 +42,11 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
-      # The overlay's number (4) ahead of the units' rodata (as in battle).
-      - [0x0, rodata, field_prefix]
       # Units change where the jump tables change phase mod 8 (GCC's .align 3
       # is relative to the unit's rodata, placed at 4-byte boundaries; see
       # docs/matching.md). The text boundaries are documented in each file.
-      - [0x4, .rodata, field]
+      # The first unit's rodata opens with the overlay's number (4).
+      - [0x0, .rodata, field]
       - [0x9C, .rodata, field_8007A44C]
       - [0x198, .rodata, field_800854D0]
       - [0x2BC, .rodata, field_800A4748]
@@ -57,7 +56,14 @@ segments:
       - [0x159E0, c, field_800854D0]
       - [0x34C58, c, field_800A4748]
       - [0x39784, c, field_800A9274]
-      - [0x3df78, data, field_data]
-      # The decoded length is not word-aligned; its final bytes are zero.
-      - [0x3fafc, databin, field_tail]
+      - [0x3df78, .data, field]
+      - [0x3e1f0, .data, field_8007A44C]
+      - [0x3e4dc, .data, field_800854D0]
+      - [0x3f034, .data, field_800A4748]
+      - [0x3f984, .data, field_800A9274]
+  - [0x3faf8]
+  # The packer completes its last group of eight tokens with zero literals
+  # and records the padded length (field.mk), so the decoded image ends six
+  # zero bytes after the data, inside the BSS (800af5e8-800c4270, cleared by
+  # the resident's mode table entry), where the RECT ring at 800af5e8 lives.
   - [0x3fafe]

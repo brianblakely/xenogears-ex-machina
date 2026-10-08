@@ -7,6 +7,43 @@
  * GCC 2.7.2 with a later ASPSX (see debug2611.mk). */
 #include "battle_debug.h"
 
+/* Tool statics, in the original's definition order. The words this code
+ * never reads (8028203c, 80282048-8028205b) are kept as they were defined. */
+s32 D_80282034 = 0;          /* heap monitor shown */
+s32 D_80282038 = 0;          /* performance counters shown */
+s32 D_8028203C = 0;          /* unreferenced */
+s32 D_80282040 = 0;          /* camera tool shown */
+s32 D_80282044 = 0;          /* geometry offset toggle */
+s32 D_80282048 = 0;          /* unreferenced */
+char D_8028204C[] = "mem_0"; /* unreferenced dump file name */
+s32 D_80282054 = 0;          /* unreferenced */
+s32 D_80282058 = 10;         /* unreferenced */
+s32 D_8028205C = 0x808D;     /* heap monitor flags */
+s32 D_80282060 = 0;          /* heap monitor first block */
+s32 D_80282064 = 0;          /* heap monitor scroll repeat delay */
+s32 D_80282068 = 1;          /* heap monitor step */
+
+/* The load meter's needles: a triangle across the dial centre reaching 20
+ * (GPU) or 30 (CPU) along the rotated x axis. */
+SVECTOR D_8028206C[2][3] = {
+    {{0, -3, 0}, {0, 3, 0}, {20, 0, 0}},
+    {{0, -3, 0}, {0, 3, 0}, {30, 0, 0}},
+};
+
+/* The actor tool's control modes. */
+char D_8028209C[] = "pos";
+char D_802820A0[] = "rot";
+char D_802820A4[] = "scale";
+char D_802820AC[] = "lgtang";
+char D_802820B4[] = "lgtcol";
+u8 D_802820BB = 0; /* actor tool shift (right after the 7-byte name) */
+u8 D_802820BC = 0; /* actor tool control mode */
+char *D_802820C0[] = {D_8028209C, D_802820A0, D_802820A4, D_802820AC, D_802820B4};
+
+s32 D_802820D4 = 0;                         /* memory dump count */
+char D_802820D8[] = "c:\\btlmem\\mem_00"; /* memory dump file name */
+s32 D_802820EC = 0;                         /* frame counter */
+
 /* Move the camera position with the pad: the directional buttons move it in
  * the camera's frame, R1/L1 (bits 0 and 2) raise and lower it; bit 1 slows
  * and bit 3 speeds the step. */
