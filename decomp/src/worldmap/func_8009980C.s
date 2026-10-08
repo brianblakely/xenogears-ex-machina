@@ -3,7 +3,7 @@
 # Draw one terrain quarter block of 8x8 cells as textured triangles.
 # a0 = the block's cell words, nine per row (the ninth is skipped), a1 =
 # ordering table, a2 = the next free POLY_FT3, whose colour/code word is
-# preset (func_80099708 passes the frame's buffer + D_8009D7DC packets).
+# preset (the callers pass the frame's buffer + D_8009D7DC packets).
 # The scratchpad holds TerrainDrawScratch: 9x9 SVECTOR vertices from
 # 0x000 (row stride 0x48), 64 CLUTs at 0x288 and texture pages at 0x308.
 # The GTE holds the caller's rotation, translation, projection and depth
@@ -20,7 +20,7 @@
 # packets exist; it is stored back on exit.
 # Saves s0..s5, s5 in the caller's a0 home slot; clobbers a0, a2, a3, v0,
 # v1 and t0..t9. Handwritten: saves beyond its 24-byte frame, ori for
-# small constants, trapping addi, and FLAG reads with cfc2.
+# small constants and trapping addi.
 
 # Project the three loaded vertices; if the triangle is accepted, emit a
 # POLY_FT3 at a2 with the packed u | v << 8 coordinates in registers \uv0,

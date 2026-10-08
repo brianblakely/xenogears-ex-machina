@@ -6,20 +6,19 @@
 # and texture coordinates are preset. The scratchpad holds
 # TerrainPassScratch: the sprite's four corners at 0x00, the view matrix at
 # 0x28, the roll matrix at 0x48 and 16 depth CLUTs at 0x68.
-# Each position is taken relative to the camera target D_8009BE28 (20.12),
-# x and z wrapped into [-0x4000, 0x4000) by the map size (D_8009D160 by
-# D_8009D2B4 blocks of 0x800). (dx, y, -dz) through the view matrix becomes
-# the translation of the roll matrix, and the corners are projected with
-# RTPT and then RTPS. A quad is drawn when RTPT reports no FLAG error, the
-# first three corners pass screen_bounds_test and SZ3 < 0xE00. It is
-# linked at OT entry SZ3 >> 4 with CLUT (IR0 >> 8), IR0 (the fourth
-# corner's depth cue) limited to 0xFFF. Nothing more is drawn once the
-# frame's quad count D_8009BE04 (a word here) reaches 512; it is stored
-# back on exit.
+# Each position is taken relative to the camera target D_8009BE28 (20.12);
+# an x or z difference below -0x4000 gains, and one then at or above 0x4000
+# loses, one map width or height (D_8009D160 by D_8009D2B4 blocks of
+# 0x800). (dx, y, -dz) through the view matrix becomes the translation of
+# the roll matrix, and the corners are projected with RTPT and then RTPS.
+# A quad is drawn when RTPT reports no FLAG error, the first three corners
+# pass screen_bounds_test and SZ3 < 0xE00. It is linked at OT entry
+# SZ3 >> 4 with CLUT (IR0 >> 8), IR0 (the fourth corner's depth cue)
+# limited to 0xFFF. Nothing more is drawn once the frame's quad count
+# D_8009BE04 (a word here) reaches 512; it is stored back on exit.
 # Saves s0/s1, s1 in the caller's a0 home slot; clobbers a0, a1, a3, v0,
 # v1, t0..t9 and the GTE rotation and translation. Handwritten: saves
-# beyond its 8-byte frame, ori for a small constant and raw ctc2/cop2
-# sequences.
+# beyond its 8-byte frame and ori for a small positive constant.
 glabel func_80099BFC
     addiu   $sp, $sp, -8
     sw      $s0, 4($sp)

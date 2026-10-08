@@ -7,8 +7,8 @@
 # that it never turns into the transparent value 0; a zero pixel stays 0.
 # Clobbers a0, a1, a2, a3, t2..t6 and GTE IR0..IR3/MAC1..MAC3; no frame.
 # The loop reads the halfword after the last source pixel before it exits.
-# Handwritten: trapping addi in the clamp, `bne $zero, rt` operand order,
-# raw cop2 moves and an absolute jump back to the loop head.
+# Handwritten: trapping addi in the clamp and the `bne $zero, rt` operand
+# order of its tests.
 glabel func_80026F44
     slti    $t2, $a1, 32
     bne     $zero, $t2, .Ldarken_level

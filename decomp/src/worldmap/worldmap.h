@@ -1223,8 +1223,8 @@ typedef struct {
 #define TERRAIN_PASS_SCRATCH ((TerrainPassScratch *)0x1F800000)
 
 extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
-extern s16 D_8009BE04;     /* quads used this frame */
-void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
+extern s16 D_8009BE04;     /* quads used this frame; a word in 80099BFC */
+void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads); /* draw billboards (assembly) */
 
 /* Scene object placement (16 bytes; the list follows a count halfword). */
 typedef struct {

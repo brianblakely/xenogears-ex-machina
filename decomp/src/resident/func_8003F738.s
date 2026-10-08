@@ -16,8 +16,8 @@
 # The negations precede their shifts. Only the nine rotation halfwords are
 # stored; the matrix padding and translation are untouched.
 # Leaf code in t registers: clobbers t0..t9, at, HI and LO.
-# Handwritten: trapping neg/add/sub, and the multiplies are interleaved by
-# hand with nops keeping each mflo two instructions ahead of the next mult.
+# Handwritten: trapping neg/add/sub. The nops keep each mflo two
+# instructions ahead of the next mult (the R3000 HI/LO hazard).
 glabel func_8003F738
     lw      $t1, 0($a0)         # vx | vy << 16
     lh      $t3, 4($a0)         # vz

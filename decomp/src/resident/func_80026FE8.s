@@ -8,8 +8,8 @@
 # result. Bit 15 is otherwise clear.
 # Clobbers a0, a1, a2, a3, v0, v1, t0..t7 and GTE IR0..IR3/MAC1..MAC3;
 # no frame. The loop reads the halfword after the last target pixel.
-# Handwritten: trapping add/addi, raw cop2 moves, a dead copy of a2 in the
-# clamp's delay slot and an absolute jump back to the loop head.
+# Handwritten: trapping add/addi and a dead copy of a2 in the clamp's
+# delay slot.
 glabel func_80026FE8
     lw      $t0, 16($sp)        # target pixels
     slti    $v0, $a1, 33

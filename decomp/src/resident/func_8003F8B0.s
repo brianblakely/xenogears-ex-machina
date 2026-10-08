@@ -1,7 +1,8 @@
 # Sine of a 12-bit angle (4096 = one turn), 4096 = 1.0: the low halfword of
 # pair a0 & 0xFFF in the sine/cosine table D_800523F0, sign extended.
 # Clobbers a0, t0 and at. Handwritten, like its cosine twin func_8003F8CC:
-# the scaled index goes to t0, which compiled code does not allocate here.
+# the scaled index goes to t0, where the unit's GCC compiles the plain C
+# lookup with the index scaled in place in a0.
 glabel func_8003F8B0
     andi    $a0, $a0, 0xFFF
     sll     $t0, $a0, 2
