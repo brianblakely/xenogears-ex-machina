@@ -467,6 +467,32 @@ class MatchingTests(unittest.TestCase):
         })
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
+        from tools.service_calls import scan_function
+
+        words = [
+            0x3C041F80,  # lui   a0, 0x1f80
+            0x34841814,  # ori   a0, a0, 0x1814  (GPU status port)
+            0x8C850000,  # lw    a1, 0(a0)
+            0xA0850010,  # sb    a1, 0x10(a0)   (a0 still holds 0x1f801814)
+            0x3C061F80,  # lui   a2, 0x1f80
+            0xACC00100,  # sw    zero, 0x100(a2)  (scratchpad)
+            0x3C028005,  # lui   v0, 0x8005
+            0x8C4208E4,  # lw    v0, 0x8e4(v0)   (hardware pointer global)
+            0x0C010000,  # jal   0x80040000
+            0x4A280030,  # rtpt
+            0x0040F809,  # jalr  v0
+            0x03E00008,  # jr    ra
+        ]
+        blob = b"".join(w.to_bytes(4, "little") for w in words)
+        found = scan_function(blob, 0x80010000, {0x800508E4: 0x1F801C00})
+        self.assertEqual(found["io"], [0x1F801814, 0x1F801824])
+        self.assertEqual(found["scratchpad"], [0x1F800100])
+        self.assertEqual(found["hardware_pointers"], [0x800508E4])
+        self.assertEqual(found["calls"], [0x80040000])
+        self.assertEqual((found["gte"], found["indirect"]), (1, 1))
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):
         from tools.nonmatching_score import instruction_differences
 

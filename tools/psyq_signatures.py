@@ -25,21 +25,14 @@ def pattern_of(sig: str) -> re.Pattern[bytes]:
     return re.compile(b"".join(parts), re.DOTALL)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("signatures", type=Path, help="psx_psyq_signatures checkout")
-    parser.add_argument("image", type=Path, help="raw image bytes (no PS-X EXE header)")
-    parser.add_argument("--vram", type=lambda v: int(v, 0), required=True)
-    parser.add_argument("--min-bytes", type=int, default=16)
-    args = parser.parse_args()
-    data = args.image.read_bytes()
-
+def scan(signatures: Path, data: bytes, vram: int, min_bytes: int = 16) -> dict[tuple[int, int], list[str]]:
+    """Unique complete object matches: {(start, end): ["version library object labels", ...]}."""
     hits: dict[tuple[int, int], list[str]] = {}
-    for version in sorted(p for p in args.signatures.iterdir() if p.is_dir() and p.name.isdigit()):
+    for version in sorted(p for p in signatures.iterdir() if p.is_dir() and p.name.isdigit()):
         for lib in sorted(version.glob("*.json")):
             for obj in json.loads(lib.read_text()):
                 sig = obj.get("sig", "").strip()
-                if len(sig.split()) < args.min_bytes:
+                if len(sig.split()) < min_bytes:
                     continue
                 # Trailing zero words are alignment padding inside the archive
                 # member, not code; the linked image may place the next object there.
@@ -51,8 +44,19 @@ def main() -> None:
                     continue
                 start = found[0]
                 labels = ",".join(f"{l['name']}+{l['offset']:#x}" for l in obj.get("labels", []))
-                key = (args.vram + start, args.vram + start + len(tokens))
+                key = (vram + start, vram + start + len(tokens))
                 hits.setdefault(key, []).append(f"{version.name} {lib.stem} {obj['name']} {labels}")
+    return hits
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("signatures", type=Path, help="psx_psyq_signatures checkout")
+    parser.add_argument("image", type=Path, help="raw image bytes (no PS-X EXE header)")
+    parser.add_argument("--vram", type=lambda v: int(v, 0), required=True)
+    parser.add_argument("--min-bytes", type=int, default=16)
+    args = parser.parse_args()
+    hits = scan(args.signatures, args.image.read_bytes(), args.vram, args.min_bytes)
     for (start, end), names in sorted(hits.items()):
         for name in names:
             print(f"{start:08x} {end:08x} {name}")
