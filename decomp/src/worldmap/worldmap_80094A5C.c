@@ -285,11 +285,6 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-/* NON_MATCHING: size and 0xb8 frame agree. The two-edge cases still load
- * second with lhu before its signed -1 test; the original copies the lh
- * result into a3 in the branch delay slot. Sharing the wall cases keeps
- * their common first-neighbour choice and the original dispatch tails. */
-#ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
     WalkScratch *scratch;
@@ -426,14 +421,19 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     func_800952B0(direction, out, &scratch->side[2]);
                 }
                 break;
-            case 3:
+            case 3: {
+                s32 first_word;
+                s32 second_word;
+
                 edges = 0;
-                if (faces[(s16)face].next[0] != -1) {
+                first_word = faces[(s16)face].next[0];
+                if (first_word != -1) {
                     edges |= 1;
                 }
                 first = faces[(s16)face].next[0];
+                second_word = faces[(s16)face].next[1];
                 second = faces[(s16)face].next[1];
-                if (faces[(s16)face].next[1] != -1) {
+                if (second_word != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
@@ -481,14 +481,20 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     break;
                 }
                 break;
-            case 5:
+            }
+            case 5: {
+                s32 first_word;
+                s32 second_word;
+
                 edges = 0;
-                if (faces[(s16)face].next[0] != -1) {
+                first_word = faces[(s16)face].next[0];
+                if (first_word != -1) {
                     edges |= 1;
                 }
                 first = faces[(s16)face].next[0];
+                second_word = faces[(s16)face].next[2];
                 second = faces[(s16)face].next[2];
-                if (faces[(s16)face].next[2] != -1) {
+                if (second_word != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
@@ -536,14 +542,20 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     break;
                 }
                 break;
-            case 6:
+            }
+            case 6: {
+                s32 first_word;
+                s32 second_word;
+
                 edges = 0;
-                if (faces[(s16)face].next[1] != -1) {
+                first_word = faces[(s16)face].next[1];
+                if (first_word != -1) {
                     edges |= 1;
                 }
                 first = faces[(s16)face].next[1];
+                second_word = faces[(s16)face].next[2];
                 second = faces[(s16)face].next[2];
-                if (faces[(s16)face].next[2] != -1) {
+                if (second_word != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
@@ -591,6 +603,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     break;
                 }
                 break;
+            }
             case 7:
                 break;
             }
@@ -599,9 +612,6 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095414);
-#endif
 
 /* Move a flying position: clamp its height between the ground and the
  * ceiling, bounce back off solid objects, else slide along the terrain. */
