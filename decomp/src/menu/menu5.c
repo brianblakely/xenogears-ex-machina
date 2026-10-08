@@ -7,6 +7,38 @@
 #include "window.h"
 #include "gte.h"
 
+/* The unit's small uninitialized variables, zero in the file after every
+ * unit's data, each in a slot of whole words (BSS in menu.mk). */
+static SVector D_80092768; /* stored map position */
+static s32 D_80092770;
+static s32 D_80092774;
+static s32 D_80092778; /* unreferenced */
+static s32 D_8009277C; /* framing heading */
+static s16 D_80092780; /* fade level */
+static s32 D_80092784;
+static PolyFT4 *D_80092788[2]; /* floor quad pools: template, working copy */
+static s32 D_80092790;
+static s32 D_80092794; /* scene mode */
+static s32 D_80092798; /* first actor's model id */
+static s32 D_8009279C; /* second actor's model id */
+static u16 D_800927A0; /* floor palette */
+static u16 D_800927A4; /* floor texture page */
+static u16 D_800927A8; /* floor texture row */
+static s32 D_800927AC; /* orbit angle */
+static s32 D_800927B0; /* orbit speed */
+static void *D_800927B4[2]; /* loaded model of each actor slot */
+static s32 D_800927BC[2]; /* unreferenced */
+static s32 D_800927C4;
+static s32 D_800927C8; /* unreferenced */
+static u8 *D_800927CC; /* per map row: right edge of the drawn span */
+static u8 *D_800927D0; /* per map row: left edge of the drawn span */
+static u16 D_800927D4; /* backdrop texture page */
+static u16 D_800927D8; /* backdrop palette */
+static u8 D_800927DC; /* backdrop texel u */
+static u8 D_800927E0; /* backdrop texel v */
+static s32 D_800927E4[2]; /* unreferenced */
+static u8 D_800927EC;
+
 /* Files of the menu mode, loaded by func_80029AFC up to the zero file. */
 Resource D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
 
@@ -54,6 +86,681 @@ MapTable D_80091934 = {
         { 0x0F0F, 0x0F00, 0x000F, 0x0000 },
     },
 };
+
+/* Build the menu backdrop packets: the sky gradient quads, the backdrop
+ * texture pages, the six backdrop sprites; scale the map heights and set
+ * up the map drawing pools. */
+void func_80081ECC(void) {
+    PolyG4 *sky;
+    s16 *height;
+    s32 i;
+
+    func_800875EC();
+    sky = &D_80095580[0];
+    ((PacketTag *)sky)->len = 8;
+    sky->code = 0x38;
+    sky->r0 = 0x10;
+    sky->g0 = 0x60;
+    sky->b0 = 0x7F;
+    *(u16 *)&sky->r1 = 0x6010;
+    sky->b1 = 0x7F;
+    *(u16 *)&sky->r2 = 0x7F7F;
+    sky->b2 = 0x7F;
+    *(u16 *)&sky->r3 = 0x7F7F;
+    sky->b3 = 0x7F;
+    *(u32 *)&sky->x0 = 0;
+    *(u32 *)&sky->x1 = 0x140;
+    *(u32 *)&sky->x2 = 0x600000;
+    *(u32 *)&sky->x3 = 0x600140;
+    D_80095580[1] = D_80095580[0];
+    SetDrawTPage(&D_800955C8[0], 0, 0, GetTPage(2, 2, 0, 0x100));
+    SetDrawTPage(&D_800955C8[1], 0, 0, GetTPage(2, 2, 0, 0));
+    SetDrawTPage(&D_800955C8[2], 0, 0, GetTPage(2, 2, 0x100, 0x100));
+    SetDrawTPage(&D_800955C8[3], 0, 0, GetTPage(2, 2, 0x100, 0));
+    ((PacketTag *)&D_800955F8[0])->len = 4;
+    *(u32 *)&D_800955F8[0].r0 = 0x64707070;
+    D_800955F8[0].code &= ~1; /* texture not shaded */
+    D_800955F8[0].code |= 2;  /* semi-transparent */
+    *(u32 *)&D_800955F8[0].x0 = 0;
+    *(u16 *)&D_800955F8[0].u0 = 0;
+    *(u32 *)&D_800955F8[0].w = 0xDB0080;
+    func_800732AC(&D_800955F8[1], &D_800955F8[0], sizeof(Sprite) * 5);
+    D_800955F8[3].u0 = 0x80;
+    D_800955F8[2].u0 = 0x80;
+    D_800955F8[3].x0 = 0x80;
+    D_800955F8[2].x0 = 0x80;
+    D_800955F8[5].x0 = 0x100;
+    D_800955F8[4].x0 = 0x100;
+    D_800955F8[5].w = 0x40;
+    D_800955F8[4].w = 0x40;
+    height = (s16 *)D_800928DC;
+    for (i = 0; i < 0x4000; i++) {
+        *height *= 12;
+        height += 2;
+    }
+    func_80087830();
+}
+
+/* Draw the large direction arrow at a map position (8.8 fixed point). */
+void func_80082178(s32 x, s32 z, s32 direction) {
+    s32 start_x;
+    s32 start_z;
+    s32 last_x;
+    s32 last_z;
+    s32 next_x;
+    s32 next_z;
+    s32 angle;
+    s32 i;
+
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
+    angle = direction + 0x580;
+    for (i = 0; i < 6; i++) {
+        next_x = x + ((func_8003F8B0(angle) * 24) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 24) >> 12);
+        func_80087698(last_x, last_z, next_x, next_z);
+        last_x = next_x;
+        last_z = next_z;
+        angle += 0x100;
+    }
+    next_x = x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
+    func_80087698(last_x, last_z, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
+}
+
+/* Draw the small direction arrow at a map position (8.8 fixed point). */
+void func_80082300(s32 x, s32 z, s32 direction) {
+    s32 start_x;
+    s32 start_z;
+    s32 last_x;
+    s32 last_z;
+    s32 next_x;
+    s32 next_z;
+    s32 angle;
+    s32 i;
+
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
+    angle = direction + 0x78A;
+    for (i = 0; i < 3; i++) {
+        next_x = x + ((func_8003F8B0(angle) * 32) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 32) >> 12);
+        func_80087698(last_x, last_z, next_x, next_z);
+        last_x = next_x;
+        last_z = next_z;
+        angle += 0x75;
+    }
+    next_x = x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
+    func_80087698(last_x, last_z, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
+}
+
+/* Copy the stored map position. */
+void func_80082458(SVector *out) {
+    *out = D_80092768;
+}
+
+/* Raise a ground corner by its square's kind: 1 by 0x100, 3 by 0x40. */
+#define GROUND_KIND_LIFT(corner, x, z)                                          \
+    switch (((u32 *)D_800928DC)[(z) * 128 + (x)] & 0x3000000) {                \
+    case 0x1000000:                                                            \
+        (corner).vy += 0xC0;                                                   \
+    case 0x3000000:                                                            \
+        (corner).vy += 0x40;                                                   \
+    }
+
+/* Ground height under a position: the plane through the triangle of its
+ * 256-unit square that contains it (corners optionally raised by their
+ * square's kind); the plane's normal is kept in D_80092768.
+ * Once the triangle is copied, its wide plane point reuses the last
+ * corner's scratch slot and the following eight bytes. */
+s32 func_80082488(Vector *pos, s32 lift) {
+    struct {
+        s32 unused0[2];
+        union {
+            SVector corner[5]; /* four corners and room for the later Vector */
+            struct {
+                SVector unused[3];
+                Vector point;
+            } plane;
+        } geometry;
+        SVector tri[3];
+        s32 unused1[2];
+    } scratch;
+    GroundSquare *square;
+    s32 x;
+    s32 z;
+    s32 x0;
+    s32 z0;
+
+    x = pos->vx;
+    z = pos->vz;
+    x0 = x & ~0xFF;
+    x >>= 8;
+    z0 = z & ~0xFF;
+    z >>= 8;
+    square = (GroundSquare *)((z * 128 + x) * sizeof(GroundSquare) +
+                             (s32)D_800928DC);
+    scratch.geometry.corner[0].vx = x0;
+    scratch.geometry.corner[0].vy = square[0].height;
+    scratch.geometry.corner[0].vz = z0;
+    scratch.geometry.corner[1].vx = x0 + 0x100;
+    scratch.geometry.corner[1].vy = square[129].height;
+    scratch.geometry.corner[1].vz = z0 + 0x100;
+    scratch.geometry.corner[2].vx = x0 + 0x100;
+    scratch.geometry.corner[2].vy = square[1].height;
+    scratch.geometry.corner[2].vz = z0;
+    scratch.geometry.corner[3].vx = x0;
+    scratch.geometry.corner[3].vy = square[128].height;
+    scratch.geometry.corner[3].vz = z0 + 0x100;
+    if (lift) {
+        GROUND_KIND_LIFT(scratch.geometry.corner[0], x, z);
+        GROUND_KIND_LIFT(scratch.geometry.corner[1], x + 1, z + 1);
+        GROUND_KIND_LIFT(scratch.geometry.corner[2], x + 1, z);
+        GROUND_KIND_LIFT(scratch.geometry.corner[3], x, z + 1);
+    }
+    if ((scratch.geometry.corner[0].vz - scratch.geometry.corner[1].vz) * pos->vx +
+            (scratch.geometry.corner[1].vx - scratch.geometry.corner[0].vx) * pos->vz +
+            scratch.geometry.corner[0].vx * scratch.geometry.corner[1].vz -
+            scratch.geometry.corner[1].vx * scratch.geometry.corner[0].vz < 0) {
+        scratch.tri[0] = scratch.geometry.corner[0];
+        scratch.tri[1] = scratch.geometry.corner[1];
+        scratch.tri[2] = scratch.geometry.corner[2];
+    } else {
+        scratch.tri[0] = scratch.geometry.corner[0];
+        scratch.tri[1] = scratch.geometry.corner[3];
+        scratch.tri[2] = scratch.geometry.corner[1];
+    }
+    func_8002DB84(&scratch.tri[0], &scratch.tri[1], &scratch.tri[2], &D_80092768);
+    {
+        scratch.geometry.plane.point.vx = scratch.tri[0].vx;
+        scratch.geometry.plane.point.vy = scratch.tri[0].vy;
+        scratch.geometry.plane.point.vz = scratch.tri[0].vz;
+        return pos->vy +
+               (scratch.geometry.plane.point.vx * D_80092768.vx +
+                scratch.geometry.plane.point.vy * D_80092768.vy +
+                scratch.geometry.plane.point.vz * D_80092768.vz -
+                (pos->vx * D_80092768.vx + pos->vy * D_80092768.vy +
+                 pos->vz * D_80092768.vz)) / D_80092768.vy;
+    }
+}
+
+/* Ground height of the map cell under a position (cells of 256 units). */
+s32 func_80082880(SVector *pos) {
+    Vector unused[3]; /* the original frame has 0x30 unused bytes */
+    s16 x, z;
+
+    x = pos->vx >> 8;
+    z = pos->vz >> 8;
+    return *(s16 *)&((s32 *)D_800928DC)[x + z * 128];
+}
+
+/* The map cell word under a position (cells of 256 units). */
+s32 func_800828C4(Vector *pos) {
+    s32 x = pos->vx >> 8;
+    s32 z = pos->vz >> 8;
+
+    return ((s32 *)D_800928DC)[z * 128 + x];
+}
+
+/* Keep a moving position inside the circular arena of the given radius
+ * around the scene centre: when the step would leave it, turn the step
+ * along the rim and shorten it until the end point is inside. */
+void func_800828F8(Vector *pos, Vector *step, s32 radius) {
+    Vector local;
+    Vector next;
+    Vector square;
+    Matrix rim;
+    Matrix back;
+    SVector dir;
+    s32 distance;
+
+    local.vx = pos->vx + step->vx - 0x3F80;
+    local.vz = pos->vz + step->vz - 0x3F80;
+    func_8004A414(&local, &square);
+    if (radius < SquareRoot0(square.vx + square.vz)) {
+        VectorNormalS(&local, &dir);
+        rim.m[2][1] = 0;
+        rim.m[1][2] = 0;
+        rim.m[1][0] = 0;
+        rim.m[0][1] = 0;
+        rim.m[1][1] = 0x1000;
+        rim.m[2][2] = dir.vz;
+        rim.m[0][0] = dir.vz;
+        rim.m[0][2] = -dir.vx;
+        rim.m[2][0] = dir.vx;
+        ApplyMatrixLV(&rim, step, &local);
+        func_8004A8EC(&rim, &back);
+        SetRotMatrix(&back);
+        local.vz = 0;
+        for (;;) {
+            func_8004998C(&local, step);
+            next.vx = pos->vx + step->vx - 0x3F80;
+            next.vz = pos->vz + step->vz - 0x3F80;
+            func_8004A414(&next, &square);
+            distance = SquareRoot0(square.vx + square.vz);
+            if (radius >= distance) {
+                break;
+            }
+            local.vz -= distance - radius - 8;
+        }
+    }
+}
+
+/* Apply the current stage's colours: sky gradient (top and bottom), back
+ * and far (fog) colours, fade tiles and the GTE primitive colour. */
+void func_80082A70(void) {
+    Environment *env;
+    s32 top_r;
+    s32 top_g;
+    s32 top_b;
+    s32 bottom_r;
+    s32 bottom_g;
+    s32 bottom_b;
+
+    env = &D_8009178C[D_800928B4];
+    D_8009288C = env;
+    top_r = env->top[0];
+    top_g = env->top[1];
+    top_b = env->top[2];
+    D_8009291C = env->unk4;
+    D_80092910 = env->unk5;
+    D_80092908 = env->unk6;
+    bottom_r = env->bottom[0];
+    bottom_g = env->bottom[1];
+    bottom_b = env->bottom[2];
+    func_8002C6E0(env->back[0], env->back[1], env->back[2]);
+    func_8004A10C(bottom_r, bottom_g, bottom_b);
+    D_80095580[0].r0 = top_r;
+    D_80095580[1].r0 = top_r;
+    D_80095580[0].g0 = top_g;
+    D_80095580[1].g0 = top_g;
+    D_80095580[0].b0 = top_b;
+    D_80095580[1].b0 = top_b;
+    *(u16 *)&D_80095580[0].r1 = top_r | (top_g << 8);
+    D_80095580[0].b1 = top_b;
+    *(u16 *)&D_80095580[1].r1 = top_r | (top_g << 8);
+    D_80095580[1].b1 = top_b;
+    *(u16 *)&D_80095580[0].r2 = bottom_r | (bottom_g << 8);
+    D_80095580[0].b2 = bottom_b;
+    *(u16 *)&D_80095580[1].r2 = bottom_r | (bottom_g << 8);
+    D_80095580[1].b2 = bottom_b;
+    *(u16 *)&D_80095580[0].r3 = bottom_r | (bottom_g << 8);
+    D_80095580[0].b3 = bottom_b;
+    *(u16 *)&D_80095580[1].r3 = bottom_r | (bottom_g << 8);
+    D_80095580[1].b3 = bottom_b;
+    D_8009A1C0.r0 = bottom_r;
+    D_8009A1C0.g0 = bottom_g;
+    D_8009A1C0.b0 = bottom_b;
+    D_8009A2B8.r0 = bottom_r;
+    D_8009A2B8.g0 = bottom_g;
+    D_8009A2B8.b0 = bottom_b;
+    SetFogNearFar(0x800, 0x1800, 0xC0);
+    D_80059598 = (D_80059598 & 0xFFFFFF) | 0x28000000;
+    gte_ldrgb(&D_80059598);
+}
+
+/* Load the stage's floor texture (a TIM, palette made semi-transparent)
+ * and build the two pools of 64 textured floor quads, alternating the two
+ * halves of the texture. */
+void func_80082C4C(StageFiles *files) {
+    TimImage tim;
+    PolyFT4 *quad;
+    s16 *clut;
+    s32 i;
+
+    OpenTIM(files->floor_tim);
+    ReadTIM(&tim);
+    clut = (s16 *)tim.caddr;
+    for (i = 0; i < 0x100; i++) {
+        *clut++ |= 0x8000;
+    }
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_800927A0 = GetClut(tim.crect->x, tim.crect->y);
+    D_800927A4 = GetTPage(1, 0, tim.prect->x, tim.prect->y);
+    D_800927A8 = (u8)tim.prect->y;
+    D_80092788[0] = func_80031BDC(0xA00, 0);
+    D_80092788[1] = func_80031BDC(0xA00, 0);
+    quad = D_80092788[0];
+    for (i = 0; i < 0x40; i += 2) {
+        ((PacketTag *)&quad[0])->len = 9;
+        quad[0].code = 0x2C;
+        ((PacketTag *)&quad[1])->len = 9;
+        quad[1].code = 0x2C;
+        quad->clut = D_800927A0;
+        quad->tpage = D_800927A4;
+        quad->u0 = 0x7F;
+        quad->v0 = D_800927A8 + 0x3F;
+        quad->u1 = 0x7F;
+        quad->v1 = D_800927A8;
+        quad->u2 = 0x3F;
+        quad->v2 = D_800927A8 + 0x3F;
+        quad->u3 = 0x3F;
+        quad->v3 = D_800927A8;
+        quad++;
+        quad->clut = D_800927A0;
+        quad->tpage = D_800927A4;
+        quad->u0 = 0x3F;
+        quad->v0 = D_800927A8 + 0x3F;
+        quad->u1 = 0x3F;
+        quad->v1 = D_800927A8;
+        quad->u2 = 0;
+        quad->v2 = D_800927A8 + 0x3F;
+        quad->u3 = 0;
+        quad->v3 = D_800927A8;
+        quad++;
+    }
+    func_800732AC(D_80092788[1], D_80092788[0], 0xA00);
+}
+
+/* Draw the arena wall: a ring of 32 two-storey textured segments around
+ * the scene centre, starting behind the given position, depth-cued and
+ * skipped when too far away. The wall's corners are taken relative to the
+ * camera as 16-bit offsets. */
+void func_80082E60(u32 *ot, Vector *pos) {
+    Vector centre;
+    SVector base0;
+    SVector base1;
+    SVector mid0;
+    SVector mid1;
+    SVector top0;
+    SVector top1;
+    s32 z[4];
+    PolyFT4 *quad;
+    PolyFT4 *next;
+    s32 angle;
+    s32 depth;
+    s32 i;
+
+    centre = *pos;
+    i = 0;
+    quad = D_80092788[D_800928A0];
+    centre.vx -= 0x3F80;
+    centre.vz -= 0x3F80;
+    angle = ratan2(centre.vx, centre.vz) & 0xFFF0;
+    angle -= 0x100;
+    mid0.vy = mid1.vy = -0x290;
+    base0.vy = base1.vy = 0;
+    top0.vy = top1.vy = -0x520;
+    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
+    angle += 0x10;
+    for (; i < 32; i++) {
+        top0.vx = mid0.vx = base0.vx;
+        top0.vz = mid0.vz = base0.vz;
+        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
+        gte_ldv3(&base0, &base1, &mid0);
+        gte_rtpt();
+        gte_dpcs();
+        gte_stsxy3(&quad[0].x0, &quad[0].x1, &quad[0].x2);
+        gte_stsz3v(&z[0], &z[1], &z[2]);
+        gte_ldv3(&mid1, &top0, &top1);
+        gte_rtpt();
+        next = &quad[1];
+        depth = z[0];
+        if (depth < z[1]) {
+            depth = z[1];
+        }
+        if (depth <= z[2]) {
+            depth = z[2];
+        }
+        *(u32 *)&next->x0 = *(u32 *)&quad[0].x2;
+        gte_stsxy(&quad[0].x3);
+        gte_stsxy3(&quad[0].x3, &next->x2, &next->x3);
+        gte_stsz(&z[3]);
+        *(u32 *)&next->x1 = *(u32 *)&quad[0].x3;
+        if (depth <= z[3]) {
+            depth = z[3];
+        }
+        if (depth < 0x1C00) {
+            depth >>= 4;
+            gte_strgb(&quad[0].r0);
+            gte_strgb(&next->r0);
+            ((PacketTag *)&quad[0])->len = 9;
+            quad[0].code = 0x2C;
+            ((PacketTag *)next)->len = 9;
+            next->code = 0x2C;
+            AddPrim(&ot[depth], &quad[0]);
+            AddPrim(&ot[depth], next);
+        }
+        quad += 2;
+        angle += 0x10;
+        base0.vx = base1.vx;
+        base0.vz = base1.vz;
+    }
+}
+
+/* Put the look-at point somewhere random around the scene centre and set
+ * the idle camera motion parameters. */
+void func_800831C8(void) {
+    s32 radius;
+    s32 angle;
+
+    radius = (rand() & 0x1FFF) + 0x800;
+    angle = rand() % 0x600 + 0x500;
+    D_8009871C.vx = ((func_8003F8B0(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vz = ((func_8003F8CC(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vy = -((rand() & 0x7FF) + 0x400);
+    D_80092770 = 0x100;
+    D_80092774 = 0x40;
+    D_8009287C = 0x40;
+    D_8009290C = 0x400;
+}
+
+/* Turn the idle camera with the left/right buttons. */
+void func_800832C0(s32 buttons) {
+    if (buttons & 0x8000) {
+        D_800927AC += 0x20;
+    }
+    if (buttons & 0x2000) {
+        D_800927AC -= 0x20;
+    }
+}
+
+/* Idle orbit camera: move the eye toward a point between the two actors
+ * (further toward the other actor late in the orbit, a third of the way
+ * when smoothing) and swing the look-at point around it, kept inside the
+ * arena and above the ground. */
+void func_80083310(s32 smooth) {
+    Vector look;
+    Vector step;
+    Vector offset;
+    Vector unused;   /* the original frame has 0x18 unused bytes */
+    SVector unused2;
+    Actor *subject;
+    Actor *other;
+    s32 value; /* the other actor's share, then the orbit angle, then the ground */
+
+    if (D_80092890 != 0) {
+        subject = &D_80097010;
+        other = &D_8009872C;
+    } else {
+        subject = &D_8009872C;
+        other = &D_80097010;
+    }
+    ratan2(subject->pos.vx - other->pos.vx, subject->pos.vz - other->pos.vz);
+    if (D_800928AC > 0xB0) {
+        value = 0x100;
+    } else if (D_800928AC > 0xA0) {
+        value = (D_800928AC - 0xA0) << 4;
+    } else {
+        value = 0;
+    }
+    offset.vx = other->pos.vx;
+    offset.vy = other->pos.vy;
+    offset.vz = other->pos.vz;
+    offset.vx -= subject->pos.vx;
+    offset.vy -= subject->pos.vy;
+    offset.vz -= subject->pos.vz;
+    offset.vx *= value;
+    offset.vy *= value;
+    offset.vz *= value;
+    offset.vx /= 256;
+    offset.vy /= 256;
+    offset.vz /= 256;
+    offset.vx += subject->pos.vx;
+    offset.vy += subject->pos.vy;
+    offset.vz += subject->pos.vz;
+    offset.vy -= 0xA0;
+    offset.vx -= D_8009867C.vx;
+    offset.vy -= D_8009867C.vy;
+    offset.vz -= D_8009867C.vz;
+    if (smooth) {
+        offset.vx /= 3;
+        offset.vy /= 3;
+        offset.vz /= 3;
+    }
+    D_80092770 = 0xC00;
+    D_8009867C.vx += offset.vx;
+    D_8009867C.vy += offset.vy;
+    D_8009867C.vz += offset.vz;
+    value = D_800927AC + D_800928AC * D_800927B0;
+    look.vx = (func_8003F8B0(value) * D_80092770) >> 12;
+    look.vz = (func_8003F8CC(value) * D_80092770) >> 12;
+    look.vy = -(D_800928AC * 6 + 0x200);
+    look.vx += D_8009867C.vx;
+    look.vy += D_8009867C.vy;
+    look.vz += D_8009867C.vz;
+    step.vx = look.vx - D_8009871C.vx;
+    step.vz = look.vz - D_8009871C.vz;
+    func_800828F8(&D_8009871C, &step, 0x3D00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vz += step.vz;
+    value = func_80082488(&D_8009871C, 0);
+    if (value < look.vy) {
+        look.vy = value;
+    }
+    D_8009871C.vy = look.vy;
+}
+
+/* Start an idle camera orbit at a random angle, speed and direction. */
+void func_8008369C(void) {
+    D_800927AC = rand();
+    D_800927B0 = rand() % 12 + 4;
+    if (rand() & 1) {
+        D_800927B0 = -D_800927B0;
+    }
+    func_80083310(0);
+}
+
+/* Frame two actors: put the eye between them, pick the side of the pair
+ * the look-at point is nearer to, and move the look-at point toward a spot
+ * beside the pair (further back when they are far apart), kept inside the
+ * arena and above the ground. */
+void func_80083738(Actor *first, Actor *second) {
+    Vector side;
+    Vector other_side;
+    Vector unused[2]; /* the original frame has 0x20 unused bytes */
+    s32 heading;
+    s32 distance;
+    s32 angle;
+    s32 value; /* the second angle, then a side's distance, then the ground */
+
+    heading = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+    distance = func_800887A4(&first->pos, &second->pos);
+    angle = heading - 0x400;
+    D_80092770 = distance * 2 / 3 + 0xC0;
+    D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
+    D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
+    D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
+    side.vx = D_8009867C.vx + ((func_8003F8B0(angle) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((func_8003F8CC(angle) * D_80092770) >> 12);
+    value = heading + 0x400;
+    other_side.vx = D_8009867C.vx + ((func_8003F8B0(value) * D_80092770) >> 12);
+    other_side.vz = D_8009867C.vz + ((func_8003F8CC(value) * D_80092770) >> 12);
+    side.vx -= D_8009871C.vx;
+    side.vy -= D_8009871C.vy;
+    side.vz -= D_8009871C.vz;
+    other_side.vx -= D_8009871C.vx;
+    other_side.vy -= D_8009871C.vy;
+    other_side.vz -= D_8009871C.vz;
+    value = func_80088754(&side);
+    if (func_80088754(&other_side) < value) {
+        D_8009290C = 0x400;
+        D_800928F4 = 0;
+    } else {
+        D_8009290C = -0x400;
+        D_800928F4 = 1;
+    }
+    distance /= 4;
+    if (distance > 0x300) {
+        distance = 0x300;
+    }
+    side.vy = D_8009867C.vy - D_80092774 - distance;
+    side.vx = D_8009867C.vx + ((func_8003F8B0(heading + D_8009290C) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((func_8003F8CC(heading + D_8009290C) * D_80092770) >> 12);
+    value = func_80082488(&side, 0) - 0x100;
+    if (value < side.vy) {
+        side.vy = value;
+    }
+    side.vx = (side.vx - D_8009871C.vx) / D_8009287C;
+    side.vy = (side.vy - D_8009871C.vy) / D_8009287C;
+    side.vz = (side.vz - D_8009871C.vz) / D_8009287C;
+    D_8009277C = heading;
+    func_800828F8(&D_8009871C, &side, 0x3D00);
+    D_8009287C = 100;
+    D_8009871C.vx += side.vx;
+    D_8009871C.vy += side.vy;
+    D_8009871C.vz += side.vz;
+}
+
+/* Read the camera's look-at point and eye. */
+void func_80083B54(Vector *look, Vector *eye) {
+    *look = D_8009871C;
+    *eye = D_8009867C;
+}
+
+/* Clear the display area (one or both 320-wide buffers) and wait. */
+void func_80083BB4(s32 both) {
+    Rect rect;
+
+    rect.x = 0;
+    rect.y = 0;
+    if (both) {
+        rect.w = 0x280;
+    } else {
+        rect.w = 0x140;
+    }
+    rect.h = 0x1E0;
+    ClearImage(&rect, 0, 0, 0);
+    DrawSync(0);
+}
+
+/* Enter a camera/scene mode, running its setup. */
+void func_80083C0C(s32 mode) {
+    D_80092794 = mode;
+    switch (mode) {
+    case 3:
+        func_80081E6C();
+        break;
+    case 4:
+        func_8007A21C(D_8009294C);
+        break;
+    case 8:
+        func_8007AC3C();
+        break;
+    case 6:
+        if (D_8009872C.unkF2 < D_80097010.unkF2) {
+            func_800725B0(&D_80097010);
+        } else {
+            func_800725B0(&D_8009872C);
+        }
+        break;
+    }
+}
+
+/* The scene state word. */
+s32 func_80083CD8(void) {
+    return D_80092790;
+}
 
 /* Draw the elapsed time (frames at 30 per second) as minutes, seconds and
  * hundredths. */

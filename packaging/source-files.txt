@@ -204,7 +204,6 @@ decomp/src/mdec/commons/skipped_frames.c
 decomp/src/mdec/commons/slice_width.c
 decomp/src/mdec/commons/stall_count.c
 decomp/src/mdec/mdec.c
-decomp/src/mdec/mdec_bss.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
 decomp/src/menu/func_80072D18.s
@@ -234,6 +233,7 @@ decomp/src/menu/menu4.c
 decomp/src/menu/menu5.c
 decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
+decomp/src/menu/menu_common.c
 decomp/src/menu/mesh_packet.s
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h
@@ -343,6 +343,7 @@ decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
+decomp/src/resident/kernel_settings.c
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/main2_800366E0.c
@@ -366,6 +367,7 @@ decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/sprite_80025C04.c
+decomp/src/resident/sprite_settings.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h
@@ -509,6 +511,7 @@ docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
 docs/scripts/battle-effect-vm.md
 docs/scripts/battle-event-vm.md
+docs/scripts/field-events.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
 docs/scripts/text-control.md
@@ -720,6 +723,7 @@ tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
 tests/test_event_state.py
+tests/test_events.py
 tests/test_execution.py
 tests/test_field_actor.cpp
 tests/test_field_analysis.py

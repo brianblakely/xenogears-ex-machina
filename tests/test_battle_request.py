@@ -43,10 +43,10 @@ class BattleRequestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             decode_instruction(b"\x00\x80" + bytes(65533) + b"\x71", 65535)
 
-    def test_decoder_still_rejects_unrecovered_post_request_behavior(self):
+    def test_decoder_rejects_an_unknown_extended_opcode_after_the_request(self):
         with self.assertRaises(UnknownInstruction) as caught:
-            disassemble_reachable(command(0x8000) + b"\x70", 0)
-        self.assertEqual((caught.exception.pc, caught.exception.opcode), (3, 0x70))
+            disassemble_reachable(command(0x8000) + b"\xfe\xe3", 0)
+        self.assertEqual((caught.exception.pc, caught.exception.opcode), (4, 0xE3))
 
     def test_music_retry_preserves_request_and_pc_then_accepts_when_ready(self):
         before = state()

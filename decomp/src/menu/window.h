@@ -48,7 +48,6 @@ extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_8008
 
 /* Bout-end sequence effects. */
 extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
-extern s16 D_8009260C;       /* knock-down flash level */
 void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
 void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
@@ -60,8 +59,6 @@ extern u8 D_8005061E;          /* resident: first actor's model id */
 extern u8 D_8005061F;          /* resident: second actor's model id */
 extern u8 D_80050620;          /* resident: option 6 */
 extern u8 D_80050621;          /* resident: level */
-extern s32 D_80092798;         /* first actor's model id */
-extern s32 D_8009279C;         /* second actor's model id */
 extern s32 D_80062528;         /* resident: default sequence handle */
 
 /* Scene script interpreter. */
@@ -92,8 +89,6 @@ typedef struct {
 extern OverlayBuffer D_8009A2F8[2];
 extern DVector D_800917F4[8]; /* map frame corner layout */
 void MargePrim(void *packet, void *next); /* chain two packets */
-extern u8 *D_800927CC; /* per map row: right edge of the drawn span */
-extern u8 *D_800927D0; /* per map row: left edge of the drawn span */
 extern u8 D_80091834[]; /* per map row: leftmost allowed column */
 extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
 
@@ -125,10 +120,6 @@ typedef struct {
 extern PathPoint D_8009A928[0x1F];
 extern s32 D_800928F8; /* recorded path points */
 extern PolyFT3 *D_80092854[2]; /* map triangle pool per draw buffer */
-extern u16 D_800927D4; /* backdrop texture page */
-extern u16 D_800927D8; /* backdrop palette */
-extern u8 D_800927DC;  /* backdrop texel u */
-extern u8 D_800927E0;  /* backdrop texel v */
 
 void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
@@ -139,7 +130,7 @@ u32 func_80072D18(u32 *ot, s32 originX, s32 originZ);
 void func_8008779C(u32 *ot, s32 originX, s32 originZ);
 
 /* Stage colours (17 bytes each). */
-typedef struct {
+typedef struct Environment {
     u8 top[3];         /* sky gradient top */
     u8 unk3;
     u8 unk4, unk5, unk6;
@@ -183,10 +174,6 @@ typedef struct {
 
 extern MapTable D_80091934;
 
-extern u16 D_800927A0; /* floor palette */
-extern u16 D_800927A4; /* floor texture page */
-extern u16 D_800927A8; /* floor texture row */
-extern PolyFT4 *D_80092788[2]; /* floor quad pools: template, working copy */
 u16 GetTPage(s32 mode, s32 rate, s32 x, s32 y); /* texture page id */
 
 /* A three-part gauge bar. */
@@ -227,8 +214,6 @@ void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
 void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
 
 /* Fading overlay. */
-extern s16 D_80092780; /* fade level */
-extern s32 D_80092784;
 extern s32 D_80092948;
 extern s32 D_8009292C;
 
@@ -236,26 +221,17 @@ extern u8 D_800928A0; /* buffer being built */
 extern s32 D_80092880;
 extern Caption D_80095540;
 extern Menu D_800915AC[8];
-extern Menu *D_80092734; /* menu being shown */
-extern s32 D_80092700;
-extern s32 D_80092744; /* caption of the selected line */
-extern s32 D_80092748; /* pad buttons held */
 extern s32 D_80091364; /* pad port of the menu input */
-extern u8 D_80092764;  /* stick is deflected */
 /* Resident pad state, per port. */
 extern u16 D_80059570, D_80059574;
 extern u16 D_800594A4, D_800594A8;
 extern u16 D_8005948C, D_80059490;
 extern u8 D_80059438, D_8005943C; /* stick x */
 extern u8 D_80059430, D_80059434; /* stick y */
-extern s32 D_80092704;
 
 extern u8 D_800928FC;  /* pad port driving the menus */
 extern TileRgb D_8009A1C0; /* screen fade tile, buffer 0 */
 extern TileRgb D_8009A2B8; /* screen fade tile, buffer 1 */
-
-/* Map view. */
-extern SVector D_80092768; /* stored map position */
 
 void func_80080AE8(void);
 void func_80036420(void);
@@ -280,7 +256,6 @@ s32 func_80035734(s32 port); /* pad type */
 void func_8008EB4C(s32 sound);
 void func_80080964(s32 menu);
 
-extern Menu *D_80092738; /* menu to return to */
 extern MenuItem D_80091368[2]; /* vibration choices, port 1 */
 extern MenuItem D_80091390[2]; /* port 2 */
 

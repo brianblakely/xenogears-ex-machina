@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -58,11 +58,14 @@ segments:
       - [0x6C0, .rodata, menu5]   # tables 800701C0, 80070260 at 0 mod 8
       - [0x794, .rodata, menu6]   # strings only
       - [0xBF8, .rodata, menu7]   # tables 800706E8-80070748 at 0 mod 8
-      - [0xcb8, c, menu]
-      - [0xEAC, c, menu2]
+      # The overlay number's unit has no code: 800707A8-8007099C reads
+      # menu2's uninitialized variables, so menu2's text starts there. The
+      # variables also move the menu3/menu4 boundary to 8007E528 and the
+      # menu4/menu5 boundary to 80081ECC (see the .bss below).
+      - [0xcb8, c, menu2]
       - [0x37DC, c, menu3]
-      - [0xEB44, c, menu4]
-      - [0x141F8, c, menu5]
+      - [0xEA38, c, menu4]
+      - [0x123DC, c, menu5]
       # menu6 opens with a data word in .text: the mode-task table D_80088BFC.
       - [0x1910C, c, menu6]
       - [0x196D0, c, menu7]
@@ -73,17 +76,25 @@ segments:
       - [0x21CD0, .data, menu5]
       # menu6's gear list: its strings open menu6's rodata (D_80070284).
       - [0x21E74, .data, menu6]
+      # menu7's .data ends with the embedded sprite model D_80091FB0 (asset,
+      # menu.classification.txt) and D_800925A4, whose padding holds three
+      # stray assembler bytes ("ind").
       - [0x2211C, .data, menu7]
-      # D_80091FB0, still in menu7's .data: an embedded sprite model (asset;
-      # see menu.classification.txt).
-      - [0x224C0, data, menu_model]
-      # D_800925A4, menu7's last table (15 command input triples); the original
-      # assembler padded the section with three stray bytes ("ind").
-      - [0x22AB4, data, menu_data]
-      # The units' uninitialized variables, zero in the image: each unit's in
-      # 4-byte slots (menu2 to menu7), then the common ones from D_8009284C.
-      # The decoded length is not word-aligned: the image ends five bytes into
-      # the window record D_80092954.
-      - [0x22AE4, data, menu_bss]
-      - [0x22e68, databin, menu_tail]
+      # The file then holds the small (up to eight bytes) uninitialized
+      # variables (loaded .bss), zero, each in a slot of whole words (BSS in
+      # menu.mk): every unit's own, in unit order, then the commons
+      # (menu_common.c). Every variable a unit reads lies in its own range,
+      # which fixes the unit boundaries above. The larger ones follow from
+      # D_80092954 on in the same order, past the program's end.
+      - [0x22AE4, .bss, menu2]
+      - [0x22B48, .bss, menu3]
+      - [0x22BE4, .bss, menu4]
+      - [0x22C78, .bss, menu5]
+      - [0x22D00, .bss, menu6]
+      - [0x22D10, .bss, menu7]
+      - [0x22D5C, .bss, menu_common]
+  - [0x22E64]
+  # The packer completes its last group of eight tokens with zero literals
+  # and records the padded length (menu.mk), so the decoded image ends five
+  # zero bytes after the program, inside the window record D_80092954.
   - [0x22e69]

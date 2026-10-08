@@ -106,8 +106,7 @@ typedef struct {
 extern struct TotalPopup *D_800D2D68; /* the running total's task, if shown */
 extern s32 D_800C374C;
 extern MATRIX D_800C3760; /* the popups' view */
-extern s32 D_800C377C;    /* the projection distance when drawn */
-extern s16 D_800C3752[];  /* the first glyph's x by digit count */
+extern s16 D_800C3754[];  /* the first glyph's x by digit count */
 extern s32 D_800D3630;    /* the popup colour kind */
 extern u8 D_800C3784[];   /* hexadecimal digit glyphs */
 extern u32 D_800C37A4[];  /* powers of ten */

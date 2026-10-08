@@ -15,3 +15,9 @@ CONTAINERS := 1:37 2:32
 # Every division carries inline zero/overflow checks (all 24 div, e.g. 800935dc).
 MASPSX_FLAGS := --aspsx-version=2.79 --expand-div
 CLASSIFICATION := decomp/targets/overlays/worldmap.classification.txt
+# The data ends at 0x8009bbb4 (file 0x2c0c4), where the BSS starts. The
+# original packer appended zero literal tokens until its last group held eight
+# and recorded the padded length: the plain encoding of the 0x2c0c4 linked
+# bytes plus two zero literals is the disc stream. The two zero bytes are
+# reproduced here as file padding.
+OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x2c0c6

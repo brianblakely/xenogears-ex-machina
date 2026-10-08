@@ -1143,14 +1143,18 @@ typedef struct {
  * hold the sprite's offset from the camera, then a near layer's base corner,
  * and count the middle rows and the near rows and columns; layer first holds
  * the packed view-cone test point. */
-/* NON_MATCHING: only the four projected corners' registers differ. Bound to
- * $14/$15/$24/$25 (register variables, not accepted as recovered source) the
- * function matches exactly. As pseudos they have 48 refs over ~195 insns each,
- * so global allocation ranks them above layer, the near column offset and quad
- * (to follow quad they would have to live across the whole sprite loop): the
- * corners take t1-t3/t6 (original t6-t9), layer t7 (t1), the column offset s0
- * (t2), quad t8 (t3) and &flag t9 (s0). */
-#ifdef NON_MATCHING
+/* The four projected corners are register variables: the original keeps them
+ * in t6-t9 ($14/$15/$24/$25) in all three branches. In the near loop these are
+ * the only temporaries left: gte_stflg and addPrimLen9 use $12/$13 (t4/t5), and
+ * t0-t3 hold the quad's store pointer, layer, the column offset and quad. As
+ * plain locals the corners (48 loop-weighted refs over 176-199 insns each) rank
+ * in global allocation above layer (53 over 380), the column offset (19 over
+ * 118) and quad (46 over 493) and take t1/t2/t3/t6. Bound to t6-t9 the
+ * function matches exactly. No compiler release or flag places plain locals
+ * there (a replay of GCC 2.7.2's global allocation shows they cannot reach
+ * t6-t9), and the corners are read with the three-mfc2-plus-nop shapes of
+ * LIBGTE.H's register-argument read_sxsy macros, so the original most likely
+ * declared them as register variables too. */
 void func_80086798(void) {
     DriftScratch *scratch;
     PolyFT4 *quad;
@@ -1161,10 +1165,10 @@ void func_80086798(void) {
     s32 cx;
     s32 cz;
     u16 uv;
-    s32 sxy0;
-    s32 sxy1;
-    s32 sxy2;
-    s32 sxy3;
+    register s32 sxy0 asm("$14");
+    register s32 sxy1 asm("$15");
+    register s32 sxy2 asm("$24");
+    register s32 sxy3 asm("$25");
 
     (*D_8009CD40)();
     scratch = DRIFT_SCRATCH;
@@ -1409,9 +1413,6 @@ void func_80086798(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086798);
-#endif
 
 /* Reset an actor to step 0 with parameter 8. */
 s32 func_80087710(s32 index) {

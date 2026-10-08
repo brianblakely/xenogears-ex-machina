@@ -3,7 +3,6 @@
 
 #include "common.h"
 
-
 /* Kind of sparkle (20-byte records at D_80092A74). */
 typedef struct {
     u8 *u;          /* 0x00: texture column of each frame */
@@ -74,25 +73,9 @@ extern u8 D_800911F8[16];
 extern u8 D_80091208[16]; /* 12 used */
 extern u8 D_80091218[16];
 
-/* Other effect textures (position, CLUT, texture page). */
-extern u16 D_80092678, D_8009267C;
-extern s16 D_80092680, D_80092684;
-extern s16 D_80092688, D_8009268C, D_80092690;
-extern Color D_800926B8; /* colour of kind-2 sparkles */
-extern s32 D_800926A4;   /* frame counter */
-extern s32 D_800926B0; /* scene lines added this frame */
-extern s32 D_800926B4;
-
-
-/* Palette of the menu's two-colour sprites and where it is loaded. */
-extern u16 D_800926A8[4];
-extern s16 D_80092698;
-extern s16 D_8009269C;
-extern u16 D_800926A0; /* its CLUT id */
 u16 LoadClut2(u16 *clut, s32 x, s32 y); /* load a CLUT, return its id */
 
 /* Texture of the trail and line sprites. */
-extern u16 D_80092694;   /* texture page */
 extern s32 D_800928E8;   /* owner of the segments started now */
 extern s16 D_80091228[]; /* trail sizes */
 

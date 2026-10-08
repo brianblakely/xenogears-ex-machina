@@ -81,8 +81,8 @@ class EventAnalysisTests(unittest.TestCase):
 
     def test_unknown_and_overlapping_instructions_never_become_noops(self):
         with self.assertRaises(UnknownInstruction) as error:
-            disassemble_reachable(b"\x01\x03\0\xff", 0)
-        self.assertEqual((error.exception.pc, error.exception.opcode), (3, 0xFF))
+            disassemble_reachable(b"\x01\x03\0\xfe\xe3", 0)
+        self.assertEqual((error.exception.pc, error.exception.opcode), (4, 0xE3))
         with self.assertRaisesRegex(EventError, "overlapping"):
             disassemble_reachable(b"\x01\x01\0\0", 0)
 
@@ -106,10 +106,10 @@ class EventAnalysisTests(unittest.TestCase):
     def test_battle_wait_prefix_wrap_and_unknown_successor(self):
         code = bytes((0x7F, 0)) + bytes(65533) + bytes((0xFE,))
         wait = decode_instruction(code, 65535)
-        self.assertEqual((wait.operands, wait.successors), ((0x7F,), (65535, 1)))
+        self.assertEqual((wait.extended, wait.operands, wait.successors), (0x7F, (), (65535, 1)))
         with self.assertRaises(UnknownInstruction) as error:
-            disassemble_reachable(bytes((0xFE, 0x7F, 0xFF)), 0)
-        self.assertEqual((error.exception.pc, error.exception.opcode), (2, 0xFF))
+            disassemble_reachable(bytes((0xFE, 0x7F, 0xFE, 0xE3)), 0)
+        self.assertEqual((error.exception.pc, error.exception.opcode), (3, 0xE3))
 
     def test_truncation_bad_targets_and_unknown_modes_are_explicit(self):
         for data in (b"", b"\x01", b"\x01\0", b"\x02" + bytes(6)):
@@ -119,7 +119,7 @@ class EventAnalysisTests(unittest.TestCase):
             decode_instruction(b"\x01\xff\xff", 0)
         for mode in (0x10, 0x20, 0x0B, 0xCF):
             with self.subTest(mode=mode), self.assertRaises(EventError):
-                branch(0, 0, mode)
+                branch_operands(branch(0, 0, mode), variables(0, 0))
         for pc in (-1, 0x10000, True):
             with self.subTest(pc=pc), self.assertRaises(EventError):
                 decode_instruction(b"\0", pc)

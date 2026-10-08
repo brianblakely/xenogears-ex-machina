@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -50,10 +50,8 @@ segments:
       - [0x7E1C, c, shop]
       - [0xcf50, .data, ovl2601]
       - [0xd210, .data, shop]
-      # The shop's u16 D_801D2260, zero in a four-byte slot. The image ends
-      # with the units' uninitialized variables, which the original linker
-      # allocated in four-byte units (as the resident's u8 variables at
-      # 8005942c-8005943c); a C definition cannot leave the slot's last two
-      # bytes, so the slot stays original data.
-      - [0xd260, data, ovl2601_bss]
+      # The file ends with the units' uninitialized variables (their .bss,
+      # loaded), each in a slot of whole words (BSS in ovl2601.mk): the shop's
+      # u16 D_801D2260.
+      - [0xd260, .bss, shop]
   - [0xd264]
