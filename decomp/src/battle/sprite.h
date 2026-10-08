@@ -237,7 +237,7 @@ void func_8001F6B0(BattleSprite *sprite);
 extern BattleSprite *D_800C3E1C;
 extern s16 D_800D36BC;
 void func_800A96B4(s32 set);
-void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
+void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y);
 void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
 void func_800BEE2C(s32 index, s32 mask, s32 mode);
 void func_800B6004();

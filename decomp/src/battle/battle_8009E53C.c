@@ -3970,13 +3970,14 @@ void func_800A96B4(s32 set) {
 }
 
 #ifdef NON_MATCHING
-/* Create stage object index from the gear files read by 800A9540 (its model
- * file and images) at x, y, z, facing angle; with a variant file, also its
- * extra parts as objects 2 * index + 13 + k attached to parts of the gear,
- * then free the files. A nonzero count copies the shared data even when
- * negative; only positive counts create child objects. Nonmatching:
- * remaining operand lifetimes and loop-invariant scheduling. */
-void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
+/* Create stage gear object index from the files read by 800A9540, using
+ * (texture_x, texture_y) and (clut_x, clut_y) as the VRAM placement bases
+ * for its textures and CLUTs. With a variant file, also create its extra
+ * parts as objects 2 * index + 13 + k attached to parts of the gear, then
+ * free the files. A nonzero count copies the shared data even when negative;
+ * only positive counts create child objects. Nonmatching: remaining operand
+ * lifetimes and loop-invariant scheduling. */
+void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y) {
     GearPartFile *parts;
     s16 *entry;
     s32 count;
@@ -3986,7 +3987,8 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
     s32 flags;
     s32 slot;
 
-    func_800A8BF0(index, 0, D_800C3B78->data1, D_800C3B78->data0, x, y, z, angle, NULL);
+    func_800A8BF0(index, 0, D_800C3B78->data1, D_800C3B78->data0,
+                  texture_x, texture_y, clut_x, clut_y, NULL);
     D_800D3368[index]->field38 = 1;
     D_800D3368[index]->field22 = 1;
     parts = (GearPartFile *)D_800C3B78->field14;
@@ -4010,7 +4012,8 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
                         flags -= 2;
                     }
                     slot = index * 2 + (k + 13);
-                    func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end, x, y, z, angle, NULL);
+                    func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end,
+                                  texture_x, texture_y, clut_x, clut_y, NULL);
                     D_800D3368[slot]->parentPart = *entry++;
                     D_800D3368[slot]->field5C = index;
                     D_800D3368[slot]->field5D = 2;
@@ -4021,7 +4024,7 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
                 } while (++k < count);
             }
         } else {
-            func_8002DDE4(parts->model, 1, x, y, 1, z, angle);
+            func_8002DDE4(parts->model, 1, texture_x, texture_y, 1, clut_x, clut_y);
         }
         func_800320E8(parts);
     }
