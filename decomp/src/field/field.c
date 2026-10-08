@@ -1,12 +1,123 @@
 /* Field unit 8006FDEC-8007A44C: the field load, the frame and its passes
  * (models, sprites, compass), fades, camera, and the field mode entry.
- * Its rodata runs 0x4-0x9c (after the overlay number); where its text ends
+ * Its rodata runs 0x0-0x9c (the overlay number first); where its text ends
  * is chosen with the next unit (see field_8007A44C.c). */
 #include "common.h"
 #include "field.h"
 #include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
+#include "field_music.h"
+
+/* The overlay's number, ahead of this unit's other rodata (the field is
+ * mode overlay 4). */
+const s32 D_8006FAF0 = 4;
+
+/* The field's shared state, defined here in the original order. The words
+ * this unit does not read are used by the other units and the debug monitor
+ * (debug595); the music table's copy above opens this data. */
+s32 D_800ADAFC = 0;     /* debug monitor page toggle (debug595) */
+u16 D_800ADB00 = 0xFFFF;
+s16 D_800ADB02 = 0;     /* frames stuck against terrain */
+u8 D_800ADB04 = 0;      /* random encounters enabled */
+u8 D_800ADB05 = 0;      /* 1 while character drawing is off */
+s32 D_800ADB08 = 0;     /* current draw buffer */
+s32 D_800ADB0C = 0;
+void *D_800ADB10 = NULL; /* first portrait image */
+void *D_800ADB14 = NULL; /* second portrait image */
+s32 D_800ADB18 = 0;
+s32 D_800ADB1C = 0;     /* 801e module loaded */
+void *D_800ADB20 = NULL; /* the 801e module */
+s32 D_800ADB24 = 0;     /* screen effect buffers allocated */
+s32 D_800ADB28 = 0;     /* latched jump setting */
+s32 D_800ADB2C = 0;
+u32 D_800ADB30 = 0;     /* heap top */
+s32 D_800ADB34 = 0;
+s32 D_800ADB38 = 0;     /* requested transition */
+s32 D_800ADB3C = 0;     /* transition operand */
+s32 D_800ADB40 = 0xFF;
+s32 D_800ADB44 = 0;     /* last effect owner */
+s16 D_800ADB48 = 0;     /* needle heading */
+s16 D_800ADB4A = 0;     /* needle goal */
+s32 D_800ADB4C = 0;
+s32 D_800ADB50 = 0;
+s16 D_800ADB54 = 0;
+s32 D_800ADB58 = 0;     /* descriptor whose list is read */
+s32 D_800ADB5C = 0;     /* list position */
+s32 D_800ADB60 = 0;     /* field stream running */
+s32 D_800ADB64 = 0xFF;  /* jump contact, 0xff none */
+s32 D_800ADB68 = 0;     /* pad input polled this pass */
+s32 D_800ADB6C = 0;     /* movie stopped */
+s32 D_800ADB70 = 0;     /* movie requested */
+s32 D_800ADB74 = 0;     /* movie mode */
+s32 D_800ADB78 = 0;
+s32 D_800ADB7C = 0;
+s32 D_800ADB80 = 0;
+s32 D_800ADB84 = 0;
+s32 D_800ADB88 = 0;
+s32 D_800ADB8C = 0;
+s32 D_800ADB90 = 0;
+s32 D_800ADB94 = 0;     /* camera distance */
+s32 D_800ADB98 = 0;
+s32 D_800ADB9C = 0;     /* frame start time */
+s32 D_800ADBA0 = 0;     /* frame draw (CPU) time */
+s32 D_800ADBA4 = 0;     /* GPU time */
+s32 D_800ADBA8 = 0;
+s32 D_800ADBAC = 0;     /* camera frames settling */
+s32 D_800ADBB0 = 0;     /* camera frames releasing */
+s32 D_800ADBB4 = 0;
+void *D_800ADBB8 = NULL; /* music-wave stream ring */
+s32 D_800ADBBC = 0;     /* stream arrivals */
+void *D_800ADBC0 = NULL; /* pending party sprite buffer */
+s32 D_800ADBC4 = 0xFF;
+s32 D_800ADBC8 = 0;
+s32 D_800ADBCC = 0;     /* pending party slot */
+s32 D_800ADBD0 = 0;
+s32 D_800ADBD4 = 0;
+s32 D_800ADBD8 = 0;
+s32 D_800ADBDC = 0;
+s32 D_800ADBE0 = 0;
+s32 D_800ADBE4 = 0;
+s32 D_800ADBE8 = 0;
+s32 D_800ADBEC = 0;     /* publish the field id on the next walk */
+void *D_800ADBF0 = NULL; /* field message table */
+Zone *D_800ADBF4 = NULL; /* trigger zones */
+EventPackage *D_800ADBF8 = NULL;
+s32 D_800ADBFC = 0;     /* event actor count */
+u8 *D_800ADC00 = NULL;  /* event bytecode */
+s32 D_800ADC04 = 2;     /* fade mode; fades start only in mode 2 */
+s16 D_800ADC08 = 1;     /* fade started */
+s32 D_800ADC0C = 0;
+s32 D_800ADC10 = 0;     /* scratchpad words in use */
+void *D_800ADC14 = NULL; /* field stream ring */
+s32 D_800ADC18 = 0;
+
+/* Octant bits. */
+u8 D_800ADC1C[8] = {0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08};
+
+/* The compass: the heading octant bit of each palette row and the letters'
+ * x, z offsets. */
+u16 D_800ADC24[8] = {0x81, 0xC0, 0x60, 0x30, 0x18, 0x0C, 0x06, 0x03};
+DVECTOR D_800ADC34[4] = {{0, 0x500}, {0x500, 0}, {0, -0x500}, {-0x500, 0}};
+
+/* Where the text images go: x, y, palette x, y, w, h per image. Nine rows;
+ * 80077620 loads the first eight. */
+s16 D_800ADC44[9 * 6] = {
+    0x2A0, 0x1C0, 0,     0xFB, 0,    0,
+    0x280, 0x1E0, 0x100, 0xF3, 0x10, 1,
+    0x29C, 0x1C0, 0x100, 0xF5, 0,    0,
+    0x280, 0x1C0, 0x100, 0xF2, 0,    0,
+    0x280, 0x1F0, 0x100, 0xF4, 0x10, 1,
+    0x3C0, 0x140, 0x100, 0xF7, 0x10, 1,
+    0x298, 0x1C0, 0x100, 0xF6, 0x10, 1,
+    0x288, 0x1C0, 0x100, 0xF6, 0x10, 1,
+    0x380, 0x100, 0,     0xE8, 0x10, 1,
+};
+
+/* The VRAM blocks the menu overwrites (x, y pairs) and where they are saved
+ * meanwhile. */
+s16 D_800ADCB0[12] = {0, 0xE0, 0x40, 0xE0, 0x80, 0xE0, 0xC0, 0xE0, 0x100, 0xE0, 0x100, 0x1E0};
+s16 D_800ADCC8[12] = {0x2C0, 0, 0x2C0, 0x20, 0x2C0, 0x40, 0x2C0, 0x60, 0x2C0, 0x80, 0x2C0, 0xA0};
 
 /* Build the camera matrix from the eye, target and up vectors, the world
  * matrix under it, then the three lights and background color from the
@@ -1893,7 +2004,6 @@ void func_8007520C(void) {
     }
 }
 
-extern u8 D_800ADB05; /* 1 while character drawing is off */
 void func_80024FE4(u32 *ot);
 void func_80024FF4(void *p);
 void func_8001D468(void);
@@ -2559,7 +2669,6 @@ void func_800775F8(void) {
 
 extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
 extern s32 *D_8005A4A0;      /* the text-image file (a7) */
-extern s16 D_800ADC44[8 * 6]; /* per text image: x, y, palette x, y, w, h */
 extern RECT D_800B004C;      /* compass colour strip */
 extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
 extern s16 D_800C2690;
@@ -2727,7 +2836,6 @@ void func_80077D2C(void) {
     func_800320E8(D_8005A414[2]);
 }
 
-extern s32 D_800ADB9C;
 
 /* "Clear OTAG". The original assembler left a stray byte (0x6b) in the
  * string's alignment padding, so the literal is linked as original rodata. */
@@ -2765,14 +2873,8 @@ extern s32 D_800595AC;
 extern s32 D_8006251C;
 extern s32 D_80062524;
 extern GameState D_8006D634; /* the game state */
-extern s32 D_800ADBD8;
-extern s32 D_800ADBE0;
-extern s32 D_800ADBE8;
 extern s32 D_8004F354;
 extern s32 D_8004F358;
-extern s32 D_800ADC10;
-extern s32 D_800ADB7C;
-extern s32 D_800ADC04;
 extern s32 D_800AFC78;
 extern s32 D_8004F31C;
 extern s32 D_8004F320;
@@ -2782,12 +2884,8 @@ extern u16 D_800C3908;      /* pad buttons pressed */
 extern u16 D_800AFE9C;
 extern s32 D_8004F334;
 extern u8 D_8005954C;
-extern s32 D_800ADBD4;
-extern s32 D_800ADB18;
 extern s32 D_8004F378;
 extern s32 D_8004F37C;
-extern s32 D_800ADB68;
-extern s32 D_800ADB70;
 extern u8 D_80059171;
 void func_8007781C(void);
 void func_80085890(); /* called with an argument it ignores */
@@ -3309,8 +3407,6 @@ void func_80078D44(void) {
     D_800AFD04 = 0;
 }
 
-extern u8 D_800ADB04;       /* random encounters enabled */
-extern s32 D_800ADBEC;
 extern u8 D_800594F8;
 extern u8 D_80059508;       /* the battle's encounter kind */
 extern u8 D_80065ADC[16];   /* encounter kind weights */
@@ -3521,8 +3617,6 @@ extern u8 D_80059178;
 extern u8 D_80059460;       /* menu kind */
 extern u32 *D_8005A4AC;     /* the menu's order tables */
 extern u32 *D_8005A4B0;
-extern s16 D_800ADCB0[12]; /* VRAM blocks the menu overwrites (x, y pairs) */
-extern s16 D_800ADCC8[12]; /* where they are saved meanwhile (x, y pairs) */
 extern s32 D_8004F31C;
 extern s32 D_8004F320;
 void func_8001C634(void);

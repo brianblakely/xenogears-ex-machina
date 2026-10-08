@@ -13,7 +13,7 @@
 #include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
-
+#include "field_music.h"
 
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */

@@ -8,5 +8,10 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/field
+# The data ends at 0x800af5e8 (file 0x3faf8), where the resident's mode table
+# starts the field BSS. The packer appends zero literals until its last group
+# holds eight tokens and records that length (tools/packed_container.py): six
+# zero bytes, reproduced here as file padding.
+OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x3fafe
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:36 2:31
