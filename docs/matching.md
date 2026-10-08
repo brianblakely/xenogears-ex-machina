@@ -286,6 +286,21 @@ comparison includes linked addresses and data/layout. Decoded overlay matching
 and compressed-container reproduction are separate claims. Do not turn optical
 filesystem/ECC reproduction into a prerequisite for recovering executable code.
 
+## Script machines
+
+Read an opcode table from its recovered interpreter: the handlers of a dispatch
+table or the cases of a switch, with each size and flow taken from the handler's
+advance (its returned step or pointer increment), never inferred from the data.
+Keep the table in a tools/analysis module whose entries name their handlers, and
+test it against the C (table order, returns, case advances) so it cannot drift.
+Find scripts from the code that starts them (stores to the script pointer, their
+pointer tables) and decode each disc's own container, checked against the
+target's original hash; report script-shaped data that nothing starts apart.
+Comment every handler with its operands and effect read from the callee, not the
+call's shape: world map opcode 10 slides an effect's volume rather than playing
+it. docs/scripts/ summarises each machine
+(`python3 -m tools.analysis.overlay_scripts --sweep` for the world map and arena).
+
 ## Evidence without paperwork
 
 For a qualified exact match, retain source/build configuration and the comparison
