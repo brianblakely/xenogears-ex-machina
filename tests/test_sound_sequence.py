@@ -18,7 +18,9 @@ from tools.analysis.sound_sequence import (
     WAIT,
     SequenceError,
     Sweep,
+    archive_offsets,
     check_driver_tables,
+    containers,
     decode_channel,
     decode_instruction,
     locate,
@@ -166,6 +168,32 @@ class ScriptTests(unittest.TestCase):
         found, rejected = locate(bytes(broken))
         self.assertEqual([s.kind for _, s in found], ["smds"])
         self.assertEqual(sum(rejected.values()), 1)
+
+    def test_archive_offsets(self):
+        self.assertEqual(archive_offsets(struct.pack("<III", 2, 12, 14) + bytes(4)), (12, 14))
+        self.assertEqual(archive_offsets(struct.pack("<III", 2, 14, 12) + bytes(4)), ())
+        self.assertEqual(archive_offsets(struct.pack("<III", 2, 8, 12) + bytes(4)), ())
+        self.assertEqual(archive_offsets(struct.pack("<III", 2, 12, 17) + bytes(4)), ())
+        self.assertEqual(archive_offsets(struct.pack("<III", 2, 12, 16) + bytes(8), 16), (12, 16))
+
+    def test_bank_in_a_packed_archive_entry_is_located(self):
+        data = bank([(bytes([0x95, 0x95, 0x90]), None)])  # 40 bytes: five literal groups
+        packed = len(data).to_bytes(4, "little")
+        for start in range(0, len(data), 8):
+            packed += b"\0" + data[start : start + 8]
+        file = struct.pack("<III", 2, 12, 16) + bytes(4) + packed  # the final flag: padding
+
+        class Disc:
+            number, boot = 1, b""
+
+            def files(self):
+                return [{"slot": 5, "size": len(file)}]
+
+            def sectors(self, slot):
+                return file + bytes(2048 - len(file))
+
+        found = [(label, s.kind) for label, c in containers(Disc()) for _, s in locate(c)[0]]
+        self.assertEqual(found, [("disc1 slot 5 entry 1 unpacked", "seds")])
 
     def test_unreached_bytes_decode_on_their_own(self):
         # Each effect's channel ends at its first 90; 95 90 and the final 80

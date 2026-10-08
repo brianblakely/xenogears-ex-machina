@@ -78,7 +78,8 @@ OPCODES = {
             "rest",
             ["ticks:u8"],
             0x8003CD08,
-            "wait `ticks` with the key released (unk5C, flags 0x400, flags2 2)",
+            "wait `ticks` with the key released (unk5C; flags 0x400 and flags2 2, the key-off "
+            "request of an expired gate)",
             WAIT,
         ),
         _op(
@@ -124,7 +125,8 @@ OPCODES = {
             "time_signature",
             ["beats:u8", "unit:u8"],
             0x8003CE68,
-            "beats per bar and beat unit (0xC0 / unit ticks per beat); restart the beat count",
+            "`beats` beats per bar of 0xC0 / unit ticks each (the bar and beat counters "
+            "8003c020 advances); restart the current beat's ticks",
         ),
         _op(
             0x98,
@@ -171,7 +173,8 @@ OPCODES = {
             ["effect:u16", "part:u8"],
             0x8003D070,
             "continue three bytes into channel `part` of effect `effect` of the channel's bank "
-            "(the first bank when it has none); without that bank the operands run as data",
+            "(the first bank when it has none); with no loaded bank of that id it returns the "
+            "operand pointer, so the operands are executed as opcodes",
             JUMP,
         ),
         _op(
@@ -186,7 +189,8 @@ OPCODES = {
             "rate_add",
             ["delta:s8"],
             0x8003D110,
-            "tick rate += delta; zero the ticks per frame until the next rate or tempo change",
+            "tick rate += delta; zero the ticks per frame until a rate or tempo opcode or slide "
+            "recomputes them",
         ),
         _op(
             0xA2,
@@ -200,7 +204,7 @@ OPCODES = {
             "set_1a",
             ["value:u8"],
             0x8003CEC0,
-            "sequence byte 0x1A = value (the driver never reads it)",
+            "sequence byte 0x1A = value (no recovered code reads it)",
         ),
         _op(0xA5, "add_1a", ["value:u8"], 0x8003CED4, "sequence byte 0x1A += value"),
         _op(
@@ -365,7 +369,8 @@ OPCODES = {
             "vibrato_period",
             ["period:u8"],
             0x8003DAB0,
-            "pitch modulator fade-in step 0x400 / ((period + 1) * 4)",
+            "fade the pitch modulator in over (period + 1) * 4 frames (step 0x400 / that; 0xFF "
+            "changes nothing)",
         ),
         _op(
             0xD8,
@@ -412,7 +417,8 @@ OPCODES = {
             "tremolo_period",
             ["period:u8"],
             0x8003DE18,
-            "volume modulator fade-in step 0x400 / ((period + 1) * 4)",
+            "fade the volume modulator in over (period + 1) * 4 frames (step 0x400 / that; 0xFF "
+            "changes nothing)",
         ),
         _op(
             0xE4,
@@ -448,7 +454,8 @@ OPCODES = {
             "autopan_period",
             ["period:u8"],
             0x8003DF3C,
-            "pan modulator fade-in step 0x400 / ((period + 1) * 4)",
+            "fade the pan modulator in over (period + 1) * 4 frames (step 0x400 / that; 0xFF "
+            "changes nothing)",
         ),
         _op(
             0xEC,
@@ -487,7 +494,8 @@ OPCODES = {
             "modulator_timing",
             ["delay:u8", "period:u8"],
             0x8003E308,
-            "selected modulator: delay * 4 frames, fade-in step 0x400 / ((period + 1) * 4)",
+            "selected modulator: delay * 4 frames, fade-in over (period + 1) * 4 frames (period "
+            "0xFF: neither changes)",
         ),
         _op(0xF5, "nop_f5", [], 0x8003E358, "no effect"),
         _op(
@@ -503,7 +511,8 @@ OPCODES = {
             "level_sweep",
             ["from:u8", "frames:u8", "to:u8"],
             0x8003DBE4,
-            "each note sweeps the channel level from `from` to `to` over `frames`",
+            "each note sweeps the channel level from `from` to `to` over `frames` (equal levels "
+            "or 0 frames: off)",
         ),
         _op(
             0xF9,
@@ -517,7 +526,8 @@ OPCODES = {
             "wave_bank_instrument",
             ["key:u8", "instrument:u8"],
             0x8003E44C,
-            "select the wave bank with `key` (the default when not loaded) and an instrument of it",
+            "select the wave bank with `key` (the first loaded wave bank when none has it) and an "
+            "instrument of it",
         ),
         _op(0xFD, "tempo", ["tempo:u8"], 0x8003E4BC, "tempo = tempo << 24 unless 0"),
         _op(
@@ -525,7 +535,7 @@ OPCODES = {
             "wave_bank",
             ["key:u8"],
             0x8003E4F0,
-            "select the wave bank with `key` (the default when not loaded)",
+            "select the wave bank with `key` (the first loaded wave bank when none has it)",
         ),
         _op(
             0xFF,
@@ -798,23 +808,59 @@ class Sweep:
             self.unreferenced[f"{script.kind} scripts"] += 1
 
 
+def archive_offsets(data: bytes, size: int | None = None) -> tuple[int, ...]:
+    """Entry offsets when the first `size` bytes of `data` read as an offset
+    archive (8003342c: a u32 count, then that many ascending u32 offsets past
+    the table and inside it); () otherwise."""
+    size = len(data) if size is None else size
+    if size < 8:
+        return ()
+    count = struct.unpack_from("<I", data, 0)[0]
+    if not 0 < count < 0x1000 or 4 + 4 * count > size:
+        return ()
+    offsets = struct.unpack_from(f"<{count}I", data, 4)
+    if offsets[0] < 4 + 4 * count or offsets[-1] > size or list(offsets) != sorted(offsets):
+        return ()
+    return offsets
+
+
+def containers(disc):
+    """(label, bytes) of the boot program, every file, the files that unpack,
+    and the archive entries (of a file or its unpacked form) that unpack:
+    80032e88 unpacks an entry from its offset, its stream possibly reading
+    the final flag byte past the entry."""
+    yield f"disc{disc.number} boot", disc.boot
+    for entry in disc.files():
+        where = f"disc{disc.number} slot {entry['slot']}"
+        sectors = disc.sectors(entry["slot"])
+        yield where, sectors[: entry["size"]]
+        try:
+            unpacked = decode_block(sectors).data
+        except PackedError:
+            unpacked = None
+        else:
+            yield f"{where} unpacked", unpacked
+        for label, data, size in (
+            (where, sectors, entry["size"]),
+            (f"{where} unpacked", unpacked, None),
+        ):
+            if data is None:
+                continue
+            view = memoryview(data)
+            for index, offset in enumerate(archive_offsets(data, size)):
+                try:
+                    yield f"{label} entry {index} unpacked", decode_block(view[offset:]).data
+                except PackedError:
+                    pass
+
+
 def sweep() -> Sweep:
     result, seen = Sweep(), set()
     for disc in discs():
         result.table_problems += [
             f"disc {disc.number}: {p}" for p in check_driver_tables(disc.boot)
         ]
-        containers = [(f"disc{disc.number} boot", disc.boot)]
-        for entry in disc.files():
-            sectors = disc.sectors(entry["slot"])
-            containers.append((f"disc{disc.number} slot {entry['slot']}", sectors[: entry["size"]]))
-            try:
-                containers.append(
-                    (f"disc{disc.number} slot {entry['slot']} unpacked", decode_block(sectors).data)
-                )
-            except PackedError:
-                pass
-        for where, container in containers:
+        for where, container in containers(disc):
             result.containers += 1
             found, rejected = locate(container)
             result.rejected.update(rejected)
@@ -837,7 +883,8 @@ def report(result: Sweep) -> str:
     )
     lines += [f"    {p}" for p in result.table_problems]
     lines.append(
-        f"  containers scanned (boot programs, files, unpacked files): {result.containers}"
+        "  containers scanned (boot programs, files, unpacked files and archive entries): "
+        f"{result.containers}"
     )
     for kind, name in (("smds", "sequences"), ("seds", "effect banks")):
         lines.append(

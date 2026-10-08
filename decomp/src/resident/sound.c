@@ -1716,8 +1716,8 @@ u8 *func_8003CD00(u8 *data) {
     return data;
 }
 
-/* 80 rest(u8 ticks): wait `ticks` with the key released (unk5C, flags 0x400,
- * flags2 2). */
+/* 80 rest(u8 ticks): wait `ticks` with the key released (unk5C; flags 0x400
+ * and flags2 2, the key-off request of an expired gate). */
 u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->unk5C = *data++;
     channel->flags |= 0x400;
@@ -1801,8 +1801,9 @@ u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 97 time_signature(u8 beats, u8 unit): beats per bar and beat unit (0xC0 /
- * unit ticks per beat); restart the beat count. */
+/* 97 time_signature(u8 beats, u8 unit): `beats` beats per bar of 0xC0 / unit
+ * ticks each (the bar and beat counters 8003c020 advances); restart the
+ * current beat's ticks. */
 u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
     s16 beats = data[0];
     s16 unit = data[1];
@@ -1827,7 +1828,7 @@ u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* A4 set_1a(u8 value): sequence byte 0x1A = value (the driver never reads
+/* A4 set_1a(u8 value): sequence byte 0x1A = value (no recovered code reads
  * it). */
 u8 *func_8003CEC0(u8 *data, SoundSeq *seq) {
     seq->unk1A = *data;
@@ -1901,7 +1902,8 @@ u8 *func_8003D034(u8 *data) {
 
 /* 9E goto_effect(u16 effect, u8 part): continue three bytes into channel
  * `part` of effect `effect` of the channel's bank (the first bank when it
- * has none); without that bank the operands run as data. */
+ * has none); with no loaded bank of that id it returns the operand pointer,
+ * so the operands are executed as opcodes. */
 u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundBank *bank = D_80059440;
     s16 effect = data[0] | (data[1] << 8);
@@ -1929,7 +1931,7 @@ u8 *func_8003D0E8(u8 *data, SoundSeq *seq) {
 }
 
 /* A1 rate_add(s8 delta): tick rate += delta; zero the ticks per frame until
- * the next rate or tempo change. */
+ * a rate or tempo opcode or slide recomputes them. */
 u8 *func_8003D110(s8 *data, SoundSeq *seq) {
     u8 reserved[4]; /* Retain the original unused eight-byte stack frame. */
     s32 rate = *data;
@@ -2393,8 +2395,8 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* D7 vibrato_period(u8 period): pitch modulator fade-in step 0x400 /
- * ((period + 1) * 4). */
+/* D7 vibrato_period(u8 period): fade the pitch modulator in over (period +
+ * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2449,7 +2451,7 @@ u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* F8 level_sweep(u8 from, u8 frames, u8 to): each note sweeps the channel
- * level from `from` to `to` over `frames`. */
+ * level from `from` to `to` over `frames` (equal levels or 0 frames: off). */
 u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 from = data[0] << 24;
     s16 frames = data[1];
@@ -2522,8 +2524,8 @@ u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* E3 tremolo_period(u8 period): volume modulator fade-in step 0x400 /
- * ((period + 1) * 4). */
+/* E3 tremolo_period(u8 period): fade the volume modulator in over (period +
+ * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2577,8 +2579,8 @@ u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* EB autopan_period(u8 period): pan modulator fade-in step 0x400 / ((period
- * + 1) * 4). */
+/* EB autopan_period(u8 period): fade the pan modulator in over (period + 1)
+ * * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2718,7 +2720,8 @@ s32 func_8003E290(depth, rate, shape)
 }
 
 /* F2 modulator_timing(u8 delay, u8 period): selected modulator: delay * 4
- * frames, fade-in step 0x400 / ((period + 1) * 4). */
+ * frames, fade-in over (period + 1) * 4 frames (period 0xFF: neither
+ * changes). */
 u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundModulator *modulator = &channel->modulator[channel->modulator_index];
     u8 period = data[1] + 1;
@@ -2765,7 +2768,8 @@ u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* FC wave_bank_instrument(u8 key, u8 instrument): select the wave bank with
- * `key` (the default when not loaded) and an instrument of it. */
+ * `key` (the first loaded wave bank when none has it) and an instrument of
+ * it. */
 u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = data[0];
     u8 instrument = data[1];
@@ -2792,8 +2796,8 @@ u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
     return data;
 }
 
-/* FE wave_bank(u8 key): select the wave bank with `key` (the default when
- * not loaded). */
+/* FE wave_bank(u8 key): select the wave bank with `key` (the first loaded
+ * wave bank when none has it). */
 u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = *data++;
     SoundSequence *bank;
