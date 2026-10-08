@@ -43,7 +43,28 @@ segments:
     start: 0x0
     vram: 0x801d3000
     subsegments:
-      - [0x0, .rodata, mdec]
+      # The libraries' strings (sdk); the player has no read-only data.
+      - [0x0, rodata, mdec_sdk_rodata]
       - [0xc4, c, mdec]
-      - [0x38b4, data, mdec_data]
+      # .data: the player's initialized statics, then the libraries' data
+      # (sdk ranges in mdec.classification.txt).
+      - [0x38b4, .data, mdec]
+      - [0x38d0, data, mdec_sdk_data]
+      # The image ends with its .bss, all zero: the player's statics, the
+      # libcd modules' statics, then the commons. The original linker gave
+      # each common a 4-byte slot and placed the player's five among libcd's
+      # (CDROM.OBJ declares 20), so each of those is linked from its own unit
+      # under commons/ between the generated libcd ranges.
+      - [0x15910, .data, mdec_bss]
+      - [0x159ac, data, mdec_sdk_bss]
+      - [0x159c0, .data, commons/slice_width]
+      - [0x159c4, data, mdec_sdk_commons1]
+      - [0x159d4, .data, commons/skipped_frames]
+      - [0x159d8, data, mdec_sdk_commons2]
+      - [0x159e0, .data, commons/load_restart]
+      - [0x159e4, data, mdec_sdk_commons3]
+      - [0x159ec, .data, commons/previous_frame]
+      - [0x159f0, data, mdec_sdk_commons4]
+      - [0x159f4, .data, commons/stall_count]
+      - [0x159f8, data, mdec_sdk_commons5]
   - [0x15a1c]

@@ -1,4 +1,27 @@
 # START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
+# The player has no read-only data: the rodata is the libraries' messages.
+801d3000 801d30c4 sdk libpress LIBPRESS.OBJ messages (MDEC_reset, MDEC_in_sync, MDEC_out_sync, timeout) and libcd C_011's dma_execute message
 # Game movie code ends at 0x801d444c; the rest of the text is the linked PsyQ
 # movie libraries, identified with tools/psyq_signatures.py.
 801d444c 801d68b4 sdk PsyQ libpress (BUILD, LIBPRESS, DCT, VLC, VLC_C, ENCSPU), libds, libcd CD streaming (CDROM, CDREAD2, C_0xx)
+# Library data, in the libraries' link order after the player's .data
+# (801d68b4); only library code reads it.
+801d68d0 801d76e0 sdk libpress BUILD.OBJ: the packed VLC table that DecDCTvlcBuild expands
+801d76e0 801d782c sdk libpress LIBPRESS.OBJ: MDEC commands, default IQ tables, DCT matrix and the MDEC/DMA register pointers (DecDCTGetEnv/PutEnv, MDEC_*)
+801d782c 801e882c sdk libpress VLC.OBJ: DecDCTvlc's 0x11000-byte decode table (DECDCTTAB size; its DC tables are read at -0x800/-0x400 from the AC table 801d802c)
+801e882c 801e8830 sdk libpress ENCSPU.OBJ: _EncSPU's state halfword (-1) and the object's padding
+801e8830 801e8910 sdk libcd streaming modules: CD, DMA and interrupt register pointers (StUnSetRing, StCdInterrupt, dma_execute) and StCdInterrupt's words at 801e8908
+# The .bss after the player's statics (801e8910-801e89ac, decomp/src/mdec):
+# the C_004 (last sector's location and frame, read by StGetBackloc) and
+# C_011 statics, then the 20 commons that CDROM.OBJ declares (its signature's
+# xbss: StRingAddr/Base/Size, StFunc1/2, StRgb24, Stsector_offset,
+# StCdIntrFlag, ...), which the linker interleaved with the player's five
+# commons (801e89c0, 801e89d4, 801e89e0, 801e89ec, 801e89f4). StCdIntrFlag
+# (801e89d0) is also read and cleared by the player's MDEC callback, as in
+# the PsyQ movie samples.
+801e89ac 801e89c0 sdk libcd C_004/C_011 statics and two CDROM.OBJ commons (the halfword one, Stsector_offset, at 801e89bc)
+801e89c4 801e89d4 sdk libcd CDROM.OBJ commons: StSetStream's RGB24 flag and two callbacks (StRgb24, StFunc1, StFunc2), StCdIntrFlag
+801e89d8 801e89e0 sdk libcd CDROM.OBJ commons (StSetMask's start frame at 801e89dc)
+801e89e4 801e89ec sdk libcd CDROM.OBJ commons
+801e89f0 801e89f4 sdk libcd CDROM.OBJ common
+801e89f8 801e8a1c sdk libcd CDROM.OBJ commons: ring indices, StSetMask's end frame and mask, StSetRing's ring address and size
