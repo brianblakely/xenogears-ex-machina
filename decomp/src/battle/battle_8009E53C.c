@@ -2596,16 +2596,23 @@ void func_800A4CF8(s32 index) {
 /* Draw the stage sky seen from eye towards target: the horizon bands at the
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
- * each front-facing tile textured from the scroll position. Differs only
- * before the rows (one word longer): the original keeps a plain copy of the
- * masked u0 for the tiles where the s16 u0 here is sign-extended (and then
- * schedules vertex after n, not into the scroll fix-up). The rows match:
- * the tile loop hoists the half and u0 extensions and the tag masks, and in
- * the row loop each invariant moved out of the tile loop doubles loop.c's
- * insn count, so after the four extensions the half copy for the + half - 1
- * corners and the masks stay in the row body. addPrim is not wrapped in a
- * statement macro: in 2.6.3 the insn after a loop note is a scheduling
- * barrier, and the original loads the tile tag before the last UV stores. */
+ * each front-facing tile textured from the scroll position (the u and v
+ * corners only use their low byte). Differs in one word: before the rows
+ * the original copies the masked u0 (addu t8, t0, zero) where (u8)u0 here
+ * zero-extends it (andi t8, t0, 0xff). The cast is what makes the u0 term a
+ * two-insn invariant (a QImode lowpart copy and its extension) like the
+ * original's: loop.c moves it out of the tile loop and then the row loop
+ * with the half extension, and each of those four moved_once insns doubles
+ * the row loop's insn count, so (u8)half for the + half - 1 corners and
+ * the addPrim masks stay in the row body. A plain s32 u0 needs no
+ * conversion and those three move out too; an s16 u0 is sign-extended
+ * (sll/sra, one word longer). combine cannot drop the andi: the masked
+ * value's nonzero bits are unbounded (size - 1 may be -1). Also measured
+ * without effect: u/v/u0/half/col types, u0 first, row-level v, setUV4 and
+ * setUVWH corners, two-step and in-loop masks, statement macros around the
+ * corners. addPrim is not wrapped in a statement macro: in 2.6.3 the insn
+ * after a loop note is a scheduling barrier, and the original loads the
+ * tile tag before the last UV stores. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2623,7 +2630,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s32 tilt;
     s32 size;
     s16 half;
-    s16 u0;
+    s32 u0;
     s32 v0;
     s32 u;
     s32 v;
@@ -2720,8 +2727,8 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     sky->scrollY += sky->speedY;
     u0 = (sky->scrollX / 16 + delta.vx / 12) & ((size = sky->tileSize) - 1);
     v0 = (sky->scrollY / 16 + delta.vz / 12) & (size - 1);
-    vertex = &sky->grid[0][0];
     n = buffer * 64;
+    vertex = &sky->grid[0][0];
     half = (s16)size / 2;
     for (row = 0; row < 8; row++) {
         for (col = 0; col < 8; col++, n++, vertex++) {
@@ -2735,7 +2742,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 gte_rtps();
                 gte_stsxy(&sky->tiles[n].x3);
                 v = (row & 1) * half + v0;
-                u = (col & 1) * half + u0;
+                u = (col & 1) * half + (u8)u0;
                 sky->tiles[n].v0 = v;
                 sky->tiles[n].v1 = v;
                 sky->tiles[n].v2 = v + half - 1;
