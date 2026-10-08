@@ -6,8 +6,7 @@
 #include "menu.h"
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
- * in a slot of whole words (BSS in slot39.mk). func_801E78C8, linked as
- * assembly, names the RECTs' members (slot39.data.ld). */
+ * in a slot of whole words (BSS in slot39.mk). */
 static s16 D_801EA724; /* item list scroll bar */
 static s32 D_801EA728;
 static s16 D_801EA72C;
@@ -3753,94 +3752,72 @@ void func_801E781C(s32 index, u8 rebuild) {
     }
 }
 
-/* Upload listed file `file`'s save icon (palette and three 16x16 frames)
- * to its slot of the icon pages, set its animation steps from the header's
- * frame count (11-13), and add its block count to its port's total; a file
- * without animation is marked still (state 0). */
-/* Nonmatching: the upload loop and row values match; the animation switch
- * still allocates its card pointer and record offsets differently.
- * Lreg dump: here the record offset (file * 92) is a block-local pseudo
- * that local-alloc ties to its multiply chain (all v1), so the card
- * pointer gets a0. The original keeps the chain in v0 and the offset apart
- * (v1 / a0 / a2 in cases 11 / 12 / 13, the first register free after
- * second_y and third_y), the pattern of a pseudo allocated after the block
- * locals, i.e. one local-alloc did not take (not single-block or not
- * dying exactly once), which then pushes the card pointer to a3. Tried:
- * second_y/third_y set before the first store or written inline, each
- * case's stores in a do { } while (0) block (81), still = 0 first in each
- * case (74). local-alloc only ties a pseudo whose reg_qty is -2 (lives in
- * one block, dies once); the original's three different offset registers
- * mean three pseudos, each untied from its chain. A 12-minute permuter
- * run found only a cosmetic 300 -> 295 change. In the original the chain
- * (v0) and the offset are not tied, so at local-alloc time the offset
- * failed combine_regs: either it was not block-local (reg_qty -1: used in
- * another block or dying twice) or file * 23 was not; three registers
- * mean three such pseudos, one per case. As a block-local qty it would
- * still be allocated before second_y (7 refs against 4), so it must have
- * reached global-alloc. A second 20-minute permuter run found nothing. */
-#ifdef NON_MATCHING
+/* Upload listed file `file`'s save icon to its slot of the icon pages (the
+ * palette to row 1c1 + port, the three 16x16 frames to rows 80, a0 and c0
+ * plus port * 16, column 140 + file % 16 * 4), set its six animation steps
+ * to those rows by the header's icon flag (11-13: one to three frames) and
+ * add its block count to its port's total; a file with another flag gets
+ * state 0. Every position is written as a `file / 16` expression, as in the
+ * prologue. That shapes the switch: the first cse pass keeps each case's
+ * first division (its block starts after the loop's end note), the second
+ * merges it into the loop's but leaves the dead division to flow, and the
+ * branch that remains until the jump pass after reload splits the case, so
+ * each case's record offset is allocated globally (v1, a0, a2; the card
+ * pointer a3). */
 void func_801E78C8(s32 file) {
     s32 i;
-    s32 row_y, first_y;
-    s32 second_y, third_y;
-    u8 still;
+    u8 noIcon;
 
-    still = 1;
-    D_801EA8E4.x = file * 4 - (s16)(file / 16 * 64 - 0x140);
+    noIcon = 1;
+    D_801EA8E4.x = 0x140 + file * 4 - file / 16 * 64;
     D_801EA8E4.w = 4;
     D_801EA8E4.h = 0x10;
     D_801EA8EC.x = file * 16;
-    D_801EA8EC.y = file / 16 + 0x1c1;
+    D_801EA8EC.y = 0x1c1 + file / 16;
     D_801EA8EC.w = 0x10;
     D_801EA8EC.h = 1;
     memmove(D_801EA8C4, &D_800625A0->card->headers[file][0x60], 0x20);
     LoadImage(&D_801EA8EC, D_801EA8C4);
     DrawSync(0);
     for (i = 0; i < 3; i++) {
-        D_801EA8E4.y = i * 32 + (first_y = (row_y = file / 16 * 16) + 0x80);
+        D_801EA8E4.y = 0x80 + i * 32 + file / 16 * 16;
         LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
         DrawSync(0);
     }
     switch (D_800625A0->card->headers[file][2]) {
     case 0x11:
-        D_800625A0->card->files[file].frames[0] = first_y;
-        D_800625A0->card->files[file].frames[1] = first_y;
-        D_800625A0->card->files[file].frames[2] = first_y;
-        D_800625A0->card->files[file].frames[3] = first_y;
-        D_800625A0->card->files[file].frames[4] = first_y;
-        D_800625A0->card->files[file].frames[5] = first_y;
-        still = 0;
+        D_800625A0->card->files[file].frames[0] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[1] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[2] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[3] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[4] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[5] = 0x80 + file / 16 * 16;
+        noIcon = 0;
         break;
     case 0x12:
-        D_800625A0->card->files[file].frames[0] = first_y;
-        second_y = row_y + 0xa0;
-        D_800625A0->card->files[file].frames[1] = second_y;
-        D_800625A0->card->files[file].frames[2] = first_y;
-        D_800625A0->card->files[file].frames[3] = second_y;
-        D_800625A0->card->files[file].frames[4] = first_y;
-        D_800625A0->card->files[file].frames[5] = second_y;
-        still = 0;
+        D_800625A0->card->files[file].frames[0] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[1] = 0xa0 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[2] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[3] = 0xa0 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[4] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[5] = 0xa0 + file / 16 * 16;
+        noIcon = 0;
         break;
     case 0x13:
-        D_800625A0->card->files[file].frames[0] = first_y;
-        second_y = row_y + 0xa0;
-        D_800625A0->card->files[file].frames[1] = second_y;
-        third_y = row_y + 0xc0;
-        D_800625A0->card->files[file].frames[2] = third_y;
-        D_800625A0->card->files[file].frames[3] = first_y;
-        D_800625A0->card->files[file].frames[4] = second_y;
-        D_800625A0->card->files[file].frames[5] = third_y;
-        still = 0;
+        D_800625A0->card->files[file].frames[0] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[1] = 0xa0 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[2] = 0xc0 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[3] = 0x80 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[4] = 0xa0 + file / 16 * 16;
+        D_800625A0->card->files[file].frames[5] = 0xc0 + file / 16 * 16;
+        noIcon = 0;
         break;
     }
     D_801EA900[file / 16] += D_800625A0->card->headers[file][3];
-    if (still) {
+    if (noIcon) {
         D_800625A0->card->files[file].state = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78C8);
-#endif
 
 /* Point the current quad at its palette (D_80059414 or the plain
  * D_800595D4). A statement macro. */
