@@ -260,7 +260,7 @@ Unknown behavior and progression workarounds cannot be reported as completion.
 ## Phase 5 — Modern/HD-2D rendering, stereo and optional PS1 fidelity
 
 **Goal:** Modern flat/stereo presentation by default, with optional HD-2D-inspired
-visuals and selectable original quirks on native and browser hosts.
+visual effects and selectable original quirks on native and browser hosts.
 
 - [ ] Use the qualified native and browser wgpu backends across the targets;
   support arbitrary resolution/aspect ratio and presentation framerate,
@@ -270,15 +270,18 @@ visuals and selectable original quirks on native and browser hosts.
   texturing, projected vertex snapping, color precision, dithering, low-resolution
   rasterization and recovered ordering/transparency quirks independently selectable
   at their appropriate rendering stages; adding HD-2D does not change the default.
-- [ ] Make the HD-2D-inspired profile evoke Square Enix's HD-2D visual style:
-  crisp original pixel-art sprites integrated into lit 3D environments, coherent
-  sprite/world lighting, contact/cast shadows, ambient occlusion, atmospheric fog
-  or light shafts, restrained bloom, color grading and adjustable depth of field
-  for a miniature/diorama feel. This is scene-aware rendering, not just a fullscreen
-  filter, sprite smoothing or an upscale. Retain Xenogears' art identity, sprite
-  animation and existing 3D Gear/world geometry rather than replacing game content.
+- [ ] Make the HD-2D-inspired profile apply only Square Enix HD-2D-like visual
+  effects to existing game assets: coherent sprite/world lighting, contact/cast
+  shadows, ambient occlusion, atmospheric fog or light shafts, restrained bloom,
+  color grading and adjustable depth of field for a miniature/diorama feel.
+  Implement the look through scene-aware shaders, lighting and post-processing,
+  not sprite smoothing, an upscale or an art remake. Do not create, redraw, replace
+  or require new sprites, textures, models, animations or other art assets for
+  this mode; no original-art production or replacement art pack is in scope.
+  Preserve the existing sprite pixels/animation and 3D Gear/world geometry.
 - [ ] Keep new lighting/material/scene-tuning metadata in the presentation layer,
-  separate from recovered logic and original assets. Preserve cutout silhouettes,
+  separate from recovered logic and original assets. Do not make new texture maps
+  or other authored art a dependency. Preserve cutout silhouettes,
   transparency, intentional masks, important color cues and original scene layout;
   handle existing baked shading deliberately. UI/text/portraits/FMVs and Seraph
   Glass controls stay legible and outside world depth-of-field/post effects.
