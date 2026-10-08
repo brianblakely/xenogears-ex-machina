@@ -624,7 +624,7 @@ s32 func_80084DB8(s32 probe, s32 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 void func_800963E4(DiscReadRequest *list);
 
-extern s32 D_8009B224[2], D_8009B22C[2], D_8009B234[2], D_8009B23C[2];
+extern s16 D_8009B224[], D_8009B22C[], D_8009B234[], D_8009B23C[]; /* pitches, heights */
 extern HostReadRequest *D_8009C624[16]; /* submitted host-file request lists */
 
 /* Terrain slope plane per type (16 bytes). */
@@ -1521,7 +1521,7 @@ typedef struct {
 s32 func_80090A84(WorldmapActor *actor);
 
 /* worldmap_80090A84 camera pitch choice */
-extern s32 D_8009B214[3]; /* camera distance per pitch */
+extern s32 D_8009B214[4]; /* camera distance per pitch */
 s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 /* worldmap_80094A5C: terrain visibility grid */

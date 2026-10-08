@@ -2,6 +2,38 @@
 
 void func_80093354(VECTOR *position);
 
+/* The orbit camera per pitch step (func_80091C18): its distance, and for
+ * each of its two settings (commands 10 and 9) the pitch angles and the
+ * height margins over the terrain. */
+s32 D_8009B214[4] = {0x280000, 0x370000, 0x460000, 0x550000};
+s16 D_8009B224[4] = {-341, -455, -512, -568};
+s16 D_8009B22C[4] = {-227, -455, -512, -568};
+s16 D_8009B234[4] = {-256, -480, -696, -936};
+s16 D_8009B23C[4] = {-176, -480, -696, -936};
+
+/* Cell diagonal normals, per diagonal direction. */
+VECTOR D_8009B244[2] = {{2896, 0, -2896}, {2896, 0, 2896}};
+
+/* Per terrain type: the slope plane, and the split plane's normal and point. */
+SlopeNormal D_8009B264[16] = {
+    {-1832, 0, 3664}, {1832, 0, 3664}, {1832, 0, 3664}, {-1832, 0, 3664},
+    {-3664, 0, 1832}, {3664, 0, 1832}, {3664, 0, 1832}, {-3664, 0, 1832},
+    {-2896, 0, 2896}, {2896, 0, 2896}, {0, 0, 4096}, {4096, 0, 0},
+    {-2896, 0, 2896}, {2896, 0, 2896}, {2896, 0, 2896}, {-2896, 0, 2896},
+};
+VECTOR D_8009B364[16] = {
+    {3664, 0, 1832}, {-3664, 0, 1832}, {3664, 0, -1832}, {-3664, 0, -1832},
+    {1832, 0, 3664}, {-1832, 0, 3664}, {1832, 0, -3664}, {-1832, 0, -3664},
+    {2896, 0, 2896}, {-2896, 0, 2896}, {4096, 0, 0}, {0, 0, -4096},
+    {-2896, 0, -2896}, {2896, 0, -2896}, {-2896, 0, 2896}, {2896, 0, 2896},
+};
+VECTOR D_8009B464[16] = {
+    {0xFFFF, 0, 0}, {0, 0, 0}, {0x8000, 0, 0}, {0x7FFF, 0, 0},
+    {0xFFFF, 0, 0x8000}, {0, 0, 0x8000}, {0, 0, 0}, {0xFFFF, 0, 0},
+    {0xFFFF, 0, 0}, {0, 0, 0}, {0x8000, 0, 0}, {0, 0, 0x8000},
+    {0x7FFF, 0, 0}, {0x8000, 0, 0}, {0, 0, 0x8000}, {0xFFFF, 0, 0x8000},
+};
+
 /* Walking input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when a path or its entrance is selected, else 0. */
 s32 func_80090A84(WorldmapActor *actor) {
     switch (D_8009CD4C >> 12) {
