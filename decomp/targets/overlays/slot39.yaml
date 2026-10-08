@@ -60,5 +60,5 @@ segments:
       - [0x258E4, data, slot39_rects]
       - [0x258F4, .data, slot39_801E8070]
       # The common variables, allocated after every unit's own.
-      - [0x258FC, data, slot39_common]
+      - [0x258FC, .data, slot39_common]
   - [0x25908]
