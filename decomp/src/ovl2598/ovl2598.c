@@ -7,7 +7,78 @@
 #include "common.h"
 #include "party_menu.h"
 
-extern u16 D_801CB57C[];
+/* The four cursor markers' home positions. */
+s32 D_801CB180[4] = {0, 0, 180, 276}; /* x */
+s32 D_801CB190[4] = {0, 0, 200, 200}; /* y */
+/* A marker's position by list row: the three party rows, then the six
+ * member rows. */
+s32 D_801CB1A0[9] = {32, 32, 32, 144, 144, 144, 144, 144, 144}; /* x */
+s32 D_801CB1C4[9] = {38, 94, 150, 22, 54, 86, 118, 150, 182};   /* y */
+
+/* Status panel layouts: the 17 part positions func_801C9A08,
+ * func_801C9F80 and func_801CA24C read (layout sprites 0-8, then the face,
+ * level digits, next value, HP, HP max, EP, EP max and name label). The
+ * party tables' entries past the 17th are never read. */
+s32 D_801CB1E8[17] = { /* member panel x */
+    152, 160, 192, 224, 232, 264, 224, 232, 264,
+    126, 168, 200, 240, 272, 248, 272, 152,
+};
+s32 D_801CB22C[18] = { /* party panel x */
+    40, 48, 80, 40, 48, 80, 40, 48, 80,
+    14, 56, 88, 56, 88, 64, 88, 40, 64,
+};
+s32 D_801CB274[17] = { /* member panel y */
+    14, 14, 14, 22, 22, 22, 30, 30, 30,
+    14, 14, 14, 22, 22, 30, 30, 24,
+};
+s32 D_801CB2B8[35] = { /* party panel y */
+    30, 30, 30, 54, 54, 54, 62, 62, 62,
+    30, 30, 30, 54, 54, 62, 62, 40, 22,
+    30, 30, 30, 54, 54, 54, 62, 62, 62,
+    22, 30, 30, 54, 54, 62, 62, 40,
+};
+
+/* Name texture position by character pair: x (in 4-pixel units), y. */
+s32 D_801CB344[19] = {
+    24, 0, 24, 0, 24, 0, 24, 0, 24, 0,
+    24, 0, 24, 0, 24, 0, 24, 0, 24,
+};
+s32 D_801CB390[19] = {
+    59, 72, 72, 85, 85, 98, 98, 111, 111, 124,
+    124, 137, 137, 150, 150, 163, 163, 176, 176,
+};
+
+/* Status panel layout sprites (0xFFFF none). */
+s32 D_801CB3DC[9] = {0x15, 0x1F, 0xFFFF, 0x11, 0x19, 0x3E, 0x16, 0x19, 0x3E};
+
+/* The four command labels' text ids. */
+u8 D_801CB400[4] = {9, 10, 11, 12};
+
+/* File cursor -> slot (slots 15 and 31 are skipped). */
+s32 D_801CB404[30] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+};
+/* Slot positions. */
+s32 D_801CB47C[32] = { /* x */
+    32, 40, 48, 56, 64, 72, 80, 88,
+    96, 104, 112, 120, 128, 136, 144, 320,
+    176, 184, 192, 200, 208, 216, 224, 232,
+    240, 248, 256, 264, 272, 280, 288, 320,
+};
+s32 D_801CB4FC[32] = { /* y */
+    14, 34, 54, 14, 34, 54, 14, 34,
+    54, 14, 34, 54, 14, 34, 54, 256,
+    14, 34, 54, 14, 34, 54, 14, 34,
+    54, 14, 34, 54, 14, 34, 54, 256,
+};
+
+/* Each character's bit in the party flags. */
+u16 D_801CB57C[16] = {
+    0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+};
 
 void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
 void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
@@ -15,21 +86,6 @@ void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 void func_801CAD14(void);
 void func_801CA690(u8 first);
 u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page);
-extern u8 D_801CB400[];
-extern s32 D_801CB180[]; /* marker home x */
-extern s32 D_801CB190[]; /* marker home y */
-extern s32 D_801CB1A0[]; /* marker x by list row */
-extern s32 D_801CB1C4[]; /* marker y by list row */
-extern s32 D_801CB1E8[]; /* member panel layout x */
-extern s32 D_801CB22C[]; /* party panel layout x */
-extern s32 D_801CB274[]; /* member panel layout y */
-extern s32 D_801CB2B8[]; /* party panel layout y */
-extern s32 D_801CB344[]; /* name texture x (in 4-pixel units) by character pair */
-extern s32 D_801CB390[]; /* name texture y by character pair */
-extern s32 D_801CB3DC[]; /* status panel layout sprites (0xFFFF none) */
-extern s32 D_801CB404[]; /* file cursor -> slot */
-extern s32 D_801CB47C[]; /* slot x */
-extern s32 D_801CB4FC[]; /* slot y */
 
 /* Test character `index`'s bit (table D_801CB57C) in `flags`. */
 s32 func_801C5018(s32 flags, u8 index) {
