@@ -23,6 +23,135 @@
 #include "field_gte.h"
 #include "field_motion.h"
 
+/* The compass grid: corner x by column, corner z by row, texture u by
+ * column and v by row (four corners each), and each style's texture page
+ * (tp, abr, x, y) and palette (x, y). */
+s16 D_800ADCE0[9][4] = {
+    {0x400, 0x200, 0x400, 0x200},
+    {0x200, 0, 0x200, 0},
+    {0, -0x200, 0, -0x200},
+    {-0x200, -0x400, -0x200, -0x400},
+    {-0x100, 0x100, -0x100, 0x100},
+    {-0x100, 0x100, -0x100, 0x100},
+    {-0x100, 0x100, -0x100, 0x100},
+    {-0x100, 0x100, -0x100, 0x100},
+    {-0x100, 0x100, -0x100, 0x100},
+};
+s16 D_800ADD28[9][4] = {
+    {0x400, 0x400, 0x200, 0x200},
+    {0x200, 0x200, 0, 0},
+    {0, 0, -0x200, -0x200},
+    {-0x200, -0x200, -0x400, -0x400},
+    {0xA0, 0xA0, -0xA0, -0xA0},
+    {0xA0, 0xA0, -0xA0, -0xA0},
+    {0xA0, 0xA0, -0xA0, -0xA0},
+    {0xA0, 0xA0, -0xA0, -0xA0},
+    {0x300, 0x300, 0, 0},
+};
+s16 D_800ADD70[9][4] = {
+    {0x40, 0x50, 0x40, 0x50},
+    {0x50, 0x60, 0x50, 0x60},
+    {0x60, 0x70, 0x60, 0x70},
+    {0x70, 0x7F, 0x70, 0x7F},
+    {0x70, 0x80, 0x70, 0x80},
+    {0x70, 0x80, 0x70, 0x80},
+    {0x70, 0x80, 0x70, 0x80},
+    {0x70, 0x80, 0x70, 0x80},
+    {0x70, 0x80, 0x70, 0x80},
+};
+s16 D_800ADDB8[9][4] = {
+    {0xC0, 0xC0, 0xD0, 0xD0},
+    {0xD0, 0xD0, 0xE0, 0xE0},
+    {0xE0, 0xE0, 0xF0, 0xF0},
+    {0xF0, 0xF0, 0xFF, 0xFF},
+    {0xC0, 0xC0, 0xCA, 0xCA},
+    {0xCA, 0xCA, 0xD4, 0xD4},
+    {0xD4, 0xD4, 0xDE, 0xDE},
+    {0xDE, 0xDE, 0xE8, 0xE8},
+    {0xE8, 0xE8, 0x100, 0x100},
+};
+s16 D_800ADE00[4][6] = {
+    {1, 0, 0x2A0, 0x1C0, 0, 0xFB},
+    {0, 0, 0x29C, 0x1C0, 0x100, 0xF5},
+    {0, 0, 0x280, 0x1C0, 0x100, 0xF2},
+    {0, 0, 0x2A0, 0x1C0, 0, 0xFB},
+};
+
+/* The compass letters: corners (x, z per corner) and texture coordinates
+ * (u, v per corner), one row per letter. */
+s16 D_800ADE30[32] = {
+    -0x600, -0x600, 0, -0x600, -0x600, 0, 0, 0,
+    0x600, -0x600, 0, -0x600, 0x600, 0, 0, 0,
+    -0x600, 0x600, 0, 0x600, -0x600, 0, 0, 0,
+    0x600, 0x600, 0, 0x600, 0x600, 0, 0, 0,
+};
+u8 D_800ADE70[32] = {
+    0x00, 0x00, 0x1F, 0x00, 0x00, 0x1F, 0x1F, 0x1F,
+    0x00, 0x00, 0x1F, 0x00, 0x00, 0x1F, 0x1F, 0x1F,
+    0x00, 0x00, 0x1F, 0x00, 0x00, 0x1F, 0x1F, 0x1F,
+    0x00, 0x00, 0x1F, 0x00, 0x00, 0x1F, 0x1F, 0x1F,
+};
+
+s32 D_800ADE90 = 0; /* next message slot to try */
+s32 D_800ADE94 = 0; /* dialogue cursor frame */
+s32 D_800ADE98 = 0; /* dialogue ticks */
+
+/* Dialogue texture windows, four halfwords (x, y, w, h) each: 0-7 the
+ * border pieces, 8-12 the choice cursor frames, 13- the prompt frames. */
+s16 D_800ADE9C[19 * 4] = {
+    0x20, 0xF0, 0x10, 0x10,
+    0x10, 0xF8, 0x10, 8,
+    0x30, 0xF0, 0x10, 0x10,
+    0x10, 0xF0, 0x10, 8,
+    0x40, 0xF0, 0x10, 0x10,
+    0, 0xF0, 8, 0x10,
+    0x50, 0xF0, 0x10, 0x10,
+    8, 0xF0, 8, 0x10,
+    0x20, 0x1C0, 8, 0xC,
+    0x28, 0x1C0, 8, 0xC,
+    0x30, 0x1C0, 8, 0xC,
+    0x38, 0x1C0, 8, 0xC,
+    0x40, 0x1C0, 8, 0xC,
+    0x60, 0x1C0, 0xC, 8,
+    0x60, 0x1C8, 0xC, 8,
+    0x60, 0x1D0, 0xC, 8,
+    0x60, 0x1D8, 0xC, 8,
+    0x60, 0x1E0, 0xC, 8,
+    0x30, 0xF0, 0x10, 0x10,
+};
+
+/* Icon texture origin per frame. */
+DVECTOR D_800ADF34[8] = {
+    {0x3F, 0}, {0, 0}, {0x3F, 0x40}, {0, 0x40},
+    {0x3F, 0x80}, {0, 0x80}, {0x3F, 0xBF}, {0, 0xBF},
+};
+
+/* Text VRAM position per window. */
+u16 D_800ADF54[4][2] = {{0x300, 0x100}, {0x300, 0x180}, {0x300, 0x134}, {0x300, 0x1B4}};
+
+s32 D_800ADF64 = 0; /* touch latch */
+
+/* The d-pad direction per button state (0x8000 none) and the alternate
+ * directions; read by event a7, player control (field_800854D0.c). */
+u16 D_800ADF68[16] = {
+    0x8000, 0x400, 0x800, 0x600, 0xC00, 0x8000, 0xA00, 0x800,
+    0, 0x200, 0x8000, 0x400, 0xE00, 0, 0xC00, 0x8000,
+};
+u16 D_800ADF88[16] = {
+    0x8000, 0xC00, 0, 0xE00, 0x400, 0x8000, 0x200, 0,
+    0x800, 0xA00, 0x8000, 0xC00, 0x600, 0x800, 0x400, 0x8000,
+};
+
+/* Terrain push angles. */
+u16 D_800ADFA8[8] = {0xC00, 0xE00, 0, 0x200, 0x400, 0x600, 0x800, 0xA00};
+
+/* The layer frame of each animation below 0x10 for 801e layer actors;
+ * animations 0x0c-0x0f read the push speeds that follow. */
+u8 D_800ADFB8[12] = {1, 2, 2, 2, 0, 0, 0, 6, 0, 0, 0, 0};
+
+/* Terrain push speeds. */
+s16 D_800ADFC4[4] = {4, 8, 16, 32};
+
 /* Set a quad's texture coordinates, each clamped to 0..255. */
 void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v2, s16 u3, s16 v3) {
     if (u0 < 0) {
@@ -84,8 +213,6 @@ void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v
 }
 
 extern FieldMarker D_800B0FEC[4]; /* the four compass letters */
-extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
-extern u8 D_800ADE70[32];         /* letter texture coordinates */
 
 /* Build the four compass letters: corners from 800ade30, texture
  * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
@@ -126,11 +253,6 @@ void func_8007A5C4(void) {
     }
 }
 
-extern s16 D_800ADCE0[][4]; /* compass corner x by column */
-extern s16 D_800ADD28[][4]; /* compass corner z by row */
-extern s16 D_800ADD70[][4]; /* texture u by column */
-extern s16 D_800ADDB8[][4]; /* texture v by row */
-extern s16 D_800ADE00[][6]; /* texture page (tp, abr, x, y) and palette (x, y) by style */
 
 /* Build a compass quad record for a grid column and row in a style, then
  * copy the quad to the second buffer. */
@@ -1481,9 +1603,6 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
     poly->y3 = y + h;
 }
 
-/* Dialogue texture windows, four halfwords (x, y, w, h) each: 0-7 the
- * border pieces, 8-12 the choice cursor frames, 13- the prompt frames. */
-extern s16 D_800ADE9C[];
 s32 func_800347AC(TextBox *text);
 s32 func_800347C0(TextBox *text);
 
@@ -1745,7 +1864,6 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
 }
 
-extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
 /* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
  * square and the frame's CLUT row. */
@@ -1808,8 +1926,6 @@ void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     *x = (s16)screen;
 }
 
-extern s32 D_800ADE90;         /* next message slot to try */
-extern u16 D_800ADF54[4][2];   /* text VRAM position per window */
 void func_80032F54(TextBox *text, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 s32 func_80033728(void *messages, void *message);
 
@@ -2637,7 +2753,6 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
 
 
 extern void func_800245D8(void *model, s32 animation);
-extern u8 D_800ADFB8[];
 /* Start animation `animation` on a descriptor's model (flag 0x40 set):
  * clears the actor's flag 0x800 outside jumps or on a change; 801e layer
  * actors (layer bit 13) set their layer frame instead (below 0x10 through

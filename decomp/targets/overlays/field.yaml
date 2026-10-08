@@ -57,7 +57,7 @@ segments:
       - [0x34C58, c, field_800A4748]
       - [0x39784, c, field_800A9274]
       - [0x3df78, .data, field]
-      - [0x3e1f0, data, field_data_f1]
+      - [0x3e1f0, .data, field_8007A44C]
       - [0x3e4dc, .data, field_800854D0]
       - [0x3e570, data, field_data_rest]
   - [0x3faf8]
