@@ -80,7 +80,7 @@ typedef struct {
     s16 clut_y;
 } PortraitPlace;
 
-extern PortraitPlace D_800AEAE4[3][2]; /* VRAM place per slot and image */
+extern PortraitPlace D_800AEAE4[4][2]; /* VRAM place per slot and image */
 extern u8 D_800AE1E0[][2];             /* portrait files per character, - 0x46 */
 extern void *D_800ADB10;               /* first portrait image */
 extern void *D_800ADB14;               /* second portrait image */

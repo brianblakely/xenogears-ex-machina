@@ -59,7 +59,7 @@ segments:
       - [0x3df78, .data, field]
       - [0x3e1f0, .data, field_8007A44C]
       - [0x3e4dc, .data, field_800854D0]
-      - [0x3e570, data, field_data_rest]
+      - [0x3f034, data, field_data_rest]
   - [0x3faf8]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (field.mk), so the decoded image ends six

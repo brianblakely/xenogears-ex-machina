@@ -15,6 +15,53 @@
 #include "field_motion.h"
 #include "field_music.h"
 
+/* The movie sound timelines: one run per movie sound-effect bank, each of
+ * (time, sound) entries ended by 0xffff; 80085788 skips bank + 1 ends. A
+ * sound holds its id in the low byte and its voice pair in bits 8-10. */
+u16 D_800AE060[96][2] = {
+    {0xFFFF, 0},
+    {1, 0x301}, {41, 0xB}, {85, 0x202}, {152, 0x203}, {154, 0xC}, {275, 0x204},
+    {284, 0x105}, {292, 0x206}, {299, 0x107}, {345, 0x208}, {370, 0xD}, {421, 0xE},
+    {518, 0xF}, {638, 0x10}, {677, 0x11}, {735, 0x12}, {760, 0x209}, {787, 0x10A},
+    {0xFFFF, 0},
+    {0, 0x301}, {0xFFFF, 0},
+    {0, 0x301}, {0, 0x202}, {0, 0x103}, {60, 0x11}, {84, 0x304}, {84, 0x205}, {84, 0x106},
+    {118, 0x30A}, {118, 0x20B}, {118, 0x10C}, {142, 0x10}, {320, 0x307}, {320, 0x208},
+    {320, 0x109}, {335, 0x30D}, {335, 0x20E}, {335, 0x10F}, {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {360, 0x306}, {360, 0x207},
+    {360, 0x108}, {360, 0x9}, {360, 0x40A}, {360, 0x50B}, {360, 0x60C}, {360, 0x70D},
+    {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
+    {1, 0x708}, {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
+    {1, 0x708}, {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
+    {1, 0x708}, {0xFFFF, 0},
+    {1, 0x301}, {0xFFFF, 0},
+    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
+    {0xFFFF, 0},
+};
+
+/* Portrait files per character (- 0x46): first and second image. */
+u8 D_800AE1E0[90][2] = {
+    {0, 0}, {6, 6}, {17, 17}, {19, 20}, {21, 21}, {23, 23}, {24, 24}, {28, 28},
+    {27, 27}, {17, 17}, {25, 25}, {34, 34}, {35, 35}, {36, 36}, {37, 37}, {79, 79},
+    {82, 82}, {83, 83}, {26, 26}, {52, 52}, {81, 81}, {77, 77}, {78, 78}, {33, 33},
+    {41, 41}, {29, 29}, {43, 43}, {50, 51}, {42, 42}, {53, 53}, {56, 56}, {38, 38},
+    {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {7, 7}, {8, 8}, {9, 9},
+    {10, 10}, {11, 11}, {12, 12}, {13, 13}, {14, 14}, {15, 15}, {16, 16}, {18, 18},
+    {30, 30}, {31, 31}, {32, 32}, {39, 39}, {40, 40}, {44, 44}, {45, 45}, {46, 46},
+    {47, 47}, {48, 48}, {49, 49}, {54, 54}, {22, 22}, {57, 57}, {58, 58}, {59, 59},
+    {60, 60}, {61, 61}, {62, 62}, {63, 63}, {64, 64}, {65, 65}, {66, 66}, {67, 67},
+    {68, 68}, {69, 69}, {70, 70}, {71, 71}, {72, 72}, {73, 73}, {74, 74}, {75, 75},
+    {76, 76}, {80, 80}, {55, 55}, {84, 84}, {85, 85}, {86, 86}, {87, 87}, {88, 88},
+    {89, 89}, {90, 90},
+};
+
+/* The sprite of each character slot. */
+u8 D_800AE294[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 2, 6};
+
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */
 s32 func_800854D0(void) {
@@ -10602,3 +10649,161 @@ void func_800A3F4C(void) {
         func_800379C8("SAVESIZE=%d %x\n", size, size);
     }
 }
+
+/* The event instructions by opcode (run by 800a1ec8), and the extended
+ * instructions that opcode fe (800869b8) runs by the following byte. */
+void (*D_800AE2A0[256])(void) = {
+    /* 00 */ func_800A1B70, func_800A1E74, func_800A1BD0, func_8009C104,
+    /* 04 */ func_800A1A8C, func_800A17F4, func_800A1730, func_8009EB78,
+    /* 08 */ func_8009ED68, func_8009F0A0, func_8009533C, func_800A1624,
+    /* 0C */ func_8009F5A8, func_800A18B8, func_80092404, func_800923E4,
+    /* 10 */ func_80098C00, func_80098C3C, func_80093200, func_800A2FC0,
+    /* 14 */ func_80093C48, func_80093C6C, func_800A08B8, func_8009E91C,
+    /* 18 */ func_8009E83C, func_8009E4BC, func_8009E428, func_8009E35C,
+    /* 1C */ func_8009E2C8, func_8009E248, func_8009E208, func_8009E1A0,
+    /* 20 */ func_8009E10C, func_8009E094, func_8009DF10, func_8009E040,
+    /* 24 */ func_8009DDEC, func_8009DE94, func_8009DD34, func_8009DC4C,
+    /* 28 */ func_8009DBC8, func_8009DAC4, func_8009DA1C, func_8009DA44,
+    /* 2C */ func_8009A130, func_8009A024, func_80099FC4, func_80099EF8,
+    /* 30 */ func_80099F48, func_800961A0, func_800961C8, func_800961F0,
+    /* 34 */ func_80096214, func_8009D9A4, func_8009D960, func_8009D91C,
+    /* 38 */ func_8009D890, func_8009D804, func_8009D644, func_8009D408,
+    /* 3C */ func_8009D340, func_8009D3A4, func_8009D5B8, func_8009D52C,
+    /* 40 */ func_8009D4A0, func_8009D2D0, func_8009D260, func_8009D198,
+    /* 44 */ func_80098184, func_80097864, func_80092808, func_80092EA0,
+    /* 48 */ func_80093CD0, func_80093D48, func_80099980, func_80098430,
+    /* 4C */ func_800979F0, func_80097954, func_80098370, func_80098274,
+    /* 50 */ func_800977A4, func_800976A8, func_800980FC, func_80098038,
+    /* 54 */ func_800975C0, func_8009749C, func_80093014, func_80099214,
+    /* 58 */ func_80094918, func_8009F4CC, func_8009524C, func_80095284,
+    /* 5C */ func_800A0228, func_8009A174, func_8009A1AC, func_8009AD6C,
+    /* 60 */ func_8008FDD0, func_8008FE2C, func_8008FF04, func_8008FF90,
+    /* 64 */ func_80090068, func_800900C4, func_8009019C, func_8009ABFC,
+    /* 68 */ func_8009AC34, func_8009AC7C, func_8009ACB4, func_8009AB5C,
+    /* 6C */ func_8009ABAC, func_8009A6AC, func_8009A768, func_8009A2A8,
+    /* 70 */ func_8009A1E4, func_80093568, func_8008F724, func_80086C34,
+    /* 74 */ func_8008F668, func_8008F76C, func_80093A68, func_80093A98,
+    /* 78 */ func_800973A4, func_80097264, func_800972AC, func_800969FC,
+    /* 7C */ func_80096F18, func_80097010, func_80097108, func_80095300,
+    /* 80 */ func_80092664, func_800926C8, func_80093664, func_80092768,
+    /* 84 */ func_80096644, func_800966B4, func_80096724, func_80096790,
+    /* 88 */ func_800967E8, func_80095E48, func_80095C00, func_800962C0,
+    /* 8C */ func_8009631C, func_8009640C, func_80095F24, func_80095FB8,
+    /* 90 */ func_8009601C, func_800964B0, func_800A19B0, func_800A1364,
+    /* 94 */ func_800945D4, func_80094650, func_8009468C, func_8009A634,
+    /* 98 */ func_800932D0, func_8008FB98, func_8008FC4C, func_8008FD40,
+    /* 9C */ func_8009BB0C, func_8009A34C, func_8009B9A0, func_8009BA0C,
+    /* A0 */ func_8009BA7C, func_8009A670, func_8009A58C, func_80090228,
+    /* A4 */ func_8009A490, func_8009A534, func_80097410, func_8009F5F4,
+    /* A8 */ func_8009D1F0, func_8009BC98, func_8009ACEC, func_80090300,
+    /* AC */ func_800903BC, func_80090B18, func_80090B9C, func_80090C20,
+    /* B0 */ func_80090CB8, func_80090D50, func_8009A5E0, func_8009731C,
+    /* B4 */ func_80097364, func_8009B8E4, func_8009B6AC, func_8009ADDC,
+    /* B8 */ func_8009AE0C, func_80096534, func_800965A8, func_800965F4,
+    /* BC */ func_800A0D3C, func_80094A5C, func_80094ACC, func_80094B3C,
+    /* C0 */ func_80094BAC, func_80094C1C, func_80094C8C, func_800972F4,
+    /* C4 */ func_80093E30, func_80093FC0, func_800A1E9C, func_8009B824,
+    /* C8 */ func_8009B884, func_80095734, func_8009A824, func_800958C0,
+    /* CC */ func_80095520, func_8009DA70, func_8009DA98, func_8009CE48,
+    /* D0 */ func_8009CEE0, func_8009CF70, func_8009C0B4, func_8009C0DC,
+    /* D4 */ func_8009C01C, func_80092628, func_800925A0, func_800946BC,
+    /* D8 */ func_80094710, func_80094764, func_800921E8, func_80091F84,
+    /* DC */ func_80092044, func_80091E00, func_8009D6D8, func_8009D768,
+    /* E0 */ func_80091E98, func_80091BBC, func_80096150, func_80096178,
+    /* E4 */ func_80091AD4, func_80091944, func_80091A08, func_80091A78,
+    /* E8 */ func_80094158, func_800943AC, func_80092DFC, func_800910C0,
+    /* EC */ func_80091318, func_800915C4, func_80091720, func_8008FA38,
+    /* F0 */ func_80090DEC, func_8008B248, func_8008F90C, func_80090E70,
+    /* F4 */ func_8009BE9C, func_8009C12C, func_8008E8C8, func_8008E85C,
+    /* F8 */ func_8008E59C, func_8008DE64, func_800947B0, func_8008D780,
+    /* FC */ func_8009BF8C, func_800A2FC0, func_800869B8, func_800A2FC0,
+};
+void (*D_800AE6A0[227])(void) = {
+    /* 00 */ func_8008D2D8, func_8009F424, func_80095B3C, func_8008D0F4,
+    /* 04 */ func_8008D26C, func_80095CC4, func_80095D6C, func_8008D604,
+    /* 08 */ func_8008D180, func_8008D078, func_8008D684, func_8008D700,
+    /* 0C */ func_8008CFEC, func_8008CF9C, func_8008C84C, func_8008C938,
+    /* 10 */ func_8008CA60, func_8008CB4C, func_8008CC74, func_8008CD48,
+    /* 14 */ func_8008CDD4, func_800A14F0, func_8008C7D8, func_8009AA00,
+    /* 18 */ func_8008BDD8, func_8008C334, func_8008B894, func_8008B5D4,
+    /* 1C */ func_80098A7C, func_800984EC, func_8009FB98, func_8009FDD4,
+    /* 20 */ func_8009FE4C, func_800A06E8, func_8009B664, func_8009B398,
+    /* 24 */ func_8009B210, func_8008D5C8, func_8008B2F0, func_8008B328,
+    /* 28 */ func_8008E4EC, func_8008E518, func_8008E544, func_8008E570,
+    /* 2C */ func_8008DEBC, func_8008DF44, func_8008DFCC, func_8008E054,
+    /* 30 */ func_8008E3E8, func_8008E414, func_8008E440, func_8008E46C,
+    /* 34 */ func_8008E298, func_8008E2EC, func_8008E340, func_8008E394,
+    /* 38 */ func_8008E1B4, func_8008D230, func_8008CED0, func_8008CE64,
+    /* 3C */ func_8008B180, func_8008AEC8, func_8008AFD8, func_8008B0E8,
+    /* 40 */ func_80092148, func_8009FC48, func_8009FCAC, func_8009B15C,
+    /* 44 */ func_8009B184, func_8009A0FC, func_8008AE5C, func_8008B144,
+    /* 48 */ func_8008B518, func_8008DAFC, func_8008ACE8, func_8008A9AC,
+    /* 4C */ func_8008A974, func_8008A93C, func_8008AA60, func_80093BB0,
+    /* 50 */ func_80093BD4, func_80093BFC, func_80093C20, func_80093AC8,
+    /* 54 */ func_80093B10, func_80093740, func_80093930, func_800937E0,
+    /* 58 */ func_80093824, func_800939A0, func_80093A04, func_8008B210,
+    /* 5C */ func_800A0FD8, func_8008F6AC, func_8008F2D8, func_8008F1C8,
+    /* 60 */ func_8008EC30, func_8008E9F8, func_8008F444, func_8008F4A0,
+    /* 64 */ func_8008F5E4, func_8008F4FC, func_8008F558, func_8008EE14,
+    /* 68 */ func_80092C20, func_8008A6E0, func_8008A604, func_8008A640,
+    /* 6C */ func_8008A5A0, func_8008FB28, func_8008FABC, func_8008B45C,
+    /* 70 */ func_80089F54, func_8009899C, func_800988B8, func_8009861C,
+    /* 74 */ func_800985BC, func_800989F0, func_80098738, func_8008A2E8,
+    /* 78 */ func_8008A4F0, func_8008A4E8, func_8008A4E0, func_8008A518,
+    /* 7C */ func_8008A500, func_8008A508, func_8008A510, func_8008A244,
+    /* 80 */ func_80089FD0, func_8008A08C, func_8008A148, func_80092FB4,
+    /* 84 */ func_800933F8, func_8008A2A0, func_80089F94, func_800936E4,
+    /* 88 */ func_80089BF0, func_80089DCC, func_80089F18, func_80089B54,
+    /* 8C */ func_8008F3D0, func_8008F394, func_8008F348, func_80088790,
+    /* 90 */ func_80089004, func_80089174, func_80089374, func_80089574,
+    /* 94 */ func_800896D4, func_80089880, func_80089A80, func_80089AE4,
+    /* 98 */ func_800884CC, func_8008848C, func_8008F0B4, func_8008EF5C,
+    /* 9C */ func_8008EFA0, func_8008F070, func_8008EFE4, func_800883D4,
+    /* A0 */ func_8008EA58, func_80088360, func_8008825C, func_800881E8,
+    /* A4 */ func_80088198, func_80088C1C, func_800888A4, func_800889BC,
+    /* A8 */ func_80090A10, func_80090A94, func_8008DB2C, func_8008DC74,
+    /* AC */ func_8008DD6C, func_80096B58, func_80096AF4, func_8008800C,
+    /* B0 */ func_8008AACC, func_80087FD4, func_80096D28, func_80096E20,
+    /* B4 */ func_80096C40, func_80087FA4, func_80087E98, func_80087E5C,
+    /* B8 */ func_80087DE0, func_80087B5C, func_80087C34, func_80087D30,
+    /* BC */ func_80087D80, func_80088B68, func_80087C0C, func_80087848,
+    /* C0 */ func_80087800, func_80088508, func_80088674, func_8009E014,
+    /* C4 */ func_8009DF78, func_80086F7C, func_8008BC80, func_800882B8,
+    /* C8 */ func_80088CF8, func_80088D18, func_800A0EE8, func_800A0EB0,
+    /* CC */ func_800A0E54, func_800A0DFC, func_800A0DC0, func_80093888,
+    /* D0 */ func_8008764C, func_8008754C, func_8008752C, func_80087420,
+    /* D4 */ func_80086FD0, func_80087960, func_800879D0, func_80087AB8,
+    /* D8 */ func_80087A40, func_80087A7C, func_80093790, func_80097200,
+    /* DC */ func_800873C4, func_800871B0, func_80087148, func_80086E1C,
+    /* E0 */ func_80086DE0, func_80087580, func_80086D4C,
+};
+
+/* Party slot masks by event operand (& 3). */
+s16 D_800AEA2C[4] = {7, 1, 2, 4};
+
+/* Facings (0x8000 | angle) per direction: the direction table (turns and
+ * faces), the second (camera-relative faces) and the third. */
+s16 D_800AEA34[8] = {0x8C00, 0x8E00, 0x8000, 0x8200, 0x8400, 0x8600, 0x8800, 0x8A00};
+s16 D_800AEA44[8] = {0x8C00, 0x8E00, 0x8000, 0x8200, 0x8400, 0x8600, 0x8800, 0x8A00};
+s16 D_800AEA54[8] = {0x8C00, 0x8400, 0x8800, 0x8000, 0x8A00, 0x8E00, 0x8600, 0x8200};
+
+/* Octant turn table [from * 8 + to]: the signed octants to turn. */
+s16 D_800AEA64[64] = {
+    0, 1, 2, 3, 4, -3, -2, -1,
+    -1, 0, 1, 2, 3, 4, -3, -2,
+    -2, -1, 0, 1, 2, 3, 4, -3,
+    -3, -2, -1, 0, 1, 2, 3, 4,
+    4, -3, -2, -1, 0, 1, 2, 3,
+    3, 4, -3, -2, -1, 0, 1, 2,
+    2, 3, 4, -3, -2, -1, 0, 1,
+    1, 2, 3, 4, -3, -2, -1, 0,
+};
+
+/* Portrait VRAM places per slot and image (x, y, palette x, y); 8009c154
+ * uses the first three slots. */
+PortraitPlace D_800AEAE4[4][2] = {
+    {{0x2C0, 0x100, 0, 0xE1}, {0x2E0, 0x100, 0, 0xE0}},
+    {{0x2C0, 0x140, 0, 0xE3}, {0x2E0, 0x140, 0, 0xE2}},
+    {{0x2C0, 0x180, 0, 0xE5}, {0x2E0, 0x180, 0, 0xE4}},
+    {{0x2C0, 0x1C0, 0, 0xE7}, {0x2E0, 0x1C0, 0, 0xE6}},
+};
