@@ -265,23 +265,6 @@ typedef struct {
     s32 gpu_hold;   /* +54 */
 } LoadMeter;        /* 0x58 */
 
-/* Tool statics (data). */
-extern s32 D_80282034; /* heap monitor shown */
-extern s32 D_80282038; /* performance counters shown */
-extern s32 D_80282040; /* camera tool shown */
-extern s32 D_80282044; /* geometry offset toggle */
-extern s32 D_8028205C; /* heap monitor flags */
-extern s32 D_80282060; /* heap monitor first block */
-extern s32 D_80282064; /* heap monitor scroll repeat delay */
-extern s32 D_80282068; /* heap monitor step */
-extern SVECTOR D_8028206C[2][3]; /* meter needles */
-extern u8 D_802820BB;  /* actor tool shift */
-extern u8 D_802820BC;  /* actor tool control mode */
-extern char *D_802820C0[]; /* control mode names */
-extern s32 D_802820D4; /* memory dump count */
-extern char D_802820D8[]; /* memory dump file name */
-extern s32 D_802820EC; /* frame counter */
-
 void func_80280844(s32 buttons);
 void func_80280960(s32 buttons);
 void func_8028103C(void);
