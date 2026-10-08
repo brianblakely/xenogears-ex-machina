@@ -189,7 +189,7 @@ u16 func_800A1B50(ModelPart *root, s16 *data);
 void func_800A2ACC(EffectPool *pool, ModelPart *part);
 
 /* Build a surface from its point/primitive description (800A7064). */
-void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 

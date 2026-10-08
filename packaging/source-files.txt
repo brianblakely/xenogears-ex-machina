@@ -507,7 +507,9 @@ docs/recovery-inventory.md
 docs/reverse-engineering.md
 docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
+docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
+docs/scripts/text-control.md
 docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
@@ -776,6 +778,7 @@ tests/test_scenario_program.py
 tests/test_sector_survey.py
 tests/test_sound_driver.cpp
 tests/test_sound_output.cpp
+tests/test_sound_sequence.py
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
 tests/test_sprite_model.cpp
@@ -786,6 +789,7 @@ tests/test_sprite_upload.cpp
 tests/test_sprite_vm.py
 tests/test_sweep_math.py
 tests/test_sweep_trace.py
+tests/test_text_control.py
 tests/test_workflow.py
 tests/validation-results.json
 tools/analysis/active_motion.py
@@ -800,6 +804,7 @@ tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
+tools/analysis/disc_index.py
 tools/analysis/event_media.py
 tools/analysis/event_schedule.py
 tools/analysis/event_state.py
@@ -828,6 +833,7 @@ tools/analysis/position_trace.py
 tools/analysis/query_trace.py
 tools/analysis/replay_trace.py
 tools/analysis/return_case.py
+tools/analysis/sound_sequence.py
 tools/analysis/sprite_animation.py
 tools/analysis/sprite_creation.py
 tools/analysis/sprite_matrix.py
@@ -838,6 +844,7 @@ tools/analysis/sprite_vm.py
 tools/analysis/sweep_math.py
 tools/analysis/sweep_math_trace.py
 tools/analysis/sweep_trace.py
+tools/analysis/text_control.py
 tools/analysis/verify_active_motion.py
 tools/analysis/verify_collision_math.py
 tools/analysis/verify_decoder.py
