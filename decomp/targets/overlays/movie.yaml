@@ -49,9 +49,10 @@ segments:
       - [0x4, .rodata, movie]
       - [0x9f8, c, movie]
       - [0x7358, .data, movie]
-      # The .bss starts at 0x80076f3c with the counters D_80076F3C[16]: the
-      # resident's mode table clears it from 0x80076f38 with a pre-increment
-      # loop. The decoded length (0x7453) ends 7 bytes into it; those zero
-      # bytes are not a data object and stay generated.
-      - [0x744c, databin, movie_tail]
+  - [0x744c]
+  # The packer completes its last group of eight tokens with zero literals
+  # and records the padded length (movie.mk), so the decoded image ends
+  # seven zero bytes after the data, inside the BSS: the counters
+  # D_80076F3C[16], which the resident's mode table clears from 0x80076f38
+  # with a pre-increment loop.
   - [0x7453]
