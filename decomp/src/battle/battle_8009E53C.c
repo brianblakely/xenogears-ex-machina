@@ -3283,45 +3283,13 @@ void func_800A6F98(void) {
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
  * then `count` zeroed entries (using its signed low halfword). The table's
  * first halfword is the ring count; h0 is the mesh identifier set by the caller.
- * Texture steps narrow to a signed halfword in u and an unsigned one in v.
+ * The texture page origin is tx/ty rounded down to a multiple of 64/256 as a
+ * halfword; the u/v bases and steps are signed halfwords, and the cells
+ * between two strands use the smaller of their point counts.
  * On an allocation failure the surface is left empty; the original clears
  * centres before passing NULL to the free service, even when a centre block
- * was allocated.
- * NON_MATCHING: the frame and size agree, but the table/scale/angle registers
- * and strip-loop spills still differ. This C also hoists v_step * k ahead
- * of the second triangle's SetPolyGT3 call, unlike the original. */
-#ifdef NON_MATCHING
-/* The two triangles of a cell between neighbouring point strands. */
-#define SET_RING_FIRST_INDICES(_p, _first, _count) \
-    do { \
-        (_p)->index[0] = (_first); \
-        (_p)->index[1] = (_first) + (_count) + 1; \
-        (_p)->index[2] = (_first) + 1; \
-    } while (0)
-
-#define SET_RING_SECOND_INDICES(_p, _first, _count) \
-    do { \
-        s32 next_index = (_first) + 1; \
-        (_p)->index[0] = next_index + (_count); \
-        (_p)->index[1] = next_index + (_count) + 1; \
-        (_p)->index[2] = next_index; \
-    } while (0)
-
-/* Initialize one buffer's textured triangle, whose vertices are filled when drawn. */
-#define SET_RING_TRIANGLE(_p, _page, _clut, _u0, _v0, _u1, _v1, _u2, _v2) \
-    do { \
-        SetPolyGT3(_p); \
-        (_p)->tpage = (_page); \
-        (_p)->u0 = (_u0); \
-        (_p)->v0 = (_v0); \
-        (_p)->clut = (_clut); \
-        (_p)->u1 = (_u1); \
-        (_p)->v1 = (_v1); \
-        (_p)->u2 = (_u2); \
-        (_p)->v2 = (_v2); \
-    } while (0)
-
-void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+ * was allocated. */
+void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
@@ -3335,12 +3303,11 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     SurfaceEntry *entry;
     s32 start;
     u16 tpage, clut;
-    s32 page_x, page_y;
-    s32 u_base;
+    s16 page_x, page_y;
+    s16 u_base;
     s16 v_base;
     s16 u_step;
-    u16 v_step;
-    s32 first;
+    s16 v_step;
     s32 i, k, b;
     s32 n;
     u16 total;
@@ -3382,8 +3349,8 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     }
     centre = surface->centres;
     points_base = point;
-    for (i = 0; i < surface->rings; i++, counts++, centre++) {
-        *rings++ = point;
+    for (i = 0; i < surface->rings; rings++, counts++, centre++, i++) {
+        *rings = point;
         for (k = 0; k < *counts; k++) {
             point->length = *radii++ * scale / 4096;
             point->sag = *angles++ + angle_base;
@@ -3409,36 +3376,50 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         return;
     }
     surface->polyList = polys;
-    page_x = tx / 64;
-    page_y = ty / 256;
-    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    page_x = tx / 64 * 64;
+    page_y = ty / 256 * 256;
+    tpage = GetTPage(0, 1, page_x, page_y);
     clut = GetClut(clut_x, clut_y);
-    u_base = (tx - (s16)(page_x << 6)) * 4;
-    v_base = ty - (page_y << 8);
+    u_base = (tx - page_x) * 4;
+    v_base = ty - page_y;
     start = 0;
     u_step = u_span / (surface->rings - 1);
     for (i = 0; i < surface->rings - 1; i++) {
-        n = counts[1];
         if (counts[0] < counts[1]) {
             n = counts[0];
+        } else {
+            n = counts[1];
         }
         v_step = v_span / n;
         for (k = 0; k < n; k++) {
-            first = start + k;
-            SET_RING_FIRST_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k;
+            polys->index[1] = start + k + counts[0] + 1;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * i, v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * i;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * k;
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
-            SET_RING_SECOND_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k + counts[0] + 1;
+            polys->index[1] = start + k + counts[0] + 2;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * (k + 1),
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * (i + 1);
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * (k + 1);
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
         }
@@ -3473,13 +3454,6 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         surface->entries = NULL;
     }
 }
-
-#undef SET_RING_TRIANGLE
-#undef SET_RING_SECOND_INDICES
-#undef SET_RING_FIRST_INDICES
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
-#endif
 
 /* Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),

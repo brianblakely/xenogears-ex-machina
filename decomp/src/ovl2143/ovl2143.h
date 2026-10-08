@@ -619,7 +619,7 @@ s32 func_80031894(u8 *group);       /* the group's size */
 ModelList *func_801DC22C(u8 *group, ModelList *list);
 ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
-void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
