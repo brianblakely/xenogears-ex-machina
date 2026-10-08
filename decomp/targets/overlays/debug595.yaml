@@ -44,5 +44,5 @@ segments:
     subsegments:
       - [0x0, .rodata, debug595]
       - [0x11ec, c, debug595]
-      - [0x596c, data, debug595_data]
+      - [0x596c, .data, debug595]
   - [0x61c8]

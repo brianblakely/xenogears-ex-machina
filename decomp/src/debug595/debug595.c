@@ -8,6 +8,28 @@
  * debug lines. */
 #include "debug595.h"
 
+/* Monitor statics (all zero in the image). */
+s32 D_8028596C = 0; /* RGB calc red */
+s32 D_80285970 = 0; /* green */
+s32 D_80285974 = 0; /* blue */
+u32 D_80285978 = 0; /* RGB calc mode (bits 4..5) */
+s32 D_8028597C = 0; /* screen cursor */
+s32 D_80285980 = 0; /* second counter, reset with the cursor */
+s32 D_80285984 = 0; /* monitor screen */
+s32 D_80285988 = 0; /* debug lines shown (set by the field overlay) */
+s32 D_8028598C = 0; /* encounter notice shown */
+s32 D_80285990 = 0; /* encounter notice frames */
+s32 D_80285994 = 0; /* encounters counted */
+s32 D_80285998 = 0; /* last encounter number */
+s32 D_8028599C = 0; /* particle editor row */
+s32 D_802859A0 = 0; /* particle editor column */
+s16 D_802859A4 = 0; /* CPU-time marks this frame */
+/* The CPU-time marks: 32 records of 12 bytes exactly fill 802859a8-80285b28;
+ * the code addresses their time (+4) and name (+8). */
+CpuMark D_802859A8[32] = {0};
+s16 D_80285B28[16] = {0}; /* encounters per number */
+DebugLine D_80285B48[16] = {0};
+
 /* Reset the two frame counters. */
 void func_802811EC(void) {
     D_80285980 = 0;
@@ -199,8 +221,8 @@ void func_80281B00(char *name) {
 
     if (D_800C268C == 0) {
         now = VSync(1);
-        D_802859AC[D_802859A4].time = now - D_800ADB9C;
-        D_802859AC[D_802859A4].name = name;
+        D_802859A8[D_802859A4].time = now - D_800ADB9C;
+        D_802859A8[D_802859A4].name = name;
         D_802859A4++;
         D_800ADB9C = VSync(1);
     }
@@ -560,7 +582,7 @@ free_size:
     case 5:
         func_800379C8("---------- CPU Time --------\n");
         for (i = 0; i < D_802859A4; i++) {
-            func_800379C8("%s = %6d\n", D_802859AC[i].name, D_802859AC[i].time);
+            func_800379C8("%s = %6d\n", D_802859A8[i].name, D_802859A8[i].time);
         }
         func_800379C8("\nCPU=%6d GPU=%6d\n", D_800ADBA0, D_800ADBA4);
         func_800379C8("PolyCount %d / %d\n", D_80059578, D_800595C0);

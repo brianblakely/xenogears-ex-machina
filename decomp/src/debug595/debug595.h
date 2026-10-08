@@ -26,9 +26,9 @@ typedef struct {
 
 /* One CPU-time mark: scanlines spent before it. */
 typedef struct {
-    s32 time;
-    char *name;
-    s32 unk8;
+    s32 unk0;
+    s32 time;   /* 0x04 */
+    char *name; /* 0x08 */
 } CpuMark;
 
 /* An emitter's drawing flags (the editor steps them as one halfword). */
@@ -101,26 +101,12 @@ extern s16 D_800AF9E6;
 extern s16 D_800AF9FC;
 extern u16 D_800AF9FE;
 
-/* Tool statics. */
-extern s32 D_8028597C;
-extern s32 D_80285980;
-extern s32 D_80285988;   /* debug lines shown */
-extern s32 D_8028598C;
-extern s32 D_80285990;
-extern s32 D_80285994;
-extern s32 D_80285998;
-extern s16 D_802859A4;   /* CPU-time marks this frame */
-extern CpuMark D_802859AC[];
 extern s32 D_800ADB9C;   /* scanline count at the last mark */
-extern s16 D_80285B28[16];
-extern DebugLine D_80285B48[16];
 
 s32 func_80281B90(u32 *ot);
 void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer);
 
 /* Particle emitter editor. */
-extern s32 D_8028599C; /* editor row */
-extern s32 D_802859A0; /* editor column */
 void func_80284354(s32 row, s32 cursor, s32 blink);
 s32 func_8028439C(s32 row, s32 cursor, s32 *selected);
 void func_802846CC(s32 axis, u32 item);
@@ -253,11 +239,6 @@ extern s16 D_800B218E;
 extern s32 D_800B2298;         /* encounter timer */
 extern s32 D_800B229C;         /* encounter number */
 extern u8 D_80065ADC[16];
-extern s32 D_8028596C;         /* RGB calc red */
-extern s32 D_80285970;         /* green */
-extern s32 D_80285974;         /* blue */
-extern u32 D_80285978;         /* RGB calc mode (bits 4..5) */
-extern s32 D_80285984;         /* monitor screen */
 s32 func_80032340(void);       /* free heap size */
 void func_8003278C(s32 mode, s32 top, s32 step, s32 flags); /* heap monitor */
 void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
