@@ -4521,7 +4521,6 @@ void func_800AAB34(BattleObject *object) {
 /* A script jump: offset is in bytes from the command's start. */
 #define SCRIPT_JUMP(start, offset) ((u16 *)((u8 *)(start) + (offset)))
 
-#ifdef NON_MATCHING
 /* Run a battle object's effect script for steps frames: first move it by its
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
@@ -4529,14 +4528,12 @@ void func_800AAB34(BattleObject *object) {
  * (-1 when called to start a script). The command word is signed; its
  * opcode and argument views are unsigned bytes. Jump offsets are in bytes
  * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
- * the first and second parameter words, shared by several commands, as is
- * the looked-up animation of 11/12. The turn towards a position passes a roll
- * that is only ever zero: the original keeps its `move $s7,$zero` while
- * combine folds the stored argument to $zero. Still NON_MATCHING (3184 of
- * 3186 words): the opcode lives in $s7 instead of $fp, b2 in $s1 instead of
- * $s7, and the camera commands spill their low byte and second high byte
- * (0x160/0x168) where the original keeps them in $s1 and in a caller-saved
- * $a3 (home 0x1C8), so later spill slots shift by 16 bytes. */
+ * the first and second parameter words, decoded the same way by every
+ * command that takes bytes; m1 is the first word's high byte of 1B, 25 and
+ * the camera commands. ptr holds the looked-up animation of 11/12 and the
+ * target image of 1B, and 1F looks its slot up into op. The turn towards a
+ * position passes a roll that is only ever zero, and a relative camera turn
+ * (67 with 0x20) ends where it started (to is the old from). */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4558,10 +4555,8 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     u8 b1;
     u8 b2;
     u8 b3;
-    Animation *animation;
+    void *ptr;
     u8 m1;
-    u8 c0;
-    u8 c3;
 
     if (steps == 0 || object->script == NULL) {
         return;
@@ -4811,24 +4806,27 @@ chosen:
             {
                 u8 loop;
 
-                animation = (Animation *)func_800AF518(object, arg, &i);
+                ptr = func_800AF518(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
                     loop = word >> 8;
-                    func_800A2434(pool, object->hierarchy, (u16 *)animation, loop, (u8)word);
+                    b0 = word;
+                    func_800A2434(pool, object->hierarchy, ptr, loop, b0);
                     flags = -1;
-                    object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, animation, loop);
+                    object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                    func_800AE1BC(object, ptr, loop);
                 }
             }
             break;
         case 0x12:
-            animation = (Animation *)func_800AF518(object, arg, &i);
+            ptr = func_800AF518(object, arg, &i);
             word = *pc++;
             if (i == 0) {
-                func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
+                b1 = word >> 8;
+                b0 = word;
+                func_800A2704(pool, object->hierarchy, ptr, b1, b0);
                 flags = -1;
-                object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
             break;
         case 0x13:
@@ -4868,8 +4866,6 @@ chosen:
             {
                 BattleObject *created;
                 ModelPart *parts;
-                ModelPart *from;
-                ModelPart *to;
 
                 word = *pc++;
                 for (i = 0x13; i < 0x1F; i++) {
@@ -4960,16 +4956,16 @@ chosen:
             break;
         case 0x1B: /* start an image animation */
             if (arg < object->imageCount) {
-                ImageAnim *target;
                 ColorRow *colors;
                 FrameCurve curve;
                 s16 x, y, z, x2, y2, z2, x3, y3;
 
                 word = *pc++;
-                if ((u8)word != 0xFF && (u8)word < object->imageCount) {
-                    target = &object->images[(u8)word];
+                b0 = word;
+                if (b0 != 0xFF && b0 < object->imageCount) {
+                    ptr = &object->images[b0];
                 } else {
-                    target = NULL;
+                    ptr = NULL;
                 }
                 if (((m1 = (s16)word >> 8) & 0x7F) < 4) {
                     colors = NULL;
@@ -4978,7 +4974,8 @@ chosen:
                 }
                 word = *pc++;
                 b2 = word;
-                curve = func_800AA820((u8)(word >> 8));
+                b3 = word >> 8;
+                curve = func_800AA820(b3);
                 x = *pc++;
                 y = *pc++;
                 z = *pc++;
@@ -5003,7 +5000,7 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
+                func_800A3640(&object->images[arg], ptr, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
@@ -5031,13 +5028,10 @@ chosen:
         case 0x1E:
             object->field37 = arg;
             break;
-        case 0x1F: /* continue on another object */
-            {
-                BattleObject *other = D_800D3368[func_800AF438(self, arg, &word)];
-
-                if (other != NULL) {
-                    object = other;
-                }
+        case 0x1F: /* continue on another object (the slot reuses op) */
+            op = func_800AF438(self, arg, &word);
+            if (D_800D3368[op] != NULL) {
+                object = D_800D3368[op];
             }
             break;
         case 0x20: /* wait for the animation to loop */
@@ -5119,7 +5113,8 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                func_800AF438(object, (u8)word, &word);
+                b0 = word;
+                func_800AF438(object, b0, &word);
                 ax = *pc++;
                 ay = *pc++;
                 az = *pc++;
@@ -5200,7 +5195,8 @@ chosen:
                 }
                 word = *pc++;
                 b1 = word >> 8;
-                part = &object->hierarchy[(u8)word];
+                b0 = word;
+                part = &object->hierarchy[b0];
                 frames = distance / object->field8E;
                 found = 0;
                 if (part->effects[0] != NULL) {
@@ -5332,12 +5328,16 @@ chosen:
             break;
         case 0x38:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 0, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
+            b0 = word;
+            b1 = word >> 8;
+            func_800AE098(pool, object->hierarchy, 0, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x39:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 1, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
+            b0 = word;
+            b1 = word >> 8;
+            func_800AE098(pool, object->hierarchy, 1, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x3A:
@@ -5683,9 +5683,9 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                c0 = word;
+                b0 = word;
                 word = *pc++;
-                c3 = word >> 8;
+                b3 = word >> 8;
                 b2 = word;
                 if (op == 0x65) {
                     camX = D_800D335C.vx;
@@ -5727,7 +5727,7 @@ chosen:
                     mode = 0;
                     y = -1;
                 }
-                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, c0, camX, camY, camZ, x, (s16)value, y, c3);
+                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, b0, camX, camY, camZ, x, (s16)value, y, (s16)b3);
             }
             break;
         case 0x67: /* start a camera turn */
@@ -5739,9 +5739,9 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                c0 = word;
+                b0 = word;
                 word = *pc++;
-                c3 = word >> 8;
+                b3 = word >> 8;
                 b2 = word;
                 angle = *pc++;
                 word = *pc++;
@@ -5771,15 +5771,18 @@ chosen:
                     word = (s16)word * D_800658C8->objectScale >> 12;
                 }
                 if (b2 & 0x20) {
+                    to = from;
                     from += angle;
-                } else if (m1 < 2) {
-                    from = (angle + base) & 0xFFF;
-                } else if (m1 < 3) {
-                    from = angle & 0xFFF;
                 } else {
-                    from = angle;
+                    if (m1 < 2) {
+                        from = (angle + base) & 0xFFF;
+                    } else if (m1 < 3) {
+                        from = angle & 0xFFF;
+                    } else {
+                        from = angle;
+                    }
+                    to = from;
                 }
-                to = from;
                 if (b2 & 0x40) {
                     to += (u16)word;
                 } else if (m1 < 3) {
@@ -5800,7 +5803,7 @@ chosen:
                 } else {
                     to = (u16)word;
                 }
-                ((void (*)())func_800B0164)(pool, m1, arg + 2, c0, (s16)from, 0, 0, (s16)to, 0, 0, c3);
+                ((void (*)())func_800B0164)(pool, m1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, (s16)b3);
             }
             break;
         case 0x68: /* start the camera */
@@ -5917,9 +5920,6 @@ chosen:
         func_800B9258();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AAD54);
-#endif
 
 /* Turn a part to rotation (x, y, z): at once for a duration below 2, else by
  * a turning effect (kind 0xFE) over duration frames along the shortest way
