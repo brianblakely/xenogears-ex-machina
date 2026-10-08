@@ -6,8 +6,8 @@ indexes the 256 handlers of D_800AE2A0; fe (800869b8) moves the PC onto the
 next byte and indexes the 227 extended handlers of D_800AE6A0 with it, so an
 extended handler reads its operands relative to the extended byte. Extended
 bytes e3-ff index past the table and are unknown. A handler advances the PC
-itself; one that does not advance runs again on the actor's next pass (waits
-yield first). An extended handler that waits steps back onto fe; one that
+itself; one that does not advance runs again, at once unless it yielded (most
+waits yield). An extended handler that waits steps back onto fe; one that
 neither advances nor steps back leaves the PC on the extended byte, which then
 runs as the primary opcode of the same value ("rerun").
 

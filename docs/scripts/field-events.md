@@ -9,8 +9,8 @@
   next byte and indexes `D_800AE6A0[227]` with it, so extended handlers read
   their operands from the extended byte. Extended `e3`-`ff` index past the
   table and are unknown.
-- Handlers advance the PC themselves. One that does not advance runs again on
-  the next pass; extended waits step back onto `fe`. An extended handler that
+- Handlers advance the PC themselves. One that does not advance runs again, at
+  once unless it yielded; extended waits step back onto `fe`. An extended handler that
   does neither leaves the PC on its byte, which then runs as the primary opcode
   of the same value: ext `00` and `78`-`7e` are empty, and the selector cases
   missing from ext `27`, `5c`, `ca`, `d4` and `dd` do the same.
