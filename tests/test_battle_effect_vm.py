@@ -5,12 +5,20 @@ import unittest
 
 from tools.analysis.battle_effect_vm import (
     BATTLE,
+    BATTLE_EVENTS,
     MODEL_VIEWER,
+    MODEL_VIEWER_EVENTS,
     EffectError,
+    ScriptTable,
+    Sweep,
+    animation_entries,
+    animation_events,
     decode,
+    decode_events,
     disassemble,
     file_tables,
     script_file,
+    sweep_table,
 )
 
 
@@ -52,12 +60,39 @@ class DecodeTests(unittest.TestCase):
         self.assertEqual(listing.instructions[6].successors, (10, 4))
         self.assertEqual(sorted(listing.instructions), [0, 4, 6, 10])
 
-    def test_object_events_are_skipped_as_data(self):
-        code = command(0x63, 1, 10) + bytes(6) + command(0x00)
+    def test_object_events_follow_the_command(self):
+        show = words(3) + bytes([7, 0, 2, 1])  # frame 3: draw part 2
+        code = command(0x63, 1, 10) + show + command(0x00)
         listing = disassemble(code, [0])
         self.assertEqual(listing.errors, [])
-        self.assertEqual(listing.instructions[0].data, (4, 10))
+        insn = listing.instructions[0]
+        self.assertEqual(insn.data, (4, 10))
+        self.assertEqual(
+            [(e.offset, e.time, e.type, e.name, e.length) for e in insn.events],
+            [(4, 3, 7, "show_part", 6)],
+        )
         self.assertEqual(sorted(listing.instructions), [0, 10])
+
+    def test_event_lengths_follow_type_and_on_byte(self):
+        light_off = words(0) + bytes([2, 1, 0, 0])
+        light_on = words(1) + bytes([2, 1, 1, 0]) + bytes(12)
+        menu = words(2) + bytes([6, 0])
+        sound = words(2) + bytes([5, 0x39, 0, 1, 0, 0])
+        block = light_off + light_on + menu + sound
+        events = decode_events(block, 0, 4, len(block))
+        self.assertEqual([e.length for e in events], [6, 0x12, 4, 8])
+        self.assertEqual([e.name for e in events], ["light", "light", "menu_update", "sound"])
+        self.assertEqual(decode_events(block, 0, 1, len(block), "ovl2143")[0].name, "anchor")
+        self.assertEqual(decode_events(block, 0, 0, 0), ())
+
+    def test_bad_events_are_reported(self):
+        with self.assertRaises(EffectError):  # no case for type 0
+            decode_events(words(0) + bytes(4), 0, 1, 6)
+        with self.assertRaises(EffectError):  # an image event longer than its block
+            decode_events(words(0) + bytes([9, 0, 1, 0]), 0, 1, 6)
+        listing = disassemble(command(0x63, 2, 10) + words(0) + bytes([7, 0, 1, 1]), [0])
+        self.assertEqual(listing.errors, ["animation event at 0xa runs past its block"])
+        self.assertEqual(set(BATTLE_EVENTS), set(MODEL_VIEWER_EVENTS))
 
     def test_unknown_opcodes_and_overlaps_are_reported(self):
         self.assertNotIn(0x76, BATTLE)
@@ -90,8 +125,7 @@ class ContainerTests(unittest.TestCase):
 
     def test_object_script_file(self):
         data = self.script_file_bytes()
-        animations, scripts = script_file(data)
-        self.assertEqual((animations, scripts), (0x1C, [0x1C, 0]))
+        self.assertEqual(script_file(data), ScriptTable([0x1C, 0], 0x1C, 0))
         self.assertEqual(sorted(disassemble(data, [0x1C]).instructions), [0x1C, 0x1E])
 
     def test_enemy_set_model_entries(self):
@@ -100,15 +134,43 @@ class ContainerTests(unittest.TestCase):
         entries = struct.pack("<IIB3x", 32, 8, 1) + struct.pack("<IIB3x", 0, 3, 1)
         data = header + entries + inner
         tables = list(file_tables("enemy", data))
-        self.assertEqual([(label, table[1]) for label, table in tables], [(".0", [32 + 0x1C, 0])])
+        self.assertEqual(
+            [(label, table.scripts) for label, table in tables], [(".0", [32 + 0x1C, 0])]
+        )
 
-    def test_scene_motion_block(self):
+    def test_scene_motion_block_has_no_animations(self):
         data = bytearray(4 + 0x518)
         struct.pack_into("<i", data, 4 + 0x514, 0x518)
         data += struct.pack("<III", 2, 8, 12) + command(0x00)
         self.assertEqual(
-            list(file_tables("scene", bytes(data))), [("", (4 + 0x518 + 8, [4 + 0x518 + 12]))]
+            list(file_tables("scene", bytes(data))), [("", ScriptTable([4 + 0x518 + 12]))]
         )
+
+    def test_animations_run_their_event_lists(self):
+        # header, ObjectScripts (animations, one script), animation table (an
+        # animation, two unused ids at the script, one at the data block), the
+        # animation, the script, the data block
+        header = struct.pack("<III", 2, 0x0C, 0x50)
+        scripts = struct.pack("<III", 2, 0x0C, 0x42)
+        table = struct.pack("<IIIII", 4, 0x14, 0x36, 0x36, 0x38)
+        animation = bytearray(0x18)
+        struct.pack_into("<HI", animation, 0x12, 2, 0x18)
+        events = words(0) + bytes([7, 0, 1, 1]) + words(1) + bytes([6, 0])
+        data = header + scripts + table + animation + events + command(0x00) + bytes(4)
+        parsed = script_file(data)
+        self.assertEqual(parsed, ScriptTable([0x4E], 0x18, 0x50))
+        self.assertEqual(
+            animation_entries(data, parsed), [(0x2C, True), (0x4E, False), (0x50, False)]
+        )
+        self.assertEqual(
+            [(e.offset, e.time, e.name) for e in animation_events(data, 0x2C)],
+            [(0x44, 0, "show_part"), (0x4A, 1, "menu_update")],
+        )
+        result = Sweep()
+        self.assertEqual(sweep_table(result, "extra", "battle", data, parsed), [])
+        self.assertEqual((result.animations, result.not_animations), (1, 2))
+        self.assertEqual(result.events, {("animation", 7): 1, ("animation", 6): 1})
+        self.assertEqual(result.instructions, {"extra": 1})
 
 
 if __name__ == "__main__":

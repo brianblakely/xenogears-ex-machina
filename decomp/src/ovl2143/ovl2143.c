@@ -3348,13 +3348,13 @@ aim:
             word = *pc++;
             actor->w54 = arg ? (s32)((u8 *)start + (s16)word) : 0;
             break;
-        case 0x38: /* move the root toward the target (801e5b50 kind 7; values `arg`
-                    * and the word's low byte, duration its high byte) */
+        case 0x38: /* turn the root toward the target each frame within a limit from
+                    * `arg` (801e5b50 kind 7; gain the word's low byte, rate its high) */
             word = *pc++;
             func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
-        case 0x39: /* the same, flag 1 */
+        case 0x39: /* the same, heading only (kind 8) */
             word = *pc++;
             func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
@@ -3364,8 +3364,8 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* play sound (word low byte) of view `arg`'s bank, parameter
-                    * (high byte) */
+        case 0x3C: /* fade sound (word low byte) of view `arg`'s bank to silence over
+                    * (high byte) frames (8003a3b8) */
             word = *pc++;
             reference = word;
             entry = word >> 8;
@@ -3705,8 +3705,10 @@ void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry
     }
 }
 
-/* Start a movement tween (kind `type` + 7) of a node towards (x, y, z) over
- * `duration` ticks in its first attachment; value 0 is the distance + 1. */
+/* Start a homing turn (kind `type` + 7: 7 pitch and yaw, 8 yaw) of a node
+ * towards (x, y, z) in its first attachment: each tick it turns by at most
+ * value 1 + (distance + time) * value 2 / value 0 (the first distance + 1),
+ * time growing by `duration`, until released. */
 void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
                    s32 x, s32 y, s32 z) {
     PoolSlot *tween;
@@ -3774,8 +3776,10 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
 /* Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
- * loop frame. The call event (type 8) reads a local the original never
- * sets; it is spilled, so it is loaded from its stack slot. */
+ * loop frame. The events have the battle's layout (800AE2A4); anim_frame
+ * counts them and anim_state is the frame. The call event (type 8) reads a
+ * local the original never sets; it is spilled, so it is loaded from its
+ * stack slot. */
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
     u16 unset;
     AnimEvent *event;
@@ -3806,10 +3810,10 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             break;
         }
         switch (event->type) {
-        case 1:
+        case 1: /* a battle sprite: stepped over */
             actor->anim_pos += 0x14;
             break;
-        case 2:
+        case 2: /* set up or deactivate (6 bytes) an anchor */
             if (event->u.anchor.active) {
                 if (event->index < 2) {
                     anchor = event;
@@ -3834,7 +3838,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             }
             break;
         case 3:
-        case 4:
+        case 4: /* stop a channel (the battle's colour fade events) */
             func_801E0844(&actor->channels[event->index].id, arg2);
             if (event->u.more) {
                 actor->anim_pos += 0x1C;
@@ -3842,17 +3846,17 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
                 actor->anim_pos += 6;
             }
             break;
-        case 5:
+        case 5: /* a battle sound: stepped over */
             actor->anim_pos += 8;
             break;
-        case 6:
+        case 6: /* a battle menu update: stepped over */
             actor->anim_pos += 4;
             break;
-        case 7:
+        case 7: /* show or hide a node */
             actor->parts[event->u.show.node].visible = event->u.show.visible & 1;
             actor->anim_pos += 6;
             break;
-        case 8:
+        case 8: /* call an entry of the masked actors */
             /* The original tests a local it never sets. */
             call = event;
             state = unset;
@@ -3875,7 +3879,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             D_801E863C = saved_mask;
             actor->anim_pos += 0xA;
             break;
-        case 9:
+        case 9: /* start or stop (6 bytes) an image animation */
             if (event->u.image.active) {
                 if (event->index < actor->count10E) {
                     if (event->u.image.target != 0xFF && event->u.image.target < actor->count10E) {
