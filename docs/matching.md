@@ -322,6 +322,11 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 - When a draft resists every source shape, compile it and its variants under the other
   old-gcc releases (2.5.7-2.95.2, `-psx` and plain) and single-flag variants before more
   shuffling; compare whole units, not one function, before adopting a setting.
+- To learn whether only allocation remains, bind the disputed variables to the
+  original's registers (`register s32 v asm("$14")`) in a scratch build that is never
+  committed. World-map 80086798 then matched exactly: its four projected corners
+  (48 loop-weighted refs over ~195 insns) outrank the variables the original
+  allocated before them, which a pseudo follows only if it lives as long as they do.
 
 ## Recovering data
 

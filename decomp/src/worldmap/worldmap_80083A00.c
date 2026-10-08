@@ -1143,12 +1143,13 @@ typedef struct {
  * hold the sprite's offset from the camera, then a near layer's base corner,
  * and count the middle rows and the near rows and columns; layer first holds
  * the packed view-cone test point. */
-/* NON_MATCHING: same size, frame (0x50) and spill slots (screen copy, corner,
- * row offset copy). The reused x/z/layer give the original's a2/a3 and uv
- * pointers; global allocation still ranks the four projected corners
- * (48 refs over ~190 insns each) above layer, the near column offset and quad,
- * so the corners take t1-t3/t6 (original t6-t9), layer t7 (t1), the column
- * offset s0 (t2), quad t8 (t3) and &flag t9 (s0). */
+/* NON_MATCHING: only the four projected corners' registers differ. Bound to
+ * $14/$15/$24/$25 (register variables, not accepted as recovered source) the
+ * function matches exactly. As pseudos they have 48 refs over ~195 insns each,
+ * so global allocation ranks them above layer, the near column offset and quad
+ * (to follow quad they would have to live across the whole sprite loop): the
+ * corners take t1-t3/t6 (original t6-t9), layer t7 (t1), the column offset s0
+ * (t2), quad t8 (t3) and &flag t9 (s0). */
 #ifdef NON_MATCHING
 void func_80086798(void) {
     DriftScratch *scratch;
@@ -1227,8 +1228,8 @@ void func_80086798(void) {
             continue;
         }
         scratch->local.t[0] = x;
-        scratch->local.t[2] = z;
         scratch->local.t[1] = D_8009D150[i].unk4 >> 12;
+        scratch->local.t[2] = z;
         gte_CompMatrix(&D_8009C808, &scratch->local, &scratch->screen);
         gte_SetRotMatrix(&scratch->screen);
         gte_SetTransMatrix(&scratch->screen);
