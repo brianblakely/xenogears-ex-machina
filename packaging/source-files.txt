@@ -195,7 +195,13 @@ decomp/src/field/field_party.h
 decomp/src/field/field_picture.h
 decomp/src/field/field_screen.h
 decomp/src/field/field_script.h
+decomp/src/mdec/commons/load_restart.c
+decomp/src/mdec/commons/previous_frame.c
+decomp/src/mdec/commons/skipped_frames.c
+decomp/src/mdec/commons/slice_width.c
+decomp/src/mdec/commons/stall_count.c
 decomp/src/mdec/mdec.c
+decomp/src/mdec/mdec_bss.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
 decomp/src/menu/func_80072D18.s
@@ -235,6 +241,7 @@ decomp/src/menu/vector_scale.s
 decomp/src/menu/window.h
 decomp/src/movie/movie.c
 decomp/src/movie/movie_mode.h
+decomp/src/movie/movie_number.c
 decomp/src/ovl2143/gte.h
 decomp/src/ovl2143/ovl2143.c
 decomp/src/ovl2143/ovl2143.h
