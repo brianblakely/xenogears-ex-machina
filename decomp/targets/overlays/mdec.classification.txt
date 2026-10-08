@@ -13,14 +13,15 @@
 801e8830 801e8910 sdk libcd streaming modules: CD, DMA and interrupt register pointers (StUnSetRing, StCdInterrupt, dma_execute) and StCdInterrupt's words at 801e8908
 # The .bss after the player's statics (801e8910-801e89ac, decomp/src/mdec):
 # the C_004 (last sector's location and frame, read by StGetBackloc) and
-# C_011 statics, then the 20 commons CDROM.OBJ declares (StRingBase,
-# StRingSize, StFunc1/2, StRgb24, Stsector_offset, StCdIntrFlag, ...), which
-# the linker interleaved with the player's five commons (801e89c0, 801e89d4,
-# 801e89e0, 801e89ec, 801e89f4). StCdIntrFlag (801e89d0) is also read and
-# cleared by the player's MDEC callback, as in the PsyQ movie samples.
-801e89ac 801e89c0 sdk libcd C_004/C_011 statics and CDROM.OBJ commons
-801e89c4 801e89d4 sdk libcd CDROM.OBJ commons (StRgb24, StFunc1, StFunc2, StCdIntrFlag)
-801e89d8 801e89e0 sdk libcd CDROM.OBJ commons (StStartFrame at 801e89dc)
+# C_011 statics, then the 20 commons that CDROM.OBJ declares (its signature's
+# xbss: StRingAddr/Base/Size, StFunc1/2, StRgb24, Stsector_offset,
+# StCdIntrFlag, ...), which the linker interleaved with the player's five
+# commons (801e89c0, 801e89d4, 801e89e0, 801e89ec, 801e89f4). StCdIntrFlag
+# (801e89d0) is also read and cleared by the player's MDEC callback, as in
+# the PsyQ movie samples.
+801e89ac 801e89c0 sdk libcd C_004/C_011 statics and two CDROM.OBJ commons (the halfword one, Stsector_offset, at 801e89bc)
+801e89c4 801e89d4 sdk libcd CDROM.OBJ commons: StSetStream's RGB24 flag and two callbacks (StRgb24, StFunc1, StFunc2), StCdIntrFlag
+801e89d8 801e89e0 sdk libcd CDROM.OBJ commons (StSetMask's start frame at 801e89dc)
 801e89e4 801e89ec sdk libcd CDROM.OBJ commons
 801e89f0 801e89f4 sdk libcd CDROM.OBJ common
-801e89f8 801e8a1c sdk libcd CDROM.OBJ commons (ring indices, StEndFrame, StRingBase, StRingSize)
+801e89f8 801e8a1c sdk libcd CDROM.OBJ commons: ring indices, StSetMask's end frame and mask, StSetRing's ring address and size
