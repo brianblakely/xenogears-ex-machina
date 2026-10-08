@@ -848,7 +848,7 @@ void func_8009382C(u8 member, u8 kind);
 void func_800916D4(u8 column, u8 row, u8 member);
 void func_8009187C(u8 member, u8 column, u8 row);
 void func_80091B38(u8 member, u8 column, u8 row);
-extern u16 D_800C3234[16]; /* single-bit masks: 0x80 down to 1, then 0x8000 down to 0x100 */
+extern u16 D_800C3234[16]; /* single-bit masks, 0x8000 down to 1 */
 void func_8008AAA0(u32 value);
 u8 func_8009A258(u8 member, u8 command);
 void func_80076BF0(POLY_FT4 *prim);
