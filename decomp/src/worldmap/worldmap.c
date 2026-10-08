@@ -1,5 +1,9 @@
 #include "worldmap.h"
 
+/* The overlay's number, the first word of each mode overlay (field 4, world
+ * map 5, battle 6, menu 7, movie 8). */
+const s32 D_8006FAF0 = 5;
+
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
@@ -444,5 +448,3 @@ void func_800721E4(void) {
     D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
     func_800295D8(D_8009D3C8, D_8006259C, 0, 0);
 }
-
-INCLUDE_RODATA(".local/decomp/worldmap/asm/nonmatchings/worldmap", D_8006FAF0);
