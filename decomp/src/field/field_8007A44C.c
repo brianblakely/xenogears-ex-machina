@@ -2160,23 +2160,12 @@ s32 func_80080A18(void) {
     return D_800AF880.components.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
 }
 
-#ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
- * each collision layer under its descriptor's position.
- * NON_MATCHING (4 edits): only the +4 store is misplaced. With this order
- * (flags, unk18, layer_flags, fraction, unk074, height, unk075) local-alloc
- * gives the original's registers (0x10 in $v1 across the 0x800 constant,
- * 0x60 in $v0, the 0xff bytes in $v1); sched2 then keeps the +4 store after
- * the +18/+1c stores (higher luid), where the original stores +4 right after
- * +0 and loads 0x60 before the +18 store. That needs the 0x60 load ahead of
- * the 0xff load in luid order, which the register births (each constant set
- * next to its first store) never give while 0xff spans the 0x60 store.
- * All 5040 orders of these seven stores were compiled (none exact; this is
- * the best); the earlier draft order gave 10. The (point + i)-> and
+ * each collision layer under its descriptor's position. The +75 store follows
+ * the +ea store: its 0xff byte then stays live across the halfword 0xff and
+ * takes the other register, as in the original. The (point + i)-> and
  * (normal + layer)-> forms keep the point clears off the call argument as
- * the original does; a shared s32 temporary for 0x10/0xff stops being a
- * register birth and is hoisted to the function entry; do { } while (0)
- * groups split the block.
+ * the original does.
  */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
@@ -2189,9 +2178,8 @@ void func_80080A74(s32 index) {
     actor->unk18 = 0x10;
     actor->layer_flags = 0x800;
     actor->gravity.s.fraction = 0x10;
-    actor->unk074 = 0xFF;
     actor->height = 0x60;
-    actor->unk075 = 0xFF;
+    actor->unk074 = 0xFF;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
     actor->unk40[2] = 0;
@@ -2206,6 +2194,7 @@ void func_80080A74(s32 index) {
     actor->target[2] = 0;
     actor->unkE6 = 0;
     actor->unk0EA = 0xFF;
+    actor->unk075 = 0xFF;
     actor->unkE2 = 0;
     actor->pc = 0;
     actor->stuck = 0;
@@ -2295,9 +2284,6 @@ void func_80080A74(s32 index) {
     actor->position[2] = D_800AF880.components.descriptors[index].matrix.t[2] << 16;
     actor->unk72 = D_800AF880.components.descriptors[index].matrix.t[1];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80080A74);
-#endif
 
 /* Create event actor `index`: a cleared 0x138-byte record, the fetch hooks of
  * an animated model's channels, its defaults (80080a74) and its ground
