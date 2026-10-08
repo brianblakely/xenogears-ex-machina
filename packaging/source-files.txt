@@ -507,6 +507,8 @@ docs/recovery-inventory.md
 docs/reverse-engineering.md
 docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
+docs/scripts/battle-effect-vm.md
+docs/scripts/battle-event-vm.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
 docs/scripts/text-control.md
@@ -705,6 +707,8 @@ tests/test_baseline.py
 tests/test_battle.cpp
 tests/test_battle_ai.py
 tests/test_battle_continuation.py
+tests/test_battle_effect_vm.py
+tests/test_battle_event_vm.py
 tests/test_battle_loader.cpp
 tests/test_battle_request.py
 tests/test_battle_setup.cpp
@@ -801,6 +805,8 @@ tools/analysis/arithmetic.py
 tools/analysis/audio_modes.py
 tools/analysis/battle_ai.py
 tools/analysis/battle_continuation.py
+tools/analysis/battle_effect_vm.py
+tools/analysis/battle_event_vm.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py

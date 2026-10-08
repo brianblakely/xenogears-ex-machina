@@ -144,7 +144,7 @@ typedef struct {
     s16 time;
     u8 type;
     u8 kind;       /* 0x03: with flag 0x80 plus the gear's variant less one */
-    u8 flags;      /* 0x04: 0x80 at the acting object; the slot kinds (800B12D0) */
+    u8 flags;      /* 0x04: 0x80 at the acting object; event codes that skip it (800B12D0) */
     u8 part;       /* 0x05 */
     s16 offset[3]; /* 0x06 */
     u8 mode;       /* 0x0C: 1 on the ground, 2 at the scene's centre; 0x80 at the acting object */
@@ -186,7 +186,7 @@ typedef struct {
     s16 time;
     u8 type;
     u8 sound;   /* 0x03 */
-    u8 flags;   /* 0x04: the slot kinds (800B12D0) */
+    u8 flags;   /* 0x04: event codes that skip it (800B12D0) */
     u8 source;  /* 0x05: of the bank (800AE220) */
     u8 sound2;  /* 0x06: a second sound, 0 none */
     u8 kind;    /* 0x07 */
@@ -196,7 +196,7 @@ typedef struct {
 typedef struct {
     s16 time;
     u8 type;
-    u8 kinds;      /* 0x03: the slot kinds (800B12D0) */
+    u8 kinds;      /* 0x03: event codes that skip a slot (800B12D0) */
     u8 onTarget;   /* 0x04: run on this object's target */
     u8 scripts[5]; /* 0x05: by slot code: 0-1 (in a gear the next), 5, 4, 2-3 */
 } SlotEvent;
@@ -291,7 +291,11 @@ typedef struct ScriptEntry {
     s32 field18;  /* 0x18 */
 } ScriptEntry;
 
-/* An effect script file. */
+/* An effect script file. Its layout is a PlayStation TMD model: id 0x41,
+ * flags (bit 0 FIXP), object count, then per object its vertex, normal and
+ * primitive tables with their counts and a scale; its commands are TMD
+ * primitives. It is not bytecode of the effect VM (800AAD54); the resident's
+ * D_8001C76C (0x170 bytes, one object) is one. */
 typedef struct {
     u8 pad0[4];
     u32 flags; /* 0x04: bit 0 relocated */

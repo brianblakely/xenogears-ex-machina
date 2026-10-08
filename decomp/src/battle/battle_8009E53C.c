@@ -5948,8 +5948,10 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
     }
 }
 
-/* Attach a travelling effect (kind 0xFE) to a part: from its translation to
- * (x, y, z), over a length of its distance plus one. */
+/* Attach a homing turn (kind 0xFE) toward (x, y, z) to a part's rotation: type
+ * 0 (step type 7) turns pitch and yaw, 1 (8) the yaw only. Each frame 800A0838
+ * turns by at most param1 + (distance + time) * param2 / params[0] (the first
+ * distance plus one), time growing by field12; it runs until released. */
 void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x,
                    s32 y, s32 z) {
     EffectEntry *entry;
@@ -6023,7 +6025,11 @@ s32 func_800AE220(BattleObject *object, s32 source) {
 
 /* Run the events of object's animation for its current frame (sprites,
  * lights, effect channels, sounds, part flags, the slots' effect scripts and
- * image animations), then advance the frame, looping at its loop length. */
+ * image animations), then advance the frame, looping at its loop length.
+ * An event is an s16 frame time and a type byte, then the type's fields
+ * (AnimEvent); an animation (800AE1BC) or effect command 63 supplies the
+ * list and its count. Each case steps over its event; a type without a case
+ * is not stepped over (tools/analysis/battle_effect_vm.py decodes them). */
 void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     AnimEvent *event;
     SpriteCommand *sprite;
@@ -6070,7 +6076,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     break;
                 }
                 switch (event->header.type) {
-                case 1:
+                case 1: /* create a sprite (SpriteCommand, 0x14 bytes) */
                     slot = 0;
                     m = (MATRIX *)0x1F800000;
                     sprite = &event->sprite;
@@ -6138,7 +6144,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     object->animationStart += sizeof(SpriteCommand);
                     break;
-                case 2:
+                case 2: /* a light follows a part, or goes off (LightEvent; 6 bytes off) */
                     if (event->light.on) {
                         if (event->light.light < 2) {
                             light = &event->light;
@@ -6163,7 +6169,8 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     break;
                 case 3:
-                case 4:
+                case 4: /* stop a colour fade channel; on: restart it in mode type - 3
+                         * (ChannelEvent; 6 bytes off) */
                     func_800A3484(&object->channels[event->channel.channel], arg2);
                     if (event->channel.on) {
                         if (event->channel.channel < object->channelCount) {
@@ -6181,7 +6188,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         object->animationStart += 6;
                     }
                     break;
-                case 5:
+                case 5: /* play a sound (SoundEvent) */
                     sound = &event->sound;
                     if (func_800B12D0(func_800AF400(), sound->flags)) {
                         variant = 0;
@@ -6207,15 +6214,15 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     object->animationStart += sizeof(SoundEvent);
                     break;
-                case 6:
+                case 6: /* update the battle menu (4 bytes) */
                     func_800BF6CC();
                     object->animationStart += 4;
                     break;
-                case 7:
+                case 7: /* draw part (byte 4) = byte 5 bit 0 (6 bytes) */
                     object->hierarchy[event->header.arg4].flag7 = event->header.arg5 & 1;
                     object->animationStart += 6;
                     break;
-                case 8:
+                case 8: /* start effect scripts on the object's slots (SlotEvent) */
                     slots = &event->slots;
                     i = 0;
                     objects = D_800D3368;
@@ -6265,7 +6272,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     D_800C3E30 = savedMask;
                     object->animationStart += sizeof(SlotEvent);
                     break;
-                case 9:
+                case 9: /* start or stop an image animation (ImageEvent; 6 bytes off) */
                     if (event->image.on) {
                         if (event->image.anim < object->imageCount) {
                             if (event->image.source != 0xFF && event->image.source < object->imageCount) {

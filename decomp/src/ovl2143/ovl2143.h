@@ -347,13 +347,14 @@ typedef struct {
     } u;
 } AnimEvent;
 
-/* An animation record: frame count and the offset of its frame data. */
+/* An animation record: its loop frame, event count and the offset of its
+ * events (801E5C74, 801E5D44). */
 typedef struct {
     u8 pad0[2];
     u16 loop;               /* +2 */
     u8 pad4[0xE];
-    u16 frames;             /* +12 */
-    s32 data;               /* +14: offset of the frame data */
+    u16 frames;             /* +12: the event count */
+    s32 data;               /* +14: offset of the events */
 } Animation;
 
 /* A table of script entry points. */
@@ -420,10 +421,10 @@ typedef struct Actor {
     s16 h92;                /* +92 */
     u16 shift_x;            /* +94: added to image animation positions */
     u16 shift_y;            /* +96 */
-    s16 anim_state;         /* +98: -1 none */
+    s16 anim_state;         /* +98: the frame, -1 none */
     s16 anim_loop;          /* +9a: -1 no loop */
-    s16 anim_frame;         /* +9c */
-    s16 anim_frames;        /* +9e */
+    s16 anim_frame;         /* +9c: the events run */
+    s16 anim_frames;        /* +9e: the event count */
     u8 *anim_pos;           /* +a0: next event */
     u8 *anim_start;         /* +a4 */
     void *group;            /* +a8: the model group block */
@@ -638,7 +639,7 @@ VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 
 void MoveImage(RECT *rect, s32 x, s32 y);
 s32 rand(void);
-void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* play a sound effect */
+void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* slide its volume to arg1 over arg2 frames */
 s32 func_800286CC(void);
 void func_800796F4(void);
 

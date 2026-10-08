@@ -105,8 +105,8 @@ typedef struct {
     u8 pad0[2];
     u16 loop; /* 0x02 */
     u8 pad4[0x12 - 0x4];
-    u16 length;     /* 0x12 */
-    u32 dataOffset; /* 0x14 */
+    u16 length;     /* 0x12: the event count */
+    u32 dataOffset; /* 0x14: offset of the events (AnimEvent) */
 } Animation;
 
 /* A rectangle of the scene's ground (8 bytes; the scene data's areas at
