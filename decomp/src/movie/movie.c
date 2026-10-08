@@ -1151,9 +1151,10 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
  * test and a return to the kernel. Square and Cross speed up the frame
  * settings. The menu cursor is kept across the screens it opens. The unused
- * name reproduces the original's frame. Keep the queried disc mode local
- * while clearing the debug views and selecting 24-bit library output,
- * then publish it with the playback defaults. */
+ * name reproduces the original's frame. The debug views are cleared and
+ * 24-bit library output selected before the row and last-frame defaults:
+ * stored in the order the binary shows (rows and last frame first), the
+ * schedule differs. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
@@ -1161,7 +1162,6 @@ void func_800737EC(void) {
     s32 dir;
     s32 line;
     s32 last;
-    s32 disc_mode;
     s32 cursor;
     void *top;
     void *library;
@@ -1180,11 +1180,10 @@ void func_800737EC(void) {
     func_800295D8(1, library, 0, 0);
     func_80028A60(0);
     func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
-    disc_mode = func_8002C3D8();
+    D_80077450 = func_8002C3D8();
     D_80077394 = 0;
     D_800773B0 = 0;
     D_80077454 = 1;
-    D_80077450 = disc_mode;
     D_800773A0 = -1;
     D_8007739C = 0xC80;
     D_80077448 = 1;
