@@ -464,8 +464,6 @@ extern s32 D_80092918;
 extern s32 D_80092944;
 extern s32 D_80092950;
 extern s32 D_80092640;
-extern u8 D_80091150;
-extern s8 D_80091151;
 extern s32 D_80092668;
 extern s32 D_8009266C;
 extern s32 D_80092670;
@@ -489,8 +487,6 @@ extern u8 D_800928F0;
 extern u8 D_800928F4;
 extern s32 D_8009290C;
 extern s32 D_8009294C;
-extern u8 D_80091144;
-extern u8 D_80091145;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
 extern Actor *D_80092614;
@@ -578,6 +574,8 @@ void func_80087AB0(Actor *actor);
 void func_80078ED4(s16 *params);
 extern u8 D_8009264C[4]; /* default combo state */
 extern char D_8006FC74[]; /* "" */
+extern char D_8006FC10[]; /* "ETHER" */
+extern char D_8006FCCC[]; /* combo names "BBB", "BBA", ... "A", four bytes each */
 /* Bout captions (shared with other functions, so kept as their own rodata). */
 extern char D_8006FC3C[]; /* "DRAW GAME" */
 extern char D_8006FC48[]; /* "KNOCK OUT!!" */
