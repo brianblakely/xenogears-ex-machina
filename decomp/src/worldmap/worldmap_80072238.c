@@ -550,7 +550,7 @@ void func_800739B8(void) {
 
     tpage = GetTPage(0, 1, 0x380, 0x100);
     clut = GetClut(0x110, 0x1FE);
-    quad = D_8009C744;
+    quad = D_8009C744[0];
     for (i = 0; i < 4; i++, quad++) {
         ((u8 *)quad)[3] = 9;
         quad->code = 0x2C;
@@ -583,72 +583,49 @@ void func_800739B8(void) {
 
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
- * ordering table. */
-/* NON_MATCHING: only registers differ: the original loads the heading
- * through t2 straight into u (a3) and keeps right in t1 (here the heading
- * address is in t1 and the shifted heading in t2). Computing u in one
- * expression fixes those but swaps u and its store copy (a2/a3) and moves
- * the 0x3F00 stores: sched1 places `right = u | 0x80` after the u0 stores,
- * so right shares a3 with the u0 copy (local-alloc: u a2, copy a3, right a3,
- * u1 copy t1; the original has right live across the u0 stores in t1).
- * Types (s32/u32/u16/s16 for u and right), declaration order, `u &= 0x7F`
- * or u computed from a first `u = vy >> 2` leave the same two shapes. */
-#ifdef NON_MATCHING
+ * ordering table. Each texture coordinate pair is stored as one (v << 8 | u)
+ * halfword: u0/u2 at the scroll, u1/u3 128 texels right, v2/v3 at 0x3F. */
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
     PolyFT4 *quad;
-    PolyFT4 *row;
     s32 u;
     s32 right;
     s32 i;
-    s32 offset;
     s32 otz;
     u32 *ot;
 
-    right = D_8009BD38.vy >> 2;
-    u = right & 0x7F;
+    u = (D_8009BD38.vy >> 2) & 0x7F;
     right = u | 0x80;
-    *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
-    *(u16 *)&D_8009C744[D_8009D7F0].u1 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u1 = right;
-    u |= 0x3F00;
-    *(u16 *)&D_8009C744[D_8009D7F0].u2 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u2 = u;
-    right |= 0x3F00;
-    *(u16 *)&D_8009C744[D_8009D7F0].u3 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u3 = right;
+    *(u16 *)&D_8009C744[0][D_8009D7F0].u0 = *(u16 *)&D_8009C744[1][D_8009D7F0].u0 = u;
+    *(u16 *)&D_8009C744[0][D_8009D7F0].u1 = *(u16 *)&D_8009C744[1][D_8009D7F0].u1 = right;
+    *(u16 *)&D_8009C744[0][D_8009D7F0].u2 = *(u16 *)&D_8009C744[1][D_8009D7F0].u2 = u + 0x3F00;
+    *(u16 *)&D_8009C744[0][D_8009D7F0].u3 = *(u16 *)&D_8009C744[1][D_8009D7F0].u3 = right + 0x3F00;
     HORIZON_SCRATCH->angle.vz = 0;
     scratch = HORIZON_SCRATCH;
     scratch->angle.vx = 0;
     scratch->angle.vy = D_8009BD38.vy;
     func_8004A92C(&scratch->angle, &scratch->rotation);
-    corners = D_8009A300[0];
-    i = 0;
-    offset = 0;
     scratch->rotation.t[2] = 0;
     scratch->rotation.t[1] = 0;
     scratch->rotation.t[0] = 0;
     CompMatrix(&D_8009C808, &scratch->rotation, &scratch->view);
     SetRotMatrix(&scratch->view);
     SetTransMatrix(&scratch->view);
-    do {
-        quad = &D_8009C744[D_8009D7F0];
-        row = (PolyFT4 *)(offset + (u32)quad);
-        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&row->x0,
-                            (s32 *)&row->x1, (s32 *)&row->x2, (s32 *)&row->x3, &scratch->p, &scratch->flag);
-        i++;
-        corners += 4;
-        offset += 2 * sizeof(PolyFT4);
-    } while (i < 2);
+    corners = D_8009A300[0];
+    for (i = 0; i < 2; i++, corners += 4) {
+        quad = &D_8009C744[i][D_8009D7F0];
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
+                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+    }
     if (scratch->flag >= 0) {
         ot = &D_8009BE3C->ot[otz >> D_80050100];
         addPrim(ot, &D_8009D3D8[1]);
-        addPrim(ot, &D_8009C744[D_8009D7F0]);
-        addPrim(ot, &D_8009C744[D_8009D7F0 + 2]);
+        addPrim(ot, &D_8009C744[0][D_8009D7F0]);
+        addPrim(ot, &D_8009C744[1][D_8009D7F0]);
         addPrim(ot, &D_8009D3D8[0]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073B04);
-#endif
 
 /* Initialise the overlay picture quad (both buffers), its texture page, eight
  * red Gouraud triangles and 64 small tiles. */
