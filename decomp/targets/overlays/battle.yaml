@@ -45,7 +45,7 @@ segments:
       # The overlay's number (6) ahead of the units' rodata, as in field (4),
       # worldmap (5), menu (7) and movie (8); the first unit's rodata starts
       # at 0x4, where its jump tables sit (4 mod 8, docs/matching.md).
-      - [0x0, rodata, battle_prefix]
+      - [0x0, .rodata, battle_prefix]
       # Units change where the jump tables change phase mod 8 (GCC's .align 3
       # is relative to the unit's rodata, placed at 4-byte boundaries; see
       # docs/matching.md). The tables at 80070314-80070370 (8008B478,
