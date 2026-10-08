@@ -3981,18 +3981,18 @@ void func_800A96B4(s32 set) {
     func_80028470(saved0, saved1);
 }
 
-#ifdef NON_MATCHING
 /* Create stage gear object index from the files read by 800A9540, using
  * (texture_x, texture_y) and (clut_x, clut_y) as the VRAM placement bases
  * for its textures and CLUTs. With a variant file, also create its extra
  * parts as objects 2 * index + 13 + k attached to parts of the gear, then
- * free the files. A nonzero count copies the shared data even when negative;
- * only positive counts create child objects. Nonmatching: remaining operand
- * lifetimes and loop-invariant scheduling. */
+ * free the files. The part table starts with the signed part count; the
+ * part entries (parent part, then three offsets) follow two halfwords on.
+ * A nonzero count copies the shared data even when negative; only positive
+ * counts create child objects. */
 void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y) {
     GearPartFile *parts;
     s16 *entry;
-    s32 count;
+    s16 count;
     s32 size;
     void *model;
     s32 k;
@@ -4008,32 +4008,29 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
         func_8003342C(parts);
         entry = parts->table;
         count = *entry;
-        entry += 2;
         if (count != 0) {
-            k = 0;
+            entry += 2;
             size = parts->end - parts->model;
             model = func_80031BDC(size, 0);
             memcpy(model, parts->model, size);
-            if (count > 0) {
-                do {
-                    flags = 7;
-                    if (k == 0) {
-                        flags = 2;
-                    }
-                    if (k == count - 1) {
-                        flags -= 2;
-                    }
-                    slot = index * 2 + (k + 13);
-                    func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end,
-                                  texture_x, texture_y, clut_x, clut_y, NULL);
-                    D_800D3368[slot]->parentPart = *entry++;
-                    D_800D3368[slot]->field5C = index;
-                    D_800D3368[slot]->field5D = 2;
-                    D_800D3368[slot]->field36 = 1;
-                    D_800D3368[slot]->offset2[0] = *entry++;
-                    D_800D3368[slot]->offset2[1] = *entry++;
-                    D_800D3368[slot]->offset2[2] = *entry++;
-                } while (++k < count);
+            for (k = 0; k < count; k++) {
+                flags = 7;
+                if (k == 0) {
+                    flags = 2;
+                }
+                if (k == count - 1) {
+                    flags -= 2;
+                }
+                slot = index * 2 + 13 + k;
+                func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end,
+                              texture_x, texture_y, clut_x, clut_y, NULL);
+                D_800D3368[slot]->parentPart = *entry++;
+                D_800D3368[slot]->field5C = index;
+                D_800D3368[slot]->field5D = 2;
+                D_800D3368[slot]->field36 = 1;
+                D_800D3368[slot]->offset2[0] = *entry++;
+                D_800D3368[slot]->offset2[1] = *entry++;
+                D_800D3368[slot]->offset2[2] = *entry++;
             }
         } else {
             func_8002DDE4(parts->model, 1, texture_x, texture_y, 1, clut_x, clut_y);
@@ -4044,9 +4041,6 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
     DrawSync(0);
     func_800320E8(D_800C3B78->data0);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A979C);
-#endif
 
 /* Run the stage for the elapsed frames (two frames per step, at most three
  * steps): advance the waves and the highlight pulse, push the acting object
