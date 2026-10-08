@@ -817,12 +817,9 @@ extern void func_8003E724(SoundChannel *state, u32 voice);
 
 /* Start the channels of a sequence at the data offsets listed in its
  * header: default note, volume, pan and modulators, muted when the
- * sequence's mute mask says so.
- * Store the voice index before rereading the sequence's channel offset.
- * NON_MATCHING: size and memory-access order agree; the modulator loop
- * pointer is computed before flags2 rather than after the id load, and
- * the priority constant moves with it (four unequal instruction words). */
-#ifdef NON_MATCHING
+ * sequence's mute mask says so. The voice index is stored before the
+ * channel offset is reread, and the data pointers (start, position and
+ * repeat return) are set together. */
 void func_8003B424(SoundSeq *seq) {
     s32 count = seq->channels;
     SoundSeqChannel *channel = seq->channel;
@@ -865,12 +862,12 @@ void func_8003B424(SoundSeq *seq) {
             channel->priority = 0x10;
             channel->voice_bit = index;
             channel->position = channel->start = (u8 *)header + *offset;
+            channel->loop = NULL;
             channel->transpose = 0x3C;
             channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
             channel->volume = 0x6000;
             channel->level.value = 0x7F000000;
-            channel->loop = NULL;
             channel->unk1C = 0;
             channel->unk20 = 0;
             channel->unk22 = 0;
@@ -909,9 +906,6 @@ void func_8003B424(SoundSeq *seq) {
     } while (count != 0);
     seq->voices = voices;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B424);
-#endif
 
 extern SoundSeq *D_800595D8;     /* sound effect channels */
 extern s32 D_80059404;           /* channels of the next effect */
