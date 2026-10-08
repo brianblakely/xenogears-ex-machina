@@ -81,7 +81,9 @@ Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
 byte-identical on both discs. `tools/extraction/disc_files.py` and
 `tools/extraction/overlays.py` write the local inputs; splat writes the local
-assembly. Distinct overlays at the same address keep separate targets and
+assembly. `tools/extraction/code_census.py` scans every file of both discs for
+MIPS function structure and fails unless each code-bearing file is the boot
+executable or byte-identical to a target image (MDEC streams are reported apart). Distinct overlays at the same address keep separate targets and
 symbol files.
 
 ```sh

@@ -779,6 +779,7 @@ tools/authoring/qualify.py
 tools/authoring/tsconfig.json
 tools/decomp_rename.py
 tools/extraction/README.md
+tools/extraction/code_census.py
 tools/extraction/disc_files.py
 tools/extraction/overlays.py
 tools/jump_table_phases.py
