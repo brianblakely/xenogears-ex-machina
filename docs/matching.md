@@ -258,6 +258,12 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
   (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label whose
   remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over an
   `if` without inner labels, so a dead `if` hides nothing.
+- When `x = y;` copies a register and both live on, cse makes the one that outlives the
+  block and the other the canonical name (`make_regs_eqv`); a test of `y` right after the
+  copy is rewritten to `x`, `y` dies there, and allocation merges them. A later use of `y`
+  (reusing the variable after a loop, sound driver 80039144) keeps both registers and the
+  copy, as do a hard-register variable for `x` (never made canonical) or a dead store,
+  which the rules above reject.
 - A dead loop that flow deletes leaves its exit label until the jump pass after reload:
   it still splits the scheduling blocks, and an assignment before it can be hoisted
   into the prologue.
