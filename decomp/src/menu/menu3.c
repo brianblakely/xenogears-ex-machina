@@ -2976,7 +2976,7 @@ void func_8007AE10(Actor *first, Actor *second) {
         switch (D_800928C8) {
         case 1:
             func_8007EC54("YOU WERE DEFEATED");
-            sprintf(text, "     BY %s", D_8009196C[second->model_id].name);
+            sprintf(text, "     BY %s", D_80091964[second->model_id].name);
             func_8007EC54(text);
             break;
         case 2:

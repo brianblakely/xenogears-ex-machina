@@ -675,7 +675,6 @@ void func_80019ACC(s32 arg); /* resident mode dispatcher */
 
 /* Resident flags. */
 extern s32 D_8006F980;
-extern u8 D_80091A6C[];
 
 /* Actor setup. */
 Node *func_8008B38C(ModelSetFile *file);

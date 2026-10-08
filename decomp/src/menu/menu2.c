@@ -893,12 +893,12 @@ void func_80072858(LightRig *rig) {
         func_8007EBE0("MATCHES");
         func_8007EBE0("TIME");
         func_8007E894(0xA8, y);
-        func_8007EBE0(D_8009196C[winner->model_id].name);
+        func_8007EBE0(D_80091964[winner->model_id].name);
         if (D_800928C8 != 2 && D_800928C8 != 3) {
             sprintf(text, "%s", func_8007F97C());
             func_8007EBE0(text);
         }
-        sprintf(text, "%d/%d VS %s", winner->unkF2, D_80092950, D_8009196C[winner->opponent->model_id].name);
+        sprintf(text, "%d/%d VS %s", winner->unkF2, D_80092950, D_80091964[winner->opponent->model_id].name);
         func_8007EBE0(text);
         func_80083CE8();
     }

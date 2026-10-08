@@ -203,9 +203,11 @@ void func_8007313C(void *pixels, void *end);
 
 typedef struct {
     s32 id;
-    u8 unk4[4];
+    char *model; /* 0x04: model file name */
     u8 *name;    /* 0x08 */
 } ListEntry;
+
+extern char D_80070284[]; /* the gears' model files and names, heap tag names */
 
 /* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
  * its palette row and its 30x64 image. */

@@ -46,13 +46,6 @@ struct Menu {
 extern s32 D_800911D4; /* second actor also posed by func_8007661C */
 extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 
-/* A playable character's record (12 bytes). */
-typedef struct {
-    char *name;
-    u8 unk4[8];
-} Character;
-
-extern Character D_8009196C[];
 
 /* Bout-end sequence effects. */
 extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
@@ -62,7 +55,7 @@ void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
 
 /* Menu mode main loop. */
-extern Resource D_800917C0[5]; /* sequence, sound bank, messages, map, scene */
+extern Resource D_800917C0[6]; /* sequence, sound bank, messages, map, scene; zero file */
 extern u8 D_8005061D;          /* resident: entry kind (0 bout, 1 bout mode 4, 2 scene) */
 extern u8 D_8005061E;          /* resident: first actor's model id */
 extern u8 D_8005061F;          /* resident: second actor's model id */
