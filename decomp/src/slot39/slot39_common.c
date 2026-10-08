@@ -1,7 +1,7 @@
-/* The menu overlay's common variables. They follow every unit's own
- * variables at the end of the image (zero there), so no unit's .data can
- * hold them; this data-only unit defines them, zero-initialized. */
+/* The menu overlay's common (uninitialized global) variables. The original
+ * linker allocated them after every unit's own variables, at the end of the
+ * file (zero there), so this unit, linked last, defines them. */
 #include "menu.h"
 
-u8 D_801EA8FC = 0;          /* the last choice was cancelled */
-s32 D_801EA900[2] = { 0 }; /* per port */
+u8 D_801EA8FC;     /* the last choice was cancelled */
+s32 D_801EA900[2]; /* per port */

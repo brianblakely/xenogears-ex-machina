@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -49,12 +49,9 @@ segments:
       # string padding elsewhere; ovl2596.c includes it from the original
       # (INCLUDE_ORIGINAL).
       - [0x64c0, .data, ovl2596]
-      # From 801e44cc the image holds the module's uninitialized variables
-      # as zeros, in the four-byte slots the original linker allocated (as
-      # the resident's u8 variables at 8005942c-8005943c are four bytes
-      # apart): the u8 at 801e44e4 follows the u8 at 801e44e0 four bytes on,
-      # and the image ends two bytes after the u8[3][2] at 801e44f8. GCC
-      # packs adjacent u8 definitions, so the slots from 801e44e4 stay
-      # original data; ovl2596.c ends with the u8 at 801e44e0.
-      - [0x64e4, data, ovl2596_bss]
+      # From 801e44cc the file holds the module's uninitialized variables
+      # (its .bss, loaded) as zeros, each in a slot of whole words (BSS in
+      # ovl2596.mk): the u8 at 801e44e4 follows the u8 at 801e44e0 four bytes
+      # on, and the image ends two bytes after the u8[3][2] at 801e44f8.
+      - [0x64cc, .bss, ovl2596]
   - [0x6500]

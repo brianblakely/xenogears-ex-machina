@@ -190,7 +190,21 @@ the audit; they are never counted as matches. This diagnostic does not replace
   GTE, `break` and scratchpad-stack macros are original style.
 - Strings whose alignment padding holds stray assembler bytes stay original data:
   mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
-  function and reference it as `extern char[]`.
+  function and reference it as `extern char[]`. A .data object whose padding holds
+  such bytes (a byte flag followed by `04`, a halfword table ending in `"Mt"`) is
+  linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
+  among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
+  only where the padding is non-zero and nothing reads it. Both count as `included`.
+- Uninitialized variables are defined uninitialized in their unit, never as zero
+  data. GCC emits a unit's function-local statics, then its file-scope tentative
+  definitions in first-declaration order; the original assembler gave each a slot of
+  whole words (two `u8` four bytes apart, `BSS := slots` in the target, a filter on
+  maspsx's output). A unit's own variables come first, as statics where the commons
+  follow apart; the commons, which the original linker allocated after every unit's
+  own in an order of its own, are defined by a commons unit linked last
+  (slot39_common.c, mdec commons/). Where a file holds its
+  .bss as zeros the .bss is loaded (`ld_bss_is_noload: False`); zeros a packer added
+  past the program are file padding (`OBJCOPY_FLAGS --gap-fill 0 --pad-to`, field.mk).
 - Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)
   stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in place
   from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in the
@@ -291,7 +305,8 @@ made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
 From the link map it also attributes every loaded .rodata/.data/.sdata input
-section to compiled C, original bytes INCLUDE_RODATA'd beside C (`included`),
+section to compiled C, original bytes INCLUDE_RODATA'd or INCLUDE_ORIGINAL'd in C
+(`included`),
 authored assembly, a classified `sdk`/`asset` range, or a generated
 `placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
 game data or bytecode that is parsed and documented rather than rewritten as source.

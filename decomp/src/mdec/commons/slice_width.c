@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-u16 movie_slice_width = 0;
+u16 movie_slice_width;

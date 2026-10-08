@@ -15,15 +15,21 @@
 INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
 GameData *D_801E44C4 = &D_8006D634;
 BattleWork *D_801E44C8 = (BattleWork *)D_800CCCE8;
-/* The level gauge animation. Zero in the image like everything after it:
- * the module's uninitialized variables, which the original linker gave
- * four-byte slots. From D_801E44E4 on they stay original data. */
-s32 D_801E44CC = 0;
-s32 D_801E44D0 = 0;
-s32 D_801E44D4 = 0;
-s32 D_801E44D8 = 0;
-s32 D_801E44DC = 0;
-u8 D_801E44E0 = 0;
+/* The module's uninitialized variables (the level gauge animation, the
+ * growth data and the record being processed, the experience pools), zero
+ * in the file, each in a slot of whole words. */
+s32 D_801E44CC;
+s32 D_801E44D0;
+s32 D_801E44D4;
+s32 D_801E44D8;
+s32 D_801E44DC;
+u8 D_801E44E0;
+u8 D_801E44E4;
+GrowthFile *D_801E44E8;
+Combatant *D_801E44EC;
+u32 D_801E44F0;
+u32 D_801E44F4;
+u8 D_801E44F8[3][2];
 
 /* Queue every member card's glyph runs while the cards are shown. */
 void func_801DE048(void) {

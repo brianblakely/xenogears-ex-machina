@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -50,21 +50,17 @@ segments:
       - [0xFC, .rodata, slot39_801DBE54]
       - [0x278, .rodata, slot39_801E8070]
       - [0x31c, c, slot39]
-      - [0x16E54, c, slot39_801DBE54]
+      - [0x16DB4, c, slot39_801DBE54]
       - [0x23070, c, slot39_801E8070]
       # All initialized data is slot39's: the other units' tables are interleaved
       # with its own and come before every unit's uninitialized variables.
-      # Then each unit's uninitialized variables (zero in the image), defined
-      # zero-initialized where their C layout is the original one.
       - [0x246A4, .data, slot39]
-      # slot39's from D_801EA714: two bytes four apart, the original's 4-byte
-      # slots, are no C layout.
-      - [0x25714, data, slot39_data]
-      - [0x25730, .data, slot39_801DBE54]
-      # The icon RECTs D_801EA8E4/D_801EA8EC, whose members the assembly of
-      # the nonmatching func_801E78C8 names.
-      - [0x258E4, data, slot39_rects]
-      - [0x258F4, .data, slot39_801E8070]
-      # The common variables, allocated after every unit's own.
-      - [0x258FC, .data, slot39_common]
+      # The file ends with each unit's uninitialized variables (their .bss,
+      # loaded), each in a slot of whole words (BSS in slot39.mk): two bytes
+      # lie four apart (801EA710, 801EA714). The common variables follow every
+      # unit's own.
+      - [0x256D0, .bss, slot39]
+      - [0x25724, .bss, slot39_801DBE54]
+      - [0x258F4, .bss, slot39_801E8070]
+      - [0x258FC, .bss, slot39_common]
   - [0x25908]
