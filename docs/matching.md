@@ -77,14 +77,24 @@ units' previously matching C still matches. ASPSX 2.56-2.86 give identical
 bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
+A fourth compiler, GCC 2.6.0 (`psx-cc1-2.6.0`, old-gcc 0.17 `gcc-2.6.0-psx`),
+builds slot39's card-refresh unit (`slot39_801C93A8.c`) at `-O2
+-fno-rerun-cse-after-loop`, set with `CC_<file> := 2.6.0` and
+`CC1FLAGS_<file>`. Its function keeps a register copy of its zeroed result
+(`move s6,s4`); of 2.5.7-2.95.2 under single-flag variants only that setting
+reproduces all 521 words, and the functions on both sides break under it, so
+the unit is a file of its own. 2.6.0 and 2.6.3 otherwise agree on 205 of
+slot39's 210 functions; the other four need 2.6.3.
+
 Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
 byte-identical on both discs. `tools/extraction/disc_files.py` and
 `tools/extraction/overlays.py` write the local inputs; splat writes the local
 assembly. `tools/extraction/code_census.py` scans every file of both discs for
 MIPS function structure and fails unless each code-bearing file is the boot
-executable or byte-identical to a target image (MDEC streams are reported apart). Distinct overlays at the same address keep separate targets and
-symbol files.
+executable or byte-identical to a target image (MDEC streams are reported
+apart). Distinct overlays at the same address keep separate targets and symbol
+files.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
@@ -180,7 +190,10 @@ the audit; they are never counted as matches. This diagnostic does not replace
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per unit; compiling every remaining draft under
   single-flag variants (`-fno-schedule-insns[2]`, `-fno-strength-reduce`, CSE and loop
-  options, `-O1`) produced no match, so do not change unit flags to fix one function.
+  options, `-O1`) produced no match, so do not change an existing unit's flags to fix
+  one function. A function that matches only under a compiler or flag its neighbours
+  do not survive is its own unit: split the file there after checking that rodata order
+  and jump-table phase allow the boundary (the slot39 card refresh).
 
 ## Matching levers (GCC 2.6.3/2.7.2)
 
@@ -215,6 +228,31 @@ Most matches came from data shape, not statement shuffling:
 Inspect decisions with cc1 RTL dumps (`-dL` loop, `-dS`/`-dR` scheduling, `-dl`/`-dg`
 allocation) on the preprocessed unit; the comments of each NON_MATCHING draft record
 what has been measured for it.
+
+## When one instruction will not move
+
+Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
+
+- cse replaces a register source by a known constant whenever it can (a MIPS
+  CONST_INT costs 0, a pseudo 1), so a surviving `move` of a register that was just
+  zeroed means both cse passes lost the value. A cse block ends at a referenced label;
+  the first pass also ends at a loop-end note (any `do { } while (0)`), the second
+  (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label whose
+  remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over an
+  `if` without inner labels, so a dead `if` hides nothing.
+- A dead loop that flow deletes leaves its exit label until the jump pass after reload:
+  it still splits the scheduling blocks, and an assignment before it can be hoisted
+  into the prologue.
+- In 2.6.3 the insn after a loop note is a scheduling barrier; 2.6.0 lets later loads'
+  delay slots take the insn before the note.
+- reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
+  was compiler-generated, not inline asm.
+- Splitting a file into units drops the prototypes that earlier definitions supplied:
+  calls across the new boundary with narrow (`u8`/`s16`) parameters lose their
+  `andi`/sign extension. Declare those prototypes in the shared header.
+- When a draft resists every source shape, compile it and its variants under the other
+  old-gcc releases (2.5.7-2.95.2, `-psx` and plain) and single-flag variants before more
+  shuffling; compare whole units, not one function, before adopting a setting.
 
 ## Recover incrementally
 
