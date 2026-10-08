@@ -37,7 +37,9 @@ positive `li` to `ori` as the original does (resident, movie library). Qualifica
 8-byte frame and reschedules the stores. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
-`GP_<file> := 8` in the target fragment.
+`GP_<file> := 8` in the target fragment. ASPSX loads and stores small data through
+`$gp` but forms every address (`la`) with `lui`/`addiu`, also of the unit's own
+small string constants (resident heap report), so such units expand `la` before GNU as.
 
 Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
 assembler honoured it relative to the unit's own rodata section, and the
@@ -196,6 +198,12 @@ the audit; they are never counted as matches. This diagnostic does not replace
 - Strings whose alignment padding holds stray assembler bytes stay original data:
   mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
   function and reference it as `extern char[]`.
+- Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)
+  stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in place
+  from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in the
+  .mk), and an `asset` line in the classification names the format and its reader.
+  Never commit their bytes as C initializers; numeric program tables (sine, pitch,
+  note encodings, opcode lengths) are source.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per unit; compiling every remaining draft under
@@ -286,7 +294,10 @@ section to compiled C, original bytes INCLUDE_RODATA'd beside C (`included`),
 authored assembly, a classified `sdk`/`asset` range, or a generated
 `placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
 game data or bytecode that is parsed and documented rather than rewritten as source.
-`remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
+GCC emits a static initializer's string literals last to first once the initializer
+ends, so a pointer table whose strings lie in reverse address order was written with
+its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
+go to `.sdata`. `remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
 assembly and reviewed nonmatching C candidates; SDK and handwritten assembly stay
 separate. Instructions are four-byte words within ELF function ranges, including
 nops and delay slots, excluding data sections and padding outside those ranges.

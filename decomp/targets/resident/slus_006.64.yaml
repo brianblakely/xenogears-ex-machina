@@ -28,7 +28,7 @@ options:
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
-  section_order: [".rodata", ".text", ".data", ".bss"]
+  section_order: [".rodata", ".text", ".data", ".sdata", ".bss"]
   subalign: 4
   string_encoding: ASCII
   data_string_encoding: ASCII
@@ -36,9 +36,15 @@ options:
   data_string_guesser_level: 2
   include_asm_macro_style: maspsx_hack
 segments:
+  # The PS-X EXE header (decomp/src/resident/header.c) ahead of the image.
+  # Nothing addresses it; its vram only keeps splat from taking zero words
+  # for pointers into it.
   - name: header
-    type: header
+    type: code
     start: 0x0
+    vram: 0x8000F800
+    subsegments:
+      - [0x0, .data, header]
 
   - name: main
     type: code
@@ -151,7 +157,43 @@ segments:
         name: libgte_msc00_data
         linker_section_order: .text
       - [0x393C4, c, psyq_tail_80048BC4]
-      - [0x3F288, data, data]
+      # LIBCARD END.OBJ keeps the three words _ExitCard copies into the
+      # kernel (8004EA88-8004EA94) and its end label in its .text, after the
+      # code (its signature labels text_68/text_74); .data starts at 8004EAA0.
+      - start: 0x3F288
+        type: data
+        name: libcard_end_data
+        linker_section_order: .text
+      # The game units' .data in link order. The texture-scroll and disc unit
+      # (main_8002709C) has none: the disc and stream state it shares opens
+      # main_8002A260's. main3's is the handwritten rotation object's
+      # sine/cosine table, linked ahead of every library.
+      - [0x3F2A0, .data, main]
+      - [0x3FB88, .data, main_8001B6C4]
+      - [0x402B8, .data, sprite]
+      - [0x404C0, .data, sprite_80022090]
+      - [0x40540, .data, sprite_800248D4]
+      - [0x405C0, .data, sprite_80025C04]
+      - [0x405E0, .data, main_8002A260]
+      - [0x40650, .data, main_8002C3E8]
+      - [0x40910, .data, heap]
+      - [0x40990, .data, main2]
+      - [0x40A40, .data, main2_800366E0]
+      - [0x40E24, .data, sound]
+      - [0x42BF0, .data, main3]
+      # PsyQ library .data in link order (libc2 SPRINTF ... libspu S_SRMT);
+      # classified sdk.
+      - [0x46BF0, data, psyq_data]
+      # Small data addressed through $gp (_gp = 0x80059170). The two generated
+      # ranges are initialized small globals that their own units address
+      # absolutely (8001b844-8001c76c: 80059171/78/7c; the sprite units:
+      # 80059198-800591b4), as a one-pass ASPSX does for data defined after
+      # its uses; defined in C, maspsx and GNU as would use $gp.
+      - [0x49970, sdata, sdata_80059170]
+      - [0x49984, .sdata, sprite]
+      - [0x49998, sdata, sdata_80059198]
+      - [0x499B8, .sdata, sprite_80022090]
+      - [0x499C4, .sdata, heap]
       - { start: 0x49ABC, type: bss, vram: 0x800592BC }
   - [0x49ABC]
   # Zero file padding is reproduced by objcopy --pad-to 0x4A000. It is

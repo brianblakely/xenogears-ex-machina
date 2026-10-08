@@ -19,6 +19,14 @@
 #include "console.h"
 #include "sound.h"
 
+/* Each mode's overlay file in directory 1; the kernel menu (mode 0) has none. */
+s32 D_8004EAA0[] = {0, 0xE, 0x10, 0xF, 0xD, 0x11, 0x12};
+
+/* The packed boot logo (80019d48): its unpacked size, a 6209-byte 16-colour
+ * TIM, and the LZSS stream 80032e88 decodes. */
+extern u8 D_8004EABC[];
+INCLUDE_ASSET(".data", D_8004EABC, 0x8004EABC, 0x800);
+
 INCLUDE_ASM("decomp/src/resident", func_80019524);
 
 INCLUDE_ASM("decomp/src/resident", func_80019548);
@@ -220,13 +228,17 @@ void func_80019C2C(void) {
     PCclose(fd);
 }
 
-/* Heap diagnostics, listed by the message table 8004f2c0. */
-const char D_80018104[] = "LsFreeMem:This ptr isn't MCB";
-const char D_80018124[] = "LsGetMem:MCB Broken";
-const char D_80018138[] = "LsFreeMem:Can't Release NULL Pointer";
-const char D_80018160[] = "LsGetMem:Memory Not Enough";
-const char D_8001817C[] = "LsKernel:PC File Not Found";
-const char D_80018198[] = "LsKernel:Program Not Defined";
+/* Fatal errors shown by 80019ef8: their count and the messages of the kernel
+ * and heap errors 0x80-0x85. */
+s32 D_8004F2BC = 0;
+char *D_8004F2C0[] = {
+    "LsKernel:Program Not Defined",
+    "LsKernel:PC File Not Found",
+    "LsGetMem:Memory Not Enough",
+    "LsFreeMem:Can't Release NULL Pointer",
+    "LsGetMem:MCB Broken",
+    "LsFreeMem:This ptr isn't MCB",
+};
 
 /* Select heap owner tag 10 (clearing its word and the quiet flag). */
 void func_80019C7C(void) {
@@ -363,7 +375,7 @@ loop:
         func_8003700C("MCBlog -> c:\\lserrmem.txt\n");
         func_8003700C("\n");
         if (error & 0x80) {
-            func_8003700C("%s\n", D_8004F0C0[error]);
+            func_8003700C("%s\n", D_8004F2C0[error - 0x80]);
             if (error == 0x82) {
                 func_80031BC4(&first, &second);
                 func_8003700C("Program From %08x\n", first);
@@ -381,13 +393,51 @@ loop:
     goto loop;
 }
 
-/* Names listed by the table at 8004f2dc. */
-const char D_8001826C[] = "MASAKI";
-const char D_80018274[] = "HIGUCHI";
-const char D_8001827C[] = "SUGIMOTO";
-const char D_80018288[] = "KAZUMI";
-const char D_80018290[] = "HIGUCHI,MIYAGAWA,MASAKI";
-const char D_800182A8[] = "YOSHII";
+s32 D_8004F2D8 = 0; /* kernel menu cursor */
+
+/* Staff names; nothing reads the table. */
+char *D_8004F2DC[] = {
+    "YOSHII", "HIGUCHI,MIYAGAWA,MASAKI", "KAZUMI", "SUGIMOTO", "HIGUCHI", "MASAKI",
+};
+
+/* Game state reset by 8001aadc. */
+s32 D_8004F2F4 = 0;
+s32 D_8004F2F8 = 0;
+s32 D_8004F2FC = 0;
+s32 D_8004F300 = 0;
+s32 D_8004F304 = 0;
+s32 D_8004F308 = -1;
+s32 D_8004F30C = 0;
+s32 D_8004F310 = 0;
+s32 D_8004F314 = 0;
+s32 D_8004F318 = 0;
+s32 D_8004F31C = 0;
+s32 D_8004F320 = 0;
+s32 D_8004F324 = 0xFF;
+s32 D_8004F328 = 0xFF;
+s32 D_8004F32C = -1;
+s32 D_8004F330 = -1;
+s32 D_8004F334 = -1;
+s32 D_8004F338 = -1;
+s32 D_8004F33C = -1;
+s32 D_8004F340 = -1;
+s32 D_8004F344 = 0;
+s32 D_8004F348 = 0;
+s32 D_8004F34C = -1;
+s32 D_8004F350 = 0;
+s32 D_8004F354 = 0;
+s32 D_8004F358 = 0;
+s32 D_8004F35C = 0;
+s32 D_8004F360 = 0;
+s32 D_8004F364 = 1;
+s32 D_8004F368 = 0;
+s32 D_8004F36C = 0;
+s32 D_8004F370 = 0;
+s32 D_8004F374 = 0;
+s32 D_8004F378 = 0;
+s32 D_8004F37C = 0;
+s32 D_8004F380 = 0;
+s16 D_8004F384 = 0;
 
 /* Kernel menu buffer: clear to dark blue and set up the white cursor triangle. */
 void func_8001A1E4(s32 index) {

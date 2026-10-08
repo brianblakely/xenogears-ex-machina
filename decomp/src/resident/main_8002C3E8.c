@@ -20,6 +20,75 @@
 #include "console.h"
 #include "sound.h"
 
+/* The handwritten renderers with their alternate entries (model_draw.s) and
+ * the C routines that prepare one record's packets. */
+void func_8002E010(), func_8002E024(), func_8002E038(), func_8002E04C(),
+    func_8002E22C(), func_8002E240(), func_8002E254(), func_8002E268(), func_8002E448(),
+    func_8002E45C(), func_8002E470(), func_8002E484(), func_8002E64C(), func_8002E660(),
+    func_8002E674(), func_8002E688(), func_8002E8B4(), func_8002E8C8(), func_8002E8DC(),
+    func_8002E8F0(), func_8002EAB8(), func_8002EACC(), func_8002EAE0(), func_8002EAF4(),
+    func_8002ED20(), func_8002EF0C(), func_8002F0E4(), func_8002F2E0(), func_8002F4B4(),
+    func_8002F6B4(), func_8002F8D0(), func_8002FAE8(), func_8002FCFC(), func_8002FF0C(),
+    func_80030750();
+s32 func_8002CDCC(CVECTOR *color, s16 *vertices, s32 flags);
+s32 func_8002CF34(s32 *value);
+s32 func_8002CF58(CVECTOR *color, s16 *vertices, s32 flags);
+s32 func_8002D0C0(s32 *value);
+s32 func_8002D0E4(u16 *command);
+s32 func_8002D180(CVECTOR *color, s16 *vertices);
+s32 func_8002D244(u16 *command, s16 *vertices);
+s32 func_8002D530(u16 *command, s16 *vertices, s32 flags);
+s32 func_8002D6AC(CVECTOR *color, s16 *vertices, s32 flags);
+s32 func_8002D77C(CVECTOR *color, s16 *vertices);
+s32 func_8002D814(u16 *command, s16 *vertices, s32 flags);
+s32 func_8002D984(u16 *command);
+s32 func_8002DA14(u16 *command, s16 *vertices);
+s32 func_8002DAFC(void);
+
+/* The renderer of each primitive type, indexed by PrimitiveGroup.type. */
+PrimitiveType D_8004FE50[17] = {
+    {{func_8002E038, func_8002ED20, func_8002E470, func_8002E8DC, func_8002E038, func_8002E038},
+     func_8002CDCC, 8, 4, 0x14},
+    {{func_8002E04C, func_8002F2E0, func_8002E484, func_8002E8F0, func_8002EF0C, func_8002F0E4},
+     func_8002D814, 8, 8, 0x20},
+    {{func_8002E024, func_8002F6B4, func_8002E45C, func_8002E8C8, func_8002E024, func_8002E024},
+     func_8002D6AC, 8, 4, 0x1C},
+    {{func_8002E010, func_8002F4B4, func_8002E448, func_8002E8B4, func_8002E010, func_8002E010},
+     func_8002DA14, 8, 8, 0x28},
+    {{func_8002E038, func_8002E038, func_8002E470, func_8002E8DC, func_8002E038, func_8002E038},
+     func_8002CF34, 8, 4, 0x14},
+    {{func_8002E04C, func_8002E04C, func_8002E484, func_8002E8F0, func_8002EF0C, func_8002F0E4},
+     func_8002D984, 8, 8, 0x20},
+    {{func_8002E024, func_8002E024, func_8002E45C, func_8002E8C8, func_8002E024, func_8002E024},
+     func_8002D77C, 8, 4, 0x1C},
+    {{func_8002E010, func_8002E010, func_8002E448, func_8002E8B4, func_8002E010, func_8002E010},
+     func_8002DA14, 8, 8, 0x28},
+    {{func_8002E254, func_8002F8D0, func_8002E674, func_8002EAE0, func_8002E254, func_8002E254},
+     func_8002CF58, 8, 4, 0x18},
+    {{func_8002E268, func_8002FAE8, func_8002E688, func_8002EAF4, func_8002FCFC, func_8002FF0C},
+     func_8002D530, 8, 12, 0x28},
+    {{func_8002E240, func_8002E240, func_8002E660, func_8002EACC, func_8002E240, func_8002E240},
+     func_8002D180, 8, 4, 0x24},
+    {{func_8002E22C, func_8002E22C, func_8002E64C, func_8002EAB8, func_8002E22C, func_8002E22C},
+     func_8002D244, 8, 12, 0x34},
+    {{func_8002E254, func_8002E254, func_8002E674, func_8002EAE0, func_8002E254, func_8002E254},
+     func_8002D0C0, 8, 4, 0x18},
+    {{func_8002E268, func_8002E268, func_8002E688, func_8002EAF4, func_8002FCFC, func_8002FF0C},
+     func_8002D0E4, 8, 12, 0x28},
+    {{func_8002E240, func_8002E240, func_8002E660, func_8002EACC, func_8002E240, func_8002E240},
+     func_8002D180, 8, 4, 0x24},
+    {{func_8002E22C, func_8002E22C, func_8002E64C, func_8002EAB8, func_8002E22C, func_8002E22C},
+     func_8002D244, 8, 12, 0x34},
+    {{func_80030750, func_80030750, func_80030750, func_80030750, func_80030750, func_80030750},
+     func_8002DAFC, 8, 4, 0x20},
+};
+s32 D_800500F8 = 0x13F;    /* right screen edge of the renderers (8002dff0) */
+s32 D_800500FC = 0xEE0000; /* bottom screen edge - 1, in the high half */
+s32 D_80050100 = 2;        /* depth shift into the ordering table */
+s32 D_80050104 = 1;        /* bounding box test mode (8003101c), 0 off */
+s32 D_80050108 = 0;        /* texture page override: 0 none, 1 page, 2 raw */
+s32 D_8005010C = 1;        /* CLUT override: 0 on */
+
 /* Relocate a model group's offsets to addresses (once). Returns the number
  * of models. */
 s32 func_8002C3E8(ModelGroup *group) {
@@ -291,8 +360,6 @@ void func_8002CBBC(ModelBuffer *buffer) {
     }
 }
 
-extern s32 D_80050108; /* texture page override: 0 none, 1 page, 2 raw */
-extern s32 D_8005010C; /* CLUT override: 0 on */
 extern s32 D_80059310;
 extern s32 D_80059314;
 
@@ -806,9 +873,6 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
 u8 *func_8002DFE0(void) {
     return D_8006FAF0;
 }
-
-extern s32 D_800500F8;
-extern s32 D_800500FC;
 
 void func_8002DFF0(s32 a, s32 b) {
     D_800500FC = (b - 1) << 16;

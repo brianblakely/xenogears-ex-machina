@@ -14,6 +14,34 @@
 #include "heap.h"
 #include "mode.h"
 
+/* The text palette: two 16-colour CLUTs. */
+u16 D_80050190[32] = {
+    0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
+    0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
+    0x0000, 0x0000, 0x0000, 0x0000, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
+    0xC086, 0xC086, 0xC086, 0xC086, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
+};
+/* The rows of the special 0xFFFF glyph. */
+u16 D_800501D0[11] = {
+    0xC07F, 0x60C0, 0xA0A0, 0x2091, 0x208A, 0x2084, 0x208A, 0x2091, 0xA0A0, 0x60C0, 0xC07F,
+};
+u16 D_800501E8[8] = {0x20, 0x40, 0x10, 0x80, 0x4, 0x1, 0x8, 0x2}; /* button bits */
+u8 D_800501F8 = 0;              /* play time stopped at 100 hours */
+void (*D_800501FC)(void) = NULL; /* vertical-blank hook */
+s32 D_80050200 = 1;
+s32 D_80050204 = 0;
+s32 D_80050208 = 0; /* queue overflowed */
+u8 D_8005020C[16] = {
+    0x80, 0x80, 0xFF, 0xFF, 0x80, 0x80, 0xFF, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x80, 0x80, 0x80,
+};
+u8 D_8005021C[16] = {
+    0x80, 0x00, 0x80, 0x00, 0xFF, 0x80, 0xFF, 0x80, 0x80, 0x00, 0x80, 0x80, 0xFF, 0x80, 0x80, 0x80,
+};
+s32 D_8005022C = 0; /* frames the held buttons have not changed */
+s32 D_80050230 = 0;
+s32 D_80050234 = 0; /* nothing reads it */
+u8 D_80050238[8] = {0, 1, 2, 3, 4, 5, 6, 7}; /* button assignment */
+
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
     return *packed;
@@ -1151,8 +1179,6 @@ extern u16 D_800594A8;       /* pad buttons repeated, second port */
 extern s32 D_80059488;       /* vertical blank count */
 extern u32 D_80059374;       /* held pad buttons of the last frame */
 extern u32 D_80059378;
-extern s32 D_8005022C;       /* frames the held buttons have not changed */
-extern s32 D_80050230;
 extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
 extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
 
@@ -1245,7 +1271,6 @@ void func_800358BC(void) {
 extern u32 D_8005937C; /* queued count */
 extern u32 D_80059380; /* write index */
 extern u32 D_80059384; /* read index */
-extern s32 D_80050208; /* queue overflowed */
 extern u16 D_8005A0FC[16];
 extern u16 D_8005A11C[16];
 extern u16 D_8005A13C[16];
@@ -1298,7 +1323,6 @@ u32 func_80035DA0(void) {
     return D_8005937C;
 }
 
-extern s32 D_80050200;
 extern u16 D_800594DC;
 extern u16 D_800594E0;
 extern u16 D_800594E8;
@@ -1327,7 +1351,6 @@ void func_80035DB0(void) {
     D_80059570 = 0;
 }
 
-extern u8 D_800501F8; /* play time stopped at 100 hours */
 extern u8 D_80059370; /* frames */
 
 /* Advance the play time by one frame. */
@@ -1451,7 +1474,6 @@ void func_80036270(s32 port, u8 disabled) {
     D_8005A1BC[port].disabled = disabled;
 }
 
-extern s32 D_80050204;
 extern s32 D_80059390;
 
 /* Start the controllers and reset the queue, actuators and assignment. */
@@ -1479,8 +1501,6 @@ void func_80036288(void) {
 void func_8003633C(u8 value) {
     D_8005938C = value;
 }
-
-extern void (*D_800501FC)(void);
 
 /* Vertical-blank callback: counts frames, polls the controllers, input queue
  * and play clock, runs the installed hook, and on a development (host)

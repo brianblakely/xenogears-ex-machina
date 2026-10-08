@@ -17,7 +17,27 @@
 #include "heap.h"
 #include "mode.h"
 
-extern void (*D_80050594)(s32 c);
+void func_800370DC(s32 c);
+
+/* The built-in console font, packed: its unpacked size and the LZSS stream
+ * 80032e88 decodes (800374e8). */
+extern u8 D_80050240[];
+INCLUDE_ASSET(".data", D_80050240, 0x80050240, 0x354);
+void (*D_80050594)(s32 c) = func_800370DC; /* character output (800366f0) */
+/* The console font CLUTs, built by 80036e4c: four rows of 16 colours. */
+u16 D_80050598[64] = {
+    0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF,
+    0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF,
+    0x0000, 0x0000, 0x7FFF, 0x7FFF, 0x0000, 0x0000, 0x7FFF, 0x7FFF,
+    0x0000, 0x0000, 0x7FFF, 0x7FFF, 0x0000, 0x0000, 0x7FFF, 0x7FFF,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF,
+};
+s32 D_80050618 = 0; /* the menu's mode (800379b4) */
+u8 D_8005061C[6] = {1, 0, 0, 2, 2, 0}; /* option bytes of the field and menu */
+
 
 /* Install the character output run by 800366f0. */
 void func_800366E0(void (*callback)(s32 c)) {
@@ -279,7 +299,6 @@ void func_80036DC8(s32 r, s32 g, s32 b) {
     }
 }
 
-extern u16 D_80050598[64]; /* console font CLUTs */
 extern RECT D_80059398;    /* their VRAM rectangle */
 
 /* Build and upload the console font CLUTs: four 16-color rows of
@@ -524,8 +543,6 @@ void func_8003748C(void) {
     }
     D_800593A0 = 0;
 }
-
-extern u8 D_80050240[]; /* the built-in font (packed) */
 
 /* Open the debug text console at (left, top, width, height) with room for
  * `capacity` characters per frame: allocate it (unless a block was
@@ -1252,7 +1269,7 @@ void func_8003890C(SoundBank *bank, s32 enable) {
     }
 }
 
-extern s32 D_800508E8[10]; /* reverb work area size of each reverb type */
+extern s32 D_800508E8[10]; /* reverb work area size of each reverb type (sound.c) */
 void func_80038AD4(s32 address, s32 size);
 
 /* Compiled-out debug trace of the reverb work area allocation. */

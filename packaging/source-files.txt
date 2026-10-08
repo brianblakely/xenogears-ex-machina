@@ -112,6 +112,7 @@ decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
 decomp/include/psyq/inline_c.h
+decomp/include/psyq/kernel.h
 decomp/include/psyq/libapi.h
 decomp/include/psyq/libc.h
 decomp/include/psyq/libcd.h
@@ -338,6 +339,7 @@ decomp/src/resident/func_8003F8B0.s
 decomp/src/resident/func_8003F8CC.s
 decomp/src/resident/gpu.h
 decomp/src/resident/gte.h
+decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
@@ -475,6 +477,7 @@ decomp/targets/overlays/worldmap.mk
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
 decomp/targets/resident/classification.txt
+decomp/targets/resident/link.ld
 decomp/targets/resident/slus_006.64.mk
 decomp/targets/resident/slus_006.64.yaml
 decomp/targets/resident/slus_006.69.mk

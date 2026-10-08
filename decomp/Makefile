@@ -36,7 +36,7 @@ $(foreach var,ORIGINAL ORIGINAL_SHA256 IMAGE LINKER_SCRIPT SPLAT_CONFIG BUILD CC
 # for the R3000, ASPSX 2.34 behaviour through maspsx, GNU as for the object.
 CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx \
 	-D_PSYQ -D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C \
-	-lang-c -nostdinc -I$(ROOT)/decomp/include $(TARGET_CPPFLAGS)
+	-lang-c -nostdinc -I$(ROOT)/decomp/include -DORIGINAL_IMAGE='"$(ORIGINAL)"' $(TARGET_CPPFLAGS)
 CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
 ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 	-I$(ROOT)/decomp/include -I$(ROOT)
@@ -54,12 +54,15 @@ cc1flags_of = $(CC1FLAGS_$(basename $(notdir $(1))))
 MASPSX_FLAGS ?= --aspsx-version=2.34
 maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
 # GNU as addresses a symbol through $gp when GCC's `.extern name, size` declares it
-# small or it is a small common, also for `la`; the sprite units' assembler ignored
-# those sizes and took every address (`la`) absolutely. EXTERN_<file> := absolute
-# drops the directives and expands `la` of a symbol to lui/addiu.
-ABSOLUTE_FILTER := | sed -E -e '/^\.extern/d' \
-	-e 's/^la\t(\$$[0-9a-z]+),([A-Za-z_][A-Za-z0-9_]*(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
-extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),$(ABSOLUTE_FILTER))
+# small, it is a small common or it lies in the unit's .sdata, also for `la`. ASPSX
+# took every address (`la`) absolutely: no resident unit forms one from $gp, and the
+# heap unit's small string constants, which GCC places in .sdata, are addressed with
+# lui/addiu. Units with a small-data threshold therefore expand `la` themselves. Some
+# units' assembler also ignored the `.extern` sizes (the sprite units, the menu
+# support): EXTERN_<file> := absolute drops the directives.
+LA_ABSOLUTE := -e 's/^la\t(\$$[0-9a-z]+),((\$$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
+extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\.extern/d')
+asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.
@@ -104,7 +107,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) $(call cc1flags_of,$<) -G$(call gp_of,$<) -o $@.cc1.s
-	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call extern_of,$<) > $@.s
+	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call asm_filter_of,$<) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
 $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)

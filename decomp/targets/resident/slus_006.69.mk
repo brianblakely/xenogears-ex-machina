@@ -7,7 +7,7 @@ ORIGINAL_SHA256 := 3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19
 BUILD := .local/decomp/build/resident2
 IMAGE := .local/decomp/build/SLUS_006.69
 LINKER_SCRIPT := .local/decomp/resident2/slus_006.69.ld
-LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/resident2/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/resident2/undefined_funcs_auto.txt decomp/targets/resident/link.ld
 OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
@@ -68,3 +68,6 @@ EXTERN_main_8001B6C4 := absolute
 # The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
 # is compiled by GCC 2.6.3.
 CC_main_8002A260 := 2.6.3
+# Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
+# whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800

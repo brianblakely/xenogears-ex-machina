@@ -23,6 +23,25 @@
             "\t.include \"" FOLDER "/" #NAME ".s\"\n"                          \
             ".section .text")
 
+/*
+ * Link SIZE bytes of the user's original image at VRAM as NAME: media or
+ * bytecode embedded in a unit's data (a packed image, font or sound bank),
+ * which stays user-supplied and out of the source (an `asset` range in the
+ * target's classification). The target defines ORIGINAL_IMAGE (its pristine
+ * input) and ORIGINAL_BASE (the VRAM of file offset 0).
+ */
+#define INCLUDE_ASSET_STR(X) #X
+#define INCLUDE_ASSET_XSTR(X) INCLUDE_ASSET_STR(X)
+#define INCLUDE_ASSET(SECTION, NAME, VRAM, SIZE)                               \
+    __asm__(".section " SECTION "\n"                                          \
+            "\t.align 2\n"                                                    \
+            "\t.globl " #NAME "\n"                                            \
+            #NAME ":\n"                                                        \
+            "\t.incbin \"" ORIGINAL_IMAGE "\", " #VRAM " - "                  \
+            INCLUDE_ASSET_XSTR(ORIGINAL_BASE) ", " #SIZE "\n"                 \
+            "\t.size " #NAME ", " #SIZE "\n"                                  \
+            "\t.previous")
+
 __asm__(".include \"macro.inc\"\n");
 
 #endif

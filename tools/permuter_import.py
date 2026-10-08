@@ -34,9 +34,12 @@ CPPFLAGS = (
 ).split()
 CC1FLAGS = "-quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2".split()
 ASFLAGS = "-EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections".split()
-ABSOLUTE_FILTER = (
-    r"sed -E -e '/^\.extern/d' "
-    r"-e 's/^la\t(\$[0-9a-z]+),([A-Za-z_][A-Za-z0-9_]*(\+[0-9]+)?)$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'"
+# Units with a small-data threshold expand `la` absolutely (ASPSX); EXTERN absolute
+# units also drop GCC's `.extern name, size` directives.
+EXTERN_FILTER = r"-e '/^\.extern/d'"
+LA_ABSOLUTE = (
+    r"-e 's/^la\t(\$[0-9a-z]+),((\$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$/"
+    r"lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'"
 )
 
 
@@ -140,7 +143,9 @@ def main() -> None:
     permuter_lib()
     (out / "base.c").write_text(strip_other_functions(pre, name))
 
-    filter_ = f" | {ABSOLUTE_FILTER}" if absolute else ""
+    filter_ = ""
+    if gp != "0":
+        filter_ = f" | sed -E {EXTERN_FILTER + ' ' if absolute else ''}{LA_ABSOLUTE}"
     compile_sh = out / "compile.sh"
     compile_sh.write_text(
         "#!/usr/bin/env bash\n"

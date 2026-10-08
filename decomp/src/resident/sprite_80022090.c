@@ -22,9 +22,18 @@
 #include "console.h"
 #include "sound.h"
 
-/* The unit's own small globals ($gp-relative; the assembler knows them as
- * this unit's small commons). */
-s32 D_800591B8;
+/* Lengths in bytes of the frame script commands 0x80-0xff, including the
+ * command byte. */
+u8 D_8004FCC0[0x80] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+};
+
+/* The unit's own small data and small commons, $gp-relative. */
+s32 D_800591B8 = 0;
+s16 D_800591BC[4] = {0x400, -0x200, 0, 0}; /* nothing references it */
 s32 D_800592EC;
 RECT *D_800592F0;             /* LoadImage area for 80022a0c */
 u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
@@ -257,7 +266,7 @@ next:
             }
             break;
         }
-        sprite->script += D_8004FC40[op];
+        sprite->script += D_8004FCC0[op - 0x80];
         goto next;
     }
 }
