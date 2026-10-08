@@ -23,6 +23,45 @@
 /* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
 extern s32 D_800CCB34_word __asm__("D_800CCB34");
 
+/* This unit's data, 800c348c-800c3508: the formula tables of its formula
+ * functions, the formation mode and battle.c's combo steps. */
+void func_80094EE4(void);
+void func_80095690(void);
+void func_80095A78(void);
+void func_80095D4C(void);
+void func_80096018(void);
+void func_80095BAC(void);
+void func_800957D8(void);
+void func_8009BD94(void);
+void func_8009CBC4(void);
+void func_8009D354(void);
+void func_8009E268(void);
+void func_8009E278(void);
+void func_8009E2EC(void);
+void func_8009E3C8(void);
+void func_8009E410(void);
+void func_8009E48C(void);
+void func_8009E508(void);
+void func_8009E364(void);
+void (*D_800C348C[])(void) = {
+    func_80094EE4, func_80095690, func_80095A78, func_80095D4C, func_80096018, func_80095BAC,
+    func_800957D8, func_8009BD94,
+};
+u8 D_800C34AC = 0; /* never read */
+u8 D_800C34AD = 0;
+u8 D_800C34AE = 0;
+BattleWork *D_800C34B0 = &D_800CCCE8;
+/* The next combo step by step and AP paid (1-3); battle.c reads it from one
+ * byte before, as D_800C34B3. */
+u8 D_800C34B4[8][3] = {
+    {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {4, 6, 7}, {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {1, 5, 7},
+};
+u8 D_800C34CC[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53};
+void (*D_800C34DC[])(void) = {
+    func_8009CBC4, func_8009D354, func_8009E268, func_8009E278, func_8009E2EC, func_8009E3C8,
+    func_8009E410, func_8009E48C, func_8009E508, func_80096018, func_8009E364,
+};
+
 /* Hide the command windows (three panels); without `keep` show the +0x641c
  * lists. */
 void func_8008CCCC(u8 keep) {
