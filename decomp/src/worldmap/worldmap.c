@@ -327,10 +327,10 @@ void func_80071B9C(s32 index, s32 position) {
     if (index < 8) {
         for (i = 1; position >= D_8009B564[i]; i++) {
         }
-        area = &D_8009B57C[i];
+        area = &D_8009B584[i - 1];
         D_8009C610 = i - 1;
     } else {
-        area = &D_8009B57C[index + 2];
+        area = &D_8009B584[index + 1];
     }
     D_8009D3C4 = area->file + 1;
     D_8009C17C = area->file + 2;

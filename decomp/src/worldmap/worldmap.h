@@ -35,7 +35,7 @@ typedef struct {
 } WorldmapArea;
 
 extern u16 D_8009B564[];          /* area thresholds, indexed from 1 */
-extern WorldmapArea D_8009B57C[]; /* area file sets */
+extern WorldmapArea D_8009B584[]; /* area file sets */
 
 /* Loaded area files and their buffers. */
 extern s32 D_8009D3C4, D_8009C174, D_8009C17C, D_8009D3D0, D_8009CC98;
@@ -421,13 +421,15 @@ extern s16 D_8009BD04;
 
 s32 func_8008C364(WorldmapActor *actor, s32 kind);
 
+/* A path region as the current path (PathRegion's layout): data holds the
+ * bounds, then the scene id and its parameter; count is the path link. */
 typedef struct {
-    u8 data[0xC];
+    s16 data[6];
     u16 count;
     u16 pad;
 } PathTable;
 
-extern PathTable D_8009B6C4[2];
+extern PathTable D_8009B6C4[3];
 extern PathTable *D_8009D7D8;
 extern s16 D_8009BD24;
 extern u8 D_8009D738, D_8009BD60;
@@ -1540,7 +1542,7 @@ typedef struct {
 #define GRID_SCRATCH ((GridScratch *)0x1F800000)
 
 extern s16 D_8009D650[25][4]; /* per block: visibility of its 4 quarters */
-extern u32 D_8009B7A8[4][25][2]; /* per quadrant: always-visible quarters */
+extern s16 D_8009B7A8[4][25][4]; /* per quadrant: always-visible quarters */
 
 s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
 
