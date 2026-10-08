@@ -1721,7 +1721,8 @@ def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> N
     starts, skipped = script_entries(package)
     result = walk(code, [pc for _, _, pc in starts])
     totals.maps += 1
-    totals.packages[map_id] = bytes(package.variable_unsigned_bits) + code
+    rows = b"".join(struct.pack("<32H", *row) for row in package.entries)
+    totals.packages[map_id] = bytes(package.variable_unsigned_bits) + rows + code
     totals.actors += len(package.entries)
     totals.scripts += len(starts)
     totals.starts += len({pc for _, _, pc in starts})
