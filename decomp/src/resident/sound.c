@@ -2110,23 +2110,24 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
             gate = 0x7FFF;
             if (!(channel->flags & 0x600)) {
                 fraction = channel->gate_fraction;
-                if (fraction != 15) {
-                    if (fraction == 16) {
-                        gate = duration;
-                        goto packed_timers;
+                switch (fraction) {
+                case 16:
+                    gate = duration;
+                    break;
+                case 15:
+                    gate = duration - 1;
+                    if (gate == 0) {
+                        gate = 1;
                     }
-                    goto scaled_gate;
-                }
-                gate = duration - 1;
-                goto minimum_gate;
-scaled_gate:
-                gate = (u32)(duration * fraction) >> 4;
-minimum_gate:
-                if (gate == 0) {
-                    gate = 1;
+                    break;
+                default:
+                    gate = (u32)(duration * fraction) >> 4;
+                    if (gate == 0) {
+                        gate = 1;
+                    }
+                    break;
                 }
             }
-packed_timers:
             *(s32 *)&channel->unk5C = duration + (gate << 16);
             if (new_note) {
                 if (channel->flags3 & 4) {
