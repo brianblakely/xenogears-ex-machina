@@ -12,15 +12,17 @@ the data:
   update. Only func_800827C8 (D_8009A758) and func_800838E8 (D_8009AC60) give
   an actor a script.
 * Arena scene scripts, func_8007107C (decomp/src/menu/menu2.c). Bytes; switch
-  cases 1-34 take one to three bytes, 0 and every value without a case return
-  without advancing. func_80070F80 starts the scripts: D_8009105C[scene]
+  cases 1-34 take one to three bytes, except 16 and 17, which never advance
+  and never return. 0 and every value without a case return without
+  advancing. func_80070F80 starts the scripts: D_8009105C[scene]
   (func_8007191C, scenes 0-9), the opening D_80090F38 (func_800719F0) and the
   setup script D_800910C4 (func_800720D4).
 
 Neither machine has jumps: a script runs straight to its stop instruction.
-`--sweep` decodes every script of both machines from each disc's own packed
-overlay container and prints aggregate counts only; `--list` prints the
-disassembly of the user's discs to stdout.
+Sizes and flow follow each handler's advance; the C comments of the handlers
+give each opcode's effect. `--sweep` decodes every script of both machines
+from each disc's own packed overlay container and prints aggregate counts
+only; `--list` prints the disassembly of the user's discs to stdout.
 """
 
 from __future__ import annotations

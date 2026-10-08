@@ -1,11 +1,13 @@
 """Synthetic scripts exercise the recovered overlay script decoders."""
 
+import re
 import struct
 import unittest
 
 from tools.analysis.overlay_scripts import (
     ARENA,
     BASE,
+    ROOT,
     WORLDMAP,
     ScriptError,
     UnknownOpcode,
@@ -102,6 +104,36 @@ class ArenaScriptTests(unittest.TestCase):
         self.assertEqual((result.scripts, result.instructions), (4, 6))
         self.assertEqual(result.uses, {0: 3, 3: 1, 14: 1, 25: 1})
         self.assertEqual(result.failures[0][:2], ("D_8009105C[9]", 0x80090F48))
+
+
+class SourceTests(unittest.TestCase):
+    """The opcode tables follow the recovered interpreters in decomp/src."""
+
+    def test_worldmap_entries_follow_d_8009a3c0_and_handler_returns(self):
+        text = (ROOT / "decomp/src/worldmap/worldmap_80072238.c").read_text()
+        table = re.search(r"ScriptOp D_8009A3C0\[12\] = \{(.*?)\};", text, re.S).group(1)
+        handlers = [spec.handler for spec in WORLDMAP.opcodes.values()]
+        self.assertEqual(re.findall(r"func_[0-9A-F]{8}", table), handlers)
+        for code, spec in WORLDMAP.opcodes.items():
+            body = re.search(rf"\ns32 {spec.handler}\([^)]*\) \{{.*?\n\}}", text, re.S).group(0)
+            advances = {int(n) for n in re.findall(r"return (\d+);", body)} - {0}
+            expected = set() if spec.flow == "stop" else {WORLDMAP.size(spec) // 2}
+            self.assertEqual(advances, expected, code)
+
+    def test_arena_entries_follow_the_switch_cases_and_their_advances(self):
+        text = (ROOT / "decomp/src/menu/menu2.c").read_text()
+        body = text[text.index("s32 func_8007107C(void) {") : text.index("void func_80071724(")]
+        parts = re.split(r"\n\s*case (\d+):", body)
+        advances = {}
+        for number, case in zip(parts[1::2], parts[2::2], strict=True):
+            steps = case.count("D_800925F8++")
+            steps += sum(int(n) for n in re.findall(r"D_800925F8 \+= (\d+);", case))
+            advances[int(number)] = steps
+        self.assertEqual(sorted(advances), sorted(ARENA.opcodes))
+        for code, spec in ARENA.opcodes.items():
+            self.assertEqual(spec.handler, f"case {code}")
+            expected = 0 if spec.flow in ("stop", "hang") else ARENA.size(spec)
+            self.assertEqual(advances[code], expected, code)
 
 
 class TargetTests(unittest.TestCase):

@@ -1,8 +1,8 @@
 # World map actor scripts
 
 - **Interpreter:** `func_80076B34` (`decomp/src/worldmap/worldmap_80072238.c`), the
-  update of the actor that `func_800827C8` or `func_800838E8` starts in world-map
-  modes 17 and 18.
+  update handler of an actor that world-map modes 17 and 18 register
+  (`func_80082324`, `func_8008355C`); its start handler sets the script.
 - **Dispatch:** `D_8009A3C0[12]`, handlers `func_80076BC4`-`func_80076D8C`, each
   commented with its operands and effect. The opcode is not range-checked.
 - **Format:** signed halfwords. The interpreter reads the 32-bit word at the script
