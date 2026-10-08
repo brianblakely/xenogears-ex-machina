@@ -579,6 +579,6 @@ s32 func_80026DCC(u16 *sheet, s32 id, SpritePart *parts, s16 x, s16 y) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026F44);
+INCLUDE_ASM("decomp/src/resident", func_80026F44);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026FE8);
+INCLUDE_ASM("decomp/src/resident", func_80026FE8);

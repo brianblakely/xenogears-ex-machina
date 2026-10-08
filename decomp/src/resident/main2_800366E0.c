@@ -651,9 +651,9 @@ void func_80037878(u8 *base, s32 count, s32 size, s32 (*compare)(void *a, void *
     func_800320E8(temp);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_800379B4);
+INCLUDE_ASM("decomp/src/resident", func_800379B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_800379C8);
+INCLUDE_ASM("decomp/src/resident", func_800379C8);
 
 void func_800379D0(void) {
 }

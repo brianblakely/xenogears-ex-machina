@@ -1228,44 +1228,44 @@ u16 mode;
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315A0);
+INCLUDE_ASM("decomp/src/resident", func_800315A0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315C4);
+INCLUDE_ASM("decomp/src/resident", func_800315C4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315E8);
+INCLUDE_ASM("decomp/src/resident", func_800315E8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003160C);
+INCLUDE_ASM("decomp/src/resident", func_8003160C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031630);
+INCLUDE_ASM("decomp/src/resident", func_80031630);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031654);
+INCLUDE_ASM("decomp/src/resident", func_80031654);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031678);
+INCLUDE_ASM("decomp/src/resident", func_80031678);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003169C);
+INCLUDE_ASM("decomp/src/resident", func_8003169C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800316C0);
+INCLUDE_ASM("decomp/src/resident", func_800316C0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800316E4);
+INCLUDE_ASM("decomp/src/resident", func_800316E4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031708);
+INCLUDE_ASM("decomp/src/resident", func_80031708);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003172C);
+INCLUDE_ASM("decomp/src/resident", func_8003172C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031750);
+INCLUDE_ASM("decomp/src/resident", func_80031750);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031774);
+INCLUDE_ASM("decomp/src/resident", func_80031774);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031798);
+INCLUDE_ASM("decomp/src/resident", func_80031798);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800317BC);
+INCLUDE_ASM("decomp/src/resident", func_800317BC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800317E0);
+INCLUDE_ASM("decomp/src/resident", func_800317E0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031804);
+INCLUDE_ASM("decomp/src/resident", func_80031804);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031828);
+INCLUDE_ASM("decomp/src/resident", func_80031828);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003184C);
+INCLUDE_ASM("decomp/src/resident", func_8003184C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031870);
+INCLUDE_ASM("decomp/src/resident", func_80031870);

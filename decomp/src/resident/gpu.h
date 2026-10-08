@@ -49,6 +49,6 @@ s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *vie
                   s32 buffer);
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 
-MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* rotation matrix of three angles */
+MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* Rx * Ry * Rz of three angles */
 
 #endif

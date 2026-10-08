@@ -6,7 +6,7 @@ void func_80093354(VECTOR *position);
 /* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
 s32 func_80084D00(s32 probe, s16 *hit);
 
-void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
+void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin);
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -1688,7 +1688,121 @@ void func_800983A0(Camera *camera) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800987AC);
+/* Classify the quad a, b, c, d (two rows of two corners, so its edges are
+ * a-b, b-d, d-c and c-a) against the four horizon planes of 80098044,
+ * after RT with the loaded matrix: -1 when all four corners lie outside one
+ * plane, 1 when no plane has a whole edge outside it, else 0. Each plane
+ * counts the edges whose two corners are both on its negative side; the
+ * first two planes use x and z, the other two y and z. */
+s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d) {
+    VECTOR *view = GRID_SCRATCH->view;
+    s16 out0;
+    s16 out1;
+    s16 out2;
+    s16 out3;
+    s32 d0;
+    s32 d1;
+    s32 d2;
+    s32 d3;
+
+    gte_ldv0(a);
+    gte_rt();
+    gte_stlvnl(&view[0]);
+    gte_ldv0(b);
+    gte_rt();
+    gte_stlvnl(&view[1]);
+    gte_ldv0(c);
+    gte_rt();
+    gte_stlvnl(&view[2]);
+    gte_ldv0(d);
+    gte_rt();
+    gte_stlvnl(&view[3]);
+
+    out0 = 0;
+    d0 = (view[0].vx * D_8009C828.vx + view[0].vz * D_8009C828.vz) >> 12;
+    d1 = (view[1].vx * D_8009C828.vx + view[1].vz * D_8009C828.vz) >> 12;
+    d2 = (view[2].vx * D_8009C828.vx + view[2].vz * D_8009C828.vz) >> 12;
+    d3 = (view[3].vx * D_8009C828.vx + view[3].vz * D_8009C828.vz) >> 12;
+    if (d0 < 0 && d1 < 0) {
+        out0++;
+    }
+    if (d1 < 0 && d3 < 0) {
+        out0++;
+    }
+    if (d3 < 0 && d2 < 0) {
+        out0++;
+    }
+    if (d2 < 0 && d0 < 0) {
+        out0++;
+    }
+    if (out0 == 4) {
+        return -1;
+    }
+
+    out1 = 0;
+    d0 = (view[0].vx * D_8009C844.vx + view[0].vz * D_8009C844.vz) >> 12;
+    d1 = (view[1].vx * D_8009C844.vx + view[1].vz * D_8009C844.vz) >> 12;
+    d2 = (view[2].vx * D_8009C844.vx + view[2].vz * D_8009C844.vz) >> 12;
+    d3 = (view[3].vx * D_8009C844.vx + view[3].vz * D_8009C844.vz) >> 12;
+    if (d0 < 0 && d1 < 0) {
+        out1++;
+    }
+    if (d1 < 0 && d3 < 0) {
+        out1++;
+    }
+    if (d3 < 0 && d2 < 0) {
+        out1++;
+    }
+    if (d2 < 0 && d0 < 0) {
+        out1++;
+    }
+    if (out1 == 4) {
+        return -1;
+    }
+
+    out2 = 0;
+    d0 = (view[0].vy * D_8009C874.vy + view[0].vz * D_8009C874.vz) >> 12;
+    d1 = (view[1].vy * D_8009C874.vy + view[1].vz * D_8009C874.vz) >> 12;
+    d2 = (view[2].vy * D_8009C874.vy + view[2].vz * D_8009C874.vz) >> 12;
+    d3 = (view[3].vy * D_8009C874.vy + view[3].vz * D_8009C874.vz) >> 12;
+    if (d0 < 0 && d1 < 0) {
+        out2++;
+    }
+    if (d1 < 0 && d3 < 0) {
+        out2++;
+    }
+    if (d3 < 0 && d2 < 0) {
+        out2++;
+    }
+    if (d2 < 0 && d0 < 0) {
+        out2++;
+    }
+    if (out2 == 4) {
+        return -1;
+    }
+
+    out3 = 0;
+    d0 = (view[0].vy * D_8009C7F0.vy + view[0].vz * D_8009C7F0.vz) >> 12;
+    d1 = (view[1].vy * D_8009C7F0.vy + view[1].vz * D_8009C7F0.vz) >> 12;
+    d2 = (view[2].vy * D_8009C7F0.vy + view[2].vz * D_8009C7F0.vz) >> 12;
+    d3 = (view[3].vy * D_8009C7F0.vy + view[3].vz * D_8009C7F0.vz) >> 12;
+    if (d0 < 0 && d1 < 0) {
+        out3++;
+    }
+    if (d1 < 0 && d3 < 0) {
+        out3++;
+    }
+    if (d3 < 0 && d2 < 0) {
+        out3++;
+    }
+    if (d2 < 0 && d0 < 0) {
+        out3++;
+    }
+    if (out3 != 4) {
+        return (out1 | out0 | out2 | out3) == 0;
+    }
+    return -1;
+}
 
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
@@ -1906,7 +2020,7 @@ void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
-void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
+void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin) {
     SVECTOR *vertex;
     u32 *cell;
     s32 j;
@@ -1950,9 +2064,9 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
         z -= 0x80;
         row_phase += 0x200;
     }
-    func_8009980C(heights, ot, depth);
+    func_8009980C(heights, ot, packets);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009980C);
+INCLUDE_ASM("decomp/src/worldmap", func_8009980C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80099BFC);
+INCLUDE_ASM("decomp/src/worldmap", func_80099BFC);

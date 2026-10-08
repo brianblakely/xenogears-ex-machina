@@ -106,9 +106,9 @@ extern u8 D_80010004[];
 extern u16 D_80018004[];
 
 /* Original hand-written startup code. */
-void func_80019524(void);
-void func_80019548(void);
-void func_80019560(u8 *start, u8 *end);
+void func_80019524(void);               /* entry: clear the BSS, reset the stack, boot */
+void func_80019548(void);               /* sp = fp = 0x80200000, gp = _gp */
+void func_80019560(u8 *start, u8 *end); /* zero the words after start through end */
 
 void func_8001996C(s32 mode);
 void *func_800199CC(s32 mode);

@@ -1,10 +1,10 @@
 #include "common.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_8003F738);
+INCLUDE_ASM("decomp/src/resident", func_8003F738);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_8003F8B0);
+INCLUDE_ASM("decomp/src/resident", func_8003F8B0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_8003F8CC);
+INCLUDE_ASM("decomp/src/resident", func_8003F8CC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", bzero);
 

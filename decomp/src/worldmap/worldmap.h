@@ -859,7 +859,7 @@ s32 func_80096328(void);
 s32 func_800965A4(void);
 
 extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
-void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
+void func_8009980C(u32 *cells, u32 *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
 /* Model instance returned by func_80024524 (actor handle). */
 typedef struct {
@@ -1223,8 +1223,8 @@ typedef struct {
 #define TERRAIN_PASS_SCRATCH ((TerrainPassScratch *)0x1F800000)
 
 extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
-extern s16 D_8009BE04;     /* quads used this frame */
-void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
+extern s16 D_8009BE04;     /* quads used this frame; a word in 80099BFC */
+void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads); /* draw billboards (assembly) */
 
 /* Scene object placement (16 bytes; the list follows a count halfword). */
 typedef struct {
@@ -1530,7 +1530,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 /* worldmap_80094A5C: terrain visibility grid */
 typedef struct {
-    u8 pad0[0x40];
+    VECTOR view[4];  /* 0x00: the tested quad's corners after RT */
     s32 x0;          /* 0x40: grid corner x */
     s32 pad44;
     s32 z0;          /* 0x48: grid corner z */
@@ -1563,7 +1563,7 @@ typedef struct {
     MATRIX world;    /* 0x370 */
 } TerrainDrawScratch;
 
-extern s32 D_8009D7DC; /* packet depth */
+extern s32 D_8009D7DC; /* terrain POLY_FT3 packets used this frame */
 
 /* Model and object of the scene overlay at 0x801E0000. */
 typedef struct {

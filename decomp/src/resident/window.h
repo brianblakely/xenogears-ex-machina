@@ -74,6 +74,6 @@ void func_80033DF0(Window *window);
 void func_80034888(Window *window, u_long *ot, s32 buffer); /* draw */
 
 /* Hand-written ordering table link helper (800315a0-80031894). */
-void func_80031798(u_long *ot, void *prim);
+void func_80031798(u_long *ot, void *prim); /* link a SPRT */
 
 #endif

@@ -369,8 +369,8 @@ void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stag
 void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
-s32 func_8003F8B0(s32 angle); /* rcos */
-s32 func_8003F8CC(s32 angle); /* rsin */
+s32 func_8003F8B0(s32 angle); /* sine (4096 = 1.0) */
+s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
 void func_800248D4(Sprite *sprite); /* run the next script command */
 extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);

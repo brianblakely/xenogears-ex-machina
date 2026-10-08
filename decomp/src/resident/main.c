@@ -19,11 +19,11 @@
 #include "console.h"
 #include "sound.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
+INCLUDE_ASM("decomp/src/resident", func_80019524);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019548);
+INCLUDE_ASM("decomp/src/resident", func_80019548);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019560);
+INCLUDE_ASM("decomp/src/resident", func_80019560);
 
 /* Boot: initialise the system libraries, the disc index and the heap, load and install the resident data files, then enter the first mode. */
 void func_80019578(void) {
