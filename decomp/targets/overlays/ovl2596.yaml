@@ -44,5 +44,17 @@ segments:
     subsegments:
       - [0x0, .rodata, ovl2596]
       - [0x48, c, ovl2596]
+      # D_801E44C0 (u8 0): the padding after it holds a byte (0x04) that
+      # nothing reads, as the original assembler left in string padding
+      # elsewhere; a C definition would leave zero.
       - [0x64c0, data, ovl2596_data]
+      - [0x64c4, .data, ovl2596]
+      # From 801e44cc the image holds the module's uninitialized variables
+      # as zeros, in the four-byte slots the original linker allocated (as
+      # the resident's u8 variables at 8005942c-8005943c are four bytes
+      # apart): the u8 at 801e44e4 follows the u8 at 801e44e0 four bytes on,
+      # and the image ends two bytes after the u8[3][2] at 801e44f8. GCC
+      # packs adjacent u8 definitions, so the slots from 801e44e4 stay
+      # original data; ovl2596.c ends with the u8 at 801e44e0.
+      - [0x64e4, data, ovl2596_bss]
   - [0x6500]

@@ -9,6 +9,21 @@
  * order of this unit's address arithmetic (e.g. 801de5c4, 801de1c4). */
 #include "battle_results.h"
 
+/* The module's data opens with D_801E44C0 (the fanfare flag, u8 0), still
+ * linked as original data: the padding after it holds a byte (0x04) that
+ * nothing reads, which a C definition cannot leave (see ovl2596.yaml). */
+GameData *D_801E44C4 = &D_8006D634;
+BattleWork *D_801E44C8 = (BattleWork *)D_800CCCE8;
+/* The level gauge animation. Zero in the image like everything after it:
+ * the module's uninitialized variables, which the original linker gave
+ * four-byte slots. From D_801E44E4 on they stay original data. */
+s32 D_801E44CC = 0;
+s32 D_801E44D0 = 0;
+s32 D_801E44D4 = 0;
+s32 D_801E44D8 = 0;
+s32 D_801E44DC = 0;
+u8 D_801E44E0 = 0;
+
 /* Queue every member card's glyph runs while the cards are shown. */
 void func_801DE048(void) {
     s32 i;
