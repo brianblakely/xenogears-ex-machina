@@ -1,5 +1,11 @@
 #include "worldmap.h"
 
+/* The director's timed sequence: the state of each step and its duration
+ * (started by func_8008032C). The original object keeps a stray halfword
+ * (0x7542) in the durations' alignment padding. */
+u16 D_8009A698[9] = {1, 2, 8, 3, 4, 5, 6, 7, 64};
+u16 D_8009A6AC[10] = {135, 15, 135, 188, 2, 2, 120, 128, 0, 0x7542};
+
 /* Flight scene director: step through its timed sequence and run each cue. */
 s32 func_80080370(s32 index) {
     WorldmapActor *actor;

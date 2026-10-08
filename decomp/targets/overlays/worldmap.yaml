@@ -78,7 +78,9 @@ segments:
       - [0x2a960, .data, worldmap_8007A9F8]
       - [0x2a9e8, .data, worldmap_8007C3B8]
       - [0x2aab0, .data, worldmap_8007DE98]
-      - [0x2aba8, data, worldmap_data]
+      - [0x2aba8, .data, worldmap_80080370]
+      - [0x2abd0, .data, worldmap_800811C0]
+      - [0x2b23c, data, worldmap_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x2c0c4, databin, worldmap_tail]
   - [0x2c0c6]
