@@ -498,7 +498,7 @@ void func_80025718(Task *task) {
     Sprite *sprite = task->data;
 
     func_80022038(sprite);
-    if (sprite->renderer->pointer34 != NULL) {
+    if (((SpriteModelRenderer *)sprite->renderer)->model != NULL) {
         position.vx = sprite->x >> 16;
         position.vy = sprite->y >> 16;
         position.vz = sprite->z >> 16;
@@ -508,7 +508,9 @@ void func_80025718(Task *task) {
         }
         SetRotMatrix(&matrix);
         SetTransMatrix(&matrix);
-        func_8002C700(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, ((u16 *)&sprite->flags)[1] & 4); /* flags bit 18, as a halfword */
+        func_8002C700((SpriteModel *)((SpriteModelRenderer *)sprite->renderer)->model,
+                      (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[D_800592F8],
+                      (u32 *)D_8005956C, ((u16 *)&sprite->flags)[1] & 4); /* flags bit 18, as a halfword */
     }
 }
 
@@ -529,7 +531,7 @@ void func_800257F0(Task *task) {
     s32 shift;
 
     func_80022038(sprite);
-    if (sprite->renderer->pointer34 == NULL) {
+    if (((SpriteModelRenderer *)sprite->renderer)->model == NULL) {
         return;
     }
     if ((sprite->flags >> 1) & 1) {
@@ -564,12 +566,14 @@ void func_800257F0(Task *task) {
     if ((sprite->render.word >> 25) & 1) {
         shift = D_80050100;
         D_80050100 = 16;
-        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0, 0xFEC,
-                      sprite->render.bits.blend);
+        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+                      ((SpriteModelRenderer *)sprite->renderer)->packets[D_800592F8],
+                      (u32 *)D_8005956C, 0, 0xFEC, sprite->render.bits.blend);
         D_80050100 = shift;
     } else {
-        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0,
-                      sprite->half30, sprite->render.bits.blend);
+        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+                      ((SpriteModelRenderer *)sprite->renderer)->packets[D_800592F8],
+                      (u32 *)D_8005956C, 0, sprite->half30, sprite->render.bits.blend);
     }
     if ((s32)sprite->render.word < 0) {
         SetGeomOffset(offset_x, offset_y);
@@ -588,7 +592,7 @@ void func_80025A88(Task *task) {
     s32 shift;
 
     func_80022038(sprite);
-    if (sprite->renderer->pointer34 == NULL) {
+    if (((SpriteModelRenderer *)sprite->renderer)->model == NULL) {
         return;
     }
     position.vx = sprite->x >> 16;
@@ -603,11 +607,13 @@ void func_80025A88(Task *task) {
     if ((sprite->render.word >> 25) & 1) {
         shift = D_80050100;
         D_80050100 = 16;
-        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0, 0xFEC,
-                      sprite->render.bits.blend);
+        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+                      ((SpriteModelRenderer *)sprite->renderer)->packets[D_800592F8],
+                      (u32 *)D_8005956C, 0, 0xFEC, sprite->render.bits.blend);
         D_80050100 = shift;
     } else {
-        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0,
-                      sprite->half30, sprite->render.bits.blend);
+        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+                      ((SpriteModelRenderer *)sprite->renderer)->packets[D_800592F8],
+                      (u32 *)D_8005956C, 0, sprite->half30, sprite->render.bits.blend);
     }
 }

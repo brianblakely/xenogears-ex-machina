@@ -281,7 +281,7 @@ s16 func_800B0B14(s32 key);
 
 /* An entry of an effect script file (0x1C bytes); the offsets are from the
  * entry until relocated. */
-typedef struct {
+typedef struct ScriptEntry {
     u8 *data0;    /* 0x00 */
     s32 field4;   /* 0x04 */
     u8 *data8;    /* 0x08 */

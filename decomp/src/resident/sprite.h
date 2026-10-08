@@ -70,13 +70,14 @@ typedef struct {
     s8 x, y;
 } SpriteOffset;
 
-/* A sprite's renderer (its part list header). */
+/* A sprite's renderer. The group/part fields below are the one-sided
+ * view ((render.word & 3) == 1); model sprites use SpriteModelRenderer. */
 typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
     MATRIX matrix;                 /* +0xc: local screen matrix */
-    SpritePart *parts[2];          /* +0x2c: two part lists (0x18 bytes per part); 80025718 draws the one of the queue being filled */
-    SpriteRendererEntry *pointer34; /* +0x34: 8 entries */
+    SpritePart *parts[2];          /* +0x2c: two part lists (0x18 bytes per part) */
+    SpriteRendererEntry *pointer34; /* +0x34: eight group entries for one-sided sprites */
     struct Sprite *next_pending;   /* +0x38 */
     SpriteOffset offset;           /* +0x3c: screen offset, before scaling */
     u8 unknown3e[2];
@@ -386,12 +387,13 @@ typedef struct {
 
 void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
 
-/* A model sprite's renderer (render mode 2) as the script commands use it. */
+/* A model sprite's alternate renderer view ((render.word & 3) == 2).
+ * Resident F5-F7 bind a SpriteModel; battle F3 binds a ScriptEntry. */
 typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     u8 unknown6[0x26];
     u8 *packets[2];                /* +0x2c: the model's two packet buffers */
-    void *model;                   /* +0x34 */
+    void *model;                   /* +0x34: bound model or effect-script entry */
     s16 red, green, blue;          /* +0x38 */
 } SpriteModelRenderer;
 
@@ -477,5 +479,7 @@ typedef struct {
 extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
-void func_800B1F6C(SpriteRendererEntry *model, SpritePart *parts, s32 ot, s32 unused, s32 depth, s32 blend); /* battle overlay: draw a lit model */
+struct ScriptEntry;
+/* Battle overlay: draw an effect-script entry with its packet buffer. */
+void func_800B1F6C(struct ScriptEntry *entry, u8 *packets, u32 *ot, s32 unused, s32 depth, s32 blend);
 #endif
