@@ -9,20 +9,27 @@
  * order of this unit's address arithmetic (e.g. 801de5c4, 801de1c4). */
 #include "battle_results.h"
 
-/* The module's data opens with D_801E44C0 (the fanfare flag, u8 0), still
- * linked as original data: the padding after it holds a byte (0x04) that
- * nothing reads, which a C definition cannot leave (see ovl2596.yaml). */
+/* The module's data opens with D_801E44C0 (the fanfare flag, u8 0): the
+ * padding after it holds a byte (0x04) that nothing reads, which a C
+ * definition cannot leave, so it stays original data. */
+INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
 GameData *D_801E44C4 = &D_8006D634;
 BattleWork *D_801E44C8 = (BattleWork *)D_800CCCE8;
-/* The level gauge animation. Zero in the image like everything after it:
- * the module's uninitialized variables, which the original linker gave
- * four-byte slots. From D_801E44E4 on they stay original data. */
-s32 D_801E44CC = 0;
-s32 D_801E44D0 = 0;
-s32 D_801E44D4 = 0;
-s32 D_801E44D8 = 0;
-s32 D_801E44DC = 0;
-u8 D_801E44E0 = 0;
+/* The module's uninitialized variables (the level gauge animation, the
+ * growth data and the record being processed, the experience pools), zero
+ * in the file, each in a slot of whole words. */
+s32 D_801E44CC;
+s32 D_801E44D0;
+s32 D_801E44D4;
+s32 D_801E44D8;
+s32 D_801E44DC;
+u8 D_801E44E0;
+u8 D_801E44E4;
+GrowthFile *D_801E44E8;
+Combatant *D_801E44EC;
+u32 D_801E44F0;
+u32 D_801E44F4;
+u8 D_801E44F8[3][2];
 
 /* Queue every member card's glyph runs while the cards are shown. */
 void func_801DE048(void) {

@@ -18,8 +18,9 @@ With ``--map`` (the GNU ld map of the same link), loaded data input sections
 (.rodata*, .data*, .sdata*) are attributed by the object that supplied them:
 
 * ``c``            emitted by the compiler from a decomp/src C unit
-* ``included``     original bytes INCLUDE_RODATA'd beside a C unit (strings whose
-                   padding holds stray assembler bytes; docs/matching.md)
+* ``included``     original bytes INCLUDE_RODATA'd (strings) or INCLUDE_ORIGINAL'd
+                   (.data objects) in a C unit: objects whose padding holds
+                   stray assembler bytes (docs/matching.md)
 * ``handwritten``  an authored assembly unit under decomp/src
 * ``sdk``/``asset``/``handwritten``  generated data inside a classified range
                    (``asset``: user-supplied game data/bytecode, not source)
@@ -38,6 +39,7 @@ from pathlib import Path
 
 INCLUDE_ASM = re.compile(r"INCLUDE_ASM\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
 INCLUDE_RODATA = re.compile(r"INCLUDE_RODATA\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
+INCLUDE_ORIGINAL = re.compile(r"INCLUDE_ORIGINAL\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*,")
 DATA_SECTION = re.compile(r"\.(rodata|data|sdata)\b")
 NON_MATCHING = re.compile(r"#ifdef\s+NON_MATCHING(.*?)#else(.*?)#endif", re.DOTALL)
 
@@ -131,6 +133,23 @@ def data_coverage(
     return totals
 
 
+def source_names(roots: list[Path]) -> tuple[set[str], set[str], set[str]]:
+    """Names linked as assembly, reviewed nonmatching candidates and original
+    data objects (INCLUDE_RODATA, INCLUDE_ORIGINAL) in the C units under roots."""
+    asm_names: set[str] = set()
+    nonmatching: set[str] = set()
+    included: set[str] = set()
+    for root in roots:
+        for source in root.rglob("*.c"):
+            text = source.read_text()
+            for _block, fallback in NON_MATCHING.findall(text):
+                nonmatching.update(INCLUDE_ASM.findall(fallback))
+            asm_names.update(INCLUDE_ASM.findall(text))
+            included.update(INCLUDE_RODATA.findall(text))
+            included.update(INCLUDE_ORIGINAL.findall(text))
+    return asm_names, nonmatching, included
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("elf", type=Path)
@@ -140,16 +159,7 @@ def main() -> None:
     parser.add_argument("--list", choices=["c", "nonmatching", "sdk", "handwritten", "asm"])
     args = parser.parse_args()
 
-    asm_names: set[str] = set()
-    nonmatching: set[str] = set()
-    rodata_names: set[str] = set()
-    for root in args.src:
-        for source in root.rglob("*.c"):
-            text = source.read_text()
-            for _block, fallback in NON_MATCHING.findall(text):
-                nonmatching.update(INCLUDE_ASM.findall(fallback))
-            asm_names.update(INCLUDE_ASM.findall(text))
-            rodata_names.update(INCLUDE_RODATA.findall(text))
+    asm_names, nonmatching, included_names = source_names(args.src)
     ranges = classification(args.classification)
 
     table = symbols(args.elf)
@@ -202,7 +212,7 @@ def main() -> None:
         "remaining_asm_instructions": remaining[1] // 4,
     }
     if args.map:
-        included = [(a, a + n) for a, n, _, name in table if name in rodata_names]
+        included = [(a, a + n) for a, n, _, name in table if name in included_names]
         root = Path(__file__).resolve().parents[1]
         data = data_coverage(map_sections(args.map), included, ranges, root)
         report["data_bytes"] = sum(data.values())

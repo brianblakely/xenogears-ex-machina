@@ -56,7 +56,6 @@ extern u8 D_800925A4[15][3]; /* each combo's command inputs (1 A, 2 B), by speci
 
 extern s32 D_8009284C;
 extern s32 D_80092850;
-extern u8 D_80092848; /* the command the brain last started */
 extern u8 D_800928C4; /* enables the retreat rule */
 
 s32 func_8008B650(s32 from, s32 to, s32 step); /* turn angle toward target */

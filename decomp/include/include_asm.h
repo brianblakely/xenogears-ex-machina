@@ -42,6 +42,17 @@
             "\t.size " #NAME ", " #SIZE "\n"                                  \
             "\t.previous")
 
+/*
+ * The .data analogue of INCLUDE_RODATA: an object whose alignment padding
+ * holds stray bytes the original assembler left there and nothing reads.
+ * C cannot emit them, so the object and its padding (SIZE bytes at VRAM)
+ * stay original, linked from the pristine input as INCLUDE_ASSET does, at
+ * the object's place among its unit's definitions.
+ * tools/matching_coverage.py counts NAME's bytes as `included`, not as C.
+ */
+#define INCLUDE_ORIGINAL(SECTION, NAME, VRAM, SIZE)                            \
+    INCLUDE_ASSET(SECTION, NAME, VRAM, SIZE)
+
 __asm__(".include \"macro.inc\"\n");
 
 #endif

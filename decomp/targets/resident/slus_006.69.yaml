@@ -185,14 +185,12 @@ segments:
       # PsyQ library .data in link order (libc2 SPRINTF ... libspu S_SRMT);
       # classified sdk.
       - [0x46BF0, data, psyq_data]
-      # Small data addressed through $gp (_gp = 0x80059170). The two generated
-      # ranges are initialized small globals that their own units address
-      # absolutely (8001b844-8001c76c: 80059171/78/7c; the sprite units:
-      # 80059198-800591b4), as a one-pass ASPSX does for data defined after
-      # its uses; defined in C, maspsx and GNU as would use $gp.
-      - [0x49970, sdata, sdata_80059170]
+      # Small data addressed through $gp (_gp = 0x80059170). The globals the
+      # menu-support and sprite units address absolutely (80059171/78/7c,
+      # 80059198-800591b4) are no unit's own: data-only units define them.
+      - [0x49970, .sdata, kernel_settings]
       - [0x49984, .sdata, sprite]
-      - [0x49998, sdata, sdata_80059198]
+      - [0x49998, .sdata, sprite_settings]
       - [0x499B8, .sdata, sprite_80022090]
       - [0x499C4, .sdata, heap]
       - { start: 0x49ABC, type: bss, vram: 0x800592BC }

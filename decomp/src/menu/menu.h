@@ -184,15 +184,11 @@ typedef struct {
     u8 *image;         /* 0x20: palette and emblem pixels */
 } ModelData;
 
-
 /* Screen point (libgte DVECTOR). */
 typedef struct {
     s16 vx;
     s16 vy;
 } DVector;
-
-
-
 
 /* A node of a loaded model hierarchy. */
 typedef struct ModelNode {
@@ -370,7 +366,6 @@ typedef struct {
 #define ACTOR_FLAG_BITS(actor) ((ActorFlagBits *)&(actor)->flags)
 #define ACTOR_STANCE_BITS(actor) ((ActorStanceBits *)&(actor)->unkD4)
 
-
 /* A move's frame event: runs its spec (header offset) on frames first..last. */
 typedef struct {
     u8 first;
@@ -413,27 +408,14 @@ extern Actor D_8009872C;
 extern Vector D_8009867C;
 extern Vector D_8009871C;
 extern Vector D_80099078;
-extern s32 D_800925F4; /* vertical camera lift of the current view */
 
 extern MenuWindow D_8009868C; /* message window */
 extern MenuWindow D_80092954;
 
-extern u8 *D_800925F8;   /* running scene script */
 extern u8 *D_8009105C[]; /* scene scripts */
 extern u8 D_80090F38[];
 extern u8 D_800910C4[];
 
-extern s32 D_800925D4; /* message the scene shows */
-extern s32 D_800925D8;
-extern s32 D_800925DC;
-extern s32 D_800925E0; /* marker sprite x, y */
-extern s32 D_800925E4;
-extern s32 D_800925E8; /* marker sprite target x, y */
-extern s32 D_800925EC;
-extern s32 D_800925FC; /* scene script frame counter */
-extern s16 D_80092600; /* scene script charge hold */
-extern s8 D_80092604; /* scene choice cursor */
-extern u8 D_80092608;
 extern s32 D_8009284C; /* horizontal distance between the actors */
 extern s32 D_80092880;
 extern u8 D_80092884;
@@ -445,7 +427,6 @@ extern s32 D_80092934;
 extern u8 D_8009293C;
 extern s32 D_80092948;
 extern u8 D_800929BC;
-extern u8 D_800925F0; /* marker sprite shown */
 extern FloorStep D_80091084[8];
 extern u16 D_8005948C; /* pad buttons newly pressed */
 extern u16 D_800594A4; /* pad buttons repeating */
@@ -463,11 +444,6 @@ extern u8 D_800928FC;
 extern s32 D_80092918;
 extern s32 D_80092944;
 extern s32 D_80092950;
-extern s32 D_80092640;
-extern s32 D_80092668;
-extern s32 D_8009266C;
-extern s32 D_80092670;
-extern s32 D_80092674;
 extern s32 D_800911D4; /* debug: camera tuning with the pad */
 void func_80070808(Vector *target, s32 steps);
 void func_800708C4(Vector *target, s32 steps);
@@ -476,11 +452,7 @@ extern s32 D_800928AC;
 extern u8 D_800928C0;
 extern Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
 void func_8007A768(Actor *actor);
-extern s32 D_80092638;
-extern s32 D_8009263C;
-extern s32 D_80092648;
 void func_800379C8(const char *format, ...); /* debug text print */
-extern u8 D_80092664;
 extern s32 D_80092890;
 extern u8 D_800928B4;
 extern u8 D_800928F0;
@@ -489,17 +461,8 @@ extern s32 D_8009290C;
 extern s32 D_8009294C;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
-extern Actor *D_80092614;
 extern LightRig *D_800910F0; /* the scene's lights */
-extern Node *D_80092610;     /* the scene's root node */
 extern Vector D_80096FA8;    /* scene origin (last eye position) */
-extern s8 D_80092618;       /* odd: show the record text */
-extern s32 D_8009261C;
-extern s32 D_80092620;
-extern s32 D_80092624;
-extern s32 D_80092628;
-extern s32 D_8009262C;
-extern SVector D_80092630;  /* model view angles */
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
@@ -508,12 +471,9 @@ extern u8 D_80091178[]; /* pairs: next combo number after each button */
 extern u8 D_80099D9B;
 extern u8 D_80099D9C;
 extern s32 D_8009292C;
-extern s32 D_80092654; /* last crossing point x, z */
-extern s32 D_80092658;
 extern s32 D_80099D88;
 extern s32 D_80099D8C;
 extern u8 D_80050622; /* resident: result of the last menu battle */
-extern s32 D_80092650; /* trail segments added */
 
 /* PsyQ SDK (resident). */
 void AddPrim(u32 *ot, void *prim);                    /* AddPrim */
@@ -572,7 +532,6 @@ void func_80076424(Actor *actor);
 void func_80090CC0(Actor *actor);
 void func_80087AB0(Actor *actor);
 void func_80078ED4(s16 *params);
-extern u8 D_8009264C[4]; /* default combo state */
 extern char D_8006FC74[]; /* "" */
 extern char D_8006FC10[]; /* "ETHER" */
 extern char D_8006FCCC[]; /* combo names "BBB", "BBA", ... "A", four bytes each */
@@ -639,14 +598,7 @@ void func_8008976C(s32 a0, s32 a1);
 void func_8008BC04(void);
 
 /* Idle scene camera. */
-extern s32 D_80092770;
-extern s32 D_80092774;
 extern u8 D_8009287C;
-extern s32 D_800927AC; /* orbit angle */
-extern s32 D_8009277C; /* framing heading */
-extern s32 D_800927B0; /* orbit speed */
-extern s32 D_80092794; /* scene mode */
-extern s32 D_80092790;
 
 void func_80083310(s32 arg);
 void func_8007A21C(s32 arg);
@@ -658,7 +610,6 @@ typedef struct {
     void *data;
 } Resource;
 
-extern void *D_800927B4[2]; /* loaded model of each actor slot */
 extern u8 D_80099D9E;
 
 void *func_800891C0(s32 id);
@@ -666,7 +617,6 @@ s32 func_800288EC(s32 file);
 void func_80083BB4(s32 both);
 
 /* Menu mode exit. */
-extern s32 D_800927C4;
 extern s32 D_800917F0;
 void func_8003852C(s32 arg);
 void func_800399D4(s32 arg);

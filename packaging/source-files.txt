@@ -204,7 +204,6 @@ decomp/src/mdec/commons/skipped_frames.c
 decomp/src/mdec/commons/slice_width.c
 decomp/src/mdec/commons/stall_count.c
 decomp/src/mdec/mdec.c
-decomp/src/mdec/mdec_bss.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
 decomp/src/menu/func_80072D18.s
@@ -234,6 +233,7 @@ decomp/src/menu/menu4.c
 decomp/src/menu/menu5.c
 decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
+decomp/src/menu/menu_common.c
 decomp/src/menu/mesh_packet.s
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h
@@ -343,6 +343,7 @@ decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
+decomp/src/resident/kernel_settings.c
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/main2_800366E0.c
@@ -366,6 +367,7 @@ decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/sprite_80025C04.c
+decomp/src/resident/sprite_settings.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h
@@ -467,6 +469,7 @@ decomp/targets/overlays/ovl3386.yaml
 decomp/targets/overlays/ovl3387.mk
 decomp/targets/overlays/ovl3387.symbols.txt
 decomp/targets/overlays/ovl3387.yaml
+decomp/targets/overlays/slot39.data.ld
 decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml

@@ -14,6 +14,35 @@ s32 movie_vlc_limit = 0;            /* halfwords per decode call */
 s32 movie_color_mode = 0;           /* bit 0: 24-bit output */
 s32 movie_end_frame = 0;
 
+/* The player's uninitialized variables (801e8910..801e89ac) open the .bss,
+ * which the file holds as zeros after the libraries' .data and ahead of the
+ * libcd modules' .bss, each in a slot of whole words (BSS in mdec.mk): the u8
+ * flags at 801e8958..801e8968 sit four bytes apart. */
+static MovieSectorHeader *movie_decoded_bitstream;
+static u32 *movie_frame_bitstream;
+static MovieDecoder movie_decoder;
+static u8 movie_mdec_idle;         /* the MDEC finished a frame */
+static u8 movie_frame_waiting;     /* no frame was in the ring */
+static u8 movie_restarted;
+static s8 movie_player_state;
+static u8 movie_host_stream;       /* resident host-file table in use */
+static s32 movie_start_sector;
+static s32 movie_cd_mode;
+static u16 movie_file;
+static u16 movie_xa_channel;
+static s16 movie_row_limit;        /* rows a slice loads at most */
+static s32 movie_loaded_frame;     /* frame the MDEC decodes */
+static s32 movie_first_frame;
+static s32 movie_shown_frame;      /* last frame fully loaded */
+static void *movie_ring_buffer;    /* the stream ring */
+static void (*movie_frame_callback)(u16 frame, u16 x, u16 y); /* a frame is loaded */
+static s32 movie_ring_frame;       /* frame of the last ring bitstream */
+static s32 movie_load_enabled;     /* slices go to VRAM */
+static s32 movie_saved_directory; /* directory group of the movie files */
+static s32 movie_saved_index;     /* and index */
+static s32 movie_fade_in_pending;
+static s32 movie_fade_out_pending;
+
 /* The MDEC output DMA's completion callback: load the slice just decoded into
  * VRAM (column by column for a split display), then start the MDEC on the
  * next slice or, past the frame's last column, report the loaded frame. */

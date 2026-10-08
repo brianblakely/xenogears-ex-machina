@@ -7,6 +7,27 @@
 #include "window.h"
 #include "gte.h"
 
+/* The unit's small uninitialized variables, zero in the file after every
+ * unit's data, each in a slot of whole words (BSS in menu.mk). */
+static s16 D_80092800; /* model texture page x (-1: none) */
+static s16 D_80092804; /* model texture page y */
+static s16 D_80092808; /* model CLUT x (-1: none) */
+static s16 D_8009280C; /* model CLUT y */
+static s32 D_80092810;
+static s32 D_80092814; /* unreferenced */
+static CVector D_80092818[2]; /* current colour per display buffer */
+static s32 D_80092820; /* root counter at the frame start */
+static s32 D_80092824; /* nodes instanced by the last copy */
+static Node *D_80092828; /* root being instanced */
+static SVector *D_8009282C; /* scratch vectors for GTE loads */
+static SVector *D_80092830; /* view origin subtracted before projection */
+static Emitter *D_80092834; /* the menu's spark emitter */
+static s32 D_80092838; /* spark burst strength, fading by 4 per frame */
+static s16 *D_8009283C;
+static s16 *D_80092840;
+static u8 *D_80092844;
+static u8 D_80092848; /* the command the brain last started */
+
 Matrix D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
 
 s32 D_80091C2C = 0;
@@ -123,6 +144,11 @@ u8 D_80091F90[16] = {
 u8 D_80091FA0[16] = {
     0x00, 0x0C, 0x0C, 0x0D, 0x0D, 0x0E, 0x0E, 0x0A, 0xFF, 0x0B, 0x10, 0x23, 0x17, 0x2C, 0x24, 0x3D,
 };
+/* An embedded sprite model, user-supplied (menu.classification.txt). */
+INCLUDE_ASSET(".data", D_80091FB0, 0x80091FB0, 0x5F4);
+/* Each combo's command inputs (1 A, 2 B), by special move, ending the data:
+ * its padding holds stray assembler bytes ("ind"), so it stays original. */
+INCLUDE_ORIGINAL(".data", D_800925A4, 0x800925A4, 0x30);
 
 /* Load a whole file into a new allocation and return it. */
 void *func_800891C0(s32 file) {

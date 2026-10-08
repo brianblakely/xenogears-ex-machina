@@ -332,19 +332,22 @@ u16 D_801EA610[96] = {
     0x8298, 0x8299, 0x829A, 0x816F, 0x8162, 0x8170, 0x814D, 0x8140,
 };
 
-/* The unit's variables, zero in the image after the initialized data. The
- * original allocated them in 4-byte slots; from D_801EA714 on (two bytes
- * four apart) that layout is not a C one and stays generated data. */
-u8 D_801EA6D0[2][16] = { 0 }; /* per port and save slot: a save of this game exists */
-s32 D_801EA6F0 = 0;           /* unreferenced */
-u8 *D_801EA6F4 = NULL;        /* the save information of the last matched file */
-u8 D_801EA6F8 = 0;
-s32 D_801EA6FC = 0;           /* gauge: from, to, difference and lengths */
-s32 D_801EA700 = 0;
-s32 D_801EA704 = 0;
-s32 D_801EA708 = 0;
-s32 D_801EA70C = 0;
-u8 D_801EA710 = 0;
+/* The unit's uninitialized variables, zero in the file after all units'
+ * initialized data, each in a slot of whole words (BSS in slot39.mk). */
+static u8 D_801EA6D0[2][16]; /* per port and save slot: a save of this game exists */
+static s32 D_801EA6F0;       /* unreferenced */
+static u8 *D_801EA6F4;       /* the save information of the last matched file */
+static u8 D_801EA6F8;
+static s32 D_801EA6FC; /* gauge: from, to, difference and lengths */
+static s32 D_801EA700;
+static s32 D_801EA704;
+static s32 D_801EA708;
+static s32 D_801EA70C;
+static u8 D_801EA710;
+static u8 D_801EA714;
+static s32 D_801EA718; /* card event and handler ids */
+static s32 D_801EA71C;
+static s32 D_801EA720;
 
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
@@ -7094,27 +7097,4 @@ void func_801DBD4C(s32 a, s32 b) {
     tmp = D_8006F5C4[a];
     D_8006F5C4[a] = D_8006F5C4[b];
     D_8006F5C4[b] = tmp;
-}
-
-/* Size the item list's scroll bar from the last occupied inventory entry. */
-void func_801DBDB4(void) {
-    s32 i;
-    s32 last;
-    s32 pages;
-
-    for (i = 0; i < 150; i++) {
-        if (D_8006F65A[i] != 0) {
-            last = i;
-        }
-    }
-    if (last < 16) {
-        D_801EA724 = 0x74;
-        D_801EA728 = 0;
-        D_801EA72C = 0;
-    } else {
-        pages = (last - 16) / 2 + 1;
-        D_801EA724 = 0x4a;
-        D_801EA728 = pages;
-        D_801EA72C = 0x1068 / pages;
-    }
 }

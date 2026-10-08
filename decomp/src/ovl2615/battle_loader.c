@@ -10,8 +10,9 @@ MemberFile D_801E95BC[] = {
     {8, 0x19}, {9, 0x1A}, {10, 0x1B}, {11, 0x1C}, {1, 0x12}, {1, 0x12}, {1, 0x12},
 };
 u8 D_801E962C[] = {16, 16, 16, 16, 16, 24, 16, 16, 16, 24, 16, 16};
-/* D_801E9638 follows; its padding holds stray assembler bytes (0x00 0xe0),
- * so it stays original data (ovl2615.yaml). */
+/* D_801E9638 (u16 0, the next member image column): its padding holds
+ * stray assembler bytes (0x00 0xe0), so it stays original data. */
+INCLUDE_ORIGINAL(".data", D_801E9638, 0x801E9638, 4);
 /* Uninitialized: the overlay's file holds each unit's .bss after all .data. */
 void *D_801E96B4;
 

@@ -69,7 +69,6 @@ typedef struct {
     s16 w, h;
 } TileWords;
 
-extern TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
 void func_800732AC(void *dst, void *src, s32 size); /* copy memory */
 
 /* A ground particle of the scene (10 bytes; table at D_800926BC). */
@@ -83,7 +82,7 @@ typedef struct {
 } SceneCell10;
 
 /* Ground height map: 128 columns of 256-unit squares, 4 bytes each. */
-typedef struct {
+typedef struct GroundSquare {
     u16 height;
     u16 unk2; /* map renderer: UV high nibbles 0xF0F0, orientation bits 0..1,
                * texture-page/CLUT selector bits 2..3 */
@@ -102,13 +101,6 @@ typedef struct {
     s16 x0, y0;
 } Tile1;
 
-extern Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
-extern SceneCell12 *D_800926C8;
-extern SceneCell10 *D_800926BC;
-extern u8 D_80092708;
-extern s32 D_800926DC;
-extern s16 D_800926E8;
-extern s16 D_800926EC;
 extern s32 D_800912DC;
 
 /* Glyph of the menu font. */
@@ -118,17 +110,10 @@ typedef struct {
     u8 height;
 } Glyph;
 
-/* Text cursor and colour of the menu's text drawing. */
-extern u8 D_800926F0, D_800926F4, D_800926F8; /* text colour r, g, b */
 extern volatile s32 D_80059488;
 
 extern char *D_800912F4[];
-extern u32 D_8009274C; /* pad buttons repeating this frame */
-extern u32 D_80092750; /* pad buttons pressed this frame */
 
-extern u8 D_8009273C;
-extern u8 D_80092740;
-extern s32 D_80092744;
 extern s32 D_800912F0;
 /* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
 /* libgpu DR_MOVE layout. */
@@ -161,10 +146,6 @@ extern char D_8006FF60[];
 extern char D_8006FF7C[]; /* "" */
 extern char D_8006FE8C[]; /* level and computer command names */
 extern char D_8007008C[]; /* menu line texts */
-extern u32 D_80092710;  /* bit 0/1: controller port 1/2 unavailable */
-extern s32 D_80092754;
-extern s32 D_8009272C;  /* port 1 vibration entry selected */
-extern s32 D_80092730;  /* port 2 vibration entry selected */
 s32 func_80035734(s32 port); /* controller type */
 void func_8007EC54(u8 *text);
 void func_8007F258(void *ot, s32 flag);
@@ -181,10 +162,8 @@ s32 sprintf(char *out, char *format, ...); /* sprintf */
  * the settings pages view them as MenuPage. */
 extern s32 D_80092924;
 extern s32 D_800928C8;
-extern u8 D_80092758;
 extern s32 D_80092940;
 extern u8 *D_800928D8; /* the 49 portraits, 0x1000 bytes each */
-extern void *D_80092760; /* loaded image data */
 
 void func_80080964(s32 page);
 void func_80080B58(void);
@@ -192,8 +171,6 @@ void func_8007F8B4(void);
 void func_80031BB4(s32 high); /* choose the heap end to allocate from */
 void MoveImage(Rect *rect, s32 x, s32 y); /* copy a VRAM area */
 void StoreImage(Rect *rect, void *pixels);  /* read a VRAM area */
-extern u8 D_800926FC;
-extern u8 D_8009275C;
 void func_80080AA0(s32 forget);
 void func_8008509C(s32 a, s32 b);
 void *func_800891C0(s32 arg);
@@ -201,7 +178,7 @@ void *func_800891C0(s32 arg);
  * end is the terminating read cursor, and a pair there is prefetched. */
 void func_8007313C(void *pixels, void *end);
 
-typedef struct {
+typedef struct ListEntry {
     s32 id;
     char *model; /* 0x04: model file name */
     u8 *name;    /* 0x08 */
@@ -228,18 +205,7 @@ extern ListEntry D_80091964[49];
 extern struct MoveList *D_80092874; /* per model id */
 extern ListEntry **D_800928EC;
 extern s32 D_80092888;
-extern GridCell *D_8009270C;
 
-/* Two-player selection: each side's pick and confirmation. */
-extern s32 D_80092700;   /* first side's pick */
-extern s32 D_80092704;   /* second side's pick */
-extern s32 D_80092714;
-extern s32 D_80092718;
-extern s32 D_8009271C;
-extern s32 D_80092720;
-extern s32 D_80092724;
-extern s32 D_80092728;
-extern s32 D_80092748;   /* bit 0: both sides may pick the same entry */
 extern s32 D_80091364;
 void func_80085134(s32 side);
 void *func_800289D0(s32 index);
@@ -264,7 +230,6 @@ void func_8007E020(u32 *ot);
 /* Menu overlay drawing. */
 extern DrTpage D_800954C8[2];
 extern DrMove D_80095498[2];
-extern PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
 void SetDrawMove(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
 void func_800811AC(void *ot);
 
@@ -320,10 +285,6 @@ extern s16 D_800912E0[2][4];
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
 void func_8007EE68(s32 highlight);
 
-extern u16 D_800926E0; /* text texture page */
-extern u16 D_800926E4; /* text CLUT */
-
-
 void func_8007D274(Vector *from, Vector *to);
 
 /* Image data of the menu (+0x3C: the font TIM, +0x64: the banner TIM). */
@@ -333,6 +294,5 @@ typedef struct {
     u8 unk40[0x24];
     u32 *banner;
 } MenuFiles;
-
 
 #endif
