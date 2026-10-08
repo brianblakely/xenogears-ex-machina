@@ -67,8 +67,8 @@ s32 func_800318F8(char *name) {
     PClseek(fd, 0, 0);
     func_800324B8(0x2E);
     p = func_80031BDC(size, 0);
-    D_80059334 = p;
-    D_80059338 = p + size;
+    D_80059334.begin = p;
+    D_80059334.end = p + size;
     while (1) {
         if (size <= 0) {
             break;
@@ -81,11 +81,11 @@ s32 func_800318F8(char *name) {
         p += chunk;
     }
     PCclose(fd);
-    if (D_80059334[0] != 'S' || D_80059334[1] != 'Y' || D_80059334[2] != 'M' ||
-        D_80059334[3] != '1') {
-        func_800320E8(D_80059334);
-        D_80059334 = NULL;
-        D_80059338 = NULL;
+    if (D_80059334.begin[0] != 'S' || D_80059334.begin[1] != 'Y' || D_80059334.begin[2] != 'M' ||
+        D_80059334.begin[3] != '1') {
+        func_800320E8(D_80059334.begin);
+        D_80059334.begin = NULL;
+        D_80059334.end = NULL;
     }
     return 0;
 }
@@ -95,19 +95,14 @@ void func_80031A30(void) {
     func_8003747C(0);
     D_80059318 = 0x20;
     D_8005931C = 10;
-    D_80059334 = NULL;
-    D_80059338 = NULL;
+    D_80059334.begin = NULL;
+    D_80059334.end = NULL;
 }
 
 /* Make [start, end) one free block followed by the end marker.
  * Nonmatching: the symbol-data clears are scheduled after the first header
- * update, and the owner default is loaded before the end-marker header. */
+ * update. */
 #ifdef NON_MATCHING
-#define FORGET_HEAP_SYMBOLS() do { \
-    D_80059334 = NULL; \
-    D_80059338 = NULL; \
-} while (0)
-
 void func_80031A68(HeapHeader *first, u8 *end) {
     first = (HeapHeader *)((u32)first & ~3);
     end = (u8 *)((u32)end & ~3);
@@ -117,7 +112,8 @@ void func_80031A68(HeapHeader *first, u8 *end) {
     first->next = end;
     D_80059318 = 0x20;
     D_8005932C = 0;
-    FORGET_HEAP_SYMBOLS();
+    D_80059334.begin = NULL;
+    D_80059334.end = NULL;
     D_8005931C = 10;
     HEAP_HEADER(end)->next = end;
     HEAP_HEADER(end)->tag = 1;
@@ -126,7 +122,6 @@ void func_80031A68(HeapHeader *first, u8 *end) {
     func_80031A30();
 }
 
-#undef FORGET_HEAP_SYMBOLS
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031A68);
 #endif
@@ -466,13 +461,13 @@ void func_800324B8(s16 kind) {
 /* Copy into `out` the name of the last symbol below `address` from the
  * loaded symbol data (entries: little-endian address, length, name). */
 void func_800324C4(u32 address, char *out) {
-    u8 *p = D_80059334 + 4;
+    u8 *p = D_80059334.begin + 4;
     u8 *entry;
     u32 value;
     u32 length;
 
     if (p != NULL) {
-        while (p < D_80059338) {
+        while (p < D_80059334.end) {
             value = *p++;
             value |= *p++ << 8;
             value |= *p++ << 16;
@@ -556,7 +551,7 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
     if (count != 0) {
         limited = 1;
     }
-    if (D_80059334 == NULL) {
+    if (D_80059334.begin == NULL) {
         flags &= ~0x40;
     }
     if (flags & 1) {
