@@ -3,6 +3,17 @@
 #include "psyq/libsn.h"
 #include "movie.h"
 
+/* The player's initialized statics open the image's .data (all zero). */
+s32 movie_split_display = 0;        /* frames span both display buffers */
+u16 movie_frame_width = 0;          /* last frame header width */
+u16 movie_frame_height = 0;
+u16 movie_image_width = 0;          /* 16-bit VRAM units */
+u16 movie_image_height = 0;
+volatile s32 movie_vlc_pending = 0; /* a frame's decode is resumable */
+s32 movie_vlc_limit = 0;            /* halfwords per decode call */
+s32 movie_color_mode = 0;           /* bit 0: 24-bit output */
+s32 movie_end_frame = 0;
+
 /* The MDEC output DMA's completion callback: load the slice just decoded into
  * VRAM (column by column for a split display), then start the MDEC on the
  * next slice or, past the frame's last column, report the loaded frame. */
