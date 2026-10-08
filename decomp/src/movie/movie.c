@@ -8,6 +8,63 @@
 #include "common.h"
 #include "movie_mode.h"
 
+/* The unit's .data (0x80076e48..0x80076f3c); the .bss follows. */
+s32 D_80076E48 = 0;             /* read check state: the command running */
+s32 D_80076E4C = 0;             /* verify errors */
+s32 D_80076E50 = 0;             /* never read */
+s32 D_80076E54 = 0;             /* never read */
+s32 D_80076E58 = 0;             /* never read */
+s32 D_80076E5C = 0;             /* vertical blanks counted */
+s32 D_80076E60 = 0;             /* never read */
+s32 D_80076E64 = 0;             /* read phase: waiting, reading, verifying */
+s32 D_80076E68 = 0;             /* last error: offset */
+s32 D_80076E6C = 0;             /* size */
+s32 D_80076E70 = 0;             /* and the resident's stream counters */
+s32 D_80076E74 = 0;
+s32 D_80076E78 = 0;
+StreamEntry *D_80076E7C = NULL; /* stream list */
+StreamEntry *D_80076E80 = NULL; /* verify copy of the stream list */
+s32 *D_80076E84 = NULL;         /* stream destination */
+s32 *D_80076E88 = NULL;         /* read buffer */
+s32 *D_80076E8C = NULL;         /* verify copy of the read */
+s32 D_80076E90 = 0;             /* read size */
+s32 D_80076E94 = 0;             /* stream bytes left */
+s32 *D_80076E98 = NULL;         /* stream buffer */
+s32 *D_80076E9C = NULL;         /* arrived stream chunk */
+void *D_80076EA0 = NULL;        /* FAT check read buffer */
+s32 D_80076EA4 = 0;             /* reads ended */
+s32 D_80076EA8 = 0;             /* reads in total */
+s32 D_80076EAC = -1;            /* class marked " BEFORE" (-1: none) */
+s32 D_80076EB0 = -1;            /* class marked " NOW" */
+s32 D_80076EB4 = 0;             /* stream list entry */
+s32 D_80076EB8 = 0;             /* 1: stream copy; 2: host read */
+s32 D_80076EBC = 0;             /* random commands */
+s32 D_80076EC0 = 0;             /* never read */
+s32 D_80076EC4 = 0;             /* never read */
+s32 D_80076EC8 = 0;             /* seconds counted */
+s32 D_80076ECC = 0;             /* frames of the current second */
+/* Never read: a string, three words and a record of 233, the string and the
+ * record's own address. */
+char D_80076ED0[] = "\n";
+s32 D_80076ED4[3] = {20, 30, 40};
+struct {
+    s32 value;
+    char *text;
+    void *self;
+} D_80076EE0 = {233, D_80076ED0, &D_80076EE0};
+s32 D_80076EEC = 0;             /* menu: frames the buttons were held */
+s32 D_80076EF0 = 16;            /* frames until they repeat */
+s32 D_80076EF4 = 1234567890;    /* random number state */
+s32 D_80076EF8 = 987654321;
+s32 D_80076EFC = 0;             /* monitor sector */
+s32 D_80076F00 = 0;             /* monitor row */
+s32 D_80076F04 = 0;             /* playback: frames the buttons were held */
+s32 D_80076F08 = 90;            /* frames until they repeat */
+/* Never read: the origin and three 128-long axes, beside the playback
+ * camera's translation. */
+SVECTOR D_80076F0C[4] = {{0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {0, 0, 128}};
+VECTOR D_80076F2C = {0};        /* the playback camera's translation */
+
 /* The menu's CD-ROM monitor: at 640x240, show the read statistics, the
  * resident's error counters and stream state, a dump of the stream buffer
  * and the reads per result class, run the monitor's input every frame and

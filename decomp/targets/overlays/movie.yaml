@@ -42,12 +42,16 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
-      # An unreferenced word (8) ahead of the unit's rodata; the unit's own
-      # rodata starts at 0x4 (its 8-aligned jump tables sit at 4 mod 8).
-      - [0x0, rodata, movie_prefix]
+      # The overlay's number (8) ahead of the unit's rodata, from a unit of
+      # its own: the unit's rodata starts at 0x4 (its 8-aligned jump tables
+      # sit at 4 mod 8).
+      - [0x0, .rodata, movie_number]
       - [0x4, .rodata, movie]
       - [0x9f8, c, movie]
-      - [0x7358, data, movie_data]
-      # The decoded length is not word-aligned; its final bytes are zero.
-      - [0x7450, databin, movie_tail]
+      - [0x7358, .data, movie]
+      # The .bss starts at 0x80076f3c with the counters D_80076F3C[16]: the
+      # resident's mode table clears it from 0x80076f38 with a pre-increment
+      # loop. The decoded length (0x7453) ends 7 bytes into it; those zero
+      # bytes are not a data object and stay generated.
+      - [0x744c, databin, movie_tail]
   - [0x7453]

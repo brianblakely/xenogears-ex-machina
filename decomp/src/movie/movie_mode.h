@@ -132,16 +132,8 @@ typedef struct MovieBuffer {
 extern MovieBuffer *D_80077120; /* buffer being drawn */
 extern MovieBuffer D_80077124[2];
 
-/* Debug statistics. */
-extern s32 D_80076E5C;          /* vertical blanks counted */
-extern s32 D_80076EC8;          /* seconds counted */
-extern s32 D_80076ECC;          /* frames of the current second */
-extern s32 D_80076EF4;          /* random number state */
-extern s32 D_80076EF8;
-extern void *D_80076EA0;        /* FAT check read buffer */
-extern s32 D_80076E4C;
-extern s32 D_80076EAC;
-extern s32 D_80076EB0;
+/* Debug statistics (the unit's .data is defined in movie.c). The .bss starts
+ * at 80076f3c with these counters; the decoded image ends 7 bytes into them. */
 extern s32 D_80076F3C[16];      /* reads per result class */
 extern u8 D_80076F84[8];        /* CD command result */
 extern s32 D_8007700C;
@@ -164,7 +156,6 @@ void SetSemiTrans(void *p, s32 abe);
 extern VECTOR D_8007702C;                      /* eye */
 extern VECTOR D_8007703C;                      /* target */
 extern s32 D_8007704C;                         /* roll */
-extern VECTOR D_80076F2C; /* translation */
 extern MATRIX D_80077050;                      /* world to screen */
 extern MATRIX D_80077070;                      /* light colors */
 extern MATRIX D_80077090;                      /* light directions */
@@ -187,8 +178,6 @@ char *func_80028998(s32 file); /* a file's host name */
 s32 func_800289D0(s32 file);   /* a file's first sector */
 
 /* Menu. */
-extern s32 D_80076EEC;          /* frames the buttons were held */
-extern s32 D_80076EF0;          /* frames until they repeat */
 extern s32 D_80077118;          /* cursor */
 extern s32 D_800773B0;          /* monitor shown */
 extern s32 D_80077394;          /* statistics shown */
@@ -198,8 +187,6 @@ void func_80037FD8(void *bank, s32 arg1);   /* transfer a sound bank */
 s16 func_8003BDFC(s32 arg0);                /* sound transfer busy */
 
 /* Movie playback. */
-extern s32 D_80076F04;          /* frames the buttons were held */
-extern s32 D_80076F08;          /* frames until they repeat */
 extern s32 D_80077010;          /* last frame the library loaded */
 extern s32 D_80077014;          /* 1: stop; 2..5: frames until then */
 extern s32 D_80077018;          /* buffer the frame went to */
@@ -246,15 +233,6 @@ typedef struct StreamEntry {
     s32 *dest;
 } StreamEntry;
 
-extern s32 D_80076E48;          /* read check state */
-extern StreamEntry *D_80076E7C; /* stream list */
-extern s32 *D_80076E84;         /* stream destination */
-extern s32 D_80076E94;          /* stream bytes left */
-extern s32 *D_80076E9C;         /* arrived stream chunk */
-extern s32 D_80076EA4;          /* reads ended */
-extern s32 D_80076EB4;          /* stream list entry */
-extern s32 D_80076EB8;          /* 1: stream copy; 2: host read */
-extern s32 D_80076EBC;          /* random commands */
 extern s32 D_80076F7C;
 extern s32 D_80076F80;
 s32 *func_80028B14(void);             /* next arrived stream chunk */
@@ -282,13 +260,7 @@ extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 s32 func_80039850(void *sequence); /* load a music sequence */
 
 /* CD-ROM monitor screen. */
-extern s32 D_80076E64;          /* read phase: waiting, reading, verifying */
-extern s32 D_80076E68, D_80076E6C, D_80076E70, D_80076E74, D_80076E78; /* last error */
-extern StreamEntry *D_80076E80; /* verify copy of the stream list */
-extern s32 *D_80076E8C;         /* verify copy of the read */
 void func_8002A524(StreamEntry *list); /* release a file list's buffers */
-extern s32 *D_80076E98;         /* stream buffer */
-extern s32 D_80076EA8;          /* reads in total */
 extern s32 D_8005A4DC;          /* resident read error count */
 extern s32 D_8004FE1C;          /* resident read status */
 extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
@@ -301,10 +273,6 @@ void *func_80028A94(void *ring); /* replace the stream ring */
 s32 func_800286CC(void);         /* files left to read */
 s32 func_800286BC(void);         /* bytes left to read */
 void func_800712C4(void);
-extern s32 D_80076EFC;          /* monitor sector */
-extern s32 D_80076F00;          /* monitor row */
-extern s32 D_80076E90;          /* read size */
-extern s32 *D_80076E88;         /* read buffer */
 StreamEntry *func_8002A57C(s32 list, s32 mode);          /* a directory's file list */
 void func_80029AFC(StreamEntry *list, s32 mode, s32 flags); /* stream a file list */
 void func_800295D8(s32 file, void *dest, s32 mode, s32 flags); /* host-file stream */
