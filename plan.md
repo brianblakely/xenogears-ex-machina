@@ -2,12 +2,15 @@
 
 **Recover the complete original program first; port it second; extend it third.**
 
-An independent Xenogears decompilation, native multiplatform port and modding
-toolkit, led on Arch Linux. Target Linux, Windows, macOS, Android and Meta Horizon
-OS; keep full authoring/editors desktop-focused and support prebuilt play on mobile
-and headsets. Recover game-specific code and data formats from the user's original
-images and observed execution, not another Xenogears project's implementation.
-General-purpose compilers, decompilers, emulators and libraries are welcome.
+An independent Xenogears decompilation, multiplatform port and modding toolkit,
+led on Arch Linux. Target native Linux, Windows, macOS, Android and Meta Horizon OS,
+plus browsers through WebAssembly with WebXR support. Keep full authoring/editors
+desktop-focused; support prebuilt play on native hosts and in desktop, mobile and
+headset browsers. Add an optional HD-2D-inspired graphics mode alongside modern
+and PS1-style presentation. Recover game-specific code and data formats from the
+user's original images and observed execution, not another Xenogears project's
+implementation. General-purpose compilers, decompilers, emulators and libraries
+are welcome.
 
 ## Working rules
 
@@ -34,7 +37,7 @@ implementation and test, not another generated acceptance registry. Preserve pas
 findings at their measured scope; no existing host-reference result implies a
 PS1 binary match, complete discovery or native gameplay.
 
-## Native architecture — Phases 2 onward
+## Shared native/browser architecture — Phases 2 onward
 
 Use a library-first Rust/C runtime, not a new general-purpose engine. Keep the
 recovered C as the authoritative original-game implementation; use Rust for new
@@ -48,19 +51,38 @@ model. These choices add no work to Phase 1's original-compatible matching exit.
   gaps. SDL is not the game renderer or the VR abstraction; do not add a parallel
   Windows XInput path for capabilities already supplied through SDL.
 - **wgpu:** Shared game renderer across flat, stereo and XR presentation. Use the
-  appropriate Vulkan/Direct3D 12/Metal backends per target. Ordinary game surfaces
-  integrate with SDL; headset output integrates with OpenXR-owned swapchains
-  through a narrow graphics adapter, not a second renderer or per-frame CPU copy.
+  appropriate Vulkan/Direct3D 12/Metal backends on native hosts and WebGPU/WebGL2
+  backends on qualified browsers. Native game surfaces integrate with SDL; browser
+  surfaces use a canvas. OpenXR swapchains and WebXR render targets integrate
+  through narrow graphics adapters, not a second renderer or per-frame CPU copy.
+  Qualify WebXR/graphics interop separately: a working WebGPU canvas does not
+  prove WebXR submission support. Use WebGPU where supported and a tested WebGL2
+  path where needed for declared browser/XR coverage; expose capability limits.
 - **OpenXR:** Horizon immersive sessions, headset/controller poses and actions,
   hand tracking and capability-gated eye gaze/thumb gestures, stereo views,
   predicted display timing and frame submission. Keep gesture interpretation in
   an input adapter to shared commands. An Android app displayed as a flat panel
   is not evidence of immersive hand/gaze access, stereo or diorama support.
+- **WebAssembly/browser host:** Compile the same recovered C and Rust runtime to
+  WebAssembly, with a qualified shared ABI/link strategy and thin JavaScript glue,
+  not a JavaScript game rewrite, emulator or streamed native session. Browser APIs
+  own canvas/input, Web Audio, asynchronous asset/storage access and page lifecycle;
+  do not require desktop SDL/GPUI loops, native filesystem access or a local server
+  process for hosted play. Keep a usable single-thread baseline; gate optional
+  workers/shared-memory acceleration on proven browser and deployment support.
+- **WebXR:** Browser immersive sessions, poses/views, reference spaces, frame
+  scheduling and input sources, separate from the native OpenXR adapter. Support
+  immersive VR on qualified browsers/devices, including a Horizon headset browser;
+  detect session and optional hand/gaze capabilities rather than inferring them
+  from native-device support. Require secure hosting, user-initiated entry and
+  explicit exit; unavailable or denied XR must leave ordinary browser play usable.
 - **GPUI:** Desktop application interface for launcher/settings, bindings, asset
   import, save/mod management and later tools. Original dialogue, battle menus
   and other game UI stay in game presentation. Qualify GPUI on actual devices
   before adopting it beyond desktop; otherwise use a platform-appropriate client
-  of the same services. Settings must be accessible on-device and in-headset.
+  of the same services. Use a browser-appropriate application UI over those same
+  services, not a GPUI web-port requirement. Settings must remain accessible during
+  browser play and inside XR even when ordinary page UI is not visible.
 
 Keep application services (validation, settings persistence, session control and
 available save/mod operations) independent of widgets. GUIs and agents call the
@@ -70,11 +92,14 @@ processes: settings must remain accessible while playing.
 
 Give each host explicit window, GPU-resource, input-focus and lifecycle ownership.
 Coordinate SDL and GPUI event handling under platform main-thread requirements;
-do not start competing application loops. OpenXR drives headset frame scheduling,
-not SDL window refresh or GPUI repaint. One owner mutates simulation state through
-commands; presentation consumes read-only state and never advances gameplay per
-eye, UI repaint or spectator view. Keep graphical dependencies optional so the
-headless runtime needs no GPUI, wgpu, OpenXR or SDL video/audio initialization.
+do not start competing application loops. OpenXR or WebXR owns immersive frame
+scheduling; browser animation callbacks own flat web presentation, not a blocking
+native loop. One owner mutates simulation state through commands; presentation
+consumes read-only state and never advances gameplay per eye, UI repaint or
+spectator view. Yield browser work in bounded batches; page throttling, lost focus
+and XR visibility changes must not create uncontrolled simulation catch-up.
+Keep graphical dependencies optional: the native headless runtime needs no GPUI,
+wgpu, OpenXR, WebXR, browser or SDL video/audio initialization.
 
 ## Phase 0 — Preserve the research and build baseline
 
@@ -141,7 +166,7 @@ They are not the required implementation path or acceptance gate for new Phase 1
 functions. Do not grow its artificial stack/heap/service model merely to validate
 code that can instead be compiled and compared on the original target.
 
-## Phase 2 — Native runtime foundation
+## Phase 2 — Shared runtime and platform foundation
 
 **Goal:** Adapt the recovered program through thin platform boundaries, without a
 second independently maintained game-rules implementation.
@@ -170,18 +195,32 @@ second independently maintained game-rules implementation.
   through wgpu/OpenXR. Verify swapchain/device ownership and synchronization,
   frame scheduling and head tracking while simulation is paused. These are
   foundation checks, not the full UX or VR feature work of Phases 5, 6 and 10.
+- [ ] Prove the browser Rust/C WebAssembly build with a real execution path, canvas
+  rendering, user-activated audio, asynchronous local asset import and persisted
+  settings/save round-trip. Bound memory and stream/cache assets rather than
+  requiring both discs to fit in memory. Keep imported game data local; the hosted
+  application must neither bundle original assets nor upload users' images/saves.
+- [ ] Render an actual stereo test scene through WebXR on a target headset browser.
+  Qualify graphics-device/render-target ownership, projections, synchronization,
+  session entry/exit and paused head tracking, including the chosen WebGPU or
+  WebGL2 submission path. Neither cross-compilation nor a flat canvas closes this.
+- [ ] Expose the same direct commands, full introspection, stepping, bounded
+  run-until and snapshots to browser clients/automation without DOM-input simulation
+  or privileged host services. Verify native/WebAssembly authoritative outcomes;
+  browser scheduling limits must not weaken the native unlocked headless contract.
 - [ ] Demonstrate a small original-game execution path through the real native
   services, including direct commands, inspection and snapshot/restore. Compare
   authoritative outcomes with presentation attached and absent; use the retained
   behavioral tests to detect portability regressions.
 
 **Exit:** A tested shared, agent-ready Rust/C runtime and qualified platform/graphics
-integration paths exist. Defining schemas or cross-compiling alone does not prove
-integration. No authoring engine or full application UI is required before play.
+integration paths exist, including browser execution and actual WebXR submission.
+Defining schemas or cross-compiling alone does not prove integration. No authoring
+engine or full application UI is required before play.
 
-## Phase 3 — First end-to-end native playable slice
+## Phase 3 — First end-to-end multiplatform playable slice
 
-**Goal:** Prove original gameplay through the native runtime, not a replacement demo.
+**Goal:** Prove original gameplay through the shared runtime, not a replacement demo.
 
 - [ ] Integrate the established original field/dialogue/encounter/reward/return/
   menu/save-load/media route from recovered source, including required branches.
@@ -191,15 +230,16 @@ integration. No authoring engine or full application UI is required before play.
   access, valid setup, snapshots, replay and equivalent stepped/unthrottled runs.
 - [ ] Attach/change/disconnect optional spectator output without changing state
   or simulation pacing. Image-free headless play must need no GPU or audio device.
-- [ ] Run the same slice on desktop and Android, including Horizon flat-panel
-  play. Verify asset import, saves and lifecycle recovery on actual mobile/headset
-  devices; do not maintain separate platform-specific game logic.
+- [ ] Run the same slice on native desktop/Android/Horizon flat-panel hosts and
+  desktop, mobile and headset browsers. Verify local asset import, audio/media,
+  saves across reload and lifecycle recovery on actual devices; do not maintain
+  separate platform-specific game logic.
 
-**Exit:** The complete native slice works end to end under human/agent clients and
-on the target platform hosts. Its integration evidence, not a TypeScript authoring
+**Exit:** The complete slice works end to end under human/agent clients on the
+target platform hosts. Its integration evidence, not a TypeScript authoring
 prerequisite, closes this phase; full stereo/VR qualification remains later work.
 
-## Phase 4 — Complete native gameplay on both discs
+## Phase 4 — Complete native/browser gameplay on both discs
 
 **Goal:** Integrate the already recovered game, not resume deferred decompilation.
 
@@ -213,52 +253,81 @@ prerequisite, closes this phase; full stereo/VR qualification remains later work
 - [ ] Verify continuous unmodified progression, endings, optional content and
   failure/retry paths, with targeted coverage where a playthrough is insufficient.
 
-**Exit:** Both discs and all original systems work natively with human/agent parity;
-unknown behavior and progression workarounds cannot be reported as completion.
+**Exit:** Both discs and all original systems work on native and browser hosts with
+human/agent parity, including disc transitions and streamed audio/FMV playback.
+Unknown behavior and progression workarounds cannot be reported as completion.
 
-## Phase 5 — Modern rendering, stereo and optional PS1 fidelity
+## Phase 5 — Modern/HD-2D rendering, stereo and optional PS1 fidelity
 
-**Goal:** Modern flat/stereo presentation by default; original quirks stay selectable.
+**Goal:** Modern flat/stereo presentation by default, with optional HD-2D-inspired
+visual effects and selectable original quirks on native and browser hosts.
 
-- [ ] Use wgpu's appropriate Vulkan/Direct3D 12/Metal backends across the targets;
+- [ ] Use the qualified native and browser wgpu backends across the targets;
   support arbitrary resolution/aspect ratio and presentation framerate,
   resizing/high-DPI, correct projection/FOV/UI safe areas and interpolation
   without changing simulation/RNG/script/animation timing.
-- [ ] Implement Modern, PS1-style and Custom profiles: affine texturing, projected
-  vertex snapping, color precision, dithering, low-resolution rasterization and
-  recovered ordering/transparency quirks at their appropriate rendering stages.
+- [ ] Implement Modern, HD-2D-inspired, PS1-style and Custom profiles. Keep affine
+  texturing, projected vertex snapping, color precision, dithering, low-resolution
+  rasterization and recovered ordering/transparency quirks independently selectable
+  at their appropriate rendering stages; adding HD-2D does not change the default.
+- [ ] Make the HD-2D-inspired profile apply only Square Enix HD-2D-like visual
+  effects to existing game assets: coherent sprite/world lighting, contact/cast
+  shadows, ambient occlusion, atmospheric fog or light shafts, restrained bloom,
+  color grading and adjustable depth of field for a miniature/diorama feel.
+  Implement the look through scene-aware shaders, lighting and post-processing,
+  not sprite smoothing, an upscale or an art remake. Do not create, redraw, replace
+  or require new sprites, textures, models, animations or other art assets for
+  this mode; no original-art production or replacement art pack is in scope.
+  Preserve the existing sprite pixels/animation and 3D Gear/world geometry.
+- [ ] Keep new lighting/material/scene-tuning metadata in the presentation layer,
+  separate from recovered logic and original assets. Do not make new texture maps
+  or other authored art a dependency. Preserve cutout silhouettes,
+  transparency, intentional masks, important color cues and original scene layout;
+  handle existing baked shading deliberately. UI/text/portraits/FMVs and Seraph
+  Glass controls stay legible and outside world depth-of-field/post effects.
+- [ ] Provide HD-2D effect controls and explicit quality tiers for desktop, mobile,
+  browser and XR budgets. Preserve the pixel-art/lit-world identity at lower tiers;
+  never silently replace the selected profile. Default depth of field off in XR,
+  keep stereo effects and sprite planes coherent between eyes, and make bloom,
+  blur and atmospheric effects reducible without changing gameplay or camera mode.
+- [ ] Validate side-by-side representative interiors/exteriors, on-foot/Gear
+  battles, world map, effects and cutscenes against the intended HD-2D look and
+  original readability. Verify profile switching and native/browser/flat/XR output
+  leave authoritative state, RNG and timing unchanged; HD-2D requires no mod tools.
 - [ ] Preserve intentional masking, palettes, fog and compositing. Keep world,
   sprite and UI filtering independent; do not stretch text, portraits or FMVs.
 - [ ] Default optional culling to off; distinguish visibility/frustum/occlusion/
   back-face rejection from clipping, intentional hiding and gameplay activation.
 - [ ] Validate wider framing/content issues separately, cross-backend visuals and
   unchanged gameplay with rendering skipped, offscreen or spectator-streamed.
-- [ ] Qualify Horizon flat virtual-screen play, then seated stereo-screen play
-  through OpenXR. Render both eyes from the same simulation state using the
-  headset's views/projections; place game UI, sprite planes and FMVs deliberately.
+- [ ] Qualify native Horizon and browser flat virtual-screen play, then seated
+  stereo-screen play through OpenXR and WebXR respectively. Render both eyes from
+  the same simulation state using the headset's views/projections; place game UI,
+  sprite planes and FMVs deliberately.
   Preserve monoscopic media as such rather than claiming reconstructed 3D content.
 - [ ] Verify paused-game head tracking, display-paced XR rendering independent of
   simulation rate, and spectator attach/detach without extra game updates or RNG
   changes. Measure sustained headset frame pacing; never run game logic per eye.
 
-**Exit:** Display options, stereo-screen play and fidelity profiles work without
-altering game rules; flat presentation remains available.
+**Exit:** Display options, the HD-2D-inspired and fidelity profiles, and native/
+browser stereo-screen play work without altering game rules. Flat presentation
+remains available; graphics style and viewing mode are independent choices.
 
 ## Phase 6 — Cross-platform controls and application UX
 
-**Goal:** Native human input uses the same authoritative command path as agents.
+**Goal:** Native and browser human input use the same command path as agents.
 
-- [ ] Implement SDL3 keyboard/mouse/controller/touch input and OpenXR controller
-  actions, context bindings and rebinding for direction/run/jump/confirm/cancel
-  and camera left/right. Translate platform events into shared typed actions;
-  agents issue those actions directly without SDL or OS-event injection.
+- [ ] Implement SDL3/native OpenXR input and browser keyboard/pointer/touch/
+  gamepad/WebXR input, context bindings and rebinding for direction/run/jump/
+  confirm/cancel and camera left/right. Translate platform events into shared typed
+  actions; agents issue those actions directly without SDL, DOM or OS injection.
 - [ ] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
   game menu and Esc toggles the app menu. Provide touch/headset equivalents and
   explicit focus/capture transitions without rebuilding original game UI in GPUI.
-- [ ] Implement the Horizon hand/gaze contract below as an optional assisted-input
-  profile. Navigation and approach/interact use authoritative traversal data and
-  shared legal commands, not coordinate rewrites, remote confirms or another game
-  rules model. Expose resolved intents/actions to agents and deterministic replay;
+- [ ] Implement the shared headset hand/gaze contract below as an optional
+  assisted-input profile. Navigation and approach/interact use authoritative
+  traversal data and shared legal commands, not coordinate rewrites, remote confirms
+  or another game rules model. Expose resolved intents/actions to agents and deterministic replay;
   replay must not depend on recording raw eye movements or headset frame timing.
 - [ ] Deliver the GPUI desktop launcher/settings and available application-service
   screens. Apply changes through shared validation, acknowledgment and persistence;
@@ -267,6 +336,12 @@ altering game rules; flat presentation remains available.
 - [ ] Qualify mobile and in-headset application controls, using GPUI only where
   device integration is proven. Verify controller reconnects, live settings changes
   and return to play; a desktop companion is not a substitute for headset settings.
+- [ ] Deliver browser application controls as their shared services become
+  available, plus usable in-XR panels; do not depend on DOM overlays being available.
+  Provide visible Enter/Exit XR and controller/pointer alternatives. Handle page
+  focus, fullscreen/pointer-lock release, browser-reserved keys, audio activation,
+  session visibility/end and permission denial without stuck inputs or lost saves;
+  Esc must not be the only way to reach app settings in a browser.
 - [ ] Verify human/agent parity, the pause/focus rules below and actual-device
   gesture reliability. Test each hand alone with the other absent from tracking,
   gaze availability/permissions and explicit pointer alternatives, running jumps,
@@ -274,17 +349,23 @@ altering game rules; flat presentation remains available.
   controls and every minigame. Measure false activations, missed gestures, response
   latency, rapid pause/resume, sustained comfort and tracking-loss recovery.
 
-### Horizon hand/gaze interaction contract
+### Shared headset hand/gaze interaction contract
+
+Apply this contract through native Horizon OpenXR and browser WebXR adapters.
+Qualify each supported browser/device input profile independently: hand joints or
+a target ray do not establish eye-gaze or reliable thumb-microgesture support.
+Keep unsupported gestures explicitly unavailable and provide complete controller/
+pointer controls; do not claim hand/gaze parity from a generic select event.
 
 All game functions, including Pause and inspection, must be operable with either
-single hand; native app settings and presentation manipulation may use two hands.
+single hand; app settings and presentation manipulation may use two hands.
 Qualify the Phase 6 controls on Phase 5's virtual-screen/stereo presentation.
 Diorama scaling and first-person inspection use the bindings specified here when
 Phase 10 implements those views; they are not prerequisites for Phase 6's exit.
 These requirements do not add work to the Phase 1 matching decompilation.
 
 Use capability/permission checks for hand tracking, eye gaze and supported thumb
-microgestures; do not assume every Horizon device provides them. Offer explicitly
+microgestures; do not assume every device/browser provides them. Offer explicitly
 selected head-directed or one-hand-ray targeting when eye gaze is unavailable,
 without silently switching pointer sources during a gesture. Looking only aims
 or highlights: no gaze-only walking, selection, dwell activation or retargeting
@@ -303,7 +384,7 @@ thumb. Keep these recognizers distinct, including their transitional poses.
 | Overhanded five-finger grab, palm down | Toggle gameplay Pause immediately on closure |
 | Underhanded five-finger grab, palm up | Toggle stationary first-person inspection where available |
 | Two whole-hand pinches, spreading/contracting | Enlarge/shrink the diorama |
-| Prayer hands | Toggle native app settings, not the game menu |
+| Prayer hands | Toggle app settings, not the game menu |
 
 For either oriented grab, require a fresh open-to-closed transition. Classify
 palm orientation relative to room vertical as closing begins and require it to
@@ -374,8 +455,8 @@ On character-switching menus, gaze outside scrollable lists lets up select the
 **next** character and down the **previous** character. Show the receiving region;
 list scrolling takes priority even at its boundaries, with no fallthrough to
 character switching. **Never use pinch-and-drag scrolling**, including in native
-settings. Each swipe targets one stable region, with bounded scrolling and no
-transfer to another panel during its animation.
+and browser settings. Each swipe targets one stable region, with bounded scrolling
+and no transfer to another panel during its animation.
 
 Thumb tap advances ordinary dialogue one step. Choices require gaze selection
 and a fresh tap; the input that reveals a choice must not also answer it. Keep
@@ -419,7 +500,7 @@ loss. Use shared legal commands, not automated gameplay sequences.
 #### Seraph Glass visual language
 
 Unify every added cursor, button, ring, scaling handle, shop panel, arcade deck
-and native VR control under **Seraph Glass**: iOS Liquid Glass-like material
+and native/browser VR control under **Seraph Glass**: iOS Liquid Glass-like material
 behavior with Xenogears' Seraph Angels-inspired structure. Use faceted silver-white
 shells, hollow halos, tapered fins, dark recesses and sparse gold/copper accents
 around translucent inner surfaces, not generic blue holograms. Apply this to the
@@ -434,8 +515,8 @@ and reduced-motion options. External controls retain comfortable angular sizes
 independent of diorama scale and do not obscure the play area.
 
 **Exit:** Every original system and application settings are usable through the
-appropriate desktop, touch and headset controls, including qualified one-hand
-Horizon gameplay, with human/agent action parity. Phase 10 separately qualifies
+appropriate desktop, browser, touch and headset controls, including qualified
+one-hand Horizon/WebXR gameplay, with human/agent action parity. Phase 10 qualifies
 the diorama and stationary-inspection presentation bindings.
 
 ## Phase 7 — Mods and source-oriented agent authoring
@@ -448,9 +529,11 @@ the diorama and stationary-inspection presentation bindings.
   serializable progress. Integrate custom tasks with snapshots/replay and errors.
 - [ ] Build the small TypeScript/optional TSX source-to-playable bridge here:
   source/parameters -> supervised Node build -> IR -> meshes/world/collision/events
-  -> native package. The shared native runtime/events/Lua own gameplay; prebuilt
-  desktop/mobile/headset play needs no Node, browser, QML, authoring tools or
-  second runtime. Keep the supervised source-build/authoring workflow on desktop.
+  -> runtime package. The shared Rust/C runtime/events/Lua own gameplay. Native
+  prebuilt play needs no browser; native and browser prebuilt play need no Node,
+  QML, authoring tools or second game runtime. Keep supervised source builds and
+  full authoring on desktop; qualify portable prebuilt mods and Lua in WebAssembly
+  without native plugins or privileged filesystem/process assumptions.
 - [ ] Support reusable procedural solids, surfaces/arbitrary meshes and optional
   external/original assets. Start with a wall/door/collectible, then two rooms,
   an arched passage, elevation change, custom object, NPC and one-time reward.
@@ -473,6 +556,11 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 - [ ] Complete ordinary saves and supported original-save import/export; implement
   save states, rewind and fast-forward, including event/Lua/audio/media progress.
+- [ ] Persist browser saves/settings in qualified origin-local storage (such as
+  IndexedDB/OPFS), acknowledge completed writes and offer explicit import/export
+  backup and native/browser interchange. Handle quota exhaustion, denied storage,
+  eviction and interrupted writes visibly; do not rely on unload-time saving or
+  describe browser-managed storage as guaranteed permanent. Bound rewind memory.
 - [ ] Verify deterministic restore across flat/stereo/XR and headless modes,
   long runs, errors and package changes. Qualify supported cross-device save/state
   interchange; reject incompatible states explicitly rather than silently migrating.
@@ -495,9 +583,12 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Goal:** Add optional presentation features grounded in original behavior.
 
-- [ ] Extend Horizon stereo-screen play with seated diorama viewing. Retain
-  flat/stereo play; VR must not require first-person inspection. Separate head
-  pose from scripted cameras and provide recentering and comfort controls.
+- [ ] Extend native OpenXR and browser WebXR stereo-screen play with seated
+  diorama viewing. Retain flat/stereo play; VR must not require first-person
+  inspection. Separate head pose from scripted cameras and provide recentering,
+  reference-space reset handling and comfort controls. Where immersive AR is
+  supported, allow the same diorama over passthrough without making AR-specific
+  sensing a requirement for VR or ordinary browser play.
 - [ ] Implement stationary first-person inspection on both VR and flat displays,
   using the Phase 6 underhanded-grab binding and equivalent conventional inputs.
   This is look-around only, not FPS locomotion: keep the character stationary,
@@ -514,7 +605,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
   Glass shop/minigame decks and other external controls outside the diorama and
   retain readable control sizes while it scales; provide scale/reset settings.
 - [ ] Qualify transitions, paused head tracking, scale/gesture ownership, either
-  hand's oriented grabs and two-hand native controls on actual devices. Qualify
+  hand's oriented grabs and two-hand app controls on native/WebXR devices. Qualify
   sprite planes, missing surfaces, masks/effects and UI/media placement per camera
   mode; 2D assets do not become volumetric in stereo. Provide clearer FMVs with an
   original option independently of camera-mode qualification.
@@ -525,8 +616,9 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 - [ ] Retain selectable original Mono, Stereo and undecoded Wide; verify effects,
   music and FMV routing, device changes and synchronization.
 
-**Exit:** Diorama viewing/scaling, stationary first-person inspection on VR/flat
-and optional media/audio features are verified independently, without fidelity
+**Exit:** Diorama viewing/scaling and stationary first-person inspection work on
+native and browser flat/VR hosts, with capability-gated AR where supported.
+Optional media/audio features are verified independently, without fidelity
 overclaims or changes to game physics.
 
 ## Phase 11 — Graphical level and cutscene editors
@@ -554,7 +646,8 @@ overclaims or changes to game physics.
 
 ## Phase 13 — Release qualification
 
-**Goal:** Reproducible desktop/mobile/headset play and a desktop modding toolkit.
+**Goal:** Reproducible native/browser desktop/mobile/headset play and a desktop
+modding toolkit.
 
 - [ ] Qualify Arch-first Linux, Windows, macOS, Android and Meta Horizon OS builds,
   appropriate graphics backends, installation/upgrades, input/audio devices,
@@ -566,12 +659,25 @@ overclaims or changes to game physics.
   tracking, session transitions and in-headset settings; a cross-build is not enough.
   Regress one-hand gameplay, oriented grabs, gaze/list focus and two-hand native
   gestures across supported tracking capabilities and presentation modes.
+- [ ] Ship a reproducible browser WebAssembly/static-web build and qualify an
+  explicit browser/OS/device matrix, including desktop/mobile flat play and actual
+  Horizon-browser WebXR. Test the selected WebGPU/WebGL2 paths, secure hosting and
+  required headers, loading/memory budgets, storage loss/quota errors, save backup,
+  audio/media, both-disc transitions, page suspend/reload and GPU/context loss.
+  Optional shared-memory builds must not make baseline play depend on them.
+- [ ] Qualify WebXR entry/exit/reentry, denied/missing capabilities, reference-space
+  and input-source changes, paused head tracking, controller/hand profiles and
+  in-headset settings on actual supported browsers/headsets. Verify HD-2D quality
+  tiers, stereo correctness and sustained frame pacing across native/browser
+  presentation modes; report unsupported combinations rather than implying parity.
 - [ ] Run original-game, agent, authoring, mod, editor, save/time and presentation
-  regressions; verify defaults, optional original behavior and error diagnostics.
+  regressions on the applicable native/browser targets; verify defaults, optional
+  original behavior and error diagnostics.
 - [ ] Audit licenses and the explicit authored-source allowlist; distribute no
   original images, extracted assets, personal saves or unreviewed dependencies.
-- [ ] Document supported revisions, devices/OS versions, presentation modes,
-  limitations, reproducible commands and user workflows. Ship tested artifacts,
-  not merely completed specifications.
+- [ ] Document supported revisions, devices/OS/browser versions, graphics/XR
+  capabilities, presentation modes, limitations, reproducible commands and user
+  workflows, including self-hosting and local asset/save handling. Ship tested
+  artifacts, not merely completed specifications.
 
 **Exit:** All preceding phase outcomes remain passing in the supported release builds.
