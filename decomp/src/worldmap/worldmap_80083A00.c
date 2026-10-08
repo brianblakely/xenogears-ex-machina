@@ -1139,24 +1139,26 @@ typedef struct {
 /* Draw the 80 drifting cloud sprites around the camera. Each is culled against
  * the view cone, then drawn by distance: far as one to three 64-texel quads,
  * middle as three 4-quad layers of 32 texels, near as three layers of 4x4
- * generated 16-texel quads. At most 0xF1 quads are added per frame. */
+ * generated 16-texel quads. At most 0xF1 quads are added per frame. x and z
+ * hold the sprite's offset from the camera, then a near layer's base corner,
+ * and count the middle rows and the near rows and columns; layer first holds
+ * the packed view-cone test point. */
 /* NON_MATCHING: same size, frame (0x50) and spill slots (screen copy, corner,
- * row offset copy); global register allocation differs: the original gives
- * layer t1, row/column a2/a3, the column offset t2 and quad t3 before the four
- * projected corners, which end up in t6-t9, leaving s0 for &flag; here the
- * corners take t0-t2/a3 first, so layer gets s0 and &flag t9. */
+ * row offset copy). The reused x/z/layer give the original's a2/a3 and uv
+ * pointers; global allocation still ranks the four projected corners
+ * (48 refs over ~190 insns each) above layer, the near column offset and quad,
+ * so the corners take t1-t3/t6 (original t6-t9), layer t7 (t1), the column
+ * offset s0 (t2), quad t8 (t3) and &flag t9 (s0). */
 #ifdef NON_MATCHING
 void func_80086798(void) {
     DriftScratch *scratch;
     PolyFT4 *quad;
-    Drift *drift;
     s32 i;
     s32 layer;
-    s32 row;
-    s32 column;
-    s32 dx;
-    s32 dz;
-    s32 packed;
+    s32 x;
+    s32 z;
+    s32 cx;
+    s32 cz;
     u16 uv;
     s32 sxy0;
     s32 sxy1;
@@ -1197,36 +1199,35 @@ void func_80086798(void) {
         if (scratch->count > 0xF0) {
             break;
         }
-        drift = &D_8009D150[i];
-        dx = (drift->x - scratch->origin.vx) >> 12;
-        dz = (drift->z - scratch->origin.vz) >> 12;
-        if (dx < -0x1000) {
-            dx += 0x2000;
-        } else if (dx >= 0x1000) {
-            dx -= 0x2000;
+        x = (D_8009D150[i].x - scratch->origin.vx) >> 12;
+        z = (D_8009D150[i].z - scratch->origin.vz) >> 12;
+        if (x < -0x1000) {
+            x += 0x2000;
+        } else if (x >= 0x1000) {
+            x -= 0x2000;
         }
-        if (dz < -0x1000) {
-            dz += 0x2000;
-        } else if (dz >= 0x1000) {
-            dz -= 0x2000;
+        if (z < -0x1000) {
+            z += 0x2000;
+        } else if (z >= 0x1000) {
+            z -= 0x2000;
         }
-        dz = -dz;
-        packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
-        gte_ldsxy3(packed, scratch->edge[1], 0);
+        z = -z;
+        layer = ((z - scratch->view.vz) << 16) | ((x - scratch->view.vx) & 0xFFFF);
+        gte_ldsxy3(layer, scratch->edge[1], 0);
         gte_nclip();
         gte_stopz(&scratch->flag);
         if (scratch->flag > 0) {
             continue;
         }
-        packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
-        gte_ldsxy3(0, scratch->edge[0], packed);
+        layer = ((z - scratch->view.vz) << 16) | ((x - scratch->view.vx) & 0xFFFF);
+        gte_ldsxy3(0, scratch->edge[0], layer);
         gte_nclip();
         gte_stopz(&scratch->flag);
         if (scratch->flag > 0) {
             continue;
         }
-        scratch->local.t[0] = dx;
-        scratch->local.t[2] = dz;
+        scratch->local.t[0] = x;
+        scratch->local.t[2] = z;
         scratch->local.t[1] = D_8009D150[i].unk4 >> 12;
         gte_CompMatrix(&D_8009C808, &scratch->local, &scratch->screen);
         gte_SetRotMatrix(&scratch->screen);
@@ -1294,10 +1295,10 @@ void func_80086798(void) {
             /* middle: three layers of four 32-texel quads */
             scratch->vertices = scratch->near;
             for (layer = 0; layer < 3; layer++) {
-                for (row = 0; row < 4; row++) {
+                for (x = 0; x < 4; x++) {
                     gte_ldv3c(scratch->vertices);
                     gte_rtpt();
-                    uv = scratch->uv[layer + scratch->uv_index] + ((row & 2) << 12) + ((row & 1) << 5);
+                    uv = scratch->uv[layer + scratch->uv_index] + ((x & 2) << 12) + ((x & 1) << 5);
                     gte_stflg(&scratch->flag);
                     if (!(scratch->flag & 0x80000000)) {
                         gte_getsxy3(sxy0, sxy1, sxy2);
@@ -1339,8 +1340,6 @@ void func_80086798(void) {
         } else {
             /* near: three layers of 4x4 16-texel quads over a 0x180 square */
             for (layer = 0; layer < 3; layer++) {
-                s32 x, z;
-
                 x = scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx;
                 z = scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz;
                 scratch->corner[1].vx = scratch->corner[3].vx = x + 0x180;
@@ -1359,17 +1358,15 @@ void func_80086798(void) {
                 if (scratch->flag & 0x7F85E000) {
                     continue;
                 }
-                for (row = 0; row < 4; row++) {
-                    for (column = 0; column < 4; column++) {
-                        s32 x, z;
-
-                        x = scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx + column * 0x60;
-                        z = scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz - row * 0x60;
-                        scratch->corner[1].vx = scratch->corner[3].vx = x + 0x60;
-                        scratch->corner[2].vz = scratch->corner[3].vz = z - 0x60;
+                for (x = 0; x < 4; x++) {
+                    for (z = 0; z < 4; z++) {
+                        cx = scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx + z * 0x60;
+                        cz = scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz - x * 0x60;
+                        scratch->corner[1].vx = scratch->corner[3].vx = cx + 0x60;
+                        scratch->corner[2].vz = scratch->corner[3].vz = cz - 0x60;
                         gte_ldv3c(&scratch->corner[0]);
                         gte_rtpt();
-                        uv = scratch->uv[layer + scratch->uv_index] + ((row << 12) + (column << 4));
+                        uv = scratch->uv[layer + scratch->uv_index] + ((x << 12) + (z << 4));
                         gte_stflg(&scratch->flag);
                         if (!(scratch->flag & 0x7F85E000)) {
                             gte_getsxy3(sxy0, sxy1, sxy2);
