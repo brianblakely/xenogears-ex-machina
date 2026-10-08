@@ -77,7 +77,13 @@ segments:
       # D_80091FB0, still in menu7's .data: an embedded sprite model (asset;
       # see menu.classification.txt).
       - [0x224C0, data, menu_model]
+      # D_800925A4, menu7's last table (15 command input triples); the original
+      # assembler padded the section with three stray bytes ("ind").
       - [0x22AB4, data, menu_data]
-      # The decoded length is not word-aligned; its final bytes are zero.
+      # The units' uninitialized variables, zero in the image: each unit's in
+      # 4-byte slots (menu2 to menu7), then the common ones from D_8009284C.
+      # The decoded length is not word-aligned: the image ends five bytes into
+      # the window record D_80092954.
+      - [0x22AE4, data, menu_bss]
       - [0x22e68, databin, menu_tail]
   - [0x22e69]

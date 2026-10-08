@@ -52,7 +52,7 @@ typedef struct MoveSlot {
     u8 usable;
 } MoveSlot;
 
-extern u8 D_800925A4[14][3]; /* each special move's command inputs */
+extern u8 D_800925A4[15][3]; /* each combo's command inputs (1 A, 2 B), by special move */
 
 extern s32 D_8009284C;
 extern s32 D_80092850;
