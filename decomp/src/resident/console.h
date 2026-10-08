@@ -76,8 +76,8 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
 void func_80037B88(s32 a0);
 
 /* Hand-written ordering table link helpers (800315a0-80031894). */
-void func_800317E0(u_long *ot, void *prim);
-void func_80031804(u_long *ot, void *prim);
+void func_800317E0(u_long *ot, void *prim); /* link a SPRT_8 */
+void func_80031804(u_long *ot, void *prim); /* link a TILE */
 void func_80037DC0(void);
 
 #endif
