@@ -2836,7 +2836,6 @@ void func_80077D2C(void) {
     func_800320E8(D_8005A414[2]);
 }
 
-
 /* "Clear OTAG". The original assembler left a stray byte (0x6b) in the
  * string's alignment padding, so the literal is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FB80);

@@ -253,7 +253,6 @@ void func_8007A5C4(void) {
     }
 }
 
-
 /* Build a compass quad record for a grid column and row in a style, then
  * copy the quad to the second buffer. */
 void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
@@ -1863,7 +1862,6 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
 }
-
 
 /* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
  * square and the frame's CLUT row. */

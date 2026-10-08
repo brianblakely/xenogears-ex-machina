@@ -524,7 +524,6 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     }
 }
 
-
 /* Spawn `particle` of `emitter`: its delay after the previous spawn, a
  * random start within the spawn radius around the emitter (offset by the
  * owner's view octant) and a velocity toward a random point of the
@@ -882,7 +881,6 @@ s32 func_800AB748(u32 which) {
     }
     return -1;
 }
-
 
 #ifdef NON_MATCHING
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is

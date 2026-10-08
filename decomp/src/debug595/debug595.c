@@ -28,7 +28,7 @@ s16 D_802859A4 = 0; /* CPU-time marks this frame */
  * the code addresses their time (+4) and name (+8). */
 CpuMark D_802859A8[32] = {0};
 s16 D_80285B28[16] = {0}; /* encounters per number */
-DebugLine D_80285B48[16] = {0};
+DebugLine D_80285B48[16] = {0}; /* the debug lines */
 
 /* Reset the two frame counters. */
 void func_802811EC(void) {
