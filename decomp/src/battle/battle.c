@@ -2737,38 +2737,24 @@ u8 func_80087AF0(u8 member, u8 cost) {
 
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
- * member place and stand at that place of the group's area. (Nonmatching:
- * the original computes the enemy offset (actor >= 3) << 3 before testing
- * the target and keeps the branch: 0 in the delay slot, the offset copied on
- * the fall-through. Every precomputed form tried (a temporary, if/else, a
- * reused base, D_800C3EB0.slots) lets jump.c fold the branch into a
- * store-flag mask; this ternary computes the offset inside the branch.
- * With BRANCH_COST 1 jump.c only folds `base = 0; if (c) base = x` and it
- * first hoists the else when the then-arm is one REG/SUBREG/constant set,
- * so the original's then-arm was still several insns at jump1 and jump2 and
- * became a copy of the earlier offset only through CSE. Also tried: an
- * offset variable with `base += offset` or an if-only arm (cse skip-blocks
- * then keeps target * 28 across the join, adding $s5), `base = offset; if
- * (target >= 3) base = 0` (bnez layout), and the 800881B8-style party or
- * enemy flag with `flag ? 0 : 8` / `flag * 8` in the arm (computed there).
- * jump.c's store-flag and else-hoisting patterns need the then-arm to be a
- * single insn; a two-insn arm that later collapses to the copy reproduces
- * the original exactly (measured: `offset = (actor >= 3) * 8;` before the
- * test and the arm `member = offset; base = member;`), but that relay
- * through the loop counter is not plausible source. Also tried without
- * effect: u8/s16/u16/s32 offsets with `base = offset`, (s16)/(u16) casts,
- * `base = offset & 0xff`, the 800883ac-style `base = (actor >= 3) * 8`
- * followed by `base = target < 3 ? base : 0`, products and masks with
- * (target < 3), and `&&` forms. `offset & 0xf8` in the arm also matches
- * (combine drops the mask) but adds arithmetic the original has no
- * reason for.) */
-#ifdef NON_MATCHING
+ * member place and stand at that place of the group's area. The entries
+ * are offset by the actor's side (8 for an enemy, as in 800883AC) only when
+ * the target is a party member. fold turns `side * (target < 3)` into
+ * `target < 3 ? side * 1 : 0` and keeps `side * 1` as a non-lvalue of the
+ * promoted u8, which the narrowing into `base` cannot strip: the arm
+ * expands to a zero_extend and a subreg, so no jump pass before reload can
+ * hoist the else or make a store-flag mask of it. combine leaves a copy,
+ * jump2 hoists the zero above the branch and reorg fills the delay slot
+ * with it. A ternary or if/else over `side`, or an s32 `side`, leaves a
+ * one-insn arm that jump1 folds into `side & -(target < 3)`. */
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
+    u8 side;
     s32 member;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
-        base = target < 3 ? (actor >= 3) * 8 : 0;
+        side = (actor >= 3) * 8;
+        base = side * (target < 3);
         if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
             func_800883AC(actor);
             D_800D301C[D_800C3EB4[target].group + base].count++;
@@ -2790,9 +2776,6 @@ void func_80087EDC(u8 actor, u8 target) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
-#endif
 
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
