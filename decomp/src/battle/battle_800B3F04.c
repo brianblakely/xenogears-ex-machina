@@ -27,6 +27,10 @@ MATRIX D_800C3574 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}
 SVECTOR D_800C3594[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
 SVECTOR D_800C35AC[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
 VECTOR D_800C35C4 = {0, 0, -1536 << 16};
+/* The sound fade flag that 800B7870 and 800B8098 also use; whether it ends
+ * this unit's data or is 800B7870's only object is not known. Its padding
+ * holds stray assembler bytes, so it stays original data. */
+INCLUDE_ORIGINAL(".data", D_800C35D4, 0x800C35D4, 4);
 
 /* Run battle sprite script command (1-107) on sprite with its argument
  * bytes: motion, velocity and gravity settings, render flags, camera and

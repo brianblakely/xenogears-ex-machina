@@ -80,21 +80,16 @@ segments:
       - [0x50358, c, battle_800BFE48]
       - [0x516DC, c, battle_800C11CC]
       # Each unit's .data follows in unit order; the shared tables open it in
-      # the main unit (80070E2C). The generated pieces are objects whose
-      # padding holds stray assembler bytes (D_800C204C, D_800C2050, the
-      # unused 800C3488, D_800C35D4, D_800C3780, D_800C37C8, D_800C37D4) and
-      # the objects of their unit that a single C section cannot reach.
-      - [0x52558, data, battle_data]
-      - [0x52564, .data, battle_80070E2C]
-      - [0x53998, data, battle_data_3488]
+      # the main unit (80070E2C). Objects whose padding holds stray assembler
+      # bytes (D_800C204C, D_800C2050, the unreferenced 800C3488, D_800C35D4,
+      # D_800C3780, D_800C37C8, D_800C37D4) are included from the original in
+      # their units (INCLUDE_ORIGINAL).
+      - [0x52558, .data, battle_80070E2C]
       - [0x5399C, .data, battle_8008CCCC]
       - [0x53A18, .data, battle_8009E53C]
       - [0x53A58, .data, battle_800B15D8]
       - [0x53A74, .data, battle_800B3F04]
-      - [0x53AE4, data, battle_data_35D4]
       - [0x53AE8, .data, battle_800B8098]
-      - [0x53C5C, data, battle_data_374C]
-      - [0x53C94, .data, battle_800BD3AC]
-      - [0x53CD8, data, battle_data_37C8]
-      - [0x53CF8, .data, battle_800BFE48]
+      - [0x53C5C, .data, battle_800BD3AC]
+      - [0x53CE4, .data, battle_800BFE48]
   - [0x53f80]

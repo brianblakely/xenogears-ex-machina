@@ -28,3 +28,6 @@ CC_battle_800BFE48 := 2.7.2-cdk
 MASPSX_battle_800BFE48 := --aspsx-version=2.56
 CC_battle_800C11CC := 2.7.2-cdk
 MASPSX_battle_800C11CC := --aspsx-version=2.56
+# INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
+# VRAM 0x8006FAF0.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0
