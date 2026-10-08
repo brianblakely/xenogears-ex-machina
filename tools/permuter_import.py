@@ -4,8 +4,8 @@
     permuter_import.py decomp/targets/overlays/field.mk func_8007XXXX [--out DIR]
     permuter -j8 --best-only DIR
 
-The directory holds base.c (the unit preprocessed with -DNON_MATCHING, every other
-function body reduced to its prototype), compile.sh (the unit's own qualified GCC
+The directory holds base.c (the unit preprocessed with -DNON_MATCHING, retaining
+inline helpers and reducing other bodies to prototypes), compile.sh (the unit's qualified GCC
 version, -G value and maspsx flags, exactly as decomp/Makefile builds it) and
 target.o (the original function's private assembly). A permuter score of zero is
 only a candidate: copy the source back and accept it with `make verify`.
@@ -25,7 +25,6 @@ from pathlib import Path
 # The checkout being worked on: the current directory when it is one (worktrees).
 ROOT = Path.cwd() if (Path.cwd() / "decomp/Makefile").exists() else Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from matching_diff import config  # noqa: E402
 
 # Kept identical to decomp/Makefile CPPFLAGS/CC1FLAGS/ASFLAGS.
 CPPFLAGS = (
@@ -53,7 +52,7 @@ def permuter_lib() -> Path:
 
 
 def strip_other_functions(text: str, keep: str) -> str:
-    """Reduce every top-level function body except `keep` to its prototype."""
+    """Keep the selected body and inline definitions; reduce other bodies to prototypes."""
     out, depth, i, start, n = [], 0, 0, 0, len(text)
     while i < n:
         c = text[i]
@@ -72,7 +71,11 @@ def strip_other_functions(text: str, keep: str) -> str:
                     while level:
                         level += {"{": 1, "}": -1}.get(text[end], 0)
                         end += 1
-                    if match.group(1) == keep:
+                    # Inline definitions participate in the selected function's
+                    # code generation. Earlier prototypes are not its qualifiers.
+                    qualifiers = head[: match.start()].rsplit(";", 1)[-1]
+                    inline = re.search(r"\b(?:inline|__inline|__inline__)\b", qualifiers)
+                    if match.group(1) == keep or inline:
                         out.append(text[start:end])
                     else:
                         out.append(head + ";")
@@ -91,6 +94,8 @@ def unit_setting(values: dict[str, str], prefix: str, unit: str, default: str) -
 
 
 def main() -> None:
+    from matching_diff import config
+
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("config", type=Path)
     parser.add_argument("function")

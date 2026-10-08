@@ -138,6 +138,31 @@ class MatchingTests(unittest.TestCase):
         self.rebuilt.unlink()
         self.assertEqual(main(args), 2)
 
+    @unittest.skipUnless(shutil.which("cc"), "a host C compiler is unavailable")
+    def test_permuter_import_keeps_inline_helpers_for_selected_function(self):
+        from tools.permuter_import import strip_other_functions
+
+        source = (
+            "extern int unavailable(void);\n"
+            "static inline int add_one(int value) { return value + 1; }\n"
+            "extern inline int declared_only(int value);\n"
+            "int unrelated(void) { return unavailable(); }\n"
+            "static __inline__ int twice(int value) { return value * 2; }\n"
+            "int selected(void) { return twice(add_one(20)); }\n"
+        )
+        candidate = self.root / "candidate.c"
+        executable = self.root / "candidate"
+        candidate.write_text(
+            strip_other_functions(source, "selected")
+            + "int main(void) { return selected() != 42; }\n"
+        )
+        result = subprocess.run(
+            ["cc", "-O2", str(candidate), "-o", str(executable)],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(subprocess.run([str(executable)], check=False).returncode, 0)
+
     @unittest.skipUnless(
         shutil.which("psx-as") and shutil.which("psx-ld") and shutil.which("psx-objcopy"),
         "enter the matching Nix shell to test MIPS binutils",
