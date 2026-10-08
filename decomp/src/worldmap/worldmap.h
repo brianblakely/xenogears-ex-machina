@@ -1082,8 +1082,6 @@ typedef struct {
 } ActorSpawn;
 
 extern ActorSpawn D_80099E8C[];  /* actors of every area */
-extern s32 D_80099E90;           /* first update member of that same list */
-#define WORLD_COMMON_ACTORS ((ActorSpawn *)((u8 *)&D_80099E90 - 4))
 extern ActorSpawn *D_8009A034[]; /* per area: its actors */
 extern s32 D_8009C894;           /* nonzero when resuming a saved state */
 extern s32 D_8009C178, D_80059198;
