@@ -7878,28 +7878,21 @@ void func_8009C12C(void) {
     func_8009C5A8(D_800AFD1C, 3);
 }
 
-#ifdef NON_MATCHING
 /* Show the dialogue portrait of `character`: finish a pending slot first
  * (upload loaded images, or release shown ones) and return -1; a slot
  * already holding it is selected (bits 2-4 of the actor state) and 0
  * returned; otherwise the next free slot starts loading its image files and
  * -1 is returned. The placement (800aeae4) and file (800ae1e0) tables are
  * indexed as flat arrays, which keeps their bases in registers as the
- * original does.
- * NON_MATCHING: only the second file's address differs: the original
- * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). c * 2 is
- * local to its block, so local-alloc gives it s1 before global allocation;
- * the sum (global: it crosses the beq) then gets a preference for s1 from
- * its first operand and takes it, as c * 2 dies there. The original's sum
- * had no usable s1 preference (c * 2 not yet allocated, or s1 preferred by
- * a conflicting pseudo) and took a0, the first free register. Other
- * spellings of the index (D_800AE1E0[c][1], 1 + c * 2, a row pointer, an
- * index variable) give 6 or worse; 900 s of permuter found nothing. */
+ * original does. One `file` variable serves both images: set in two blocks
+ * it is allocated globally, and the second file's address, which dies where
+ * it is loaded into `file`, takes the argument register `file` prefers. */
 #define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
 #define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
     s32 i;
     s32 found;
+    s32 file;
 
     for (i = 0; i < 3; i++) {
         if (D_800B06A4[i].b == 1) {
@@ -7952,13 +7945,15 @@ s32 func_8009C154(s32 character) {
     D_800B06A4[D_800ADB0C].b = 1;
     D_800B06A4[D_800ADB0C].c = 0;
     i = 0;
-    D_800B00C8[i].file = FILES(character, 0) + 0x46;
-    D_800B00C8[i].destination = D_800ADB10 = func_80031BDC(func_800288EC(D_800B00C8[i].file), 0);
+    file = FILES(character, 0);
+    D_800B00C8[i].file = file + 0x46;
+    D_800B00C8[i].destination = D_800ADB10 = func_80031BDC(func_800288EC(file + 0x46), 0);
     i++;
     if (FILES(character, 1) != FILES(character, 0)) {
         D_800B06A4[D_800ADB0C].c = 1;
-        D_800B00C8[i].file = FILES(character, 1) + 0x46;
-        D_800B00C8[i].destination = D_800ADB14 = func_80031BDC(func_800288EC(D_800B00C8[i].file), 0);
+        file = FILES(character, 1);
+        D_800B00C8[i].file = file + 0x46;
+        D_800B00C8[i].destination = D_800ADB14 = func_80031BDC(func_800288EC(file + 0x46), 0);
         i++;
     }
     D_800B00C8[i].file = 0;
@@ -7966,9 +7961,6 @@ s32 func_8009C154(s32 character) {
     func_80029AFC(D_800B00C8, 0, 0);
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009C154);
-#endif
 
 /* -1 when an idle window shows message kind 1 for `id`, else 0. */
 s32 func_8009C538(s32 id) {
