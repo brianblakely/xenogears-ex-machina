@@ -508,6 +508,7 @@ docs/reverse-engineering.md
 docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
 docs/scripts/sound-sequence.md
+docs/scripts/sprite-vm.md
 docs/scripts/text-control.md
 docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
