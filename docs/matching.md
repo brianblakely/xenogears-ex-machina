@@ -110,6 +110,19 @@ complete eight-token group; the same rule reproduces a 25-file sample of other
 packed disc files. This is a separate claim from image matching; whole-disc
 filesystem/ECC reproduction is not attempted.
 
+## Script instructions
+
+Used script instructions are recovered from the matching interpreter, one VM at
+a time: an opcode table in `tools/analysis/` whose entries name the handler
+(function or switch case) they were read from, a `--sweep` that decodes every
+script on both discs and prints per-opcode counts and each unknown opcode with
+its location, synthetic tests, and `docs/scripts/<vm>.md`. Listings stay in
+`.local/`. Address disc files as the resident does: directory (g, i) file f is
+index slot f + table[g + i] - 2, from the u16 directory table at sector 40
+(`80028230`). A match proves a switch's case labels, not its comments: check
+handler comments against the jump table (battle AI 70-74 were labelled 6e-72,
+because 6e and 6f share the default).
+
 ## Original-environment smoke check
 
 `tools/matching_ram.py` compares code loaded by an original scenario run with the

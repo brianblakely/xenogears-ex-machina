@@ -505,6 +505,7 @@ docs/phase1-progress.md
 docs/platforms.json
 docs/recovery-inventory.md
 docs/reverse-engineering.md
+docs/scripts/battle-ai.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
@@ -697,6 +698,7 @@ tests/test_audio_modes.py
 tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
+tests/test_battle_ai.py
 tests/test_battle_continuation.py
 tests/test_battle_loader.cpp
 tests/test_battle_request.py
@@ -789,6 +791,7 @@ tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
 tools/analysis/audio_modes.py
+tools/analysis/battle_ai.py
 tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
