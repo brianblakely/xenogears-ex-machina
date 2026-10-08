@@ -43,5 +43,5 @@ segments:
     vram: 0x801fc000
     subsegments:
       - [0x0, c, ovl3381]
-      - [0x6f8, data, ovl3381_data]
+      - [0x6f8, .data, ovl3381]
   - [0x728]

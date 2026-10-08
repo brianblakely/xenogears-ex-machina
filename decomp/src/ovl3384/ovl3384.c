@@ -11,6 +11,8 @@
  * (see ovl3384.mk). */
 #include "debris.h"
 
+SVECTOR D_801FCE14 = {0, 0, 0};
+
 /* The vertex named by the primitive's n-th halfword. */
 #define VERTEX(n) ((SVECTOR *)(((u16 *)desc)[n] * sizeof(SVECTOR) + (s32)vertices))
 

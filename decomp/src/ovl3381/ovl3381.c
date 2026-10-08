@@ -16,6 +16,11 @@
 
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 
+/* The two triangles of a cell (as in ovl3387's burst effect); this module
+ * keeps them but never reads them. */
+SVECTOR D_801FC6F8[3] = {{-2, -2, 0}, {6, -2, 0}, {-2, 6, 0}};
+SVECTOR D_801FC710[3] = {{2, -6, 0}, {2, 2, 0}, {-6, 2, 0}};
+
 /* Count the effect's frames; the battle's flag 0x100 ends it. */
 void func_801FC000(TaskNode *node) {
     ((TileTask *)node->object)->frame++;

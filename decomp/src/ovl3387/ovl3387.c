@@ -12,6 +12,11 @@
  * (see ovl3387.mk). */
 #include "burst.h"
 
+u8 D_801FCE14 = 1;
+SVECTOR D_801FCE18[3] = {{-80, -80, 0}, {176, -80, 0}, {-80, 176, 0}};
+SVECTOR D_801FCE30[3] = {{80, -176, 0}, {80, 80, 0}, {-176, 80, 0}};
+u32 *D_801FCE48 = NULL;
+
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
  * frames. The empty loops over a 2x14x20 grid are left from removed work. */
 void func_801FC000(TaskNode *node) {
