@@ -79,14 +79,7 @@ units' previously matching C still matches. ASPSX 2.56-2.86 give identical
 bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
-A fourth compiler, GCC 2.6.0 (`psx-cc1-2.6.0`, old-gcc 0.17 `gcc-2.6.0-psx`),
-builds slot39's card-refresh unit (`slot39_801C93A8.c`) at `-O2
--fno-rerun-cse-after-loop`, set with `CC_<file> := 2.6.0` and
-`CC1FLAGS_<file>`. Its function keeps a register copy of its zeroed result
-(`move s6,s4`); of 2.5.7-2.95.2 under single-flag variants only that setting
-reproduces all 521 words, and the functions on both sides break under it, so
-the unit is a file of its own. 2.6.0 and 2.6.3 otherwise agree on 205 of
-slot39's 210 functions; the other four need 2.6.3.
+`CC1FLAGS_<file>` adds unit-specific cc1 options; no unit needs one yet.
 
 Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
@@ -209,9 +202,11 @@ the audit; they are never counted as matches. This diagnostic does not replace
 - Unit compiler settings are qualified per unit; compiling every remaining draft under
   single-flag variants (`-fno-schedule-insns[2]`, `-fno-strength-reduce`, CSE and loop
   options, `-O1`) produced no match, so do not change an existing unit's flags to fix
-  one function. A function that matches only under a compiler or flag its neighbours
-  do not survive is its own unit: split the file there after checking that rodata order
-  and jump-table phase allow the boundary (the slot39 card refresh).
+  one function. A match under another compiler or flag that the neighbours do not
+  survive is a hint, not proof of a unit boundary: slot39 801c93a8 matched both as its
+  own GCC 2.6.0 `-fno-rerun-cse-after-loop` unit and, more simply, under the unit's 2.6.3
+  with a zero that only combine can see (below); prefer the explanation that needs no
+  new toolchain or split.
 
 ## Matching levers (GCC 2.6.3/2.7.2)
 
@@ -253,7 +248,8 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 
 - cse replaces a register source by a known constant whenever it can (a MIPS
   CONST_INT costs 0, a pseudo 1), so a surviving `move` of a register that was just
-  zeroed means both cse passes lost the value. A cse block ends at a referenced label;
+  zeroed means both cse passes lost the value: the zero came from an expression only
+  combine reduces, such as a byte shifted right by 8 (slot39 801c93a8). A cse block ends at a referenced label;
   the first pass also ends at a loop-end note (any `do { } while (0)`), the second
   (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label whose
   remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over an
@@ -267,8 +263,7 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 - A dead loop that flow deletes leaves its exit label until the jump pass after reload:
   it still splits the scheduling blocks, and an assignment before it can be hoisted
   into the prologue.
-- In 2.6.3 the insn after a loop note is a scheduling barrier; 2.6.0 lets later loads'
-  delay slots take the insn before the note.
+- In 2.6.3 the insn after a loop note is a scheduling barrier (2.6.0's is not).
 - reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
   was compiler-generated, not inline asm.
 - Splitting a file into units drops the prototypes that earlier definitions supplied:
