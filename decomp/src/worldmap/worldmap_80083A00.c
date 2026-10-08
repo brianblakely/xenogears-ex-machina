@@ -1013,6 +1013,7 @@ extern u16 D_8009AD40[8];
                      "mtc2 %1, $13" \
                      : \
                      : "r"(r0), "r"(r1), "r"(r2))
+/* Keep producer stores for the indirect vertex reads. */
 #define gte_ldv3c(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0);" \
@@ -1021,7 +1022,8 @@ extern u16 D_8009AD40[8];
                      "lwc2 $4, 16(%0);" \
                      "lwc2 $5, 20(%0)" \
                      : \
-                     : "r"(r0))
+                     : "r"(r0) \
+                     : "memory")
 #define gte_stsz4c(r0) \
     __asm__ volatile("swc2 $16, 0(%0);" \
                      "swc2 $17, 4(%0);" \

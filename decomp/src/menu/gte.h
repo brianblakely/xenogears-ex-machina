@@ -9,10 +9,10 @@
                      "lwc2 $10, 4(%0);"                                        \
                      "lwc2 $11, 8(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* Load a colour (CVECTOR) into RGBC. */
-#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0) : "memory")
 
 /* Square IR1-IR3 into MAC1-MAC3 (sf = 0). */
 #define gte_sqr0() __asm__ volatile("nop;nop;.word 0x4AA00428")
@@ -24,7 +24,7 @@
                      "lwc2 $2, 0(%1);"                                         \
                      "lwc2 $3, 4(%1)"                                          \
                      :                                                         \
-                     : "r"(r0), "r"(r1))
+                     : "r"(r0), "r"(r1) : "memory")
 
 /* Load three short vectors into V0-V2. */
 #define gte_ldv3(r0, r1, r2)                                                   \
@@ -35,7 +35,7 @@
                      "lwc2 $4, 0(%2);"                                         \
                      "lwc2 $5, 4(%2)"                                          \
                      :                                                         \
-                     : "r"(r0), "r"(r1), "r"(r2))
+                     : "r"(r0), "r"(r1), "r"(r2) : "memory")
 
 /* Perspective-transform V0-V2. */
 #define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
@@ -73,12 +73,12 @@
     __asm__ volatile("lwc2 $2, 0(%0);"                                         \
                      "lwc2 $3, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_ldv2(r0)                                                           \
     __asm__ volatile("lwc2 $4, 0(%0);"                                         \
                      "lwc2 $5, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* Store MAC1-MAC3 as a 32-bit vector. */
 #define gte_stlvnl(r0)                                                         \

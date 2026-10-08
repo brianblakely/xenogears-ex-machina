@@ -22,7 +22,7 @@
     __asm__ volatile("lwc2 $0, 0(%0);"                                         \
                      "lwc2 $1, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* Perspective-transform V0. */
 #define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
@@ -64,7 +64,7 @@
     }
 
 /* Load a colour (CVECTOR) into RGBC. */
-#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0) : "memory")
 
 /* Depth-cue the colour (DPCS). */
 #define gte_dpcs() __asm__ volatile("nop;nop;.word 0x4A780010")
@@ -79,7 +79,7 @@
                      "lwc2 $10, 4(%0);"                                        \
                      "lwc2 $11, 8(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_sqr0() __asm__ volatile("nop;nop;.word 0x4AA00428")
 
 /* Load a matrix's rotation into the GTE. */
@@ -96,7 +96,7 @@
                      "ctc2 $14, $4"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 /* Load a matrix's translation into the GTE. */
 #define gte_SetTransMatrix(r0)                                                 \
@@ -108,7 +108,7 @@
                      "ctc2 $14, $7"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 /* Load a matrix column into IR1-IR3. */
 #define gte_ldclmv(r0)                                                         \
@@ -120,7 +120,7 @@
                      "mtc2 $14, $11"                                           \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 /* Rotate IR1-IR3 by the rotation matrix (sf = 1). */
 #define gte_rtir() __asm__ volatile("nop;nop;.word 0x4A49E012")
@@ -147,7 +147,7 @@
                      "lwc2 $1, 8(%0)"                                          \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13")
+                     : "$12", "$13", "memory")
 
 /* Rotate and translate V0 into MAC1-MAC3 (sf = 1). */
 #define gte_rt() __asm__ volatile("nop;nop;.word 0x4A480012")
@@ -171,7 +171,7 @@
                      "ctc2 $14, $4"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 /* Load the outer product's second vector into IR1-IR3. */
 #define gte_ldopv2(r0)                                                         \
@@ -179,7 +179,7 @@
                      "lwc2 $9, 0(%0);"                                         \
                      "lwc2 $10, 4(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* Outer product (sf = 1). */
 #define gte_op12() __asm__ volatile("nop;nop;.word 0x4B78000C")

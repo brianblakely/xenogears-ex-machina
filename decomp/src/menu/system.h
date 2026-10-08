@@ -465,7 +465,7 @@ extern s32 D_80050104;
                      "ctc2 $14, $4"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_SetTransMatrix(r0)                                                 \
     __asm__ volatile("lw $12, 20(%0);"                                         \
                      "lw $13, 24(%0);"                                         \
@@ -475,7 +475,7 @@ extern s32 D_80050104;
                      "ctc2 $14, $7"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_SetBackColor(r0, r1, r2)                                           \
     __asm__ volatile("sll $12, %0, 4;"                                         \
                      "sll $13, %1, 4;"                                         \

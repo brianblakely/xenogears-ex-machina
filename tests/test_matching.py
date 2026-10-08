@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import shutil
 import struct
 import subprocess
@@ -129,6 +130,128 @@ class MatchingTests(unittest.TestCase):
                 self.assertIn(signature, stamp.read_text())
                 self.assertEqual(build(settings), current)
                 previous = current
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "maspsx", "psx-as", "psx-objdump",
+            "psx-cpp-2.6.3", "psx-cc1-2.6.3",
+            "psx-cpp-2.7.2", "psx-cc1-2.7.2",
+            "psx-cpp-2.7.2-cdk", "psx-cc1-2.7.2-cdk",
+        )),
+        "enter the matching Nix shell to test GTE memory inputs",
+    )
+    def test_gte_loads_consume_stores_and_evaluate_pointer_once(self):
+        repo = Path(__file__).resolve().parents[1]
+        worldmap = repo / "decomp/src/worldmap"
+        menu = repo / "decomp/src/menu"
+        menu_includes = (menu / "menu2.c").read_text().split("\n\n", 1)[0]
+        menu_includes = re.sub(
+            r'#include "([^"]+)"',
+            lambda match: '#include "' + str(menu / match[1]) + '"', menu_includes,
+        ) + "\n"
+        # Compile the authored local macro without compiling unrelated game code.
+        lines = (worldmap / "worldmap_80083A00.c").read_text().splitlines(True)
+        start = next(i for i, line in enumerate(lines)
+                     if line.startswith("#define gte_ldv3c("))
+        end = start
+        while lines[end].rstrip().endswith("\\"):
+            end += 1
+        ldv3c = "".join(lines[start:end + 1])
+        (self.root / "decomp").mkdir()
+        (self.root / "decomp/include").symlink_to(repo / "decomp/include")
+        (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
+
+        def instructions(obj, function):
+            result = subprocess.run(
+                ["psx-objdump", "-dr", "--disassemble=" + function, str(obj)],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            words = [int(word, 16) for word in re.findall(
+                r"^\s*[0-9a-f]+:\s+([0-9a-f]{8})\s", result.stdout, re.MULTILINE,
+            )]
+            self.assertTrue(words, result.stdout)
+            return words, result.stdout
+
+        # type, consumed component, direct call, side-effect call, store opcode,
+        # component offset, memory-read opcodes and their count.
+        v0 = ("SVECTOR", "point->vx", "gte_ldv0(point)",
+              "gte_ldv0(get_point())", 0x29, 0, (0x32,), 2)
+        cases = (
+            ("worldmap_80083A00", "worldmap",
+             '#include "' + str(worldmap / "worldmap.h") + '"\n' + ldv3c,
+             (
+                 ("v0", v0),
+                 ("v3", ("SVECTOR", "point[2].vz",
+                         "gte_ldv3(point, point + 1, point + 2)",
+                         "gte_ldv3(get_point(), get_second(), get_third())",
+                         0x29, 20, (0x32,), 6)),
+                 ("lv0", ("VECTOR", "point->vx", "gte_ldlv0(point)",
+                          "gte_ldlv0(get_point())", 0x2b, 0, (0x25, 0x32), 3)),
+                 ("v3c", ("SVECTOR", "point[2].vz", "gte_ldv3c(point)",
+                          "gte_ldv3c(get_point())", 0x29, 20, (0x32,), 6)),
+             )),
+            ("gte_shared", "worldmap",
+             '#include "common.h"\n#include "psyq/libgte.h"\n'
+             '#include "psyq/inline_c.h"\n', (("v0", v0),)),
+            ("menu2", "menu", menu_includes,
+             (
+                 ("rot", ("Matrix", "point->m[2][2]", "gte_SetRotMatrix(point)",
+                          "gte_SetRotMatrix(get_point())", 0x29, 16, (0x23,), 5)),
+                 ("trans", ("Matrix", "point->t[0]", "gte_SetTransMatrix(point)",
+                            "gte_SetTransMatrix(get_point())", 0x2b, 20, (0x23,), 3)),
+             )),
+        )
+        for unit, target, includes, macros in cases:
+            # Inherit each real unit's settings and the Makefile compiler recipe.
+            (self.root / "fixture.mk").write_text(
+                "include " + str(repo / ("decomp/targets/overlays/" + target + ".mk"))
+                + "\nORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
+                + "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\nBUILD := build\n"
+            )
+            source = includes + (
+                "extern void *get_point(void), *get_second(void), *get_third(void);\n"
+            )
+            for name, (kind, component, direct, once, *_) in macros:
+                source += (
+                    f"void load_{name}({kind} *point) {{\n"
+                    + f"    {component} = 1; {direct}; {component} = 2;\n}}\n"
+                    + f"void once_{name}(void) {{ {once}; }}\n"
+                )
+            (self.root / (unit + ".c")).write_text(source)
+            obj = self.root / ("build/" + unit + ".o")
+            for compiler in ("2.6.3", "2.7.2", "2.7.2-cdk"):
+                result = subprocess.run(
+                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                     "ROOT=" + str(self.root), "CONFIG=fixture.mk",
+                     "CC_" + unit + "=" + compiler, str(obj)],
+                    cwd=self.root, text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                for name, (_, _, _, once, store_op, offset, read_ops, count) in macros:
+                    with self.subTest(unit=unit, compiler=compiler, macro=name):
+                        words, assembly = instructions(obj, "once_" + name)
+                        self.assertEqual(sum(
+                            word >> 26 in read_ops and (word >> 21) & 31 != 29
+                            for word in words
+                        ), count, assembly)  # Exclude the getter's stack restores.
+                        for getter in ("get_point", "get_second", "get_third"):
+                            self.assertEqual(len(re.findall(
+                                r"R_MIPS_26\s+" + getter + r"\b", assembly,
+                            )), int(getter in once), assembly)
+                        words, assembly = instructions(obj, "load_" + name)
+                        # These two stores write 1 then 2 to the consumed
+                        # component. Neither may be deleted or cross the GTE.
+                        stores = [i for i, word in enumerate(words)
+                                  if word >> 26 == store_op and (word >> 21) & 31 != 29]
+                        loads = [i for i, word in enumerate(words)
+                                 if word >> 26 in read_ops and (word >> 21) & 31 != 29]
+                        self.assertEqual(len(stores), 2, assembly)
+                        self.assertEqual(len(loads), count, assembly)
+                        self.assertEqual([words[i] & 0xffff for i in stores],
+                                         [offset, offset], assembly)
+                        self.assertLess(stores[0], loads[0], assembly)
+                        self.assertGreater(stores[1], loads[-1], assembly)
 
     def test_cli_exit_codes(self):
         args = [str(self.original), str(self.rebuilt), "--sha256", self.digest]

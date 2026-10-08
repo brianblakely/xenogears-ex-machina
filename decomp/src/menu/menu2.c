@@ -857,9 +857,13 @@ void func_80072858(LightRig *rig) {
     func_8008AC0C(D_800910F0->layer);
     func_8007273C(winner->node, &m, &D_80092610->view);
     func_8008A7E0(D_80092610);
-    gte_SetRotMatrix(&D_80092610->view);
-    gte_SetTransMatrix(&D_80092610->view);
-    func_8008C2E8(D_80092610);
+    {
+        Node *camera = D_80092610;
+
+        gte_SetRotMatrix(&camera->view);
+        gte_SetTransMatrix(&camera->view);
+        func_8008C2E8(camera);
+    }
     func_8008AE1C(D_800910F0->layer);
 }
 

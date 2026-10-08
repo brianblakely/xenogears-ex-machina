@@ -49,7 +49,7 @@ typedef struct {
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0)" \
                      : \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_ldv3c(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0);" \
@@ -58,7 +58,7 @@ typedef struct {
                      "lwc2 $4, 16(%0);" \
                      "lwc2 $5, 20(%0)" \
                      : \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_rtps() \
     __asm__ volatile("nop;" \
                      "nop;" \
@@ -98,7 +98,7 @@ typedef struct {
                      "ctc2 $14, $4" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_SetTransMatrix(r0) \
     __asm__ volatile("lw $12, 20(%0);" \
                      "lw $13, 24(%0);" \
@@ -108,7 +108,7 @@ typedef struct {
                      "ctc2 $14, $7" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_rtv0() \
     __asm__ volatile("nop;" \
                      "nop;" \
@@ -137,7 +137,7 @@ typedef struct {
                      "mtc2 $14, $11" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 /* A model's part list, as far as the menu reads it. */
 typedef struct {

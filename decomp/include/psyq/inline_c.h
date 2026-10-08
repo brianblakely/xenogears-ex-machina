@@ -3,7 +3,8 @@
 
 /* PsyQ inline GTE macros (inline_c.h / gtemac.h form): GTE data and control
  * register transfers through $12-$15 and the GTE commands, each preceded by
- * the two nops the SDK macros emit. */
+ * the two nops the SDK macros emit. Pointer loads declare memory reads so
+ * the compiler keeps their producer stores. */
 
 /* Control registers: rotation (0-4), light (8-12) and color (16-20)
  * matrices, background color (13-15). */
@@ -20,7 +21,7 @@
                      "ctc2 $14, $4"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 #define gte_SetLightMatrix(r0)                                                 \
     __asm__ volatile("lw $12, 0(%0);"                                          \
@@ -35,7 +36,7 @@
                      "ctc2 $14, $12"                                           \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 #define gte_SetColorMatrix(r0)                                                 \
     __asm__ volatile("lw $12, 0(%0);"                                          \
@@ -50,7 +51,7 @@
                      "ctc2 $14, $20"                                           \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 #define gte_SetBackColor(r0, r1, r2)                                           \
     __asm__ volatile("sll $12, %0, 4;"                                         \
@@ -73,7 +74,7 @@
                      "mtc2 $14, $11"                                           \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 
 #define gte_stclmv(r0)                                                         \
     __asm__ volatile("mfc2 $12, $9;"                                           \
@@ -109,19 +110,22 @@
     __asm__ volatile("lwc2 $0, 0(%0);"                                         \
                      "lwc2 $1, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0)                                                 \
+                     : "memory")
 
 #define gte_ldv1(r0)                                                           \
     __asm__ volatile("lwc2 $2, 0(%0);"                                         \
                      "lwc2 $3, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0)                                                 \
+                     : "memory")
 
 #define gte_ldv2(r0)                                                           \
     __asm__ volatile("lwc2 $4, 0(%0);"                                         \
                      "lwc2 $5, 4(%0)"                                          \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0)                                                 \
+                     : "memory")
 
 #define gte_ldv3(r0, r1, r2)                                                   \
     __asm__ volatile("lwc2 $0, 0(%0);"                                         \
@@ -131,10 +135,11 @@
                      "lwc2 $4, 0(%2);"                                         \
                      "lwc2 $5, 4(%2)"                                          \
                      :                                                         \
-                     : "r"(r0), "r"(r1), "r"(r2))
+                     : "r"(r0), "r"(r1), "r"(r2)                               \
+                     : "memory")
 
 /* The color RGB and the screen depths SZ0-SZ3. */
-#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0) : "memory")
 
 #define gte_ldsz4(r0, r1, r2, r3)                                              \
     __asm__ volatile("mtc2 %0, $16;"                                           \

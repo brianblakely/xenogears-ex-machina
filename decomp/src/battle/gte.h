@@ -8,7 +8,7 @@
     __asm__ volatile("lwc2 $0, 0(%0);"                                                             \
                      "lwc2 $1, 4(%0)"                                                              \
                      :                                                                             \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* Rotate and translate vector 0 (MVMVA 1, 0, 0, 0, 0). */
 #define gte_rtv0tr()                                                                               \
@@ -34,7 +34,7 @@
                      "lwc2 $4, 0(%2);"                                                             \
                      "lwc2 $5, 4(%2)"                                                              \
                      :                                                                             \
-                     : "r"(r0), "r"(r1), "r"(r2))
+                     : "r"(r0), "r"(r1), "r"(r2) : "memory")
 
 /* Perspective-transform vector 0, or vectors 0-2. */
 #define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
@@ -75,13 +75,13 @@
                      "ctc2 $14, $4"                                            \
                      :                                                         \
                      : "r"(r0)                                                 \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_ldopv2(r0)                                                         \
     __asm__ volatile("lwc2 $11, 8(%0);"                                        \
                      "lwc2 $9, 0(%0);"                                         \
                      "lwc2 $10, 4(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_op0() __asm__ volatile("nop;nop;.word 0x4B70000C")
 
 /* Store the GTE flag register. */
@@ -99,7 +99,7 @@
 #define gte_stotz(r0) __asm__ volatile("swc2 $7, 0(%0)" : : "r"(r0) : "memory")
 
 /* Light a normal with a colour: load RGB, NCCS, store the result. */
-#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0) : "memory")
 #define gte_nccs() __asm__ volatile("nop;nop;.word 0x4B08041B")
 #define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
 
@@ -111,7 +111,7 @@
                      "lwc2 $10, 4(%0);"                                        \
                      "lwc2 $11, 8(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 #define gte_gpf0() __asm__ volatile("nop;nop;.word 0x4B90003D") /* sf = 0 */
 #define gte_gpf12() __asm__ volatile("nop;nop;.word 0x4B98003D")
 #define gte_stlvl(r0)                                                          \

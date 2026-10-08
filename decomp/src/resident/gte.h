@@ -12,7 +12,7 @@
                      "lwc2 $10, 4(%0);"                                        \
                      "lwc2 $11, 8(%0)"                                         \
                      :                                                         \
-                     : "r"(r0))
+                     : "r"(r0) : "memory")
 
 /* IR = IR0 * IR >> 12. */
 #define gte_gpf12() __asm__ volatile("nop;nop;.word 0x4B98003D")

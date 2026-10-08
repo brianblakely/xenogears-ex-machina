@@ -1323,11 +1323,13 @@ void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
 void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 
+/* Indirect GTE reads need memory clobbers to keep their producer stores. */
 #define gte_ldv0(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0)" \
                      : \
-                     : "r"(r0))
+                     : "r"(r0) \
+                     : "memory")
 #define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
 #define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
@@ -1613,7 +1615,7 @@ typedef struct {
                      "ctc2 $14, $4" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_SetTransMatrix(r0) \
     __asm__ volatile("lw $12, 20(%0);" \
                      "lw $13, 24(%0);" \
@@ -1623,7 +1625,7 @@ typedef struct {
                      "ctc2 $14, $7" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_ldclmv(r0) \
     __asm__ volatile("lhu $12, 0(%0);" \
                      "lhu $13, 6(%0);" \
@@ -1633,7 +1635,7 @@ typedef struct {
                      "mtc2 $14, $11" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13", "$14")
+                     : "$12", "$13", "$14", "memory")
 #define gte_stclmv(r0) \
     __asm__ volatile("mfc2 $12, $9;" \
                      "mfc2 $13, $10;" \
@@ -1653,7 +1655,7 @@ typedef struct {
                      "lwc2 $1, 8(%0)" \
                      : \
                      : "r"(r0) \
-                     : "$12", "$13")
+                     : "$12", "$13", "memory")
 #define gte_ldv3(r0, r1, r2) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0);" \
@@ -1662,7 +1664,8 @@ typedef struct {
                      "lwc2 $4, 0(%2);" \
                      "lwc2 $5, 4(%2)" \
                      : \
-                     : "r"(r0), "r"(r1), "r"(r2))
+                     : "r"(r0), "r"(r1), "r"(r2) \
+                     : "memory")
 #define gte_rtir() __asm__ volatile("nop;nop;.word 0x4A49E012")
 #define gte_rt() __asm__ volatile("nop;nop;.word 0x4A480012")
 #define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
