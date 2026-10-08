@@ -1923,19 +1923,12 @@ s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d) {
 
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
- * column-major file; corners from whichever edge changed. */
-/* Each edge loop indexes the cells with n, separately from the loaded block
- * number. Both table addresses (fp/s7) are hoisted, while the exit test's -1
- * stays inside the loop. In the corner loops the flag tests are long-lived
- * invariants hoisted after i = 0; the first
- * loop moves the corner table address first (reduced to a pointer, s1), the
- * second runs out of threshold and indexes it (lui at), as in the original.
- * NON_MATCHING: size and edge-start placement agree. The cell index is
- * separate from the loaded block number, but its initial value takes v0
- * rather than s0. changed and sector/path take s5/s6 instead of s6/s5;
- * the corner block, table slot and flags also use different registers.
- * In the second edge loop, changed |= 1 is still scheduled before the
- * division. */
+ * column-major file; corners from whichever edge changed. The pass counter j
+ * also holds each corner's block number and the source value is reloaded into
+ * sector/path for a corner; each branch keeps its own edge flags.
+ * NON_MATCHING: only the edge-cell start index differs: it takes v0 (it
+ * crosses no call and prefers the v0 of its `n << 1`) where the original
+ * keeps it in s0, the register of block. */
 #ifdef NON_MATCHING
 void func_80098CC0(void) {
     s32 first;
@@ -1948,9 +1941,6 @@ void func_80098CC0(void) {
     s32 sector;
     char *path;
     s32 changed;
-    s32 corner;
-    s32 rows;
-    s32 cols;
     void *buffer;
 
     for (i = 0; i < 81; i++) {
@@ -1971,6 +1961,9 @@ void func_80098CC0(void) {
     first = func_8002C3D8();
     second = func_8002C3D8();
     if ((first == 0) | (second == -1)) {
+        s32 rows;
+        s32 cols;
+
         sector = func_800289D0(D_8009BCD8);
         n = 1;
         for (j = 1; j != -1; j--) {
@@ -1992,32 +1985,36 @@ void func_80098CC0(void) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
-                    changed |= 1;
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + ((block % D_8009D160) * D_8009D2B4 + block / D_8009D160),
                                   0x710, buffer);
+                    changed |= 1;
                 }
             }
             n = 0x11;
         }
-        for (i = 0; i < 4; i++) {
-            corner = D_8009D570.cells[D_8009BBAC[i]];
+        for (k = 0; k < 4; k++) {
+            j = D_8009D570.cells[D_8009BBAC[k]];
             rows = changed & 2;
             cols = changed & 1;
-            if (D_8009C184[corner] == NULL) {
-                D_8009C184[corner] = func_80031BDC(0x710, 0);
+            if (D_8009C184[j] == NULL) {
+                D_8009C184[j] = func_80031BDC(0x710, 0);
                 if (rows) {
-                    func_8009623C(func_800289D0(D_8009BCD8) + corner, 0x710, D_8009C184[corner]);
+                    sector = func_800289D0(D_8009BCD8);
+                    func_8009623C(sector + j, 0x710, D_8009C184[j]);
                 } else if (cols) {
-                    func_8009623C(func_800289D0(D_8009BD08) + ((corner % D_8009D160) * D_8009D2B4 +
-                                                               corner / D_8009D160),
-                                  0x710, D_8009C184[corner]);
+                    sector = func_800289D0(D_8009BD08);
+                    func_8009623C(sector + ((j % D_8009D160) * D_8009D2B4 + j / D_8009D160), 0x710,
+                                  D_8009C184[j]);
                 }
             }
         }
         func_8009623C(0, 0, NULL);
         func_80096328();
     } else {
+        s32 rows;
+        s32 cols;
+
         path = func_80028998(D_8009BCD8);
         n = 1;
         for (j = 1; j != -1; j--) {
@@ -2039,27 +2036,29 @@ void func_80098CC0(void) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
-                    changed |= 1;
                     D_8009C184[block] = buffer;
                     func_800962B0(path,
                                   ((block % D_8009D160) << 11) * D_8009D2B4 + ((block / D_8009D160) << 11),
                                   0x710, buffer);
+                    changed |= 1;
                 }
             }
             n = 0x11;
         }
-        for (i = 0; i < 4; i++) {
+        for (k = 0; k < 4; k++) {
             rows = changed & 2;
             cols = changed & 1;
-            corner = D_8009D570.cells[D_8009BBAC[i]];
-            if (D_8009C184[corner] == NULL) {
-                D_8009C184[corner] = func_80031BDC(0x710, 0);
+            j = D_8009D570.cells[D_8009BBAC[k]];
+            if (D_8009C184[j] == NULL) {
+                D_8009C184[j] = func_80031BDC(0x710, 0);
                 if (rows) {
-                    func_800962B0(func_80028998(D_8009BCD8), corner << 11, 0x710, D_8009C184[corner]);
+                    path = func_80028998(D_8009BCD8);
+                    func_800962B0(path, j << 11, 0x710, D_8009C184[j]);
                 } else if (cols) {
-                    func_800962B0(func_80028998(D_8009BD08),
-                                  ((corner % D_8009D160) << 11) * D_8009D2B4 + ((corner / D_8009D160) << 11),
-                                  0x710, D_8009C184[corner]);
+                    path = func_80028998(D_8009BD08);
+                    func_800962B0(path,
+                                  ((j % D_8009D160) << 11) * D_8009D2B4 + ((j / D_8009D160) << 11),
+                                  0x710, D_8009C184[j]);
                 }
             }
         }
