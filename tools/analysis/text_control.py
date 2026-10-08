@@ -373,6 +373,8 @@ class Sweep:
     table_problems: list = field(default_factory=list)
     unreferenced: int = 0
     unreferenced_tables: int = 0
+    unreferenced_texts: int = 0
+    unreferenced_errors: list = field(default_factory=list)
 
     def add(self, where: str, data: bytes, threshold: int) -> None:
         try:
@@ -397,11 +399,37 @@ class Sweep:
                 else:
                     self.uses[token.code] += 1
         if offsets:
-            dead = sum(
-                1 for i in range(min(offsets), min(end, len(data))) if data[i] and not covered[i]
-            )
-            self.unreferenced += dead
-            self.unreferenced_tables += dead > 0
+            self.unreached(where, data, covered, min(offsets), min(end, len(data)), threshold)
+
+    def unreached(
+        self, where: str, data: bytes, covered: bytearray, start: int, stop: int, threshold: int
+    ) -> None:
+        """Count the nonzero text bytes no entry reaches and decode each run
+        of them as texts of its own (text no entry shows, kept out of the use
+        counts)."""
+        position, dead = start, 0
+        while position < stop:
+            if covered[position] or not data[position]:
+                position += 1
+                continue
+            end = position
+            while end < stop and not covered[end]:
+                end += 1
+            dead += sum(1 for byte in data[position:end] if byte)
+            while position < end:
+                if not data[position]:
+                    position += 1
+                    continue
+                try:
+                    tokens = decode_text(data, position, threshold)
+                except TextError as error:
+                    self.unreferenced_errors.append(f"{where}: {error}")
+                    break
+                self.unreferenced_texts += 1
+                position = tokens[-1].offset + tokens[-1].length
+            position = max(position, end)
+        self.unreferenced += dead
+        self.unreferenced_tables += dead > 0
 
 
 def sweep() -> Sweep:
@@ -455,8 +483,12 @@ def report(result: Sweep) -> str:
     if result.unreferenced:
         lines.append(
             f"  nonzero text bytes no entry reaches: {result.unreferenced} in "
-            f"{result.unreferenced_tables} tables"
+            f"{result.unreferenced_tables} tables, decoding as {result.unreferenced_texts} "
+            "whole texts"
         )
+    if result.unreferenced_errors:
+        lines.append(f"  unreached bytes that do not decode: {len(result.unreferenced_errors)}")
+        lines += [f"    {u}" for u in result.unreferenced_errors]
     return "\n".join(lines)
 
 

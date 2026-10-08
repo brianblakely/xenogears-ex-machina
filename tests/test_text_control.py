@@ -6,6 +6,7 @@ import unittest
 
 from tools.analysis.text_control import (
     CONTROLS,
+    Sweep,
     TextError,
     archive_entry,
     decode_text,
@@ -114,6 +115,16 @@ class TableTests(unittest.TestCase):
         self.assertEqual(text_table(struct.pack("<HHI", 0xFFFF, 0, 0)), ((), 4))
         with self.assertRaises(TextError):
             text_table(struct.pack("<HHHH", 1, 5, 8, 8))
+
+    def test_unreached_text_decodes_on_its_own(self):
+        # The entry ends at its first 00; 42 43 00 and 0F 10 00 follow it.
+        data = table([b"\x41\x00\x42\x43\x00\x0f\x10\x00"])
+        result = Sweep()
+        result.add("table", data, THRESHOLD)
+        self.assertEqual((result.texts, result.tokens), (1, 2))
+        self.assertEqual((result.unreferenced, result.unreferenced_texts), (4, 1))
+        self.assertEqual(len(result.unreferenced_errors), 1)
+        self.assertEqual(result.unknown, [])
 
     def test_archive_entries(self):
         text = table([b"\x41\x42\x43\x00"])

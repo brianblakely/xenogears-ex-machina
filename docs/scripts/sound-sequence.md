@@ -26,7 +26,11 @@ banks (259 distinct) located; 7053 channels, 201317 instructions; 72 opcodes
 plus notes used; unknown or undecodable: 0. Every channel ends in 0x90.
 Unused by the data: 8a 8d 8e 8f 9c 9d 9e a1 a4 a5 a6 a7 aa b6 bc bd be c1 c3 c6
 c8 ee f5 fd ff. 736 nonzero bytes (2 sequences, 36 banks) are reached by no
-channel: data left after an end.
+channel. The sweep decodes them too, outside the counts: they form 58
+channels ending in 90 (unreferenced effect channels and stray ends in the
+banks; in the two sequences, instructions just before a channel's start
+offset), and a rest that runs off the end of one bank (disc 1 slot 3903
++0x2478) is the only leftover.
 
 Notes from the handlers:
 

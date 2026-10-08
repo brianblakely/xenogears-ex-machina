@@ -748,6 +748,7 @@ class Sweep:
     uses: Counter = field(default_factory=Counter)
     unknown: list = field(default_factory=list)
     unreferenced: Counter = field(default_factory=Counter)
+    unreferenced_errors: list = field(default_factory=list)
     table_problems: list = field(default_factory=list)
 
     def add(self, where: str, script: Script) -> None:
@@ -765,12 +766,36 @@ class Sweep:
             covered[start:end] = b"\1" * (end - start)
         if script.entries:
             first = min(start for _, start in script.entries)
-            dead = sum(
-                1 for i in range(first, len(script.data)) if not covered[i] and script.data[i]
-            )
-            if dead:
-                self.unreferenced[script.kind] += dead
-                self.unreferenced[f"{script.kind} scripts"] += 1
+            self.unreached(where, script, covered, first)
+
+    def unreached(self, where: str, script: Script, covered: bytearray, first: int) -> None:
+        """Count the nonzero bytes after the first channel that no channel
+        reaches and decode each run of them as channels of its own (data the
+        driver never reads, kept out of the use counts)."""
+        data, position, dead = script.data, first, 0
+        while position < len(data):
+            if covered[position] or not data[position]:
+                position += 1
+                continue
+            end = position
+            while end < len(data) and not covered[end]:
+                end += 1
+            dead += sum(1 for byte in data[position:end] if byte)
+            while position < end:
+                if not data[position]:
+                    position += 1
+                    continue
+                try:
+                    instructions = decode_channel(data, position)
+                except SequenceError as error:
+                    self.unreferenced_errors.append(f"{where}: {error}")
+                    break
+                self.unreferenced[f"{script.kind} channels"] += 1
+                position = instructions[-1].offset + instructions[-1].length
+            position = max(position, end)
+        if dead:
+            self.unreferenced[script.kind] += dead
+            self.unreferenced[f"{script.kind} scripts"] += 1
 
 
 def sweep() -> Sweep:
@@ -834,8 +859,12 @@ def report(result: Sweep) -> str:
         if result.unreferenced[kind]:
             lines.append(
                 f"  nonzero bytes no channel reaches ({kind}): {result.unreferenced[kind]} in "
-                f"{result.unreferenced[kind + ' scripts']} scripts"
+                f"{result.unreferenced[kind + ' scripts']} scripts, decoding as "
+                f"{result.unreferenced[kind + ' channels']} whole channels"
             )
+    if result.unreferenced_errors:
+        lines.append(f"  unreached bytes that do not decode: {len(result.unreferenced_errors)}")
+        lines += [f"    {u}" for u in result.unreferenced_errors]
     return "\n".join(lines)
 
 

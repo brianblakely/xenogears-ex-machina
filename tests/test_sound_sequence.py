@@ -17,6 +17,7 @@ from tools.analysis.sound_sequence import (
     UNUSED_HANDLER,
     WAIT,
     SequenceError,
+    Sweep,
     check_driver_tables,
     decode_channel,
     decode_instruction,
@@ -165,6 +166,18 @@ class ScriptTests(unittest.TestCase):
         found, rejected = locate(bytes(broken))
         self.assertEqual([s.kind for _, s in found], ["smds"])
         self.assertEqual(sum(rejected.values()), 1)
+
+    def test_unreached_bytes_decode_on_their_own(self):
+        # Each effect's channel ends at its first 90; 95 90 and the final 80
+        # (a rest running into the padding) are reached by no channel.
+        script = parse_bank(bank([(bytes([0x90, 0x95, 0x90]), None), (bytes([0x90, 0x80]), None)]))
+        result = Sweep()
+        result.add("bank", script)
+        self.assertEqual((result.channels, result.instructions), (2, 2))
+        self.assertEqual(result.unreferenced["seds"], 3)
+        self.assertEqual(result.unreferenced["seds channels"], 1)
+        self.assertEqual(len(result.unreferenced_errors), 1)
+        self.assertNotIn(0x95, result.uses)
 
 
 if __name__ == "__main__":
