@@ -61,8 +61,10 @@ whose enemy files are identical:
 **Findings.**
 
 - 33 blocks have no script table (battles 0, 2 and 5-11). They hold one
-  identical 0x170-byte record image with offsets 0, 0, 0xbb, 0, and their ids'
-  combatant records are placeholders too. They are reported, not decoded.
+  identical 0x170-byte record image with offsets 0, 0, 0xbb, 0. Their ids'
+  combatant records are template images too: in battle 0 the same image,
+  elsewhere a single record that all these ids share. They are reported, not
+  decoded.
 - Battle 70, id 0, targeted script: when its last rule's condition fails
   (`ge_b b2, 0x20` at `+0xcf6`), the skip runs past `fd`/`ff` and id 1's
   table. The original then runs id 1's turn rule at `+0xd2a`.
