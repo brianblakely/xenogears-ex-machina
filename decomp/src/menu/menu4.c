@@ -8,7 +8,7 @@
 #include "gte.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
- * unit's data, each in a slot of whole words (BSS in menu.mk). */
+ * unit's data, each in a slot of whole words (decomp/Makefile). */
 static PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
 static s32 D_800926DC;
 static u16 D_800926E0; /* text texture page */

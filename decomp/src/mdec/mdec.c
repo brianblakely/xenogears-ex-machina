@@ -16,7 +16,7 @@ s32 movie_end_frame = 0;
 
 /* The player's uninitialized variables (801e8910..801e89ac) open the .bss,
  * which the file holds as zeros after the libraries' .data and ahead of the
- * libcd modules' .bss, each in a slot of whole words (BSS in mdec.mk): the u8
+ * libcd modules' .bss, each in a slot of whole words (decomp/Makefile): the u8
  * flags at 801e8958..801e8968 sit four bytes apart. */
 static MovieSectorHeader *movie_decoded_bitstream;
 static u32 *movie_frame_bitstream;

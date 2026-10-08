@@ -8,7 +8,7 @@
 #include "gte.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
- * unit's data, each in a slot of whole words (BSS in menu.mk). */
+ * unit's data, each in a slot of whole words (decomp/Makefile). */
 static s16 D_80092800; /* model texture page x (-1: none) */
 static s16 D_80092804; /* model texture page y */
 static s16 D_80092808; /* model CLUT x (-1: none) */

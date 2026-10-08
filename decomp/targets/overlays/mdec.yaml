@@ -51,7 +51,7 @@ segments:
       - [0x38b4, .data, mdec]
       - [0x38d0, data, mdec_sdk_data]
       # The file ends with the .bss (loaded), all zero, each variable in a
-      # slot of whole words (BSS in mdec.mk): the player's statics, the libcd
+      # slot of whole words (decomp/Makefile): the player's statics, the libcd
       # modules' statics, then the commons. The original linker placed the
       # player's five commons among libcd's (CDROM.OBJ declares 20), so each
       # of those is linked from its own unit under commons/ between the

@@ -1,8 +1,8 @@
 /* The menu overlay's common (uninitialized global) variables of up to eight
  * bytes. The original linker allocated them after every unit's small
  * variables, in an order of its own, at the end of the file (zero there), so
- * this unit, linked last, defines them, each in a slot of whole words (BSS in
- * menu.mk). GCC emits tentative definitions in the order of their first
+ * this unit, linked last, defines them, each in a slot of whole words
+ * (decomp/Makefile, uninitialized variables). GCC emits tentative definitions in the order of their first
  * declaration, so they are defined ahead of the headers that declare them;
  * the headers then check their types. */
 #include "common.h"

@@ -15,9 +15,6 @@ CLASSIFICATION := decomp/targets/overlays/menu.classification.txt
 # INCLUDE_ASSET/INCLUDE_ORIGINAL read original data from ORIGINAL, whose file
 # offset 0 is VRAM 0x8006FAF0.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0
-# The original assembler gave each uninitialized variable a slot of whole
-# words (decomp/Makefile, BSS).
-BSS := slots
 # The program ends at 0x80092954 (file 0x22e64) with the small uninitialized
 # variables, where the larger ones start. The original packer appended zero
 # literal tokens until its last group held eight and recorded the padded

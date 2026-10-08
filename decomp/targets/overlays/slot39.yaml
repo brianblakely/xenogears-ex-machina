@@ -56,7 +56,7 @@ segments:
       # with its own and come before every unit's uninitialized variables.
       - [0x246A4, .data, slot39]
       # The file ends with each unit's uninitialized variables (their .bss,
-      # loaded), each in a slot of whole words (BSS in slot39.mk): two bytes
+      # loaded), each in a slot of whole words (decomp/Makefile): two bytes
       # lie four apart (801EA710, 801EA714). The common variables follow every
       # unit's own.
       - [0x256D0, .bss, slot39]

@@ -6,7 +6,7 @@
 #include "menu.h"
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
- * in a slot of whole words (BSS in slot39.mk). */
+ * in a slot of whole words (decomp/Makefile). */
 static s16 D_801EA724; /* item list scroll bar */
 static s32 D_801EA728;
 static s16 D_801EA72C;

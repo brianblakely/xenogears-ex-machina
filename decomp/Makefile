@@ -63,15 +63,24 @@ maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
 LA_ABSOLUTE := -e 's/^la\t(\$$[0-9a-z]+),((\$$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
 extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\.extern/d')
 asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
-# The original assembler gave every uninitialized variable (.lcomm, and the
-# .comm that maspsx allocates in its unit) a slot of whole words: two u8
-# variables lie four bytes apart and a u8[3][2] takes eight (ovl2596
-# 801e44e0-801e4500). BSS := slots (per target; BSS_<file> per unit) rounds each
-# object of the .bss that maspsx appends up to a whole word; maspsx itself
-# packs them without alignment.
-BSS_SLOTS := awk '/^\.section[ \t]+\.bss$$/ {bss = 1} bss && $$1 == ".space" {$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4} {print}'
-bss_of = $(or $(BSS_$(basename $(notdir $(1)))),$(BSS))
-bss_filter_of = $(if $(filter slots,$(call bss_of,$(1))),| $(BSS_SLOTS))
+# Uninitialized variables: GCC emits a unit's statics as .lcomm and its
+# tentative definitions as .comm after the code, and maspsx allocates both in
+# the unit's .sbss/.bss, packed without alignment. In the original images
+# every such object takes a slot of whole words, evidenced separately for
+# ASPSX's .lcomm statics (mdec 801e8958-801e8968: five u8, stored and loaded
+# bytewise; menu3 80092678-800926a0; slot39 801ea710/801ea714; under 2.79
+# worldmap 8009bd10-8009bd1c: four u16) and for the commons PSYLINK allocated
+# after every unit's own (ovl2596 801e44e0/801e44e4; libcd's Stsector_offset
+# alone at 801e89bc), which the commons units reproduce. Under the qualified
+# ASPSX versions (2.34, 2.79) this filter rounds each object up to a whole
+# word; under any other (2.56 units define only words so far) it rejects a
+# smaller one, whose placement nothing evidences. Only the .sbss/.bss that
+# maspsx appends are touched.
+SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
+bss_filter_of = | awk -v slots=$(if $(filter $(SLOT_ASPSX),$(call maspsx_of,$(1))),1,0) \
+	'$$1 == ".section" || $$1 ~ /^\.(text|data|rdata|sdata|previous)$$/ { bss = $$1 == ".section" && $$2 ~ /^\.s?bss$$/ } \
+	bss && $$1 == ".space" && $$2 % 4 { if (!slots) { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
+	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } { print }'
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.
@@ -89,7 +98,6 @@ $(ROOT)/$(BUILD)/%.cflags: matching-flags-force
 		$(call shell_quote,MASPSX=$(MASPSX)) \
 		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
 		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
-		$(call shell_quote,BSS=$(call bss_of,$*)) \
 		$(call shell_quote,AS=$(AS)) \
 		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
 		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \

@@ -385,10 +385,17 @@ converted to C per unit. What converting the targets' `.data` established:
   ovl2143 and ovl2602 still define theirs zero-initialized in `.data` (ovl2143
   word-aligns D_801E869C with `__attribute__((aligned(4)))`).
 - GCC emits a unit's function-local statics, then its file-scope tentative
-  definitions in first-declaration order, packing adjacent narrow ones; the original
-  assembler gave each a slot of whole words (resident u8 variables at
-  8005942c-8005943c; two `u8` four bytes apart; `BSS := slots` in the target filters
-  maspsx's output). A unit's own variables come first, as statics where the commons
+  definitions in the order of their first declaration (a header's `extern` counts),
+  and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment.
+  In the original images each object takes a slot of whole words, evidenced
+  separately for ASPSX's `.lcomm` statics (mdec 801e8958-801e8968: five u8, stored
+  and loaded bytewise; menu3 80092678-800926a0; slot39 801ea710/801ea714; under ASPSX
+  2.79 worldmap 8009bd10-8009bd1c: four u16) and for the commons PSYLINK allocated
+  (ovl2596 801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc). The build
+  rounds each object up to whole words under the qualified ASPSX 2.34 and 2.79 and
+  rejects a smaller one under any other version (decomp/Makefile); no target or unit
+  setting selects it.
+- A unit's own variables come first, as statics where the commons
   follow apart, and a unit reads only its own, which fixes text boundaries (menu
   800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
   linker allocated after every unit's own in an order of its own (mdec's five player
