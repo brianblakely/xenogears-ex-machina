@@ -17,6 +17,31 @@
 #include "field_movie.h"
 #include "field_panel.h"
 
+/* Particle spawn offset per view octant. */
+u8 D_800AF474[8] = {2, 3, 4, 5, 6, 7, 0, 1};
+
+/* The picture table (field_picture.h): per picture its map, the words for
+ * 800c3914 and 800c3a18, the file (0x7fb +), the item shown while held, the
+ * position and whether the flagged pieces are added; ended by map 0xffff. */
+s32 D_800AF47C[10 * 8 + 1] = {
+    0xEF,  0xA8B, 0xA72, 3,   0x61, 0xA0, 0x70, 0,
+    0xF0,  0xA8B, 0xA72, 4,   0x61, 0xA8, 0x87, 0,
+    0xF1,  0xA8B, 0xA72, 5,   0x61, 0x98, 0x7C, 0,
+    0x2C2, 0x374, 0x342, 6,   0x62, 0x98, 0x7A, 1,
+    0x2BF, 0x3EB, 0x3E7, 8,   0x62, 0x87, 0x7B, 0,
+    0x2C3, 0x569, 0x560, 0xA, 0x62, 0xBC, 0x50, 0,
+    0x2C4, 0x425, 0x425, 9,   0x62, 0x8D, 0x92, 0,
+    0x1BD, 0xB25, 0xAE9, 0xB, 0x63, 0xF3, 0x46, 0,
+    0x1BE, 0xB25, 0xAE9, 0xB, 0x63, 0xF3, 0x46, 0,
+    0x1BF, 0xB25, 0xAE9, 0xB, 0x63, 0x51, 0x6D, 0,
+    0xFFFF,
+};
+
+/* The pieces of file 0x802's 320-wide image. */
+RECT D_800AF5C0[5] = {
+    {0x98, 0x46, 0x20, 0x20}, {0xA8, 0x8C, 0x2C, 0x2C}, {0x78, 0x48, 0x18, 0x1C},
+    {0x70, 0x5C, 0x24, 0x20}, {0xBC, 0x32, 0x2C, 0x2C},
+};
 
 extern s16 D_800B0108[64]; /* effect slot owners, -1 free */
 extern u8 D_800B14B0[64];  /* effect slot states */
@@ -499,7 +524,6 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     }
 }
 
-extern u8 D_800AF474[8]; /* spawn offset per view octant */
 
 /* Spawn `particle` of `emitter`: its delay after the previous spawn, a
  * random start within the spawn radius around the emitter (offset by the
@@ -859,7 +883,6 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
-extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
 
 #ifdef NON_MATCHING
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is
