@@ -19,6 +19,20 @@
 #include "console.h"
 #include "sound.h"
 
+/* Sound programs requested for each battle mode; 0xff absent. */
+u8 D_8004F388[6][3] = {
+    {1, 2, 0xFF}, {3, 4, 0xFF}, {5, 6, 7}, {8, 9, 10}, {1, 2, 0xFF}, {1, 2, 0xFF},
+};
+
+/* Menu screen names, in 256-byte buffers. */
+char D_8004F39C[7][0x100] = {
+    "Normal Menu", "Member Change", "Load Game", "Enter Name", "Shop", "Robo", "CD Change",
+};
+char *D_8004FA9C[7] = {
+    D_8004F39C[0], D_8004F39C[1], D_8004F39C[2], D_8004F39C[3],
+    D_8004F39C[4], D_8004F39C[5], D_8004F39C[6],
+};
+
 extern DISPENV D_800C4A7C;
 /* Stripped debug hooks share this no-op entry. Their old argument lists
  * and forwarded return register remain part of the calling sequence. */
@@ -139,7 +153,6 @@ SoundBank *D_800595D0;
 void *D_800595A8;
 extern FileRequest D_8006F9BC[4];
 u8 D_8005954C;
-extern u8 D_8004F388[][3]; /* sound programs for each battle mode; 0xff absent */
 void func_80038428(SoundBank *bank);
 void func_80039DB8(s32 program);
 

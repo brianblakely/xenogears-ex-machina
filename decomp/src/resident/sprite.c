@@ -22,14 +22,37 @@
 #include "console.h"
 #include "sound.h"
 
-/* The unit's own small globals ($gp-relative; the assembler knows them as
- * this unit's small commons). */
-u32 D_80059184;
-s32 D_80059188;
-s32 D_8005918C;
-Sprite *D_80059190;
-s16 D_80059194; /* texture area row (0-2) of the next image */
-s16 D_80059196; /* texture area column of the next image */
+TexturePosition D_8004FAB8[8] = {
+    {0x300, 0}, {0x340, 0}, {0x380, 0}, {0x3C0, 0},
+    {0x300, 0x100}, {0x340, 0x100}, {0x380, 0x100}, {0x3C0, 0x100},
+};
+SVECTOR D_8004FAD8[4] = {0};
+/* Single-bit masks: halfwords (the facing group masks) and words. */
+u16 D_8004FAF8[16] = {
+    0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+};
+u32 D_8004FB18[32] = {
+    0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+    0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
+    0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000,
+};
+SVECTOR D_8004FB98[4] = {0};
+/* The sprite camera: identity rotation, no translation. */
+MATRIX D_8004FBB8 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+/* The packed image 8001fab4 uploads: its unpacked size (664 bytes) and the
+ * LZSS stream 80032e88 decodes. */
+extern u8 D_8004FBD8[];
+INCLUDE_ASSET(".data", D_8004FBD8, 0x8004FBD8, 0xE8);
+
+/* The unit's own small data and small commons, $gp-relative. */
+u32 D_80059184 = 0;
+s32 D_80059188 = 0;
+s32 D_8005918C = 0;
+Sprite *D_80059190 = NULL;
+s16 D_80059194 = 0; /* texture area row (0-2) of the next image */
+s16 D_80059196 = 0; /* texture area column of the next image */
 s32 *D_800592E4;              /* image list for 8001fb30 */
 s16 D_800592E8;               /* its position */
 s16 D_800592EA;

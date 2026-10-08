@@ -11,6 +11,9 @@
 #include "sprite.h"
 #include "gte.h"
 
+/* Corners of a sheet part being drawn (z 0x1000 until drawn). */
+SVECTOR D_8004FDC0[4] = {{0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}};
+
 /* Scale `count` 15-bit pixels from `src` into `dst` by `scale` / 32 with
  * the GTE (through the scratchpad), clamping each component and keeping
  * the transparency bit. */

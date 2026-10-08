@@ -340,10 +340,10 @@ extern BattleAiFlags D_800C3D0C;
 
 /* Per-enemy AI state (0x800D3400, 0x40 bytes per enemy). */
 typedef struct {
-    u8 *main;       /* script entry points in the enemy data file */
-    u8 *sub;
-    u8 *script;
-    u8 *reaction;
+    u8 *main;       /* script entry points in the enemy data file: the turn */
+    u8 *sub;        /* script (battle 800799c8), one no code runs, the */
+    u8 *script;     /* reaction script (80079ab0) and the script run after */
+    u8 *reaction;   /* a party turn targeting the enemy (80079c24) */
     s32 vars[4];    /* 0x10 */
     s16 hvars[8];   /* 0x20 */
     u8 bvars[16];   /* 0x30 */

@@ -109,8 +109,15 @@ def data_coverage(
             unit = Path(obj.split("/decomp/src/", 1)[1]).with_suffix("")
             authored = root / "decomp/src" / unit
             inside = sum(max(0, min(e, end) - max(s, start)) for s, e in included)
+            # INCLUDE_ASSET bytes inside an authored unit count under their class.
+            classified = 0
+            for s, e, cls, _note in ranges:
+                overlap = max(0, min(e, end) - max(s, start))
+                if overlap:
+                    add(cls, overlap)
+                    classified += overlap
             kind = "c" if authored.with_suffix(".c").exists() else "handwritten"
-            add(kind, size - inside)
+            add(kind, size - inside - classified)
             add("included", inside)
             continue
         cursor = start

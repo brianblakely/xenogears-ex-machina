@@ -8,9 +8,10 @@ ORIGINAL_SHA256 := dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7
 BUILD := .local/decomp/build/resident
 IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld
-LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/resident/undefined_funcs_auto.txt
-# The header declares t_size 0x49800: the file is padded with zeros from the
-# end of .data (0x800592bc) to the next 2048-byte boundary (file 0x4a000).
+LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/resident/undefined_funcs_auto.txt decomp/targets/resident/link.ld
+# The header (decomp/src/resident/header.c) declares t_size 0x49800 from the
+# link (link.ld): the file is padded with zeros from the end of the small
+# data (0x800592bc) to the next 2048-byte boundary (file 0x4a000).
 OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
@@ -73,3 +74,6 @@ EXTERN_main_8001B6C4 := absolute
 # The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
 # is compiled by GCC 2.6.3.
 CC_main_8002A260 := 2.6.3
+# Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
+# whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800

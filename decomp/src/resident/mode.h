@@ -100,7 +100,7 @@ extern struct SoundSequence *D_80059560; /* resident wave banks */
 extern struct SoundSequence *D_800595AC;
 extern s32 D_80010000;
 extern u8 D_8004EABC[];      /* compressed boot logo image */
-extern char *D_8004F0C0[];   /* error messages by number */
+extern char *D_8004F2C0[];   /* messages of the fatal errors 0x80-0x85 */
 extern s32 D_8004F2BC;       /* fatal error count */
 extern u8 D_80010004[];
 extern u16 D_80018004[];

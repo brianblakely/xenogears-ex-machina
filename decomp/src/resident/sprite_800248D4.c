@@ -25,6 +25,24 @@
 #include "console.h"
 #include "sound.h"
 
+void func_80025258(Task *task);
+void func_8002541C(Task *task);
+void func_80025544(Task *task);
+void func_80025710(Task *task);
+void func_80025718(Task *task);
+void func_800257F0(Task *task);
+
+/* Task update callbacks by kind (80025224). */
+void (*D_8004FD40[16])(Task *) = {
+    func_80025258, func_80025710, func_80025718, NULL,
+    NULL,          func_80025258, func_80025258, func_80025718,
+    func_8002541C, func_80025544, NULL,          NULL,
+    NULL,          NULL,          func_80025258, func_800257F0,
+};
+/* Light colour and direction matrices of lit sprite models. */
+MATRIX D_8004FD80 = {{{0xC00, 0, 0}, {0xC00, 0, 0}, {0xC00, 0, 0}}, {0, 0, 0}};
+MATRIX D_8004FDA0 = {{{0x1000, 0x1000, 0x1000}, {0, 0, 0}, {0, 0, 0}}, {0, 0, 0}};
+
 /* The unit's own small globals ($gp-relative; the assembler knows them as
  * this unit's small commons). */
 s32 D_800592F8;               /* the queue being filled (0 or 1) */
@@ -246,7 +264,7 @@ next:
     /* a7 u8: bit 7 pauses the main task list (80059428) for (u8 & 7f) + 1 frames and waits a
      * frame; else wait u8 + 2 frames (scaled, at least 1). */
     case 0xA7:
-        sprite->script += D_8004FC40[op];
+        sprite->script += D_8004FCC0[op - 0x80];
         if (args[0] & 0x80) {
             D_80059428 = (args[0] & 0x7F) + 1;
             sprite->countdown++;
@@ -268,7 +286,7 @@ next:
         func_8001FBE4(sprite, op, args);
         break;
     }
-    sprite->script += D_8004FC40[op];
+    sprite->script += D_8004FCC0[op - 0x80];
     goto next;
 }
 
@@ -519,7 +537,7 @@ void func_80025544(Task *task) {
     }
 }
 
-void func_80025710(void) {
+void func_80025710(Task *task) {
 }
 
 /* Sprite task draw: rebuild the orientation if needed and, with a renderer

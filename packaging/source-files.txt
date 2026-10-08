@@ -112,6 +112,7 @@ decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
 decomp/include/psyq/inline_c.h
+decomp/include/psyq/kernel.h
 decomp/include/psyq/libapi.h
 decomp/include/psyq/libc.h
 decomp/include/psyq/libcd.h
@@ -338,6 +339,7 @@ decomp/src/resident/func_8003F8B0.s
 decomp/src/resident/func_8003F8CC.s
 decomp/src/resident/gpu.h
 decomp/src/resident/gte.h
+decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
@@ -369,8 +371,6 @@ decomp/src/resident/text.h
 decomp/src/resident/window.h
 decomp/src/slot39/menu.h
 decomp/src/slot39/slot39.c
-decomp/src/slot39/slot39_801C93A8.c
-decomp/src/slot39/slot39_801C9BCC.c
 decomp/src/slot39/slot39_801DBE54.c
 decomp/src/slot39/slot39_801E8070.c
 decomp/src/slot39/slot39_common.c
@@ -475,6 +475,7 @@ decomp/targets/overlays/worldmap.mk
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
 decomp/targets/resident/classification.txt
+decomp/targets/resident/link.ld
 decomp/targets/resident/slus_006.64.mk
 decomp/targets/resident/slus_006.64.yaml
 decomp/targets/resident/slus_006.69.mk
@@ -504,6 +505,9 @@ docs/phase1-progress.md
 docs/platforms.json
 docs/recovery-inventory.md
 docs/reverse-engineering.md
+docs/scripts/arena-scene.md
+docs/scripts/battle-ai.md
+docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
@@ -696,6 +700,7 @@ tests/test_audio_modes.py
 tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
+tests/test_battle_ai.py
 tests/test_battle_continuation.py
 tests/test_battle_loader.cpp
 tests/test_battle_request.py
@@ -752,6 +757,7 @@ tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
+tests/test_overlay_scripts.py
 tests/test_packed_container.py
 tests/test_packed_field.cpp
 tests/test_planar_motion.py
@@ -788,6 +794,7 @@ tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
 tools/analysis/audio_modes.py
+tools/analysis/battle_ai.py
 tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
@@ -810,6 +817,7 @@ tools/analysis/movement_sweep.py
 tools/analysis/movie_chain.py
 tools/analysis/music_loading.py
 tools/analysis/original_trace.py
+tools/analysis/overlay_scripts.py
 tools/analysis/packed.py
 tools/analysis/party_sprites.py
 tools/analysis/planar_motion.py

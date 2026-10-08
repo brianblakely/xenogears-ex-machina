@@ -462,8 +462,8 @@ class MatchingTests(unittest.TestCase):
         ranges = [(0x80010070, 0x80010078, "sdk", ""), (0x80010090, 0x800100a0, "asset", "")]
         totals = data_coverage(sections, [(0x80010004, 0x80010010)], ranges, self.root)
         self.assertEqual(totals, {
-            "c": 0x20 - 12 + 8 + 8, "included": 12,
-            "placeholder": 0x30 - 8 - 8, "sdk": 8, "asset": 8,
+            "c": 0x20 - 12 + 8 + 8 - 8, "included": 12,
+            "placeholder": 0x30 - 8 - 8, "sdk": 8, "asset": 8 + 8,
         })
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")

@@ -37,7 +37,9 @@ positive `li` to `ori` as the original does (resident, movie library). Qualifica
 8-byte frame and reschedules the stores. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
-`GP_<file> := 8` in the target fragment.
+`GP_<file> := 8` in the target fragment. ASPSX loads and stores small data through
+`$gp` but forms every address (`la`) with `lui`/`addiu`, also of the unit's own
+small string constants (resident heap report), so such units expand `la` before GNU as.
 
 Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
 assembler honoured it relative to the unit's own rodata section, and the
@@ -77,14 +79,7 @@ units' previously matching C still matches. ASPSX 2.56-2.86 give identical
 bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
-A fourth compiler, GCC 2.6.0 (`psx-cc1-2.6.0`, old-gcc 0.17 `gcc-2.6.0-psx`),
-builds slot39's card-refresh unit (`slot39_801C93A8.c`) at `-O2
--fno-rerun-cse-after-loop`, set with `CC_<file> := 2.6.0` and
-`CC1FLAGS_<file>`. Its function keeps a register copy of its zeroed result
-(`move s6,s4`); of 2.5.7-2.95.2 under single-flag variants only that setting
-reproduces all 521 words, and the functions on both sides break under it, so
-the unit is a file of its own. 2.6.0 and 2.6.3 otherwise agree on 205 of
-slot39's 210 functions; the other four need 2.6.3.
+`CC1FLAGS_<file>` adds unit-specific cc1 options; no unit needs one yet.
 
 Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
@@ -112,8 +107,31 @@ image's second copy) are reproduced from the rebuilt images by
 `tools/packed_container.py` (`make -C decomp all-container`). The packer is
 Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
 complete eight-token group; the same rule reproduces a 25-file sample of other
-packed disc files. This is a separate claim from image matching; whole-disc
-filesystem/ECC reproduction is not attempted.
+packed disc files. The zero literals that complete the last group count in the
+decoded length, so a decoded image can end a few bytes past its last object
+(worldmap 2, field 6, movie 7 bytes): those bytes belong to no object and stay
+out of C (objcopy padding or a generated tail). This is a separate claim from
+image matching; whole-disc filesystem/ECC reproduction is not attempted.
+
+## Script instructions
+
+Used script instructions are recovered from the matching interpreter, one machine
+at a time. Read each opcode's size and flow from its handler (the returned step or
+pointer advance of a dispatch-table entry or switch case), never from the data,
+and keep the table in a `tools/analysis/` module whose entries name their
+handlers, with synthetic tests that check it against the C (table order,
+returns, case advances). Find scripts from the code that starts them (stores to
+the script pointer, their pointer tables) and decode each disc's own files: a
+`--sweep` prints per-opcode counts and every unknown opcode with its location,
+and reports script-shaped data that nothing starts separately. Listings stay in
+`.local/`; `docs/scripts/<vm>.md` summarises each machine. Address disc files as
+the resident does: directory (g, i) file f is index slot f + table[g + i] - 2,
+from the u16 directory table at sector 40 (`80028230`). Comment every handler
+with its operands and effect as read from the callee, not from the call's shape
+(world map opcode 10 slides an effect's volume rather than playing it). A match
+proves a switch's case labels, not its comments: check handler comments against
+the jump table (battle AI 70-74 were labelled 6e-72, because 6e and 6f share the
+default).
 
 ## Original-environment smoke check
 
@@ -132,6 +150,16 @@ python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 
   .local/decomp/build/field.bin@8006faf0:8006fdec-800ada68
 ```
 
+`--targets` compares every built target's linked code range with a capture and
+lists those resident in it. Across the ten retained routes (forest/encounter/
+menu on both discs, the two painting-room smokes, the movie and Mono/Stereo/Wide
+routes) the resident images, field, slot39 and the ovl3384 battle module are
+loaded exactly as rebuilt, apart from the guard and SDK variables above.
+
+```sh
+python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --targets
+```
+
 ## Converting a function
 
 Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
@@ -143,6 +171,11 @@ it (splat migrated them into the function's assembly). Shared structures go in
 small headers beside the source. A function that is understood but does not yet
 match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
 INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
+
+A new file (a split or data-only unit, an overlay-number unit, a `.data.ld` alias
+script, authored `.s`) also goes into packaging/source-files.txt, which lists every
+tracked file. `source_archive.py --check` validates only the listed paths, so
+compare the list with `git ls-files` after adding one.
 
 Register allocation and scheduling differences can be searched with the pinned
 decomp-permuter: `python3 tools/permuter_import.py <config.mk> <func>` prepares
@@ -175,6 +208,8 @@ the audit; they are never counted as matches. This diagnostic does not replace
 - An unused aggregate local (`RECT unused; /* unused in the original; reserves 8
   bytes */`) may reproduce a frame slot that the original code never reads or writes.
   GCC 2.x allocates unused aggregates; leftover locals are ordinary shipped code.
+  GCC also leaves never-accessed slots itself (field 8007E1C0: combine's `(use (reg))`
+  of a folded sign-extension temporary), so rule that out first.
 - Named `do { ... } while (0)` statement macros may wrap real statement groups (the
   original used them; they add a loop note that changes scheduling, allocation weight
   and block placement). An empty one is allowed only as a named, commented,
@@ -183,17 +218,35 @@ the audit; they are never counted as matches. This diagnostic does not replace
   scheduling or allocation are rejected even when they match (battle 80087EDC was
   withdrawn for this). No new inline asm, register pinning or `.word`; the existing
   GTE, `break` and scratchpad-stack macros are original style.
-- Strings whose alignment padding holds stray assembler bytes stay original data:
-  mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
-  function and reference it as `extern char[]`.
+- Strings and data objects whose alignment padding holds stray assembler bytes stay
+  original data: mark a string `force_not_migration:True`, link it with INCLUDE_RODATA
+  beside the function and reference it as `extern char[]`; leave a data object in the
+  target's generated data (ovl2615 D_801E9638, ovl2596 D_801E44C0, battle D_800C204C).
+- A routine is classified handwritten (reviewed `.s` beside the C) only on code GCC
+  does not emit: trapping `add`/`addi`/`sub`/`neg`, saves below `$sp` or beyond the
+  frame, `ori` for a small positive constant where the unit's ASPSX emits `addiu`,
+  `bne $zero, rt` operand order, dead delay-slot copies, or a register choice that a
+  probe compile of the plain C does not make (resident 8003F8B0). Raw cop2 moves,
+  absolute jumps and a missing frame are not evidence: PsyQ's GTE macros compile to
+  them (worldmap 800987AC was plain C). In authored `.s` the GTE command macros emit
+  `.word`, so GAS cannot fold label differences across them; a code patcher addresses
+  its targets by literal offsets (resident 80030988).
+- Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)
+  stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in place
+  from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in the
+  .mk), and an `asset` line in the classification names the format and its reader.
+  Never commit their bytes as C initializers; numeric program tables (sine, pitch,
+  note encodings, opcode lengths) are source.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per unit; compiling every remaining draft under
   single-flag variants (`-fno-schedule-insns[2]`, `-fno-strength-reduce`, CSE and loop
   options, `-O1`) produced no match, so do not change an existing unit's flags to fix
-  one function. A function that matches only under a compiler or flag its neighbours
-  do not survive is its own unit: split the file there after checking that rodata order
-  and jump-table phase allow the boundary (the slot39 card refresh).
+  one function. A match under another compiler or flag that the neighbours do not
+  survive is a hint, not proof of a unit boundary: slot39 801c93a8 matched both as its
+  own GCC 2.6.0 `-fno-rerun-cse-after-loop` unit and, more simply, under the unit's 2.6.3
+  with a zero that only combine can see (below); prefer the explanation that needs no
+  new toolchain or split.
 
 ## Matching levers (GCC 2.6.3/2.7.2)
 
@@ -204,7 +257,12 @@ Most matches came from data shape, not statement shuffling:
   from a separate symbol or offset 0. Index flat tables exactly as the original does
   (`tbl[i*2+1]`), use bit-field views where it inserts/extracts bits, the operands'
   real signedness, and PsyQ macros (`setXYWH`, `setRECT`, `setUVWH`) instead of
-  hand-written corner arithmetic.
+  hand-written corner arithmetic. Conversely, words the original schedules as
+  separate symbols are separate scalars (heap reset 80031A68: as members of one
+  struct, its symbol-range clears could not move ahead of the block-header stores).
+- Parameter types place copies: a `u16` parameter's conversion lands after the
+  stack-argument load, while an `int` parameter narrowed at each use keeps the
+  original order (glyph outline expander 80034FFC).
 - sched1 places a pseudo set exactly once (a "register birth") next to its use; a
   variable assigned twice (`p = base; p += off;`) keeps an earlier load early.
 - Global allocation ranks pseudos by references (weighted by loop depth) over live
@@ -218,9 +276,14 @@ Most matches came from data shape, not statement shuffling:
   (threshold 52, 26 with calls, minus 3 per moved insn on 2.6.3; inner-loop invariants
   double the outer loop's count). A larger original body (per-branch statements,
   statement macros) keeps invariants in the loop; identical address computations
-  pair into reduced pointers where distinct ones stay indexed.
+  pair into reduced pointers where distinct ones stay indexed. Identical constants
+  across an interpreter loop's cases are hoisted as one group (then spilled); where
+  the original loads 0xff at each use, one case's marker in a block-scope variable
+  stops the hoist (ovl2143 801E39F0).
 - jump.c copies loop exit blocks shorter than about 22-26 insns to the loop entry and
-  cross-jumps identical tails; keep tails distinct where the original does.
+  cross-jumps identical tails; keep tails distinct where the original does. A table's
+  first element loaded apart before a loop is usually that copied exit test: write
+  the plain loop over the defined table, not a second symbol (worldmap 80072238).
 - Script interpreters read a signed 16-bit word: bytes taken as `word >> 8` into a
   `u8` get `andi 0xff` at every later use because combine cannot prove the upper bits.
 - Store order of independent statements is free to search (semantics unchanged).
@@ -235,16 +298,22 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 
 - cse replaces a register source by a known constant whenever it can (a MIPS
   CONST_INT costs 0, a pseudo 1), so a surviving `move` of a register that was just
-  zeroed means both cse passes lost the value. A cse block ends at a referenced label;
+  zeroed means both cse passes lost the value: the zero came from an expression only
+  combine reduces, such as a byte shifted right by 8 (slot39 801c93a8). A cse block ends at a referenced label;
   the first pass also ends at a loop-end note (any `do { } while (0)`), the second
   (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label whose
   remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over an
   `if` without inner labels, so a dead `if` hides nothing.
+- When `x = y;` copies a register and both live on, cse makes the one that outlives the
+  block and the other the canonical name (`make_regs_eqv`); a test of `y` right after the
+  copy is rewritten to `x`, `y` dies there, and allocation merges them. A later use of `y`
+  (reusing the variable after a loop, sound driver 80039144) keeps both registers and the
+  copy, as do a hard-register variable for `x` (never made canonical) or a dead store,
+  which the rules above reject.
 - A dead loop that flow deletes leaves its exit label until the jump pass after reload:
   it still splits the scheduling blocks, and an assignment before it can be hoisted
   into the prologue.
-- In 2.6.3 the insn after a loop note is a scheduling barrier; 2.6.0 lets later loads'
-  delay slots take the insn before the note.
+- In 2.6.3 the insn after a loop note is a scheduling barrier (2.6.0's is not).
 - reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
   was compiler-generated, not inline asm.
 - Splitting a file into units drops the prototypes that earlier definitions supplied:
@@ -253,6 +322,60 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 - When a draft resists every source shape, compile it and its variants under the other
   old-gcc releases (2.5.7-2.95.2, `-psx` and plain) and single-flag variants before more
   shuffling; compare whole units, not one function, before adopting a setting.
+- To learn whether only allocation remains, bind the disputed variables to the
+  original's registers (`register s32 v asm("$14")`) in a scratch build that is never
+  committed. World-map 80086798 then matched exactly: its four projected corners
+  (48 loop-weighted refs over ~195 insns) outrank the variables the original
+  allocated before them, which a pseudo follows only if it lives as long as they do.
+
+## Recovering data
+
+Data placeholders (`remaining_data_placeholder_bytes` in the coverage report) are
+converted to C per unit. What converting the targets' `.data` established:
+
+- A unit emits each section in definition order and the original linker joined them
+  in unit order, so a block belongs to the unit whose section holds it, not to the
+  units that read it (slot39.c holds tables only its later units use; battle
+  80070E2C's `.data` opens with tables several units share). Define blocks in
+  address order. Each unit has one `.data`: when an object stays original data, the
+  neighbours one C section can no longer cover stay generated with it. Data order is
+  also unit-boundary evidence: each world map scene unit's data opens with that of
+  mode handlers the text split still leaves in the preceding unit (8007DE98).
+- The mode overlays' leading number is the first unit's `.rodata` (field.c,
+  worldmap.c, menu.c), or a unit of its own where that unit's rodata starts at 4 mod 8
+  right after it (battle_prefix.c, movie_number.c).
+- Unreferenced objects are shipped data: define them at their offsets (movie's unread
+  words, ovl3381's unused copy of the cell triangles). Two units whose data opens with
+  the same table include it as a `static` from a shared header (field_music.h).
+- splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
+  entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
+  Define the real object and index it as the code does (`D_8009A68C[index - 4]`,
+  `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
+  remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
+  `undefined_syms_auto.txt` covers only unaligned ones).
+- GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
+  heap tag names).
+- Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
+  ovl2601, ovl2602, ovl2615). ovl2615 keeps its units' uninitialized definitions
+  and loads `.bss` (splat `ld_bss_is_noload: False`, one `.bss` subsegment per
+  unit); the others define the variables zero-initialized, which GCC 2.x places in
+  `.data`: in place where no later unit has initialized data (slot39), else in a
+  data-only unit at that address (mdec_bss.c). Commons follow every unit (mdec's
+  five player commons among the 20 of libcd's CDROM.OBJ) and go in data-only units
+  (slot39_common.c, mdec/commons/).
+- The original toolchain gave each `.bss` object and common its own 4-byte slot
+  (resident u8 variables at 8005942c-8005943c); GCC packs adjacent narrow definitions.
+  mdec_bss.c and ovl2143 word-align them with `__attribute__((aligned(4)))`; ovl2596,
+  ovl2601, slot39 and menu_bss keep such ranges generated.
+- The resident clears each mode overlay's `.bss` from the address its mode table
+  records with a pre-increment loop, so the first object sits 4 bytes later (movie:
+  80076f38, counters at 80076f3c; field's RECT ring).
+- Embedded game data stays generated and is classified `asset` with its format
+  (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
+  reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
+  function, so coverage counted libpress/libcd messages as C until they became a
+  generated rodata segment classified `sdk`. Name data only by what its readers show
+  (the libcd commons).
 
 ## Recover incrementally
 
@@ -276,7 +399,10 @@ section to compiled C, original bytes INCLUDE_RODATA'd beside C (`included`),
 authored assembly, a classified `sdk`/`asset` range, or a generated
 `placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
 game data or bytecode that is parsed and documented rather than rewritten as source.
-`remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
+GCC emits a static initializer's string literals last to first once the initializer
+ends, so a pointer table whose strings lie in reverse address order was written with
+its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
+go to `.sdata`. `remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
 assembly and reviewed nonmatching C candidates; SDK and handwritten assembly stay
 separate. Instructions are four-byte words within ELF function ranges, including
 nops and delay slots, excluding data sections and padding outside those ranges.

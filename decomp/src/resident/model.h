@@ -164,8 +164,8 @@ typedef struct {
  * by average (4) or farthest depth (5); a type without a variant lists
  * its mode 0 routine. */
 typedef struct {
-    void (*draw[6])(u8 *records, s32 count);
-    s32 (*prepare)(u8 *aux, u8 *record, s16 kind); /* one record's packets */
+    void (*draw[6])(); /* (u8 *records, s32 count): the handwritten renderers */
+    s32 (*prepare)();  /* (aux, record, kind): one record's packets */
     s32 stride;         /* record */
     s32 aux_stride;     /* auxiliary data per record */
     s32 packet_size;

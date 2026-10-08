@@ -433,7 +433,7 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code);
 
 extern SpriteQueueEntry *D_80059580; /* the next free queue entry */
 extern u8 *D_80059534;                /* its end */
-extern u16 D_8004FAF8[8];  /* group masks tested against render byte 1 */
+extern u16 D_8004FAF8[16]; /* bit masks; the facing groups test render byte 1 */
 extern SVECTOR D_8004FB98[4]; /* the corners of the quad being drawn */
 extern SVECTOR D_8004FAD8[4]; /* the corners of the shadow quad being drawn */
 
@@ -452,7 +452,7 @@ typedef struct {
     unsigned flag18 : 1;     /* inherited by child sprites (80023b84) */
     unsigned unknown19 : 13;
 } SpriteFlagBits;
-extern u8 D_8004FC40[]; /* frame command lengths */
+extern u8 D_8004FCC0[0x80]; /* lengths of the frame commands 0x80-0xff */
 void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
 void func_80022D44(Sprite *sprite);
 s32 func_80023440(u16 *entry);

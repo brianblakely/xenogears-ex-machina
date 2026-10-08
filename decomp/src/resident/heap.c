@@ -8,24 +8,22 @@
 #include "heap.h"
 #include "mode.h"
 
-extern char *D_80050110[]; /* owner-tag names */
-extern char *D_80050140[]; /* built-in allocation-class names */
-extern char D_80059248[]; /* "%06x " */
-extern char D_80059250[]; /* "%6x " */
-extern char D_80059258[]; /* "%s " */
-extern char D_8005925C[]; /* "%s" */
-extern char D_80059260[]; /* " / " */
-extern char D_80059264[]; /* newline */
-extern char D_80059268[]; /* "No- " */
-extern char D_80059270[]; /* "MCB--- " */
-extern char D_80059278[]; /* "ADDR-- " */
-extern char D_80059280[]; /* "SIZE-- " */
-extern char D_80059288[]; /* "USER " */
-extern char D_80059290[]; /* "GETADD " */
-extern char D_80059298[]; /* "%3d " */
-extern char D_800592A0[]; /* "--- " */
-extern char D_800592A8[]; /* "------ " */
-extern char D_800592B0[]; /* "---- " */
+/* Nothing reads this pointer; its string opens the unit's small data. */
+char *D_800591C8 = " ";
+
+/* Owner tag names, by tag. Strings of up to 8 bytes are small data here: GCC
+ * emits a static initializer's strings last to first, into .sdata or .rodata. */
+char *D_80050110[] = {
+    "....", "END ", "HIG ", "KAZM", "MASA", "MIYA", "SUGI", "SUZU", "YOSI", "SIMA", "????", "TEST",
+};
+
+/* Names of the built-in allocation classes (kind & 0x1f with kind bit 0x20). */
+char *D_80050140[] = {
+    "",           "FREE AREA",   "fake malloc", "fake calloc", "MDL Data",
+    "MDL Packet", "MDL Light",   "CD CHACE",    "MES IMAGE",   "MES WORK",
+    "MES CUE",    "MIMe Work",   "MIMe Vertex", "MIMe Normal", "SYMBOL DATA",
+    "SOUND",      "MES FONT",    "MES SYSDATA", "LsFONT",      "DelayFree",
+};
 
 /* Usable size of a block: the distance to the next block's header. */
 s32 func_80031894(u8 *data) {
@@ -488,25 +486,25 @@ void func_80032584(HeapHeader *header, u8 *data, s32 size, s32 flags) {
     char *contents;
 
     if (flags & 2) {
-        func_80032BDC(D_80059248, (void *)((u32)header & 0xFFFFFF));
+        func_80032BDC("%06x ", (void *)((u32)header & 0xFFFFFF));
     }
     if (flags & 4) {
-        func_80032BDC(D_80059248, (void *)((u32)data & 0xFFFFFF));
+        func_80032BDC("%06x ", (void *)((u32)data & 0xFFFFFF));
     }
     if (flags & 8) {
-        func_80032BDC(D_80059250, (void *)size);
+        func_80032BDC("%6x ", (void *)size);
     }
     if (flags & 0x10) {
-        func_80032BDC(D_80059258, D_80050110[header->tag]);
+        func_80032BDC("%s ", D_80050110[header->tag]);
     }
     if (flags & 0x20) {
-        func_80032BDC(D_80059248, (void *)(header->caller * 4));
+        func_80032BDC("%06x ", (void *)(header->caller * 4));
     }
     if ((flags & 0x40) && header->tag != 0) {
         func_800324C4(header->caller * 4 + 0x80000000U, name);
-        func_80032BDC(D_8005925C, name);
+        func_80032BDC("%s", name);
         if ((flags & 0x80) && (header->kind & 0x1F)) {
-            func_80032BDC(D_80059260);
+            func_80032BDC(" / ");
         }
     }
     if ((flags & 0x80) && (header->kind & 0x1F)) {
@@ -515,12 +513,10 @@ void func_80032584(HeapHeader *header, u8 *data, s32 size, s32 flags) {
         } else {
             contents = ((char **)D_80059FA4[header->tag])[header->kind];
         }
-        func_80032BDC(D_8005925C, contents);
+        func_80032BDC("%s", contents);
     }
-    func_80032BDC(D_80059264);
+    func_80032BDC("\n");
 }
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
 
 /* Report the heap, coalescing free blocks for nonzero modes. Mode 2 groups
  * equal owner tags/allocation classes (ignoring keep/caller); mode 3 groups
@@ -548,22 +544,22 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
         flags &= ~0x40;
     }
     if (flags & 1) {
-        func_80032BDC(D_80059268);
+        func_80032BDC("No- ");
     }
     if (flags & 2) {
-        func_80032BDC(D_80059270);
+        func_80032BDC("MCB--- ");
     }
     if (flags & 4) {
-        func_80032BDC(D_80059278);
+        func_80032BDC("ADDR-- ");
     }
     if (flags & 8) {
-        func_80032BDC(D_80059280);
+        func_80032BDC("SIZE-- ");
     }
     if (flags & 0x10) {
-        func_80032BDC(D_80059288);
+        func_80032BDC("USER ");
     }
     if (flags & 0x20) {
-        func_80032BDC(D_80059290);
+        func_80032BDC("GETADD ");
     }
     if (flags & 0x40) {
         func_80032BDC("FUNCTION/");
@@ -571,7 +567,7 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
     if (flags & 0x80) {
         func_80032BDC("CONTENTS");
     }
-    func_80032BDC(D_80059264);
+    func_80032BDC("\n");
     header = HEAP_HEADER(D_80059320);
     data = D_80059320;
     size = 0;
@@ -592,7 +588,7 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
             skip--;
         } else {
             if (flags & 1) {
-                func_80032BDC(D_80059298, (void *)number);
+                func_80032BDC("%3d ", (void *)number);
             }
             func_80032584(header, data, size, flags);
             count--;
@@ -606,24 +602,24 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
         data = (u8 *)(header + 1);
     }
     if (flags & 1) {
-        func_80032BDC(D_800592A0);
+        func_80032BDC("--- ");
     }
     if (flags & 2) {
-        func_80032BDC(D_800592A8);
+        func_80032BDC("------ ");
     }
     if (flags & 4) {
-        func_80032BDC(D_800592A8);
+        func_80032BDC("------ ");
     }
     if (flags & 8) {
-        func_80032BDC(D_800592A8);
+        func_80032BDC("------ ");
     }
     if (flags & 0x10) {
-        func_80032BDC(D_800592B0);
+        func_80032BDC("---- ");
     }
     if (flags & 0x8000) {
         func_80032BDC("\nFree %6x", (void *)func_80032340());
     }
-    func_80032BDC(D_80059264);
+    func_80032BDC("\n");
 }
 
 /* Allocate a protected block owned by tag 7 (class 0x2F), from the top. */
@@ -656,6 +652,10 @@ void func_80032BAC(void *data) {
     func_800320B8(data);
     func_800320E8(data);
 }
+
+/* The heap report output: the console printf until 80032e04 sends a report
+ * to a host file. */
+void (*D_800592B8)(char *line) = (void (*)(char *))func_8003700C;
 
 /* Format a heap report line and pass it to the report output. */
 void func_80032BDC(char *format, void *args) {

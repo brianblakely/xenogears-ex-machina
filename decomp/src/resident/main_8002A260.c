@@ -19,6 +19,41 @@
 #include "console.h"
 #include "sound.h"
 
+/* Disc access and stream state (cd.h, stream.h); the texture-scroll and disc
+ * unit before this one shares it. */
+s32 D_8004FDE0 = 0x10;
+s32 D_8004FDE4 = 0;
+s32 D_8004FDE8 = 0;
+s32 D_8004FDEC = 0;
+u8 *D_8004FDF0 = NULL;
+u16 *D_8004FDF4 = NULL;
+s32 D_8004FDF8 = 0;
+s32 D_8004FDFC = 0;
+s32 D_8004FE00 = 0;
+s32 D_8004FE04 = 0;
+void *D_8004FE08 = NULL;
+FileRequest *D_8004FE0C = NULL;
+s32 D_8004FE10 = 0;
+s32 D_8004FE14 = 0;
+s32 D_8004FE18 = 0;
+s32 D_8004FE1C = 0;
+s32 D_8004FE20 = 0;
+u16 D_8004FE24 = 0;
+u16 D_8004FE26 = 0;
+u16 D_8004FE28 = 0;
+StreamSlot *D_8004FE2C = NULL;
+StreamRing *D_8004FE30 = NULL;
+s32 D_8004FE34 = 0;
+s32 D_8004FE38 = 0;
+s32 D_8004FE3C = 0;
+s32 D_8004FE40 = 0;
+u8 D_8004FE44 = 0xFF;
+u8 D_8004FE45 = 0;
+u8 D_8004FE46 = 0;
+u8 D_8004FE47 = 0;
+char *D_8004FE48 = NULL;
+s32 D_8004FE4C = 0;
+
 /* CdlSetmode parameter: the mode byte, then 3 zero bytes. The stream unit
  * (main_8002709C.c) declares only its mode byte. */
 extern u8 D_80059F18[4];
