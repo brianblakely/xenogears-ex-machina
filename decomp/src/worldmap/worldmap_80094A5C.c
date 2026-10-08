@@ -1923,13 +1923,10 @@ s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d) {
 
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
- * column-major file; corners from whichever edge changed. The pass counter j
- * also holds each corner's block number and the source value is reloaded into
- * sector/path for a corner; each branch keeps its own edge flags.
- * NON_MATCHING: only the edge-cell start index differs: it takes v0 (it
- * crosses no call and prefers the v0 of its `n << 1`) where the original
- * keeps it in s0, the register of block. */
-#ifdef NON_MATCHING
+ * column-major file; corners from whichever edge changed. n first holds the
+ * read-from-disc test and then each edge's first cell; the pass counter j
+ * also holds each corner's block number, and a corner reloads the source
+ * into sector/path. Each branch keeps its own edge flags. */
 void func_80098CC0(void) {
     s32 first;
     s32 second;
@@ -1960,7 +1957,9 @@ void func_80098CC0(void) {
     changed = 0;
     first = func_8002C3D8();
     second = func_8002C3D8();
-    if ((first == 0) | (second == -1)) {
+    n = first == 0;
+    n |= second == -1;
+    if (n) {
         s32 rows;
         s32 cols;
 
@@ -2066,9 +2065,6 @@ void func_80098CC0(void) {
         func_800965A4();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80098CC0);
-#endif
 
 /* Draw the visible 5x5 terrain blocks around the camera: all four quarters
  * of a block, or only the quarters whose flag differs when the combined
