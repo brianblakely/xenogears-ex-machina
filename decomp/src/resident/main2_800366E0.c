@@ -1562,12 +1562,11 @@ void *func_80039024(s32 size) {
     return data;
 }
 
-/* Release a block of driver memory.
- * Nonmatching: the original keeps the pool head ($s0) apart from the walk
- * pointer ($v0, copied after DisableEvent); this C walks in $s0 (132 vs
- * 136 bytes). Only a dead store (prev = head; entry = prev) reproduces the
- * copy, which is not taken. */
-#ifdef NON_MATCHING
+/* Release a block of driver memory: unlink it from the pool list (the head
+ * is never released), with the driver's event disabled. The head variable
+ * is reused for the predecessor test; that keeps the pool head in its own
+ * register through the first comparison and the walk in a copy of it, as in
+ * the original. */
 void func_80039144(void *data) {
     SoundBlock *head = D_80059410;
     SoundBlock *block;
@@ -1582,14 +1581,12 @@ void func_80039144(void *data) {
         prev = entry;
         entry = entry->next;
     }
-    if (prev != NULL) {
+    head = prev;
+    if (head != NULL) {
         prev->next = block->next;
     }
     EnableEvent(D_800595BC);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_80039144);
-#endif
 
 /* The largest free gap of the driver memory pool, in 16-byte units. */
 s32 func_800391CC(void) {
