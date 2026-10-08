@@ -1,5 +1,14 @@
 #include "worldmap.h"
 
+/* Scripted flight waypoints (x, z; -1 ends) of func_8008E76C. */
+SVECTOR D_8009B1AC[5] = {
+    {0x4E00, 0, 0x2C80}, {0x4A00, 0, 0x2AC0}, {0x4600, 0, 0x2C00}, {0x4600, 0, 0x2D74}, {-1, 0, -1},
+};
+SVECTOR D_8009B1D4[8] = {
+    {0x22F7, 0, 0x4C1C}, {0x24F1, 0, 0x4AF5}, {0x2686, 0, 0x4749}, {0x2643, 0, 0x43BE},
+    {0x24F4, 0, 0x4224}, {0x228E, 0, 0x4124}, {0x1F5C, 0, 0x410C}, {-1, 0, -1},
+};
+
 /* Compiled-out debug trace of the restored vehicle position. */
 #define VEHICLE_TRACE_POSITION(actor) do { } while (0)
 

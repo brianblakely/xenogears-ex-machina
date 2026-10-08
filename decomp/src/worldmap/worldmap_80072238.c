@@ -160,8 +160,12 @@ MATRIX D_8009A180 = {{{4096, 0, 0}, {0, 4096, 0}, {0, 0, 4096}}, {0, 0, 0}};
 
 /* Terrain texture animations: frame sequences and the slots they upload
  * to, for the two animation sections of an area. */
-TexAnimFrame D_8009A1A0[9] = {{0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1}};
-TexAnimFrame D_8009A1C4[9] = {{0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1}};
+TexAnimFrame D_8009A1A0[9] = {
+    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
+};
+TexAnimFrame D_8009A1C4[9] = {
+    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
+};
 TexAnimSlot D_8009A1E8[2] = {
     {{0xF8, 0x1B0, 8, 1}, 0, D_8009A1A0},
     {{0xF8, 0x1D0, 8, 1}, 1, D_8009A1C4},
