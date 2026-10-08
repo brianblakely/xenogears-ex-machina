@@ -194,8 +194,9 @@ void func_80079934(u8 **pc) {
     *pc += 4;
 }
 
-/* Skip the script's conditions (0x80 and up), then everything but
- * actions 0x80..0xef. */
+/* After a false condition skip the remaining conditions (0x80 and up), then
+ * every opcode outside 0x80..0xef: the rule's actions and its closing fd/ff,
+ * up to the next rule's condition. */
 void func_80079948(u8 **pc) {
     while (**pc >= 0x80) {
         func_80079934(pc);
@@ -205,8 +206,9 @@ void func_80079948(u8 **pc) {
     }
 }
 
-/* Run enemy `slot`'s AI script: clear the action list and event types, then
- * evaluate conditions and actions until 0xfd or 0xff. */
+/* Run enemy `slot`'s turn script (AI block +0x00): clear the action list and
+ * event types, then evaluate conditions (8007f8c0) and actions (8007ef6c)
+ * until 0xfd or 0xff; a false condition skips its rule (80079948). */
 void func_800799C8(u8 slot, u16 attacking) {
     u8 *pc;
     u8 count;
