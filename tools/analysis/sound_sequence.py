@@ -760,9 +760,13 @@ class Sweep:
     unreferenced: Counter = field(default_factory=Counter)
     unreferenced_errors: list = field(default_factory=list)
     table_problems: list = field(default_factory=list)
+    disc_codes: dict = field(default_factory=dict)  # disc -> opcodes its scripts use
 
-    def add(self, where: str, script: Script) -> None:
+    def add(self, where: str, script: Script) -> set:
+        """Decode the script's channels into the counts; returns the opcodes
+        (and "note") they use."""
         covered = bytearray(len(script.data))
+        codes = set()
         for label, start in script.entries:
             self.channels += 1
             try:
@@ -771,12 +775,15 @@ class Sweep:
                 self.unknown.append(f"{where} {label}: {error}")
                 continue
             self.instructions += len(instructions)
-            self.uses.update(i.code if i.code >= 0x80 else "note" for i in instructions)
+            used = [i.code if i.code >= 0x80 else "note" for i in instructions]
+            self.uses.update(used)
+            codes.update(used)
             end = instructions[-1].offset + instructions[-1].length
             covered[start:end] = b"\1" * (end - start)
         if script.entries:
             first = min(start for _, start in script.entries)
             self.unreached(where, script, covered, first)
+        return codes
 
     def unreached(self, where: str, script: Script, covered: bytearray, first: int) -> None:
         """Count the nonzero bytes after the first channel that no channel
@@ -855,11 +862,12 @@ def containers(disc):
 
 
 def sweep() -> Sweep:
-    result, seen = Sweep(), set()
+    result, seen = Sweep(), {}  # digest -> opcodes the script uses
     for disc in discs():
         result.table_problems += [
             f"disc {disc.number}: {p}" for p in check_driver_tables(disc.boot)
         ]
+        disc_codes = result.disc_codes.setdefault(disc.number, set())
         for where, container in containers(disc):
             result.containers += 1
             found, rejected = locate(container)
@@ -867,11 +875,10 @@ def sweep() -> Sweep:
             for position, script in found:
                 result.located[script.kind] += 1
                 digest = hashlib.sha256(script.data).digest()
-                if digest in seen:
-                    continue
-                seen.add(digest)
-                result.distinct[script.kind] += 1
-                result.add(f"{where} +0x{position:x}", script)
+                if digest not in seen:
+                    result.distinct[script.kind] += 1
+                    seen[digest] = result.add(f"{where} +0x{position:x}", script)
+                disc_codes.update(seen[digest])
     return result
 
 
@@ -895,6 +902,13 @@ def report(result: Sweep) -> str:
     lines.append(f"  channels: {result.channels}, instructions: {result.instructions}")
     used = sorted(code for code in result.uses if code != "note")
     lines.append(f"  opcodes defined: {len(OPCODES)} + note; used: {len(used)} + note")
+    lines.append(
+        "    used per disc: "
+        + ", ".join(
+            f"disc {disc} {len(codes - {'note'})} + note"
+            for disc, codes in sorted(result.disc_codes.items())
+        )
+    )
     lines.append(f"    note: {result.uses['note']}")
     for code in used:
         lines.append(f"    {code:02x} {OPCODES[code].mnemonic}: {result.uses[code]}")

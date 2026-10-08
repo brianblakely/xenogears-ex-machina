@@ -438,13 +438,17 @@ class Sweep:
     pairs: dict = field(default_factory=dict)  # disc -> Counter of pair_kind
     names: int = 0
     name_uses: Counter = field(default_factory=Counter)
+    disc_codes: dict = field(default_factory=dict)  # disc -> controls its tables use
 
-    def add(self, where: str, data: bytes, threshold: int) -> None:
+    def add(self, where: str, data: bytes, threshold: int) -> set:
+        """Decode the table's texts into the counts; returns the controls
+        they use."""
+        codes = set()
         try:
             offsets, end = text_table(data)
         except TextError as error:
             self.unknown.append(f"{where}: {error}")
-            return
+            return codes
         covered = bytearray(len(data))
         for offset in sorted(set(offsets)):
             try:
@@ -461,8 +465,10 @@ class Sweep:
                     self.uses["glyph (2 bytes)" if token.length == 2 else "glyph (1 byte)"] += 1
                 else:
                     self.uses[token.code] += 1
+                    codes.add(token.code)
         if offsets:
             self.unreached(where, data, covered, min(offsets), min(end, len(data)), threshold)
+        return codes
 
     def unreached(
         self, where: str, data: bytes, covered: bytearray, start: int, stop: int, threshold: int
@@ -509,7 +515,9 @@ def sweep() -> Sweep:
             else:
                 result.tables[group] += 1
                 result.digests.add(hashlib.sha256(data).digest())
-                result.add(f"disc{disc.number} {group} {item}", data, threshold)
+                result.disc_codes.setdefault(disc.number, set()).update(
+                    result.add(f"disc{disc.number} {group} {item}", data, threshold)
+                )
         pairs = archive_entry(system_data(disc), 27)
         result.pairs[disc.number] = Counter(
             pair_kind(pairs[2 * code], pairs[2 * code + 1], threshold) for code in range(PAIR_CODES)
@@ -555,6 +563,12 @@ def report(result: Sweep) -> str:
         lines.append(f"    {name}: {result.uses[name]}")
     used = sorted(code for code in result.uses if isinstance(code, int))
     lines.append(f"  controls defined: {len(CONTROLS)}; used: {len(used)}")
+    lines.append(
+        "    used per disc: "
+        + ", ".join(
+            f"disc {disc} {len(codes)}" for disc, codes in sorted(result.disc_codes.items())
+        )
+    )
     for code in used:
         lines.append(f"    {control_name(code)} {CONTROLS[code].mnemonic}: {result.uses[code]}")
     unused = [control_name(code) for code in sorted(CONTROLS) if code not in result.uses]

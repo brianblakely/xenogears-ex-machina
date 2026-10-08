@@ -33,8 +33,8 @@ python3 -m tools.analysis.text_control --sweep    # aggregate, both discs
 ```
 
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files
-skipped), 42367 texts, 1961794 tokens; 13 controls used; unknown or
-undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08, 0F 09, 0F 0B,
+skipped), 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D
+occurs only on disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08, 0F 09, 0F 0B,
 0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The sweep
 decodes them too, outside the counts: they form 37 whole texts ending in 00
 (messages no entry shows). The 62 initial names decode as 392 glyphs.

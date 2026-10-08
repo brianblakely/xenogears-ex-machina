@@ -32,7 +32,8 @@ every offset-archive entry (of a file or of its unpacked form) that unpacks:
 8961 containers on both discs. No packed archive entry holds a script; 213
 sequences (63 distinct) and 1203 banks (259 distinct) are located, every
 magic found is a valid script. 7053 channels, 201317 instructions; 72 opcodes
-plus notes used; unknown or undecodable: 0. Every channel ends in 0x90.
+plus notes used, the same 72 on each disc; unknown or undecodable: 0. Every
+channel ends in 0x90.
 Unused by the data: 8a 8d 8e 8f 9c 9d 9e a1 a4 a5 a6 a7 aa b6 bc bd be c1 c3 c6
 c8 ee f5 fd ff. 736 nonzero bytes (2 sequences, 36 banks) are reached by no
 channel. The sweep decodes them too, outside the counts: they form 58
