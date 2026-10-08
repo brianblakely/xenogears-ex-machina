@@ -648,7 +648,7 @@ typedef struct {
     s16 kind; /* 0x0E: 4 destination */
 } PathRegion;
 
-extern s16 D_8009B18C[4], D_8009B194[4], D_8009B19C[4], D_8009B1A4[4];
+extern s16 D_8009B18C[], D_8009B194[], D_8009B19C[], D_8009B1A4[];
 extern s32 D_8009CD44, D_8009BD2C;
 
 /* Frame state. */

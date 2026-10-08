@@ -3,6 +3,85 @@
 /* Declared here only: other units call it without a prototype. */
 void func_80093354(VECTOR *position);
 
+/* Scene object draw mode, by the object's flags (func_800848F4). */
+s16 D_8009AD2C[10] = {4, 4, 5, 5, 0, 0, 2, 2, 3, 3};
+
+/* Drifting sprites (clouds, func_80086798): texture origins, the far sprite
+ * corners and the near sprites' quads (four corners each), in three layers. */
+u16 D_8009AD40[8] = {0, 0x40, 0x80, 0, 0xC0, 0x4000, 0x4040, 0};
+SVECTOR D_8009AD50[12] = {
+    {-192, 0, 192}, {192, 0, 192}, {-192, 0, -192}, {192, 0, -192},
+    {-192, -8, 192}, {192, -8, 192}, {-192, -8, -192}, {192, -8, -192},
+    {-192, -16, 192}, {192, -16, 192}, {-192, -16, -192}, {192, -16, -192},
+};
+SVECTOR D_8009ADB0[48] = {
+    {-192, 0, 192}, {0, 0, 192}, {-192, 0, 0}, {0, 0, 0},
+    {0, 0, 192}, {192, 0, 192}, {0, 0, 0}, {192, 0, 0},
+    {-192, 0, 0}, {0, 0, 0}, {-192, 0, -192}, {0, 0, -192},
+    {0, 0, 0}, {192, 0, 0}, {0, 0, -192}, {192, 0, -192},
+    {-192, -8, 192}, {0, -8, 192}, {-192, -8, 0}, {0, -8, 0},
+    {0, -8, 192}, {192, -8, 192}, {0, -8, 0}, {192, -8, 0},
+    {-192, -8, 0}, {0, -8, 0}, {-192, -8, -192}, {0, -8, -192},
+    {0, -8, 0}, {192, -8, 0}, {0, -8, -192}, {192, -8, -192},
+    {-192, -16, 192}, {0, -16, 192}, {-192, -16, 0}, {0, -16, 0},
+    {0, -16, 192}, {192, -16, 192}, {0, -16, 0}, {192, -16, 0},
+    {-192, -16, 0}, {0, -16, 0}, {-192, -16, -192}, {0, -16, -192},
+    {0, -16, 0}, {192, -16, 0}, {0, -16, -192}, {192, -16, -192},
+};
+
+/* Drift template points (func_800863E0). */
+Drift D_8009AF30[5] = {{0xC0, 0, 0xC0}, {0x240, 0, 0x340}, {0x4C0, 0, 0x140}, {0x5C0, 0, 0x440}, {0x2C0, 0, 0x640}};
+
+/* Ferry waypoints (x, z). */
+u16 D_8009AF80[8] = {23296, 18208, 14968, 11491, 3072, 31144, 28148, 25620};
+u16 D_8009AF90[8] = {23736, 16576, 16008, 16554, 16200, 14552, 14612, 16928};
+
+/* Scene object links (parent, child pairs; -1 ends). */
+s16 D_8009AFA0[30] = {
+    7, 0, 7, 1, 7, 2, 7, 3, 5, 7, 5, 4, 12, 10, 12, 5, 12, 11, 12, 13, 12, 6, 12, 9, 12, 8,
+    12, 13, -1, 0,
+};
+
+/* Scene objects to show (-1 ends). */
+s16 D_8009AFDC[10] = {67, 68, 70, 71, 72, 73, 74, 75, 76, -1};
+
+/* Particle kinds (func_80089C78): four packed u,v corners and the quad shape. */
+u16 D_8009AFF0[10 * 4] = {
+    0, 0, 0, 0,
+    0, 0x3F, 0x3F00, 0x3F3F,
+    0x4000, 0x403F, 0x7F00, 0x7F3F,
+    0x40, 0x5F, 0x1F40, 0x1F5F,
+    0x2040, 0x205F, 0x3F40, 0x3F5F,
+    0x4040, 0x405F, 0x5F40, 0x5F5F,
+    0xF000, 0xF05F, 0xFF00, 0xFF5F,
+    0x60, 0x7F, 0xFF60, 0xFF7F,
+    0x8000, 0x801F, 0xDF00, 0xDF1F,
+    0xB020, 0xB05F, 0xEF20, 0xEF5F,
+};
+ParticleShape D_8009B040[10] = {
+    {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
+    {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
+    {{{-32, -64, 0}, {32, -64, 0}, {-32, 0, 0}, {32, 0, 0}}},
+    {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
+    {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
+    {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
+    {{{0, -8, 0}, {96, -8, 0}, {0, 8, 0}, {96, 8, 0}}},
+    {{{-16, -255, 0}, {16, -255, 0}, {-16, 0, 0}, {16, 0, 0}}},
+    {{{-16, -96, 0}, {16, -96, 0}, {-16, 0, 0}, {16, 0, 0}}},
+    {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
+};
+
+/* Per landing kind: whether the player may stand there. */
+s16 D_8009B180[6] = {1, 1, 0, 1, 1, 1};
+
+/* Per party member: the parameters func_8008C28C passes with its gear
+ * model. The original object keeps a stray halfword (0x3C00) in the last
+ * table's alignment padding. */
+s16 D_8009B18C[3] = {0x100, 0x100, 0x100};
+s16 D_8009B194[3] = {0x1FD, 0x1FC, 0x1FB};
+s16 D_8009B19C[3] = {0x140, 0x160, 0x280};
+s16 D_8009B1A4[4] = {0x140, 0x140, 0x100, 0x3C00};
+
 /* Scripted camera stages 1-6 around the player (commands set the angle, distance
  * and position of each stage), with easing and a random vertical shake. */
 s32 func_80083A00(s32 index) {
@@ -1003,9 +1082,6 @@ typedef struct {
 } DriftScratch;
 
 #define DRIFT_SCRATCH ((DriftScratch *)0x1F800000)
-
-extern SVECTOR D_8009AD50[12], D_8009ADB0[48];
-extern u16 D_8009AD40[8];
 
 #define gte_ldsxy3(r0, r1, r2) \
     __asm__ volatile("mtc2 %0, $12;" \
