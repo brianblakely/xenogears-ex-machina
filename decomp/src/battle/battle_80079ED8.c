@@ -2199,7 +2199,7 @@ void func_8007FB70(u8 member) {
     }
 }
 
-/* Place the separator lines of a `count`-row list (rows from the 800c3200
+/* Place the separator lines of a `count`-row list (rows from the 800c3214
  * table) and remember the selected row (clamped below `count`). */
 void func_8007FBE0(u8 count, u8 selected) {
     s32 i;
@@ -2208,8 +2208,8 @@ void func_8007FBE0(u8 count, u8 selected) {
         selected--;
     }
     for (i = 0; i < count - 1; i++) {
-        setXY2(&D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer], 0xC, D_800C3200[count * 6 + 2 + i] + 0x5E, 0x12,
-               D_800C3200[count * 6 + 2 + i] + 0x5E);
+        setXY2(&D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer], 0xC, D_800C3214[count - 3][i] + 0x5E, 0x12,
+               D_800C3214[count - 3][i] + 0x5E);
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;

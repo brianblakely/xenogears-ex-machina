@@ -45,7 +45,7 @@ segments:
       # The overlay's number (6) ahead of the units' rodata, as in field (4),
       # worldmap (5), menu (7) and movie (8); the first unit's rodata starts
       # at 0x4, where its jump tables sit (4 mod 8, docs/matching.md).
-      - [0x0, rodata, battle_prefix]
+      - [0x0, .rodata, battle_prefix]
       # Units change where the jump tables change phase mod 8 (GCC's .align 3
       # is relative to the unit's rodata, placed at 4-byte boundaries; see
       # docs/matching.md). The tables at 80070314-80070370 (8008B478,
@@ -79,5 +79,22 @@ segments:
       - [0x4D8BC, c, battle_800BD3AC]
       - [0x50358, c, battle_800BFE48]
       - [0x516DC, c, battle_800C11CC]
+      # Each unit's .data follows in unit order; the shared tables open it in
+      # the main unit (80070E2C). The generated pieces are objects whose
+      # padding holds stray assembler bytes (D_800C204C, D_800C2050, the
+      # unused 800C3488, D_800C35D4, D_800C3780, D_800C37C8, D_800C37D4) and
+      # the objects of their unit that a single C section cannot reach.
       - [0x52558, data, battle_data]
+      - [0x52564, .data, battle_80070E2C]
+      - [0x53998, data, battle_data_3488]
+      - [0x5399C, .data, battle_8008CCCC]
+      - [0x53A18, .data, battle_8009E53C]
+      - [0x53A58, .data, battle_800B15D8]
+      - [0x53A74, .data, battle_800B3F04]
+      - [0x53AE4, data, battle_data_35D4]
+      - [0x53AE8, .data, battle_800B8098]
+      - [0x53C5C, data, battle_data_374C]
+      - [0x53C94, .data, battle_800BD3AC]
+      - [0x53CD8, data, battle_data_37C8]
+      - [0x53CF8, .data, battle_800BFE48]
   - [0x53f80]

@@ -20,6 +20,12 @@
 #include "stage.h"
 #include "battle_command.h"
 
+/* This unit's data from 800c374c to 800c37d4 holds stray assembler bytes in
+ * the padding of D_800C3780 and D_800C37C8, so the objects around those two
+ * stay original data (battle.yaml); the digit tables between them are C. */
+u8 D_800C3784[32] = "0123456789ABCDEF0123456789abcdef";
+u32 D_800C37A4[] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+
 /* Show value over sprite as a damage popup of kind (replacing the sprite's
  * earlier ones): 1 a prefix glyph, 2 green, 3 magenta with a prefix, 4 a
  * single glyph that only fades, 5 red, 10 and 11 (blue) with a suffix

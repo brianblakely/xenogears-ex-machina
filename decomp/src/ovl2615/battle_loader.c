@@ -4,6 +4,17 @@
  * (see ovl2615.mk). */
 #include "battle_setup.h"
 
+/* The sprite file and sequencer word of each party member type. */
+MemberFile D_801E95BC[] = {
+    {1, 0x12}, {2, 0x13}, {4, 0x15},  {3, 0x14},  {5, 0x16}, {6, 0x17}, {7, 0x18},
+    {8, 0x19}, {9, 0x1A}, {10, 0x1B}, {11, 0x1C}, {1, 0x12}, {1, 0x12}, {1, 0x12},
+};
+u8 D_801E962C[] = {16, 16, 16, 16, 16, 24, 16, 16, 16, 24, 16, 16};
+/* D_801E9638 follows; its padding holds stray assembler bytes (0x00 0xe0),
+ * so it stays original data (ovl2615.yaml). */
+/* Uninitialized: the overlay's file holds each unit's .bss after all .data. */
+void *D_801E96B4;
+
 /* Start the loading task for the enemy set file `data` while flagging the
  * battle setup as running. */
 void func_801E62E0(u8 *data) {

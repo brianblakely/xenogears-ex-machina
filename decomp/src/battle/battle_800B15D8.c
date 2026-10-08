@@ -23,6 +23,13 @@
 #include "stage.h"
 #include "effect_script.h"
 
+Quake *D_800C3548 = NULL;
+SVECTOR D_800C354C = {0, 0, 0};
+ScreenFade *D_800C3554 = NULL;
+ScreenFade *D_800C3558 = NULL;
+u8 D_800C355C = 0;
+LightFade *D_800C3560 = NULL;
+
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
  * relocated) and start its commands; its command count. */

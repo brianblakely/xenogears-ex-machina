@@ -21,13 +21,16 @@ s32 func_80086B88(s32 step, u8 member); /* the member can use combo step `step` 
 void func_8008AA40(u8 id); /* play a sound effect */
 void func_800B8DA4(void);
 
-extern u8 D_800C31D4[][8];  /* timer reload by maximum and remaining AP */
+/* The timer reload by maximum and remaining AP: D_800C31EC (maximum 3-7) from
+ * three rows before (battle.data.ld). */
+extern u8 D_800C31D4[][8];
 extern u32 *D_800C3A70[3]; /* combo text image blocks */
 s32 func_80086028(u8 member, s32 index, s32 column, u8 id, u32 **pixels, u8 offset);
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels);
 extern u8 D_800C4929;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
-extern u8 D_800C34B3[8][3]; /* the next combo step by step and AP paid */
+/* The next combo step by step and AP paid, from one byte before D_800C34B4. */
+extern u8 D_800C34B3[8][3];
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
 
 /* The fuel cost of each combo step (1-based, indexed like the combo flags

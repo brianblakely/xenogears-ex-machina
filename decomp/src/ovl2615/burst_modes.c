@@ -5,6 +5,11 @@
  * load_modes (see ovl2615.mk). */
 #include "battle_setup.h"
 
+u8 D_801E9680 = 0;
+SVECTOR D_801E9684[3] = {{-80, -80, 0}, {176, -80, 0}, {-80, 176, 0}};
+SVECTOR D_801E969C[3] = {{80, -176, 0}, {80, 80, 0}, {-176, 80, 0}};
+u32 *D_801E96BC;
+
 /* Advance the two burst variants, keeping the twist variant's current speed
  * for the translation that follows. */
 #define BURST_ROTATE_STEP(burst, frame_out)               \

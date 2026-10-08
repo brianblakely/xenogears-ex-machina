@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -50,5 +50,16 @@ segments:
       - [0x30e8, c, stage]
       - [0x3f4c, c, load_modes]
       - [0x4964, c, burst_modes]
-      - [0x55bc, data, ovl2615_data]
+      # Each unit's .data in link order, then each unit's .bss: the file holds
+      # the battle_loader/load_modes/burst_modes pointers that only their own
+      # units use at 801e96b4-801e96c0, after all .data (so .bss is loaded).
+      - [0x55bc, .data, battle_loader]
+      # D_801E9638 (u16 0) ends battle_loader's .data; its padding holds stray
+      # assembler bytes (0x00 0xe0), so it stays original data.
+      - [0x5638, data, ovl2615_data]
+      - [0x563c, .data, load_modes]
+      - [0x5680, .data, burst_modes]
+      - [0x56b4, .bss, battle_loader]
+      - [0x56b8, .bss, load_modes]
+      - [0x56bc, .bss, burst_modes]
   - [0x56c0]

@@ -12,6 +12,35 @@
  * GCC 2.6.3 (see func_801DF7A8) and ASPSX-style checked divisions. */
 #include "ovl2143.h"
 
+/* Copies of the battle overlay's extra file bases (800c3530) and gear file
+ * table (800c3508, base and variant count per gear; the last gear's base is
+ * 102 here, 0 there); this module never reads them. */
+u8 D_801E8590[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
+u8 D_801E85A4[] = {
+    1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,
+    34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 102, 0,
+};
+
+/* The module state, zeroed in the file. The original allocated it as PsyQ
+ * allocates .bss, each object in a 4-byte slot: D_801E869C starts its own
+ * slot after D_801E8698, and the file ends with the rest of D_801E86B0's
+ * (ovl2143.yaml aligns the section end). */
+s32 D_801E85CC = 0;
+u8 D_801E85D0[36] = {0}; /* never read */
+ModelList D_801E85F4[8] = {0};
+s32 D_801E8634 = 0;
+u8 *D_801E8638 = NULL;
+u16 D_801E863C = 0;
+s32 D_801E8640 = 0;
+MATRIX *D_801E8644 = NULL;
+Anchor D_801E8648[2] = {0};
+Actor *D_801E8670[10] = {0};
+s16 D_801E8698 = 0;
+s16 D_801E869C __attribute__((aligned(4))) = 0;
+ParticlePool D_801E86A0 = {0};
+SlotPool D_801E86A8 = {0};
+u16 D_801E86B0 = 0;
+
 /* Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */
 ModelList *func_801DC22C(u8 *group, ModelList *list) {
