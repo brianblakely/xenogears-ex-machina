@@ -11,8 +11,19 @@ Every function symbol in the linked ELF is attributed to exactly one class:
 * ``asm``          unrecovered original assembly (remaining work)
 
 The classification file lists ``START END CLASS NOTE...`` lines (hex VRAM,
-END exclusive). Data sections are reported by size only. This tool never
-reads or asserts binary agreement; run the exact comparison separately.
+END exclusive). This tool never reads or asserts binary agreement; run the
+exact comparison separately.
+
+With ``--map`` (the GNU ld map of the same link), loaded data input sections
+(.rodata*, .data*, .sdata*) are attributed by the object that supplied them:
+
+* ``c``            emitted by the compiler from a decomp/src C unit
+* ``included``     original bytes INCLUDE_RODATA'd beside a C unit (strings whose
+                   padding holds stray assembler bytes; docs/matching.md)
+* ``handwritten``  an authored assembly unit under decomp/src
+* ``sdk``/``asset``/``handwritten``  generated data inside a classified range
+                   (``asset``: user-supplied game data/bytecode, not source)
+* ``placeholder``  generated data from the original image (remaining work)
 Instruction counts are static MIPS words (four bytes each) in the same ELF
 function ranges as the byte totals, including nops and branch delay slots.
 """
@@ -26,6 +37,8 @@ import subprocess
 from pathlib import Path
 
 INCLUDE_ASM = re.compile(r"INCLUDE_ASM\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
+INCLUDE_RODATA = re.compile(r"INCLUDE_RODATA\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
+DATA_SECTION = re.compile(r"\.(rodata|data|sdata)\b")
 NON_MATCHING = re.compile(r"#ifdef\s+NON_MATCHING(.*?)#else(.*?)#endif", re.DOTALL)
 
 
@@ -50,10 +63,65 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
         line = line.split("#", 1)[0].strip()
         if line:
             start, end, kind, *note = line.split()
-            if kind not in ("sdk", "handwritten"):
+            if kind not in ("sdk", "handwritten", "asset"):
                 raise SystemExit(f"unknown classification {kind!r}")
             ranges.append((int(start, 16), int(end, 16), kind, " ".join(note)))
     return ranges
+
+
+def map_sections(path: Path) -> list[tuple[str, int, int, str]]:
+    """(section, address, size, object) of every nonempty loaded data input section."""
+    result, pending = [], None
+    for line in path.read_text().splitlines():
+        parts = line.split()
+        if line.startswith(" .") and len(parts) == 1:
+            pending = parts[0]  # GNU ld puts a long section name on a line of its own
+            continue
+        if pending and len(parts) == 3:
+            parts = [pending] + parts
+        elif not line.startswith(" ."):
+            parts = []
+        pending = None
+        if len(parts) != 4 or not DATA_SECTION.match(parts[0]):
+            continue
+        name, address, size, obj = parts
+        if address.startswith("0x") and size.startswith("0x") and int(size, 16):
+            result.append((name, int(address, 16), int(size, 16), obj))
+    return result
+
+
+def data_coverage(
+    sections: list[tuple[str, int, int, str]],
+    included: list[tuple[int, int]],
+    ranges: list[tuple[int, int, str, str]],
+    root: Path,
+) -> dict[str, int]:
+    """Bytes per data class; generated data is split at classified range edges."""
+    totals: dict[str, int] = {}
+
+    def add(cls: str, count: int) -> None:
+        if count:
+            totals[cls] = totals.get(cls, 0) + count
+
+    for _name, start, size, obj in sections:
+        end = start + size
+        if "/decomp/src/" in obj:
+            unit = Path(obj.split("/decomp/src/", 1)[1]).with_suffix("")
+            authored = root / "decomp/src" / unit
+            inside = sum(max(0, min(e, end) - max(s, start)) for s, e in included)
+            kind = "c" if authored.with_suffix(".c").exists() else "handwritten"
+            add(kind, size - inside)
+            add("included", inside)
+            continue
+        cursor = start
+        for s, e, kind, _note in sorted(ranges):
+            lo, hi = max(s, cursor), min(e, end)
+            if lo < hi:
+                add("placeholder", lo - cursor)
+                add(kind, hi - lo)
+                cursor = hi
+        add("placeholder", end - cursor)
+    return totals
 
 
 def main() -> None:
@@ -61,17 +129,20 @@ def main() -> None:
     parser.add_argument("elf", type=Path)
     parser.add_argument("--src", type=Path, action="append", default=[])
     parser.add_argument("--classification", type=Path)
+    parser.add_argument("--map", type=Path, help="GNU ld map of the same link (data coverage)")
     parser.add_argument("--list", choices=["c", "nonmatching", "sdk", "handwritten", "asm"])
     args = parser.parse_args()
 
     asm_names: set[str] = set()
     nonmatching: set[str] = set()
+    rodata_names: set[str] = set()
     for root in args.src:
         for source in root.rglob("*.c"):
             text = source.read_text()
             for _block, fallback in NON_MATCHING.findall(text):
                 nonmatching.update(INCLUDE_ASM.findall(fallback))
             asm_names.update(INCLUDE_ASM.findall(text))
+            rodata_names.update(INCLUDE_RODATA.findall(text))
     ranges = classification(args.classification)
 
     table = symbols(args.elf)
@@ -123,6 +194,13 @@ def main() -> None:
         "remaining_asm_bytes": remaining[1],
         "remaining_asm_instructions": remaining[1] // 4,
     }
+    if args.map:
+        included = [(a, a + n) for a, n, _, name in table if name in rodata_names]
+        root = Path(__file__).resolve().parents[1]
+        data = data_coverage(map_sections(args.map), included, ranges, root)
+        report["data_bytes"] = sum(data.values())
+        report["data_classes"] = dict(sorted(data.items()))
+        report["remaining_data_placeholder_bytes"] = data.get("placeholder", 0)
     print(json.dumps(report, sort_keys=True))
 
 

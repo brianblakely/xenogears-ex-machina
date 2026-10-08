@@ -231,6 +231,11 @@ Measure source coverage and exact matching independently. Do not call a baseline
 made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
+From the link map it also attributes every loaded .rodata/.data/.sdata input
+section to compiled C, original bytes INCLUDE_RODATA'd beside C (`included`),
+authored assembly, a classified `sdk`/`asset` range, or a generated
+`placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
+game data or bytecode that is parsed and documented rather than rewritten as source.
 `remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
 assembly and reviewed nonmatching C candidates; SDK and handwritten assembly stay
 separate. Instructions are four-byte words within ELF function ranges, including

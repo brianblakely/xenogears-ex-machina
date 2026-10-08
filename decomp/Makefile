@@ -114,7 +114,7 @@ verify: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
 
 coverage: $(ROOT)/$(IMAGE)
-	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
 
 audit: coverage
 	cd $(ROOT) && $(PYTHON) tools/nonmatching_score.py $(abspath $(CONFIG)) --exact

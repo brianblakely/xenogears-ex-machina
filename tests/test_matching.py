@@ -439,6 +439,33 @@ class MatchingTests(unittest.TestCase):
             for cls, count in cases.items()
         })
 
+    def test_data_coverage_attributes_map_sections_by_object(self):
+        from tools.matching_coverage import data_coverage, map_sections
+
+        build = ".local/decomp/build/t"
+        (self.root / "decomp/src/t").mkdir(parents=True)
+        (self.root / "decomp/src/t/unit.c").write_text("int x = 1;\n")
+        mapfile = self.root / "image.map"
+        mapfile.write_text(
+            f" .rodata        0x80010000       0x20 {build}/decomp/src/t/unit.o\n"
+            f" .rodata.str1.4\n                0x80010020        0x8 {build}/decomp/src/t/unit.o\n"
+            f" .text          0x80010028       0x40 {build}/decomp/src/t/unit.o\n"
+            f" .data          0x80010068        0x0 {build}/decomp/src/t/unit.o\n"
+            f" .data          0x80010068       0x30 {build}/.local/decomp/t/asm/data/t.data.o\n"
+            f" .sdata         0x80010098        0x8 {build}/decomp/src/t/unit.o\n"
+        )
+        sections = map_sections(mapfile)
+        self.assertEqual([(n, a, s) for n, a, s, _ in sections], [
+            (".rodata", 0x80010000, 0x20), (".rodata.str1.4", 0x80010020, 8),
+            (".data", 0x80010068, 0x30), (".sdata", 0x80010098, 8),
+        ])
+        ranges = [(0x80010070, 0x80010078, "sdk", ""), (0x80010090, 0x800100a0, "asset", "")]
+        totals = data_coverage(sections, [(0x80010004, 0x80010010)], ranges, self.root)
+        self.assertEqual(totals, {
+            "c": 0x20 - 12 + 8 + 8, "included": 12,
+            "placeholder": 0x30 - 8 - 8, "sdk": 8, "asset": 8,
+        })
+
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):
         from tools.nonmatching_score import instruction_differences
