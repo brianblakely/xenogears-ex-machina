@@ -475,8 +475,9 @@ void func_80033DF0(Window *window) {
         byte = *window->text;
         first = byte;
         /* 00 end(), 1 byte: end of text: return after an inserted text's
-         * control, else flag 8, state 1 (unk6B) and stop; the pointer stays on
-         * the 00. */
+         * control; else state 1 (unk6B), flag 8 (wait) and unk6C, so once the
+         * wait ends the window moves on to its next queued text. The pointer
+         * stays on the 00. */
         if (first == 0) {
             if (window->flags & 0x80) {
                 window->flags &= ~0x80;

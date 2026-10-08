@@ -6,11 +6,15 @@ import unittest
 
 from tools.analysis.text_control import (
     CONTROLS,
+    PAIR_CODES,
     Sweep,
     TextError,
     archive_entry,
+    code_text,
     decode_text,
     decode_token,
+    initial_names,
+    pair_kind,
     text_table,
     unpack_logical,
 )
@@ -150,6 +154,42 @@ def literals(data: bytes) -> bytes:
     for start in range(0, len(data), 8):
         out += b"\0" + data[start : start + 8]
     return bytes(out)
+
+
+class CharacterCodeTests(unittest.TestCase):
+    # Codes 0-3: one byte 41, one byte 01, empty, two bytes FE 12.
+    PAIRS = bytes([0, 0x41, 0, 0x01, 0, 0, 0xFE, 0x12]) + bytes(2 * (PAIR_CODES - 4))
+
+    def test_code_text(self):
+        self.assertEqual(code_text(self.PAIRS, [0, 3, 0]), b"\x41\xfe\x12\x41\x00")
+        self.assertEqual(code_text(self.PAIRS, []), b"\x00")
+        with self.assertRaises(TextError):
+            code_text(self.PAIRS, [PAIR_CODES])
+
+    def test_pair_kinds(self):
+        kinds = [pair_kind(*self.PAIRS[2 * c : 2 * c + 2], THRESHOLD) for c in range(4)]
+        self.assertEqual(
+            kinds, ["one-byte glyph", "control", "00 (ends the text)", "two-byte glyph"]
+        )
+        self.assertEqual(pair_kind(0x41, 0x42, THRESHOLD), "two separate tokens")
+        self.assertEqual(pair_kind(0, 0xFE, THRESHOLD), "two-byte glyph lead alone")
+
+    def test_initial_names_end_at_code_0f(self):
+        game = bytearray(31 * 20)
+        struct.pack_into("<3H", game, 0, 0, 3, 0x000F)  # slot 0: two codes, then the end
+        struct.pack_into("<10H", game, 20, *[0] * 10)  # slot 1: ten codes, no end code
+        names = initial_names(bytes(game), self.PAIRS)
+        self.assertEqual(len(names), 31)
+        self.assertEqual(names[0], b"\x41\xfe\x12\x00")
+        self.assertEqual(names[1], b"\x41" * 10 + b"\x00")
+        self.assertEqual(
+            [t.mnemonic for t in decode_text(names[0], 0, THRESHOLD)],
+            [
+                "glyph",
+                "glyph",
+                "end",
+            ],
+        )
 
 
 if __name__ == "__main__":

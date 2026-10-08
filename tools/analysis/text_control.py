@@ -13,7 +13,13 @@ last operand; the inserted text's 00 returns to the byte after it.
 Text lives in tables read by func_80033728: entry n starts at the u16 offset
 at byte 4 + 2n. Every located table also holds its count at +0, 0 at +2, count
 + 1 offsets (the last ends the text) and count (columns, rows) byte pairs
-after them (func_8003373C/func_80033760 read the pairs).
+after them (func_8003373C/func_80033760 read the pairs). Windows get text only
+through func_80034714 (queue), func_80034EAC (one-line layout) and the
+insertions; their callers pass entries of these tables, or text built at run
+time from character codes through the byte pairs of system resource 27
+(func_80033ABC/func_80033B34: numbers, names, name entry). The sweep reads
+every table those callers use, classifies the pairs and decodes the initial
+names (func_8001B970).
 
     python3 -m tools.analysis.text_control --sweep    # both discs, aggregate only
 """
@@ -21,6 +27,7 @@ after them (func_8003373C/func_80033760 read the pairs).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import struct
 import sys
 from collections import Counter
@@ -47,8 +54,9 @@ CONTROLS = {
         (),
         1,
         "func_80033DF0 byte 0",
-        "end of text: return after an inserted text's control, else flag 8, state 1 "
-        "(unk6B) and stop; the pointer stays on the 00",
+        "end of text: return after an inserted text's control; else state 1 (unk6B), flag 8 "
+        "(wait) and unk6C, so once the wait ends the window moves on to its next queued "
+        "text; the pointer stays on the 00",
     ),
     0x01: Control(
         0x01,
@@ -250,6 +258,50 @@ def font_threshold(font: bytes) -> int:
     return struct.unpack_from("<H", font, 4)[0]
 
 
+# Text built at run time (numbers, names, name entry) comes from character
+# codes through the byte pairs of system resource 27; func_80033BAC searches
+# its first 0x144 pairs.
+PAIR_CODES = 0x144
+NAME_SLOTS = 31  # D_8006D634.names: twenty bytes each, decoded by func_8001B970
+
+
+def code_text(pairs: bytes, codes) -> bytes:
+    """func_80033B34: the text of character codes (a pair with first byte 0
+    gives its second byte alone), then 00."""
+    out = bytearray()
+    for code in codes:
+        if not 0 <= code < PAIR_CODES:
+            raise TextError(0, f"character code 0x{code:x} outside the 0x144 pairs")
+        first, second = pairs[2 * code], pairs[2 * code + 1]
+        out += bytes((first, second)) if first else bytes((second,))
+    return bytes(out) + b"\0"
+
+
+def pair_kind(first: int, second: int, threshold: int) -> str:
+    """What func_80033DF0 reads in the text bytes of one character pair."""
+    if first:
+        return "two-byte glyph" if first >= threshold else "two separate tokens"
+    if second == 0:
+        return "00 (ends the text)"
+    if second in (1, 2, 3, 0x0F):
+        return "control"
+    return "one-byte glyph" if second < threshold else "two-byte glyph lead alone"
+
+
+def initial_names(game: bytes, pairs: bytes) -> list[bytes]:
+    """The name texts func_8001B970 makes from the game data file: up to ten
+    u16 character codes per twenty-byte slot, ending at code 0x000F."""
+    names = []
+    for slot in range(NAME_SLOTS):
+        codes = []
+        for code in struct.unpack_from("<10H", game, slot * 20):
+            if code == 0x000F:
+                break
+            codes.append(code)
+        names.append(code_text(pairs, codes))
+    return names
+
+
 def unpack(data: bytes) -> bytes:
     return decode_block(data).data
 
@@ -311,11 +363,16 @@ WORLD_AREA_FILES = (
 )
 
 
+def system_data(disc: Disc) -> bytes:
+    """ "MES SYSDATA", installed by func_800335F4 (D_80059360[n] = entry n)."""
+    return unpack(disc.sectors(disc.slot(0, 1, 7)))
+
+
 def text_tables(disc: Disc):
     """(group, item, table) for every text table the decompiled loaders read
     on `disc`; table is None for a placeholder map file and a TextError when
     it cannot be unpacked."""
-    system = unpack(disc.sectors(disc.slot(0, 1, 7)))  # "MES SYSDATA", installed by func_800335F4
+    system = system_data(disc)
     for index in range(struct.unpack_from("<I", system, 0)[0]):
         if index != 27:  # D_80059360[27]: character code pairs (func_80033ABC), not text
             yield "system data", index, archive_entry(system, index)
@@ -340,6 +397,8 @@ def text_tables(disc: Disc):
     # declared size: unpack them from whole sectors.
     menu = disc.sectors(disc.slot(0x10, 0, 1))  # D_8005945C; labels = files[3] (801c65f4)
     yield "menu labels", 3, archive_entry(menu, 3, packed=True)
+    world = disc.sectors(disc.slot(0x24, 0, 0x26))  # the world map's D_8005945C (80071fec)
+    yield "menu labels (world map file 0x26)", 3, archive_entry(world, 3, packed=True)
     data = disc.sectors(disc.slot(0x10, 0, 2))  # 801c72bc MenuDataArchive +3C/+40/+54/+58/+D4..;
     for index in (14, 15, 20, 21, 52, 53, 54, 55, 0x27, 0x28, 0x29, *range(0x2C, 0x34)):
         yield "menu data", index, archive_entry(data, index, packed=True)  # shops 801c6828/801c6a54
@@ -375,6 +434,10 @@ class Sweep:
     unreferenced_tables: int = 0
     unreferenced_texts: int = 0
     unreferenced_errors: list = field(default_factory=list)
+    digests: set = field(default_factory=set)
+    pairs: dict = field(default_factory=dict)  # disc -> Counter of pair_kind
+    names: int = 0
+    name_uses: Counter = field(default_factory=Counter)
 
     def add(self, where: str, data: bytes, threshold: int) -> None:
         try:
@@ -445,7 +508,25 @@ def sweep() -> Sweep:
                 result.unknown.append(f"disc{disc.number} {group} {item}: {data}")
             else:
                 result.tables[group] += 1
+                result.digests.add(hashlib.sha256(data).digest())
                 result.add(f"disc{disc.number} {group} {item}", data, threshold)
+        pairs = archive_entry(system_data(disc), 27)
+        result.pairs[disc.number] = Counter(
+            pair_kind(pairs[2 * code], pairs[2 * code + 1], threshold) for code in range(PAIR_CODES)
+        )
+        try:  # directory 0x10 file 3, read by func_8001B970
+            names = initial_names(disc.data(disc.slot(0x10, 0, 3)), pairs)
+        except TextError as error:
+            result.unknown.append(f"disc{disc.number} initial names: {error}")
+            names = []
+        for slot, name in enumerate(names):
+            try:
+                tokens = decode_text(name, 0, threshold)
+            except TextError as error:
+                result.unknown.append(f"disc{disc.number} initial name {slot}: {error}")
+                continue
+            result.names += 1
+            result.name_uses.update(token.mnemonic for token in tokens)
     return result
 
 
@@ -465,7 +546,7 @@ def report(result: Sweep) -> str:
     decoded = sum(
         count for group, count in result.tables.items() if group != "placeholder map files"
     )
-    lines.append(f"  tables decoded: {decoded}")
+    lines.append(f"  tables decoded: {decoded} ({len(result.digests)} distinct)")
     lines.append(
         "    " + ", ".join(f"{group} {count}" for group, count in sorted(result.tables.items()))
     )
@@ -489,6 +570,15 @@ def report(result: Sweep) -> str:
     if result.unreferenced_errors:
         lines.append(f"  unreached bytes that do not decode: {len(result.unreferenced_errors)}")
         lines += [f"    {u}" for u in result.unreferenced_errors]
+    for disc, kinds in sorted(result.pairs.items()):
+        lines.append(
+            f"  disc {disc} character pairs (resource 27, 0x144 codes; run-time text): "
+            + ", ".join(f"{kind} {count}" for kind, count in sorted(kinds.items()))
+        )
+    lines.append(
+        f"  initial names (directory 0x10 file 3 via the pairs): {result.names} decoded; "
+        + ", ".join(f"{name} {count}" for name, count in sorted(result.name_uses.items()))
+    )
     return "\n".join(lines)
 
 
