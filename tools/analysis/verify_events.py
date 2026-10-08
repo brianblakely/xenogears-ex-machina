@@ -154,7 +154,7 @@ def compare(sources: dict, map_id: int, capture: Path, start: int, end: int) -> 
                 raise ValueError(
                     f"Original branch operands or successor differ at +0x{instruction.pc:04x}"
                 )
-            mode, comparison = instruction.operands[2:]
+            mode, comparison = instruction.operands[2] & 0xF0, instruction.operands[2] & 0x0F
             counts[(mode, comparison, pc == instruction.successors[0])] += 1
             sites.add((actor, instruction.pc))
             pending = None

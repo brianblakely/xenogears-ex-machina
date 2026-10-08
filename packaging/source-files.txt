@@ -507,6 +507,7 @@ docs/recovery-inventory.md
 docs/reverse-engineering.md
 docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
+docs/scripts/field-events.md
 docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
@@ -713,6 +714,7 @@ tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
 tests/test_event_state.py
+tests/test_events.py
 tests/test_execution.py
 tests/test_field_actor.cpp
 tests/test_field_analysis.py
