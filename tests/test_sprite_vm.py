@@ -198,6 +198,10 @@ class SpriteDisassemblyTests(unittest.TestCase):
     def test_lengths_follow_the_width_rule_except_be(self):
         self.assertEqual([vm.table_width(op) for op in (0x80, 0x9F, 0xA0, 0xC7)], [1, 1, 2, 2])
         self.assertEqual([vm.table_width(op) for op in (0xC8, 0xF0, 0xF1, 0xFF)], [3, 3, 4, 4])
+        source = (ROOT / "decomp/src/resident/sprite_80022090.c").read_text()
+        table = re.search(r"u8 D_8004FCC0\[0x80\] = \{([^}]*)\}", source).group(1)
+        lengths = [int(value) for value in re.findall(r"\d+", table)]
+        self.assertEqual(lengths, [vm.table_width(op) for op in range(0x80, 0x100)])
         for dialect in vm.DIALECTS:
             for opcode in range(0x100):
                 spec = vm.spec_for(opcode, dialect)
@@ -330,6 +334,17 @@ class SpriteDisassemblyTests(unittest.TestCase):
         broken[0x16] = 0xFF  # a header offset past the section
         self.assertIsNone(vm.resource_block(bytes(broken), 0))
         self.assertIsNone(vm.resource_block(bytes(4) + block(bytes([0x80])), 2))
+
+    def test_headers_no_directory_lists_are_reported_apart(self):
+        data = bytearray(block(bytes([0x31, 0x80]), bytes([0x32, 0x80]), bytes([0x33, 0x80])))
+        data[0x14:0x16] = struct.pack("<H", 2)  # the directory lists headers 0 and 2 only
+        data[0x18:0x1A] = struct.pack("<H", 0x28 - 0x14)
+        found = vm.resource_block(bytes(data), 0)
+        self.assertEqual(found.headers, (0x1C, 0x28))
+        listing = vm.block_listing(bytes(data), found, vm.BATTLE)
+        self.assertEqual([i.pc for i in listing.instructions], [0x30, 0x31, 0x34, 0x35])
+        self.assertEqual(vm.unlisted_headers(bytes(data), found, listing), (0x22,))
+        self.assertEqual(vm.script_start(bytes(data), 0x22), 0x32)
 
     def test_blocks_take_any_section_count_and_headers_point_past_themselves(self):
         # 80022224 reads only the first three section offsets; battle sprite

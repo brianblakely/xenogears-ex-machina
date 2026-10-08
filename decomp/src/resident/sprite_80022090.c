@@ -189,7 +189,7 @@ void func_800223B0(Sprite *sprite, s16 angle) {
  * frame and add their duration (commands 40-7f repeat the last one), b3
  * sets the frame index, be shows a frame with its flip and duration, e2
  * pushes its return point and jumps; 80-82 end, and 86, 87 and 97 end at
- * the target. Others are skipped by their length (8004fc40). */
+ * the target. Others are skipped by their length (D_8004FCC0). */
 void func_80022660(Sprite *sprite, u8 *target, s32 count) {
     u8 *script;
     u8 op;

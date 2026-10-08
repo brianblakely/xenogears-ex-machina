@@ -80,8 +80,9 @@ next:
             }
             return;
         }
-        /* 80-ff: as 800248d4 (the same width table follows a handler that keeps the
-         * script pointer), with the battle's cases. */
+        /* 80-ff: as 800248d4 (a handler that keeps the script pointer then advances by
+         * the resident length table, D_8004FC40[op] = D_8004FCC0[op - 0x80]), with the
+         * battle's cases. */
         switch (op) {
         /* e8 cmd var: battle command cmd (800b3f04) on the bytes at the variable. */
         case 0xE8:
@@ -118,8 +119,8 @@ next:
                 func_80023538(target, animation);
             }
             break;
-        /* fb s16 u8: when the sprite comes nearer its target than u8 * 2, or moves away,
-         * resume at this command + s16 (800b5924). */
+        /* fb s16 u8: go on; once the sprite comes nearer its target point (+a0) than u8 * 2,
+         * or moves away from it, resume at this command + s16 (800b5924 watches). */
         case 0xFB:
             func_800B5924(sprite, args[2] * 2, sprite->script + VM_S16(args, 0));
             break;

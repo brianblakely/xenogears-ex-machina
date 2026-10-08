@@ -116,8 +116,8 @@ next:
         return;
     }
     /* 80-ff: the cases below, the rest through 8001fbe4; a handler that keeps the script
-     * pointer is followed by the width table D_8004FC40[op] (80-9f: 1, a0-c7: 2, c8-f0:
-     * 3, f1-ff: 4; entries 00-7f are not read). See tools/analysis/sprite_vm.py. */
+     * pointer then advances by the command's length D_8004FCC0[op - 0x80] (80-9f: 1,
+     * a0-c7: 2, c8-f0: 3, f1-ff: 4). See tools/analysis/sprite_vm.py. */
     switch (op) {
     /* be s16 (three bytes; the width table says two): frame bits 0-8, wait bits 11-14 + 1
      * (scaled); one-sided sprites also take flip x (bit 9) and y (bit 10), and bit 15 maps a

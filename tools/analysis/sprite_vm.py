@@ -10,7 +10,8 @@ The second part decodes every command of both interpreters: the resident one
 (800248d4 with the generic commands of 8001fbe4) and the battle overlay's copy
 (800c11cc with the battle commands of 800b3f04), as recovered in decomp/src.
 `python3 -m tools.analysis.sprite_vm --sweep` finds the sprite resource blocks
-of both extracted discs and prints aggregate decoding results only.
+of both extracted discs and prints aggregate decoding results only, with the
+animation headers that nothing recovered starts reported apart.
 """
 
 from __future__ import annotations
@@ -230,11 +231,12 @@ class Spec:
 
 
 def table_width(opcode: int) -> int:
-    """D_8004FC40[opcode], the width of command 80-ff (resident data).
+    """D_8004FCC0[opcode - 0x80], the length of command 80-ff (resident data).
 
     The interpreters add it to the script pointer after every handler that
-    keeps the pointer. Only entries 80-ff are read; the sweep checks these
-    ranges against each disc's resident executable.
+    keeps the pointer (the battle copy indexes the same bytes as D_8004FC40).
+    A test checks it against the C table in sprite_80022090.c; the sweep checks
+    it against each disc's resident executable.
     """
     if not 0x80 <= opcode <= 0xFF:
         raise ValueError(f"no width entry is read for command {opcode:#x}")
@@ -912,13 +914,79 @@ def block_listing(view: bytes, block: ResourceBlock, dialect: str) -> Listing:
     return disassemble(view, starts, dialect, bounds=block.animations)
 
 
+# Frame tables of a header by its facing groups (bits 0-1): one, three of
+# four and five of eight (the others mirror one, 800223b0).
+FRAME_TABLES = (1, 3, 5, 1)
+
+
+def header_size(code: bytes, header: int) -> int:
+    return 4 + 2 * FRAME_TABLES[u16(code, header) & 3]
+
+
+def _header_fits(code: bytes, header: int, end: int) -> bool:
+    """A header whose commands and frame tables follow it within the section."""
+    size = header_size(code, header)
+    if header + size > end or not header + 6 <= script_start(code, header) < end:
+        return False
+    tables = (header + 4 + 2 * k for k in range(FRAME_TABLES[u16(code, header) & 3]))
+    return all(header + 6 <= at + u16(code, at) <= end for at in tables)
+
+
+def unlisted_headers(view: bytes, block: ResourceBlock, listing: Listing) -> tuple[int, ...]:
+    """Animation headers of section 1 that nothing in the recovered code starts.
+
+    The bytes no listed or spawned header, frame table start or reached
+    command covers (the directory area up to the first listed header counts
+    as covered) form runs; a run made wholly of headers that fit is taken as
+    headers that no directory lists and no command spawns. Data can take
+    this shape by chance, so the result is reported apart from the scripts.
+    """
+    low, high = block.animations
+    covered = bytearray(high - low)
+
+    def mark(start: int, end: int) -> None:
+        start, end = max(start, low), min(end, high)
+        if start < end:
+            covered[start - low : end - low] = b"\1" * (end - start)
+
+    mark(low, min(block.headers))
+    headers = set(block.headers)
+    for ins in listing.instructions:
+        mark(ins.pc, ins.pc + ins.length)
+        headers.update(ins.headers)
+    tables = set()
+    for header in headers:
+        mark(header, header + header_size(view, header))
+        for k in range(FRAME_TABLES[u16(view, header) & 3]):
+            at = header + 4 + 2 * k
+            tables.add(at + u16(view, at))
+    found = []
+    at = 0
+    while at < len(covered):
+        if covered[at]:
+            at += 1
+            continue
+        end = at
+        while end < len(covered) and not covered[end]:
+            end += 1
+        run, header = [], low + at
+        if header not in tables:
+            while header < low + end and _header_fits(view, header, high):
+                run.append(header)
+                header += header_size(view, header)
+        if run and header == low + end:
+            found.extend(run)
+        at = end
+    return tuple(found)
+
+
 # ---------------------------------------------------------------------------
 # Locating the blocks on the extracted discs
 # ---------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parents[2]
 RESIDENT_BASE = 0x80010000 - 0x800  # file offset of an address in the boot executable
-WIDTH_TABLE = 0x8004FCC0  # D_8004FC40 + 0x80: the entries the interpreters read
+WIDTH_TABLE = 0x8004FCC0  # D_8004FCC0, the lengths of commands 80-ff
 FIELD_ARCHIVES = {1: 606, 2: 601}  # slot of field 0's archive (verify_field.load_sources)
 FIELD_MAPS = 730
 FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_field)
@@ -1030,10 +1098,32 @@ class SweepReport:
     unhandled: dict[str, list[str]] = field(default_factory=dict)
     unhandled_blocks: dict[str, set] = field(default_factory=dict)
     unique: dict[str, set] = field(default_factory=lambda: {d: set() for d in DIALECTS})
+    # Opcodes of the commands that only unlisted headers' scripts reach.
+    unlisted: dict[str, Counter] = field(default_factory=lambda: {d: Counter() for d in DIALECTS})
 
 
 def _note(report: SweepReport, key: str, value: str) -> None:
     report.commands.setdefault(key, Counter())[value] += 1
+
+
+def _note_unlisted(
+    report: SweepReport, view: bytes, block: ResourceBlock, listing: Listing, dialect: str
+) -> None:
+    """Count a distinct block's unlisted headers and the commands their scripts add."""
+    unlisted = unlisted_headers(view, block, listing)
+    if not unlisted:
+        return
+    counts = report.counts
+    counts[f"{dialect} unlisted headers"] += len(unlisted)
+    counts[f"{dialect} blocks with unlisted headers"] += 1
+    entries = [script_start(view, h) for h in block.headers + unlisted]
+    combined = disassemble(view, entries, dialect, bounds=block.animations)
+    reached = {ins.pc for ins in listing.instructions}
+    for ins in combined.instructions:
+        if ins.pc not in reached:
+            counts[f"{dialect} unlisted commands"] += 1
+            report.unlisted[dialect][ins.opcode] += 1
+    counts[f"{dialect} unlisted undecodable"] += len(set(combined.errors) - set(listing.errors))
 
 
 def sweep_disc(root: Path, disc: int, report: SweepReport, listing_dir: Path | None = None) -> None:
@@ -1095,6 +1185,8 @@ def sweep_disc(root: Path, disc: int, report: SweepReport, listing_dir: Path | N
                         _note(report, f"battle {ins.opcode:02x} {ins.name} commands", ins.command)
                         if ins.overread:
                             _note(report, "battle commands reading past their bytes", at)
+                if fresh:
+                    _note_unlisted(report, view.data, block, listing, dialect)
                 if listing_dir is not None and fresh:
                     name = f"disc{disc}-{slot:04d}-{view.name.replace('/', '_').replace(' ', '_')}"
                     path = listing_dir / f"{name}-{block.offset:06x}-{dialect}.txt"
@@ -1175,6 +1267,24 @@ def print_report(report: SweepReport, out=sys.stdout) -> None:
     for kind, places in sorted(report.unhandled.items()):
         blocks = len(report.unhandled_blocks[kind])
         line(f"  {kind}: {len(places)} uses in {blocks} distinct blocks, e.g. {places[0]}")
+    line()
+    line("not started by recovered code: headers no directory lists and no command spawns")
+    for dialect in DIALECTS:
+        headers = counts[f"{dialect} unlisted headers"]
+        if not headers:
+            line(f"  {dialect}: none")
+            continue
+        used = report.unlisted[dialect]
+        line(
+            f"  {dialect}: {headers} headers in {counts[f'{dialect} blocks with unlisted headers']} "
+            f"distinct blocks; their scripts add {counts[f'{dialect} unlisted commands']} commands, "
+            f"{counts[f'{dialect} unlisted undecodable']} undecodable"
+        )
+        new = sorted(op for op in used if op not in report.opcodes[dialect])
+        line(
+            "    opcodes the started scripts do not use: "
+            + ("; ".join(f"{op:02x} {spec_for(op, dialect).name} {used[op]}" for op in new) or "none")
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
