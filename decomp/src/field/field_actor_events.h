@@ -22,7 +22,7 @@ extern u16 D_800AFE9C;         /* held pad buttons */
 extern u16 D_800C2694;         /* newly pressed pad buttons */
 extern s16 D_800ADB02;         /* frames stuck against terrain */
 extern s32 D_800ADB28;         /* latched jump setting */
-extern s32 D_800ADB64;         /* jump contact, 0xff none */
+extern s32 D_800ADB64;         /* requested menu kind, 0xff none */
 extern s32 D_800ADB68;         /* pad input polled this pass */
 extern u16 D_800ADF68[16];     /* d-pad direction per button state */
 extern u16 D_800ADF88[16];     /* alternate d-pad directions */

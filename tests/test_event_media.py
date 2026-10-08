@@ -54,9 +54,9 @@ class EventMediaTests(unittest.TestCase):
 
     def test_unknown_extended_opcode_reports_its_namespace_and_pc(self):
         with self.assertRaises(UnknownInstruction) as caught:
-            decode_instruction(bytes([0xFE, 0xA3, 0]), 0)
+            decode_instruction(bytes([0xFE, 0xE3, 0]), 0)
         error = caught.exception
-        self.assertEqual((error.namespace, error.pc, error.opcode), ("extended", 1, 0xA3))
+        self.assertEqual((error.namespace, error.pc, error.opcode), ("extended", 1, 0xE3))
         with self.assertRaises(ValueError):
             decode_instruction(bytes([0xFE]), 0)
         with self.assertRaises(EventError):

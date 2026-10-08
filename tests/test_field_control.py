@@ -259,7 +259,7 @@ class FieldControlTests(unittest.TestCase):
         with self.assertRaises(EventError):
             decode_instruction(bytes([0xA7]), 0)
         with self.assertRaises(UnknownInstruction):
-            decode_instruction(bytes([0x0B, 0]), 0)
+            decode_instruction(bytes([0xFE, 0xE3]), 0)
 
 
 if __name__ == "__main__":
