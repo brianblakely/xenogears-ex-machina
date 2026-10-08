@@ -52,8 +52,10 @@ model. These choices add no work to Phase 1's original-compatible matching exit.
   integrate with SDL; headset output integrates with OpenXR-owned swapchains
   through a narrow graphics adapter, not a second renderer or per-frame CPU copy.
 - **OpenXR:** Horizon immersive sessions, headset/controller poses and actions,
-  stereo views, predicted display timing and frame submission. An Android app
-  displayed as a flat panel is not evidence of stereo or immersive support.
+  hand tracking and capability-gated eye gaze/thumb gestures, stereo views,
+  predicted display timing and frame submission. Keep gesture interpretation in
+  an input adapter to shared commands. An Android app displayed as a flat panel
+  is not evidence of immersive hand/gaze access, stereo or diorama support.
 - **GPUI:** Desktop application interface for launcher/settings, bindings, asset
   import, save/mod management and later tools. Original dialogue, battle menus
   and other game UI stay in game presentation. Qualify GPUI on actual devices
@@ -253,6 +255,11 @@ altering game rules; flat presentation remains available.
 - [ ] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
   game menu and Esc toggles the app menu. Provide touch/headset equivalents and
   explicit focus/capture transitions without rebuilding original game UI in GPUI.
+- [ ] Implement the Horizon hand/gaze contract below as an optional assisted-input
+  profile. Navigation and approach/interact use authoritative traversal data and
+  shared legal commands, not coordinate rewrites, remote confirms or another game
+  rules model. Expose resolved intents/actions to agents and deterministic replay;
+  replay must not depend on recording raw eye movements or headset frame timing.
 - [ ] Deliver the GPUI desktop launcher/settings and available application-service
   screens. Apply changes through shared validation, acknowledgment and persistence;
   changing settings from an agent uses the same path. Add later save/mod/editor
@@ -260,11 +267,176 @@ altering game rules; flat presentation remains available.
 - [ ] Qualify mobile and in-headset application controls, using GPUI only where
   device integration is proven. Verify controller reconnects, live settings changes
   and return to play; a desktop companion is not a substitute for headset settings.
-- [ ] Verify equivalent human/agent actions and explicit pause policy during app
-  interactions; opening settings must not accidentally advance or stall simulation.
+- [ ] Verify human/agent parity, the pause/focus rules below and actual-device
+  gesture reliability. Test each hand alone with the other absent from tracking,
+  gaze availability/permissions and explicit pointer alternatives, running jumps,
+  interaction interruptions, dialogue, shops, both battle types, world-map/vehicle
+  controls and every minigame. Measure false activations, missed gestures, response
+  latency, rapid pause/resume, sustained comfort and tracking-loss recovery.
+
+### Horizon hand/gaze interaction contract
+
+All game functions, including Pause and inspection, must be operable with either
+single hand; native app settings and presentation manipulation may use two hands.
+Qualify the Phase 6 controls on Phase 5's virtual-screen/stereo presentation.
+Diorama scaling and first-person inspection use the bindings specified here when
+Phase 10 implements those views; they are not prerequisites for Phase 6's exit.
+These requirements do not add work to the Phase 1 matching decompilation.
+
+Use capability/permission checks for hand tracking, eye gaze and supported thumb
+microgestures; do not assume every Horizon device provides them. Offer explicitly
+selected head-directed or one-hand-ray targeting when eye gaze is unavailable,
+without silently switching pointer sources during a gesture. Looking only aims
+or highlights: no gaze-only walking, selection, dwell activation or retargeting
+of an already committed action.
+
+#### Gesture vocabulary and global controls
+
+A normal **pinch** joins thumb and index fingertips. A **thumb tap** taps the side
+of the index finger; thumb swipes travel up/down/left/right along that surface.
+A **five-finger grab** curls the fingers into the palm with the thumb closing
+around them. A **whole-hand pinch** instead gathers the fingertips toward the
+thumb. Keep these recognizers distinct, including their transitional poses.
+
+| Gesture | Action |
+| --- | --- |
+| Overhanded five-finger grab, palm down | Toggle gameplay Pause immediately on closure |
+| Underhanded five-finger grab, palm up | Toggle stationary first-person inspection where available |
+| Two whole-hand pinches, spreading/contracting | Enlarge/shrink the diorama |
+| Prayer hands | Toggle native app settings, not the game menu |
+
+For either oriented grab, require a fresh open-to-closed transition. Classify
+palm orientation relative to room vertical as closing begins and require it to
+remain in that region through closure; allow comfortable angles and a sideways
+neutral region that triggers neither action. No hold, dwell, release-to-trigger
+or deliberate cooldown: reopening rearms the next closure. A resting fist,
+rotating a closed fist or reacquiring a closed hand must not trigger. Coalesce
+simultaneous matching grabs into one toggle rather than toggling twice.
+
+Pause works in every gameplay context and during inspection without a gaze target.
+Keep head tracking, presentation and app input live while simulation is paused.
+Settings add a separate app-menu pause; closing them removes only that pause and
+preserves the player's Pause toggle. Inspection changes the view, not pause state.
+Clear transient gesture/button inputs across pause and focus transitions so no
+buffered jump, attack or selection fires on return.
+
+Prayer hands is a deliberate approach of open, aligned palms facing one another;
+near-contact is sufficient. Trigger once, separate to rearm, and leave settings
+open while the hands separate to operate them. Repeating the gesture or selecting
+Return to Game closes settings. Anchor the panel comfortably outside the game
+presentation, not between hands that must remain together.
+
+Arbitrate gestures before dispatch: a grab must not also emit a navigation pinch
+or thumb command. Two-hand scaling owns its full gesture through release and must
+not emit grab toggles. Runtime system gestures take priority over XEM actions.
+Each event belongs to one active context/target; never carry it into a newly
+opened list, dialogue choice, battle turn or different pointer source. Loss of
+active-hand tracking or app focus releases held inputs, cancels pending gestures
+and queued interaction, and pauses uncontrolled gameplay; require neutral input
+and explicit resume, not automatic reengagement. An unused second hand is not
+required tracking. Lost gaze blocks new gaze-targeted actions, not a substitution
+of a different target for an already accepted command.
+
+#### Field traversal and interaction
+
+- Use a discreet, stabilized, surface-aligned gaze cursor in the spirit of the
+  iOS Measure cursor. Select visible walkable surfaces using collision/traversal
+  data and occlusion, not scenery behind an obstruction. Distinguish walking
+  reachability, a required manual jump and invalid destinations; do not reveal
+  otherwise hidden interactions. Keep the live cursor and committed destination
+  visually related but distinct.
+- A single normal pinch commits the destination; no sustained pinch or joystick.
+  Pathfinding supplies legal movement inputs. Run for distant destinations and
+  walk only extremely nearby, using remaining route distance and separated speed
+  thresholds to avoid oscillation. A new pinch replaces the route. Looking away
+  or rotating the camera does not move its world-space destination.
+- Thumb tap on an interactive object/NPC commits approach-and-interact: retain
+  target identity, approach a valid position/facing and Confirm exactly once when
+  the original interaction is legal. Bound replanning for moving NPCs. Cancel on
+  replacement commands, unrelated dialogue, battle or scene transitions; never
+  let a queued Confirm act on a different interface. Thumb tap on noninteractive
+  ground stops the route without selecting another destination.
+- Thumb swipe **up** jumps; **left/right** rotate the field camera; **down** opens
+  the game menu, cancels navigation and does not restart it when the menu closes.
+  Keep manual jump timing and original movement/jump physics. Support destinations
+  across gaps: approach a takeoff area, preserve the intended direction/destination
+  through a player-triggered jump and replan after landing. Do not reject every
+  disconnected platform, auto-jump, guarantee a landing or slow a running jump
+  merely because its landing point is nearby. Make ledge braking an explicit
+  assistance option. Qualify gesture-to-jump latency with real platforming routes.
+
+#### Menus, dialogue and shops
+
+Use a 2D gaze cursor in the same visual language; thumb tap selects and thumb swipe
+**right** cancels/goes back. Gaze over a list plus thumb **up/down** scrolls that
+list: up moves content upward to later entries, down reveals earlier entries.
+On character-switching menus, gaze outside scrollable lists lets up select the
+**next** character and down the **previous** character. Show the receiving region;
+list scrolling takes priority even at its boundaries, with no fallthrough to
+character switching. **Never use pinch-and-drag scrolling**, including in native
+settings. Each swipe targets one stable region, with bounded scrolling and no
+transfer to another panel during its animation.
+
+Thumb tap advances ordinary dialogue one step. Choices require gaze selection
+and a fresh tap; the input that reveals a choice must not also answer it. Keep
+skipping/fast-forward separate from ordinary advance. Named gaze-selectable
+context actions expose otherwise awkward commands such as Gear boarding/exiting
+without requiring two-handed button chords or bypassing normal eligibility.
+
+In shops, put **+, -, ALL, NONE** virtual quantity buttons outside the game surface
+(and outside the Phase 10 diorama). They edit the selected item's proposed
+quantity only: ALL selects its maximum legal quantity subject to funds, stock,
+inventory and transaction limits; NONE clears that proposal. Display quantity
+and total, then separately confirm the purchase/sale. Do not reuse left/right
+thumb swipes for quantities or interpret ALL as every item in the shop.
+
+#### Battles and bespoke minigames
+
+On the command ring, thumb up/right/left/down directly activate the corresponding
+visible slots; **thumb tap cycles command-ring pages** with a visible page
+indicator. Do not use pinch for paging or require an extra tap for each command.
+On the attack ring, **up = Weak, left = Strong, down = Fierce, right = End the
+attack sequence**. Keep positions fixed and unavailable attacks visibly disabled;
+each swipe submits one legal input, with no extra confirmation, automatic repeats
+or undo of executed attacks. Thumb tap does nothing on an unpaged attack ring.
+Respect the original on-foot/Gear costs and timing rather than assuming one model.
+
+Ability/item lists follow the menu rules, including right to back out rather
+than activating a ring behind the list. Select requested enemy/ally/group targets
+by gaze plus thumb tap; offer a target list for overlap/occlusion. Confirmed targets
+remain selected while looking elsewhere, unless the game requires new targeting.
+No page-change/attack gesture may leak into a new list, target step or next turn.
+
+Provide a custom virtual arcade control deck for each minigame, outside the game
+surface/diorama. Tailor it to that game's actual directional, timing, selection,
+held and simultaneous inputs rather than forcing field navigation or a generic
+controller layout onto every game. Each deck must support complete one-handed
+play, including simultaneous steering/actions where required; Pause remains
+available. Discrete thumb events alone are not held inputs: define explicit
+press/release or captured-control behavior and release everything on exit/focus
+loss. Use shared legal commands, not automated gameplay sequences.
+
+#### Seraph Glass visual language
+
+Unify every added cursor, button, ring, scaling handle, shop panel, arcade deck
+and native VR control under **Seraph Glass**: iOS Liquid Glass-like material
+behavior with Xenogears' Seraph Angels-inspired structure. Use faceted silver-white
+shells, hollow halos, tapered fins, dark recesses and sparse gold/copper accents
+around translucent inner surfaces, not generic blue holograms. Apply this to the
+control layer, not a glass coating over the original game world or a requirement
+to rebuild original game UI in GPUI.
+
+Keep cursor centers stable, silhouettes related across surface/2D targeting and
+committed destinations, and feedback restrained. Give ornate shapes generous,
+simple hit areas; communicate state through shape/contrast as well as color.
+Text and essential symbols stay solid and readable, with reduced-transparency
+and reduced-motion options. External controls retain comfortable angular sizes
+independent of diorama scale and do not obscure the play area.
 
 **Exit:** Every original system and application settings are usable through the
-appropriate desktop, touch and headset controls, with human/agent action parity.
+appropriate desktop, touch and headset controls, including qualified one-hand
+Horizon gameplay, with human/agent action parity. Phase 10 separately qualifies
+the diorama and stationary-inspection presentation bindings.
 
 ## Phase 7 — Mods and source-oriented agent authoring
 
@@ -323,13 +495,29 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Goal:** Add optional presentation features grounded in original behavior.
 
-- [ ] Extend Horizon stereo-screen play with seated diorama viewing, then a
-  separately qualified optional immersive first-person mode. Retain flat/stereo
-  play; VR must not require first-person gameplay. Separate head pose from scripted
-  cameras and provide recentering, world-scale and comfort controls.
-- [ ] Implement playable first-person mode on flat displays and clearer FMVs with
-  an original option. Qualify sprite planes, missing surfaces, masks/effects and
-  UI/media placement per camera mode; 2D assets do not become volumetric in stereo.
+- [ ] Extend Horizon stereo-screen play with seated diorama viewing. Retain
+  flat/stereo play; VR must not require first-person inspection. Separate head
+  pose from scripted cameras and provide recentering and comfort controls.
+- [ ] Implement stationary first-person inspection on both VR and flat displays,
+  using the Phase 6 underhanded-grab binding and equivalent conventional inputs.
+  This is look-around only, not FPS locomotion: keep the character stationary,
+  disable navigation/approach-and-interact/jump commands, and cancel the route on
+  entry. Head tracking supplies VR looking; flat-display look input rotates the
+  view without moving the character. Restore the prior field camera/diorama scale
+  on exit without restarting the old route. Preserve Pause independently and
+  avoid forced viewpoint changes from character turning or animation.
+- [ ] Implement diorama scaling with two whole-hand fingertip pinches, distinct
+  from fists and normal index pinches: spread to enlarge, contract to shrink,
+  release either hand to finish. No rim targeting is required. Keep the anchor
+  stable; change presentation scale only, never physics or game-state distances.
+  The scaling gesture must not emit movement or grab toggles. Place the Seraph
+  Glass shop/minigame decks and other external controls outside the diorama and
+  retain readable control sizes while it scales; provide scale/reset settings.
+- [ ] Qualify transitions, paused head tracking, scale/gesture ownership, either
+  hand's oriented grabs and two-hand native controls on actual devices. Qualify
+  sprite planes, missing surfaces, masks/effects and UI/media placement per camera
+  mode; 2D assets do not become volumetric in stereo. Provide clearer FMVs with an
+  original option independently of camera-mode qualification.
 - [ ] Implement Wide-derived headphone surround only after verifying the actual
   Wide signal and intended playback model. Distinguish matrix encoding from
   phase-based expansion; select a justified reconstruction/decoder and HRTF path
@@ -337,8 +525,9 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 - [ ] Retain selectable original Mono, Stereo and undecoded Wide; verify effects,
   music and FMV routing, device changes and synchronization.
 
-**Exit:** Diorama and immersive modes, flat-display first-person play and optional
-media/audio features are verified independently, without fidelity overclaims.
+**Exit:** Diorama viewing/scaling, stationary first-person inspection on VR/flat
+and optional media/audio features are verified independently, without fidelity
+overclaims or changes to game physics.
 
 ## Phase 11 — Graphical level and cutscene editors
 
@@ -375,6 +564,8 @@ media/audio features are verified independently, without fidelity overclaims.
   surface/device recreation and controller/audio reconnects on actual devices.
   Qualify sustained performance/thermal behavior and XR frame pacing, stereo,
   tracking, session transitions and in-headset settings; a cross-build is not enough.
+  Regress one-hand gameplay, oriented grabs, gaze/list focus and two-hand native
+  gestures across supported tracking capabilities and presentation modes.
 - [ ] Run original-game, agent, authoring, mod, editor, save/time and presentation
   regressions; verify defaults, optional original behavior and error diagnostics.
 - [ ] Audit licenses and the explicit authored-source allowlist; distribute no
