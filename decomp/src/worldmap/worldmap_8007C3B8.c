@@ -1,5 +1,22 @@
 #include "worldmap.h"
 
+/* The director's timed sequence: the state of each step and its duration
+ * (started by func_8007C36C). */
+u16 D_8009A4D8[8] = {2, 16, 17, 18, 19, 20, 22, 64};
+u16 D_8009A4E8[8] = {600, 60, 8, 255, 180, 270, 75, 0};
+
+/* Camera shot paths: control points. */
+SVECTOR D_8009A4F8[14] = {
+    {1629, -160, 1629}, {0, -160, 2304}, {-1629, -160, 1629}, {-2304, -160, 0},
+    {-1621, -386, -1621}, {0, -525, -1623}, {814, -160, -814}, {1022, -110, 0},
+    {515, -401, 516}, {0, -260, 503}, {-267, -235, 267}, {-383, -125, -6}, {-244, -55, -251},
+    {6, -55, -352},
+};
+SVECTOR D_8009A568[7] = {
+    {4, -387, -369}, {-252, -507, -257}, {-272, -637, -2}, {-176, -892, 172}, {-209, -991, 360},
+    {-495, -1063, 852}, {-703, -707, 1647},
+};
+
 /* Vehicle scene director: step through its timed sequence and run each cue (actor commands, sounds, fog). */
 s32 func_8007C3B8(s32 index) {
     WorldmapActor *actor;

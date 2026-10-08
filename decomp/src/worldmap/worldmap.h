@@ -35,7 +35,7 @@ typedef struct {
 } WorldmapArea;
 
 extern u16 D_8009B564[];          /* area thresholds, indexed from 1 */
-extern WorldmapArea D_8009B57C[]; /* area file sets */
+extern WorldmapArea D_8009B584[]; /* area file sets */
 
 /* Loaded area files and their buffers. */
 extern s32 D_8009D3C4, D_8009C174, D_8009C17C, D_8009D3D0, D_8009CC98;
@@ -367,7 +367,7 @@ typedef struct SceneObject {
 } SceneObject;
 
 extern SceneObject *D_8009C620; /* scene objects */
-extern u16 D_8009A450;
+extern u16 D_8009A450[];
 extern u16 D_8009A46C[];
 extern u16 D_8009A4D8[];
 extern u16 D_8009A4E8[];
@@ -421,13 +421,15 @@ extern s16 D_8009BD04;
 
 s32 func_8008C364(WorldmapActor *actor, s32 kind);
 
+/* A path region as the current path (PathRegion's layout): data holds the
+ * bounds, then the scene id and its parameter; count is the path link. */
 typedef struct {
-    u8 data[0xC];
+    s16 data[6];
     u16 count;
     u16 pad;
 } PathTable;
 
-extern PathTable D_8009B6C4[2];
+extern PathTable D_8009B6C4[3];
 extern PathTable *D_8009D7D8;
 extern s16 D_8009BD24;
 extern u8 D_8009D738, D_8009BD60;
@@ -617,14 +619,14 @@ s16 func_80093F18(VECTOR *position);
 void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
-extern u16 D_8009A68C[];
+extern u16 D_8009A68C[]; /* exhaust flame sizes */
 extern DiscReadRequest *D_8009D788[16]; /* submitted disc request lists */
 
 s32 func_80084DB8(s32 probe, s32 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 void func_800963E4(DiscReadRequest *list);
 
-extern s32 D_8009B224[2], D_8009B22C[2], D_8009B234[2], D_8009B23C[2];
+extern s16 D_8009B224[], D_8009B22C[], D_8009B234[], D_8009B23C[]; /* pitches, heights */
 extern HostReadRequest *D_8009C624[16]; /* submitted host-file request lists */
 
 /* Terrain slope plane per type (16 bytes). */
@@ -648,7 +650,7 @@ typedef struct {
     s16 kind; /* 0x0E: 4 destination */
 } PathRegion;
 
-extern s16 D_8009B18C[4], D_8009B194[4], D_8009B19C[4], D_8009B1A4[4];
+extern s16 D_8009B18C[], D_8009B194[], D_8009B19C[], D_8009B1A4[];
 extern s32 D_8009CD44, D_8009BD2C;
 
 /* Frame state. */
@@ -1082,8 +1084,6 @@ typedef struct {
 } ActorSpawn;
 
 extern ActorSpawn D_80099E8C[];  /* actors of every area */
-extern s32 D_80099E90;           /* first update member of that same list */
-#define WORLD_COMMON_ACTORS ((ActorSpawn *)((u8 *)&D_80099E90 - 4))
 extern ActorSpawn *D_8009A034[]; /* per area: its actors */
 extern s32 D_8009C894;           /* nonzero when resuming a saved state */
 extern s32 D_8009C178, D_80059198;
@@ -1351,9 +1351,7 @@ typedef struct {
     MATRIX rotation;   /* 0x110 */
 } FlameScratch;
 
-extern u16 D_8009A684[]; /* flame sizes per actor */
-
-extern u16 D_8009A5A0[][3]; /* per area: three ambient sounds */
+extern u16 D_8009A5A0[][3]; /* per entry: three ambient sounds */
 
 /* Scratchpad work area of the flight-track actor. */
 typedef struct {
@@ -1461,7 +1459,7 @@ extern u16 D_8006EE68, D_8006EE76;
 
 void func_80039E18(s32 sound);
 
-extern SVECTOR D_8009A490[]; /* rig flight path; pad -1 ends */
+extern SVECTOR D_8009A490[]; /* rig flight path */
 /* Scratchpad work area of the rig path follower. */
 typedef struct {
     VECTOR axis[4];   /* 0x00 */
@@ -1472,7 +1470,7 @@ typedef struct {
     MATRIX frame;     /* 0xF0 */
 } FollowScratch;
 
-extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths; pad -1 ends */
+extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths */
 
 /* Scratchpad work area of the camera shot director. */
 typedef struct {
@@ -1505,7 +1503,7 @@ typedef struct {
 s32 func_80090A84(WorldmapActor *actor);
 
 /* worldmap_80090A84 camera pitch choice */
-extern s32 D_8009B214[3]; /* camera distance per pitch */
+extern s32 D_8009B214[4]; /* camera distance per pitch */
 s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 /* worldmap_80094A5C: terrain visibility grid */
@@ -1524,7 +1522,7 @@ typedef struct {
 #define GRID_SCRATCH ((GridScratch *)0x1F800000)
 
 extern s16 D_8009D650[25][4]; /* per block: visibility of its 4 quarters */
-extern u32 D_8009B7A8[4][25][2]; /* per quadrant: always-visible quarters */
+extern s16 D_8009B7A8[4][25][4]; /* per quadrant: always-visible quarters */
 
 s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
 

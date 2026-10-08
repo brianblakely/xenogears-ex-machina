@@ -73,7 +73,20 @@ segments:
       - [0x1e6a0, c, worldmap_8008E190]
       - [0x20f94, c, worldmap_80090A84]
       - [0x24f6c, c, worldmap_80094A5C]
-      - [0x2a39c, data, worldmap_data]
+      - [0x2a39c, .data, worldmap_80072238]
+      - [0x2a900, .data, worldmap_80077E68]
+      - [0x2a960, .data, worldmap_8007A9F8]
+      - [0x2a9e8, .data, worldmap_8007C3B8]
+      - [0x2aab0, .data, worldmap_8007DE98]
+      - [0x2aba8, .data, worldmap_80080370]
+      - [0x2abd0, .data, worldmap_800811C0]
+      - [0x2b23c, .data, worldmap_80083A00]
+      - [0x2b6bc, .data, worldmap_8008E190]
+      - [0x2b724, .data, worldmap_80090A84]
+      - [0x2ba74, .data, worldmap_80094A5C]
       # The decoded length is not word-aligned; its final bytes are zero.
+      # They are not program data: the packer completed its last group of
+      # eight tokens with two zero literals (the program ends at 0x2c0c4,
+      # where the BSS terrain origin D_8009BBB4 starts) and counted them.
       - [0x2c0c4, databin, worldmap_tail]
   - [0x2c0c6]

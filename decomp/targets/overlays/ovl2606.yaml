@@ -44,5 +44,5 @@ segments:
     subsegments:
       - [0x0, .rodata, ovl2606]
       - [0x124, c, ovl2606]
-      - [0xd40, data, ovl2606_data]
+      - [0xd40, .data, ovl2606]
   - [0x1ddc]

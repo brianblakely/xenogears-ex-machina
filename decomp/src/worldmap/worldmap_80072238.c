@@ -29,6 +29,189 @@ s32 func_8008868C();
 s32 func_800879E0();
 s32 func_80088C90();
 
+/* Actor handlers of the actor lists below (start, then update). */
+s32 func_8008A2C8(), func_8008A72C(), func_8008B2BC(), func_8008B644();
+s32 func_8008BB40(), func_8008C530(), func_8008C844(), func_8008D3F0();
+s32 func_8008D678(), func_8008DD6C(), func_8008E190(), func_8008E76C();
+s32 func_800906E0(), func_800907F4(), func_80091430(), func_800914D0();
+s32 func_80091B54(), func_80091C18(), func_80092234(), func_800922AC();
+s32 func_80092C70(), func_80092FD8(), func_80087C6C(), func_80087FD0();
+s32 func_80088570(), func_80088720(), func_800879A8(), func_80087A8C();
+s32 func_800877E0(), func_80087804(), func_80088B40(), func_80088D00();
+s32 func_80088EA0(), func_80088F1C(), func_80088F54(), func_80088F5C();
+s32 func_80088D64(), func_80088DE4(), func_80088E1C(), func_80088E68();
+
+/* Mode handlers (enter, start, leave) of the mode table below. */
+void func_80071CDC(void);
+void func_80072238(void);
+void func_8007299C(void);
+void func_80077214(void);
+void func_80077480(void);
+void func_80077A64(void);
+void func_80077CC0(void);
+void func_80078A60(void);
+void func_80078D24(void);
+void func_8007A5DC(void);
+void func_8007A8AC(void);
+void func_8007BF50(void);
+void func_8007C260(void);
+void func_8007D918(void);
+void func_8007DCE0(void);
+void func_8007FF70(void);
+void func_80080218(void);
+void func_80080D00(void);
+void func_8008106C(void);
+void func_80082324(void);
+void func_800826B4(void);
+void func_8008355C(void);
+void func_800837DC(void);
+
+/* Actor script commands (dispatched by func_80076B34). */
+s32 func_80076BC4(void);
+s32 func_80076BDC(WorldmapActor *actor, s16 frames);
+s32 func_80076C18(WorldmapActor *actor, s32 a, s32 b);
+s32 func_80076C3C(WorldmapActor *actor, s32 x, s32 y, s32 z);
+s32 func_80076C68(WorldmapActor *actor, s16 x, s16 y, s16 z);
+s32 func_80076C88(WorldmapActor *actor, s32 a);
+s32 func_80076CB4(WorldmapActor *actor, s32 a);
+s32 func_80076CD4(WorldmapActor *actor, s32 a);
+s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b);
+s32 func_80076D1C(WorldmapActor *actor, s32 sound);
+s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c);
+s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b);
+
+/* The actors started in every area (the world map's common actors). */
+ActorSpawn D_80099E8C[16] = {
+    {(s32)func_800923A8, (s32)func_800925A0}, {(s32)func_8008A2C8, (s32)func_8008A72C},
+    {(s32)func_8008B2BC, (s32)func_8008B644}, {(s32)func_8008BB40, (s32)func_8008B644},
+    {(s32)func_8008C530, (s32)func_8008C844}, {(s32)func_8008D3F0, (s32)func_8008D678},
+    {(s32)func_8008DD6C, (s32)func_8008D678}, {(s32)func_8008E190, (s32)func_8008E76C},
+    {(s32)func_800906E0, (s32)func_800907F4}, {(s32)func_80091430, (s32)func_800914D0},
+    {(s32)func_80091B54, (s32)func_80091C18}, {(s32)func_80092234, (s32)func_800922AC},
+    {(s32)func_80092BE4, (s32)func_80092C70}, {(s32)func_80092DF8, (s32)func_80092FD8},
+    {(s32)func_80071A50, (s32)func_80071A58}, {0, 0},
+};
+
+/* Each area's own actors, by area (D_8009A034). */
+ActorSpawn D_80099F0C[2] = {{(s32)func_80087710, (s32)func_80087734}, {0, 0}};
+ActorSpawn D_80099F1C[1] = {{0, 0}};
+ActorSpawn D_80099F24[3] = {
+    {(s32)func_80087C6C, (s32)func_80087FD0}, {(s32)func_80088570, (s32)func_80088720}, {0, 0},
+};
+ActorSpawn D_80099F3C[7] = {
+    {(s32)func_80087C6C, (s32)func_80087FD0}, {(s32)func_80088570, (s32)func_80088720},
+    {(s32)func_800879A8, (s32)func_80087A8C}, {(s32)func_800877E0, (s32)func_80087804},
+    {(s32)func_80088B40, (s32)func_80088D00}, {(s32)func_80088EA0, (s32)func_80088F1C}, {0, 0},
+};
+ActorSpawn D_80099F74[7] = {
+    {(s32)func_80087C6C, (s32)func_80087FD0}, {(s32)func_80088570, (s32)func_80088720},
+    {(s32)func_800879A8, (s32)func_80087A8C}, {(s32)func_800877E0, (s32)func_80087804},
+    {(s32)func_80088F54, (s32)func_80088F5C}, {(s32)func_80088EA0, (s32)func_80088F1C}, {0, 0},
+};
+ActorSpawn D_80099FAC[8] = {
+    {(s32)func_80087C6C, (s32)func_80087FD0}, {(s32)func_80088570, (s32)func_80088720},
+    {(s32)func_800879A8, (s32)func_80087A8C}, {(s32)func_800877E0, (s32)func_80087804},
+    {(s32)func_80088F54, (s32)func_80088F5C}, {(s32)func_80088EA0, (s32)func_80088F1C},
+    {(s32)func_80088D64, (s32)func_80088DE4}, {0, 0},
+};
+ActorSpawn D_80099FEC[9] = {
+    {(s32)func_80088F54, (s32)func_80088F5C}, {(s32)func_80088F54, (s32)func_80088F5C},
+    {(s32)func_800879A8, (s32)func_80087A8C}, {(s32)func_800877E0, (s32)func_80087804},
+    {(s32)func_80088F54, (s32)func_80088F5C}, {(s32)func_80088EA0, (s32)func_80088F1C},
+    {(s32)func_80088D64, (s32)func_80088DE4}, {(s32)func_80088E1C, (s32)func_80088E68}, {0, 0},
+};
+ActorSpawn *D_8009A034[9] = {
+    D_80099F0C, D_80099F1C, D_80099F1C, D_80099F24, D_80099F3C,
+    D_80099F74, D_80099FAC, D_80099FAC, D_80099FEC,
+};
+
+/* Handlers per world-map mode (worldmap.c's frame loop): 0-7 the open map,
+ * the others the scripted scenes. */
+WorldmapMode D_8009A058[19] = {
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071CDC, func_80072238, func_8007299C},
+    {func_80071EF0, func_80077214, func_80077480},
+    {func_80071EF0, func_80077A64, func_80077CC0},
+    {func_80071EF0, func_80078A60, func_80078D24},
+    {func_80071EF0, func_80077214, func_80077480},
+    {func_80071EF0, func_8007BF50, func_8007C260},
+    {func_80071EF0, func_8007FF70, func_80080218},
+    {func_80071EF0, func_8007A5DC, func_8007A8AC},
+    {func_80071EF0, func_8007D918, func_8007DCE0},
+    {func_80071EF0, func_80080D00, func_8008106C},
+    {func_80071EF0, func_80082324, func_800826B4},
+    {func_80071EF0, func_8008355C, func_800837DC},
+};
+
+/* Unreferenced: the extent positions wrap at (see func_800980D4). */
+s32 D_8009A13C = 0x800000;
+
+/* Light colour and direction matrices of the scene objects (func_80084580)
+ * and the landmark model (func_80076098), and the identity matrix. */
+MATRIX D_8009A140 = {{{1536, 0, 0}, {1536, 0, 0}, {1536, 0, 0}}, {0, 0, 0}};
+MATRIX D_8009A160 = {{{0, -4096, 0}, {0, 0, 0}, {0, 0, 0}}, {0, 0, 0}};
+MATRIX D_8009A180 = {{{4096, 0, 0}, {0, 4096, 0}, {0, 0, 4096}}, {0, 0, 0}};
+
+/* Terrain texture animations: frame sequences and the slots they upload
+ * to, for the two animation sections of an area. */
+TexAnimFrame D_8009A1A0[9] = {
+    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
+};
+TexAnimFrame D_8009A1C4[9] = {
+    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
+};
+TexAnimSlot D_8009A1E8[2] = {
+    {{0xF8, 0x1B0, 8, 1}, 0, D_8009A1A0},
+    {{0xF8, 0x1D0, 8, 1}, 1, D_8009A1C4},
+};
+TexAnimFrame D_8009A208[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
+TexAnimFrame D_8009A220[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
+TexAnimFrame D_8009A238[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
+TexAnimSlot D_8009A250[3] = {
+    {{0x280, 0xC0, 0x20, 0x40}, 0, D_8009A208},
+    {{0x2A0, 0xC0, 0x10, 0x20}, 1, D_8009A220},
+    {{0x2B8, 0xC0, 0x10, 0x40}, 2, D_8009A238},
+};
+
+/* Sky band corners. */
+SVECTOR D_8009A280[4][4] = {
+    {{-4096, -768, 4096}, {4096, -768, 4096}, {-4096, 1024, 4096}, {4096, 1024, 4096}},
+    {{-4096, -1152, 4096}, {4096, -1152, 4096}, {-4096, -768, 4096}, {4096, -768, 4096}},
+    {{-4096, -3200, 3072}, {4096, -3200, 3072}, {-4096, -1152, 4096}, {4096, -1152, 4096}},
+    {{-4096, -4096, 1024}, {4096, -4096, 1024}, {-4096, -3200, 3072}, {4096, -3200, 3072}},
+};
+
+/* Horizon quad corners. */
+SVECTOR D_8009A300[2][4] = {
+    {{-4096, -896, 4032}, {0, -896, 4032}, {-4096, -640, 4032}, {0, -640, 4032}},
+    {{0, -896, 4032}, {4096, -896, 4032}, {0, -640, 4032}, {4096, -640, 4032}},
+};
+
+/* Map player marker triangles. */
+SVECTOR D_8009A340[4][3] = {
+    {{0, 0, 0}, {-8, -8, 0}, {-4, -11, 0}},
+    {{0, 0, 0}, {-4, -11, 0}, {0, -12, 0}},
+    {{0, 0, 0}, {0, -12, 0}, {4, -11, 0}},
+    {{0, 0, 0}, {4, -11, 0}, {8, -8, 0}},
+};
+
+/* Terrain kind substitutes. */
+s16 D_8009A3A0[16] = {3, 3, 3, 3, 3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+
+/* Actor script commands, by command number. */
+ScriptOp D_8009A3C0[12] = {
+    (ScriptOp)func_80076BC4, (ScriptOp)func_80076BDC, (ScriptOp)func_80076C18, func_80076C3C,
+    (ScriptOp)func_80076C68, (ScriptOp)func_80076C88, (ScriptOp)func_80076CB4,
+    (ScriptOp)func_80076CD4, (ScriptOp)func_80076CF4, (ScriptOp)func_80076D1C, func_80076D50,
+    (ScriptOp)func_80076D8C,
+};
+
 /* Enter the world map: set up the display, load or restore the area, start the
  * subsystems, the music and the area's actors. */
 void func_80072238(void) {
@@ -144,12 +327,8 @@ void func_80072238(void) {
     }
     switch (D_8009C894) {
     case 0:
-        if (WORLD_COMMON_ACTORS[0].kind != 0) {
-            i = 0;
-            do {
-                func_80097718(D_80099E8C[i].kind, D_80099E8C[i].update);
-                i++;
-            } while (D_80099E8C[i].kind != 0);
+        for (i = 0; D_80099E8C[i].kind != 0; i++) {
+            func_80097718(D_80099E8C[i].kind, D_80099E8C[i].update);
         }
         spawn = D_8009A034[D_8009C610];
         if (spawn->kind != 0) {

@@ -11,6 +11,29 @@
  * 801e0238. */
 #include "scene_select.h"
 
+/* The row labels and character names, each in a 256-byte text buffer, and
+ * the tables of pointers to them that the screen prints. */
+char D_801E0D40[4][0x100] = {"SceneNo ", "Party   ", "Robo    ", "FileNo  "};
+char D_801E1140[12][0x100] = {
+    "Fei", "Elly", "Shitan", "Baltho", "Billy", "Lico",
+    "Emerada", "Chuchu", "Maria", "Shitan2", "Emerada2", "",
+};
+char *D_801E1D40[4] = {D_801E0D40[0], D_801E0D40[1], D_801E0D40[2], D_801E0D40[3]};
+char *D_801E1D50[12] = {
+    D_801E1140[0], D_801E1140[1], D_801E1140[2], D_801E1140[3],
+    D_801E1140[4], D_801E1140[5], D_801E1140[6], D_801E1140[7],
+    D_801E1140[8], D_801E1140[9], D_801E1140[10], D_801E1140[11],
+};
+
+/* Gear ids for the gear columns Nml and Bar, indexed by character (ff
+ * none). */
+u8 D_801E1D80[16] = {0, 2, 3, 4, 5, 6, 9, 7, 8, 16, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+u8 D_801E1D90[16] = {1, 2, 11, 12, 13, 14, 9, 7, 8, 11, 18, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+/* The selector's values and shown columns, set by func_801E0124. */
+s32 D_801E1DA0[4][3] = {0};
+u8 D_801E1DD0[4][3] = {0};
+
 /* Put the first frame's environments, enable the display and reset the
  * selector: party order 0/1/2, default values and every digit visible. */
 void func_801E0124(void) {

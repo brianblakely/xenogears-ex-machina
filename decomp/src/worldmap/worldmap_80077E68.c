@@ -30,6 +30,13 @@ s32 func_8007BA10();
 s32 func_8007BB60();
 s32 func_8007BBEC();
 
+/* The scene camera's flight path: control points, the last marked by pad -1. */
+SVECTOR D_8009A3F0[12] = {
+    {0, -228, -425}, {301, -228, -301}, {490, -364, 0}, {358, -437, 358}, {0, -512, 512},
+    {-400, -625, 400}, {-577, -675, -577}, {0, -904, -946}, {96, -608, 0}, {0, -1157, 1106},
+    {-793, -899, -771}, {0, 0, 0, -1},
+};
+
 /* Scene camera flight along the path: follow the path points, speed up and
  * slow down by state, fade out at the end, and set the engine volume from the
  * eye's distance. */
@@ -865,7 +872,7 @@ s32 func_8007A9B4(s32 index) {
 
     actor = &D_8009BE24[index];
     actor->u.step = 0;
-    actor->state = D_8009A450;
+    actor->state = D_8009A450[0];
     actor->wait = D_8009A46C[actor->u.step];
     return 1;
 }

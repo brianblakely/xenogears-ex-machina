@@ -4,8 +4,6 @@ D_8009D3FC = 0x8009D3FC;
 // The copied music buffer is also consumed as the resident sequence header.
 D_80062648 = 0x80062648; // allow_duplicated:True
 D_80062648_sequence = 0x80062648; // allow_duplicated:True
-// The common-actor list also has an independently addressed update member.
-D_80099E90 = 0x80099E90;
 // Saved gear flags are also addressed individually by the frame loop.
 D_8006EE70 = 0x8006EE70;
 D_8006EE72 = 0x8006EE72;
