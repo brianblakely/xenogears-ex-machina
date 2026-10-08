@@ -864,10 +864,9 @@ extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
 #ifdef NON_MATCHING
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is
  * clear to the 8-bit page area at (300, 100).
- * NON_MATCHING (139 -> 52 edits, 672 bytes vs 656): the shared height
- * base and current-piece cursor recover the original frame and initial
- * height/width/Y bases. Cursor spills, row-load scheduling and additional
- * outer cursor updates still differ. */
+ * NON_MATCHING: size and row-loop cursor structure agree. The frame is
+ * eight bytes short, s6/s7 are swapped, and the source-pointer addition
+ * operands differ. */
 
 /* A RECT is four signed halfwords (x, y, width, height). Sum the source
  * offset in words; reread width after memcpy before advancing the row. */
@@ -890,7 +889,6 @@ void func_800AB808(void) {
     u8 *row_pixels;
     s32 i;
     s32 row;
-    const s16 *piece_h;
     const s16 *height_base;
 
     file = func_80031BDC(func_800288EC(0x802), 0);
@@ -900,20 +898,19 @@ void func_800AB808(void) {
     OpenTIM(file);
     if (ReadTIM(&tim) != NULL) {
         height_base = &D_800AF5C0[0].h;
-        piece_h = height_base;
-        for (i = 0; i < 5; i++, piece_h += 4) {
+        for (i = 0; i < 5; i++) {
             if (func_800AB748(i) == -1 && tim.paddr != NULL) {
                 row_pixels = pixels;
                 row = 0;
-                if (*piece_h > 0) {
+                if (height_base[i * 4] > 0) {
                     do {
                         row_pixels = copy_picture_row(row_pixels, &tim, i, row);
-                    } while (++row < height_base[i * 4]);
+                    } while (++row < ((s16 *)D_800AF5C0)[i * 4 + 3]);
                 }
                 tim.prect->x = ((s16 *)D_800AF5C0)[i * 4] / 2 + 0x300;
                 tim.prect->y = ((s16 *)D_800AF5C0)[i * 4 + 1] + 0x100;
                 tim.prect->w = picture_piece_width(i) / 2;
-                tim.prect->h = *piece_h;
+                tim.prect->h = height_base[i * 4];
                 LoadImage(tim.prect, (u_long *)pixels);
                 DrawSync(0);
             }
