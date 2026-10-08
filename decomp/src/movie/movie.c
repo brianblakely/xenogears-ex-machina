@@ -1087,7 +1087,6 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     *ot = (*ot & 0xFF000000) | ((u32)poly & 0xFFFFFF);
 }
 
-#ifdef NON_MATCHING
 /* Mode 6 entry. Load the movie library below the heap top and open it at
  * 320x256; with a movie request (8004fe44..47) play it and select the next
  * mode. Otherwise run the development menu: movie type, number, start and
@@ -1095,19 +1094,9 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
  * test and a return to the kernel. Square and Cross speed up the frame
  * settings. The menu cursor is kept across the screens it opens. The unused
- * name reproduces the original's frame. The setup's 1s are stored through
- * `last` (the original keeps them in $v1, the register `last` gets in the
- * loop): a constant 1 would be a pseudo set once, which sched1 places just
- * before its first store, sharing $v0 with -1/0xC80/2 so that sched2 groups
- * the four stores of 1. Does not match: one instruction is out of place:
- * the load of 1 into $v1 comes right after the func_8002C3D8 call, above
- * the SetDefDrawEnv argument setup (lui/addiu $s1, $a0-$a3), where the
- * original has it just below that setup, before the D_80077450 store.
- * Both sched1 and sched2 keep it there here; moving `last = 1` anywhere
- * between the call and the first store of 1, or making `last` hold the
- * call's result first, changes nothing. In sched1 every insn of this block
- * has priority 1 and the 1 load loses the LUID tie to the argument setup;
- * using step/dir/line/cursor for the 1s or plain constants is worse. */
+ * name reproduces the original's frame. Keep the queried disc mode local
+ * while clearing the debug views and selecting 24-bit library output,
+ * then publish it with the playback defaults. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
@@ -1115,6 +1104,7 @@ void func_800737EC(void) {
     s32 dir;
     s32 line;
     s32 last;
+    s32 disc_mode;
     s32 cursor;
     void *top;
     void *library;
@@ -1133,17 +1123,17 @@ void func_800737EC(void) {
     func_800295D8(1, library, 0, 0);
     func_80028A60(0);
     func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
-    D_80077450 = func_8002C3D8();
-    last = 1;
-    D_800773A0 = -1;
-    D_8007739C = 0xC80;
+    disc_mode = func_8002C3D8();
     D_80077394 = 0;
     D_800773B0 = 0;
-    D_80077454 = last;
-    D_80077448 = last;
+    D_80077454 = 1;
+    D_80077450 = disc_mode;
+    D_800773A0 = -1;
+    D_8007739C = 0xC80;
+    D_80077448 = 1;
     D_8007711C = 0;
-    D_800773A4 = last;
-    D_80077398 = last;
+    D_800773A4 = 1;
+    D_80077398 = 1;
     D_80077444 = 2;
     D_8007743C = 0;
     D_800773A8 = 0;
@@ -1453,9 +1443,6 @@ void func_800737EC(void) {
         func_80019CA0();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800737EC);
-#endif
 
 /* Menu input: read controller port 0 with a repeat after 16 frames held; Up
  * and Down move the cursor between `first` and `last`, wrapping; the four
