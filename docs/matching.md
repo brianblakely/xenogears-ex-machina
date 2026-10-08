@@ -375,7 +375,10 @@ converted to C per unit. What converting the targets' `.data` established:
   Define the real object and index it as the code does (`D_8009A68C[index - 4]`,
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
-  `undefined_syms_auto.txt` covers only unaligned ones).
+  `undefined_syms_auto.txt` covers only unaligned ones). These aliases are
+  scaffolding, deleted when their last assembly user matches (slot39.data.ld went
+  with 801E78C8). One of a static resolves only because maspsx makes `.lcomm` symbols
+  global, where ASPSX kept them local.
 - GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
   heap tag names).
 - Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
@@ -397,13 +400,30 @@ converted to C per unit. What converting the targets' `.data` established:
   window colour D_800594D4, the overlays' `u8[3]`, is still a `u8` with extern +1/+2
   bytes: ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it),
   but GNU as moves a small common's offset accesses to `$gp`.
-- A unit's own variables come first, as statics where the commons
-  follow apart, and a unit reads only its own, which fixes text boundaries (menu
-  800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
-  linker allocated after every unit's own in an order of its own (mdec's five player
-  commons among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked
-  last (slot39_common.c, menu_common.c, mdec commons/). Zeros a packer added past the
+- A unit's own variables come first, in unit order, as statics where the commons
+  follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
+  reports every FOREIGN reference into a unit's own `.bss` (none in any target) and,
+  with `--end`, the order of variables still extern. That places menu 800707A8 and
+  8007E528 exactly, the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, and
+  slot39's after 801CD2AC and at or before 801DBDB4 (an earlier one moves the `.bss`
+  boundary with it); the latest is kept. The commons, which the original linker
+  allocated after every unit's own in an order of its own (mdec's five player commons
+  among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
+  (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
+  the linker's placement rather than modelling it. Zeros a packer added past the
   program are file padding (Compressed containers).
+- The menu (GCC 2.7.2) splits its uninitialized variables by size. Those of up to
+  eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
+  and end the program; the larger ones follow past it in the same order, each unit's
+  own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
+  (`data_users.py menu.mk --end 80096fa8`: no FOREIGN reference or INVERSION). The
+  GCC 2.6.3 images keep one `.bss` in declaration order (slot39_801DBE54's 2-, 200-,
+  200- and 1-byte statics at 801ea72c-801ea8c0; mdec's 64-byte movie_decoder among
+  4-byte statics), so the split is likely the original assembler's 8-byte small-data
+  threshold applied to the `.lcomm`/`.comm` GCC emits after the code, with the
+  linker's small commons. Until it is modelled the larger variables stay extern
+  (`undefined_syms_auto.txt`): defined in their units they would be allocated among
+  the small ones.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
   definition placed after its use (a probe defining `int late_var = 2;` after its
   reader shows it under 2.6.3, 2.7.2 and 2.7.2-cdk, as does any GP 8 unit's
