@@ -306,35 +306,37 @@ void func_800B1F0C(u32 *ot) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Draw script entry's commands with their built primitives prims (800B1720,
+/* Point v0-v2 (v0-v3) at the vertices that a command's indices at offsets
+ * o0-o3 name. */
+#define SET_VERTICES3(o0, o1, o2)                                                                 \
+    do {                                                                                           \
+        v0 = SCRIPT_CMD_VERTEX(vertices, cmd, o0);                                                 \
+        v1 = SCRIPT_CMD_VERTEX(vertices, cmd, o1);                                                 \
+        v2 = SCRIPT_CMD_VERTEX(vertices, cmd, o2);                                                 \
+    } while (0)
+
+#define SET_VERTICES4(o0, o1, o2, o3)                                                             \
+    do {                                                                                           \
+        v0 = SCRIPT_CMD_VERTEX(vertices, cmd, o0);                                                 \
+        v1 = SCRIPT_CMD_VERTEX(vertices, cmd, o1);                                                 \
+        v2 = SCRIPT_CMD_VERTEX(vertices, cmd, o2);                                                 \
+        v3 = SCRIPT_CMD_VERTEX(vertices, cmd, o3);                                                 \
+    } while (0)
+
+/* Draw script entry's commands with their built primitives packets (800B1720,
  * one set per display buffer) into ordering table ot: transform each
- * polygon's vertices, cull back faces, colour the lit ones from their
- * normals and add the facing ones at their average depth (shifted by
- * D_80050100, plus bias, at least 5); untextured ones in blend mode blend
- * (1-4) also get the blend mode's texture page. As in the original, the
- * buffer parameter is reused as the command cursor and the first vertex
- * pointer holds the primitive's code byte across the lighting call.
- * Nonmatching: only the allocation of the first five saved registers differs
- * (the original has v0 $s0, the cursor $s1, prims $s2, vertices $s3, entry and
- * then the 0x00FFFFFF mask $s4; here v0 ranks below entry and lands in $s4,
- * shifting prims/vertices/entry down by one). Global-alloc order here: prims
- * 1.39 (137 refs/688), cursor 1.34 (133/696), vertices 0.92, entry 0.60
- * (8/40), v0 0.48 (62/647), v2 0.43, v1 0.40. v0 is live around the loop
- * (the first switch has a default path), so it conflicts with everything
- * and would need about twice prims' references to be allocated first. The
- * original order is reproduced only if something non-conflicting with v0
- * takes $s0 first (a separate code-byte temporary does: it then gets $s0,
- * and v0 can share it in pass 0) AND v0 outranks entry AND the cursor
- * outranks prims; with separate temporaries v0 drops to 46 refs (0.37) and
- * equal refs leave v2/v1 ahead of v0 (shorter lives), so v0 needs refs that
- * v1/v2 lack. A do { } while (0) adds one loop level to the references
- * inside it (tested: a wrapped gte_ldv3 gives v0..v2 +1 each); wrapping the
- * lighting blocks gives v0 70 refs (above entry) but prims 151 vs cursor
- * 139, and wrapping the vertex fetches lifts vertices above prims. */
-void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
+ * polygon's vertices, cull back faces and add the facing ones at their
+ * average depth (shifted by D_80050100, plus bias, at least 5); untextured
+ * ones in blend mode blend (1-4) also get the blend mode's texture page.
+ * Commands with flag bit 0 clear (kind 0x100) carry normal indices: F3, F4
+ * and FT3 primitives are coloured from one normal, GT3 from three, keeping
+ * the GPU code byte that the colour's last byte overwrites; the other such
+ * kinds keep the colours 800B1720 built. Only the plain kinds fetch their
+ * vertices through SET_VERTICES3/4 (the macros' loop level is part of what
+ * gives the cursor and v0 their original registers). */
+void func_800B1F6C(entry, packets, ot, unused, bias, blend)
     ScriptEntry *entry;
-    u8 *buffer;
+    u8 *packets;
     u32 *ot;
     s32 unused;
     s32 bias;
@@ -354,130 +356,117 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
     long flag;
     s32 kind;
     u8 *prims;
+    u8 *cmd;
 
     if (blend != 0) {
         SetDrawTPage((DR_TPAGE *)&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
     }
-    prims = buffer;
-    i = 0;
-    buffer = entry->commands + (u32)entry;
+    prims = packets;
+    cmd = entry->commands + (u32)entry;
     vertices = (SVECTOR *)(entry->data0 + (u32)entry);
     count = entry->count;
     normals = (SVECTOR *)(entry->data8 + (u32)entry);
-    for (; i != count; i++) {
-        kind = buffer[3] & 0x1C;
-        kind |= ((buffer[2] ^ 1) & 1) << 8; /* lit */
+    for (i = 0; i != count; i++) {
+        kind = cmd[3] & 0x1C;
+        kind |= ((cmd[2] ^ 1) & 1) << 8; /* lit from normals */
         switch (kind) {
         case 0x0:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x8);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
+            SET_VERTICES3(0x8, 0xA, 0xC);
             break;
         case 0x10:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
+            SET_VERTICES3(0x10, 0x12, 0x14);
             break;
         case 0x18:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            SET_VERTICES4(0x14, 0x16, 0x18, 0x1A);
             break;
         case 0x8:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x8);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
+            SET_VERTICES4(0x8, 0xA, 0xC, 0xE);
             break;
         case 0x4:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
+            SET_VERTICES3(0x14, 0x16, 0x18);
             break;
         case 0x14:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x20);
+            SET_VERTICES3(0x1C, 0x1E, 0x20);
             break;
         case 0xC:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
+            SET_VERTICES4(0x18, 0x1A, 0x1C, 0x1E);
             break;
         case 0x1C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x24);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x26);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x28);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x2A);
+            SET_VERTICES4(0x24, 0x26, 0x28, 0x2A);
             break;
         case 0x100:
+            v0 = SCRIPT_CMD_VERTEX(normals, cmd, 0x8);
             {
-                v0 = (SVECTOR *)(u32)prims[7];
+                u8 code = prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x8), (CVECTOR *)(prims + 4));
-                prims[7] = (u32)v0;
+                NormalColor(v0, (CVECTOR *)(prims + 4));
+                prims[7] = code;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
             break;
         case 0x110:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
             break;
         case 0x108:
+            v0 = SCRIPT_CMD_VERTEX(normals, cmd, 0x8);
             {
-                v0 = (SVECTOR *)(u32)prims[7];
+                u8 code = prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x8), (CVECTOR *)(prims + 4));
-                prims[7] = (u32)v0;
+                NormalColor(v0, (CVECTOR *)(prims + 4));
+                prims[7] = code;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
             break;
         case 0x104:
+            v0 = SCRIPT_CMD_VERTEX(normals, cmd, 0x10);
             {
-                v0 = (SVECTOR *)(u32)prims[7];
+                u8 code = prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x10), (CVECTOR *)(prims + 4));
-                prims[7] = (u32)v0;
+                NormalColor(v0, (CVECTOR *)(prims + 4));
+                prims[7] = code;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
             break;
         case 0x114:
+            v0 = SCRIPT_CMD_VERTEX(normals, cmd, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(normals, cmd, 0x14);
+            v2 = SCRIPT_CMD_VERTEX(normals, cmd, 0x18);
             {
-                v0 = (SVECTOR *)(u32)prims[7];
+                u8 code = prims[7];
 
-                NormalColor3(SCRIPT_CMD_VERTEX(normals, buffer, 0x10), SCRIPT_CMD_VERTEX(normals, buffer, 0x14), SCRIPT_CMD_VERTEX(normals, buffer, 0x18), (CVECTOR *)(prims + 4), (CVECTOR *)(prims + 0x10),
+                NormalColor3(v0, v1, v2, (CVECTOR *)(prims + 4), (CVECTOR *)(prims + 0x10),
                              (CVECTOR *)(prims + 0x1C));
-                prims[7] = (u32)v0;
+                prims[7] = code;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
             break;
         case 0x10C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
             break;
         case 0x118:
         case 0x11C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
-            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
-            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
-            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x22);
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x22);
             break;
         }
-        switch (buffer[3] & 0x1C) {
+        kind = cmd[3] & 0x1C;
+        switch (kind) {
         case 0x0:
             {
                 long flag;
@@ -643,13 +632,13 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
             }
             break;
         }
-        prims += (buffer[0] + 1) * 4;
-        buffer += (buffer[1] + 1) * 4;
+        prims += (cmd[0] + 1) * 4;
+        cmd += (cmd[1] + 1) * 4;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1F6C);
-#endif
+
+#undef SET_VERTICES4
+#undef SET_VERTICES3
 
 /* Apply clamped RGB offsets to both packet buffers of an unrelocated script
  * entry. Lit primitives use their command colours; unlit textured primitives
