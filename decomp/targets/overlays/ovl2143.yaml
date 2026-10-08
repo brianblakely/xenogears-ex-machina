@@ -27,7 +27,7 @@ options:
   generate_asm_macros_files: False
   ld_bss_is_noload: True
   ld_align_segment_vram_end: False
-  ld_align_section_vram_end: False
+  ld_align_section_vram_end: True
   use_legacy_include_asm: False
   section_order: [".rodata", ".text", ".data", ".bss"]
   subalign: 4
@@ -41,8 +41,12 @@ segments:
     type: code
     start: 0x0
     vram: 0x801dc000
+    # The module state that ends .data was allocated in 4-byte slots (see
+    # ovl2143.c); the file ends with the rest of D_801E86B0's slot, so the
+    # sections end on a word boundary (ld_align_section_vram_end).
+    align: 4
     subsegments:
       - [0x0, .rodata, ovl2143]
       - [0x22c, c, ovl2143]
-      - [0xc590, data, ovl2143_data]
+      - [0xc590, .data, ovl2143]
   - [0xc6b4]
