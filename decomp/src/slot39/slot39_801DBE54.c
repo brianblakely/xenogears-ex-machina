@@ -4,6 +4,14 @@
  * previous unit's rodata, and 801DBE54, the first using this unit's. */
 #include "menu.h"
 
+/* The unit's variables, zero in the image after slot39's. Its last two, the
+ * icon image and palette areas (RECT D_801EA8E4, D_801EA8EC), stay generated
+ * data while func_801E78C8 is linked as assembly that names their members. */
+u8 D_801EA730[200] = { 0 }; /* equipment list entry ids */
+u8 D_801EA7F8[200] = { 0 }; /* equipment list entry counts */
+u8 D_801EA8C0 = 0;          /* the last printed character was two-byte */
+u8 D_801EA8C4[0x20] = { 0 }; /* icon palette buffer */
+
 /* The item screen: a two-column list of eight rows scrolled over the
  * inventory with a cursor, the selected entry's description and its
  * windows. Confirm selects an entry, uses it when selected again or swaps

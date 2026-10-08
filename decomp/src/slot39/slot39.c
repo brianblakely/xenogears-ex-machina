@@ -332,6 +332,20 @@ u16 D_801EA610[96] = {
     0x8298, 0x8299, 0x829A, 0x816F, 0x8162, 0x8170, 0x814D, 0x8140,
 };
 
+/* The unit's variables, zero in the image after the initialized data. The
+ * original allocated them in 4-byte slots; from D_801EA714 on (two bytes
+ * four apart) that layout is not a C one and stays generated data. */
+u8 D_801EA6D0[2][16] = { 0 }; /* per port and save slot: a save of this game exists */
+s32 D_801EA6F0 = 0;           /* unreferenced */
+u8 *D_801EA6F4 = NULL;        /* the save information of the last matched file */
+u8 D_801EA6F8 = 0;
+s32 D_801EA6FC = 0;           /* gauge: from, to, difference and lengths */
+s32 D_801EA700 = 0;
+s32 D_801EA704 = 0;
+s32 D_801EA708 = 0;
+s32 D_801EA70C = 0;
+u8 D_801EA710 = 0;
+
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
  * 9 reset), then restore the command window. Returns 0 when the menu ends. */
