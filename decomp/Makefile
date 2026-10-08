@@ -120,7 +120,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cf
 	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call asm_filter_of,$<) $(call bss_filter_of,$<) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
-$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)
+$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(LINKER_EXTRA))) $(CONFIG)
 	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }
 	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
 		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_EXTRA)) -o $(IMAGE).elf
