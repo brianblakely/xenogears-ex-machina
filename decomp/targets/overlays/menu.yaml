@@ -73,7 +73,11 @@ segments:
       - [0x21CD0, .data, menu5]
       # menu6's gear list: its strings open menu6's rodata (D_80070284).
       - [0x21E74, .data, menu6]
-      - [0x2211C, data, menu_data]
+      - [0x2211C, .data, menu7]
+      # D_80091FB0, still in menu7's .data: an embedded sprite model (asset;
+      # see menu.classification.txt).
+      - [0x224C0, data, menu_model]
+      - [0x22AB4, data, menu_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x22e68, databin, menu_tail]
   - [0x22e69]
