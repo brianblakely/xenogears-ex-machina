@@ -112,16 +112,23 @@ filesystem/ECC reproduction is not attempted.
 
 ## Script instructions
 
-Used script instructions are recovered from the matching interpreter, one VM at
-a time: an opcode table in `tools/analysis/` whose entries name the handler
-(function or switch case) they were read from, a `--sweep` that decodes every
-script on both discs and prints per-opcode counts and each unknown opcode with
-its location, synthetic tests, and `docs/scripts/<vm>.md`. Listings stay in
-`.local/`. Address disc files as the resident does: directory (g, i) file f is
-index slot f + table[g + i] - 2, from the u16 directory table at sector 40
-(`80028230`). A match proves a switch's case labels, not its comments: check
-handler comments against the jump table (battle AI 70-74 were labelled 6e-72,
-because 6e and 6f share the default).
+Used script instructions are recovered from the matching interpreter, one machine
+at a time. Read each opcode's size and flow from its handler (the returned step or
+pointer advance of a dispatch-table entry or switch case), never from the data,
+and keep the table in a `tools/analysis/` module whose entries name their
+handlers, with synthetic tests that check it against the C (table order,
+returns, case advances). Find scripts from the code that starts them (stores to
+the script pointer, their pointer tables) and decode each disc's own files: a
+`--sweep` prints per-opcode counts and every unknown opcode with its location,
+and reports script-shaped data that nothing starts separately. Listings stay in
+`.local/`; `docs/scripts/<vm>.md` summarises each machine. Address disc files as
+the resident does: directory (g, i) file f is index slot f + table[g + i] - 2,
+from the u16 directory table at sector 40 (`80028230`). Comment every handler
+with its operands and effect as read from the callee, not from the call's shape
+(world map opcode 10 slides an effect's volume rather than playing it). A match
+proves a switch's case labels, not its comments: check handler comments against
+the jump table (battle AI 70-74 were labelled 6e-72, because 6e and 6f share the
+default).
 
 ## Original-environment smoke check
 

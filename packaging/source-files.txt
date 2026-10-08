@@ -505,7 +505,9 @@ docs/phase1-progress.md
 docs/platforms.json
 docs/recovery-inventory.md
 docs/reverse-engineering.md
+docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
+docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
@@ -755,6 +757,7 @@ tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
+tests/test_overlay_scripts.py
 tests/test_packed_container.py
 tests/test_packed_field.cpp
 tests/test_planar_motion.py
@@ -814,6 +817,7 @@ tools/analysis/movement_sweep.py
 tools/analysis/movie_chain.py
 tools/analysis/music_loading.py
 tools/analysis/original_trace.py
+tools/analysis/overlay_scripts.py
 tools/analysis/packed.py
 tools/analysis/party_sprites.py
 tools/analysis/planar_motion.py
