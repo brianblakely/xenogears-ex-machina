@@ -1,7 +1,7 @@
 # START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
 # Not compiler output: frames too small for the registers saved (addiu sp,-8 then
-# sw s1,8(sp), i.e. into the caller's frame), raw cop2 sequences, and ori for
-# positive constants where this unit's assembler emits addiu.
-800987ac 80098cc0 handwritten world-map GTE terrain routine (no GCC frame, raw cop2)
+# sw s1,8(sp), i.e. into the caller's frame), trapping addi, and ori for positive
+# constants where this unit's assembler emits addiu. Raw cop2 alone is no evidence:
+# 800987ac (leaf, GTE macros) compiles from C under this unit's settings.
 8009980c 80099bfc handwritten terrain quarter-block triangle renderer (s5 saved beyond its 0x18-byte frame, ori for small constants, trapping addi)
 80099bfc 80099e8c handwritten terrain billboard quad renderer (addiu sp,-8 with sw s1,8(sp); ori for 0xfff)

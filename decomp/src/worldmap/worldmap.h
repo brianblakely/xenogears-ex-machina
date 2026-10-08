@@ -1530,7 +1530,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 /* worldmap_80094A5C: terrain visibility grid */
 typedef struct {
-    u8 pad0[0x40];
+    VECTOR view[4];  /* 0x00: the tested quad's corners after RT */
     s32 x0;          /* 0x40: grid corner x */
     s32 pad44;
     s32 z0;          /* 0x48: grid corner z */
