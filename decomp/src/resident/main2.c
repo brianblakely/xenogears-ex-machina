@@ -19,9 +19,9 @@ s32 func_80032E7C(s32 *packed) {
     return *packed;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032E88);
+INCLUDE_ASM("decomp/src/resident", func_80032E88);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032EB4);
+INCLUDE_ASM("decomp/src/resident", func_80032EB4);
 
 /* Build a message window's two texture halves for each line and display
  * buffer. Lines share a glyph image in pairs, using alternating CLUTs;

@@ -34,8 +34,8 @@ extern u16 D_800501D0[11]; /* special 0xFFFF glyph */
 
 /* Packed data (0x80032e7c-0x80032f54); window setup follows. */
 s32 func_80032E7C(s32 *packed);
-void *func_80032E88(void *data, s32 a1);
-void func_80032EB4(void *source, void *destination);
+void *func_80032E88(void *data, s32 mode); /* allocate (func_80031BDC mode) and unpack */
+void *func_80032EB4(void *source, void *destination); /* unpack; returns destination */
 
 void func_80033558(u16 *font);
 void func_800335F4(u8 *data);
