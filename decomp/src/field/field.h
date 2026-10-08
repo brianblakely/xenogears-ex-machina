@@ -798,7 +798,7 @@ extern void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern s32 func_8001B484(s32 file, s32);
-extern void func_80028470(s32 directory, s32);
+extern s32 func_80028470(s32 directory, s32);
 extern s32 func_800286CC(void);
 extern void func_800320B8(void *block);
 extern void func_80032498(s32 tag, s32);

@@ -16,8 +16,8 @@ typedef struct {
 
 #define HEAP_HEADER(data) ((HeapHeader *)(data) - 1)
 
-/* Store the return address register at `p` (the heap records its callers). */
-#define GET_RA(p) __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(p) : "$15")
+/* Store the return address at `p`; consumers must reload the written word. */
+#define GET_RA(p) __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(p) : "$15", "memory")
 
 /* A release deferred by `frames` frames ("DelayFree" blocks). */
 typedef struct DelayedFree {

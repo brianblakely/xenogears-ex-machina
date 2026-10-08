@@ -253,6 +253,62 @@ class MatchingTests(unittest.TestCase):
                         self.assertLess(stores[0], loads[0], assembly)
                         self.assertGreater(stores[1], loads[-1], assembly)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx",
+            "psx-as", "psx-objdump",
+        )),
+        "enter the matching Nix shell to test the return-address memory output",
+    )
+    def test_return_address_capture_reloads_output_and_evaluates_pointer_once(self):
+        repo = Path(__file__).resolve().parents[1]
+        (self.root / "decomp").mkdir()
+        (self.root / "decomp/include").symlink_to(repo / "decomp/include")
+        (self.root / "heap.c").write_text(
+            '#include "' + str(repo / "decomp/src/resident/heap.h") + '"\n'
+            + "u32 read_caller(void) {\n"
+            + "    u32 caller = 0; GET_RA(&caller); return caller;\n}\n"
+            + "extern u32 *caller_slot(void);\n"
+            + "void write_caller(void) { GET_RA(caller_slot()); }\n"
+        )
+        (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
+        (self.root / "fixture.mk").write_text(
+            "include " + str(repo / "decomp/targets/resident/slus_006.64.mk") + "\n"
+            + "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
+            + "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\nBUILD := build\n"
+        )
+        obj = self.root / "build/heap.o"
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+             "ROOT=" + str(self.root), "CONFIG=fixture.mk", str(obj)],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = subprocess.run(
+            ["psx-objdump", "-dr", "--disassemble=read_caller", str(obj)],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        words = [int(word, 16) for word in re.findall(
+            r"^\s*[0-9a-f]+:\s+([0-9a-f]{8})\s", result.stdout, re.MULTILINE,
+        )]
+        # The assembly stores $ra; returning the initialized zero would hide
+        # that write. The return register must reload the captured word.
+        stores = [i for i, word in enumerate(words)
+                  if word >> 26 == 0x2b and (word >> 16) & 31 == 31]
+        reloads = [i for i, word in enumerate(words)
+                   if word >> 26 == 0x23 and (word >> 16) & 31 == 2]
+        self.assertEqual(len(stores), 1, result.stdout)
+        self.assertEqual(len(reloads), 1, result.stdout)
+        self.assertGreater(reloads[0], stores[0], result.stdout)
+        result = subprocess.run(
+            ["psx-objdump", "-dr", "--disassemble=write_caller", str(obj)],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(len(re.findall(r"R_MIPS_26\s+caller_slot\b", result.stdout)),
+                         1, result.stdout)
+
     def test_cli_exit_codes(self):
         args = [str(self.original), str(self.rebuilt), "--sha256", self.digest]
         self.assertEqual(main(args), 0)
