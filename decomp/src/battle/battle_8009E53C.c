@@ -2596,16 +2596,16 @@ void func_800A4CF8(s32 index) {
 /* Draw the stage sky seen from eye towards target: the horizon bands at the
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
- * each front-facing tile textured from the scroll position. Differs in the
- * tile loop's register allocation: the original also copies half (for the
- * multiplies) and u0 before the rows and loads the tag masks per row; here
- * the masks and the row copy of half are hoisted out of both loops. The
- * original's row loop was not loop-optimized at all (the masks hoisted out
- * of the tile loop stay in the row body); a goto row loop reproduces that,
- * but then ot loses its loop-weighted references and swaps $s4/$s5 with
- * &turn, so the for loop stays here. */
-/* Link a ceiling tile after its screen coordinates and texture corners. */
-#define LINK_SKY_TILE(table, tile) do { addPrim((table), (tile)); } while (0)
+ * each front-facing tile textured from the scroll position. Differs only
+ * before the rows (one word longer): the original keeps a plain copy of the
+ * masked u0 for the tiles where the s16 u0 here is sign-extended, and it
+ * schedules n and vertex ahead of delta.vz / 12's multiply. The rows match:
+ * the tile loop hoists the half and u0 extensions and the tag masks, and in
+ * the row loop each invariant moved out of the tile loop doubles loop.c's
+ * insn count, so after the four extensions the half copy for the + half - 1
+ * corners and the masks stay in the row body. addPrim is not wrapped in a
+ * statement macro: in 2.6.3 the insn after a loop note is a scheduling
+ * barrier, and the original loads the tile tag before the last UV stores. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2622,13 +2622,11 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s32 angle;
     s32 tilt;
     s32 size;
-    s32 half;
-    s32 halfU;
-    s32 u0;
+    s16 half;
+    s16 u0;
     s32 v0;
     s32 u;
     s32 v;
-    s32 vEnd;
     s32 row;
     s32 col;
     s32 n;
@@ -2726,10 +2724,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     vertex = &sky->grid[0][0];
     n = buffer * 64;
     for (row = 0; row < 8; row++) {
-        halfU = half;
-        v = (row & 1) * half + v0;
-        vEnd = v + halfU - 1;
-        for (col = 0; col < 8; col++) {
+        for (col = 0; col < 8; col++, n++, vertex++) {
             gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
             gte_rtpt();
             gte_nclip();
@@ -2739,18 +2734,17 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 gte_ldv0(&vertex[10]);
                 gte_rtps();
                 gte_stsxy(&sky->tiles[n].x3);
+                v = (row & 1) * half + v0;
+                u = (col & 1) * half + u0;
                 sky->tiles[n].v0 = v;
                 sky->tiles[n].v1 = v;
-                sky->tiles[n].v2 = vEnd;
-                sky->tiles[n].v3 = vEnd;
-                u = (col & 1) * half + u0;
+                sky->tiles[n].v2 = v + half - 1;
+                sky->tiles[n].v3 = v + half - 1;
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
-                sky->tiles[n].u3 = sky->tiles[n].u1 = u + halfU - 1;
-                LINK_SKY_TILE(ot, &sky->tiles[n]);
+                sky->tiles[n].u3 = sky->tiles[n].u1 = u + half - 1;
+                addPrim(ot, &sky->tiles[n]);
             }
-            n++;
-            vertex++;
         }
         vertex++;
     }
@@ -2762,7 +2756,6 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     }
     addPrim(ot, &sky->modes[buffer]);
 }
-#undef LINK_SKY_TILE
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
 #endif
