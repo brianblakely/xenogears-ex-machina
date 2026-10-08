@@ -13,6 +13,8 @@ Every function symbol in the linked ELF is attributed to exactly one class:
 The classification file lists ``START END CLASS NOTE...`` lines (hex VRAM,
 END exclusive). Data sections are reported by size only. This tool never
 reads or asserts binary agreement; run the exact comparison separately.
+Instruction counts are static MIPS words (four bytes each) in the same ELF
+function ranges as the byte totals, including nops and branch delay slots.
 """
 
 from __future__ import annotations
@@ -67,7 +69,7 @@ def main() -> None:
     for root in args.src:
         for source in root.rglob("*.c"):
             text = source.read_text()
-            for block, fallback in NON_MATCHING.findall(text):
+            for _block, fallback in NON_MATCHING.findall(text):
                 nonmatching.update(INCLUDE_ASM.findall(fallback))
             asm_names.update(INCLUDE_ASM.findall(text))
     ranges = classification(args.classification)
@@ -87,6 +89,8 @@ def main() -> None:
             continue
         if not any(s <= address < e for s, e in text):
             continue
+        if address % 4 or size % 4:
+            raise SystemExit(f"unaligned MIPS function range: {name} at {address:08x}, size {size}")
         if name in nonmatching:
             cls = "nonmatching"
         elif name in asm_names:
@@ -102,12 +106,22 @@ def main() -> None:
         print("\n".join(listing))
         return
     text_bytes = sum(v[1] for v in totals.values())
+    remaining = [
+        sum(totals.get(cls, [0, 0])[i] for cls in ("asm", "nonmatching"))
+        for i in (0, 1)
+    ]
     report = {
         "claim": "source_coverage_only",
         "binary_agreement": "not_measured",
         "text_bytes": text_bytes,
-        "classes": {k: {"functions": v[0], "bytes": v[1]} for k, v in sorted(totals.items())},
-        "remaining_asm_bytes": totals.get("asm", [0, 0])[1] + totals.get("nonmatching", [0, 0])[1],
+        "text_instructions": text_bytes // 4,
+        "classes": {
+            k: {"functions": v[0], "bytes": v[1], "instructions": v[1] // 4}
+            for k, v in sorted(totals.items())
+        },
+        "remaining_asm_functions": remaining[0],
+        "remaining_asm_bytes": remaining[1],
+        "remaining_asm_instructions": remaining[1] // 4,
     }
     print(json.dumps(report, sort_keys=True))
 

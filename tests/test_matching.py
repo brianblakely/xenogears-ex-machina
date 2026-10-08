@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
+import json
 import re
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.matching import compare, main
 
@@ -371,6 +375,143 @@ class MatchingTests(unittest.TestCase):
         self.original.write_bytes(struct.pack("<4I", 0x24020007, 0x03E00008, 0, 0))
         digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
         self.assertTrue(compare(self.original, self.rebuilt, digest)["matched"])
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in ("psx-as", "psx-ld", "psx-readelf")),
+        "enter the matching Nix shell to test coverage counts",
+    )
+    def test_coverage_counts_remaining_functions_and_instructions(self):
+        repo = Path(__file__).resolve().parents[1]
+        assembly = self.root / "coverage.s"
+        obj = self.root / "coverage.o"
+        elf = self.root / "coverage.elf"
+        linker = self.root / "coverage.ld"
+        source = self.root / "coverage.c"
+        classification = self.root / "classification.txt"
+        cases = {"c": 3, "asm": 6, "nonmatching": 4, "sdk": 5, "handwritten": 2}
+        lines = ['.section .text,"ax"', ".set noreorder",
+                 ".globl fixture_TEXT_START", "fixture_TEXT_START:"]
+        ranges = []
+        address = 0x80010000
+        for cls, count in cases.items():
+            name = "covered_" + cls
+            lines += [".globl " + name, ".type " + name + ", @function", name + ":"]
+            lines += ["nop"] * (count - 2) + ["jr $31", "nop"]
+            lines += [".size " + name + ", .-" + name, ".space 4"]
+            if cls in ("sdk", "handwritten"):
+                ranges.append(f"{address:08x} {address + count * 4:08x} {cls}")
+            address += (count + 1) * 4
+        lines += [
+            ".globl fixture_TEXT_END", "fixture_TEXT_END:",
+            ".globl __maspsx_include_asm_hack_fixture",
+            ".type __maspsx_include_asm_hack_fixture, @function",
+            ".set __maspsx_include_asm_hack_fixture, covered_c",
+            '.section .rodata,"a"', ".type outside_text, @function",
+            "outside_text:", ".word 42", ".size outside_text, .-outside_text",
+        ]
+        assembly.write_text("\n".join(lines) + "\n")
+        linker.write_text("SECTIONS { .text 0x80010000 : { *(.text) } .rodata : { *(.rodata) } }\n")
+        source.write_text(
+            'int covered_c(void) { return 0; }\n'
+            'INCLUDE_ASM("fixture", covered_asm);\n'
+            '#ifdef NON_MATCHING\nint covered_nonmatching(void) { return 1; }\n'
+            '#else\nINCLUDE_ASM("fixture", covered_nonmatching);\n#endif\n'
+            'INCLUDE_ASM("fixture", covered_sdk);\n'
+            'INCLUDE_ASM("fixture", covered_handwritten);\n'
+        )
+        classification.write_text("\n".join(ranges) + "\n")
+        subprocess.run(["psx-as", "-EL", "-mips1", "-o", str(obj), str(assembly)], check=True)
+        subprocess.run(["psx-ld", "-EL", "-T", str(linker), "-o", str(elf), str(obj)], check=True)
+        result = subprocess.run(
+            [sys.executable, str(repo / "tools/matching_coverage.py"), str(elf),
+             "--src", str(self.root), "--classification", str(classification)],
+            text=True, capture_output=True, check=True,
+        )
+        report = json.loads(result.stdout)
+        self.assertEqual(report["binary_agreement"], "not_measured")
+        self.assertEqual(report["text_bytes"], 80)
+        self.assertEqual(report["text_instructions"], 20)
+        self.assertEqual(report["remaining_asm_functions"], 2)
+        self.assertEqual(report["remaining_asm_bytes"], 40)
+        self.assertEqual(report["remaining_asm_instructions"], 10)
+        self.assertEqual(report["classes"], {
+            cls: {"functions": 1, "bytes": count * 4, "instructions": count}
+            for cls, count in cases.items()
+        })
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_instruction_differences_keep_immediates_and_absent_words(self):
+        from tools.nonmatching_score import instruction_differences
+
+        original = struct.pack("<3I", 0x24020007, 0x03E00008, 0)
+        self.assertEqual(instruction_differences(original, original), 0)
+        self.assertEqual(instruction_differences(
+            original, struct.pack("<3I", 0x24020008, 0x03E00008, 0)), 1)
+        self.assertEqual(instruction_differences(original, original + bytes(4)), 1)
+        self.assertEqual(instruction_differences(original, original[:-4]), 1)
+        self.assertEqual(instruction_differences(
+            original, original[:4] + bytes(4) + original[4:]), 3)
+        with self.assertRaisesRegex(ValueError, "word-aligned"):
+            instruction_differences(original, b"bad")
+
+    @unittest.skipUnless(
+        importlib.util.find_spec("rabbitizer") and all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )), "enter the matching Nix shell to test linked draft differences",
+    )
+    def test_draft_audit_counts_relocated_field_offset_and_preserves_baseline(self):
+        from tools import nonmatching_score
+
+        repo = Path(__file__).resolve().parents[1]
+        decomp = self.root / "decomp"
+        source_dir = decomp / "src/fixture"
+        source_dir.mkdir(parents=True)
+        (decomp / "include").symlink_to(repo / "decomp/include")
+        shutil.copyfile(repo / "decomp/Makefile", decomp / "Makefile")
+        source = source_dir / "fixture.c"
+        source.write_text(
+            "extern int external_global[];\nint draft(void) { return external_global[0]; }\n"
+        )
+        linker = self.root / "fixture.ld"
+        linker.write_text(
+            "external_global = 0x80020000; _gp = 0x80059170;\n"
+            "SECTIONS { .text 0x80010000 : AT(0) { fixture_TEXT_START = .;\n"
+            ".local/build/decomp/src/fixture/fixture.o(.text)\n"
+            "fixture_TEXT_END = .; } /DISCARD/ : { *(*) } }\n"
+        )
+        config = decomp / "fixture.mk"
+        contents = (
+            "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
+            "IMAGE := baseline.bin\nLINKER_SCRIPT := fixture.ld\n"
+            "SPLAT_CONFIG := unused.yaml\nBUILD := .local/build\nCC_VERSION := 2.7.2\n"
+            "SOURCE_DIRS := decomp/src/fixture\n"
+        )
+        config.write_text(contents)
+        baseline = self.root / "baseline.bin"
+        subprocess.run(
+            ["make", "-s", "-C", str(decomp), "CONFIG=fixture.mk", str(baseline)], check=True,
+        )
+        original = baseline.read_bytes()
+        self.original.write_bytes(original)
+        config.write_text(contents.replace(self.digest, hashlib.sha256(original).hexdigest()))
+        shutil.copyfile(
+            self.root / ".local/build/decomp/src/fixture/fixture.o.s", source_dir / "draft.s",
+        )
+        source.write_text(
+            '#include "include_asm.h"\nextern int external_global[];\n'
+            '#ifdef NON_MATCHING\nint draft(void) { return external_global[1]; }\n'
+            '#else\nINCLUDE_ASM("decomp/src/fixture", draft);\n#endif\n'
+        )
+        with patch.object(nonmatching_score, "ROOT", self.root):
+            report = nonmatching_score.audit_drafts(config, nonmatching_score.config(config), [])
+            self.assertEqual(report["differing_functions"], 1)
+            self.assertEqual(report["differing_instructions"], 1)
+            self.assertEqual(report["original_instructions"], report["candidate_instructions"])
+            self.assertEqual(baseline.read_bytes(), original)
+            baseline.write_bytes(bytes(len(original)))
+            with self.assertRaisesRegex(ValueError, "baseline image does not match"):
+                nonmatching_score.audit_drafts(config, nonmatching_score.config(config), [])
 
 
 if __name__ == "__main__":

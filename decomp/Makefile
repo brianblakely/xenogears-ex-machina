@@ -10,11 +10,11 @@ MASPSX := maspsx
 .SUFFIXES:
 .SECONDARY:
 MAKEFLAGS += --no-builtin-rules
-.PHONY: verify smoke split coverage container clean all-split all-verify all-coverage all-container
+.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container
 TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
 
 # Every supported executable image: split, exact comparison, source coverage.
-all-split all-verify all-coverage all-container:
+all-split all-verify all-coverage all-audit all-container:
 	@for config in $(TARGET_CONFIGS); do \
 		echo "== $$config"; \
 		$(MAKE) --no-print-directory CONFIG=$$config $(@:all-%=%) || exit 1; \
@@ -25,7 +25,7 @@ smoke:
 	cd $(ROOT) && $(PYTHON) -m unittest tests.test_matching
 
 ifeq ($(strip $(CONFIG)),)
-verify split coverage container clean:
+verify split coverage audit container clean:
 	@echo 'Set CONFIG=targets/<target>/<target>.mk (see docs/matching.md).' >&2
 	@exit 2
 else
@@ -115,6 +115,9 @@ verify: $(ROOT)/$(IMAGE)
 
 coverage: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+
+audit: coverage
+	cd $(ROOT) && $(PYTHON) tools/nonmatching_score.py $(abspath $(CONFIG)) --exact
 
 # Compressed-container reproduction (a separate claim from image matching):
 # CONTAINERS lists DISC:SLOT pairs whose packed file holds this image.

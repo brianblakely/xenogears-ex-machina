@@ -145,6 +145,19 @@ NON_MATCHING drafts into a side build and ranks them by remaining instruction
 differences. It compares relocated instructions without their immediates, so a wrong
 struct offset or symbol offset scores as equal; confirm near misses in the real image.
 
+For actual differing-instruction counts, use `make -C decomp all-audit` (or
+`make -C decomp CONFIG=targets/overlays/menu.mk audit` for one target).
+Alongside source coverage, this runs `nonmatching_score.py <config.mk> --exact`:
+it verifies the pristine baseline, compiles all reviewed C drafts with
+`NON_MATCHING` in an isolated local build, and links them with the target's layout
+and symbol rules. It compares complete four-byte words at corresponding function
+offsets, including relocated immediates; extra or missing words count as differences.
+An insertion can therefore make later words differ too. The JSON reports differing
+functions/instructions and both original and candidate sizes. Assembly without a C
+draft has no measured candidate difference. Compilation or linking failures fail
+the audit; they are never counted as matches. This diagnostic does not replace
+`all-verify` or measure data/layout differences outside the selected draft functions.
+
 ## What counts as recovered source
 
 - An unused aggregate local (`RECT unused; /* unused in the original; reserves 8
@@ -216,6 +229,12 @@ it does not infer source coverage. Keep the linker/build source map authoritativ
 for ranges still backed by original assembly, binary data or nonmatching source.
 Measure source coverage and exact matching independently. Do not call a baseline
 made entirely of original assembly a completed decompilation.
+
+The coverage audit reports functions, bytes and static MIPS instructions per class.
+`remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
+assembly and reviewed nonmatching C candidates; SDK and handwritten assembly stay
+separate. Instructions are four-byte words within ELF function ranges, including
+nops and delay slots, excluding data sections and padding outside those ranges.
 
 A normalized asm diff is a debugging aid, not final acceptance. Exact final image
 comparison includes linked addresses and data/layout. Decoded overlay matching
