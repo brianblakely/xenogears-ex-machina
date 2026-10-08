@@ -466,6 +466,69 @@ class MatchingTests(unittest.TestCase):
             "placeholder": 0x30 - 8 - 8, "sdk": 8, "asset": 8 + 8,
         })
 
+    def build_fixture_unit(self, source, settings=()):
+        """Compile decomp/src/t/unit.c with the target Makefile; returns the object."""
+        repo = Path(__file__).resolve().parents[1]
+        include = self.root / "decomp/include"
+        include.mkdir(parents=True, exist_ok=True)
+        for name in ("include_asm.h", "macro.inc"):
+            shutil.copy(repo / "decomp/include" / name, include / name)
+        unit = self.root / "decomp/src/t/unit.c"
+        unit.parent.mkdir(parents=True, exist_ok=True)
+        unit.write_text(source)
+        (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
+        (self.root / "fixture.mk").write_text(
+            "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
+            "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\n"
+            "SPLAT_CONFIG := unused.yaml\nBUILD := build\nCC_VERSION := 2.7.2\n"
+        )
+        obj = self.root / "build/decomp/src/t/unit.o"
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+             "ROOT=" + str(self.root), "CONFIG=fixture.mk", *settings, str(obj)],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return obj
+
+    def section_bytes(self, obj, section):
+        out = self.root / (section.strip(".") + ".bin")
+        subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)], check=True)
+        return out.read_bytes()
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test original data objects",
+    )
+    def test_original_object_links_in_place_and_counts_as_included(self):
+        from tools.matching_coverage import data_coverage, source_names
+
+        self.original.write_bytes(bytes(range(16)))
+        self.digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
+        obj = self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            "int before = 0x11111111;\n"
+            '/* a byte object whose padding holds 05 06 07 */\n'
+            'INCLUDE_ORIGINAL(".data", D_80010004, 0x80010004, 4);\n'
+            "int after = 0x22222222;\n",
+            ["TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000"],
+        )
+        self.assertEqual(
+            self.section_bytes(obj, ".data"),
+            struct.pack("<I", 0x11111111) + bytes([4, 5, 6, 7]) + struct.pack("<I", 0x22222222),
+        )
+        symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                 capture_output=True, text=True).stdout
+        self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
+        _asm, _nonmatching, included = source_names([self.root / "decomp/src"])
+        self.assertEqual(included, {"D_80010004"})
+        sections = [(".data", 0x80010000, 12, "build/decomp/src/t/unit.o")]
+        totals = data_coverage(sections, [(0x80010004, 0x80010008)], [], self.root)
+        self.assertEqual(totals, {"c": 8, "included": 4})
+
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
         from tools.service_calls import scan_function
