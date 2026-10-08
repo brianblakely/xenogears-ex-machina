@@ -994,16 +994,16 @@ void func_800931B0(void) {
     func_800346D4(&D_8009BD64);
 }
 
-/* Build `steps` fades of 256 CLUT entries towards `colour`; zero entries stay transparent. */
-/* NON_MATCHING: the size, frame, setup and loop registers agree. The channel
- * sums still use different registers, and the RGB555 OR scheduling differs. */
-#ifdef NON_MATCHING
+/* Build `steps` fades of 256 CLUT entries towards `colour`; zero entries stay
+ * transparent. Step i blends each 8-bit channel of an entry with `colour` at
+ * weight i/steps (0x1000 = 1.0) and keeps the entry's semi-transparency bit. */
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
     CVECTOR c;
     s32 r, g, b;
     s32 i, j;
     u32 t, inv;
     u16 *src;
+    u32 stp, red, green, blue;
 
     r = colour[0];
     g = colour[1];
@@ -1019,17 +1019,15 @@ void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
                 c.r = (*src & 0x1F) << 3;
                 c.g = ((*src >> 5) & 0x1F) << 3;
                 c.b = ((*src >> 10) & 0x1F) << 3;
-                *out = (*src & 0x8000) |
-                       (((c.r * inv + r * t) >> 15) |
-                        ((((c.g * inv + g * t) >> 15) << 5) |
-                         (((c.b * inv + b * t) >> 15) << 10)));
+                stp = *src & 0x8000;
+                red = (c.r * inv + r * t) >> 15;
+                green = (c.g * inv + g * t) >> 15;
+                blue = (c.b * inv + b * t) >> 15;
+                *out = stp | red | (green << 5) | (blue << 10);
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800931D8);
-#endif
 
 /* Wrap a position (20.12) onto the area's extent. */
 void func_80093354(VECTOR *position) {
