@@ -1127,7 +1127,6 @@ extern u8 D_801EA568[];  /* status screen labels: a character's page, then (6) a
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA574[];  /* sound mode labels */
 extern s32 D_801E9F88[];  /* sound mode label x offsets */
-extern u8 D_801EA8F4[];
 extern u8 *D_8004FDF0;         /* disc directory records */
 extern u8 *D_8004FDF4;
 extern u8 *D_8004FE48;
@@ -1135,15 +1134,7 @@ void func_8002954C(s32 file, void *buffer, s32 size, s32 arg3, s32 arg4); /* rea
 void func_801E9340(char *name, void *buffer, s32 size);
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u8 D_801E9778;    /* a card changed during a choice */
-extern u8 D_801EA8C0;    /* the last printed character was two-byte */
 extern u16 D_801EA610[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
-extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */
-extern s32 D_801EA700;
-extern s32 D_801EA704;
-extern s32 D_801EA708;
-extern s32 D_801EA70C;
-extern u8 D_801EA710;
-extern u8 D_801EA714;
 /* Sheet positions of label images, x / 4 and y: per row pair, from entry 3
  * the portrait per slot (characters, then gears), from 6 the view names. */
 extern s32 D_801EA578[19];
@@ -1170,7 +1161,6 @@ extern s32 D_801E9D88[];
 extern s32 D_801E9DDC[];  /* arts list cost x positions */
 extern s32 D_801E9E14[];  /* arts list cost y positions */
 extern u16 D_801E97F0[];
-extern u8 D_801EA7F8[];  /* equipment list entry counts */  /* per character: arts usable from the menu */
 extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
 extern u16 D_8006ECFA[];
 extern u16 D_8006ED0E[];  /* part panel row y positions */
@@ -1229,9 +1219,6 @@ extern s32 D_801E9B5C;   /* y */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];
-extern s16 D_801EA724;   /* item list scroll bar */
-extern s32 D_801EA728;
-extern s16 D_801EA72C;
 extern u8 D_801E9778;    /* a card message is pending */
 extern s32 D_801E9788[3]; /* arts screen window sizes per kind */
 extern s32 D_801E9794[3];
@@ -1241,10 +1228,6 @@ extern MenuAnchor D_801EA054[]; /* target panel layouts: x and y anchors */
 extern MenuAnchor D_801EA098[];
 extern MenuAnchor D_801EA0DC[];
 extern MenuAnchor D_801EA120[];
-extern u8 D_801EA730[];  /* equipment list entry ids */
-extern s32 D_801EA718;   /* card event and handler ids */
-extern s32 D_801EA71C;
-extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
 extern s32 D_801E9994[21];    /* text character x per column */
@@ -1280,12 +1263,7 @@ extern s32 D_801EA03C;         /* value C digits x, y */
 extern s32 D_801EA040;
 extern s32 D_801EA044;         /* value D digits x, y */
 extern s32 D_801EA048;
-extern u8 D_801EA8C4[0x20];    /* icon palette buffer */
-extern RECT D_801EA8E4;        /* icon image area */
-extern RECT D_801EA8EC;        /* icon palette area */
 extern s32 D_801EA900[2];     /* per port */
-extern u8 D_801EA6D0[2][16]; /* per port and save slot: a save of this game exists */
-extern u8 *D_801EA6F4;     /* the save information of the last matched file */
 extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */
@@ -1467,7 +1445,6 @@ typedef struct MenuSavePayload {
 #define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);
 void func_801C9270(s32 port);
-extern u8 D_801EA6F8;
 extern s32 D_801E981C[];          /* card slot (port * 16 + n) of each cursor position */
 void func_801C8BEC(void);
 void func_801C8EE8(void);

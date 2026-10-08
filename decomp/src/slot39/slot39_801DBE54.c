@@ -1,16 +1,45 @@
-/* Menu overlay unit from 801DBE54 (screens reached from the field menu).
- * Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump tables);
- * the text boundary lies between 801CC6D8, the last function using the
- * previous unit's rodata, and 801DBE54, the first using this unit's. */
+/* Menu overlay unit from 801DBDB4 (screens reached from the field menu).
+ * Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump tables),
+ * where 801DBE54's table sits; 801CC6D8 is the last function using the
+ * previous unit's rodata. Its uninitialized variables open with the item
+ * list's scroll bar, which 801DBDB4 sizes, so the unit starts there. */
 #include "menu.h"
 
-/* The unit's variables, zero in the image after slot39's. Its last two, the
- * icon image and palette areas (RECT D_801EA8E4, D_801EA8EC), stay generated
- * data while func_801E78C8 is linked as assembly that names their members. */
-u8 D_801EA730[200] = { 0 }; /* equipment list entry ids */
-u8 D_801EA7F8[200] = { 0 }; /* equipment list entry counts */
-u8 D_801EA8C0 = 0;          /* the last printed character was two-byte */
-u8 D_801EA8C4[0x20] = { 0 }; /* icon palette buffer */
+/* The unit's uninitialized variables, zero in the file after slot39's, each
+ * in a slot of whole words (BSS in slot39.mk). func_801E78C8, linked as
+ * assembly, names the RECTs' members (slot39.data.ld). */
+static s16 D_801EA724; /* item list scroll bar */
+static s32 D_801EA728;
+static s16 D_801EA72C;
+static u8 D_801EA730[200]; /* equipment list entry ids */
+static u8 D_801EA7F8[200]; /* equipment list entry counts */
+static u8 D_801EA8C0;      /* the last printed character was two-byte */
+static u8 D_801EA8C4[0x20]; /* icon palette buffer */
+static RECT D_801EA8E4;     /* icon image area */
+static RECT D_801EA8EC;     /* icon palette area */
+
+/* Size the item list's scroll bar from the last occupied inventory entry. */
+void func_801DBDB4(void) {
+    s32 i;
+    s32 last;
+    s32 pages;
+
+    for (i = 0; i < 150; i++) {
+        if (D_8006F65A[i] != 0) {
+            last = i;
+        }
+    }
+    if (last < 16) {
+        D_801EA724 = 0x74;
+        D_801EA728 = 0;
+        D_801EA72C = 0;
+    } else {
+        pages = (last - 16) / 2 + 1;
+        D_801EA724 = 0x4a;
+        D_801EA728 = pages;
+        D_801EA72C = 0x1068 / pages;
+    }
+}
 
 /* The item screen: a two-column list of eight rows scrolled over the
  * inventory with a cursor, the selected entry's description and its

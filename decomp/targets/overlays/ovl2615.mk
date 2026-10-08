@@ -22,3 +22,6 @@ CC_burst_modes := 2.7.2-cdk
 MASPSX_battle_loader := --aspsx-version=2.56
 MASPSX_load_modes := --aspsx-version=2.56
 MASPSX_burst_modes := --aspsx-version=2.56
+# INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
+# VRAM 0x801E4000.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x801E4000

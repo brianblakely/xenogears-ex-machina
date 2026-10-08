@@ -21,6 +21,10 @@
 #include "settle.h"
 #include "curve.h"
 
+/* The idle motion of each shown condition, opening the unit's data: its
+ * padding holds stray assembler bytes, so it stays original data. */
+INCLUDE_ORIGINAL(".data", D_800C37D4, 0x800C37D4, 20);
+
 /* The cubic B-spline weights (1.0 = 0x4000) of the curve cells: five rows
  * of eight steps, four weights each (func_800C0D18). */
 s32 D_800C37E8[40][4] = {

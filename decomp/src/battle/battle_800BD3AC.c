@@ -20,11 +20,18 @@
 #include "stage.h"
 #include "battle_command.h"
 
-/* This unit's data from 800c374c to 800c37d4 holds stray assembler bytes in
- * the padding of D_800C3780 and D_800C37C8, so the objects around those two
- * stay original data (battle.yaml); the digit tables between them are C. */
+/* This unit's data (800c374c-800c37d4). The flags D_800C3780 and D_800C37C8
+ * have stray assembler bytes in their padding, so they stay original data. */
+s32 D_800C374C = 0;
+DamagePopup *D_800C3750 = NULL;
+s16 D_800C3754[5] = {-4, -8, -12, -16, -20}; /* the first glyph's x by digit count */
+MATRIX D_800C3760 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0x200}};
+INCLUDE_ORIGINAL(".data", D_800C3780, 0x800C3780, 4);
 u8 D_800C3784[32] = "0123456789ABCDEF0123456789abcdef";
 u32 D_800C37A4[] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+INCLUDE_ORIGINAL(".data", D_800C37C8, 0x800C37C8, 4);
+u8 D_800C37CC = 0;
+s32 D_800C37D0 = 0;
 
 /* Show value over sprite as a damage popup of kind (replacing the sprite's
  * earlier ones): 1 a prefix glyph, 2 green, 3 magenta with a prefix, 4 a
@@ -68,7 +75,7 @@ void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
     popup->glyphCount = 0;
     if (kind != 4) {
         func_800BE6E8(value, text, 5, 0, 0);
-        x = D_800C3752[text[0]];
+        x = D_800C3754[text[0] - 1];
     }
     switch (kind) {
     case 4:
@@ -386,7 +393,7 @@ void func_800BDF1C(void) {
                 break;
             }
             func_800BE6E8(value, text, 5, 0, 0);
-            x = D_800C3752[text[0]];
+            x = D_800C3754[text[0] - 1];
             total->glyphCount = 0;
             for (i = 0; i != text[0]; x += 10) {
                 total->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
@@ -442,7 +449,7 @@ void func_800BE1C4(PopupTask *task) {
     offset.vx = (0xA0 - x) * 2;
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
-    D_800C377C = ReadGeomScreen();
+    D_800C3760.t[2] = ReadGeomScreen();
     func_80021B24(&angle, &popup->angle);
     scale.vx = popup->scale.vx;
     scale.vy = popup->scale.vy;
@@ -509,7 +516,7 @@ void func_800BE330(s32 value) {
         break;
     }
     func_800BE6E8(value, text, 5, 0, 0);
-    x = D_800C3752[text[0]];
+    x = D_800C3754[text[0] - 1];
     popup->glyphCount = 0;
     for (i = 0; i != text[0]; x += 10) {
         popup->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);

@@ -21,7 +21,8 @@ s32 D_801D2250 = 232;
 s32 D_801D2254 = 88;
 s32 D_801D2258 = 232;
 s32 D_801D225C = 100;
-/* D_801D2260 (u16) follows in a four-byte slot; see ovl2601.yaml. */
+/* Uninitialized: the file holds it as zeros in a four-byte slot. */
+u16 D_801D2260;
 
 /* This unit passes quad coordinates as words; the shared screen unit sees
  * the helper's narrow definition before its local calls. */

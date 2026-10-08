@@ -109,9 +109,10 @@ Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
 complete eight-token group; the same rule reproduces a 25-file sample of other
 packed disc files. The zero literals that complete the last group count in the
 decoded length, so a decoded image can end a few bytes past its last object
-(worldmap 2, field 6, movie 7 bytes): those bytes belong to no object and stay
-out of C (objcopy padding or a generated tail). This is a separate claim from
-image matching; whole-disc filesystem/ECC reproduction is not attempted.
+(worldmap 2, field 6, movie 7, menu 5 bytes): those bytes belong to no object
+and stay out of C as file padding (`OBJCOPY_FLAGS := --gap-fill 0 --pad-to`).
+This is a separate claim from image matching; whole-disc filesystem/ECC
+reproduction is not attempted.
 
 ## Script instructions
 
@@ -218,10 +219,13 @@ the audit; they are never counted as matches. This diagnostic does not replace
   scheduling or allocation are rejected even when they match (battle 80087EDC was
   withdrawn for this). No new inline asm, register pinning or `.word`; the existing
   GTE, `break` and scratchpad-stack macros are original style.
-- Strings and data objects whose alignment padding holds stray assembler bytes stay
-  original data: mark a string `force_not_migration:True`, link it with INCLUDE_RODATA
-  beside the function and reference it as `extern char[]`; leave a data object in the
-  target's generated data (ovl2615 D_801E9638, ovl2596 D_801E44C0, battle D_800C204C).
+- Strings whose alignment padding holds stray assembler bytes stay original data:
+  mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
+  function and reference it as `extern char[]`. A .data object whose padding holds
+  such bytes (a byte flag followed by `04`, a halfword table ending in `"Mt"`) is
+  linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
+  among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
+  only where the padding is non-zero and nothing reads it. Both count as `included`.
 - A routine is classified handwritten (reviewed `.s` beside the C) only on code GCC
   does not emit: trapping `add`/`addi`/`sub`/`neg`, saves below `$sp` or beyond the
   frame, `ori` for a small positive constant where the unit's ASPSX emits `addiu`,
@@ -337,10 +341,11 @@ converted to C per unit. What converting the targets' `.data` established:
   in unit order, so a block belongs to the unit whose section holds it, not to the
   units that read it (slot39.c holds tables only its later units use; battle
   80070E2C's `.data` opens with tables several units share). Define blocks in
-  address order. Each unit has one `.data`: when an object stays original data, the
-  neighbours one C section can no longer cover stay generated with it. Data order is
-  also unit-boundary evidence: each world map scene unit's data opens with that of
-  mode handlers the text split still leaves in the preceding unit (8007DE98).
+  address order. Each unit has one `.data`, so an object that stays original data is
+  linked at its place among the unit's definitions (INCLUDE_ORIGINAL, above) and its
+  neighbours stay C. Data order is also unit-boundary evidence: each world map scene
+  unit's data opens with that of mode handlers the text split still leaves in the
+  preceding unit (8007DE98).
 - The mode overlays' leading number is the first unit's `.rodata` (field.c,
   worldmap.c, menu.c), or a unit of its own where that unit's rodata starts at 4 mod 8
   right after it (battle_prefix.c, movie_number.c).
@@ -356,17 +361,27 @@ converted to C per unit. What converting the targets' `.data` established:
 - GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
   heap tag names).
 - Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
-  ovl2601, ovl2602, ovl2615). ovl2615 keeps its units' uninitialized definitions
-  and loads `.bss` (splat `ld_bss_is_noload: False`, one `.bss` subsegment per
-  unit); the others define the variables zero-initialized, which GCC 2.x places in
-  `.data`: in place where no later unit has initialized data (slot39), else in a
-  data-only unit at that address (mdec_bss.c). Commons follow every unit (mdec's
-  five player commons among the 20 of libcd's CDROM.OBJ) and go in data-only units
-  (slot39_common.c, mdec/commons/).
-- The original toolchain gave each `.bss` object and common its own 4-byte slot
-  (resident u8 variables at 8005942c-8005943c); GCC packs adjacent narrow definitions.
-  mdec_bss.c and ovl2143 word-align them with `__attribute__((aligned(4)))`; ovl2596,
-  ovl2601, slot39 and menu_bss keep such ranges generated.
+  ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
+  their unit, never as zero data, and where a file holds its `.bss` as zeros the
+  `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
+  ovl2143 and ovl2602 still define theirs zero-initialized in `.data` (ovl2143
+  word-aligns D_801E869C with `__attribute__((aligned(4)))`).
+- GCC emits a unit's function-local statics, then its file-scope tentative
+  definitions in first-declaration order, packing adjacent narrow ones; the original
+  assembler gave each a slot of whole words (resident u8 variables at
+  8005942c-8005943c; two `u8` four bytes apart; `BSS := slots` in the target filters
+  maspsx's output). A unit's own variables come first, as statics where the commons
+  follow apart, and a unit reads only its own, which fixes text boundaries (menu
+  800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
+  linker allocated after every unit's own in an order of its own (mdec's five player
+  commons among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked
+  last (slot39_common.c, menu_common.c, mdec commons/). Zeros a packer added past the
+  program are file padding (Compressed containers).
+- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, so a
+  one-pass ASPSX has seen every definition before any use: small data that all its
+  users address absolutely is no user's own. The resident's (80059170-80059184,
+  80059198-800591b8) is defined by data-only `-G8` units at its link positions
+  (kernel_settings.c, sprite_settings.c).
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).
@@ -395,7 +410,8 @@ made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
 From the link map it also attributes every loaded .rodata/.data/.sdata input
-section to compiled C, original bytes INCLUDE_RODATA'd beside C (`included`),
+section to compiled C, original bytes INCLUDE_RODATA'd or INCLUDE_ORIGINAL'd in C
+(`included`),
 authored assembly, a classified `sdk`/`asset` range, or a generated
 `placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
 game data or bytecode that is parsed and documented rather than rewritten as source.

@@ -7,6 +7,12 @@
 #include "window.h"
 #include "gte.h"
 
+/* The unit's small uninitialized variables, zero in the file after every
+ * unit's data, each in a slot of whole words (BSS in menu.mk). */
+static s32 D_800927F0;
+static s32 D_800927F4;
+static s32 D_800927F8[2]; /* unreferenced */
+
 /* The mode's tasks, indexed by the resident mode word D_80050618; the only
  * entry is the menu task. The table is stored in .text, ahead of the code. */
 void (*D_80088BFC[])(s32) __attribute__((section(".text"))) = { func_800852C4 };
