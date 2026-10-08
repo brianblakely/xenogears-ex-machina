@@ -6,6 +6,135 @@
  */
 #include "menu_card.h"
 
+/* Headings: two sets of four sprites and the two alternative ones, with
+ * their positions. */
+u8 D_801D6D08[8] = {0xF2, 0xDE, 0xF3, 0xE5, 0xE5, 0xE3, 0xE5, 0xE5};
+u8 D_801D6D10[2] = {0xF2, 0xE3};
+s32 D_801D6D14[8] = {150, 48, 48, 224, 208, 208, 208, 208}; /* x */
+s32 D_801D6D34[2] = {150, 224};
+s32 D_801D6D3C[8] = {158, 190, 198, 88, 72, 80, 72, 72}; /* y */
+s32 D_801D6D5C[2] = {158, 88};
+/* The three nine-digit numbers' positions. */
+s32 D_801D6D64 = 232;
+s32 D_801D6D68 = 78;
+s32 D_801D6D6C = 232;
+s32 D_801D6D70 = 88;
+s32 D_801D6D74 = 232;
+s32 D_801D6D78 = 100;
+
+/* Per gear (17; gear 7 has no model values): the model's first file id,
+ * variant and two model values. */
+u16 D_801D6D7C[17] = {
+    0x6BA, 0x70E, 0x6BC, 0x6DC, 0x6D4, 0x6DE, 0x6E8, 0x702, 0x6E4,
+    0x700, 0x6BA, 0x710, 0x712, 0x714, 0x716, 0x72C, 0x6DC,
+};
+u8 D_801D6DA0[17] = {13, 4, 12, 4, 7, 8, 10, 0, 13, 4, 1, 4, 4, 4, 4, 4, 4};
+u16 D_801D6DB4[17] = {
+    200, 200, 192, 192, 204, 192, 192, 0, 200,
+    215, 200, 187, 187, 178, 178, 210, 192,
+};
+u16 D_801D6DD8[17] = {
+    240, 215, 243, 244, 235, 231, 221, 0, 211,
+    178, 250, 212, 195, 213, 189, 180, 244,
+};
+/* The camera's targets: x per gear; y per gear, command (1-3) and list
+ * entry; the distance per command and list entry. func_801CFC60 indexes the
+ * last two from the command's row, one row before their first entries. */
+s16 D_801D6DFC[17] = {
+    352, 352, 312, 352, 352, 400, 596, 0, 564,
+    300, 352, 452, 500, 508, 676, 396, 352,
+};
+s16 D_801D6E20[17 * 12] = {
+    128, 0, 0, 0, 128, 0, 0, 0, 64, 0, 64, -48,
+    128, 0, 0, 0, 128, 0, 0, 0, 84, 0, 84, -40,
+    128, 12, 0, 0, 128, 12, 0, 0, 96, 0, 96, -40,
+    128, 0, 0, 0, 128, 0, 0, 0, 88, 0, 88, -60,
+    120, -20, 0, 0, 120, -20, 0, 0, 84, 0, 84, -64,
+    100, -30, 0, 0, 100, -30, 0, 0, 72, 0, 72, -70,
+    76, -8, 0, 0, 76, -8, 0, 0, 40, 0, 40, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    136, -4, 0, 0, 136, -4, 0, 0, 84, 0, 84, 0,
+    68, 116, 0, 0, 68, 116, 0, 0, 40, 0, 40, 20,
+    128, 0, 0, 0, 128, 0, 0, 0, 64, 0, 64, -48,
+    100, 0, 0, 0, 100, 0, 0, 0, 76, 0, 76, -50,
+    96, 0, 0, 0, 96, 0, 0, 0, 68, 0, 68, -50,
+    88, 0, 0, 0, 88, 0, 0, 0, 64, 0, 64, -58,
+    56, 0, 0, 0, 56, 0, 0, 0, 28, 0, 28, -52,
+    68, -20, 0, 0, 68, -20, 0, 0, 36, 0, 36, -44,
+    128, 0, 0, 0, 128, 0, 0, 0, 88, 0, 88, -60,
+};
+s16 D_801D6FB8[3 * 4] = {
+    1024, 0, 0, 0,
+    -1024, -2048, 0, 0,
+    1024, -1024, -1024, 1024,
+};
+
+/* The two second markers' x. */
+s32 D_801D6FD0[2] = {16, 276};
+s32 D_801D6FD8 = 0; /* available members 1-10 */
+s32 D_801D6FDC = 0; /* index of the gear screen's member among the available ones */
+
+/* The two lamps: their sprite ids, four per frame and five frames per lamp
+ * (0xFFFF none). */
+u16 D_801D6FE0[40] = {
+    0x169, 0xFFFF, 0xFFFF, 0xFFFF,
+    0x169, 0x16A, 0xFFFF, 0xFFFF,
+    0x169, 0x16A, 0x16B, 0xFFFF,
+    0x169, 0x16A, 0x16B, 0x16C,
+    0x169, 0x16A, 0x16B, 0x16D,
+    0x169, 0xFFFF, 0xFFFF, 0xFFFF,
+    0x169, 0x16E, 0xFFFF, 0xFFFF,
+    0x169, 0x16E, 0x16F, 0xFFFF,
+    0x169, 0x16E, 0x16F, 0x170,
+    0x169, 0x16E, 0x16F, 0x171,
+};
+/* Lamp and indicator position per command and list cursor. */
+u8 D_801D7030[16] = {
+    0xFF, 0xFF, 0xFF, 0xFF,
+    0, 1, 0xFF, 0xFF,
+    0, 1, 0xFF, 0xFF,
+    2, 3, 4, 5,
+};
+u16 D_801D7040[2] = {100, 230}; /* lamp x */
+/* Lamp y choices, six per lamp. */
+u16 D_801D7044[12] = {
+    50, 66, 82, 98, 114, 130,
+    150, 134, 118, 102, 86, 70,
+};
+u16 D_801D705C[6] = {238, 238, 150, 150, 50, 50}; /* indicator x choices */
+u16 D_801D7068[6] = {42, 150, 42, 150, 42, 150};  /* indicator y choices */
+u16 D_801D7074[6] = {42, 42, 100, 100, 150, 150}; /* flicker x choices */
+u16 D_801D7080[6] = {110, 30, 110, 30, 110, 30};  /* flicker y choices */
+
+/* The gear parts frame: sprite ids and positions. */
+u16 D_801D708C[14] = {0x11, 0x19, 0x3E, 0xF, 0x1E, 0xE, 0x15, 0x3E, 0x20, 0xE, 0x12, 0x10, 0x11, 0x1D};
+u16 D_801D70A8[14] = {210, 218, 250, 210, 218, 226, 234, 250, 210, 218, 226, 234, 242, 250};
+u16 D_801D70C4[14] = {50, 50, 58, 66, 66, 66, 66, 74, 82, 82, 82, 82, 82, 82};
+/* Gear value positions (x, y). */
+u16 D_801D70E0 = 210;
+u16 D_801D70E2 = 58;
+u16 D_801D70E4 = 258;
+u16 D_801D70E6 = 58;
+u16 D_801D70E8 = 218;
+u16 D_801D70EA = 74;
+u16 D_801D70EC = 258;
+u16 D_801D70EE = 74;
+u16 D_801D70F0 = 234;
+u16 D_801D70F2 = 90;
+/* The pilot of each gear. */
+u8 D_801D70F4[20] = {0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 15, 15, 15};
+
+/* Zero in the image: the overlay's uninitialized variables. The original
+ * linker placed them after both units' initialized data (the first two are
+ * read only by ovl2602.c), so this unit defines them after its own data. */
+POLY_FT4 D_801D7108[200] = {0}; /* model values debug display packets, two per sprite */
+s32 D_801D9048 = 0;             /* their sprite count */
+u16 D_801D904C = 0;             /* count of the item last looked up */
+CameraMove D_801D9050 = {{0}};
+u8 D_801D9084 = 0;              /* gear being edited */
+u8 *D_801D9088 = NULL;          /* name pixel buffer */
+s32 D_801D908C[5] = {0};        /* entries in each of the five gear part lists */
+
 void func_801C7604();
 
 /* Draw the two second-marker sprites and set their four quads. */
@@ -451,7 +580,8 @@ void func_801CFAB8(u8 slot, u8 gear) {
 /*
  * Swing the camera to the edited gear's view for the current command, open
  * the lamps, indicator and flicker, and wait until the lamps and indicator
- * are open. The y table holds three command rows of four list entries per gear.
+ * are open. The y table holds three command rows (commands 1-3) of four list
+ * entries per gear, the distance table one such row set.
  */
 void func_801CFC60(void) {
     s32 row;
@@ -461,8 +591,8 @@ void func_801CFC60(void) {
     D_801D9050.from[2] = D_801D9050.to[2];
     D_801D9050.to[0] = D_801D6DFC[D_801D9084];
     row = D_801D9084 * 3;
-    D_801D9050.to[1] = D_801D6E18[(D_800625A0->top_cursor + row) * 4 + D_800625A0->list_cursor];
-    D_801D9050.to[2] = D_801D6FB0[D_800625A0->top_cursor * 4 + D_800625A0->list_cursor];
+    D_801D9050.to[1] = D_801D6E20[(D_800625A0->top_cursor + row - 1) * 4 + D_800625A0->list_cursor];
+    D_801D9050.to[2] = D_801D6FB8[(D_800625A0->top_cursor - 1) * 4 + D_800625A0->list_cursor];
     func_801CB690();
     D_800625A0->view_motion = 7;
     D_800625A0->unk454->flicker_shown = 1;
@@ -2351,7 +2481,7 @@ void func_801D5F94(GearTable *table, u8 id) {
     s32 bonus;
 
     if (D_8006D634.unk22B6 & 0x1000) {
-        D_801D70FD = 10;
+        D_801D70F4[9] = 10; /* gear 9's pilot */
     }
     gear = &D_8006D634.gears[id];
     pilot = &D_8006D634.characters[D_801D70F4[id]];

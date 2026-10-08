@@ -12,6 +12,66 @@
 
 const CardPrefix D_801C5000 = {"BISLPS-00800"};
 
+/* The shared screen data. */
+u8 D_801D697C = 0; /* the model values debug display (func_801CBE60) is on */
+/* Command pictures: two per command. */
+s32 D_801D6980[8] = {0x109, 0x135, 0x10A, 0x136, 0x10B, 0x137, 0x10C, 0x143};
+/* List pictures: four pairs (sprite, second layer) per command, 0xFFFF none. */
+s32 D_801D69A0[32] = {
+    0x110, 0x144, 0x111, 0x145, 0x112, 0x146, 0x113, 0x147,
+    0x110, 0x145, 0x111, 0x144, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0x110, 0x145, 0x111, 0x144, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0x110, 0x149, 0x111, 0x148, 0x112, 0x147, 0x113, 0x146,
+};
+/* List label text ids: commands, the sell lists (two sets of four), the buy
+ * lists. */
+u8 D_801D6A20[4] = {0x7B, 0x7B, 0x7B, 0x7B};
+u8 D_801D6A24[8] = {0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B};
+u8 D_801D6A2C[2] = {0x7C, 0x12};
+/* List label x offsets: commands, then the gear lists (two sets of four). */
+s32 D_801D6A30[4] = {0x12, 0x12, 0x12, 0};
+s32 D_801D6A40[8] = {0, 0x18, 0, 0, 0x18, 0xC, 0xC, 6};
+/* The four cursor markers' home positions. */
+s32 D_801D6A60[4] = {0, 0, 132, 228}; /* x */
+s32 D_801D6A70[4] = {0, 0, 120, 120}; /* y */
+/* The four command labels' text ids. */
+u8 D_801D6A80[4] = {9, 10, 11, 12};
+/* File slot -> list position (positions 15 and 31 are skipped). */
+s32 D_801D6A84[30] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+};
+/* Marker position per list position. */
+s32 D_801D6AFC[32] = { /* x */
+    32, 40, 48, 56, 64, 72, 80, 88,
+    96, 104, 112, 120, 128, 136, 144, 320,
+    176, 184, 192, 200, 208, 216, 224, 232,
+    240, 248, 256, 264, 272, 280, 288, 320,
+};
+s32 D_801D6B7C[32] = { /* y */
+    14, 34, 54, 14, 34, 54, 14, 34,
+    54, 14, 34, 54, 14, 34, 54, 256,
+    14, 34, 54, 14, 34, 54, 14, 34,
+    54, 14, 34, 54, 14, 34, 54, 256,
+};
+/* Cursor position per position. */
+s32 D_801D6BFC[9] = {73, 72, 67, 60, 37, 36, 31, 24, 16};          /* x */
+s32 D_801D6C20[9] = {201, 181, 162, 144, 201, 181, 162, 144, 128}; /* y */
+/* Member portrait x by shown member. */
+s32 D_801D6C44[9] = {72, 98, 124, 150, 176, 202, 228, 254, 280};
+/* Each member's party bit, as halfwords and as words. */
+u16 D_801D6C68[16] = {
+    0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+};
+u32 D_801D6C88[32] = {
+    0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
+    0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
+    0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000,
+};
+
 /* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
 u16 func_801C511C(u16 min, u16 max) {
     s32 range;
