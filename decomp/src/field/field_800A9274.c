@@ -1049,8 +1049,9 @@ void func_800ABEC8(void) {
 
 extern s32 D_800AF780; /* file 0xab bytes left */
 
-/* The glyph of the two-byte code at `text`: an index into the overlay font
- * (*own 1) or the ROM font bitmap (*own 0). */
+/* The glyph of the big-endian two-byte code at `text`: codes 8540..887f give
+ * overlay font cell code - 8540 (*own 1), any other the kanji ROM bitmap
+ * address from Krom2RawAdd (*own 0). */
 s32 func_800ABFDC(u8 *text, s32 *own) {
     u16 code;
 
@@ -1088,8 +1089,11 @@ void func_800AC03C(u8 *cell, u16 *rows) {
     }
 }
 
-/* Draw the next text line (ending at CR, up to 28 glyphs) into VRAM row
- * `row` at x `left`, blanking the rest; return the text after it. */
+/* Draw the next text line into VRAM row `row` at x `left`, blanking the rest
+ * of its 28 cells; return the text after it. A line is up to 28 two-byte
+ * codes ending at a CR, which it consumes; the CR test comes before each
+ * code, so a line of 28 codes leaves its CR to the next line, an empty one.
+ * Once no bytes of file 0xab are left (D_800AF780) it only blanks the row. */
 u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
     GlyphCell cell;
     RECT dest;
@@ -1304,7 +1308,8 @@ void func_800ACCB0(void) {
 }
 
 
-/* Advance the sequence one frame; every 16th frame decode the next step. */
+/* Advance the sequence one pass; every 16th pass, from the first, draw the
+ * next line of file 0xab at x 0x300 into VRAM row D_800AF778 & 15 (from 15). */
 void func_800ACCF4(void) {
     if (D_8004F300 != 0) {
         if ((D_800AF77C & 0xF) == 0) {

@@ -51,3 +51,33 @@ Notes from the handler:
 - Disc 1 map 145's packed message stream reads two bytes past its file; two
   different continuations give the same table, the bytes they change lying
   past its logical size.
+
+## Staff-roll text (field file 0xAB)
+
+- Reader: field `func_800AC0F0` (decomp/src/field/field_800A9274.c) draws one
+  line into VRAM row n & 15 at x 0x300. `func_800ACCF4` calls it on every
+  16th pass of the movie loop in `func_800A7948` (movie frames 0x687-0x18E1),
+  and `func_800AC99C` scrolls the sixteen rows up a pixel each pass.
+- Format: lines of up to 28 big-endian two-byte glyph codes, each ending at a
+  CR (0x0D) that the line consumes. The CR test comes before each code, so a
+  line of 28 codes leaves its CR to the next line, an empty one. Codes
+  8540-887F are cells of the font image (file 0xAC at (380, 100), seven 9x16
+  cells a row; `func_800ABFDC`); any other code goes to the BIOS kanji ROM
+  (`Krom2RawAdd`, whose PsyQ prototype takes a Shift-JIS code). CR is the only
+  control. Once the file's bytes are used up (`D_800AF780`), every further
+  line is blank.
+- Source: directory (4, 0) files 0xAB and 0xAC, loaded by `func_800AC308`
+  from `func_800ACC58` when `D_8004F300` is set. Only field extended event BE
+  (`func_80087C0C`) sets it, and no reachable field script on either disc uses
+  that event (`python3 -m tools.analysis.events --sweep`).
+
+```sh
+python3 -m tools.analysis.staff_roll --sweep    # aggregate, both discs
+```
+
+Sweep of both discs: one text each, byte-identical (9522 bytes). Each decodes
+as 571 lines: 570 end at a CR and one stops at 28 codes. 155 lines are empty.
+The 4476 glyph codes are 90 font cells (85 distinct, highest 94, inside the
+112 cells of file 0xAC's 64x256 image) and 4386 kanji ROM codes (575
+distinct). Unknown or undecodable: 0. `tests/test_staff_roll.py` checks the
+reader against the C.
