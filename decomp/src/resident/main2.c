@@ -959,30 +959,32 @@ s32 func_80034F98(u16 first, u16 second) {
  * pixels. Each glyph has eleven rows; its three-row stencil also sets the
  * neighbouring pixels. The two glyph planes occupy opposite two-bit pairs
  * in each nibble, so clearing/drawing one preserves the other.
- * NON_MATCHING: loop strength reduction keeps extra row addresses live and
- * introduces an eight-byte register-save frame absent from the original. */
-#ifdef NON_MATCHING
+ *
+ * Each row ORs an outline word into the rows above and below and the drawn
+ * pixels with their outline into its own row. `carry` is the outline that a
+ * column's first pixel and the previous column's last two pixels spread
+ * into the column. `first` arrives as a full word; each use takes its low
+ * half. */
 #define DRAW_GLYPH_PLANE(keep, shift) do { \
-    image[2] &= keep; \
     image[0] &= keep; \
     image[1] &= keep; \
+    image[2] &= keep; \
     image += stride; \
-    last = image + 2; \
-    lower = image + stride; \
-    upper = image - stride; \
     image[0] &= keep; \
-    image[2] &= keep; \
     image[1] &= keep; \
+    image[2] &= keep; \
     do { \
+        u16 *upper = &image[-stride]; \
+        u16 *lower = &image[stride]; \
         lower[0] &= keep; \
-        lower[2] &= keep; \
         lower[1] &= keep; \
+        lower[2] &= keep; \
         bits = *glyph++; \
         edge = -((bits & 0x80) != 0) & (0x222 << shift); \
         if (bits & 0x40) edge |= 0x2220 << shift; \
         if (bits & 0x20) edge |= 0x2200 << shift; \
-        spread = edge | (0x2000 << shift); \
         if (!(bits & 0x10)) spread = edge; \
+        else spread = edge | (0x2000 << shift); \
         upper[0] |= spread; \
         centre = -((bits & 0x80) != 0) & (0x212 << shift); \
         lower[0] |= spread; \
@@ -992,16 +994,15 @@ s32 func_80034F98(u16 first, u16 second) {
         previous = image[0]; \
         if (bits & 0x10) image[0] = previous | (0x2000 << shift) | edge; \
         else image[0] = previous | edge; \
-        spread = 0x222 << shift; \
         if (!(bits & 8)) { \
-            if (!(bits & 0x10)) spread = (bits >> (4 - shift)) & (2 << shift); \
-            else spread = 0x22 << shift; \
-        } \
-        edge = spread; \
+            if (!(bits & 0x10)) carry = (bits >> (4 - shift)) & (2 << shift); \
+            else carry = 0x22 << shift; \
+        } else carry = 0x222 << shift; \
+        edge = carry; \
         if (bits & 4) edge |= 0x2220 << shift; \
         if (bits & 2) edge |= 0x2200 << shift; \
-        spread = edge | (0x2000 << shift); \
         if (!(bits & 1)) spread = edge; \
+        else spread = edge | (0x2000 << shift); \
         upper[1] |= spread; \
         lower[1] |= spread; \
         edge = (bits >> (4 - shift)) & (2 << shift); \
@@ -1009,19 +1010,18 @@ s32 func_80034F98(u16 first, u16 second) {
         if (bits & 8) edge |= 0x212 << shift; \
         if (bits & 4) edge |= 0x2120 << shift; \
         if (bits & 2) edge |= 0x1200 << shift; \
-        previous = last[-1]; \
-        if (bits & 1) last[-1] = previous | (0x2000 << shift) | edge; \
-        else last[-1] = previous | edge; \
-        spread = 0x222 << shift; \
+        previous = image[1]; \
+        if (bits & 1) image[1] = previous | (0x2000 << shift) | edge; \
+        else image[1] = previous | edge; \
         if (!(bits & 0x8000)) { \
-            spread = 0x22 << shift; \
-            if (!(bits & 1)) spread = (bits << shift) & (2 << shift); \
-        } \
-        edge = spread; \
+            if (!(bits & 1)) carry = (bits << shift) & (2 << shift); \
+            else carry = 0x22 << shift; \
+        } else carry = 0x222 << shift; \
+        edge = carry; \
         if (bits & 0x4000) edge |= 0x2220 << shift; \
         if (bits & 0x2000) edge |= 0x2200 << shift; \
-        spread = edge | (0x2000 << shift); \
         if (!(bits & 0x1000)) spread = edge; \
+        else spread = edge | (0x2000 << shift); \
         upper[2] |= spread; \
         lower[2] |= spread; \
         edge = (bits << shift) & (2 << shift); \
@@ -1029,37 +1029,33 @@ s32 func_80034F98(u16 first, u16 second) {
         if (bits & 0x8000) edge |= 0x212 << shift; \
         if (bits & 0x4000) edge |= 0x2120 << shift; \
         if (bits & 0x2000) edge |= 0x1200 << shift; \
-        previous = last[0]; \
-        if (bits & 0x1000) last[0] = previous | (0x2000 << shift) | edge; \
-        else last[0] = previous | edge; \
-        last += stride; \
-        lower += stride; \
-        upper += stride; \
-        row++; \
+        previous = image[2]; \
+        if (bits & 0x1000) image[2] = previous | (0x2000 << shift) | edge; \
+        else image[2] = previous | edge; \
         image += stride; \
+        row++; \
     } while (row < 11); \
 } while (0)
 
-void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane) {
+void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     u16 *glyph;
-    u16 *last;
-    u16 *lower;
-    u16 *upper;
     u16 bits;
     u16 previous;
     s32 edge;
-    s32 centre;
     s32 spread;
-    s32 row = 0;
+    s32 centre;
+    s32 carry;
+    s32 row;
 
-    if (first == 0) {
+    if ((u16)first == 0) {
         glyph = (u16 *)(D_8005935C + (second - D_80059364) * 22);
-    } else if (first == 0xFF && second == 0xFF) {
+    } else if ((u16)first == 0xFF && second == 0xFF) {
         glyph = D_800501D0;
     } else {
         glyph = (u16 *)(D_8005935C + second * 22 + D_80059350 +
-                       (first - D_8005934C) * 0x1600);
+                       ((u16)first - D_8005934C) * 0x1600);
     }
+    row = 0;
     if (plane == 0) {
         DRAW_GLYPH_PLANE(0xCCCC, 0);
     } else {
@@ -1068,9 +1064,6 @@ void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane) {
 }
 
 #undef DRAW_GLYPH_PLANE
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034FFC);
-#endif
 
 
 /* Buttons held on controller `port` (active high), or 0 without a digital

@@ -42,7 +42,7 @@ void func_800335F4(u8 *data);
 u8 *func_80033728(u8 *resource, s32 index);
 s32 func_80033BAC(u8 first, u8 second);
 s32 func_80034F98(u16 first, u16 second);
-void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane);
+void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane);
 
 extern u8 D_8006F2E8[]; /* map indirect name indices to their 20-byte slots */
 

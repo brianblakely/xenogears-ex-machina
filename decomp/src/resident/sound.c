@@ -1506,14 +1506,10 @@ extern u8 D_80050A94[]; /* encoded note -> semitone */
  *
  * The two tick counters share a word. Keep the original signed addition
  * when packing it: the low half is not masked before adding the high half.
- * The encoded note byte reuses `opcode` (the original copies it for the two
- * table indexes).
- * NON_MATCHING: same size; left: the encoded note takes $a2 and the duration
- * $a0 (original both $a1); the lookahead loop also hoists the 0x99 constant
- * (original only 0x80 and 0x81); the duration adjustment reuses the first
- * unk5C load (original reloads it); and three loads after the portamento
- * division are ordered differently. */
-#ifdef NON_MATCHING
+ * One 16-bit variable holds the encoded note byte, then the note's duration
+ * (the original copies the byte for the two table indexes). The duration
+ * bias is stored before the duration is extended; the extension rereads
+ * unk5C. */
 void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     s16 remaining_channels;
     SoundSeqChannel *channel;
@@ -1527,7 +1523,6 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     u16 gate;
     u16 fraction;
     s32 note;
-    u8 length;
     s32 new_note;
     s32 distance;
     s32 remaining;
@@ -1547,13 +1542,13 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                         channel->volume = opcode << 8;
                     }
                     channel->flags2 |= 0x100;
-                    opcode = *position++;
-                    note = channel->current_note = (u8)channel->transpose + D_80050A94[opcode];
-                    length = D_800509B0[opcode];
-                    if (length == 0) {
-                        length = *position++;
+                    duration = *position++;
+                    note = channel->current_note = (u8)channel->transpose + D_80050A94[duration];
+                    duration = D_800509B0[duration];
+                    if (duration == 0) {
+                        duration = *position++;
                     }
-                    channel->unk5C = length;
+                    channel->unk5C = duration;
                     channel->state.envelope.release_rate = channel->unk28;
                     channel->state.flags |= 0x80;
                     if (channel->flags & 0x10) {
@@ -1592,7 +1587,7 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                 channel->flags |= 0x200;
             }
             loop = &channel->loops[channel->loop_depth];
-            for (opcode = *position; opcode >= 0x80; opcode = *position) {
+            while ((opcode = *position) >= 0x80) {
                 if (opcode == 0x90) {
                     position = channel->loop;
                     if (position != NULL) {
@@ -1608,7 +1603,7 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                     channel->flags |= 0x200;
                     break;
                 }
-                if ((u32)((u8)opcode - 0xB0) < 2) {
+                if (opcode == 0xB0 || opcode == 0xB1) {
                     channel->flags &= ~0x200;
                     break;
                 }
@@ -1631,10 +1626,10 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
             } else {
                 channel->flags &= ~0x1000;
             }
-            duration = (s8)channel->duration_adjust + (u16)channel->unk5C;
+            duration = (s8)channel->duration_adjust + channel->unk5C;
             if (duration <= 0) {
-                duration += (u16)channel->unk5C;
-                channel->duration_adjust += (u8)channel->unk5C;
+                channel->duration_adjust += channel->unk5C;
+                duration += channel->unk5C;
             }
             gate = 0x7FFF;
             if (!(channel->flags & 0x600)) {
@@ -1662,8 +1657,8 @@ packed_timers:
                     distance = (channel->current_note - channel->previous_note) << 24;
                     if (distance != 0) {
                         channel->unk84 = distance / channel->unk70;
-                        channel->flags3 |= 1;
                         channel->unk94 = channel->unk70;
+                        channel->flags3 |= 1;
                         channel->note.value = ((channel->previous_note << 8) + channel->detune + channel->unk6C) << 16;
                     }
                 }
@@ -1693,9 +1688,6 @@ packed_timers:
         channel++;
     } while (--remaining_channels != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C6E8);
-#endif
 
 extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
 
