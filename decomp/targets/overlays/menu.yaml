@@ -69,7 +69,8 @@ segments:
       # Initialized data of each unit in link order; menu has none.
       - [0x21448, .data, menu2]
       - [0x21604, .data, menu3]
-      - [0x21740, data, menu_data]
+      - [0x21740, .data, menu4]
+      - [0x21CD0, data, menu_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x22e68, databin, menu_tail]
   - [0x22e69]

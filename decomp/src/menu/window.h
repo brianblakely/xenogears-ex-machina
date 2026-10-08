@@ -289,5 +289,7 @@ void func_8008EB4C(s32 sound);
 void func_80080964(s32 menu);
 
 extern Menu *D_80092738; /* menu to return to */
+extern MenuItem D_80091368[2]; /* vibration choices, port 1 */
+extern MenuItem D_80091390[2]; /* port 2 */
 
 #endif
