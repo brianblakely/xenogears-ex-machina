@@ -157,8 +157,12 @@ typedef struct {
     s16 count;
 } PrimitiveGroup;
 
-/* The renderer of a primitive type: a routine per sort mode, the record
- * stride and the packet sizes. */
+/* The renderer of a primitive type: a routine per draw mode, the record
+ * stride and the packet sizes. The handwritten draw routines (see
+ * model_draw.s) sort by average depth (mode 0), light the faces (1), sort
+ * by the farthest (2) or nearest (3) vertex, or depth-cue textured faces
+ * by average (4) or farthest depth (5); a type without a variant lists
+ * its mode 0 routine. */
 typedef struct {
     void (*draw[6])(u8 *records, s32 count);
     s32 (*prepare)(u8 *aux, u8 *record, s16 kind); /* one record's packets */
