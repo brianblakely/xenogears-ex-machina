@@ -340,7 +340,13 @@ void func_800B1F0C(u32 *ot) {
  * the GPU code byte that the colour's last byte overwrites; the other such
  * kinds keep the colours 800B1720 built. Only the plain kinds fetch their
  * vertices through SET_VERTICES3/4 (the macros' loop level is part of what
- * gives the cursor and v0 their original registers). */
+ * gives the cursor and v0 their original registers). The binary bounds
+ * that choice: a loop note after a lighting call adds a load-delay nop
+ * where the original reads `lhu v0; lhu v1; sll` (800B22F8), so the lit
+ * fetches were written out by hand, and with fewer than two loop-wrapped
+ * fetch groups the function grows to 757 words. Any two to eight of the
+ * eleven groups that start their own block match; the eight plain kinds
+ * are the reading that keeps each half uniform. */
 void func_800B1F6C(entry, packets, ot, unused, bias, blend)
     ScriptEntry *entry;
     u8 *packets;
