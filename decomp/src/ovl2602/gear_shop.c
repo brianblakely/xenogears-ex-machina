@@ -124,16 +124,9 @@ u16 D_801D70F2 = 90;
 /* The pilot of each gear. */
 u8 D_801D70F4[20] = {0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 15, 15, 15};
 
-/* Zero in the image: the overlay's uninitialized variables. The original
- * linker placed them after both units' initialized data (the first two are
- * read only by ovl2602.c), so this unit defines them after its own data. */
-POLY_FT4 D_801D7108[200] = {0}; /* model values debug display packets, two per sprite */
-s32 D_801D9048 = 0;             /* their sprite count */
-u16 D_801D904C = 0;             /* count of the item last looked up */
-CameraMove D_801D9050 = {{0}};
-u8 D_801D9084 = 0;              /* gear being edited */
-u8 *D_801D9088 = NULL;          /* name pixel buffer */
-s32 D_801D908C[5] = {0};        /* entries in each of the five gear part lists */
+/* The unit's own uninitialized variable, after ovl2602.c's in the file
+ * (zero there); the overlay's commons follow (ovl2602_common.c). */
+static u16 D_801D904C; /* count of the item last looked up */
 
 void func_801C7604();
 

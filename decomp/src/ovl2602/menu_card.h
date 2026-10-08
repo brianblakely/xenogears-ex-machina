@@ -537,13 +537,11 @@ extern s32 D_801D6AFC[]; /* marker x per list position */
 extern s32 D_801D6B7C[]; /* marker y per list position */
 extern s32 D_801D6BFC[]; /* cursor x per position */
 extern s32 D_801D6C44[]; /* member portrait x */
-extern s32 D_801D908C[5]; /* entries in each of the five gear part lists */
 extern u8 D_801D6D10[];  /* alternative heading sprite ids */
 extern s32 D_801D6D14[]; /* heading x */
 extern s32 D_801D6D34[]; /* alternative heading x */
 extern s32 D_801D6D3C[]; /* heading y */
 extern s32 D_801D6D5C[]; /* alternative heading y */
-extern u16 D_801D904C;   /* count of the item last looked up */
 extern s32 D_801D6D64;   /* first number x */
 extern s32 D_801D6D68;   /* first number y */
 extern s32 D_801D6D6C;   /* second number x */
@@ -888,8 +886,6 @@ void func_801D62A4(GearTable *table, u8 id);
 void func_801D6250(GearTable *table, u8 id);
 void func_801D6334(GearTable *table, u8 id);
 void func_801D6738(GearTable *table, u8 id);
-extern u8 D_801D9084;      /* gear being edited */
-extern u8 *D_801D9088;     /* name pixel buffer */
 extern u8 D_801D697C;
 u8 func_801D498C(u8 page, u8 fit);
 u32 func_801D2B74(s32 top, s32 gold, u8 *dims);
@@ -927,7 +923,12 @@ typedef struct {
     u8 negative[3];  /* 30: moving towards smaller coordinates */
     u8 frames;       /* 33: steps per update */
 } CameraMove;
+/* The overlay's commons (ovl2602_common.c), in address order: GCC
+ * allocates tentative definitions in the order of their first declaration. */
 extern CameraMove D_801D9050;
+extern u8 D_801D9084;      /* gear being edited */
+extern u8 *D_801D9088;     /* name pixel buffer */
+extern s32 D_801D908C[5];  /* entries in each of the five gear part lists */
 
 /* The Gear model code's state (801e8674, outside this overlay). */
 typedef struct {
@@ -956,8 +957,6 @@ extern u16 D_801D6DD8[];          /* model value 1ch per gear */
 void func_801E742C(s32 index, u16 flags, void *script, void *file, s16 x, s16 y, s16 z,
                    s16 w, s16 *pos);
 void func_801E8330(u16 index, u16 mask, s32 variant);
-extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
-extern s32 D_801D9048;        /* their sprite count */
 u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
 extern u16 D_801D6FE0[];        /* lamp sprite ids, four per frame, five frames per lamp (ffff none) */
 extern u8 D_801D7030[];         /* lamp and indicator position per command and list cursor */

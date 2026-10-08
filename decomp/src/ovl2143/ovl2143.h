@@ -542,15 +542,20 @@ typedef struct {
     s16 node;               /* +12 */
 } Anchor;
 
+/* The module state (ovl2143.c), in address order: GCC allocates tentative
+ * definitions in the order of their first declaration. */
 extern s32 D_801E85CC;
+extern u8 D_801E85D0[36];   /* never read */
 extern ModelList D_801E85F4[8];
+extern s32 D_801E8634;      /* model list in use */
+extern u8 *D_801E8638;      /* copy of the model group */
 extern u16 D_801E863C;
 extern s32 D_801E8640;
+extern MATRIX *D_801E8644;
 extern Anchor D_801E8648[2];
 extern Actor *D_801E8670[10];
-extern s16 D_801E869C;
-extern MATRIX *D_801E8644;
 extern s16 D_801E8698;
+extern s16 D_801E869C;
 extern ParticlePool D_801E86A0;
 extern SlotPool D_801E86A8;
 extern u16 D_801E86B0;
@@ -605,9 +610,6 @@ typedef struct {
     ScriptBlock *script;    /* +4 */
     ViewOwner *owner;       /* +8: also the sound block */
 } ActorScript;
-
-extern s32 D_801E8634;      /* model list in use */
-extern u8 *D_801E8638;      /* copy of the model group */
 
 void func_8003342C(void *table);   /* relocate an offset table in place */
 s32 func_8003864C(void *bank, s32 arg1);

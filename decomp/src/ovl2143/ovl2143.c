@@ -26,25 +26,24 @@ u8 D_801E85A4[] = {
     34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 102, 0,
 };
 
-/* The module state, zeroed in the file. The original allocated it as PsyQ
- * allocates .bss, each object in a 4-byte slot: D_801E869C starts its own
- * slot after D_801E8698, and the file ends with the rest of D_801E86B0's
- * (ovl2143.yaml aligns the section end). */
-s32 D_801E85CC = 0;
-u8 D_801E85D0[36] = {0}; /* never read */
-ModelList D_801E85F4[8] = {0};
-s32 D_801E8634 = 0;
-u8 *D_801E8638 = NULL;
-u16 D_801E863C = 0;
-s32 D_801E8640 = 0;
-MATRIX *D_801E8644 = NULL;
-Anchor D_801E8648[2] = {0};
-Actor *D_801E8670[10] = {0};
-s16 D_801E8698 = 0;
-s16 D_801E869C __attribute__((aligned(4))) = 0;
-ParticlePool D_801E86A0 = {0};
-SlotPool D_801E86A8 = {0};
-u16 D_801E86B0 = 0;
+/* The module state, zero in the file (its .bss, loaded), each object in a
+ * slot of whole words (decomp/Makefile): D_801E869C starts its own slot
+ * after D_801E8698, and the file ends with the rest of D_801E86B0's. */
+s32 D_801E85CC;
+u8 D_801E85D0[36]; /* never read */
+ModelList D_801E85F4[8];
+s32 D_801E8634;
+u8 *D_801E8638;
+u16 D_801E863C;
+s32 D_801E8640;
+MATRIX *D_801E8644;
+Anchor D_801E8648[2];
+Actor *D_801E8670[10];
+s16 D_801E8698;
+s16 D_801E869C;
+ParticlePool D_801E86A0;
+SlotPool D_801E86A8;
+u16 D_801E86B0;
 
 /* Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */

@@ -25,9 +25,9 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
-  ld_align_section_vram_end: True
+  ld_align_section_vram_end: False
   use_legacy_include_asm: False
   section_order: [".rodata", ".text", ".data", ".bss"]
   subalign: 4
@@ -41,12 +41,13 @@ segments:
     type: code
     start: 0x0
     vram: 0x801dc000
-    # The module state that ends .data was allocated in 4-byte slots (see
-    # ovl2143.c); the file ends with the rest of D_801E86B0's slot, so the
-    # sections end on a word boundary (ld_align_section_vram_end).
-    align: 4
     subsegments:
       - [0x0, .rodata, ovl2143]
       - [0x22c, c, ovl2143]
       - [0xc590, .data, ovl2143]
+      # The file ends with the module state (its .bss, loaded) as zeros,
+      # each object in a slot of whole words (decomp/Makefile): D_801E869C
+      # starts its own slot after the s16 D_801E8698, and the file ends with
+      # the rest of D_801E86B0's.
+      - [0xc5cc, .bss, ovl2143]
   - [0xc6b4]

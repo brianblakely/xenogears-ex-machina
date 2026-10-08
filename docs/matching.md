@@ -382,8 +382,6 @@ converted to C per unit. What converting the targets' `.data` established:
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
   `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
-  ovl2143 and ovl2602 still define theirs zero-initialized in `.data` (ovl2143
-  word-aligns D_801E869C with `__attribute__((aligned(4)))`).
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment.
