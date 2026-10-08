@@ -741,48 +741,48 @@ void func_80096130(void) {
     }
 }
 
-/* Append a three-word effect command to the current frame's list. */
-s32 func_8009623C(s32 a, s32 b, s32 c) {
-    EffectCommand3 *command;
+/* Append a disc read request to the current frame's list. */
+s32 func_8009623C(s32 sector, s32 bytes, u8 *destination) {
+    DiscReadRequest *request;
     s32 count;
 
     count = D_8009D808;
     if (count < 0x58) {
         D_8009D808 = count + 1;
-        command = (EffectCommand3 *)((u8 *)D_8009BE08 + D_8009BE44 * 0x420) + count;
-        command->a = a;
-        command->b = b;
-        command->c = c;
+        request = (DiscReadRequest *)((u8 *)D_8009BE08 + D_8009BE44 * 0x420) + count;
+        request->sector = sector;
+        request->bytes = bytes;
+        request->destination = destination;
         return 0;
     }
     return -1;
 }
 
-/* Append a four-word effect command to the current frame's list. */
-s32 func_800962B0(s32 a, s32 b, s32 c, s32 d) {
-    EffectCommand4 *command;
+/* Append a host-file read request to the current frame's list. */
+s32 func_800962B0(char *path, s32 offset, s32 bytes, u8 *destination) {
+    HostReadRequest *request;
     s32 count;
 
     count = D_8009D808;
     if (count < 0x58) {
         D_8009D808 = count + 1;
-        command = (EffectCommand4 *)((u8 *)D_8009D3C0 + D_8009BE44 * 0x580) + count;
-        command->a = a;
-        command->b = b;
-        command->c = c;
-        command->d = d;
+        request = (HostReadRequest *)((u8 *)D_8009D3C0 + D_8009BE44 * 0x580) + count;
+        request->path = path;
+        request->offset = offset;
+        request->bytes = bytes;
+        request->destination = destination;
         return 0;
     }
     return -1;
 }
 
-/* Submit the current effect command list; -1 when there is nothing to
+/* Submit the current disc request list; -1 when there is nothing to
  * send or its ring slot is still busy. */
 s32 func_80096328(void) {
-    s32 *list;
+    DiscReadRequest *list;
 
-    list = (s32 *)((u8 *)D_8009BE08 + D_8009BE44 * 0x420);
-    if (*list != 0 && D_8009D788[D_8009BE44] == NULL) {
+    list = (DiscReadRequest *)((u8 *)D_8009BE08 + D_8009BE44 * 0x420);
+    if (list->sector != 0 && D_8009D788[D_8009BE44] == NULL) {
         func_800963E4(list);
         D_8009D808 = 0;
         D_8009D788[D_8009BE44] = list;
@@ -794,24 +794,24 @@ s32 func_80096328(void) {
 }
 
 /* Sort a disc request list by sector (insertion sort in place). */
-void func_800963E4(s32 *list) {
-    EffectCommand3 *first;
-    EffectCommand3 *p;
-    EffectCommand3 swap;
+void func_800963E4(DiscReadRequest *list) {
+    DiscReadRequest *first;
+    DiscReadRequest *p;
+    DiscReadRequest swap;
 
-    p = (EffectCommand3 *)list;
+    p = list;
     first = p;
-    while (p[1].a != 0) {
-        if ((u32)p[0].a > (u32)p[1].a) {
-            swap.a = p[0].a;
-            swap.b = p[0].b;
-            swap.c = p[0].c;
-            p[0].a = p[1].a;
-            p[0].b = p[1].b;
-            p[0].c = p[1].c;
-            p[1].a = swap.a;
-            p[1].b = swap.b;
-            p[1].c = swap.c;
+    while (p[1].sector != 0) {
+        if ((u32)p[0].sector > (u32)p[1].sector) {
+            swap.sector = p[0].sector;
+            swap.bytes = p[0].bytes;
+            swap.destination = p[0].destination;
+            p[0].sector = p[1].sector;
+            p[0].bytes = p[1].bytes;
+            p[0].destination = p[1].destination;
+            p[1].sector = swap.sector;
+            p[1].bytes = swap.bytes;
+            p[1].destination = swap.destination;
             if (first < p) {
                 p--;
             }
@@ -822,27 +822,27 @@ void func_800963E4(s32 *list) {
 }
 
 /* Sort a host-file request list by offset (insertion sort in place). */
-void func_800964B0(s32 *list) {
-    EffectCommand4 *first;
-    EffectCommand4 *p;
-    EffectCommand4 swap;
+void func_800964B0(HostReadRequest *list) {
+    HostReadRequest *first;
+    HostReadRequest *p;
+    HostReadRequest swap;
 
-    p = (EffectCommand4 *)list;
+    p = list;
     first = p;
-    while (p[1].a != 0) {
-        if ((u32)p[0].b > (u32)p[1].b) {
-            swap.a = p[0].a;
-            swap.b = p[0].b;
-            swap.c = p[0].c;
-            swap.d = p[0].d;
-            p[0].a = p[1].a;
-            p[0].b = p[1].b;
-            p[0].c = p[1].c;
-            p[0].d = p[1].d;
-            p[1].a = swap.a;
-            p[1].b = swap.b;
-            p[1].c = swap.c;
-            p[1].d = swap.d;
+    while (p[1].path != NULL) {
+        if ((u32)p[0].offset > (u32)p[1].offset) {
+            swap.path = p[0].path;
+            swap.offset = p[0].offset;
+            swap.bytes = p[0].bytes;
+            swap.destination = p[0].destination;
+            p[0].path = p[1].path;
+            p[0].offset = p[1].offset;
+            p[0].bytes = p[1].bytes;
+            p[0].destination = p[1].destination;
+            p[1].path = swap.path;
+            p[1].offset = swap.offset;
+            p[1].bytes = swap.bytes;
+            p[1].destination = swap.destination;
             if (first < p) {
                 p--;
             }
@@ -852,13 +852,13 @@ void func_800964B0(s32 *list) {
     }
 }
 
-/* Submit the current four-word command list; -1 when there is nothing to
+/* Submit the current host-file request list; -1 when there is nothing to
  * send or its ring slot is still busy. */
 s32 func_800965A4(void) {
-    s32 *list;
+    HostReadRequest *list;
 
-    list = (s32 *)((u8 *)D_8009D3C0 + D_8009BE44 * 0x580);
-    if (*list != 0 && D_8009C624[D_8009BE44] == NULL) {
+    list = (HostReadRequest *)((u8 *)D_8009D3C0 + D_8009BE44 * 0x580);
+    if (list->path != NULL && D_8009C624[D_8009BE44] == NULL) {
         func_800964B0(list);
         D_8009D808 = 0;
         D_8009C624[D_8009BE44] = list;
@@ -889,7 +889,7 @@ void func_80096694(void) {
 }
 
 /* Read a host-file request list, retrying each call up to eight times. */
-void func_800966CC(EffectCommand4 *request) {
+void func_800966CC(HostReadRequest *request) {
     s32 fd;
     s32 i;
 
@@ -897,9 +897,9 @@ void func_800966CC(EffectCommand4 *request) {
     D_8009CCB0 = 0;
     D_8009CCA8 = 0;
     D_8009CCA0 = 0;
-    for (; request->a != 0; request++) {
+    for (; request->path != NULL; request++) {
         for (i = 0; i < 8; i++) {
-            fd = PCopen((char *)request->a, 0, 0);
+            fd = PCopen(request->path, 0, 0);
             if (fd != -1) {
                 break;
             }
@@ -907,9 +907,9 @@ void func_800966CC(EffectCommand4 *request) {
         if (fd == -1) {
             continue;
         }
-        PClseek(fd, request->b, 0);
+        PClseek(fd, request->offset, 0);
         for (i = 0; i < 8; i++) {
-            if (func_8004C398(fd, (void *)request->d, request->c) != 0) {
+            if (func_8004C398(fd, request->destination, request->bytes) != 0) {
                 break;
             }
         }
@@ -968,10 +968,10 @@ s32 func_800968E0(void) {
 }
 
 /* Start reading a disc request list: seek to its first sector. */
-void func_8009699C(EffectCommand3 *request) {
+void func_8009699C(DiscReadRequest *request) {
     s32 sector;
 
-    sector = request->a;
+    sector = request->sector;
     D_8009CD44 = 1;
     D_8009D3BC = request;
     D_8009D3BC = request + 1;
@@ -981,9 +981,9 @@ void func_8009699C(EffectCommand3 *request) {
     D_8009CCA0 = 0;
     D_8009D7F4 = sector;
     D_8009D614 = sector;
-    D_8009D56C = (u32)(request->b + 0x7FF) >> 11;
-    D_8009CEB8 = request->b;
-    D_8009C590 = request->c;
+    D_8009D56C = (u32)(request->bytes + 0x7FF) >> 11;
+    D_8009CEB8 = request->bytes;
+    D_8009C590 = request->destination;
     CdIntToPos(sector, &D_8009CEBC);
     CdSyncCallback(func_80096A6C);
     CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
@@ -1041,7 +1041,7 @@ void func_80096A6C(s32 status, u8 *result) {
  * request's destination and continue with the next request, seeking when it
  * is not close ahead; pause at the end of the list. */
 void func_80096C0C(s32 status, u8 *result) {
-    EffectCommand3 *request;
+    DiscReadRequest *request;
     s32 sector;
     s32 next;
 
@@ -1051,10 +1051,10 @@ void func_80096C0C(s32 status, u8 *result) {
         if (sector == D_8009D7F4) {
             if (D_8009D614 == sector) {
                 if (D_8009CEB8 < 0x800) {
-                    CdGetSector((void *)D_8009C590, D_8009CEB8 / 4);
+                    CdGetSector(D_8009C590, D_8009CEB8 / 4);
                     CdGetSector(D_8009D7D4, (0x800 - D_8009CEB8) / 4);
                 } else {
-                    CdGetSector((void *)D_8009C590, 0x200);
+                    CdGetSector(D_8009C590, 0x200);
                     D_8009CEB8 -= 0x800;
                 }
                 if (--D_8009D56C != 0) {
@@ -1062,11 +1062,11 @@ void func_80096C0C(s32 status, u8 *result) {
                     D_8009C590 += 0x800;
                 } else {
                     request = D_8009D3BC++;
-                    next = request->a;
+                    next = request->sector;
                     D_8009D614 = next;
-                    D_8009D56C = (u32)(request->b + 0x7FF) >> 11;
-                    D_8009CEB8 = request->b;
-                    D_8009C590 = request->c;
+                    D_8009D56C = (u32)(request->bytes + 0x7FF) >> 11;
+                    D_8009CEB8 = request->bytes;
+                    D_8009C590 = request->destination;
                     if (next != 0) {
                         if (next - D_8009D7F4 >= 0x13) {
                             D_8009D7F4 = next;
@@ -1464,7 +1464,7 @@ void func_80097DC0(void) {
     s32 block;
     void *buffer;
     s32 sector;
-    s32 path;
+    char *path;
 
     first = func_8002C3D8();
     second = func_8002C3D8();
@@ -1476,11 +1476,11 @@ void func_80097DC0(void) {
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
                     D_8009C184[block] = buffer;
-                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                    func_8009623C(sector + block, 0x710, buffer);
                 }
             }
         }
-        func_8009623C(0, 0, 0);
+        func_8009623C(0, 0, NULL);
         func_80096328();
         for (row = 0; row < 9; row++) {
             for (column = 0; column < 9; column++) {
@@ -1488,11 +1488,11 @@ void func_80097DC0(void) {
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
                     D_8009C184[block] = buffer;
-                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                    func_8009623C(sector + block, 0x710, buffer);
                 }
             }
         }
-        func_8009623C(0, 0, 0);
+        func_8009623C(0, 0, NULL);
         func_80096328();
     } else {
         path = func_80028998(D_8009BCD8);
@@ -1502,11 +1502,11 @@ void func_80097DC0(void) {
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
                     D_8009C184[block] = buffer;
-                    func_800962B0(path, block << 11, 0x710, (s32)buffer);
+                    func_800962B0(path, block << 11, 0x710, buffer);
                 }
             }
         }
-        func_800962B0(0, 0, 0, 0);
+        func_800962B0(NULL, 0, 0, NULL);
         func_800965A4();
     }
 }
@@ -1723,7 +1723,7 @@ void func_80098CC0(void) {
     s32 n;
     s32 block;
     s32 sector;
-    s32 path;
+    char *path;
     s32 changed;
     s32 corner;
     s32 rows;
@@ -1757,7 +1757,7 @@ void func_80098CC0(void) {
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
                     D_8009C184[block] = buffer;
-                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                    func_8009623C(sector + block, 0x710, buffer);
                     changed |= 2;
                 }
             }
@@ -1774,7 +1774,7 @@ void func_80098CC0(void) {
                     changed |= 1;
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + ((block % D_8009D160) * D_8009D2B4 + block / D_8009D160),
-                                  0x710, (s32)buffer);
+                                  0x710, buffer);
                 }
             }
             block = 0x11;
@@ -1786,15 +1786,15 @@ void func_80098CC0(void) {
             if (D_8009C184[corner] == NULL) {
                 D_8009C184[corner] = func_80031BDC(0x710, 0);
                 if (rows) {
-                    func_8009623C(func_800289D0(D_8009BCD8) + corner, 0x710, (s32)D_8009C184[corner]);
+                    func_8009623C(func_800289D0(D_8009BCD8) + corner, 0x710, D_8009C184[corner]);
                 } else if (cols) {
                     func_8009623C(func_800289D0(D_8009BD08) + ((corner % D_8009D160) * D_8009D2B4 +
                                                                corner / D_8009D160),
-                                  0x710, (s32)D_8009C184[corner]);
+                                  0x710, D_8009C184[corner]);
                 }
             }
         }
-        func_8009623C(0, 0, 0);
+        func_8009623C(0, 0, NULL);
         func_80096328();
     } else {
         path = func_80028998(D_8009BCD8);
@@ -1806,7 +1806,7 @@ void func_80098CC0(void) {
                 if (D_8009C184[block] == NULL) {
                     buffer = func_80031BDC(0x710, 0);
                     D_8009C184[block] = buffer;
-                    func_800962B0(path, block << 11, 0x710, (s32)buffer);
+                    func_800962B0(path, block << 11, 0x710, buffer);
                     changed |= 2;
                 }
             }
@@ -1824,7 +1824,7 @@ void func_80098CC0(void) {
                     D_8009C184[block] = buffer;
                     func_800962B0(path,
                                   ((block % D_8009D160) << 11) * D_8009D2B4 + ((block / D_8009D160) << 11),
-                                  0x710, (s32)buffer);
+                                  0x710, buffer);
                 }
             }
             block = 0x11;
@@ -1836,15 +1836,15 @@ void func_80098CC0(void) {
             if (D_8009C184[corner] == NULL) {
                 D_8009C184[corner] = func_80031BDC(0x710, 0);
                 if (rows) {
-                    func_800962B0(func_80028998(D_8009BCD8), corner << 11, 0x710, (s32)D_8009C184[corner]);
+                    func_800962B0(func_80028998(D_8009BCD8), corner << 11, 0x710, D_8009C184[corner]);
                 } else if (cols) {
                     func_800962B0(func_80028998(D_8009BD08),
                                   ((corner % D_8009D160) << 11) * D_8009D2B4 + ((corner / D_8009D160) << 11),
-                                  0x710, (s32)D_8009C184[corner]);
+                                  0x710, D_8009C184[corner]);
                 }
             }
         }
-        func_800962B0(0, 0, 0, 0);
+        func_800962B0(NULL, 0, 0, NULL);
         func_800965A4();
     }
 }

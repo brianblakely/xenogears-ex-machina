@@ -440,16 +440,22 @@ void func_800346D4(void *object);
 s32 func_80093E8C(VECTOR *position); /* terrain attribute at a position */
 u8 *func_80093660(s32 x, s32 z);   /* terrain cell at a position */
 
-extern void *D_8009BE08, *D_8009D3C0, *D_8009D7D4; /* effect command buffers */
+extern void *D_8009BE08, *D_8009D3C0; /* disc and host-file request buffers */
+extern void *D_8009D7D4; /* unused bytes drained from the final CD sector */
 extern s32 D_8009D808, D_8009BE44, D_8009BCB8;
 
 typedef struct {
-    s32 a, b, c;
-} EffectCommand3;
+    s32 sector;
+    s32 bytes;
+    u8 *destination;
+} DiscReadRequest;
 
 typedef struct {
-    s32 a, b, c, d;
-} EffectCommand4;
+    char *path;
+    s32 offset;
+    s32 bytes;
+    u8 *destination;
+} HostReadRequest;
 
 s32 func_8003F8B0(s32 angle);                  /* rsin */
 s32 func_8003F8CC(s32 angle);                  /* rcos */
@@ -612,14 +618,14 @@ void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
 extern u16 D_8009A68C[];
-extern void *D_8009D788[16]; /* submitted frame lists */
+extern DiscReadRequest *D_8009D788[16]; /* submitted disc request lists */
 
 s32 func_80084DB8(s32 probe, s32 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
-void func_800963E4(s32 *list);
+void func_800963E4(DiscReadRequest *list);
 
 extern s32 D_8009B224[2], D_8009B22C[2], D_8009B234[2], D_8009B23C[2];
-extern void *D_8009C624[16]; /* submitted four-word lists */
+extern HostReadRequest *D_8009C624[16]; /* submitted host-file request lists */
 
 /* Terrain slope plane per type (16 bytes). */
 typedef struct {
@@ -631,7 +637,7 @@ typedef struct {
 
 extern SlopeNormal D_8009B264[16];
 
-void func_800964B0(s32 *list);
+void func_800964B0(HostReadRequest *list);
 
 /* Path region (16 bytes); an id of -1 ends a list. */
 typedef struct {
@@ -766,9 +772,10 @@ void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b);
 /* Stream reader: disc read requests (sector, bytes, destination) and
  * host-file requests (name, offset, bytes, destination), sorted by position. */
 
-extern EffectCommand3 *volatile D_8009D3BC; /* next disc request (shared with the CD callbacks) */
+extern DiscReadRequest *volatile D_8009D3BC; /* next disc request (shared with the CD callbacks) */
 extern s32 D_8009BE48, D_8009CCB0, D_8009CCA8, D_8009CCA0;
-extern s32 D_8009D7F4, D_8009D614, D_8009CEB8, D_8009C590;
+extern s32 D_8009D7F4, D_8009D614, D_8009CEB8;
+extern u8 *D_8009C590; /* destination of the next sector's data */
 extern u32 D_8009D56C; /* sectors left */
 extern s32 D_8009BCCC[3]; /* sector header */
 
@@ -776,8 +783,8 @@ extern CdlLOC D_8009CEBC; /* request position */
 
 void func_80096A6C(s32 status, u8 *result);
 void func_80096C0C(s32 status, u8 *result);
-void func_8009699C(EffectCommand3 *request);
-void func_800966CC(EffectCommand4 *request);
+void func_8009699C(DiscReadRequest *request);
+void func_800966CC(HostReadRequest *request);
 s32 func_800968E0(void);
 
 /* Scratchpad matrices of the angle and camera helpers. */
@@ -845,9 +852,9 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode);
 s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out);
 
 s32 func_800289D0(s32 file); /* first sector of a disc file */
-s32 func_80028998(s32 file); /* host path of a file */
-s32 func_8009623C(s32 a, s32 b, s32 c);
-s32 func_800962B0(s32 a, s32 b, s32 c, s32 d);
+char *func_80028998(s32 file); /* host path of a file */
+s32 func_8009623C(s32 sector, s32 bytes, u8 *destination);
+s32 func_800962B0(char *path, s32 offset, s32 bytes, u8 *destination);
 s32 func_80096328(void);
 s32 func_800965A4(void);
 
