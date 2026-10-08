@@ -279,6 +279,8 @@ decomp/src/resident/console.h
 decomp/src/resident/func_80019524.s
 decomp/src/resident/func_80019548.s
 decomp/src/resident/func_80019560.s
+decomp/src/resident/func_80026F44.s
+decomp/src/resident/func_80026FE8.s
 decomp/src/resident/gpu.h
 decomp/src/resident/gte.h
 decomp/src/resident/heap.c
