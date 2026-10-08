@@ -40,7 +40,7 @@ typedef struct {
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
 extern MATRIX D_8004FBB8;   /* sprite camera */
-extern u8 D_8001C76C[];  /* resident effect script table */
+extern u8 D_8001C76C[];  /* resident effect script table (a TMD model, objects.h) */
 
 void *func_8001D0A4(void *owner, void (*update)()); /* the owner's child task running update */
 u8 *func_800B168C(u8 *table, s32 index);

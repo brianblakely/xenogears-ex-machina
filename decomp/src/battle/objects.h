@@ -291,7 +291,11 @@ typedef struct ScriptEntry {
     s32 field18;  /* 0x18 */
 } ScriptEntry;
 
-/* An effect script file. */
+/* An effect script file. Its layout is a PlayStation TMD model: id 0x41,
+ * flags (bit 0 FIXP), object count, then per object its vertex, normal and
+ * primitive tables with their counts and a scale; its commands are TMD
+ * primitives. It is not bytecode of the effect VM (800AAD54); the resident's
+ * D_8001C76C (0x170 bytes, one object) is one. */
 typedef struct {
     u8 pad0[4];
     u32 flags; /* 0x04: bit 0 relocated */

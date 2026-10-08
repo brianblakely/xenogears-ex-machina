@@ -2876,11 +2876,11 @@ aim:
         arg = word >> 8;
         op = (u8)word;
         switch (op) {
-        case 0x00: /* wait */
+        case 0x00: /* end: stay on this command */
             pc = start;
             running = 0;
             break;
-        case 0x01: /* wait for a number of frames */
+        case 0x01: /* wait (word) frames */
             if (changed != -1) {
                 word = *pc++;
                 actor->h40 += ticks;
@@ -2896,17 +2896,17 @@ aim:
                 running = 0;
             }
             break;
-        case 0x02: /* redraw */
+        case 0x02: /* call 800796f4 after the run (`redraw`) */
             redraw = 1;
             break;
-        case 0x03:
+        case 0x03: /* the same */
             redraw = 1;
             break;
         case 0x08: /* drop the node tweens and the animation */
             func_801DFE8C(pool, actor->parts);
             func_801E632C(actor);
             break;
-        case 0x0A:
+        case 0x0A: /* release node `arg`'s attachments 0-2 */
             func_801DF52C(pool, actor->parts, arg, 7);
             break;
         case 0x0B: { /* drop the tweens and reset every node below the root */
@@ -2942,16 +2942,16 @@ aim:
             actor->drift_accel[1] = 0;
             actor->drift_accel[2] = 0;
             break;
-        case 0x0D:
+        case 0x0D: /* release node `arg`'s rotation attachment */
             func_801DF52C(pool, actor->parts, arg, 1);
             break;
-        case 0x0E:
+        case 0x0E: /* release node `arg`'s position attachment */
             func_801DF52C(pool, actor->parts, arg, 2);
             break;
         case 0x10: /* apply keyframe `arg` */
             func_801DEF10(actor->parts, (s16 *)func_801E6910(actor, arg, &n));
             break;
-        case 0x11: { /* start animation `arg` */
+        case 0x11: { /* start animation `arg` (word: loop high, tag low byte) */
             s32 size;
 
             key = func_801E6910(actor, arg, &n);
@@ -2967,7 +2967,8 @@ aim:
             }
             break;
         }
-        case 0x13: /* tween to keyframe */
+        case 0x13: /* tween to keyframe (word 0: keyframe low, tag high; word 1:
+                    * smoothing low, duration high; mode `arg`) */
             word = *pc++;
             entry = word >> 8;
             reference = (u8)word;
@@ -2985,7 +2986,8 @@ aim:
             changed = -1;
             func_801E632C(actor);
             break;
-        case 0x14: /* call an entry in the masked actors */
+        case 0x14: /* call entry (word high byte) of a source (low byte; 0xff each
+                    * actor's own) in the actors of code `arg`; 0xfd hands over */
             word = *pc++;
             reference = (u8)word;
             entry = word >> 8;
@@ -3009,7 +3011,8 @@ aim:
                 return;
             }
             break;
-        case 0x15: { /* clone this actor into a free slot 8 or 9 */
+        case 0x15: { /* clone this actor into a free slot 8 or 9; node (word) moves
+                      * to the copy, which runs entry `arg` (0xff none) */
             ModelPart *parts;
 
             word = *pc++;
@@ -3065,14 +3068,15 @@ aim:
         case 0x17: /* release this actor */
             func_801E8030(actor->index);
             return;
-        case 0x18: /* start animation `arg` looping from a frame */
+        case 0x18: /* start animation `arg`, looping when the word is set */
             key = func_801E6910(actor, arg, &n);
             func_801E5C74(actor, (Animation *)key, (s16)*pc++);
             break;
         case 0x19: /* stop the animation */
             func_801E632C(actor);
             break;
-        case 0x1A: { /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+        case 0x1A: { /* move a VRAM rectangle (words x, y, dst x, dst y, w, h;
+                      * arg bit 0: by the actor's image offset) */
             s16 x, y;
 
             rect.x = *pc++;
@@ -3094,7 +3098,8 @@ aim:
             MoveImage(&rect, x, y);
             break;
         }
-        case 0x1D: /* tween node `arg` between two poses */
+        case 0x1D: /* tween node `arg` between two poses (words: flags/mode,
+                    * tag/field, start x y z, end x y z, duration) */
             word = *pc++;
             entry = word >> 8;
             reference = (u8)word;
@@ -3135,7 +3140,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x22: /* wait for a number of loops (of all, or those tagged `arg`) */
+        case 0x22: /* wait for (word) loops (of all, or those tagged `arg`) */
             if (changed != -1) {
                 word = *pc++;
                 if (arg == 0xFF) {
@@ -3170,7 +3175,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x23:
+        case 0x23: /* show or hide node (word) by flags `arg` (801e6d94) */
             func_801E6D94(actor, &actor->parts[(s16)*pc++], arg);
             break;
         case 0x24: /* show or hide */
@@ -3302,7 +3307,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x2E: /* jump when near the target */
+        case 0x2E: /* jump (word: offset; `arg` 0 cancels) when near the target */
             actor->h48 = actor->h8E;
             word = *pc++;
             actor->w4C = arg ? (s32)((u8 *)start + (s16)word) : 0;
@@ -3333,7 +3338,7 @@ aim:
                 pc = (u16 *)((u8 *)start + (s16)word);
             }
             break;
-        case 0x36: /* jump after a number of frames */
+        case 0x36: /* jump after a number of frames (words: frames, offset) */
             actor->h44 = 0;
             actor->h46 = *pc++;
             word = *pc++;
@@ -3343,7 +3348,8 @@ aim:
             word = *pc++;
             actor->w54 = arg ? (s32)((u8 *)start + (s16)word) : 0;
             break;
-        case 0x38: /* move node `arg` toward the target */
+        case 0x38: /* move the root toward the target (801e5b50 kind 7; values `arg`
+                    * and the word's low byte, duration its high byte) */
             word = *pc++;
             func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
@@ -3353,12 +3359,13 @@ aim:
             func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
-        case 0x33:
+        case 0x33: /* the battle's conditional jumps: consume the word */
         case 0x34:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* play a sound */
+        case 0x3C: /* play sound (word low byte) of view `arg`'s bank, parameter
+                    * (high byte) */
             word = *pc++;
             reference = word;
             entry = word >> 8;
@@ -3419,27 +3426,27 @@ aim:
             func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
             changed = -1;
             break;
-        case 0x44:
+        case 0x44: /* spin = three words */
             actor->spin[0] = *pc++;
             actor->spin[1] = *pc++;
             actor->spin[2] = *pc++;
             break;
-        case 0x45:
+        case 0x45: /* spin += three words */
             actor->spin[0] += *pc++;
             actor->spin[1] += *pc++;
             actor->spin[2] += *pc++;
             break;
-        case 0x46:
+        case 0x46: /* spin acceleration = three words */
             actor->spin_accel[0] = *pc++;
             actor->spin_accel[1] = *pc++;
             actor->spin_accel[2] = *pc++;
             break;
-        case 0x47:
+        case 0x47: /* spin acceleration += three words */
             actor->spin_accel[0] += *pc++;
             actor->spin_accel[1] += *pc++;
             actor->spin_accel[2] += *pc++;
             break;
-        case 0x48:
+        case 0x48: /* b36 = arg */
             actor->b36 = arg;
             break;
         case 0x49: /* place the root */
@@ -3463,22 +3470,22 @@ aim:
                 actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
             }
             break;
-        case 0x4B:
+        case 0x4B: /* drift = three words */
             actor->drift[0] = *pc++;
             actor->drift[1] = *pc++;
             actor->drift[2] = *pc++;
             break;
-        case 0x4C:
+        case 0x4C: /* drift += three words */
             actor->drift[0] += *pc++;
             actor->drift[1] += *pc++;
             actor->drift[2] += *pc++;
             break;
-        case 0x4D:
+        case 0x4D: /* drift acceleration = three words */
             actor->drift_accel[0] = *pc++;
             actor->drift_accel[1] = *pc++;
             actor->drift_accel[2] = *pc++;
             break;
-        case 0x4E:
+        case 0x4E: /* drift acceleration += three words */
             actor->drift_accel[0] += *pc++;
             actor->drift_accel[1] += *pc++;
             actor->drift_accel[2] += *pc++;
@@ -3504,16 +3511,16 @@ aim:
             actor->target[1] = *pc++;
             actor->target[2] = *pc++;
             break;
-        case 0x54:
+        case 0x54: /* h8e = word scaled by the actor and root scales */
             actor->h8E = (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
             break;
-        case 0x55:
+        case 0x55: /* h8e += word scaled */
             actor->h8E += (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
             break;
-        case 0x56:
+        case 0x56: /* h8e += word */
             actor->h8E += *pc++;
             break;
-        case 0x57:
+        case 0x57: /* h8e += the width of the actor of code `arg` */
             n = func_801E6830(actor, arg, &word) & 0xFF;
             actor->h8E += func_801E8480(n);
             break;
@@ -3543,19 +3550,20 @@ aim:
                 pc = (u16 *)((u8 *)start + (s16)word);
             }
             break;
-        case 0x5D:
+        case 0x5D: /* node (word)'s billboard mode = `arg` */
             word = *pc++;
             actor->parts[(s16)word].billboard = arg;
             break;
-        case 0x5E:
+        case 0x5E: /* scale = word */
             word = *pc++;
             actor->scale = word;
             break;
-        case 0x5F:
+        case 0x5F: /* flags = word */
             word = *pc++;
             actor->flags = word;
             break;
-        case 0x62:
+        case 0x62: /* set or add node (word 0)'s transform to words 1-3 (801e7094,
+                    * flags `arg`) */
             /* The operands are read in order. */
             func_801E7094(actor, &actor->parts[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
@@ -3568,10 +3576,10 @@ aim:
             actor->anim_pos = (u8 *)pc;
             pc = (u16 *)((u8 *)start + (s16)word);
             break;
-        case 0x64:
+        case 0x64: /* h3e = word */
             actor->h3E = *pc++;
             break;
-        case 0x6B:
+        case 0x6B: /* node (word) uses RotMatrixYXZ = `arg` */
             word = *pc++;
             actor->parts[(s16)word].yxz = arg;
             break;
@@ -3581,7 +3589,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x6D:
+        case 0x6D: /* b38 = `arg` bit 0 */
             actor->b38 = arg & 1;
             break;
         case 0x6E: { /* wait while an actor's b38 equals the word's bit 0 */
@@ -3596,7 +3604,7 @@ aim:
             }
             break;
         }
-        case 0x6F:
+        case 0x6F: /* h3a = the current mask (801e863c), or -1 for `arg` 0 */
             actor->h3A = arg ? D_801E863C : -1;
             break;
         case 0x70: /* jump and stop when h3a is the current value */
@@ -3606,7 +3614,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x04:
+        case 0x04: /* the battle-only commands: no effect, no words */
         case 0x05:
         case 0x06:
         case 0x07:
