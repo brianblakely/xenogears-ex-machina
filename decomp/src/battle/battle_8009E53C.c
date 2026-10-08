@@ -2598,8 +2598,8 @@ void func_800A4CF8(s32 index) {
  * of the scrolling ceiling under a camera turned and tilted with the view,
  * each front-facing tile textured from the scroll position. Differs only
  * before the rows (one word longer): the original keeps a plain copy of the
- * masked u0 for the tiles where the s16 u0 here is sign-extended, and it
- * schedules n and vertex ahead of delta.vz / 12's multiply. The rows match:
+ * masked u0 for the tiles where the s16 u0 here is sign-extended (and then
+ * schedules vertex after n, not into the scroll fix-up). The rows match:
  * the tile loop hoists the half and u0 extensions and the tag masks, and in
  * the row loop each invariant moved out of the tile loop doubles loop.c's
  * insn count, so after the four extensions the half copy for the + half - 1
@@ -2720,9 +2720,9 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     sky->scrollY += sky->speedY;
     u0 = (sky->scrollX / 16 + delta.vx / 12) & ((size = sky->tileSize) - 1);
     v0 = (sky->scrollY / 16 + delta.vz / 12) & (size - 1);
-    half = (s16)size / 2;
     vertex = &sky->grid[0][0];
     n = buffer * 64;
+    half = (s16)size / 2;
     for (row = 0; row < 8; row++) {
         for (col = 0; col < 8; col++, n++, vertex++) {
             gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
