@@ -4530,10 +4530,13 @@ void func_800AAB34(BattleObject *object) {
  * opcode and argument views are unsigned bytes. Jump offsets are in bytes
  * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
  * the first and second parameter words, shared by several commands, as is
- * the looked-up animation of 11/12. Still NON_MATCHING: decoded-byte register
- * allocation, part-reset loop scheduling and camera temporaries differ from
- * the original. The compiled frame is eight bytes smaller; the decoded high
- * fields still do not use the original caller-save home. */
+ * the looked-up animation of 11/12. The turn towards a position passes a roll
+ * that is only ever zero: the original keeps its `move $s7,$zero` while
+ * combine folds the stored argument to $zero. Still NON_MATCHING (3184 of
+ * 3186 words): the opcode lives in $s7 instead of $fp, b2 in $s1 instead of
+ * $s7, and the camera commands spill their low byte and second high byte
+ * (0x160/0x168) where the original keeps them in $s1 and in a caller-saved
+ * $a3 (home 0x1C8), so later spill slots shift by 16 bytes. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4757,14 +4760,14 @@ chosen:
             break;
         case 0x0B: /* stop the parts' effects and reset their transforms */
             {
-                ModelPart *root = object->hierarchy;
-                ModelPart *part;
+                ModelPart *part = object->hierarchy;
                 s32 count;
                 s32 k;
 
-                func_800A2ACC(pool, root);
-                count = root->index - 1;
-                for (k = 0, part = root + 1; k < count; k++, part++) {
+                func_800A2ACC(pool, part);
+                count = part->index - 1;
+                for (k = 0; k < count; k++) {
+                    part++;
                     part->rotation.vx = 0;
                     part->rotation.vy = 0;
                     part->rotation.vz = 0;
@@ -5431,6 +5434,7 @@ chosen:
                 s32 dz = object->position[2] - root->translation[2];
                 s16 pitch;
                 s16 yaw;
+                s16 roll;
 
                 if (op == 0x43) {
                     pitch = 0;
@@ -5439,8 +5443,9 @@ chosen:
                     pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
                 }
                 yaw = ratan2(-dx, -dz);
+                roll = 0;
                 if (dx != 0 || dy != 0 || dz != 0) {
-                    func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, 0);
+                    func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, roll);
                     flags = -1;
                 }
             }
