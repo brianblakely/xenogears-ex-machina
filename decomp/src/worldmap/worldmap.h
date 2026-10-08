@@ -303,7 +303,7 @@ typedef struct {
     u16 pad2;
 } PolyFT4;
 
-extern PolyFT4 D_8009C744[4];
+extern PolyFT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
 extern DR_TWIN D_8009D3D8[2];
 
 extern s16 D_8009C854[16];
@@ -1367,26 +1367,6 @@ typedef struct {
     u8 pad130[0x20];
     MATRIX frame;      /* 0x150 */
 } TrackScratch;
-
-/* POLY_FT4 with its texture coordinates as (v << 8 | u) words. */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u16 uv0;
-    u16 clut;
-    s16 x1, y1;
-    u16 uv1;
-    u16 tpage;
-    s16 x2, y2;
-    u16 uv2;
-    u16 pad1;
-    s16 x3, y3;
-    u16 uv3;
-    u16 pad2;
-} PolyFT4uv;
-
-#define HORIZON_QUADS ((PolyFT4uv *)D_8009C744)
 
 extern SVECTOR D_8009A300[2][4]; /* horizon quad corners */
 
