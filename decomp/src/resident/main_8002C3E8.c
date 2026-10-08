@@ -815,35 +815,37 @@ void func_8002DFF0(s32 a, s32 b) {
     D_800500F8 = a;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E010);
+/* The handwritten draw routines of D_8004FE50 (see model_draw.s). They
+ * share the exit in func_8002E010 and several have alternate entries. */
+INCLUDE_ASM("decomp/src/resident", func_8002E010);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E448);
+INCLUDE_ASM("decomp/src/resident", func_8002E448);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E64C);
+INCLUDE_ASM("decomp/src/resident", func_8002E64C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E8B4);
+INCLUDE_ASM("decomp/src/resident", func_8002E8B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002EAB8);
+INCLUDE_ASM("decomp/src/resident", func_8002EAB8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002ED20);
+INCLUDE_ASM("decomp/src/resident", func_8002ED20);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002EEF8);
+INCLUDE_ASM("decomp/src/resident", func_8002EEF8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F0E4);
+INCLUDE_ASM("decomp/src/resident", func_8002F0E4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F2E0);
+INCLUDE_ASM("decomp/src/resident", func_8002F2E0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F4B4);
+INCLUDE_ASM("decomp/src/resident", func_8002F4B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F6B4);
+INCLUDE_ASM("decomp/src/resident", func_8002F6B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F8D0);
+INCLUDE_ASM("decomp/src/resident", func_8002F8D0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FAE8);
+INCLUDE_ASM("decomp/src/resident", func_8002FAE8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FCFC);
+INCLUDE_ASM("decomp/src/resident", func_8002FCFC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FF0C);
+INCLUDE_ASM("decomp/src/resident", func_8002FF0C);
 
 /* Default morph channel update: step the weight toward the target by the
  * step, without overshooting. Returns the weight. */
@@ -998,9 +1000,11 @@ void func_800306D0(MorphState *state) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030750);
+/* The environment-mapped triangle renderer of primitive type 16 and the
+ * routine that rewrites its texture coordinate shifts and offsets. */
+INCLUDE_ASM("decomp/src/resident", func_80030750);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030988);
+INCLUDE_ASM("decomp/src/resident", func_80030988);
 
 /* Set light `index` (0-2): its row of the light direction matrix is the
  * normalized reverse of the light's vector and its color a column of the
