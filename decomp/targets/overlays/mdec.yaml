@@ -43,7 +43,8 @@ segments:
     start: 0x0
     vram: 0x801d3000
     subsegments:
-      - [0x0, .rodata, mdec]
+      # The libraries' strings (sdk); the player has no read-only data.
+      - [0x0, rodata, mdec_sdk_rodata]
       - [0xc4, c, mdec]
       # .data: the player's initialized statics, then the libraries' data
       # (sdk ranges in mdec.classification.txt).

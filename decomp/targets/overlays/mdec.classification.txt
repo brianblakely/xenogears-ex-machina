@@ -1,4 +1,6 @@
 # START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
+# The player has no read-only data: the rodata is the libraries' messages.
+801d3000 801d30c4 sdk libpress LIBPRESS.OBJ messages (MDEC_reset, MDEC_in_sync, MDEC_out_sync, timeout) and libcd C_011's dma_execute message
 # Game movie code ends at 0x801d444c; the rest of the text is the linked PsyQ
 # movie libraries, identified with tools/psyq_signatures.py.
 801d444c 801d68b4 sdk PsyQ libpress (BUILD, LIBPRESS, DCT, VLC, VLC_C, ENCSPU), libds, libcd CD streaming (CDROM, CDREAD2, C_0xx)
