@@ -198,14 +198,20 @@ the audit; they are never counted as matches. This diagnostic does not replace
 - Uninitialized variables are defined uninitialized in their unit, never as zero
   data. GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in first-declaration order; the original assembler gave each a slot of
-  whole words (two `u8` four bytes apart, `BSS := slots` in the target, a filter on
+  whole words (two `u8` four bytes apart; `BSS := slots` in the target filters
   maspsx's output). A unit's own variables come first, as statics where the commons
-  follow apart, and a unit reads only its own: that fixes text boundaries (menu
-  800707A8, 8007E528, 80081ECC; slot39 801DBDB4). The commons, which the original
+  follow apart, and a unit reads only its own, which fixes text boundaries (menu
+  800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
   linker allocated after every unit's own in an order of its own, are defined by a
-  commons unit linked last (slot39_common.c, menu_common.c, mdec commons/). Where a file holds its
-  .bss as zeros the .bss is loaded (`ld_bss_is_noload: False`); zeros a packer added
-  past the program are file padding (`OBJCOPY_FLAGS --gap-fill 0 --pad-to`, field.mk).
+  commons unit linked last (slot39_common.c, menu_common.c, mdec commons/). Where a
+  file holds its .bss as zeros the .bss is loaded (`ld_bss_is_noload: False`); zeros
+  a packer added past the program are file padding (`OBJCOPY_FLAGS --gap-fill 0
+  --pad-to`, field.mk).
+- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, so a
+  one-pass ASPSX has seen every definition before any use: small data that all its
+  users address absolutely is no user's own. The resident's (80059170-80059184,
+  80059198-800591b8) is defined by data-only `-G8` units at its link positions
+  (kernel_settings.c, sprite_settings.c).
 - Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)
   stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in place
   from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in the
