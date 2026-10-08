@@ -2,8 +2,9 @@
  * battle event script interpreter. The battle overlay loads it (80070e2c,
  * file list entry 1 through 800295d8) only when the formation sets
  * 800c3d48 (formation flag 0x20), then calls 801e5160 once to load the
- * script files and set up the threads, 801e879c every frame to run the
- * script threads, and 801e563c at the end to release everything. Opcode
+ * script files and set up the threads, 801e879c (through 80070eb0, at the
+ * start and between turns) to run the script threads until opcode 22 hands
+ * back, and 801e563c at the end to release everything. Opcode
  * handlers use the battle overlay's actor, camera and message services
  * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
 #include "ovl3087.h"
@@ -320,8 +321,8 @@ s16 y;
     D_800D2D28->portraitShown = 1;
 }
 
-/* Opcode 00 (end): drop the running level and restart the thread's base
- * level at its idle entry. Yields. */
+/* Opcode 00 (end, 1 byte): drop the running level and restart the thread's
+ * base level at its idle entry (1). Yields. */
 s32 func_801E5C1C(s32 thread) {
     D_800D3278->threads[thread].entry[D_800D3278->threads[thread].level] = 0xFF;
     D_800D3278->threads[thread].priority[D_800D3278->threads[thread].level] = 0xFF;
@@ -334,14 +335,16 @@ s32 func_801E5C1C(s32 thread) {
     return 0;
 }
 
-/* Opcode 01 (jump): continue the running level at the operand. */
+/* Opcode 01 (jump, 3 bytes): continue the running level at the bytecode
+ * offset (u16 at byte 1). */
 s32 func_801E5CE4(s32 thread, u8 *insn) {
     D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = insn[1] + (insn[2] << 8);
     return 0;
 }
 
-/* Opcode 02 (branch unless): jump to the target when the comparison of the
- * two operands fails. */
+/* Opcode 02 (branch unless, 8 bytes): compare a (byte 1) and b (byte 3),
+ * immediates by bits 0x80 and 0x40 of byte 5, by its low four bits
+ * (801e58ec); when the comparison fails jump to the offset at byte 6. */
 s32 func_801E5D24(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     if (func_801E58EC(D_800D3278->operands[0], D_800D3278->operands[1], insn[5])) {
@@ -351,9 +354,9 @@ s32 func_801E5D24(s32 thread, u8 *insn) {
     return 0;
 }
 
-/* Opcode 03 (request): start entry (low five bits) of another thread on a
- * free level with the priority in the top three bits. Retries (length 0)
- * while that thread has no free level. */
+/* Opcode 03 (request, 3 bytes): start entry (byte 2, low five bits) of
+ * thread (byte 1) on a free level with the priority in byte 2's top three
+ * bits. Retries (length 0) while that thread has no free level. */
 s32 func_801E5DCC(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 level = func_801E57C4(&D_800D3278->threads[insn[1]]);
@@ -369,8 +372,8 @@ s32 func_801E5DCC(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 04 (request and wait for start): issue the request, then wait
- * until the other thread is running the requested entry. */
+/* Opcode 04 (request and wait for start, 3 bytes as 03): issue the request,
+ * then wait until the other thread is running the requested entry. */
 s32 func_801E5EF8(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 request = D_800D3278->threads[thread].request;
@@ -384,8 +387,9 @@ s32 func_801E5EF8(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 05 (request and wait for end): issue the request, then wait until
- * the requested entry is neither queued nor running on the other thread. */
+/* Opcode 05 (request and wait for end, 3 bytes as 03): issue the request,
+ * then wait until the requested entry is neither queued nor running on the
+ * other thread. */
 s32 func_801E5F8C(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 request = D_800D3278->threads[thread].request;
@@ -410,87 +414,89 @@ s32 func_801E5F8C(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 06: var = value. */
+/* Opcode 06 (6 bytes): var (byte 1) = value (byte 3, an immediate when byte
+ * 5 has bit 0x40). */
 s32 func_801E6084(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) = D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 07: var = 1. */
+/* Opcode 07 (3 bytes): var (byte 1) = 1. */
 s32 func_801E60E8(s32 thread, u8 *insn) {
     INSN_VAR(insn) = 1;
     return 3;
 }
 
-/* Opcode 08: var = 0. */
+/* Opcode 08 (3 bytes): var (byte 1) = 0. */
 s32 func_801E6118(s32 thread, u8 *insn) {
     INSN_VAR(insn) = 0;
     return 3;
 }
 
-/* Opcode 09: var += value. */
+/* Opcode 09 (6 bytes): var (byte 1) += value (byte 3, immediate by bit 0x40
+ * of byte 5). */
 s32 func_801E6144(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) += D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 0a: var -= value. */
+/* Opcode 0a (6 bytes): var (byte 1) -= value (as 09). */
 s32 func_801E61B4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) -= D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 0b: var |= value. */
+/* Opcode 0b (6 bytes): var (byte 1) |= value (as 09). */
 s32 func_801E6224(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) |= D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 0c: var &= ~value. */
+/* Opcode 0c (6 bytes): var (byte 1) &= ~value (as 09). */
 s32 func_801E6294(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) &= ~D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 0d: var++. */
+/* Opcode 0d (3 bytes): var (byte 1)++. */
 s32 func_801E6304(s32 thread, u8 *insn) {
     INSN_VAR(insn)++;
     return 3;
 }
 
-/* Opcode 0e: var--. */
+/* Opcode 0e (3 bytes): var (byte 1)--. */
 s32 func_801E633C(s32 thread, u8 *insn) {
     INSN_VAR(insn)--;
     return 3;
 }
 
-/* Opcode 0f: var &= value. */
+/* Opcode 0f (6 bytes): var (byte 1) &= value (as 09). */
 s32 func_801E6374(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) &= D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 10: var |= value. */
+/* Opcode 10 (6 bytes): var (byte 1) |= value (as 09; the same as 0b). */
 s32 func_801E63E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) |= D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 11: var ^= value. */
+/* Opcode 11 (6 bytes): var (byte 1) ^= value (as 09). */
 s32 func_801E6454(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) ^= D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 12: var <<= count. */
+/* Opcode 12 (5 bytes): var (byte 1) <<= the variable at byte 3. */
 s32 func_801E64C4(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
@@ -499,7 +505,7 @@ s32 func_801E64C4(s32 thread, u8 *insn) {
     return 5;
 }
 
-/* Opcode 13: var >>= count. */
+/* Opcode 13 (5 bytes): var (byte 1) >>= the variable at byte 3. */
 s32 func_801E6534(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
@@ -508,26 +514,27 @@ s32 func_801E6534(s32 thread, u8 *insn) {
     return 5;
 }
 
-/* Opcode 14: var = random 0..7fff. */
+/* Opcode 14 (3 bytes): var (byte 1) = random 0..7fff. */
 s32 func_801E65A4(s32 thread, u8 *insn) {
     INSN_VAR(insn) = func_80089B50(0, 0x7FFF);
     return 3;
 }
 
-/* Opcode 15: var (second operand) = random 0..limit. */
+/* Opcode 15 (5 bytes): var (byte 3) = random 0..limit (u16 at byte 1). */
 s32 func_801E65FC(s32 thread, u8 *insn) {
     SCRIPT_VAR(D_800D3278, (insn[4] << 8) | insn[3]) = func_80089B50(0, insn[1] | (insn[2] << 8));
     return 5;
 }
 
-/* Opcode 16: var = a * b. */
+/* Opcode 16 (6 bytes): var (byte 1) = a * b, a the var operand itself (an
+ * immediate by bit 0x80 of byte 5), b at byte 3 (bit 0x40). */
 s32 func_801E6660(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) = D_800D3278->operands[0] * D_800D3278->operands[1];
     return 6;
 }
 
-/* Opcode 17: var = a / b (signed). */
+/* Opcode 17 (6 bytes): var (byte 1) = a / b (signed; operands as 16). */
 s32 func_801E66D8(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
     INSN_VAR(insn) = (s32)D_800D3278->operands[0] / (s32)D_800D3278->operands[1];
@@ -672,19 +679,21 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
     return done;
 }
 
-/* Opcode 18: show a message from the thread's speaker; repeats until the
+/* Opcode 18 (4 bytes): show message (u16 at byte 1) from the thread's
+ * speaker with flags (byte 3; 0 takes the layout's); repeats until the
  * message is done. */
 s32 func_801E71D4(s32 thread, u8 *insn) {
     return (func_801E6CE8(insn[1] | (insn[2] << 8), D_800D3278->threads[thread].speaker, insn[3]) != 0) * 4;
 }
 
-/* Opcode 19: show a message from the given actor; repeats until done. */
+/* Opcode 19 (5 bytes): show message (u16 at byte 2) from actor (byte 1) with
+ * flags (byte 4); repeats until done. */
 s32 func_801E7230(s32 thread, u8 *insn) {
     return func_801E6CE8(insn[2] | (insn[3] << 8), insn[1], insn[4]) ? 5 : 0;
 }
 
-/* Opcode 1a: set the message window layout; zero operands take the
- * defaults. */
+/* Opcode 1a (11 bytes): set the message window layout from five signed-form
+ * operands (x, y, width, height, flags); zero x..height take the defaults. */
 s32 func_801E7278(s32 thread, u8 *insn) {
     s32 i;
 
@@ -700,7 +709,8 @@ s32 func_801E7278(s32 thread, u8 *insn) {
     return 11;
 }
 
-/* Opcode 1b: set the thread's speaker (f3-f5 name the party members). */
+/* Opcode 1b (2 bytes): set the thread's speaker to actor (byte 1; f3-f5 name
+ * the party members). */
 s32 func_801E7314(s32 thread, u8 *insn) {
     u8 actor = insn[1];
 
@@ -711,59 +721,63 @@ s32 func_801E7314(s32 thread, u8 *insn) {
     return 2;
 }
 
-/* Opcode 1c. */
+/* Opcode 1c (1 byte): battle end state (800c3e4c) = 2. */
 s32 func_801E7358(s32 thread, u8 *insn) {
     D_800C3E4C = 2;
     return 1;
 }
 
-/* Opcode 1d. */
+/* Opcode 1d (1 byte): battle end state (800c3e4c) = 1. */
 s32 func_801E736C(s32 thread, u8 *insn) {
     D_800C3E4C = 1;
     return 1;
 }
 
-/* Opcode 1e: flash the actor white. */
+/* Opcode 1e (3 bytes): fade the screen to white over 2 * a frames (signed
+ * operand a; blend mode 2, 800b39c0). */
 s32 func_801E7380(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_800B39C0(D_800D3278->operands[0], 2, 0xFF, 0xFF, 0xFF);
     return 3;
 }
 
-/* Opcode 1f: flash the actor black. */
+/* Opcode 1f (3 bytes): fade the screen to black over 2 * a frames (as 1e). */
 s32 func_801E73D4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_800B39C0(D_800D3278->operands[0], 2, 0, 0, 0);
     return 3;
 }
 
-/* Opcode 49: set 8005942c. */
+/* Opcode 49 (3 bytes): 8005942c = signed operand a. */
 s32 func_801E7424(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     D_8005942C = D_800D3278->operands[0];
     return 3;
 }
 
-/* Opcode 20: end the battle (800c3d44) and halt the script. */
+/* Opcode 20 (1 byte): end the battle (800c3d44) and halt the script
+ * (801e879c checks it when next called). */
 s32 func_801E746C(s32 thread, u8 *insn) {
     D_800C3D44 = 1;
     D_800D3278->halted = 1;
     return 1;
 }
 
-/* Opcode 21: set 800d2d50. */
+/* Opcode 21 (1 byte): 800d2d50 = 1. */
 s32 func_801E748C(s32 thread, u8 *insn) {
     D_800D2D50 = 1;
     return 1;
 }
 
-/* Opcode 22. */
+/* Opcode 22 (1 byte): make this pass of 801e879c its last, returning to the
+ * battle (it repeats its passes until then). */
 s32 func_801E74A0(s32 thread, u8 *insn) {
     D_800D3278->unk801 = 2;
     return 1;
 }
 
-/* Opcode 37: end the battle through 800d2fc4 and 800c48ea and halt the script. */
+/* Opcode 37 (1 byte): request the battle exit (800d2fc4), set the outcome
+ * (800c48ea) to 1 and halt the script. */
 s32 func_801E74B8(s32 thread, u8 *insn) {
     D_800D2FC4 = 1;
     D_800D3278->halted = 1;
@@ -771,8 +785,10 @@ s32 func_801E74B8(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 23: move a party member (f3-f5) to a position and wait until the
- * move is done. */
+/* Opcode 23 (7 bytes; signed operands a, b, c): object a - f3 acts on slot b
+ * + 13 with its effect script c (800aa384), then waits until that effect
+ * reports it is done (the effect VM's 02/03 set this thread's 0x34 through
+ * 80080c6c) and finishes the battle's loads (800b8d04). */
 s32 func_801E74E0(s32 thread, u8 *insn) {
     s32 length = 0;
 
@@ -793,7 +809,8 @@ s32 func_801E74E0(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 38: start a party member (f3-f5) moving without waiting. */
+/* Opcode 38 (7 bytes; signed operands a, b, c): object a - f3 starts its
+ * effect script c on slot b + 13 (800aa320) without waiting. */
 s32 func_801E75F0(s32 thread, u8 *insn) {
     func_801E57F8(insn, 3, 0, 1);
     func_800AA320(D_800D3278->operands[0] - 0xF3, func_80089C08(D_800D3278->operands[1] + 0xD),
@@ -801,20 +818,22 @@ s32 func_801E75F0(s32 thread, u8 *insn) {
     return 7;
 }
 
-/* Opcode 4a. */
+/* Opcode 4a (1 byte): put slot 0 into state 4 with timer 6 (8009c0e0(0)). */
 s32 func_801E7660(s32 thread, u8 *insn) {
     func_8009C0E0(0);
     return 1;
 }
 
-/* Opcode 4b: set bit 0 of the actor's battle record flags (0x36). */
+/* Opcode 4b (3 bytes): set bit 0 of actor a's battle record flags (0x36;
+ * signed operand a). */
 s32 func_801E7684(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     D_800CCD1E[func_801E5A98((u8)D_800D3278->operands[0])].flags |= 1;
     return 3;
 }
 
-/* Opcode 24. */
+/* Opcode 24 (5 bytes; signed operands a, b): the pending scene (8005947c) =
+ * a + 1 and the battle kind (8005954c) = b, for the next battle start. */
 s32 func_801E7700(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     D_8005947C = D_800D3278->operands[0] + 1;
@@ -822,13 +841,14 @@ s32 func_801E7700(s32 thread, u8 *insn) {
     return 5;
 }
 
-/* Opcode 25. */
+/* Opcode 25 (1 byte): 800c3d5c = 1. */
 s32 func_801E775C(s32 thread, u8 *insn) {
     D_800C3D5C = 1;
     return 1;
 }
 
-/* Opcode 26: store four values at 8006f94e and apply them (8001ac94). */
+/* Opcode 26 (9 bytes): store four signed operands at 8006f94e and clear the
+ * state word 8004f30c (8001ac94). */
 s32 func_801E7770(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
     D_8006F94E[0] = D_800D3278->operands[0];
@@ -839,7 +859,8 @@ s32 func_801E7770(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 27. */
+/* Opcode 27 (9 bytes; signed operands a-d): 8004fe44 = a | 0x80, b, 1, c;
+ * 800d3338 = 1; 80062514 = d. */
 s32 func_801E77E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
     D_8004FE44[0] = D_800D3278->operands[0] | 0x80;
@@ -851,13 +872,15 @@ s32 func_801E77E4(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 28: tint an actor with an explicit mode and colour. */
+/* Opcode 28 (6 bytes): fade the screen to colour (bytes 2-4) in blend mode
+ * (byte 1) over 2 * (byte 5) frames (800b39c0). */
 s32 func_801E786C(s32 thread, u8 *insn) {
     func_800B39C0(insn[5], insn[1], insn[2], insn[3], insn[4]);
     return 6;
 }
 
-/* Opcode 29. */
+/* Opcode 29 (9 bytes; signed operands x, y, z, n): quake the view towards
+ * amplitude (x, y, z) over 2 * n frames (800b3658). */
 s32 func_801E78A8(s32 thread, u8 *insn) {
     u16 position[3];
 
@@ -869,8 +892,8 @@ s32 func_801E78A8(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 35: load model n of the model archive into actor slot a (thread
- * a + 13) unless one is loaded. */
+/* Opcode 35 (5 bytes; signed operands a, n): load model n of the model
+ * archive into actor slot a (thread a + 13) unless one is loaded. */
 s32 func_801E7914(s32 thread, u8 *insn) {
     s32 info[2];
     s32 slot;
@@ -887,7 +910,8 @@ s32 func_801E7914(s32 thread, u8 *insn) {
     return 5;
 }
 
-/* Opcode 2a: play an animation on the slot's loaded model. */
+/* Opcode 2a (5 bytes; signed operands a, n): play animation n on the loaded
+ * model of slot a. */
 s32 func_801E79E0(s32 thread, u8 *insn) {
     s32 slot;
 
@@ -912,20 +936,22 @@ void func_801E7A5C(s32 thread, u8 *insn) {
     }
 }
 
-/* Opcode 36: release a model. */
+/* Opcode 36 (3 bytes): release slot a's model (signed operand a). */
 s32 func_801E7B08(s32 thread, u8 *insn) {
     func_801E7A5C(thread, insn);
     return 3;
 }
 
-/* Opcode 40: release a model and 801e9b2c's state. */
+/* Opcode 40 (3 bytes): release slot a's model and reset the script camera
+ * (801e9b2c: 800c367c = 0, camera mode 0, effects disabled). */
 s32 func_801E7B2C(s32 thread, u8 *insn) {
     func_801E7A5C(thread, insn);
     func_801E9B2C();
     return 3;
 }
 
-/* Opcode 2b: wait n half-frames. */
+/* Opcode 2b (3 bytes): wait until the thread's timer, set to 2 * n (signed
+ * operand n), runs out. */
 s32 func_801E7B58(s32 thread, u8 *insn) {
     s32 length = 0;
 
@@ -941,8 +967,8 @@ s32 func_801E7B58(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 2c: set the thread's run-order request; fe moves it to the front
- * of the run order at once. */
+/* Opcode 2c (3 bytes): set the thread's run-order request (byte 1; byte 2
+ * unused); fe moves it to the front of the run order at once. */
 s32 func_801E7C0C(s32 thread, u8 *insn) {
     u8 order[16];
     s32 i;
@@ -991,21 +1017,23 @@ void func_801E7DE4(s32 volume, s32 time) {
     func_8003A89C(D_800C3E54, volume, time);
 }
 
-/* Opcode 2d: start music at full volume. */
+/* Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
+ * volume. */
 s32 func_801E7E14(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_801E7CD0(D_800D3278->operands[0], 0x7F);
     return 3;
 }
 
-/* Opcode 2e: start music silent. */
+/* Opcode 2e (3 bytes): start music a at volume 0. */
 s32 func_801E7E5C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_801E7CD0(D_800D3278->operands[0], 0);
     return 3;
 }
 
-/* Opcode 2f: fade the music to a volume over a time. */
+/* Opcode 2f (5 bytes): fade the music to volume a over time b and keep a as
+ * its stored volume (signed operands). */
 s32 func_801E7EA4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     D_800D3278->musicVolume = D_800D3278->operands[0];
@@ -1013,7 +1041,7 @@ s32 func_801E7EA4(s32 thread, u8 *insn) {
     return 5;
 }
 
-/* Opcode 30: set the music volume to its stored level (operand 0) or
+/* Opcode 30 (3 bytes): set the music to its stored volume when a is 0, else
  * silence it. */
 s32 func_801E7F08(s32 thread, u8 *insn) {
     u8 volume = 0;
@@ -1026,8 +1054,8 @@ s32 func_801E7F08(s32 thread, u8 *insn) {
     return 3;
 }
 
-/* Opcode 31: play a sound effect from the script bank (or the resident
- * bank when the fourth operand is set). */
+/* Opcode 31 (9 bytes; signed operands a-d): play sound a of the script bank
+ * (the resident bank when d is set) with volume b and pan c (80039f18). */
 s32 func_801E7F70(s32 thread, u8 *insn) {
     SoundBank *bank;
 
@@ -1042,7 +1070,8 @@ s32 func_801E7F70(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 41: stop a sound effect of the script or resident bank. */
+/* Opcode 41 (7 bytes; signed operands a-c): set the volume of playing sound
+ * a of the script bank (the resident one when c is set) to b (8003a2e4). */
 s32 func_801E7FF4(s32 thread, u8 *insn) {
     SoundBank *bank;
 
@@ -1056,12 +1085,12 @@ s32 func_801E7FF4(s32 thread, u8 *insn) {
     return 7;
 }
 
-/* Opcode 32: no operation. */
+/* Opcode 32 (1 byte): no operation. */
 s32 func_801E8074(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 33: stop the music. */
+/* Opcode 33 (1 byte): stop the music. */
 s32 func_801E807C(s32 thread, u8 *insn) {
     if (D_800D3278->musicPlaying != 0) {
         func_80039C4C(D_800C3E54);
@@ -1072,12 +1101,16 @@ s32 func_801E807C(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 34: no operation. */
+/* Opcode 34 (1 byte): no operation. */
 s32 func_801E80E8(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 39. */
+/* Opcode 39 (1 byte): party slot 0 changes to its gear: a formation group of
+ * its own (80088490), its sprite sent off and the gear object loaded
+ * (800baf48), then out of its group (800883ac); also sets 800ccd88/8006d940
+ * = 0, 800cce42 bit 7, 800d32a1 = 2, 800c3eb8 = 1 and two battle state
+ * bytes. */
 s32 func_801E80F0(s32 thread, u8 *insn) {
     D_800CCD88 = 0;
     D_8006D940 = 0;
@@ -1092,35 +1125,38 @@ s32 func_801E80F0(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 3a: start animation b on actor a. */
+/* Opcode 3a (5 bytes; signed operands a, b): start animation b on actor a
+ * (801e9430). */
 s32 func_801E818C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     func_801E9430(func_801E5A98((u8)D_800D3278->operands[0]), D_800D3278->operands[1]);
     return 5;
 }
 
-/* Opcode 3b. */
+/* Opcode 3b (3 bytes): return actor a to its idle animation (801e950c). */
 s32 func_801E81EC(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_801E950C(func_801E5A98((u8)D_800D3278->operands[0]));
     return 3;
 }
 
-/* Opcode 3c. */
+/* Opcode 3c (3 bytes): clear actor a's bytes 0x9e and 0x34 and bits 2-7 of
+ * its flags at 0x40 (801e9550). */
 s32 func_801E823C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_801E9550(func_801E5A98((u8)D_800D3278->operands[0]));
     return 3;
 }
 
-/* Opcode 3d. */
+/* Opcode 3d (3 bytes): clear actor a's byte 0x9e (801e958c). */
 s32 func_801E828C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
     func_801E958C(func_801E5A98((u8)D_800D3278->operands[0]));
     return 3;
 }
 
-/* Opcode 3e: start an actor action with three arguments and wait for it. */
+/* Opcode 3e (9 bytes; signed operands a, x, y, z): move actor a to (x, y, z)
+ * (801e95e4) and wait for it. */
 s32 func_801E82DC(s32 thread, u8 *insn) {
     s32 slot;
     s32 length = 0;
@@ -1138,7 +1174,8 @@ s32 func_801E82DC(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 3f: start the other actor action and wait for it. */
+/* Opcode 3f (9 bytes; signed operands a, x, y, z): run actor a's action 3
+ * with (x, y, z) (801e9694) and wait for it. */
 s32 func_801E83C0(s32 thread, u8 *insn) {
     s32 slot;
     s32 length = 0;
@@ -1156,8 +1193,9 @@ s32 func_801E83C0(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 45: actor a attacks actor b (animation c, value d) and waits;
- * value d becomes b's code in the first presentation event. */
+/* Opcode 45 (9 bytes; signed operands a-d): actor a attacks actor b
+ * (animation c, value d) and waits; value d becomes b's code in the first
+ * presentation event. */
 s32 func_801E84A4(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 attacker;
@@ -1184,7 +1222,9 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 46. */
+/* Opcode 46 (7 bytes; signed operands a, b, c): clear the event results,
+ * give actor a its idle animation with command c (801e9700) and run its
+ * attack on actor b (801e9760). */
 s32 func_801E8600(s32 thread, u8 *insn) {
     u8 actor;
     u8 target;
@@ -1199,25 +1239,25 @@ s32 func_801E8600(s32 thread, u8 *insn) {
     return 7;
 }
 
-/* Opcode 47. */
+/* Opcode 47 (1 byte): stop the disc read and finish the loads (800b8d7c). */
 s32 func_801E86AC(s32 thread, u8 *insn) {
     func_800B8D7C();
     return 1;
 }
 
-/* Opcode 42. */
+/* Opcode 42 (1 byte): show member 0's number lists (8007ff14(0)). */
 s32 func_801E86D0(s32 thread, u8 *insn) {
     func_8007FF14(0);
     return 1;
 }
 
-/* Opcode 43. */
+/* Opcode 43 (1 byte): leave member 0's menu (800800e8(0)). */
 s32 func_801E86F4(s32 thread, u8 *insn) {
     func_800800E8(0);
     return 1;
 }
 
-/* Opcode 44: clear byte 0x35 of the eleven battle objects. */
+/* Opcode 44 (1 byte): clear byte 0x35 of the eleven battle objects. */
 s32 func_801E8718(s32 thread, u8 *insn) {
     s32 i;
 
@@ -1229,16 +1269,18 @@ s32 func_801E8718(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 48. */
+/* Opcode 48 (5 bytes; signed operands a, b): play battle sound a (variant b)
+ * to its end (800b838c). */
 s32 func_801E8750(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     func_800B838C(D_800D3278->operands[0], D_800D3278->operands[1]);
     return 5;
 }
 
-/* Run one frame of the script: each thread in run order executes up to
- * four instructions (fewer when one yields or ends); opcode 22 counts down
- * frames in which the whole pass repeats. */
+/* Run the script: each pass gives every thread in run order a battle frame
+ * (800716d8) and then up to four instructions (fewer when one ends it).
+ * Passes repeat until opcode 22 makes one the last. Opcodes 4c-ff have no
+ * case: the previous length is applied again. */
 void func_801E879C(void) {
     s32 length;
     u8 steps;
