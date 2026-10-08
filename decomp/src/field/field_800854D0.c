@@ -1584,7 +1584,8 @@ void func_80089F18(void) {
     D_800B0078->pc += 3;
 }
 
-/* Event: set 800b21d2 to operand 1 less 0x80. */
+/* Event: set the piece drift mode 800b21d2 to operand 1 less 0x80: its low
+ * bits pick which pieces the drift vector (fe 1d) moves each frame. */
 void func_80089F54(void) {
     D_800B2078.piece_drift_mode = func_800ACDEC(1) - 0x80;
     D_800B0078->pc += 3;
@@ -1794,7 +1795,9 @@ void func_8008A5A0(void) {
     D_800B0078->pc++;
 }
 
-/* Event: set 800b21d4 from operand 1. */
+/* Event: set the ordering-table depth 800b21d4 (0x720 at load) at which the
+ * panorama backdrop is drawn and the second ordering table is linked in,
+ * from operand 1. */
 void func_8008A604(void) {
     D_800B2078.unk21D4 = func_800ACDEC(1);
     D_800B0078->pc += 3;
@@ -2818,7 +2821,8 @@ void func_8008D180(void) {
     D_800B0078->pc += 7;
 }
 
-/* Event: set 800b218c from operand 1. */
+/* Event: set the planar offset scale 800b218c (0x1000 at load; 8007b614
+ * scales the x/z offsets it builds by it) from operand 1. */
 void func_8008D230(void) {
     D_800B2078.scale = func_800ACDEC(1);
     D_800B0078->pc += 3;
@@ -2890,7 +2894,8 @@ void func_8008D570(void) {
     }
 }
 
-/* Event: set 800b21cd from its byte operand. */
+/* Event: set 800b21cd from byte 1: while it is nonzero the camera target's
+ * goal height follows the actor (its y - 0x20) instead of the floor. */
 void func_8008D5C8(void) {
     D_800B2078.camera_floor_fixed = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
@@ -5094,7 +5099,8 @@ void func_800936E4(void) {
 extern u8 D_80059171;
 extern s32 D_800ADB64;
 
-/* Request field action 0 with parameter D_800B2078.unk236C. */
+/* Event fe 55: request menu kind 0 (800adb64, run by 800799d4) with the menu
+ * parameter 800b236c (ext 99) in 80059171; count 8004f350 up and yield. */
 void func_80093740(void) {
     D_800B00C0 = 1;
     D_800ADB64 = 0;
@@ -5113,7 +5119,7 @@ void func_80093790(void) {
     D_800B0078->pc += 1;
 }
 
-/* Request field action 2. */
+/* Event fe 57: request menu kind 2 (800adb64); count 8004f350 up and yield. */
 void func_800937E0(void) {
     D_800ADB64 = 2;
     D_800B00C0 = 1;
@@ -5121,7 +5127,8 @@ void func_800937E0(void) {
     D_800B0078->pc += 1;
 }
 
-/* Request field action 3 with an operand parameter. */
+/* Event fe 58: request menu kind 3 (800adb64) with parameter operand 1
+ * (80059171); count 8004f350 up and yield. */
 void func_80093824(void) {
     D_80059171 = func_800ACDEC(1);
     D_800ADB64 = 3;
@@ -5150,8 +5157,9 @@ void func_80093888(void) {
     D_800B0078->pc += 5;
 }
 
-/* Field action 1 with an entry operand also stored in game state and
- * variable 2. */
+/* Event fe 56: request menu kind 1 (800adb64) with entry operand 1, also
+ * stored in the game's +2320 and vars[1] and in variable 2; count 8004f350
+ * up and yield. */
 void func_80093930(void) {
     s16 entry;
 
@@ -5165,7 +5173,8 @@ void func_80093930(void) {
     D_800B0078->pc += 3;
 }
 
-/* Request field action 4 with an operand parameter. */
+/* Event fe 59: request menu kind 4 (800adb64) with parameter operand 1
+ * (80059171); count 8004f350 up and yield. */
 void func_800939A0(void) {
     D_80059171 = func_800ACDEC(1);
     D_800ADB64 = 4;
@@ -5174,7 +5183,8 @@ void func_800939A0(void) {
     D_800B0078->pc += 3;
 }
 
-/* Request field action 5 with an operand parameter. */
+/* Event fe 5a: request menu kind 5 (800adb64) with parameter operand 1
+ * (80059171); count 8004f350 up and yield. */
 void func_80093A04(void) {
     D_80059171 = func_800ACDEC(1);
     D_800ADB64 = 5;

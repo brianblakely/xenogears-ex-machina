@@ -774,8 +774,8 @@ _EXTENDED = """
     walk the party to x/z 1/3, 5/7, 9/11 facing 14, 16, 18 until all arrive
 24 wait_party_gathered func_8009B210 1 wait
     yield until all party members are near the leader
-25 set_camera_floor_fixed func_8008D5C8 2 next u8@1
-    set 800b21cd to byte 1
+25 set_camera_height_follow func_8008D5C8 2 next u8@1
+    nonzero byte 1 makes the camera target's goal height follow the actor
 26 screen_distortion func_8008B2F0 15 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 iv@13
     start the screen distortion (800a484c) moving its six values to
     operands 1-11 over operand-13 frames
@@ -824,8 +824,8 @@ _EXTENDED = """
     as 33 for the actor selected by byte 3
 38 store_actor_distance func_8008E1B4 5 next var@1 actor@3 actor@4
     store the planar distance between the selected actors in a variable
-39 set_b218c func_8008D230 3 next iv@1
-    set 800b218c to operand 1
+39 set_offset_scale func_8008D230 3 next iv@1
+    set the planar offset scale 800b218c (8007b614)
 3a set_party_bit func_8008CED0 3 next iv@1
     set character operand 1's bit of +1d32
 3b clear_party_bit func_8008CE64 3 next iv@1
@@ -935,8 +935,8 @@ _EXTENDED = """
     once field control allows walk the controlled actor to x, z operands 1, 3
 69 store_character_sum func_8008A6E0 5 next var@1 iv@3
     store character operand 3's +77 + +78 in a variable
-6a set_b21d4 func_8008A604 3 next iv@1
-    set 800b21d4 to operand 1
+6a set_panorama_depth func_8008A604 3 next iv@1
+    set the ordering-table depth of the panorama and second table (800b21d4)
 6b set_character_78 func_8008A640 5 next iv@1 iv@3
     set character operand 3's +78 to operand 1 less its +77
 6c clear_pad_byte func_8008A5A0 1 next
@@ -949,7 +949,7 @@ _EXTENDED = """
 6f set_sprite_angles func_8008B45C 8 next sel@1:7/80 sel@3:7/40 sel@5:7/20 flags@7
     set the sprite view rotation
 70 set_piece_drift_mode func_80089F54 3 next iv@1
-    set 800b21d2 to operand 1 - 0x80
+    set the piece drift mode 800b21d2 to operand 1 - 0x80
 71 store_facing func_8009899C 3 next var@1
     store the running actor's facing in a variable
 72 store_turn_step func_800988B8 10 next var@1 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
@@ -1003,7 +1003,7 @@ _EXTENDED = """
 85 store_movie_frame func_8008A2A0 3 next var@1
     store the current movie frame (800b06a0) in a variable
 86 set_afe84 func_80089F94 2 next u8@1
-    set 800afe84 to byte 1
+    set 800afe84 to byte 1 (nonzero: no panorama after a movie or menu)
 87 wait_menus_done func_800936E4 1 wait
     yield until the requested menus have run (8004f350 zero)
 88 set_emitter_path func_80089BF0 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 sel@7:17/10 \
