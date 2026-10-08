@@ -189,7 +189,7 @@ void func_800223B0(Sprite *sprite, s16 angle) {
  * frame and add their duration (commands 40-7f repeat the last one), b3
  * sets the frame index, be shows a frame with its flip and duration, e2
  * pushes its return point and jumps; 80-82 end, and 86, 87 and 97 end at
- * the target. Others are skipped by their length (8004fc40). */
+ * the target. Others are skipped by their length (D_8004FCC0). */
 void func_80022660(Sprite *sprite, u8 *target, s32 count) {
     u8 *script;
     u8 op;
@@ -206,6 +206,8 @@ next:
     {
         op = *script;
         args = script + 1;
+        /* 00-7f: the frames of 800248d4, unscaled; 40-7f add the last frame command's
+         * duration again (unset before one ran). */
         if (op < 0x80) {
             sprite->script = args;
             if (op < 0x10) {
@@ -229,6 +231,7 @@ next:
             goto next;
         }
         switch (op) {
+        /* be: frame with flip and unscaled wait; advanced by the width table's 2. */
         case 0xBE:
             value = script[1] | (script[2] << 8);
             sprite->motion.bits.frame_flip = value >> 9;
@@ -238,28 +241,34 @@ next:
             }
             sprite->countdown += ((value >> 11) & 0xF) + 1;
             break;
+        /* e2 s16: call (push the return point, jump). */
         case 0xE2:
             offset = script[1] + ((s8)args[1] << 8);
             func_80021CF8(sprite, (s32)(script + 3));
             sprite->script += offset;
             goto next;
+        /* b3 s8: frame index = s8. */
         case 0xB3:
             sprite->frame_bits.frame = (s8)script[1];
             break;
+        /* 80-82: stop. */
         case 0x80:
         case 0x81:
         case 0x82:
             return;
+        /* 86: stop at the target. */
         case 0x86:
             if (script == target) {
                 return;
             }
             break;
+        /* 87: stop at the target. */
         case 0x87:
             if (script == target) {
                 return;
             }
             break;
+        /* 97: stop at the target. */
         case 0x97:
             if (script == target) {
                 return;

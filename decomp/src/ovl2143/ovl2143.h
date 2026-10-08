@@ -347,13 +347,14 @@ typedef struct {
     } u;
 } AnimEvent;
 
-/* An animation record: frame count and the offset of its frame data. */
+/* An animation record: its loop frame, event count and the offset of its
+ * events (801E5C74, 801E5D44). */
 typedef struct {
     u8 pad0[2];
     u16 loop;               /* +2 */
     u8 pad4[0xE];
-    u16 frames;             /* +12 */
-    s32 data;               /* +14: offset of the frame data */
+    u16 frames;             /* +12: the event count */
+    s32 data;               /* +14: offset of the events */
 } Animation;
 
 /* A table of script entry points. */
@@ -420,10 +421,10 @@ typedef struct Actor {
     s16 h92;                /* +92 */
     u16 shift_x;            /* +94: added to image animation positions */
     u16 shift_y;            /* +96 */
-    s16 anim_state;         /* +98: -1 none */
+    s16 anim_state;         /* +98: the frame, -1 none */
     s16 anim_loop;          /* +9a: -1 no loop */
-    s16 anim_frame;         /* +9c */
-    s16 anim_frames;        /* +9e */
+    s16 anim_frame;         /* +9c: the events run */
+    s16 anim_frames;        /* +9e: the event count */
     u8 *anim_pos;           /* +a0: next event */
     u8 *anim_start;         /* +a4 */
     void *group;            /* +a8: the model group block */
@@ -619,7 +620,7 @@ s32 func_80031894(u8 *group);       /* the group's size */
 ModelList *func_801DC22C(u8 *group, ModelList *list);
 ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
-void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
@@ -638,7 +639,7 @@ VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 
 void MoveImage(RECT *rect, s32 x, s32 y);
 s32 rand(void);
-void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* play a sound effect */
+void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* slide its volume to arg1 over arg2 frames */
 s32 func_800286CC(void);
 void func_800796F4(void);
 

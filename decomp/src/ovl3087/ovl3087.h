@@ -26,7 +26,8 @@ typedef struct {
     u8 pad29[3];
     void *modelFile; /* 0x2c model data loaded for this slot (opcode 35) */
     s32 model;       /* 0x30 model instance */
-    u8 memberState;  /* 0x34 move state of party member n (opcode 23) */
+    u8 memberState;  /* 0x34 opcode 23's effect for object n: 2 started, 1 done
+                      * (set by the effect VM's 02/03 through 80080c6c) */
     u8 modelLoaded;  /* 0x35 */
     u8 pad36[2];
 } ScriptThread;

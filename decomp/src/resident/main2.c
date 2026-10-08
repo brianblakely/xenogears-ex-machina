@@ -502,6 +502,10 @@ void func_80033DF0(Window *window) {
     while (remaining != -1) {
         byte = *window->text;
         first = byte;
+        /* 00 end(), 1 byte: end of text: return after an inserted text's
+         * control; else state 1 (unk6B), flag 8 (wait) and unk6C, so once the
+         * wait ends the window moves on to its next queued text. The pointer
+         * stays on the 00. */
         if (first == 0) {
             if (window->flags & 0x80) {
                 window->flags &= ~0x80;
@@ -513,18 +517,25 @@ void func_80033DF0(Window *window) {
             window->unk6C = 1;
             return;
         }
+        /* 03 pause(), 1 byte: state 3, flag 8: wait, keeping the lines. */
         if (first == 3) {
             window->unk6B = 3;
             window->flags |= 8;
             window->text++;
             return;
         }
+        /* 0F nn: sub-code nn through the jump table at 80018a7c (cases 0-15); 16
+         * and up match no case and leave the pointer on the 0F. */
         if (first == 15) {
             switch (window->text[1]) {
+            /* 0F 00 wait(frames), 3 bytes: wait `frames` (unk84) and end this
+             * step. */
             case 0:
                 window->unk84 = window->text[2];
                 window->text += 3;
                 return;
+            /* 0F 01 speed(speed), 3 bytes: glyphs per step = speed, saving the
+             * old speed; 0 restores the saved speed. */
             case 1:
                 first = window->text[2];
                 if (first != 0) {
@@ -539,11 +550,16 @@ void func_80033DF0(Window *window) {
                 }
                 window->text += 3;
                 break;
+            /* 0F 02 wait_done(frames), 3 bytes: wait `frames`; the following
+             * step only clears window flag 4 (unk6C), so the window takes its
+             * next queued text. */
             case 2:
                 window->unk84 = window->text[2];
                 window->text += 3;
                 window->unk6C = 1;
                 return;
+            /* 0F 03 insert(resource, entry), 4 bytes: insert entry `entry` of
+             * system resource `resource`. */
             case 3:
                 first = window->text[2];
                 second = window->text[3];
@@ -552,6 +568,9 @@ void func_80033DF0(Window *window) {
                 remaining++;
                 resource = func_80033728(resource, second);
                 goto resource_ready;
+            /* 0F 04 insert_selection(), 2 bytes: insert entry selection & 0xFF
+             * of resource 22, 23, 17, 51 or 50 for selection kinds 0x000-0x400
+             * (another kind: the 04 is read as text). */
             case 4:
                 cursor = window->text;
                 cursor++;
@@ -587,6 +606,8 @@ void func_80033DF0(Window *window) {
                     goto resource_ready;
                 }
                 break;
+            /* 0F 05 insert_name(name), 3 bytes: insert character name `name`
+             * (0x80 and up through D_8006F2E8; slot 0xFF: resource 26 entry 0). */
             case 5:
                 first = window->text[2];
                 window->text += 2;
@@ -603,6 +624,8 @@ void func_80033DF0(Window *window) {
                 }
                 remaining++;
                 break;
+            /* 0F 06 insert_23(entry), 3 bytes: insert entry `entry` of system
+             * resource 23. */
             case 6:
                 remaining++;
                 first = window->text[2];
@@ -610,6 +633,8 @@ void func_80033DF0(Window *window) {
                 resource = D_80059360[23];
                 resource = func_80033728(resource, first);
                 goto resource_ready;
+            /* 0F 07 insert_24(entry), 3 bytes: insert entry `entry` of system
+             * resource 24. */
             case 7:
                 remaining++;
                 first = window->text[2];
@@ -617,6 +642,8 @@ void func_80033DF0(Window *window) {
                 resource = D_80059360[24];
                 resource = func_80033728(resource, first);
                 goto resource_ready;
+            /* 0F 08 insert_25(entry), 3 bytes: insert entry `entry` of system
+             * resource 25. */
             case 8:
                 remaining++;
                 first = window->text[2];
@@ -624,20 +651,28 @@ void func_80033DF0(Window *window) {
                 resource = D_80059360[25];
                 resource = func_80033728(resource, first);
                 goto resource_ready;
+            /* 0F 09 insert_number(value), 3 bytes: insert window value `value`
+             * in decimal, palette 0. */
             case 9:
                 palette = 0;
                 sign = 0;
                 cursor = window->text;
                 goto insert_number;
+            /* 0F 0A insert_number_1(value), 3 bytes: insert window value `value`
+             * in decimal, palette 1. */
             case 10:
                 palette = 1;
                 cursor = window->text;
                 sign = 0;
                 goto insert_number;
+            /* 0F 0B set_6d(value), 2 bytes: window byte 0x6D = value; the
+             * pointer stops on the operand, which is read again as text. */
             case 11:
                 window->unk6D = window->text[2];
                 window->text += 2;
                 break;
+            /* 0F 0C insert_signed(value), 3 bytes: insert window value `value`
+             * as signed decimal, palette 1. */
             case 12:
                 palette = 1;
                 cursor = window->text;
@@ -650,12 +685,17 @@ insert_number:
                 func_80033CF0(window->values[first], palette, sign);
                 func_80033DD4(window, D_8005A0E4);
                 break;
+            /* 0F 0D wait_done_skippable(frames), 3 bytes: as wait_done, also
+             * setting window flag 0x200 (800345e0 then drops the wait and the
+             * pending clear). */
             case 13:
                 window->unk84 = window->text[2];
                 window->text += 3;
                 window->unk6C = 1;
                 window->flags |= 0x200;
                 return;
+            /* 0F 0E slow(frames), 3 bytes: one glyph per step every `frames`
+             * frames (unk86/unk88), saving the speed. */
             case 14:
                 old_speed = window->unk68;
                 window->unk68 = 1;
@@ -664,6 +704,8 @@ insert_number:
                 window->unk86 = window->unk88 = window->text[2];
                 window->text += 3;
                 return;
+            /* 0F 0F insert_button(action), 3 bytes: insert the name of the
+             * button assigned to `action` (D_80050238) from resource 49. */
             case 15:
                 first = window->text[2];
                 window->text += 2;
@@ -677,6 +719,8 @@ resource_ready:
                 goto check_budget;
             }
         } else if (first == 2) {
+            /* 02 page(), 1 byte: state 2, flags 0x48: wait, then clear the
+             * window; a following 01 is skipped. */
             window->unk6B = 2;
             window->flags |= 0x48;
             window->text++;
@@ -685,10 +729,14 @@ resource_ready:
             }
             return;
         } else if (first == 1) {
+            /* 01 newline(), 1 byte: x = 100 and end this step, so the next step
+             * starts a new line. */
             window->x = 100;
             window->text++;
             return;
         } else {
+            /* A glyph: one byte below D_8005934C (the font's two-byte
+             * threshold), else that byte and the next. */
             text_bytes = 1;
             if (first < D_8005934C) {
                 first = 0;

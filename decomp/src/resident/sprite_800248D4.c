@@ -85,6 +85,10 @@ next:
     script = sprite->script;
     op = *script;
     args = script + 1;
+    /* 00-7f, one byte: 00-0f show the next frame, 10-1f the next frame-table entry
+     * (80022d44), 20-2f the previous frame, 30-3f keep the frame; each waits (op & f) + 1
+     * frames scaled by the divisor / 256 (at least 1) and counts a step (frame bits 22-27,
+     * held at 63). 40-7f set no duration: the original reads a stale register. */
     if (op < 0x80) {
         sprite->script = args;
         if (op < 0x10) {
@@ -111,7 +115,13 @@ next:
         }
         return;
     }
+    /* 80-ff: the cases below, the rest through 8001fbe4; a handler that keeps the script
+     * pointer then advances by the command's length D_8004FCC0[op - 0x80] (80-9f: 1,
+     * a0-c7: 2, c8-f0: 3, f1-ff: 4). See tools/analysis/sprite_vm.py. */
     switch (op) {
+    /* be s16 (three bytes; the width table says two): frame bits 0-8, wait bits 11-14 + 1
+     * (scaled); one-sided sprites also take flip x (bit 9) and y (bit 10), and bit 15 maps a
+     * nonzero frame through the frame map (+60). */
     case 0xBE:
         value = args[0] | ((s8)args[1] << 8);
         time = ((value >> 11) & 0xF) + 1;
@@ -140,41 +150,51 @@ next:
         sprite->countdown += time;
         sprite->script += 3;
         return;
+    /* 8e: stop: no script. */
     case 0x8E:
         sprite->script = NULL;
         return;
+    /* e2 s16: call: push the 3-byte return point (the next command) and jump by s16 from
+     * this command. */
     case 0xE2:
         offset = args[0] + ((s8)args[1] << 8);
         func_80021CF8(sprite, (s32)(sprite->script + 3));
         sprite->script += offset;
         goto next;
+    /* 85: return to the 3 bytes popped from the stack (the pointer's top byte kept). */
     case 0x85:
         sprite->script = (u8 *)(((u32)sprite->script & 0xFF000000) | func_80021C6C(sprite));
         goto next;
+    /* fa var s16: jump by s16 from this command when the variable is nonzero. */
     case 0xFA:
         if (*func_8001FBA4(sprite, args) == 0) {
             break;
         }
         sprite->script += (s16)(args[1] | ((s8)args[2] << 8));
         goto next;
+    /* d4 s16: jump by s16 from this command, then run the completion callback. */
     case 0xD4:
         sprite->script += (s16)(args[0] | ((s8)args[1] << 8));
         if (sprite->callback != NULL) {
             sprite->callback(sprite);
         }
         goto next;
+    /* 86: wait while rising (vertical speed below 0), retrying each frame. */
     case 0x86:
         if (sprite->speed_y >= 0) {
             break;
         }
         sprite->countdown = 1;
         return;
+    /* 87: wait while above the ground (y < ground), retrying each frame. */
     case 0x87:
         if ((s16)(sprite->y >> 16) >= sprite->ground) {
             break;
         }
         sprite->countdown = 1;
         return;
+    /* 80: end: state 0, then the completion callback, or else the idle animation (byte b0)
+     * when it is not negative. */
     case 0x80:
     end:
         sprite->frame_bits.field28 = 0;
@@ -187,6 +207,8 @@ next:
         }
         sprite->frame_bits.field28 = 0;
         return;
+    /* 98: with a creator (+70) running this sprite's wait animation (+8d) in state 2, retry
+     * each frame; then go on after a frame (at once without a creator). */
     case 0x98:
         creator = (Sprite *)sprite->word70;
         if (creator == NULL) {
@@ -200,6 +222,8 @@ next:
             return;
         }
         break;
+    /* 82: restart: completion callback, then the current animation again (800245d8, keeping
+     * the vertical speed), run at once. */
     case 0x82:
         if (sprite->callback != NULL) {
             sprite->callback(sprite);
@@ -210,6 +234,8 @@ next:
         sprite->countdown = 0;
         func_800248D4(sprite);
         return;
+    /* 81: hold: animation 3f ends (80); others stop here (countdown 0) after the completion
+     * callback, in state 1. */
     case 0x81:
         if ((s8)sprite->motion.bytes[3] == 0x3F) {
             goto end;
@@ -220,6 +246,8 @@ next:
         }
         sprite->frame_bits.field28 = 1;
         return;
+    /* e4 s16: loop: pop a count; when nonzero, push it less one and jump by s16 from this
+     * command. */
     case 0xE4:
         count = func_80021C20(sprite);
         if (count == 0) {
@@ -229,9 +257,12 @@ next:
         func_80021CA0(sprite, count);
         sprite->script += (s16)(args[0] | ((s8)args[1] << 8));
         goto next;
+    /* e1 s16: jump by s16 from this command. */
     case 0xE1:
         sprite->script += (s16)(args[0] | ((s8)args[1] << 8));
         goto next;
+    /* a7 u8: bit 7 pauses the main task list (80059428) for (u8 & 7f) + 1 frames and waits a
+     * frame; else wait u8 + 2 frames (scaled, at least 1). */
     case 0xA7:
         sprite->script += D_8004FCC0[op - 0x80];
         if (args[0] & 0x80) {
@@ -245,9 +276,12 @@ next:
         }
         sprite->countdown += wait;
         return;
+    /* c8 op var: generic command op (8001fbe4) on the bytes at the variable (8001fba4). */
     case 0xC8:
         func_8001FBE4(sprite, args[0], func_8001FBA4(sprite, args + 1));
         break;
+    /* Others: 8001fbe4 on the bytes after the command (no effect without a case there,
+     * as for 83 and 84). */
     default:
         func_8001FBE4(sprite, op, args);
         break;
