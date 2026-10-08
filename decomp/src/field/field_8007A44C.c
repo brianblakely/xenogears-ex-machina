@@ -1605,29 +1605,17 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
 s32 func_800347AC(TextBox *text);
 s32 func_800347C0(TextBox *text);
 
-#ifdef NON_MATCHING
 /* Draw dialogue window `w`'s frame into `ot` for `buffer`: while opening
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * NON_MATCHING (126 edits): the nested choice/prompt structs give
- * the original's +37c/+3c4 bases, the texture windows are read from the
- * flat 800ade9c table and the prompt position has its own locals (the
- * original keeps them in $s5/$s2 across the calls). The frame (0xa8) and
- * the opening branch match: both quotients are taken before the products
- * and x, y, height, width are updated in that order. The s16 corner
- * values give the original's registers (left a0, top t0, right v1, the
- * window/buffer offsets t2/a2); s32 ones (or inline expressions) get
- * v1/a3/v0 and a0/a2 offsets (154 by instruction text). Left: their
- * (subreg) sets are not register births, so sched1 hoists the corner
- * computations to the top of the block where the original computes each
- * next to its first store; side and bottom swap a3/t1; the reloads that
- * follow alternate t8/t9 the other way round. The original also computes
- * the portrait's y + 4 before the style & 0x20 test (in its delay slot),
- * which a variable set next to icon_x reproduces, but with the current
- * reload parity that scores worse (161 vs 102 by instruction text). All
- * 3^7 inline/s32/s16 choices for the seven border values were scored;
- * none removes the hoisting. */
+ * The border is written piece by piece (corners 0, 2, 4, 6, then the side
+ * edges 3, 1 and the top and bottom edges 5, 7) with each value inline:
+ * every value is one temporary that sched1 computes just before its first
+ * store, and the reloads of the spilled x, y, width and height cannot move
+ * across the stores, so this order is what places them where the original
+ * has them. The portrait's y + 4 is taken next to icon_x, before the
+ * style & 0x20 test, which fills that branch's delay slot. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
@@ -1637,14 +1625,11 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     s32 grown_w;
     s32 grown_h;
     s32 steps;
-    s16 left;
     s32 prompt_x;
     s32 prompt_y;
-    s16 top;
-    s16 right;
-    s16 bottom;
     s32 side;
     s32 icon_x;
+    s32 icon_y;
     s32 icon_w;
     s32 icon_h;
     s32 i;
@@ -1698,32 +1683,28 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         D_800C2698[w].prompt_delay = 2;
     }
     side = height - 0x12;
-    left = x - 8;
-    top = y - 7;
-    right = x + width - 8;
-    bottom = y + height - 9;
-    D_800C2698[w].frame.border[buffer][0].x0 = left;
-    D_800C2698[w].frame.border[buffer][0].y0 = top;
-    D_800C2698[w].frame.border[buffer][2].y0 = top;
-    D_800C2698[w].frame.border[buffer][4].x0 = left;
-    D_800C2698[w].frame.border[buffer][2].x0 = right;
-    D_800C2698[w].frame.border[buffer][6].x0 = right;
-    D_800C2698[w].frame.border[buffer][3].x0 = left;
-    D_800C2698[w].frame.border[buffer][1].x0 = right;
-    D_800C2698[w].frame.border[buffer][4].y0 = bottom;
-    D_800C2698[w].frame.border[buffer][6].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][0].x0 = x - 8;
+    D_800C2698[w].frame.border[buffer][0].y0 = y - 7;
+    D_800C2698[w].frame.border[buffer][2].x0 = x + width - 8;
+    D_800C2698[w].frame.border[buffer][2].y0 = y - 7;
+    D_800C2698[w].frame.border[buffer][4].x0 = x - 8;
+    D_800C2698[w].frame.border[buffer][4].y0 = y + height - 9;
+    D_800C2698[w].frame.border[buffer][6].x0 = x + width - 8;
+    D_800C2698[w].frame.border[buffer][6].y0 = y + height - 9;
+    D_800C2698[w].frame.border[buffer][3].x0 = x - 8;
     D_800C2698[w].frame.border[buffer][3].y0 = y + 9;
+    D_800C2698[w].frame.border[buffer][1].x0 = x + width - 8;
     D_800C2698[w].frame.border[buffer][1].y0 = y + 9;
     if (side < 0) {
         side = 0;
     }
     D_800C2698[w].frame.border[buffer][3].h = side;
     D_800C2698[w].frame.border[buffer][1].h = side;
-    D_800C2698[w].frame.border[buffer][5].y0 = top;
     D_800C2698[w].frame.border[buffer][5].x0 = x + 8;
-    D_800C2698[w].frame.border[buffer][7].x0 = x + 8;
-    D_800C2698[w].frame.border[buffer][7].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][5].y0 = y - 7;
     D_800C2698[w].frame.border[buffer][5].w = width - 0x10;
+    D_800C2698[w].frame.border[buffer][7].x0 = x + 8;
+    D_800C2698[w].frame.border[buffer][7].y0 = y + height - 9;
     D_800C2698[w].frame.border[buffer][7].w = width - 0x10;
     if (!(D_800C2698[w].style & 0x40)) {
         for (i = 0; i < 8; i++) {
@@ -1740,10 +1721,11 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         icon_h = height - 8;
     }
     icon_x = x + 4;
+    icon_y = y + 4;
     if (D_800C2698[w].style & 0x20) {
         icon_x = x + width - icon_w - 4;
     }
-    func_8007E16C(&D_800C2698[w].icon[buffer], icon_x, y + 4, icon_w, icon_h, D_800C2698[w].style & 0x20);
+    func_8007E16C(&D_800C2698[w].icon[buffer], icon_x, icon_y, icon_w, icon_h, D_800C2698[w].style & 0x20);
     if (D_800C2698[w].unk494 == 1) {
         addPrim(ot, &D_800C2698[w].icon[buffer]);
         addPrim(ot, &D_800C2698[w].icon_modes[buffer]);
@@ -1772,9 +1754,6 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         addPrim(ot, &D_800C2698[w].frame.back_modes[buffer]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007E1C0);
-#endif
 
 extern u8 D_800594D4[3];    /* window colour */
 
