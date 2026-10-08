@@ -233,6 +233,7 @@ decomp/src/menu/menu4.c
 decomp/src/menu/menu5.c
 decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
+decomp/src/menu/menu_common.c
 decomp/src/menu/mesh_packet.s
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h

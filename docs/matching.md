@@ -200,9 +200,10 @@ the audit; they are never counted as matches. This diagnostic does not replace
   definitions in first-declaration order; the original assembler gave each a slot of
   whole words (two `u8` four bytes apart, `BSS := slots` in the target, a filter on
   maspsx's output). A unit's own variables come first, as statics where the commons
-  follow apart; the commons, which the original linker allocated after every unit's
-  own in an order of its own, are defined by a commons unit linked last
-  (slot39_common.c, mdec commons/). Where a file holds its
+  follow apart, and a unit reads only its own: that fixes text boundaries (menu
+  800707A8, 8007E528, 80081ECC; slot39 801DBDB4). The commons, which the original
+  linker allocated after every unit's own in an order of its own, are defined by a
+  commons unit linked last (slot39_common.c, menu_common.c, mdec commons/). Where a file holds its
   .bss as zeros the .bss is loaded (`ld_bss_is_noload: False`); zeros a packer added
   past the program are file padding (`OBJCOPY_FLAGS --gap-fill 0 --pad-to`, field.mk).
 - Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)

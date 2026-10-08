@@ -23,7 +23,6 @@ typedef struct {
 
 extern SystemSave D_8006F978;
 extern u8 D_8005061C;    /* nonzero keeps the options in D_8006F980 */
-extern u8 D_800927EC;
 /* Current option settings (0x80099d98). The bytes at 0x02-0x06, 0x09,
  * 0x0A and 0x0C are also addressed through their own symbols
  * (D_80099D9A..D_80099DA4) by some functions. */
@@ -88,7 +87,7 @@ typedef struct {
 } Tile;
 
 /* One of the two display buffers (table at 0x8009a0d8, 0xF8 bytes each). */
-typedef struct {
+typedef struct Window {
     DrawEnv draw;      /* 0x00 */
     DispEnv disp;      /* 0x5C */
     u32 ot;            /* 0x70: one-entry ordering table */
@@ -118,7 +117,6 @@ typedef struct Node {
     struct Node *child;  /* 0x94: first child */
     s32 unk98;
 } Node;
-
 
 /* Loaded model file header. */
 typedef struct {
@@ -326,20 +324,11 @@ typedef struct {
 #define TAG_LEN(tag) (((u8 *)(tag))[3])
 
 extern OtPair *D_80091C30;    /* table to compact at the end of the frame */
-extern s32 D_80092820;        /* root counter at the frame start */
 extern u32 *D_800928E4;       /* ordering table primitives are added to */
 extern s32 D_80050100;        /* its depth shift */
-extern s32 D_80092810;
-extern CVector D_80092818[2]; /* current colour per display buffer */
 extern s32 D_80092914;        /* colour changed this frame */
 
 extern s32 D_80091C2C;   /* nonzero: model set players do not own their keys */
-extern s32 D_80092824;   /* nodes instanced by the last copy */
-extern Node *D_80092828; /* root being instanced */
-extern s16 D_80092800;   /* model texture page x (-1: none) */
-extern s16 D_80092804;   /* model texture page y */
-extern s16 D_80092808;   /* model CLUT x (-1: none) */
-extern s16 D_8009280C;   /* model CLUT y */
 
 extern Matrix D_80091C0C; /* identity */
 extern Vector D_8009A0C8; /* look-at work: forward */
@@ -352,7 +341,6 @@ extern Matrix D_80096FE0; /* screen scale */
 extern s16 D_8009285C;    /* display width */
 extern s16 D_8009286C;    /* display height */
 extern u16 D_80059570;   /* pad buttons held this frame */
-extern s32 D_800927F4;
 
 extern s32 D_80010000;   /* boot word: -1, 0 or other start state */
 extern char *D_80091BB0[]; /* names of the menu's heap block kinds */
@@ -367,7 +355,6 @@ extern u8 D_80092920;
 extern u16 D_800928D0;   /* debug display switches */
 extern u32 *D_80092938; /* ordering table of the buffer being built */
 extern void (*D_80092930)(void *block);
-extern s32 D_800927F0;
 extern s32 D_80050618;
 extern volatile s32 D_80059488; /* vertical blanks counted */
 extern s32 D_80059578;   /* primitives drawn this frame */
