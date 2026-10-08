@@ -66,7 +66,9 @@ segments:
       # menu6 opens with a data word in .text: the mode-task table D_80088BFC.
       - [0x1910C, c, menu6]
       - [0x196D0, c, menu7]
-      - [0x21448, data, menu_data]
+      # Initialized data of each unit in link order; menu has none.
+      - [0x21448, .data, menu2]
+      - [0x21604, data, menu_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x22e68, databin, menu_tail]
   - [0x22e69]
