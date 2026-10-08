@@ -126,6 +126,12 @@ void func_8001BB0C(void) {
 
 u8 D_800594F8;
 u8 D_8005946C;
+/* The window colour is one object, the u8[3] the overlays declare: under
+ * the slot rule no other variable shares its word. ASPSX 2.34 addressed a
+ * common at an offset absolutely, so only [0] went through $gp (maspsx
+ * models that), but GNU as moves a small common's offset accesses to $gp
+ * as well, so the array cannot be declared and its last two bytes stay
+ * extern until that is modelled. */
 u8 D_800594D4;
 extern u8 D_800594D5;
 extern u8 D_800594D6;

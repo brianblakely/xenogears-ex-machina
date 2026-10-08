@@ -392,7 +392,11 @@ converted to C per unit. What converting the targets' `.data` established:
   (ovl2596 801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc). The build
   rounds each object up to whole words under the qualified ASPSX 2.34 and 2.79 and
   rejects a smaller one under any other version (decomp/Makefile); no target or unit
-  setting selects it.
+  setting selects it. Variables that share a word are therefore one object, also in
+  the resident's generated `.bss`: the sprite position D_800592E8 is a DVECTOR. The
+  window colour D_800594D4, the overlays' `u8[3]`, is still a `u8` with extern +1/+2
+  bytes: ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it),
+  but GNU as moves a small common's offset accesses to `$gp`.
 - A unit's own variables come first, as statics where the commons
   follow apart, and a unit reads only its own, which fixes text boundaries (menu
   800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
