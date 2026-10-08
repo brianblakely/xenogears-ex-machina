@@ -12,6 +12,30 @@ s32 func_80080AC4();
 s32 func_80076A14();
 s32 func_80076A1C();
 
+/* The vehicle scene's data (its mode handlers func_8007D918/func_8007DCE0 and
+ * sequence start func_8007DE14 precede this unit). Per entry (D_8009D3D4):
+ * the three ambient sounds, the player's start position and the resident
+ * flag word set on leaving. */
+u16 D_8009A5A0[3][3] = {{0x25, 0x26, 0x27}, {0x1F, 0x20, 0x21}, {0x22, 0x23, 0x24}};
+SVECTOR D_8009A5B4[3] = {{14976, -640, 11690}, {15412, -640, 11957}, {14976, -640, 11690}};
+u16 D_8009A5CC[3] = {2, 3, 4};
+
+/* The director's timed sequences per entry: states and durations. */
+s16 D_8009A5D4[14] = {1, 62, 2, 3, 61, 4, 5, 6, 7, 8, 9, 10, 63, 64};
+u16 D_8009A5F0[14] = {90, 60, 60, 44, 6, 4, 100, 4, 8, 184, 2, 135, 128, 0};
+s16 D_8009A60C[9] = {1, 62, 2, 3, 61, 24, 25, 63, 64};
+u16 D_8009A620[9] = {90, 60, 60, 44, 6, 4, 160, 128, 0};
+s16 D_8009A634[9] = {1, 62, 2, 3, 61, 16, 17, 63, 64};
+u16 D_8009A648[9] = {90, 60, 60, 44, 6, 4, 205, 128, 0};
+Sequence D_8009A65C[3] = {{D_8009A5D4, D_8009A5F0}, {D_8009A60C, D_8009A620}, {D_8009A634, D_8009A648}};
+
+/* Per entry: the flight path start. */
+SVECTOR D_8009A674[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}};
+
+/* Exhaust flame sizes, per flame (actors 4-8). The original object keeps a
+ * stray halfword (0x7965) in its alignment padding. */
+u16 D_8009A68C[6] = {0x800, 0x700, 0x600, 0x500, 0x300, 0x7965};
+
 /* Scene director: state 1 steps a timed state sequence (states at unk54,
  * durations at unk58); the other states start sounds and actor commands and
  * return to 1. */
@@ -716,7 +740,7 @@ s32 func_8007F968(s32 index) {
         actor->unk4 = 0;
         actor->state = 0;
         actor->motion.vy = 0;
-        actor->unk5C = D_8009A684[index];
+        actor->unk5C = D_8009A68C[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
         func_8004A92C(&object->angle, &object->matrix);
@@ -727,7 +751,7 @@ s32 func_8007F968(s32 index) {
         actor->wait = 4;
         actor->state = 1;
         actor->unk4 = 0;
-        actor->unk5C = D_8009A684[index];
+        actor->unk5C = D_8009A68C[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
         func_8004A92C(&object->angle, &object->matrix);

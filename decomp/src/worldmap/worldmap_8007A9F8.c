@@ -1,5 +1,20 @@
 #include "worldmap.h"
 
+/* The director's timed sequence: the state of each step and its duration
+ * (started by func_8007A9B4). */
+u16 D_8009A450[14] = {1, 2, 3, 8, 4, 5, 6, 8, 9, 7, 10, 11, 0, 0};
+u16 D_8009A46C[14] = {30, 160, 8, 30, 20, 60, 8, 30, 120, 76, 72, 1, 0, 0};
+
+/* Exhaust effect angle. */
+SVECTOR D_8009A488 = {0, 128, 0};
+
+/* The rig's flight path control points. */
+SVECTOR D_8009A490[9] = {
+    {22989, -240, 25600}, {23421, -200, 25192}, {23749, -192, 24992}, {24445, -168, 24816},
+    {24709, -232, 25456}, {24245, -360, 26024}, {23797, -160, 25648}, {23389, -48, 25192},
+    {23251, -248, 24648},
+};
+
 /* Scene director: state 1 steps the timed sequence at D_8009A450/D_8009A46C;
  * the other states start effects, sounds and actor commands and return to 1. */
 s32 func_8007A9F8(s32 index) {
@@ -11,7 +26,7 @@ s32 func_8007A9F8(s32 index) {
         break;
     case 1:
         if (--actor->wait < 0) {
-            actor->state = (&D_8009A450)[actor->u.step];
+            actor->state = D_8009A450[actor->u.step];
             actor->wait = D_8009A46C[actor->u.step];
             actor->u.step++;
         }

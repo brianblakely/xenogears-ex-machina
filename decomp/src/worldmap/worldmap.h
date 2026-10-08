@@ -367,7 +367,7 @@ typedef struct SceneObject {
 } SceneObject;
 
 extern SceneObject *D_8009C620; /* scene objects */
-extern u16 D_8009A450;
+extern u16 D_8009A450[];
 extern u16 D_8009A46C[];
 extern u16 D_8009A4D8[];
 extern u16 D_8009A4E8[];
@@ -617,7 +617,7 @@ s16 func_80093F18(VECTOR *position);
 void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
-extern u16 D_8009A68C[];
+extern u16 D_8009A68C[]; /* exhaust flame sizes */
 extern DiscReadRequest *D_8009D788[16]; /* submitted disc request lists */
 
 s32 func_80084DB8(s32 probe, s32 object);
@@ -1349,9 +1349,7 @@ typedef struct {
     MATRIX rotation;   /* 0x110 */
 } FlameScratch;
 
-extern u16 D_8009A684[]; /* flame sizes per actor */
-
-extern u16 D_8009A5A0[][3]; /* per area: three ambient sounds */
+extern u16 D_8009A5A0[][3]; /* per entry: three ambient sounds */
 
 /* Scratchpad work area of the flight-track actor. */
 typedef struct {
@@ -1479,7 +1477,7 @@ extern u16 D_8006EE68, D_8006EE76;
 
 void func_80039E18(s32 sound);
 
-extern SVECTOR D_8009A490[]; /* rig flight path; pad -1 ends */
+extern SVECTOR D_8009A490[]; /* rig flight path */
 /* Scratchpad work area of the rig path follower. */
 typedef struct {
     VECTOR axis[4];   /* 0x00 */
@@ -1490,7 +1488,7 @@ typedef struct {
     MATRIX frame;     /* 0xF0 */
 } FollowScratch;
 
-extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths; pad -1 ends */
+extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths */
 
 /* Scratchpad work area of the camera shot director. */
 typedef struct {
