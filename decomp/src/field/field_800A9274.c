@@ -882,27 +882,18 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
-#ifdef NON_MATCHING
-/* Upload the pieces of file 0x802's image whose game flag (800ab748) is
- * clear to the 8-bit page area at (300, 100).
- * NON_MATCHING: size and row-loop cursor structure agree. The frame is
- * eight bytes short, s6/s7 are swapped, and the source-pointer addition
- * operands differ. */
-
-/* A RECT is four signed halfwords (x, y, width, height). Sum the source
- * offset in words; reread width after memcpy before advancing the row. */
-static inline u8 *copy_picture_row(u8 *dest, TIM_IMAGE *tim, s32 piece, s32 row) {
-    s32 column = ((s16 *)D_800AF5C0)[piece * 4] / 4;
-
-    memcpy(dest, tim->paddr + ((((s16 *)D_800AF5C0)[piece * 4 + 1] + row) * 0x50 + column),
-           ((s16 *)D_800AF5C0)[piece * 4 + 2]);
+/* A RECT is four signed halfwords (x, y, width, height). Copy one row of
+ * a piece from `src` and return the destination advanced by the piece width
+ * rounded down to words; the width is reread after the copy. */
+static inline u8 *copy_picture_row(u8 *dest, u_long *src, s32 piece) {
+    memcpy(dest, src, ((s16 *)D_800AF5C0)[piece * 4 + 2]);
     return dest + ((s16 *)D_800AF5C0)[piece * 4 + 2] / 4 * 4;
 }
 
-static inline s16 picture_piece_width(s32 piece) {
-    return ((s16 *)D_800AF5C0)[piece * 4 + 2];
-}
-
+/* Upload the pieces of file 0x802's image whose game flag (800ab748) is
+ * clear to the 8-bit page area at (300, 100): each piece's rows (80 words
+ * per image row) are gathered into a buffer, then loaded at half the x and
+ * width. */
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -910,6 +901,7 @@ void func_800AB808(void) {
     u8 *row_pixels;
     s32 i;
     s32 row;
+    s32 column;
     const s16 *height_base;
 
     file = func_80031BDC(func_800288EC(0x802), 0);
@@ -923,14 +915,16 @@ void func_800AB808(void) {
             if (func_800AB748(i) == -1 && tim.paddr != NULL) {
                 row_pixels = pixels;
                 row = 0;
-                if (height_base[i * 4] > 0) {
+                if (row < height_base[i * 4]) {
                     do {
-                        row_pixels = copy_picture_row(row_pixels, &tim, i, row);
+                        column = ((s16 *)D_800AF5C0)[i * 4] / 4;
+                        row_pixels = copy_picture_row(
+                            row_pixels, tim.paddr + ((((s16 *)D_800AF5C0)[i * 4 + 1] + row) * 0x50 + column), i);
                     } while (++row < ((s16 *)D_800AF5C0)[i * 4 + 3]);
                 }
                 tim.prect->x = ((s16 *)D_800AF5C0)[i * 4] / 2 + 0x300;
                 tim.prect->y = ((s16 *)D_800AF5C0)[i * 4 + 1] + 0x100;
-                tim.prect->w = picture_piece_width(i) / 2;
+                tim.prect->w = ((s16 *)D_800AF5C0)[i * 4 + 2] / 2;
                 tim.prect->h = height_base[i * 4];
                 LoadImage(tim.prect, (u_long *)pixels);
                 DrawSync(0);
@@ -940,9 +934,6 @@ void func_800AB808(void) {
     func_800320E8(file);
     func_800320E8(pixels);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AB808);
-#endif
 
 /* Show the current map's picture while its item is held: park the VRAM
  * at (300, 100), load the picture, fade it in, hold until the button, fade

@@ -47,14 +47,9 @@ segments:
       # unit's strings, and 801E8070's returns to 0 mod 8 right after
       # 801E433C's odd-length table.
       - [0x0, .rodata, slot39]
-      # The card refresh unit (slot39_801C93A8.c) has no rodata; the strings
-      # "bu00:"/"bu10:" and the temporary file name open the next unit's.
-      - [0xA8, .rodata, slot39_801C9BCC]
       - [0xFC, .rodata, slot39_801DBE54]
       - [0x278, .rodata, slot39_801E8070]
       - [0x31c, c, slot39]
-      - [0x43A8, c, slot39_801C93A8]
-      - [0x4BCC, c, slot39_801C9BCC]
       - [0x16E54, c, slot39_801DBE54]
       - [0x23070, c, slot39_801E8070]
       # All initialized data is slot39's: the other units' tables are interleaved
