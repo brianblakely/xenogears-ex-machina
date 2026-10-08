@@ -6,7 +6,7 @@ void func_80093354(VECTOR *position);
 /* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
 s32 func_80084D00(s32 probe, s16 *hit);
 
-void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
+void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin);
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -1906,7 +1906,7 @@ void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
-void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
+void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin) {
     SVECTOR *vertex;
     u32 *cell;
     s32 j;
@@ -1950,9 +1950,9 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
         z -= 0x80;
         row_phase += 0x200;
     }
-    func_8009980C(heights, ot, depth);
+    func_8009980C(heights, ot, packets);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009980C);
+INCLUDE_ASM("decomp/src/worldmap", func_8009980C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80099BFC);
+INCLUDE_ASM("decomp/src/worldmap", func_80099BFC);

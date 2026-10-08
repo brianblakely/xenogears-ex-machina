@@ -859,7 +859,7 @@ s32 func_80096328(void);
 s32 func_800965A4(void);
 
 extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
-void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
+void func_8009980C(u32 *cells, u32 *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
 /* Model instance returned by func_80024524 (actor handle). */
 typedef struct {
@@ -1563,7 +1563,7 @@ typedef struct {
     MATRIX world;    /* 0x370 */
 } TerrainDrawScratch;
 
-extern s32 D_8009D7DC; /* packet depth */
+extern s32 D_8009D7DC; /* terrain POLY_FT3 packets used this frame */
 
 /* Model and object of the scene overlay at 0x801E0000. */
 typedef struct {
