@@ -4,7 +4,7 @@
  * callers pass quad coordinates as words, while the shared screen unit's
  * local calls see the helper's narrow definition.
  */
-#include "menu_card.h"
+#include "gear_shop.h"
 
 /* Headings: two sets of four sprites and the two alternative ones, with
  * their positions. */

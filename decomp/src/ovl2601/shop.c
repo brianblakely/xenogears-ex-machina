@@ -1,11 +1,23 @@
 /*
- * The item shop's own screens (801cce1c onwards): member stat views, the buy
- * and sell lists, prices and the sale. A separate translation unit from the
- * shared screen code before it: it calls the party-bit helpers 801c50b0 and
- * 801c50cc without a prototype in scope (arguments and results unmasked),
- * which the shared unit's own callers do not.
+ * The item shop's own screens: member stat views, the buy and sell lists,
+ * prices and the sale. Rodata 801c5010-801c5040, text 801cce1c-801d1f50,
+ * data 801d2210-801d2260 and the variable D_801D2260 that ends the file. A
+ * separate translation unit from the shared screen code before it: it calls
+ * the party-bit helpers 801c50b0 and 801c50cc without a prototype in scope
+ * (arguments and results unmasked), which the shared unit's own callers do
+ * not.
  */
-#include "menu_card.h"
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/text.h"
+#include "menu/screen.h"
+#include "menu/shop.h"
+#include "menu/tables.h"
+#include "item_shop.h"
 
 /* The four heading sprites and the two alternative ones: ids and positions. */
 u8 D_801D2210[4] = {0xF2, 0xDE, 0xE0, 0xE5};

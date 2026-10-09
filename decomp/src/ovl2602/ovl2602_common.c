@@ -3,7 +3,7 @@
  * (zero there), each in a slot of whole words (decomp/Makefile), so this
  * unit, linked last, defines them. Both units read all but D_801D9088
  * (tools/data_users.py). */
-#include "menu_card.h"
+#include "gear_shop.h"
 
 CameraMove D_801D9050;
 u8 D_801D9084;     /* gear being edited */

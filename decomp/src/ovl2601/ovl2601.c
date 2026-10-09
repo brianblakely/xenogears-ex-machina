@@ -9,14 +9,41 @@
  * the card state block whose save header it still fills in, with the file
  * name prefix "BISLPS-00800" (unused by the shop itself; ovl2600 and ovl2602
  * carry the same string).
+ *
+ * This unit, the screen code and the entry, is the image's first: rodata
+ * 801c5000-801c5010 (the prefix), text 801c5040-801cce1c and data
+ * 801d1f50-801d2210. shop.c follows; its head gives the boundary evidence.
  */
-#include "menu_card.h"
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
+#include "menu/shop.h"
+#include "menu/tables.h"
+#include "item_shop.h"
 
 /* The save file name prefix, this unit's only rodata (the struct copy in
  * func_801C54B4 reads its 13 bytes). The padding after it holds a stray byte
  * (0x03) that nothing reads, like the original assembler's string padding
  * elsewhere, so it is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", D_801C5000);
+extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
 
 /* The shared screen data. */
 s32 D_801D1F50 = 0; /* items the shop sells */

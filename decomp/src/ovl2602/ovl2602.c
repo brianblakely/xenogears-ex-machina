@@ -8,7 +8,7 @@
  * screen block at menu state +454. Functions shared with ovl2601 are recovered from the
  * same source; the ones that differ keep their own versions here.
  */
-#include "menu_card.h"
+#include "gear_shop.h"
 
 const CardPrefix D_801C5000 = {"BISLPS-00800"};
 
