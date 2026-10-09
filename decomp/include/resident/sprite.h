@@ -347,9 +347,7 @@ void func_8002393C(SpriteRenderer *renderer);
 
 void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
-void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
 void func_800222BC(Sprite *sprite, s32 *data);
-void func_800223B0(Sprite *sprite, s16 angle);
 void func_80022660(Sprite *sprite, u8 *target, s32 count);
 void func_80023538(Sprite *sprite, u16 *animation);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
@@ -374,7 +372,6 @@ s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
 void func_800248D4(Sprite *sprite); /* run the next script command */
 extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);
-Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
@@ -416,16 +413,11 @@ extern VECTOR D_8006F9AC;
 extern Sprite *D_800C3E1C;      /* battle overlay: the acting sprite */
 extern SpriteAnchor D_800C3EB0[]; /* battle overlay: formation places by side and slot */
 extern Sprite *D_800D363C[];    /* battle overlay: the sprites of a group, NULL-terminated */
-void func_800B2AEC(void *model, u8 *packets0, u8 *packets1, s16 red, s16 green, s16 blue); /* battle overlay: tint a model */
 
-s32 func_80023124(DVECTOR from, DVECTOR to); /* the direction from `from` to `to` */
 void func_80023290(Sprite *sprite, s32 rate);
 Sprite *func_80023B84(Sprite *sprite, u16 *animation, SpriteSource *image);
-void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z);
 void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z);
-s32 func_80021AD8(s32 value, s32 delta);
 void func_80021CA0(Sprite *sprite, u8 value);
-void func_80021FE0(Sprite *sprite, s16 direction);
 void func_8001D4E8(Sprite *sprite);
 void func_8001FB30(void);
 u8 *func_8001FBA4(Sprite *sprite, u8 *code);
@@ -462,8 +454,6 @@ void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marke
 void func_80022E8C(Task *task);
 void func_80025224(Task *task, s32 kind);
 void func_800C11CC(Sprite *sprite); /* battle overlay: run a sprite's script */
-void func_8001FBE4(Sprite *sprite, u8 op, u8 *args); /* run a script command */
-u8 func_80021C20(Sprite *sprite);
 s32 func_80021C6C(Sprite *sprite);
 void func_8001E298(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
 extern u8 D_800C3664;

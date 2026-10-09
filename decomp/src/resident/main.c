@@ -18,6 +18,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
+#include "own_prototypes.h"
 
 /* This unit's own variables. GCC emits them after the code, and the
  * original assembler gave those of up to 8 bytes the unit's .sbss, ahead of

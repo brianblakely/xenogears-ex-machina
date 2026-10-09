@@ -13,6 +13,7 @@
 #include "resident/cd.h"
 #include "resident/heap.h"
 #include "resident/mode.h"
+#include "own_prototypes.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (8005934c), the larger window, text and controller queue buffers in its

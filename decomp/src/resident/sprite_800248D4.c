@@ -24,6 +24,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
+#include "own_prototypes.h"
 
 void func_80025258(Task *task);
 void func_8002541C(Task *task);

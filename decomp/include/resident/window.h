@@ -68,8 +68,6 @@ typedef struct {
     WindowQueue *queue;
 } Window;
 
-void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
-                   u16 columns, u16 rows); /* allocate and initialize */
 void func_80033DF0(Window *window);
 void func_80034888(Window *window, u_long *ot, s32 buffer); /* draw */
 

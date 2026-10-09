@@ -397,7 +397,6 @@ void func_80038E6C(s32 volume, SpuVolume *out, s32 channel);
 void *func_80038F18(s32 size);
 s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
 s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
-SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames); /* start a sequence */
 SoundSeq *func_80039850(SoundSeqHeader *header);
 SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq);
 void func_800399D4(SoundSeq *seq);  /* release a sequence */
@@ -420,7 +419,6 @@ s32 func_8003F614(u32 *data, u32 magic, s32 id); /* check a sound file */
 void func_8003A094(SoundBank *bank);
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
-s32 func_8003BDFC(s32 wait);
 void func_8003E680(s32 bits, SoundSeq *seq);
 void func_8003E83C(SoundChannel *state, u32 voice);
 void func_8003F484(u32 voices);   /* key off */

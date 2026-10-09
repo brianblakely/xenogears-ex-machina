@@ -42,9 +42,6 @@ typedef struct {
     s16 fade_start;
 } Panorama;
 
-Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
-                        s32 mode, s32 turn, VECTOR *position, u8 *colours, u16 fill_scale,
-                        u16 fade_range, u16 fade_start);
 s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot,
                   s32 buffer);
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);

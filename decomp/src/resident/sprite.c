@@ -21,6 +21,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
+#include "own_prototypes.h"
 
 TexturePosition D_8004FAB8[8] = {
     {0x300, 0}, {0x340, 0}, {0x380, 0}, {0x3C0, 0},
