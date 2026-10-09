@@ -459,8 +459,9 @@ converted to C per unit. What converting the targets' `.data` established:
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
   function's `.s` file, and coverage counts it with the function (the resident's
-  library strings and jump tables as `sdk`, field's jtbl_8006FD30 as `nonmatching`);
-  mdec's libpress/libcd messages are a generated rodata segment classified `sdk`.
+  library strings and jump tables as `sdk`) until the function is C and the compiler
+  emits it; mdec's libpress/libcd messages are a generated rodata segment classified
+  `sdk`.
   Name data only by what its readers show (the libcd commons).
 
 ## Recover incrementally
@@ -483,24 +484,43 @@ The coverage audit reports functions, bytes and static MIPS instructions per cla
 From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
 input section and, where an image holds its uninitialized variables as zeros, each
 .bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
-alignment gaps and a packer's tail belong to no input section). A byte is compiled C
-(`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
+alignment gaps and a packer's tail belong to no input section). A function is `c` only
+where its unit's cc1 output emitted it (`.ent`); one an INCLUDE_ASM'd or
+INCLUDE_RODATA'd file defines is `sdk` or `handwritten` by range, `nonmatching` as the
+fallback of a NON_MATCHING candidate (the only source scan), else `asm`. A data byte is
+compiled C (`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
 INCLUDE_ORIGINAL'd in C (`included`, also the resident's libcd/libgpu/libspu strings
-that several library functions share), data an INCLUDE_ASM'd `.s` file carries
+that several library functions share), the other bytes of an INCLUDE_ASM'd `.s` file
 (under its function's class: `sdk`, `handwritten`, or `nonmatching`/`asm`, totalled in
 `remaining_data_asm_bytes`), authored assembly, a classified `sdk`/`asset` range, or a
 generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss included).
-Each INCLUDE_* use in a target's C units and headers must be spelled as the report
-reads it and not be wrapped in a macro, each data line of an included `.s` file must
-lie in a `dlabel`...`enddlabel` object, and each such object and
-INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name must resolve to one sized,
-section-relative ELF symbol (an INCLUDE_ASSET object inside an `asset` range);
-otherwise the report fails rather than count original bytes as C. Two limits remain:
-the alignment padding ahead of an included file's first object counts with its
-section (field's 7 bytes ahead of jtbl_8006FD30, as C), and data written in inline
-`__asm__` outside these macros is not checked (no unit has any). `asset` marks
-user-supplied game data or bytecode that is parsed and documented rather than
-rewritten as source.
+`asset` marks user-supplied game data or bytecode that is parsed and documented rather
+than rewritten as source.
+
+The report attributes a C unit's bytes by where GAS put them, not by how the source
+spells them. `make coverage` compiles each C unit again (`<unit>.cov.o` beside the
+object) with a label line at both ends of the text of every asm statement and
+assembles it with each label recording its position in every section and the number
+of GAS macro expansions so far. The report fails unless, without the labels, that
+build's cc1 output, GAS input and sections are exactly the object's and the positions
+tile every section. A statement's bytes in any section are its own, whatever its text
+includes, incbins, expands or redefines: a nested include, a redefined macro, a `;`
+separator, alignment fill or a later `.size` in an included file cannot move bytes into
+C. Every other byte came from cc1's own lines, which may expand no GAS macro. Each
+statement must be one of include_asm.h's, read as cc1 emitted it (so token pasting,
+backslash-newlines, wrapper macros and other include files change nothing):
+INCLUDE_ASM, INCLUDE_RODATA, INCLUDE_ASSET/INCLUDE_ORIGINAL outside .text, or the
+macro.inc include, which emits nothing. Any other asm statement must sit in a compiled
+function and emit only its code, with no GAS macro and no `.include`/`.incbin`. The
+report fails on every other byte rather than count it: a function that cc1 did not emit
+and no included file defines, a compiled function holding included bytes, inline asm
+data, original bytes in .text. The .text bytes outside every function (padding and
+data words of included files, data a unit places in .text, menu6's D_80088BFC) are
+attributed the same way but not counted. One limit remains: code an asm statement
+emits inside a compiled function counts with the function, so only review keeps it to
+the original-style GTE, `break` and scratchpad-stack macros (What counts as recovered
+source).
+
 GCC emits a static initializer's string literals last to first once the initializer
 ends, so a pointer table whose strings lie in reverse address order was written with
 its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
