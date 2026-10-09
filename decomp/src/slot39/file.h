@@ -206,72 +206,25 @@ extern s32 D_801EA044;         /* value D digits x, y */
 extern s32 D_801EA048;
 extern s32 D_801EA900[2]; /* per port: blocks the listed files use (15 fill a card) */
 
-void func_801C57A4(void);
-void func_801C58EC(void);
-void func_801C6400(void);
+/* The card and file screen functions that another unit calls, or its own
+ * before defining them. */
 void func_801C8694(u8 arg0);
-u8 func_801C881C(void);
-s32 func_801C891C(s32 channel);
-u8 func_801C8A10(u8 port);
 void func_801C8BEC(void);
-void func_801C8CA4(u8 port);
-u8 func_801C8D78(u8 port);
 void func_801C8EE8(void);
-void func_801C9270(s32 port);
-u8 func_801C93A8(void);
-s32 func_801C9BCC(s32 mode);
-s32 func_801C9D34(s32 mode);
-void func_801C9EF4(s32 mode, s32 slot);
-void func_801CA1D4(s32 mode, s32 slot);
-void func_801CA480(s32 mode, s32 slot);
-void func_801CA5F0(s32 mode, s32 slot);
-s32 func_801CA750(s32 mode);
-u8 func_801CAA38(u8 arg);
 s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
-void func_801CADB0(void);
-void func_801CAE08(u8 mode);
-void func_801CB184(void);
-void func_801CB28C(s32 *save);
-u8 func_801CB304(void);
-void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit);
-u8 func_801CBD90(u8 arg);
-u8 func_801CC6D8(void);
-u8 func_801CD2AC(void);
-void func_801CF37C(void);
-void func_801CF5E4(s32 first, s32 firstSlot, s32 end);
-void func_801CF8D8(void);
-void func_801CFB48(void);
-void func_801CFF64(void);
-void func_801D01D0(void);
-void func_801D02D8(void);
 void func_801D9B08(void);
 void func_801D9E3C(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801E4A28(SaveData *save);
 void func_801E4D10(SaveData *save, MenuTables *tables);
-void func_801E56E8(s32 index);
-void func_801E5924(s32 index);
 void func_801E5ACC(void);
 void func_801E5B3C(void);
-void func_801E5B88(void);
-void func_801E5E4C(void);
-void func_801E61B0(void);
 void func_801E6450(void);
 void func_801E649C(void);
 void func_801E64E0(void);
-void func_801E6668(s32 index);
-void func_801E68AC(MenuViewSet *set);
-void func_801E6AE8(u8 index, MenuViewSet *set);
-void func_801E6B70(u8 index, MenuViewSet *set);
-void func_801E6CFC(u8 index, MenuViewSet *set);
-void func_801E6F5C(u8 index, MenuViewSet *set);
-void func_801E71B4(u8 index, MenuViewSet *set, s32 file);
-void func_801E733C(void);
-void func_801E76EC(s32 index);
 void func_801E781C(s32 index, u8 rebuild);
 void func_801E78C8(s32 file);
 void func_801E92CC(void);
-void func_801E9340(char *name, void *buffer, s32 size);
 s32 func_801E93A0(s32 disc);
 
 #endif

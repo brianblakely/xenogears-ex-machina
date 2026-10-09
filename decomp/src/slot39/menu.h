@@ -73,14 +73,8 @@ u8 *func_80033818(u8 item);  /* item name text */
 u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
 s32 func_80033B34(u8 *codes, u8 *text, s32 count); /* decode a name */
 
-void func_801C65F4(void);
-void func_801C6AA0(MenuState *state);
-void func_801C6D4C(void);
-void func_801C6D5C(void);
-void func_801C6D90(void);
-void func_801C6E0C(void);
-void func_801C6E68(void);
-void func_801C6F70(void);
+/* The framework's functions that another unit calls, or its own before
+ * defining them. */
 void func_801C72BC(u8 arg0);
 void func_801C7B0C(void);
 void func_801C7BF4(void);
@@ -93,31 +87,6 @@ void func_801C8574(s32 sound);
 u16 func_801C8640(u16 flags, u8 bit);
 u16 func_801C865C(u16 flags, u8 bit);
 u32 func_801C8678(u32 flags, u8 bit);
-void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first);
-void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first);
-void func_801CE338(void);
-void func_801CE3C8(void);
-void func_801CEC40(void);
-void func_801CF308(void);
-void func_801D09F0(s32 index, u8 has_bar);
-void func_801D0C78(void);
-void func_801D0D90(void);
-void func_801D0E20(void);
-void func_801D0E38(void);
-void func_801D0EBC(void);
-void func_801D0ED4(void);
-void func_801D0F54(void);
-void func_801D0FD4(void);
-void func_801D1030(void);
-void func_801D10DC(void);
-void func_801D1160(void);
-void func_801D11F0(void);
-void func_801D1258(void);
-void func_801D1464(void);
-void func_801D14B0(void);
-void func_801D1B20(void);
-void func_801D1BE8(void);
-void func_801D1C48(void);
 void func_801D1CA0(void);
 void func_801D1D40(void);
 void func_801D1E80(void);
@@ -129,12 +98,6 @@ void func_801D3674(void);
 void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode);
 void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801D3B00(void);
-void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h);
-void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h);
-void func_801D3FF8(u8 index, u16 x, u16 y, u16 w);
-void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h);
-void func_801D4688(u8 index, u16 x, u16 y, u16 h);
-void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h);
 void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801D4EA0(u8 slot);
 void func_801D5BA4(s32 x, s32 y);
