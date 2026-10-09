@@ -44,8 +44,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from matching_coverage import (  # noqa: E402
-    BSS_SECTION, SHF_ALLOC, SHT_PROGBITS, STT_FILE, STT_SECTION, Section, extent,
-    map_sections, read_elf, script_assignments, script_names,
+    BSS_SECTION,
+    SHF_ALLOC,
+    SHT_PROGBITS,
+    STT_FILE,
+    STT_SECTION,
+    Section,
+    extent,
+    map_sections,
+    read_elf,
+    script_assignments,
+    script_names,
 )
 from matching_diff import config  # noqa: E402
 
@@ -153,8 +162,9 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
             where = f"{r.name}: {symbol}[{index}]"
             function = o.values.get("MODE_ENTRY")
             if function and entry not in o.names.get(function, ()):
+                found = ", ".join(f"{v:08x}" for v in sorted(o.names.get(function, ())))
                 errors.append(f"{where} enters {entry:08x}, not {o.name}'s {function}"
-                              f" ({', '.join(f'{v:08x}' for v in sorted(o.names.get(function, ()))) or 'undefined'})")
+                              f" ({found or 'undefined'})")
             if o.bss is None:
                 errors.append(f"{where}: {o.name} links no uninitialized data")
             elif (start + 4, stop + 4) != o.bss:
