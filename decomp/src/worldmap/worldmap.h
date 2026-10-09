@@ -195,7 +195,7 @@ extern s32 D_80059488;
 typedef struct DisplayBuffer {
     DRAWENV draw;
     DISPENV disp;
-    u32 *ot;       /* 0x70 */
+    u_long *ot;    /* 0x70 */
     void *packets; /* 0x74 */
 } DisplayBuffer;
 
@@ -427,7 +427,7 @@ typedef struct {
 
 extern OverlayObject *D_801E8670[]; /* scene overlay objects; [0] is the landmark */
 extern MATRIX *D_801E8644;
-void func_801E7D14(MATRIX *view, MATRIX *light, u32 *ot, s32 buffer, s32 mode);
+void func_801E7D14(MATRIX *view, MATRIX *light, u_long *ot, s32 buffer, s32 mode);
 
 /* A resident window call the world map declares itself: its call passes
  * words where the resident's definition takes halfwords. */

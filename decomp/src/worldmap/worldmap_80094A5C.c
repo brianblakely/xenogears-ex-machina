@@ -42,8 +42,8 @@ void func_80096A6C(s32 status, u8 *result);
 void func_80096C0C(s32 status, u8 *result);
 void func_80097DC0(void);
 s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
-void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin);
-void func_8009980C(u32 *cells, u32 *ot, s32 packets); /* draw a terrain quarter block (assembly) */
+void func_80099708(u32 *heights, u_long *ot, s32 packets, SVECTOR *origin);
+void func_8009980C(u32 *cells, u_long *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
 /* World tables of the whole overlay (this unit's .data): area selection,
  * per area scene objects, path regions, the map dots, terrain visibility
@@ -2170,7 +2170,7 @@ typedef struct {
 /* Draw the visible 5x5 terrain blocks around the camera: all four quarters
  * of a block, or only the quarters whose flag differs when the combined
  * flags are all set. */
-void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
+void func_8009932C(u_long *ot, s32 packets, Camera *camera) {
     TerrainDrawScratch *scratch;
     u8 *data;
     s32 row;
@@ -2233,7 +2233,7 @@ void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
-void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin) {
+void func_80099708(u32 *heights, u_long *ot, s32 packets, SVECTOR *origin) {
     SVECTOR *vertex;
     u32 *cell;
     s32 j;

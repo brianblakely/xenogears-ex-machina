@@ -99,7 +99,7 @@ void func_800980D4(void *);
 void func_800981C8(Camera *);
 void func_800983A0(Camera *);
 void func_80098CC0(void);
-void func_8009932C(u32 *ot, s32, Camera *);
+void func_8009932C(u_long *ot, s32, Camera *);
 
 /* The billboards standing on the terrain blocks (worldmap_80083A00): each
  * of the 256 blocks' list in the area data's billboard section,
@@ -118,6 +118,6 @@ void func_80085F58(void); /* resolve the lists, create the CLUTs */
 void func_80085FE0(void); /* allocate the quads */
 void func_80086124(void); /* free them */
 void func_8008615C(void); /* draw the billboards */
-void func_80099BFC(u8 *data, s32 count, u32 *ot, POLY_FT4 *quads); /* draw billboards (assembly) */
+void func_80099BFC(u8 *data, s32 count, u_long *ot, POLY_FT4 *quads); /* draw billboards (assembly) */
 
 #endif

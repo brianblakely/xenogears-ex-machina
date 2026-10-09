@@ -644,8 +644,8 @@ void func_80073530(void) {
     D_8009C7EC = (BillboardList *)(base + area->billboards);
     D_8009BCC0 = (AreaObject *)(base + area->emitters);
     D_8009D784 = base + area->names;
-    D_8009D77C = base + area->animations;
-    D_8009D7C8 = base + area->animations2;
+    D_8009D77C = (s32 *)(base + area->animations);
+    D_8009D7C8 = (s32 *)(base + area->animations2);
     for (i = 0; i < 16; i++) {
         D_8009D73C[i] = D_8009C180 + area->encounters[i];
     }
@@ -790,7 +790,7 @@ void func_80073B04(void) {
     s32 right;
     s32 i;
     s32 otz;
-    u32 *ot;
+    u_long *ot;
 
     u = (D_8009BD38.vy >> 2) & 0x7F;
     right = u | 0x80;
