@@ -141,7 +141,7 @@ void func_80088D1C(void) {
 
     DrawSyncCallback(func_80088C00);
     InitGeom();
-    func_80032498(6, (s32)D_80091BB0);
+    func_80032498(6, D_80091BB0);
     func_80028470(0x30, 0);
     func_800374E8(4, 2, 0x138, 0xDA, 0x14, 1, 0x3C0, 0x1F0, 0x3C0, 0x1EF, 0);
     func_80088CBC(0);

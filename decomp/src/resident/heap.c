@@ -29,7 +29,7 @@ static u8 *D_80059338;
 static s32 D_8005933C;     /* size of the last request */
 static s32 D_80059340;     /* caller of the last request */
 static s32 D_80059344;     /* unreferenced */
-static s32 D_80059FA4[10]; /* per-tag words */
+static char **D_80059FA4[10]; /* per tag, the names of its allocation classes */
 /* The delayed releases: one list head, but not small data. */
 static DelayedFree *D_80059FCC[3];
 
@@ -465,10 +465,11 @@ u32 func_80032404(void) {
     return largest - 8;
 }
 
-/* Select owner tag `tag` for the next blocks and record `value` for it. */
-void func_80032498(s32 tag, s32 value) {
+/* Select owner tag `tag` for the next blocks and record the names of its
+ * allocation classes, which the heap report prints. */
+void func_80032498(s32 tag, char **names) {
     D_8005931C = tag;
-    D_80059FA4[tag] = value;
+    D_80059FA4[tag] = names;
     D_80059330 = 0;
 }
 
@@ -539,7 +540,7 @@ void func_80032584(HeapHeader *header, u8 *data, s32 size, s32 flags) {
         if (header->kind & 0x20) {
             contents = D_80050140[header->kind & 0x1F];
         } else {
-            contents = ((char **)D_80059FA4[header->tag])[header->kind];
+            contents = D_80059FA4[header->tag][header->kind];
         }
         func_80032BDC("%s", contents);
     }
