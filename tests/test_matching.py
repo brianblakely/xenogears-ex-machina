@@ -155,14 +155,6 @@ class MatchingTests(unittest.TestCase):
             r'#include "([^"]+)"',
             lambda match: '#include "' + str(menu / match[1]) + '"', menu_includes,
         ) + "\n"
-        # Compile the authored local macro without compiling unrelated game code.
-        lines = (worldmap / "worldmap_80083A00.c").read_text().splitlines(True)
-        start = next(i for i, line in enumerate(lines)
-                     if line.startswith("#define gte_ldv3c("))
-        end = start
-        while lines[end].rstrip().endswith("\\"):
-            end += 1
-        ldv3c = "".join(lines[start:end + 1])
         (self.root / "decomp").mkdir()
         (self.root / "decomp/include").symlink_to(repo / "decomp/include")
         (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
@@ -186,7 +178,7 @@ class MatchingTests(unittest.TestCase):
         cases = (
             ("worldmap_80083A00", "worldmap",
              '#include "' + str(worldmap / "worldmap.h") + '"\n'
-             '#include "' + str(worldmap / "gte.h") + '"\n' + ldv3c,
+             '#include "' + str(worldmap / "gte.h") + '"\n',
              (
                  ("v0", v0),
                  ("v3", ("SVECTOR", "point[2].vz",

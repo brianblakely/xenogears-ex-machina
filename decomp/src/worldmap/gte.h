@@ -3,8 +3,9 @@
 
 /* The PsyQ GTE macros (inline_c.h/gtemac.h forms) the world map uses beyond
  * psyq/inline_c.h: the translation vector, a long vector load and its
- * product store, the RT command with and without perspective, and the
- * composed matrix and RotTrans sequences. */
+ * product store, the RT command with and without the translation, the
+ * composed matrix and RotTrans sequences, and the screen point and depth
+ * transfers of the cloud drawing (func_80086798). */
 
 #include "psyq/inline_c.h"
 
@@ -60,5 +61,47 @@
         gte_stlvnl(r2);                                                        \
         gte_stflg(r3);                                                         \
     }
+
+/* Screen points SXY0-SXY2 from registers, in the SDK macro's order (SXY0,
+ * SXY2, SXY1). */
+#define gte_ldsxy3(r0, r1, r2)                                                 \
+    __asm__ volatile("mtc2 %0, $12;"                                           \
+                     "mtc2 %2, $14;"                                           \
+                     "mtc2 %1, $13"                                            \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2))
+
+/* Vertices V0-V2 from three consecutive short vectors; the memory read keeps
+ * the producer stores of vertices built through a pointer. */
+#define gte_ldv3c(r0)                                                          \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0);"                                         \
+                     "lwc2 $2, 8(%0);"                                         \
+                     "lwc2 $3, 12(%0);"                                        \
+                     "lwc2 $4, 16(%0);"                                        \
+                     "lwc2 $5, 20(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "memory")
+
+/* Screen depths SZ0-SZ3 to four consecutive words. */
+#define gte_stsz4c(r0)                                                         \
+    __asm__ volatile("swc2 $16, 0(%0);"                                        \
+                     "swc2 $17, 4(%0);"                                        \
+                     "swc2 $18, 8(%0);"                                        \
+                     "swc2 $19, 12(%0)"                                        \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "memory")
+
+/* Screen points SXY0-SXY2, or SXY2 alone, to registers (LIBGTE.H's
+ * register-argument forms), then a nop for the load delay. */
+#define gte_getsxy3(r0, r1, r2)                                                \
+    __asm__ volatile("mfc2 %0, $12;"                                           \
+                     "mfc2 %1, $13;"                                           \
+                     "mfc2 %2, $14;"                                           \
+                     "nop"                                                     \
+                     : "=r"(r0), "=r"(r1), "=r"(r2))
+#define gte_getsxy2(r0) __asm__ volatile("mfc2 %0, $14; nop" : "=r"(r0))
 
 #endif

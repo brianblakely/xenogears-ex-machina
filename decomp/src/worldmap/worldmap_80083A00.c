@@ -1209,38 +1209,6 @@ typedef struct {
 
 #define DRIFT_SCRATCH ((DriftScratch *)0x1F800000)
 
-#define gte_ldsxy3(r0, r1, r2) \
-    __asm__ volatile("mtc2 %0, $12;" \
-                     "mtc2 %2, $14;" \
-                     "mtc2 %1, $13" \
-                     : \
-                     : "r"(r0), "r"(r1), "r"(r2))
-/* Keep producer stores for the indirect vertex reads. */
-#define gte_ldv3c(r0) \
-    __asm__ volatile("lwc2 $0, 0(%0);" \
-                     "lwc2 $1, 4(%0);" \
-                     "lwc2 $2, 8(%0);" \
-                     "lwc2 $3, 12(%0);" \
-                     "lwc2 $4, 16(%0);" \
-                     "lwc2 $5, 20(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "memory")
-#define gte_stsz4c(r0) \
-    __asm__ volatile("swc2 $16, 0(%0);" \
-                     "swc2 $17, 4(%0);" \
-                     "swc2 $18, 8(%0);" \
-                     "swc2 $19, 12(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "memory")
-#define gte_getsxy3(r0, r1, r2) \
-    __asm__ volatile("mfc2 %0, $12;" \
-                     "mfc2 %1, $13;" \
-                     "mfc2 %2, $14;" \
-                     "nop" \
-                     : "=r"(r0), "=r"(r1), "=r"(r2))
-#define gte_getsxy2(r0) __asm__ volatile("mfc2 %0, $14; nop" : "=r"(r0))
 /* Link a 9-word primitive into an ordering-table entry. */
 #define addPrimLen9(ot, p) \
     __asm__ volatile("lw $12, 0(%0);" \
