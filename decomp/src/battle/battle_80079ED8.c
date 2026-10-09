@@ -728,14 +728,14 @@ void func_8007BAB8(u8 enemy) {
     }
 }
 
-/* AI action 39: the enemy record's +0x14c = b1 | b2 << 8. */
+/* AI action 39: the enemy's experience (record +0x14c) = b1 | b2 << 8. */
 void func_8007BAE8(u8 **pc, u8 enemy) {
     u16 value = ((*pc)[2] << 8) | (*pc)[1];
 
     D_800CCCE8.records[enemy + 3].field14C = value;
 }
 
-/* AI action 3a: the enemy record's +0x156 = b1 | b2 << 8. */
+/* AI action 3a: the enemy's gold (record +0x156) = b1 | b2 << 8. */
 void func_8007BB2C(u8 **pc, u8 enemy) {
     u16 value = (*pc)[1] | ((*pc)[2] << 8);
 
@@ -749,7 +749,8 @@ void func_8007BB70(u8 **pc, u8 enemy) {
     D_800CCCE8.records[enemy + 3].field150[1] = (*pc)[3];
 }
 
-/* AI action 3c: the enemy record's bytes +0x154, +0x152, +0x150 = b1, b2, b3. */
+/* AI action 3c: the enemy's first drop: category (record +0x154), item
+ * (+0x152) and chance (+0x150) = b1, b2, b3. */
 void func_8007BBD8(u8 **pc, u8 enemy) {
     D_800CCCE8.records[enemy + 3].field150[4] = (*pc)[1];
     D_800CCCE8.records[enemy + 3].field150[2] = (*pc)[2];
@@ -775,7 +776,7 @@ void func_8007BCE8(u8 **pc, u8 enemy) {
 }
 
 /* AI action 40: variable b1 = the bit of a random party slot passing the
- * targeting test b2 and not flagged at 800d32a1; 0 when none does. */
+ * targeting test b2 and on foot (800d32a1 clear); 0 when none does. */
 void func_8007BD5C(u8 **pc, u8 enemy) {
     u8 tried[3];
     u8 slot;
@@ -950,7 +951,7 @@ void func_8007C75C(u8 **pc, u8 enemy) {
 }
 
 /* AI action 49: variable b1 = the bit of a random party slot passing the
- * targeting test b2, flagged at 800d32a1 and in the enemy's formation group. */
+ * targeting test b2, in a gear (800d32a1) and in the enemy's formation group. */
 void func_8007C840(u8 **pc, u8 enemy) {
     u8 tried[3];
     u8 slot;
@@ -973,7 +974,7 @@ void func_8007C840(u8 **pc, u8 enemy) {
 }
 
 /* AI action 4a: variable b1 = the bit of a random party slot passing the
- * targeting test b2 and flagged at 800d32a1. */
+ * targeting test b2 and in a gear (800d32a1). */
 void func_8007C9D4(u8 **pc, u8 enemy) {
     u8 tried[3];
     u8 slot;
@@ -995,7 +996,7 @@ void func_8007C9D4(u8 **pc, u8 enemy) {
 }
 
 /* AI action 4b: variable b1 = the bit of a random enemy slot passing the
- * targeting test b2 and flagged at 800d32a1; 0 when none does. */
+ * targeting test b2 and in a gear (800d32a1); 0 when none does. */
 void func_8007CB20(u8 **pc, u8 enemy) {
     u8 candidates[8];
     s32 count;
@@ -1128,7 +1129,8 @@ void func_8007D1DC(u8 **pc, u8 enemy) {
     }
 }
 
-/* AI action 55: long b1 = the enemy's byte at 800d2c8b. */
+/* AI action 55: long b1 = the enemy's result code (800d2c8b, the work
+ * table's resultCode[3 + enemy]). */
 void func_8007D30C(u8 **pc, u8 enemy) {
     D_800D3400[enemy].longs[(*pc)[1]] = D_800D2C8B[enemy];
 }
@@ -1275,7 +1277,7 @@ void func_8007DA1C(u8 **pc, u8 enemy) {
     }
 }
 
-/* AI action 5e: as action 5c, limited to party slots flagged at 800d32a1. */
+/* AI action 5e: as action 5c, limited to party slots in a gear (800d32a1). */
 void func_8007DB78(u8 **pc, u8 enemy) {
     u8 candidates[3];
     s32 count;
@@ -1295,7 +1297,7 @@ void func_8007DB78(u8 **pc, u8 enemy) {
     }
 }
 
-/* AI action 5f: as action 5d, limited to enemy slots flagged at 800d32a1. */
+/* AI action 5f: as action 5d, limited to enemy slots in a gear (800d32a1). */
 void func_8007DCF8(u8 **pc, u8 enemy) {
     u8 candidates[8];
     s32 count;
@@ -1371,7 +1373,7 @@ void func_8007E1D0(u8 **pc, u8 enemy) {
 }
 
 /* AI action 65: variable b1 = the mask of party slots passing 8007a744 and
- * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
+ * (b2 1) in a gear, (b2 2) on foot (800d32a1), or (other b2) any. */
 void func_8007E234(u8 **pc, u8 enemy) {
     s32 slot;
     u16 mask = 0;
@@ -1400,7 +1402,7 @@ void func_8007E234(u8 **pc, u8 enemy) {
 }
 
 /* AI action 66: variable b1 = the mask of enemy slots passing 8007a744 and
- * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
+ * (b2 1) in a gear, (b2 2) on foot (800d32a1), or (other b2) any. */
 void func_8007E334(u8 **pc, u8 enemy) {
     s32 slot;
     u16 mask = 0;
@@ -1460,8 +1462,9 @@ void func_8007E554(u8 **pc, u8 enemy) {
     D_800D3400[enemy].vars[(*pc)[1]] = mask << 2;
 }
 
-/* AI action 69: clear the enemy's 800d2c60 long and set its 800d2c8b byte
- * to 4. */
+/* AI action 69: clear the enemy's pending amount (800d2c60, damage[3 +
+ * enemy]) and set its result code (800d2c8b) to 4, which no results pass
+ * applies. */
 void func_8007E674(u8 enemy) {
     D_800D2C60[enemy] = 0;
     D_800D2C8B[enemy] = 4;
@@ -1495,11 +1498,12 @@ void func_8007E780(u8 **pc, u8 enemy) {
     D_800D3400[enemy].longs[op[1]] = (u32)D_800D3400[enemy].longs[op[1]] / op[2];
 }
 
-/* AI action 70: halfword b1 of the table at *800d3278 + 0x394 = b2. */
+/* AI action 70: the battle event script's variable b1 (ovl3087's
+ * ScriptState.vars) = b2. */
 void func_8007E7C0(u8 **pc) {
     u8 *op = *pc;
 
-    D_800D3278->unk394[op[1]] = op[2];
+    D_800D3278->vars[op[1]] = op[2];
 }
 
 /* AI action 71: set (b2 != 0) or clear flag b1 + 7 in every party record's
@@ -2229,7 +2233,7 @@ void func_8007FCE8(void) {
     }
 }
 
-/* Load file 2 (a member flagged at 800d32a1) or 1 into a new heap block
+/* Load file 2 (a member in a gear (800d32a1)) or 1 into a new heap block
  * unless loaded (UI +0xae). */
 void func_8007FD38(u8 member) {
     s32 file;

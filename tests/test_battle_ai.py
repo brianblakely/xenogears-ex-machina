@@ -73,7 +73,7 @@ class DecodeTests(unittest.TestCase):
             ins(0x01, 0, 0x0E): "list_set +0, 0x0e",
             ins(0x52, 6, 1): "list_set_v +6, v1",
             ins(0x18, 1, 2, 3): "add_bb b1, b2, b3",
-            ins(0x39, 0x34, 0x12): "set_own_14c 0x1234",
+            ins(0x39, 0x34, 0x12): "set_experience 0x1234",
             ins(0x2B, 5, 2, 0): "put_attr8 b5, attr2, v0",
             ins(0x5C, 2, 3, 4): "pick_party_attr attr2, v3, v4",
             ins(0x82, 6, 0, 1): "eq_v v6, 0x0100",

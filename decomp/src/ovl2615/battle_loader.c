@@ -179,7 +179,7 @@ void func_801E693C(FileEntry *list) {
     func_80028470(0x2C, 1);
     for (entries = member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].alone == 0) {
+        if (type < 0x11 && D_800C3EB0.slots[member].in_gear == 0) {
             file = D_801E95BC[type].file;
             list[entries].file = file;
             block = func_80031BDC(func_800288EC(file), 0);
@@ -202,7 +202,7 @@ void func_801E6A4C(void) {
 
     for (member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].alone != 0) {
+        if (type < 0x11 && D_800C3EB0.slots[member].in_gear != 0) {
             func_800BB760(member);
         }
     }
@@ -219,7 +219,7 @@ void func_801E6AC4(void) {
 
     for (member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].alone == 0) {
+        if (type < 0x11 && D_800C3EB0.slots[member].in_gear == 0) {
             D_800C3EB0.rows[member].y = 0x1C0;
             D_800C3EB0.rows[member].x = D_801E9638 + 0x100;
             D_801E9638 += D_801E962C[type];
@@ -256,7 +256,7 @@ void func_801E6C80(TaskNode *node) {
 
     if (task->timer == 0) {
         for (member = 0; member != 3; member++) {
-            if (D_800C3EB0.slots[member].alone == 0 &&
+            if (D_800C3EB0.slots[member].in_gear == 0 &&
                 (sprite = D_800C3EB0.sprites[member]) != NULL && sprite->y != sprite->ground) {
                 return;
             }
