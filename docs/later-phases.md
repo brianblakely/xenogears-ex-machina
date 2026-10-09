@@ -514,7 +514,7 @@ instruction on either disc. For Phases 7, 11 and 12:
 | --- | --- | --- | --- |
 | Disc index and directories | resident cd.h | `tools/extraction/disc_files.py`, `tools/analysis/disc_index.py` | none |
 | LZSS blocks, offset archives | `func_80032EB4`, `func_8003342C` | `tools/analysis/packed.py`, `tools/packed_container.py` | none |
-| Field bundle (nine components) | field.c `func_80070CC8` | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones, the view block |
+| Field bundle (nine components) | field.c `func_80070CC8`; header `FieldBundle` in field.h | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones and the header's view block (+0x154, lights and background) |
 | Field event bytecode | field_800854D0.c | [field-events.md](scripts/field-events.md), `events.py` | see its Open items |
 | Messages and text controls | resident main2.c `func_80033DF0` | [text-control.md](scripts/text-control.md), `text_control.py` | none |
 | Models (`ModelGroup`, `SpriteModel`, TMD) | `func_8002C3E8`, `func_8002C700`; battle `func_800B1F6C` | [dispatch-tables.md](scripts/dispatch-tables.md) (primitive census) | no mesh exporter |
