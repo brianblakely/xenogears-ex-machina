@@ -598,7 +598,7 @@ typedef struct FieldWork {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    u16 encounter_music[16];   /* 2270: per encounter kind */
+    u16 encounter_music[16];   /* 2270: per formation of the map's set */
     s16 battle_music;          /* 2290: the chosen encounter's battle music */
     u8 unk2292[2];
     s32 unk2294;               /* 2294 */
@@ -870,7 +870,7 @@ enum {
     BUNDLE_SPRITES,
     BUNDLE_IMAGES,
     BUNDLE_EVENTS,
-    BUNDLE_MESSAGES,
+    BUNDLE_ENCOUNTERS, /* the encounter set and its weights (resident/formation.h) */
     BUNDLE_8,
     BUNDLE_ZONES
 };

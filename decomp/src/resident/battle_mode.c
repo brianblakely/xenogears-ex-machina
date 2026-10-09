@@ -6,7 +6,6 @@
 #include "resident/mode.h"
 
 u8 D_8005959C;
-extern u8 D_8005947C;
 extern u8 D_800594F8;
 extern u8 D_800C48EA;
 extern u8 D_800D3338;
@@ -14,8 +13,9 @@ void func_8001B844(void);
 void func_80070F40(void);
 void func_8001AC94(void);
 
-/* Run the battle and choose the next mode from its outcome and pending
- * scene state. Outcome 0x81 installs scene 0x1EA before mode 1. */
+/* Run the battle and choose the next mode from its outcome and the next
+ * battle's formation D_8005947C: another battle (mode 2) while it is set.
+ * Outcome 0x81 installs scene 0x1EA before mode 1. */
 void func_8001B6C4(void) {
     u8 outcome;
     s32 mode;

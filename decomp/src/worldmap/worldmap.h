@@ -229,7 +229,7 @@ typedef struct {
     s32 spots;   /* spot block */
     s32 off8, offC, off10, off14, off18, off1C, off20, off24;
     s32 unk28;
-    s32 models[16];
+    s32 encounters[16]; /* per terrain kind: its encounter table (D_8009D73C) */
 } AreaHeader;
 
 /* Spot block: arrival points and a table of four sections. */
@@ -995,9 +995,9 @@ void func_80075D4C(void);
 #define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
 
 /* A terrain kind's encounter table (D_8009D73C) is its EncounterSet
- * (resident/formation.h), then 16 formation weights per level bracket. */
+ * (resident/formation.h), then 16 formation weights per scene id bracket. */
 extern s16 D_8009A3A0[];        /* terrain kind substitutes */
-extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
+extern u16 D_8009B578[];        /* scene id bracket thresholds, from 1 */
 
 s32 func_80094028(VECTOR *position);
 
@@ -1438,7 +1438,7 @@ void func_8007634C(void);
 void func_80076594(void);
 void func_800758C0(void);
 void func_80075B58(void);
-s32 func_80075E7C(VECTOR *position, s32 level);
+s32 func_80075E7C(VECTOR *position, s32 scene);
 extern u8 D_80059460, D_80059178, D_80059171, D_8005954C;
 /* Resident return-state words read-modify-written as their own variables
  * (fields flags and unk76 of D_8006EE54). */

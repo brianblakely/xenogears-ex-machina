@@ -517,10 +517,10 @@ void func_80070C84(void) {
 
 /* Load the field from the map bundle read ahead: reset the field state, take
  * the sprite slot table, build the compass quads, decode each component
- * (palettes, images, models, events, messages, zones, collision, sprites)
- * into heap blocks, place the view, create every descriptor's model
- * instance and actor, then initialise the event layer, the camera goals and
- * the actors' facings.
+ * (palettes, images, models, encounter set, events, zones, collision,
+ * sprites) into heap blocks, the encounter set into D_800658DC, place the
+ * view, create every descriptor's model instance and actor, then initialise
+ * the event layer, the camera goals and the actors' facings.
  * One word pointer serves as the palette block and then walks the model
  * and collision offset tables.
  * The chained unk90 = unkA0[0] store keeps the unk90 address pseudo first
@@ -594,8 +594,8 @@ void func_80070CC8(void) {
         func_8002C3E8((void *)(*data + (s32)D_800AF880.components.geometry));
     }
 
-    func_8007008C(BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10,
-                  BUNDLE_COMPONENT(BUNDLE_MESSAGES), &D_800658DC);
+    func_8007008C(BUNDLE_SIZE(BUNDLE_ENCOUNTERS) + 0x10,
+                  BUNDLE_COMPONENT(BUNDLE_ENCOUNTERS), &D_800658DC);
 
     size = BUNDLE_SIZE(BUNDLE_EVENTS) + 0x10;
     D_800ADBF8 = func_80031BDC(size, 0);
@@ -3407,16 +3407,15 @@ void func_80078D44(void) {
 }
 
 extern u8 D_800594F8;
-extern u8 D_80059508;       /* the battle's encounter kind */
-extern u8 D_80065ADC[16];   /* encounter kind weights */
 void func_800199CC(s32 mode);
-void func_80281204(s32 kind);
+void func_80281204(s32 formation);
 
 /* Count down the random-encounter steps while encounters are possible; on a
- * step whose drawn number (800b22a0) reaches zero, pick an encounter kind by
- * the weights at 80065adc and request battle with its music. The original
- * is an int function (implicit int) that returns no value: its epilogue keeps
- * $v0 live, so no delay slot is filled with a $v0 write. */
+ * step whose drawn number (800b22a0) reaches zero, pick a formation of the
+ * map's set by the weights D_80065ADC (resident/formation.h) and request
+ * battle with its music. The original is an int function (implicit int)
+ * that returns no value: its epilogue keeps $v0 live, so no delay slot is
+ * filled with a $v0 write. */
 s32 func_80079288(void) {
     s32 start[16];
     u8 *weights;

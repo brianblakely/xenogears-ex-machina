@@ -649,13 +649,13 @@ u16 func_80099890(u8 slot);
 
 /* Battle setup (80070f40). */
 extern u8 D_80059180;      /* battle music playing */
-extern u8 D_8005947C;      /* pending scene + 1 */
+extern u8 D_8005947C;      /* the next battle's formation + 1 (resident/mode.h) */
 extern void *D_80059480;
 extern Formation *D_8005949C; /* the formation data */
 extern void *D_800594AC;
 extern u8 D_800594D0;      /* battle result: 0 won, 1, 2, 3 */
 extern u8 D_800594F8;      /* the 801e0000 module runs first */
-extern u8 D_80059508;      /* scene index */
+extern u8 D_80059508;      /* the battle's formation (resident/formation.h) */
 extern u8 D_8005954C;      /* battle kind */
 extern u8 *D_800595D0;     /* scene texture block */
 extern s32 D_80062528;     /* battle music */

@@ -5021,7 +5021,7 @@ extern s32 D_800ADB18;
 /* Event: once the field allows it (800adbdc, 800adbe4 and 800adbec set,
  * 800adb2c and 800adb90 clear, music result 8004f308 not -1; else pc-- back to
  * fe and yield), request a battle as opcode 71 does: 8005954c = 800b2356,
- * encounter kind 80059508 = operand 1, 800594f8, 800adbdc and 800adbe0 cleared,
+ * formation 80059508 = operand 1, 800594f8, 800adbdc and 800adbe0 cleared,
  * 800adb88 set. Unless operand 5 is 0x7fff, also set the field to enter:
  * publish the current one (80092f44), variable 2 = entry operand 7, field id
  * 8004f34c = operand 5, 800adb18 = 1. Yields; bytes 3-4 are not read. */
@@ -5053,8 +5053,8 @@ void func_800933F8(void) {
     D_800B0078->pc += 9;
 }
 
-/* Request a battle once field control allows it (yield otherwise): battle
- * selector 80059508 = operand 1, its sound programs 8005954c (8001bbac) =
+/* Request a battle once field control allows it (yield otherwise):
+ * formation 80059508 = operand 1, its sound programs 8005954c (8001bbac) =
  * 800b2356, 800594f8 = 0; clear 800adbdc/800adbe0 and set 800adb88 (which ext
  * 7f waits on), then yield and continue at +3. */
 void func_80093568(void) {

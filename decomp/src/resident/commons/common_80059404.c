@@ -46,7 +46,7 @@ u8 D_8005946C;
 u8 *D_80059470; /* the battle stage file (func_800379D8; ovl2615 func_801E7210) */
 s32 D_80059474; /* unreferenced */
 s32 D_80059478; /* voice count of the effect channels */
-u8 D_8005947C; /* pending scene + 1 */
+u8 D_8005947C; /* the next battle's formation + 1 (resident/mode.h) */
 void *D_80059480; /* heap marker for the high-memory reservation */
 u8 D_80059484; /* play time hours */
 s32 D_80059488; /* vertical blank count */

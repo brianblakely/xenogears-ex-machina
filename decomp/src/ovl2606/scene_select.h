@@ -79,7 +79,6 @@ typedef struct {
 
 extern PartyState D_8006F364;
 
-extern u8 D_80059508;  /* battle selector: enemy set */
 extern u8 D_8005947C;
 extern u8 D_8005954C;  /* battle mode */
 extern u8 D_80062648[]; /* event data */
