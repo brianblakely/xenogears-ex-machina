@@ -23,14 +23,12 @@ void func_8002CB54(SpriteModel *model, void **packets0, void **packets1);
 void func_8002CC10(s16 x, s16 y);
 void func_8002CC74(s16 x, s16 y);
 
-/* A hierarchy entry: a model index (ffff: none) and its parent entry. */
-typedef struct {
-    u16 model;
-    u16 parent;
-} HierarchyLink;
+/* A model file's hierarchy entry (ovl2143/actors.h, which the unit includes
+ * after its state). */
+struct HierarchyLink;
 
 ModelTable *func_801DC22C(u8 *group, ModelTable *list);
-ModelPart *func_801DC2D0(ModelTable *group, HierarchyLink *links, s32 mode, s32 configure,
+ModelPart *func_801DC2D0(ModelTable *group, struct HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);

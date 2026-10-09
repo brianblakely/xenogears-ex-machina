@@ -149,6 +149,7 @@ decomp/include/menu/panel.h
 decomp/include/menu/screen.h
 decomp/include/menu/shop.h
 decomp/include/menu/tables.h
+decomp/include/ovl2143/actors.h
 decomp/include/psyq/inline_c.h
 decomp/include/psyq/kernel.h
 decomp/include/psyq/libapi.h

@@ -34,8 +34,9 @@ typedef struct {
     u8 done;
 } MenuMover;
 
-/* The model view's light, handed to the Gear model code with the model
- * matrix (ovl2602). */
+/* The model view's light, handed with the model matrix to the actor module's
+ * draw (ovl2143's 801E7D14, by ovl2602), which reads the first 0x20 bytes as
+ * the light matrix. */
 typedef struct {
     SVECTOR direction;   /* 0x00 */
     s16 unknown8[5];     /* 0x08 */

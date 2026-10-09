@@ -10215,15 +10215,15 @@ void func_800A0FD8(void) {
             func_800ACDEC(2);
             func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
                           (s16)(0x240 - (layer + D_800B2078.unk225F[layer]) * 64), 0x100, 0,
-                          (s16)(layer + 0xFC), &D_800B2078.layer_angles[layer]);
-            D_800B2078.layer_depths[layer] = D_801E8670[layer]->scale;
+                          (s16)(layer + 0xFC), &D_800B2078.layer_positions[layer].vx);
+            D_800B2078.layer_scales[layer] = D_801E8670[layer]->scale;
             func_800320E8(D_8005A450[layer]);
             D_800B0078->pc += 4;
             D_800B0078->layer_flags |= 0x2000;
             D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
-            D_801E8670[layer]->y = D_800B0078->position[1] >> 16;
-            D_801E8670[layer]->model->x = WHOLE(D_800B0078->position[0]);
-            D_801E8670[layer]->model->z = WHOLE(D_800B0078->position[2]);
+            D_801E8670[layer]->groundY = D_800B0078->position[1] >> 16;
+            D_801E8670[layer]->parts->translation[0] = WHOLE(D_800B0078->position[0]);
+            D_801E8670[layer]->parts->translation[2] = WHOLE(D_800B0078->position[2]);
         } else {
             D_800B0078->pc--;
         }

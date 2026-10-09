@@ -1,27 +1,37 @@
-/* ovl2143 (Disc 1 slot 2143 / Disc 2 slot 2138), loaded at 0x801dc000.
- * A 3D scene module: up to ten actors (D_801E8670), each a model hierarchy
- * (0x7c-byte nodes built from a relocated model group, 8002c3e8/8002cb54/
- * 8002c8cc) with rotation/movement tweens from a 0x14-byte slot pool, a
- * 16-particle pool of textured quads, and actor effect scripts (801e39f0,
+/* ovl2143 (Disc 1 slot 2143 / Disc 2 slot 2138), the actor module linked at
+ * 0x801dc000; ovl2143/actors.h has its records and the entries its callers
+ * use, and says who loads it (the field, for its layers, and the Gear parts
+ * shop, menu screen 5). Up to ten actors (D_801E8670), each a model hierarchy
+ * (0x7c-byte parts built from a relocated model group, 8002c3e8/8002cb54/
+ * 8002c8cc) with rotation/movement tweens from an effect pool, a 16-sprite
+ * pool of textured quads, and actor effect scripts (801e39f0,
  * docs/scripts/battle-effect-vm.md). It drives the GTE directly (RotMatrix/
  * CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and 801e0398) and uses the
  * resident heap (80031bdc/800320e8, tag 4), libgpu and sound effect banks
- * (8003852c). It has no strings. It is directory (4, 0) file 0x6b9, the
- * field's 801e module: field 80077884 loads it with the model file pair
- * 0x6ba/0x6bb + id of each layer that field actors take. The Gear parts shop
- * (menu screen 5, ovl2602) draws its gear models through it (801cf9bc loads
- * the pair, 801cfab8 makes the layer); for that screen the field's menu
- * runner 800799d4 loads directory 0x10 file 0xc, a byte-identical copy, at
- * 0x1dc000, and the resident's debug menu start 8001c1a8 loads file 0x6b9 at
- * 0x801dc000. Built with GCC 2.6.3 (see func_801DF7A8) and ASPSX-style
- * checked divisions.
+ * (8003852c). It has no strings. Built with GCC 2.6.3 (see func_801DF7A8)
+ * and ASPSX-style checked divisions.
+ *
+ * Most of its functions are the battle's model and effect library (8009E53C's
+ * unit) linked again, the same instructions apart from addresses: 801DC22C-
+ * 801DCE18 (the battle's 8009EBA8-8009F794), 801DDBF8-801E1880 (800A0838-
+ * 800A44C0; 801E011C sets other texture coordinates than 800A2D5C),
+ * 801E1A14-801E3438 (800A7064-800A8A88), 801E34BC-801E37D0 (800AA820-
+ * 800AAB34), 801E59D4-801E5C74 (800ADF1C-800AE1BC), 801E632C/801E6338
+ * (800AEEEC/800AEEF8), 801E6578-801E66BC (800AF180-800AF2C4), 801E6974-
+ * 801E7094 (800AF678-800AFD98), 801E8330 (800AA320) and 801E8394-801E8510
+ * (800AA564-800AA6E0). They use the battle's records (battle/model.h,
+ * battle/effect.h) as the battle's copies do. The module's own are the actor
+ * draw 801DCEC8, the effect VM 801E39F0, the event runner 801E5D44, the aim
+ * and reference helpers 801E63A8 and 801E67F8-801E6910, and the entries
+ * 801E7298-801E8030.
  *
  * The whole image is this one unit: rodata 801DC000-801DC22C, text
  * 801DC22C-801E8590, data 801E8590-801E85CC and the module state to
- * 801E86B4; its rodata's jump tables keep one phase (padded twice). Its
+ * 801E86B4; its rodata's jump tables keep one phase (padded twice). Its own
  * declarations are split by subsystem: model hierarchies and tweens
- * (hierarchy.h), particles and channels (particles.h), image animations
- * (image_anim.h), records24 surfaces (surface.h) and actors (actor.h). */
+ * (hierarchy.h), effect sprites and colour fades (particles.h), image
+ * animations (image_anim.h), surfaces (surface.h) and the actors' functions
+ * (actor.h). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
@@ -38,7 +48,6 @@
 #include "particles.h"
 #include "image_anim.h"
 #include "surface.h"
-#include "actor.h"
 
 /* Copies of the battle overlay's extra file bases (800c3530) and gear file
  * table (800c3508, base and variant count per gear; the last gear's base is
@@ -51,7 +60,10 @@ u8 D_801E85A4[] = {
 
 /* The module state, zero in the file (its .bss, loaded), each object in a
  * slot of whole words (decomp/Makefile): D_801E869C starts its own slot
- * after D_801E8698, and the file ends with the rest of D_801E86B0's. */
+ * after D_801E8698, and the file ends with the rest of D_801E86B0's. GCC
+ * emits tentative definitions in the order of their first declaration, so
+ * the state is defined ahead of ovl2143/actors.h, which declares two of
+ * them for the module's callers (the actors by their structure's tag). */
 s32 D_801E85CC;
 u8 D_801E85D0[36]; /* never read */
 ModelTable D_801E85F4[8];
@@ -61,12 +73,14 @@ u16 D_801E863C;
 s32 D_801E8640;
 MATRIX *D_801E8644;
 Tracker D_801E8648[2];
-Actor *D_801E8670[10];
+struct Actor *D_801E8670[10];
 s16 D_801E8698;
 s16 D_801E869C;
 SpritePool D_801E86A0;
 EffectPool D_801E86A8;
 u16 D_801E86B0;
+
+#include "actor.h"
 
 /* Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */
@@ -443,12 +457,12 @@ void func_801DCE18(ModelTable *list, s32 release_models) {
         (mat)->m[2][1] = (z);                                                  \
     } while (0)
 
-/* Draw an active actor under the camera `m`: its shadow quad at the root's
- * floor height (unless flags bit 0; the depth also sets b39), every visible
- * model node (lit by `light`; billboard nodes face the view), its records24
- * surfaces, its image animations (advanced by `ticks`) and its channels'
- * ribbons. A channel whose frame count wraps to 0 leaves the channel pointer
- * where it is, so the next channel index redraws it (as the original). */
+/* Draw an active actor under the camera `m`: its shadow quad at its ground
+ * height (unless flags bit 0; the depth also sets b39), every visible model
+ * node (lit by `light`; billboard nodes face the view), its surfaces, its
+ * image animations (advanced by `ticks`) and its colour fades' ribbons. A
+ * channel whose frame count wraps to 0 leaves the channel pointer where it
+ * is, so the next channel index redraws it (as the original). */
 void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
     MATRIX *placed = (MATRIX *)0x1F800020;
@@ -502,10 +516,10 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         v.vz = 0;
         func_8003F738(&v, placed);
         placed->t[0] = back.vx;
-        placed->t[1] = actor->h60;
+        placed->t[1] = actor->groundY;
         placed->t[2] = back.vz;
         CompMatrix(m, placed, placed);
-        shade = actor->scale - (actor->h60 - actor->parts->translation[1]) / 4;
+        shade = actor->scale - (actor->groundY - actor->parts->translation[1]) / 4;
         if (shade < 0) {
             shade = 0;
         }
@@ -585,8 +599,8 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         SetTransMatrix(scratch);
         func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
     }
-    record = actor->records24;
-    for (i = 0; i < actor->count10D; record++, i++) {
+    record = actor->surfaces;
+    for (i = 0; i < actor->surfaceCount; record++, i++) {
         VECTOR out;
         SVECTOR sun;
 
@@ -619,10 +633,10 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             entry->hA = out.vy;
             entry->hC = out.vz;
         }
-        func_801E22F8(record, &sun, m, ot, buffer, scale, actor->h60);
+        func_801E22F8(record, &sun, m, ot, buffer, scale, actor->groundY);
     }
-    anim = actor->records30;
-    for (i = 0; i < actor->count10E; i++, anim++) {
+    anim = actor->images;
+    for (i = 0; i < actor->imageCount; i++, anim++) {
         func_801E1258(anim, ticks);
     }
     ch = actor->channels;
@@ -2881,7 +2895,7 @@ void func_801E39F0(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 a
             probe.vx = actor->parts->translation[0];
             probe.vy = 0;
             probe.vz = actor->parts->translation[2];
-            probe.vy = actor->h60;
+            probe.vy = actor->groundY;
             if (probe.vy < actor->parts->translation[1]) {
                 actor->parts->translation[1] = probe.vy;
                 pc = (u16 *)actor->w54;
@@ -3068,8 +3082,8 @@ aim:
             copy->pc = 0;
             copy->b21 = actor->index;
             copy->index = n;
-            copy->count10D = 0;
-            copy->count10E = 0;
+            copy->surfaceCount = 0;
+            copy->imageCount = 0;
             func_801E8510(copy);
             parts = func_80031BDC(actor->parts->index * sizeof(ModelPart), 1);
             copy->parts = parts;
@@ -3912,9 +3926,9 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
             break;
         case 9: /* start or stop (6 bytes) an image animation */
             if (event->image.on) {
-                if (event->image.anim < actor->count10E) {
-                    if (event->image.target != 0xFF && event->image.target < actor->count10E) {
-                        target = &actor->records30[event->image.target];
+                if (event->image.anim < actor->imageCount) {
+                    if (event->image.target != 0xFF && event->image.target < actor->imageCount) {
+                        target = &actor->images[event->image.target];
                     } else {
                         target = NULL;
                     }
@@ -3939,14 +3953,14 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
                             y2 += actor->shift_y;
                         }
                     }
-                    func_801E0A00(&actor->records30[event->image.anim], target, event->image.mode & 0x7F,
+                    func_801E0A00(&actor->images[event->image.anim], target, event->image.mode & 0x7F,
                                   event->image.field12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, z2,
                                   x, y, event->image.field13, event->image.field14, event->image.field16,
                                   event->image.field18, event->image.field1A, curve);
                 }
                 actor->anim_pos += 0x1C;
             } else {
-                func_801E165C(&actor->records30[event->image.anim]);
+                func_801E165C(&actor->images[event->image.anim]);
                 actor->anim_pos += 6;
             }
             break;
@@ -4320,7 +4334,7 @@ void func_801E6F64(SpriteTask *sprite) {
     gte_rtv0tr();
     gte_stlvnl(&world);
     if (link->follow) {
-        world.vy = link->actor->h60;
+        world.vy = link->actor->groundY;
     }
     sprite->sprite.x = world.vx << 16;
     sprite->sprite.y = world.vy << 16;
@@ -4378,12 +4392,12 @@ void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z)
     }
 }
 
-/* Put an actor's root at its height unless it is held. */
+/* Put an actor's root at its ground height unless it is held (b36). */
 void func_801E7298(Actor *actor) {
     VECTOR unused;
     SVECTOR pos;
 
-    pos.vy = actor->h60;
+    pos.vy = actor->groundY;
     if (actor->b36 == 0) {
         actor->parts->translation[1] = pos.vy;
     }
@@ -4391,7 +4405,7 @@ void func_801E7298(Actor *actor) {
 
 /* The world matrix of node `node` of actor `index` (its root's local matrix
  * for node 0). */
-void func_801E72CC(MATRIX *out, s32 unused, s32 index, s32 node) {
+void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node) {
     MATRIX m;
     Actor *actor;
 
@@ -4436,14 +4450,14 @@ void func_801E738C(s32 slot_count) {
 /* Create actor `index` (when its slot is free) from its files: relocate them
  * (unless `flags` bit 0), load its sound bank (unless bit 2), copy its model
  * group into a free model list and build the hierarchy at `pos`, set up its
- * shadow quads, image animations and records24, reset its script (unless bit
+ * shadow quads, image animations and surfaces, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
  * The model list is attached even when the files were already relocated. */
 void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
                    s16 w, s16 *pos) {
     Actor *actor;
     ActorInfo *info;
-    /* The descriptor, read as its header and then as the records24
+    /* The descriptor, read as its header and then as the surfaces'
      * parameter words that follow it. */
     union {
         ActorDesc *header;
@@ -4564,22 +4578,22 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     actor->scale = desc.header->scale;
     actor->channel_count = desc.header->channel_count;
     func_801E8510(actor);
-    actor->count10E = desc.header->count30;
-    if (actor->count10E != 0) {
-        actor->records30 = func_80031BDC(actor->count10E * sizeof(ImageAnim), 0);
-        for (i = 0; i < actor->count10E; i++) {
-            actor->records30[i].active = 0;
-            actor->records30[i].pixels = NULL;
-            actor->records30[i].pixels2 = NULL;
-            actor->records30[i].work = NULL;
+    actor->imageCount = desc.header->imageCount;
+    if (actor->imageCount != 0) {
+        actor->images = func_80031BDC(actor->imageCount * sizeof(ImageAnim), 0);
+        for (i = 0; i < actor->imageCount; i++) {
+            actor->images[i].active = 0;
+            actor->images[i].pixels = NULL;
+            actor->images[i].pixels2 = NULL;
+            actor->images[i].work = NULL;
         }
     }
-    actor->count10D = desc.header->count24;
-    if (actor->count10D != 0) {
+    actor->surfaceCount = desc.header->surfaceCount;
+    if (actor->surfaceCount != 0) {
         desc.p = desc.header->records;
-        record = func_80031BDC(actor->count10D * sizeof(Surface), 0);
-        actor->records24 = record;
-        for (i = 0; i < actor->count10D; i++, record++) {
+        record = func_80031BDC(actor->surfaceCount * sizeof(Surface), 0);
+        actor->surfaces = record;
+        for (i = 0; i < actor->surfaceCount; i++, record++) {
             count = desc.p[17];
             record->h0 = *desc.p++;
             /* The parameters are read in order. */
@@ -4710,17 +4724,17 @@ void func_801E8030(s32 index) {
         if (D_801E8670[index]->channel_count != 0) {
             func_800320E8(D_801E8670[index]->channels);
         }
-        if (D_801E8670[index]->count10E != 0) {
-            for (i = 0; i < D_801E8670[index]->count10E; i++) {
-                func_801E165C(&D_801E8670[index]->records30[i]);
+        if (D_801E8670[index]->imageCount != 0) {
+            for (i = 0; i < D_801E8670[index]->imageCount; i++) {
+                func_801E165C(&D_801E8670[index]->images[i]);
             }
-            func_800320E8(D_801E8670[index]->records30);
+            func_800320E8(D_801E8670[index]->images);
         }
-        if (D_801E8670[index]->count10D != 0) {
-            for (i = 0; i < D_801E8670[index]->count10D; i++) {
-                func_801E3438(&D_801E8670[index]->records24[i]);
+        if (D_801E8670[index]->surfaceCount != 0) {
+            for (i = 0; i < D_801E8670[index]->surfaceCount; i++) {
+                func_801E3438(&D_801E8670[index]->surfaces[i]);
             }
-            func_800320E8(D_801E8670[index]->records24);
+            func_800320E8(D_801E8670[index]->surfaces);
         }
         func_800320E8(D_801E8670[index]);
         D_801E8670[index] = NULL;
@@ -4729,7 +4743,7 @@ void func_801E8030(s32 index) {
 
 /* Select actor `index` and bit mask `mask`, then run its script step
  * (func_801E35D0) with itself as the source. */
-void func_801E8330(u16 index, u16 mask, s32 arg2) {
+void func_801E8330(u16 index, u16 mask, s32 entry) {
     Actor *actor;
 
     actor = D_801E8670[index];
@@ -4737,7 +4751,7 @@ void func_801E8330(u16 index, u16 mask, s32 arg2) {
     D_801E863C = mask;
     actor->b35 = 0;
     if (D_801E8670[index] != NULL) {
-        func_801E35D0(D_801E8670[index], D_801E8670[index], &D_801E86A8, arg2);
+        func_801E35D0(D_801E8670[index], D_801E8670[index], &D_801E86A8, entry);
     }
 }
 
