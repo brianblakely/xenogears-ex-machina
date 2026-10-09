@@ -1641,6 +1641,8 @@ void func_80039360(void) {
     D_8006F9FC[0].next = 0;
 }
 
+s32 func_80039784(void);
+
 /* Allocate `size` bytes of SPU memory in the first gap of the map that
  * fits (or after its last entry). Returns the address, 0 when none. */
 s32 func_800393B8(s32 size, u16 mode) {

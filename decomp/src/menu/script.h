@@ -37,6 +37,7 @@ void func_8007191C(s32 scene);
 void func_800719F0(void);
 void func_80071AD0(void);
 void func_80071DA4(Actor *actor);
+s32 func_80071F8C(s32 command); /* the scene callbacks */
 void func_800720C4(void);
 void func_800720D4(void);
 void func_80072170(void);

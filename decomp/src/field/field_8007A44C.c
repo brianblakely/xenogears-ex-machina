@@ -2425,6 +2425,8 @@ void func_80080F44(s32 index) {
     }
 }
 
+s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status);
+
 /* The field update: run the events, then move every actor (motion stages,
  * the controlled actor's contact and position, the others' positions,
  * encounters) and the followers. */
