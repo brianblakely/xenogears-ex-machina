@@ -9,9 +9,9 @@
 #include "battle/scene.h"
 
 /* The stage objects (8009E53C's unit, 8009F794-800A0838, 800A2BB8-800A2CA4,
- * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their files, their animation
- * events and the camera channels, their creation, selection, effects and
- * per-frame update. */
+ * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their files and the camera
+ * channels, their creation, selection, effects and per-frame update (their
+ * animation events are in battle/effect.h). */
 
 /* An object's model or extra data (fields as far as recovered). */
 struct ObjectData {
@@ -97,111 +97,6 @@ typedef struct {
     s16 onGround;                         /* 0x0E: keep the object's ground height */
     SVECTOR offset;                       /* 0x10: from the part */
 } SpriteFollow;
-
-/* The start of an animation event: the frame it runs on and its type. */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 index; /* 0x03 */
-    u8 arg4;  /* 0x04 */
-    u8 arg5;  /* 0x05 */
-} EventHeader;
-
-/* Animation event 1: create a sprite (0x14 bytes). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 kind;       /* 0x03: with flag 0x80 plus the gear's variant less one */
-    u8 flags;      /* 0x04: 0x80 at the acting object; event codes that skip it (800B12D0) */
-    u8 part;       /* 0x05 */
-    s16 offset[3]; /* 0x06 */
-    u8 mode;       /* 0x0C: 1 on the ground, 2 at the scene's centre; 0x80 at the acting object */
-    u8 absolute;   /* 0x0D: the angle is not relative to the object's */
-    s16 angle;     /* 0x0E */
-    s16 scale;     /* 0x10 */
-    u8 resource;   /* 0x12: 0 D_8006BE10, else D_8005A474 */
-    u8 follow;     /* 0x13 */
-} SpriteCommand;
-
-/* Animation event 2: a light following a part of the object (0x12 bytes, 6
- * when off). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 light;       /* 0x03 */
-    u8 on;          /* 0x04 */
-    u8 free;        /* 0x05: not following the object */
-    u8 part;        /* 0x06 */
-    u8 r, g, b;     /* 0x07 */
-    s16 offset[3];  /* 0x0A */
-    s16 active;     /* 0x10 */
-} LightEvent;
-
-/* Animation events 3 and 4: an effect channel (0x1C bytes, 6 when off). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 channel;     /* 0x03 */
-    u8 on;          /* 0x04 */
-    u8 field5;
-    u8 bytes[8];    /* 0x06 */
-    s16 values[6];  /* 0x0E */
-    u8 last;        /* 0x1A */
-} ChannelEvent;
-
-/* Animation event 5: play a sound (8 bytes). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 sound;   /* 0x03 */
-    u8 flags;   /* 0x04: event codes that skip it (800B12D0) */
-    u8 source;  /* 0x05: of the bank (800AE220) */
-    u8 sound2;  /* 0x06: a second sound, 0 none */
-    u8 kind;    /* 0x07 */
-} SoundEvent;
-
-/* Animation event 8: start effect scripts on the selected slots (0xA bytes). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 kinds;      /* 0x03: event codes that skip a slot (800B12D0) */
-    u8 onTarget;   /* 0x04: run on this object's target */
-    u8 scripts[5]; /* 0x05: by slot code: 0-1 (in a gear the next), 5, 4, 2-3 */
-} SlotEvent;
-
-/* Animation event 9: an image animation (0x1C bytes, 6 when off). */
-typedef struct {
-    s16 time;
-    u8 type;
-    u8 anim;       /* 0x03 */
-    u8 on;         /* 0x04 */
-    u8 source;     /* 0x05: another animation to copy, 0xFF none */
-    u8 mode;       /* 0x06: low 7 bits the mode, 0x80 at the object's images */
-    u8 step;       /* 0x07: the step handler (800AA820) */
-    s16 x;         /* 0x08 */
-    s16 y;         /* 0x0A */
-    s16 x2;        /* 0x0C */
-    s16 y2;        /* 0x0E */
-    s16 field10;   /* 0x10 */
-    u8 field12;    /* 0x12: high nibble 1 moves x2, y2 with the images too */
-    u8 field13;    /* 0x13 */
-    u8 field14;    /* 0x14 */
-    u8 pad15;
-    s16 field16;   /* 0x16 */
-    s16 field18;   /* 0x18 */
-    s16 field1A;   /* 0x1A */
-} ImageEvent;
-
-/* An animation event (the object's event list). */
-typedef union {
-    EventHeader header;
-    SpriteCommand sprite;
-    LightEvent light;
-    ChannelEvent channel;
-    SoundEvent sound;
-    SlotEvent slots;
-    ImageEvent image;
-} AnimEvent;
 
 /* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
 typedef struct {

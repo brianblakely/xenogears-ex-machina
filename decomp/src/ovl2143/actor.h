@@ -34,56 +34,6 @@ typedef struct {
     void *end;              /* +c */
 } SoundOwner;
 
-/* An animation event (at `frame` of its animation). */
-typedef struct {
-    s16 frame;
-    u8 type;                /* 1-9 */
-    u8 index;
-    union {
-        struct {            /* type 2: set up an anchor and its light column */
-            u8 active;
-            u8 fixed;       /* not attached to this actor */
-            u8 node;
-            u8 color[3];
-            s16 offset[3];
-            s16 enable;
-        } anchor;
-        struct {            /* type 7: show or hide a node */
-            u8 node;
-            u8 visible;
-        } show;
-        struct {            /* type 8: call an entry of the masked actors */
-            u8 pad4;
-            u8 entry;
-        } call;
-        struct {            /* type 9: start an image animation */
-            u8 active;
-            u8 target;      /* 0xff none */
-            u8 mode;        /* bit 7: shifted by the actor */
-            u8 curve;
-            u16 x, y;
-            u16 x2, y2;
-            u16 h10;
-            u8 b12;         /* high nibble 1: shift the second point too */
-            u8 b13;
-            u8 b14;
-            u8 pad15;
-            s16 h16, h18, h1A;
-        } image;
-        u8 more;            /* types 3/4: nonzero for the long form */
-    } u;
-} AnimEvent;
-
-/* An animation record: its loop frame, event count and the offset of its
- * events (801E5C74, 801E5D44). */
-typedef struct {
-    u8 pad0[2];
-    u16 loop;               /* +2 */
-    u8 pad4[0xE];
-    u16 frames;             /* +12: the event count */
-    s32 data;               /* +14: offset of the events */
-} Animation;
-
 /* A table of script entry points. */
 typedef struct {
     s32 count;

@@ -6161,14 +6161,14 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     s32 mask;
     u8 onTarget;
     s32 script;
-    ImageAnim *source;
+    ImageAnim *targetImage;
     ColorRow *colour;
     s16 x;
     s16 y;
     s16 x2;
     s16 y2;
     s16 field10;
-    FrameCurve step;
+    FrameCurve curve;
 
     if (object->animation >= 0) {
         for (; object->animationFrame < object->animationLength; object->animationFrame++) {
@@ -6320,8 +6320,8 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     func_800BF6CC();
                     object->animationStart += 4;
                     break;
-                case 7: /* draw part (byte 4) = byte 5 bit 0 (6 bytes) */
-                    object->hierarchy[event->header.arg4].visible = event->header.arg5 & 1;
+                case 7: /* draw part (byte 4) = byte 5 bit 0 (ShowEvent, 6 bytes) */
+                    object->hierarchy[event->show.part].visible = event->show.visible & 1;
                     object->animationStart += 6;
                     break;
                 case 8: /* start effect scripts on the object's slots (SlotEvent) */
@@ -6377,16 +6377,16 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                 case 9: /* start or stop an image animation (ImageEvent; 6 bytes off) */
                     if (event->image.on) {
                         if (event->image.anim < object->imageCount) {
-                            if (event->image.source != 0xFF && event->image.source < object->imageCount) {
-                                source = &object->images[event->image.source];
+                            if (event->image.target != 0xFF && event->image.target < object->imageCount) {
+                                targetImage = &object->images[event->image.target];
                             } else {
-                                source = NULL;
+                                targetImage = NULL;
                             }
                             colour = NULL;
                             if ((event->image.mode & 0x7F) >= 4) {
                                 colour = (ColorRow *)D_800D2FC0;
                             }
-                            step = (FrameCurve)func_800AA820(event->image.step);
+                            curve = (FrameCurve)func_800AA820(event->image.curve);
                             x = event->image.x;
                             y = event->image.y;
                             x2 = event->image.x2;
@@ -6403,10 +6403,10 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                                     y2 += object->placement[3];
                                 }
                             }
-                            func_800A3640(&object->images[event->image.anim], source, event->image.mode & 0x7F,
+                            func_800A3640(&object->images[event->image.anim], targetImage, event->image.mode & 0x7F,
                                           event->image.field12 | 0x700, colour, x, y, 0, x2, y2, field10, x, y,
                                           event->image.field13, event->image.field14, event->image.field16, event->image.field18,
-                                          event->image.field1A, step);
+                                          event->image.field1A, curve);
                         }
                         object->animationStart += sizeof(ImageEvent);
                     } else {

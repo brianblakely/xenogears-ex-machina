@@ -3775,7 +3775,7 @@ void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 ar
 /* Start an animation (looping to its loop frame when `loop`); none without
  * frames. */
 void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
-    if (anim->frames != 0) {
+    if (anim->length != 0) {
         actor->anim_state = 0;
         if (loop) {
             actor->anim_loop = anim->loop;
@@ -3783,8 +3783,8 @@ void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
             actor->anim_loop = -1;
         }
         actor->anim_frame = 0;
-        actor->anim_frames = anim->frames;
-        actor->anim_start = actor->anim_pos = (u8 *)anim + anim->data;
+        actor->anim_frames = anim->length;
+        actor->anim_start = actor->anim_pos = (u8 *)anim + anim->dataOffset;
         return;
     }
     actor->anim_state = -1;
@@ -3807,7 +3807,7 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
 /* Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
- * loop frame. The events have the battle's layout (800AE2A4); anim_frame
+ * loop frame. The events are the battle's records (800AE2A4); anim_frame
  * counts them and anim_state is the frame. The call event (type 8) reads a
  * local the original never sets; it is spilled, so it is loaded from its
  * stack slot. */
@@ -3837,41 +3837,41 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
     }
     while (actor->anim_frame < actor->anim_frames) {
         event = (AnimEvent *)actor->anim_pos;
-        if (actor->anim_state != event->frame) {
+        if (actor->anim_state != event->header.time) {
             break;
         }
-        switch (event->type) {
+        switch (event->header.type) {
         case 1: /* a battle sprite: stepped over */
             actor->anim_pos += 0x14;
             break;
         case 2: /* set up or deactivate (6 bytes) an anchor */
-            if (event->u.anchor.active) {
-                if (event->index < 2) {
+            if (event->light.on) {
+                if (event->light.light < 2) {
                     anchor = event;
-                    if (anchor->u.anchor.fixed) {
-                        D_801E8648[anchor->index].actor = -1;
+                    if (anchor->light.free) {
+                        D_801E8648[anchor->light.light].actor = -1;
                     } else {
-                        D_801E8648[anchor->index].actor = actor->index;
+                        D_801E8648[anchor->light.light].actor = actor->index;
                     }
-                    D_801E8648[anchor->index].node = anchor->u.anchor.node;
-                    D_801E8644->m[0][anchor->index + 1] = anchor->u.anchor.color[0] << 4;
-                    D_801E8644->m[1][anchor->index + 1] = anchor->u.anchor.color[1] << 4;
-                    D_801E8644->m[2][anchor->index + 1] = anchor->u.anchor.color[2] << 4;
-                    D_801E8648[anchor->index].offset.vx = anchor->u.anchor.offset[0];
-                    D_801E8648[anchor->index].offset.vy = anchor->u.anchor.offset[1];
-                    D_801E8648[anchor->index].offset.vz = anchor->u.anchor.offset[2];
-                    D_801E8648[anchor->index].active = anchor->u.anchor.enable;
+                    D_801E8648[anchor->light.light].node = anchor->light.part;
+                    D_801E8644->m[0][anchor->light.light + 1] = anchor->light.r << 4;
+                    D_801E8644->m[1][anchor->light.light + 1] = anchor->light.g << 4;
+                    D_801E8644->m[2][anchor->light.light + 1] = anchor->light.b << 4;
+                    D_801E8648[anchor->light.light].offset.vx = anchor->light.offset[0];
+                    D_801E8648[anchor->light.light].offset.vy = anchor->light.offset[1];
+                    D_801E8648[anchor->light.light].offset.vz = anchor->light.offset[2];
+                    D_801E8648[anchor->light.light].active = anchor->light.active;
                 }
                 actor->anim_pos += 0x12;
             } else {
-                D_801E8648[event->index].active = 0;
+                D_801E8648[event->light.light].active = 0;
                 actor->anim_pos += 6;
             }
             break;
         case 3:
         case 4: /* stop a channel (the battle's colour fade events) */
-            func_801E0844(&actor->channels[event->index], arg2);
-            if (event->u.more) {
+            func_801E0844(&actor->channels[event->channel.channel], arg2);
+            if (event->channel.on) {
                 actor->anim_pos += 0x1C;
             } else {
                 actor->anim_pos += 6;
@@ -3884,10 +3884,10 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
             actor->anim_pos += 4;
             break;
         case 7: /* show or hide a node */
-            actor->parts[event->u.show.node].visible = event->u.show.visible & 1;
+            actor->parts[event->show.part].visible = event->show.visible & 1;
             actor->anim_pos += 6;
             break;
-        case 8: /* call an entry of the masked actors */
+        case 8: /* call an entry (SlotEvent: its first script) of the masked actors */
             /* The original tests a local it never sets. */
             call = event;
             state = unset;
@@ -3896,7 +3896,7 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
             bit = 1 << saved_index;
             for (i = 0, other = D_801E8670; i < 8; i++, other++) {
                 if ((actor->mask >> i) & 1) {
-                    entry = call->u.call.entry;
+                    entry = call->slots.scripts[0];
                     if (*other != NULL && entry > 0) {
                         if (state != 0) {
                             func_801E8394(actor, i, bit, entry);
@@ -3911,42 +3911,42 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
             actor->anim_pos += 0xA;
             break;
         case 9: /* start or stop (6 bytes) an image animation */
-            if (event->u.image.active) {
-                if (event->index < actor->count10E) {
-                    if (event->u.image.target != 0xFF && event->u.image.target < actor->count10E) {
-                        target = &actor->records30[event->u.image.target];
+            if (event->image.on) {
+                if (event->image.anim < actor->count10E) {
+                    if (event->image.target != 0xFF && event->image.target < actor->count10E) {
+                        target = &actor->records30[event->image.target];
                     } else {
                         target = NULL;
                     }
                     m = NULL;
-                    if ((event->u.image.mode & 0x7F) >= 4) {
+                    if ((event->image.mode & 0x7F) >= 4) {
                         m = D_801E8644;
                     }
-                    curve = func_801E34BC(event->u.image.curve);
-                    x = event->u.image.x;
-                    y = event->u.image.y;
-                    x2 = event->u.image.x2;
-                    y2 = event->u.image.y2;
-                    z2 = event->u.image.h10;
-                    if (event->u.image.mode & 0x80) {
+                    curve = func_801E34BC(event->image.curve);
+                    x = event->image.x;
+                    y = event->image.y;
+                    x2 = event->image.x2;
+                    y2 = event->image.y2;
+                    z2 = event->image.field10;
+                    if (event->image.mode & 0x80) {
                         if (actor->h90 < 0) {
                             break;
                         }
                         x += actor->shift_x;
                         y += actor->shift_y;
-                        if ((event->u.image.b12 >> 4) == 1) {
+                        if ((event->image.field12 >> 4) == 1) {
                             x2 += actor->shift_x;
                             y2 += actor->shift_y;
                         }
                     }
-                    func_801E0A00(&actor->records30[event->index], target, event->u.image.mode & 0x7F,
-                                  event->u.image.b12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, z2,
-                                  x, y, event->u.image.b13, event->u.image.b14, event->u.image.h16,
-                                  event->u.image.h18, event->u.image.h1A, curve);
+                    func_801E0A00(&actor->records30[event->image.anim], target, event->image.mode & 0x7F,
+                                  event->image.field12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, z2,
+                                  x, y, event->image.field13, event->image.field14, event->image.field16,
+                                  event->image.field18, event->image.field1A, curve);
                 }
                 actor->anim_pos += 0x1C;
             } else {
-                func_801E165C(&actor->records30[event->index]);
+                func_801E165C(&actor->records30[event->image.anim]);
                 actor->anim_pos += 6;
             }
             break;

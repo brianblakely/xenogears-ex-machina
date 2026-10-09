@@ -101,15 +101,6 @@ typedef struct BattleObject {
 /* Layout check (a negative array size fails the build). */
 typedef char BattleObjectLayoutCheck[sizeof(BattleObject) == 0x11C ? 1 : -1];
 
-/* An animation header (fields as far as recovered). */
-typedef struct {
-    u8 pad0[2];
-    u16 loop; /* 0x02 */
-    u8 pad4[0x12 - 0x4];
-    u16 length;     /* 0x12: the event count */
-    u32 dataOffset; /* 0x14: offset of the events (AnimEvent) */
-} Animation;
-
 /* A rectangle of the scene's ground (8 bytes; the scene data's areas at
  * 0x100, one per formation group). */
 typedef struct {

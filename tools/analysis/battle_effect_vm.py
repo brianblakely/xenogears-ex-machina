@@ -526,7 +526,7 @@ def _event(name, length, effect, short=None):
     return EventType(name, length, short, effect)
 
 
-# Animation events, read from 800ae2a4's cases (objects.h SpriteCommand to
+# Animation events, read from 800ae2a4's cases (battle/effect.h SpriteCommand to
 # ImageEvent): an s16 frame time, the type byte, then the type's fields. The
 # runner takes them in order while their time is the animation's frame; each
 # case advances by the length below. A type without a case does not advance.
