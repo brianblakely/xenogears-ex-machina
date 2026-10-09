@@ -10,26 +10,13 @@
  * (SpriteTasks). The interpreter (ovl3087.c) declares these helpers with its
  * own prototypes. */
 
-/* The battle's actor task callbacks (800B9B30: put the sprite at its target;
- * 800BAB0C, 800BABDC, 800BAC50: a slot sprite task's update, second update
- * and destroy), under the names this overlay's link gives them. */
-extern void D_800B9B30(Sprite *sprite);
-extern void D_800BAB0C(Task *task);
-extern void D_800BABDC(Task *task);
-extern void D_800BAC50(Task *task);
-
 /* Resident functions whose callers convert arguments/result differently
  * from the resident definition (decomp/src/resident/own_declarations.h). */
 void func_80021FE0(Sprite *sprite, s32 arg);
 void func_800223B0(Sprite *sprite, s32 arg);
 
-/* Battle functions whose callers convert arguments/result differently from
- * the battle's definition (decomp/src/battle/own_declarations.h; 800BF7C8 is
- * declared in its unit). */
+/* Defined u8 in the battle (own_declarations.h); u8 here adds andi 0xff to the result's test. */
 s32 func_800B7E94(void);
-void func_800BC404(u16 arg);
-s16 func_800BEEB4(s32 mask, Sprite **list, Sprite *target);
-void func_800BF7C8(Sprite *sprite, s32 arg1, void (*callback)(Sprite *sprite));
 
 void func_801E93E8(Sprite *actor);
 void func_801E9430(s32 actor, s32 animation);

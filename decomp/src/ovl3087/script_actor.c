@@ -134,7 +134,7 @@ void func_801E9760(s32 actor, s32 target) {
     D_80059464 = 0;
     D_800591AC = 1;
     if (func_800B7E94() != 0) {
-        func_80021BF8(self, D_800B9B30);
+        func_80021BF8(self, func_800B9B30);
     } else {
         if (self->frame != 0) {
             func_800245D8(self, 0x12);
@@ -175,7 +175,7 @@ SpriteTask *func_801E9978(void *file, s16 *position) {
     Sprite *body;
     s32 frame = D_80059464;
 
-    model = (SpriteTask *)func_8001D1D8(0x19C, 0, D_800BAC50, D_800BAB0C, D_800BABDC);
+    model = (SpriteTask *)func_8001D1D8(0x19C, 0, func_800BAC50, func_800BAB0C, func_800BABDC);
     body = &model->sprite;
     D_80059464 = frame;
     model->task.link.word &= 0x7FFFFFFF;

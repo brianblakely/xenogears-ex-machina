@@ -12,6 +12,7 @@
 #include "resident/gamedata.h"
 #include "resident/heap.h"
 #include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/combatant.h"
 #include "battle/command.h"
 #include "battle/enemy_ai.h"

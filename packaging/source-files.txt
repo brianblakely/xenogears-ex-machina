@@ -143,6 +143,7 @@ decomp/include/battle/work.h
 decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
+decomp/include/mdec/player.h
 decomp/include/menu/card.h
 decomp/include/menu/panel.h
 decomp/include/menu/screen.h

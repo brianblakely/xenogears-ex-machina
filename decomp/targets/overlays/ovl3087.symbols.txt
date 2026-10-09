@@ -1,0 +1,6 @@
+// The battle's callbacks this overlay passes by address (battle/flow.h,
+// battle/actor.h), by the battle's names.
+func_800B9B30 = 0x800B9B30; // type:func
+func_800BAB0C = 0x800BAB0C; // type:func
+func_800BABDC = 0x800BABDC; // type:func
+func_800BAC50 = 0x800BAC50; // type:func

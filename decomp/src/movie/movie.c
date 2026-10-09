@@ -1242,7 +1242,7 @@ void func_800737EC(void) {
     func_800320E8(top);
     func_800295D8(1, library, 0, 0);
     func_80028A60(0);
-    func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
+    movie_open(320, 256, 128, 16, 32, 0x800, 3);
     D_80077450 = func_8002C3D8();
     D_80077394 = 0;
     D_800773B0 = 0;
@@ -1303,7 +1303,7 @@ void func_800737EC(void) {
             D_8007739C = 0xE9;
         }
         func_800763BC(D_8004FE44_request[3]);
-        func_801D43B0();
+        movie_close();
         func_800320E8(library);
         func_8001996C(D_8004FE44_request[2]);
         func_80019ACC(0);
@@ -1333,8 +1333,8 @@ void func_800737EC(void) {
         func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
                       (s16)D_8005A4B8);
         step = 1;
-        func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4, D_801E89D4,
-                      D_80062514);
+        func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4,
+                      movie_skipped_frames, D_80062514);
         dir = func_800747AC(0, 13, &button);
         if (D_800773AC & 0x10) {
             step = 32;
@@ -2327,20 +2327,20 @@ s32 func_80076488(void) {
         VSync(0);
         D_80077018 = 0;
         D_8007701C = 0;
-        func_801D43B0();
+        movie_close();
         if (D_800773A0 > 0) {
             D_80077024 = (240 - D_800773A0) / 2;
         } else {
             D_80077024 = 0;
         }
-        func_801D3538(320, 240, 0x80, 16, 32, 0x800, D_80077454);
-        D_801D68B4 = 0;
+        movie_open(320, 240, 0x80, 16, 32, 0x800, D_80077454);
+        movie_split_display = 0;
         if (D_80077438 != 0) {
-            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 1, 0,
-                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+            movie_start(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 1, 0,
+                        D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
         } else {
-            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 0, 0,
-                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+            movie_start(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 0, 0,
+                        D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
         }
         budget = 30;
         PutDrawEnv(&D_80077124[D_80077018].draw);
@@ -2350,7 +2350,7 @@ s32 func_80076488(void) {
             if (D_80077020 == 0) {
                 for (i = 0; i < budget / 10; i++) {
                     before = VSync(1);
-                    func_801D3F7C();
+                    movie_poll();
                     after = VSync(1);
                     if (i * 2 + 1 < 32) {
                         D_800773B8[i * 2] = before;
@@ -2372,7 +2372,7 @@ s32 func_80076488(void) {
                 D_80077014--;
             }
         }
-        func_801D4318();
+        movie_stop();
         if (D_8007701C == 0) {
             DrawSync(0);
             VSync(0);
@@ -2393,7 +2393,7 @@ s32 func_80076488(void) {
  * last frame ends the movie. */
 void func_800768D8(u16 frame, u16 x, u16 y) {
     D_80077010 = frame;
-    if (D_801D68B4 == 1) {
+    if (movie_split_display == 1) {
         if (y != D_80077024) {
             D_80077018 = 0;
         } else {

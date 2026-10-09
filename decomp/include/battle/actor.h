@@ -52,6 +52,12 @@ void func_800BA4E0(s32 value);       /* end a slot's turn presentation */
 void func_800BA614(Sprite *sprite);  /* aim a sprite's jump at its target */
 void func_800BA768(Sprite *sprite);  /* the same, keeping its rising speed */
 void func_800BA8F4(Sprite *sprite);  /* put a sprite on the scene's ground */
+/* A sprite task's callbacks (func_800BA984 creates one; the event script
+ * overlay its script slots' models): func_8001D1D8's update, second update
+ * and destroy. */
+void func_800BAB0C(Task *task);      /* second update: depth in the view, draw the parts */
+void func_800BABDC(Task *task);      /* destroy: part block, children, sprite and node */
+void func_800BAC50(Task *task);      /* update (twice with double steps) unless paused */
 void func_800BAEB8(s32 slot);        /* face a slot's sprite along its side */
 void func_800BAF48(s32 slot);        /* send a party slot's sprite off for its gear */
 void func_800BB760(s32 slot);        /* start loading a slot's gear object */
@@ -61,6 +67,7 @@ void func_800BB9D4(void);            /* set the battle view and draw the stage *
 void func_800BBAB8(void);            /* step the battle camera */
 void func_800BC2F0(s32 mode);        /* set the camera mode */
 void func_800BC3F8(s32 value);
+void func_800BC404(s32 mask);        /* start a camera move */
 void func_800BCAA4(void);            /* camera mode 4 */
 void func_800BCAD0(void);            /* camera mode 1 */
 

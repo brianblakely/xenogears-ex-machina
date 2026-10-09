@@ -61,11 +61,7 @@ void func_800B8840(void);
 void func_800B88C4(void);
 void func_800B89F4(void);
 void func_800B9508(Sprite *sprite);
-void func_800B9B30(); /* also called with the sprite (800B9508) */
 void func_800B9B54(Sprite *sprite, Sprite *other);
-void func_800BAB0C(Task *task);
-void func_800BABDC(Task *task);
-void func_800BAC50(Task *task);
 void func_800BADD4(s32 slot);
 void func_800BB7F8(void);
 void func_800BC454(s16 value);

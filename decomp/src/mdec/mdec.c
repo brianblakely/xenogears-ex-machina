@@ -179,9 +179,10 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
 /* Start streaming `file` from `sector`: frames `first_frame` to `last_frame`,
  * CD-XA audio of `channel` when `select` bit 0 is set, `hold` keeps the first
  * frame, `x0, y0, x1, y1` place the two display buffers, `rows` limits the
- * rows a slice loads, and `callback` receives each loaded frame. */
+ * rows a slice loads (none when negative), and `callback` receives each
+ * loaded frame. */
 void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
-                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows,
+                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, s16 rows,
                  void (*callback)(u16 frame, u16 x, u16 y)) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     CdlFILTER filter;

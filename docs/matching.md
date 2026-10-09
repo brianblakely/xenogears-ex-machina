@@ -201,25 +201,26 @@ target's image or uninitialized data is an address copied from the original. A n
 that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
 address, and each must agree with the rebuilt targets by their own symbols: every
 other target that defines the name defines it there, each that exports it wherever
-the copied value points and one holding the value also by a local symbol (2298 of
-2510 at present); where none does, a fragment may give it as a view, another name
+the copied value points and one holding the value also by a local symbol (2318 of
+2378 at present); where none does, a fragment may give it as a view, another name
 plus a constant that agrees by name, and the value must lie in the object holding
-that name in its definer (10: members of the game data D_8006D634, the battle area
-D_800C3EB0 and its work D_800CCCE8, and the field view D_800AF880's camera vectors,
-`D_8006D8A0 = D_8006D634 + 0x26C`); otherwise a target holding the value has a
-symbol there (19: the movie library's functions and variables that field and movie
-address by number, battle functions whose addresses ovl3087 uses, two resident
-symbols the world map names differently); otherwise the address must lie inside an
-input section that target's link places (183 members or parts of objects that no
-symbol names, such as game data members, all from splat's lists). For these last
-two groups the check ties a value only to the address its name gives,
-not to a particular object or, where targets overlap (debug595's field names also
-lie in battle), to a particular target; naming them as their definers do needs the
-importing C to use those names (left open). Values outside every target (the
-resident's sizes, a constant) are not checked, nor is an address the C spells as a
-number, which neither this check nor the relocation scan (a target's own range only)
-sees. `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those
-(each other target's address a link holds without a relocation, outside asset and
+that name in its definer (4: battle's game data member `D_8006F364 = D_8006D634 +
+0x1D30` and debug595's three camera vectors of the field view D_800AF880);
+otherwise a target holding the value has a symbol there (none: the movie library's
+entries and variable that field and movie use, the battle functions ovl3087 passes
+and the resident's VSync callback and sequence buffer that the world map uses all
+take their definers' names, which the importing symbol files give); otherwise the
+address must lie inside an input section that target's link places (56 members or
+parts of objects that no symbol names, such as game data members, all from splat's
+lists). For this last group the check ties a value only to the address its name
+gives, not to a particular object or, where targets overlap (debug595's field
+names also lie in battle), to a particular target; reading them as members of
+their objects needs the importing C to use those objects (left open). Values
+outside every target (the resident's sizes, a constant) are not checked, nor is an
+address the C spells as a number, which neither this check nor the relocation scan
+(a target's own range only) sees.
+`python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
+other target's address a link holds without a relocation, outside asset and
 included bytes and the mode table); in the 26 links they are battle's three reads of
 the boot word D_80010000 (battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45,
 battle_800BFE48.c func_800C0FAC), a number in the original too: its CDK units load
@@ -341,19 +342,25 @@ subsystem with its types, variables and calls; `gamedata.h` holds the game data
 D_8006D634), `battle/` (one header per battle overlay subsystem whose types,
 variables or calls its modules and overlays use, with the battle area D_800C3EB0
 and its work area D_800CCCE8; each function sits in the header of the subsystem
-that defines it; also the screen burst that ovl2615 and ovl3387 both carry) and
+that defines it; also the screen burst that ovl2615 and ovl3387 both carry),
 `menu/` (the blocks the menu mode's screens, slot39 and ovl2598-ovl2602, keep
-behind the menu state of `resident/menu.h`). A resident or battle function whose
-callers in other targets were built with other argument or result conversions
-(narrow parameters, another count) stays out of them: each target declares it, the
-resident and the battle in their `own_declarations.h`. So does a variable some
-target declares with another qualifier (the vertical blank count, volatile in the
-mode 4 menu), and a target keeps its own view of an object whose members its code
-reads with other types (ovl2615 reads the scene data's positions unsigned). A unit
-declares what only it uses itself, before the first use. A function that is
-understood but does not yet match stays linked as assembly inside
-`#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report counts
-it separately.
+behind the menu state of `resident/menu.h`) and `mdec/` (the movie library's
+player, which the movie mode and the field call). Another image's functions and
+variables keep their definer's names, which the importing overlay's symbol file
+gives its link (movie and field name the library's entries, ovl3087 the battle's
+callbacks it passes, the world map the resident's VSync callback). A resident or
+battle function whose callers in other targets were built with other argument or
+result conversions (narrow parameters, another count) stays out of them: each
+target declares it, the resident and the battle in their `own_declarations.h`. So
+does a variable some target declares with another qualifier (the vertical blank
+count, volatile in the mode 4 menu), and a target keeps its own view of an object
+whose members its code reads with other types (ovl2615 reads the scene data's
+positions unsigned); a second declaration of one object takes its assembler name
+(the world map's sequence header over D_80062648, whose address cse would
+otherwise keep from the copy before it). A unit declares what only it uses itself,
+before the first use. A function that is understood but does not yet match stays
+linked as assembly inside `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`;
+the coverage report counts it separately.
 
 A new file (a split or data-only unit, an overlay-number unit, a `.data.ld` alias
 script, authored `.s`) also goes into packaging/source-files.txt, which lists every

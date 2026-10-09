@@ -1093,18 +1093,18 @@ void func_800A7064(void) {
 void func_800A708C(void) {
     func_80032498(4, 0);
     if (D_800ADB74 == 2) {
-        D_801D68B4 = 1;
+        movie_split_display = 1;
     } else {
-        D_801D68B4 = 0;
+        movie_split_display = 0;
     }
-    func_801D3538(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, FIELD_MOVIE.depth24);
+    movie_open(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, FIELD_MOVIE.depth24);
     D_800ADB6C = 0;
     func_80032498(8, 0);
 }
 
 /* Movie frame callback: record the frame, select the draw block for the
  * decoded buffer (24-bit display when set). */
-void func_800A7120(u16 frame, s32 unused, u16 buffer) {
+void func_800A7120(u16 frame, u16 x, u16 buffer) {
     D_800B06A0 = frame;
     D_800B00E4 = 0;
     if (buffer == 0) {
@@ -1133,9 +1133,9 @@ void func_800A7218(void) {
         if (FIELD_MOVIE.sound_bank != 0xFF || (D_800ADB80 & 0x40)) {
             mode = 3;
         }
-        func_801D37CC(FIELD_MOVIE.file + 2, FIELD_MOVIE.unk2A, FIELD_MOVIE.sound_start,
-                      FIELD_MOVIE.unk2E, 1, mode, FIELD_MOVIE.unk3A, FIELD_MOVIE.x, FIELD_MOVIE.y,
-                      FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, func_800A7120);
+        movie_start(FIELD_MOVIE.file + 2, FIELD_MOVIE.unk2A, FIELD_MOVIE.sound_start,
+                    FIELD_MOVIE.unk2E, 1, mode, FIELD_MOVIE.unk3A, FIELD_MOVIE.x, FIELD_MOVIE.y,
+                    FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, func_800A7120);
         func_80028470(4, 0);
     }
     func_80032498(8, 0);
@@ -1148,7 +1148,7 @@ void func_800A732C(s32 frames) {
     func_80019CA0();
     if (D_800ADB6C == 0) {
         for (i = 0; i < frames; i++) {
-            func_801D3F7C();
+            movie_poll();
             func_80085678();
         }
     }
@@ -1313,7 +1313,7 @@ s32 func_800A7948(void) {
     }
     if (D_800B06A0 < 0x18E2) {
         D_800AFE74 = 1;
-        D_801E89E0 = 0;
+        movie_load_restart = 0;
         setRECT(&rect, 0, 0, 0x500, 0x200);
         ClearImage(&rect, 0, 0, 0);
         DrawSync(0);
@@ -1347,7 +1347,7 @@ s32 func_800A7948(void) {
             func_800A732C(5);
         }
         D_800AFE74 = 0;
-        D_801E89E0 = 1;
+        movie_load_restart = 1;
         DrawSync(0);
         VSync(0);
         SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
@@ -1475,7 +1475,7 @@ void func_800A7C58(void) {
     } while ((s16)FIELD_MOVIE.unk3A != 0 || D_800B06A0 < FIELD_MOVIE.unk2E);
     VSync(0);
     DrawSync(0);
-    func_801D43B0();
+    movie_close();
     func_8007999C();
     PutDispEnv(&D_800C426C->disp);
     PutDrawEnv(&D_800C426C->draw);
