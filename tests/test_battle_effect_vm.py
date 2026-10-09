@@ -203,7 +203,8 @@ def case_bodies(path: str, head: str, label: str) -> dict:
     """The case bodies of the switch in the function starting with head, by the
     label pattern's group; a label without statements takes the next body."""
     text = (ROOT / path).read_text()
-    body = text[text.index(head) :]
+    # the definition, not a declaration of it ahead of its first use
+    body = text[re.search(re.escape(head) + r"[^;{]*\)\s*\{", text).start() :]
     body = re.sub(r"/\*.*?\*/", "", body[: body.index("\n}\n")], flags=re.S)
     parts = re.split(label, body)
     cases, pending = {}, []

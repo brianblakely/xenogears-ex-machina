@@ -129,7 +129,10 @@ class SourceTests(unittest.TestCase):
     def test_gear_techniques_follow_the_menu_learning_and_loader(self):
         menu = function_body(source("battle/battle.c"), "func_8008B224")
         self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
-        self.assertIn("func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)", menu)
+        self.assertIn(
+            "func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2)",
+            menu,
+        )
         battle = source("battle/battle.c")  # func_8008ADD0 is defined K&R
         commit = battle[battle.index("void func_8008ADD0(member)") :]
         commit = commit[: commit.index("\n}\n")]
@@ -159,7 +162,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_800854D0.c"), "func_80093014")
         self.assertIn("D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("D_8006F94E[3] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
+        self.assertIn("D_8006D634.entry[2] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
             "} else if ((D_8006F94E & 0x7FF) >= 0x400) {\n            func_800199CC(3);", results
