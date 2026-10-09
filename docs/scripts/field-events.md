@@ -32,7 +32,8 @@ the actor count and 32 entry PCs per actor, then the bytecode (`80070cc8`).
 - A field change loads the bundle of the operand's low 12 bits (`8001b484`);
   bits 14 and 15 are flags.
 - Component 6 is the map's encounter set; `71` and ext `84` request a battle with
-  one of its formations ([formations.md](formations.md)).
+  one of its formations, and `f7` arms its random draw
+  ([formations.md](formations.md)).
 
 - Events start only at their entry PC: event 0 at load (`800a28d4`), event 1
   whenever no slot is active (`800a2030`), event 2 on talk and 3 on touch

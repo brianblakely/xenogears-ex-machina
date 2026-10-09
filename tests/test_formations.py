@@ -180,13 +180,23 @@ class FieldTests(unittest.TestCase):
         with self.assertRaises(fm.FormationError):
             fm.field_source(1, size, stream)
 
-    def test_requests_name_immediate_formations_and_variables(self):
+    def test_scripts_name_formations_and_arm_the_draw(self):
         code = bytes([0x71, 0x05, 0x80])  # request_battle formation 5
         code += bytes([0xFE, 0x84, 0x03, 0x00, 0, 0, 0xFF, 0x7F, 0, 0])  # variable 3, no map
+        code += bytes([0xF7, 0x2C, 0x81, 0x01, 0x80])  # period 300, count 1
+        code += bytes([0xF7, 0x2C, 0x81, 0x00, 0x80])  # count 0
+        code += bytes([0xF7, 0x2C, 0x81, 0x07, 0x00])  # count from variable 7
         code += bytes([0x00])  # end_slot
         package = event_package(code)
         data = bundle({5: (len(package), package), 6: (0, b"")})
-        self.assertEqual(fm.field_requests(data), [(0, "71", 5, None), (3, "fe 84", None, 3)])
+        requests, armings, control = fm.field_scripts(data)
+        self.assertEqual(requests, [(0, "71", 5, None), (3, "fe 84", None, 3)])
+        self.assertEqual(armings, [(13, 300, 1), (18, 300, 0), (23, 300, None)])
+        self.assertEqual([a.arms for a in armings], [True, False, False])
+        self.assertEqual([a.text for a in armings], ["300/1", "300/0", "300/var"])
+        self.assertFalse(control)
+        package = event_package(bytes([0xA7, 0x00]))  # request_player_control
+        self.assertTrue(fm.field_scripts(bundle({5: (len(package), package)})).control)
 
 
 class TerrainTests(unittest.TestCase):
@@ -211,8 +221,12 @@ class TerrainTests(unittest.TestCase):
         self.assertEqual(fm.terrain_sources(143, data, 4), [])
 
 
-def census_with(sources, requests=None, chains=None, templates=(), unique=(), battles=2):
+def census_with(
+    sources, requests=None, chains=None, templates=(), unique=(), battles=2, armings=None
+):
     census = fm.Census(1, sources=sources, requests=requests or {}, chains=chains or {})
+    census.armings = armings or {}
+    census.controls = set(census.armings)
     census.script_sets, census.stages, census.battles = 2, 4, battles
     for battle in range(battles):
         data = enemy_file(templates if battle == 0 else (), unique if battle == 1 else ())
@@ -238,7 +252,10 @@ class CrossCheckTests(unittest.TestCase):
             "debug", 4, None, encounter_set(formation(battle=1, enemies=((6, 0, 0),))), ()
         )
         requests = {3: [fm.Request(0, "71", 2, None), fm.Request(9, "fe 84", None, 0x400)]}
-        census = census_with([source, debug], requests, {1: [3, None]}, templates=(7,), unique=(5,))
+        armings = {3: [fm.Arming(12, 300, 0), fm.Arming(17, 300, 1)]}
+        census = census_with(
+            [source, debug], requests, {1: [3, None]}, templates=(7,), unique=(5,), armings=armings
+        )
         ways = fm.reach(census)
         self.assertEqual(ways[("field", 3, None, 0)], {"drawn"})
         self.assertEqual(ways[("field", 3, None, 2)], {"named"})
@@ -255,6 +272,42 @@ class CrossCheckTests(unittest.TestCase):
         self.assertEqual(check.bad_script_sets, ["field map 3 formation 5: set 7"])
         self.assertEqual(check.bad_stages, ["field map 3 formation 3: stage 9"])
         self.assertEqual(check.battles_unnamed, [])
+
+    def test_a_field_draw_needs_an_arming_f7(self):
+        records = encounter_set(
+            formation(battle=1, flags=fm.EVENT, script=1, enemies=((0, 0, 0),)),
+            formation(battle=1, enemies=((1, 0, 0),)),
+        )
+        weights = bytes([1] + [0] * 15)
+        rows = (weights, bytes(16), bytes(16), bytes(16))
+        sources = [
+            fm.EncounterSource("field", map_id, None, records + weights, (weights,))
+            for map_id in (3, 4, 5, 6)
+        ] + [fm.EncounterSource("worldmap", 9, 0, records + b"".join(rows), rows)]
+        armings = {  # map 3 has no f7
+            4: [fm.Arming(0, 0, 1), fm.Arming(5, 900, 0)],
+            5: [fm.Arming(0, 900, 1)],
+            6: [fm.Arming(0, 900, 1)],
+        }
+        census = census_with(sources, chains={1: [1]}, armings=armings)
+        census.controls.discard(5)  # no player control runs the draw
+        ways = fm.reach(census)
+        for map_id in (3, 4, 5):
+            self.assertFalse(fm.armed(census, map_id))
+            self.assertEqual(ways[("field", map_id, None, 0)], {"set"})
+            self.assertEqual(ways[("field", map_id, None, 1)], {"set"})  # no chain either
+        self.assertTrue(fm.armed(census, 6))
+        self.assertEqual(ways[("field", 6, None, 0)], {"drawn"})
+        self.assertEqual(ways[("field", 6, None, 1)], {"chained"})
+        self.assertEqual(ways[("worldmap", 9, 0, 0)], {"drawn"})
+        self.assertEqual(ways[("worldmap", 9, 0, 1)], {"chained"})
+        text = " ".join(fm.disc_report(census))
+        self.assertIn(
+            "control 0c or a7): 1; such an f7 but no player control: [5];"
+            " only f7s that do not arm: [4]; no f7: 1;",
+            text,
+        )
+        self.assertIn("weighted formations never armed: 3", text)
 
 
 class DiscImage:
@@ -318,7 +371,8 @@ class SweepTests(unittest.TestCase):
             formation(battle=0, enemies=((7, 0, 0),)),
         )
         weights = bytes([5, 1] + [0] * 14)
-        package = event_package(bytes([0x71, 0x02, 0x80, 0x00]))
+        # f7 period 300 count 1 arms the draw, request_battle formation 2, player control.
+        package = event_package(bytes([0xF7, 0x2C, 0x81, 0x01, 0x80, 0x71, 0x02, 0x80, 0xA7, 0x00]))
         image.put(4, 0, 0xB7, -4)
         image.put(
             4, 0, 0xB8, bundle({5: (len(package), package), 6: (fm.FIELD_SIZE, records + weights)})
@@ -369,7 +423,8 @@ class SweepTests(unittest.TestCase):
         self.assertEqual(len(census.of("worldmap")), 16)
         self.assertEqual(len(census.tableless), len(set(dispatch_tables.area_files())) - 1)
         self.assertEqual([s.label for s in census.of("debug")], ["debug file 4"])
-        self.assertEqual(census.requests[0], [(0, "71", 2, None)])
+        self.assertEqual(census.requests[0], [(5, "71", 2, None)])
+        self.assertEqual(census.armings[0], [(0, 300, 1)])
         self.assertEqual(census.chains, {0: [3]})
         self.assertEqual((census.script_sets, census.stages, census.battles), (1, 2, 2))
         check = fm.cross_check(census)
@@ -386,8 +441,11 @@ class SweepTests(unittest.TestCase):
         )
         self.assertIn("    placed pairs on blocks without a script table: 1", lines)
         self.assertIn("sets on both discs: 18, identical: 18", lines)
+        # Map 1 runs the same script on whatever set was loaded before it.
+        self.assertIn("with an empty component 6 and armed: [1];", " ".join(lines))
         text = listed.getvalue()
-        self.assertIn("battle requests: +0x0 71 2", text)
+        self.assertIn("battle requests: +0x5 71 2", text)
+        self.assertIn("draw: armed; f7 period/count: +0x0 300/1; player control: yes", text)
         self.assertIn("   0    5 battle   1", text)
 
 

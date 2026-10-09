@@ -36,6 +36,18 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   packed stream ends 0-7 bytes later, in `D_80065AEC`, which no code reads. A map
   whose component 6 is empty leaves the set that was loaded before. The debug monitor
   prints the weights with its per-formation counts (debug595 page 10).
+
+  A script of the map has to arm the draw. Player control (events 0c and a7,
+  `func_8009F5F4`) calls `func_80079288` on frames the player holds a direction, and
+  `func_80079288` returns at once while the period `D_800B2078.unk2298` is 0. Every map
+  load clears the period and the count `unk229C` (`func_800705DC`, which
+  `func_80070CC8` calls first). Event f7 (`func_8008E85C`) sets the period from operand
+  1 and the count from operand 3 (at most 32); `func_8008E718` then gives that many
+  countdowns `unk22A0` distinct values from 1 to period + 1, or clears the period when
+  the count is 0. `func_80079288` counts them down and draws when one reaches 0, and
+  `func_8008E718` deals new values each time `unk2294` counts the period down. Nothing
+  else writes the period or the count but the debug monitor's page 10 (TIME and
+  ENCOUNT, `func_80281B90`).
 - **The world map.** The area file (0x24, 0) area + 1 of each set of `D_8009B584`
   (`func_80071B9C`). `func_80073530` points `D_8009D73C[kind]` at the offsets in header
   words 11-26 (`AreaHeader` +0x2c), one table per terrain kind. The roll
@@ -66,14 +78,23 @@ formation of the same set.
 `python3 -m tools.analysis.formations --sweep` reads `.local/extract` and
 `.local/discs` and prints the counts below. `--list field|worldmap|debug [--item N]
 [--disc D]` prints each formation with its weights: battle, scene selector, script
-set, flags, party groups, and per enemy its id, group and flags. Keep listings under
+set, flags, party groups, and per enemy its id, group and flags; for a field map also
+its battle requests, its f7s and whether it arms the draw. Keep listings under
 `.local/`. `tests/test_formations.py` checks the decoder against `formation.h` on
 invented sets, bundles, area files and discs. On the user's discs:
 
 - Disc 1: 730 map bundles, 635 with a set and 95 with an empty component 6; 17 area
   files, 12 with 16 tables (192); 49 debug files. The field and world map sets hold
-  13232 formations (587 distinct). 3550 can be drawn (a nonzero weight), 260 are named
-  by a field script, 4 are chained by opcode 24, and 9441 are started by none of these.
+  13232 formations (587 distinct). 1955 can be drawn: 1343 world map formations with a
+  weight and 612 field formations with a weight on a map that arms the draw. 260 are
+  named by a field script, 3 are chained by opcode 24, and 11017 are started by none
+  of these.
+- The field draw: 611 maps have a weight. 127 reach an f7 with a nonzero period and
+  count, and player control; map 723 reaches only f7 900/0, which clears the period;
+  483 reach no f7, so their weights are never used (1595 weighted formations in all).
+  No map whose component 6 is empty arms the draw, so a field draw only takes the
+  map's own set. The scripts reach 181 f7s, all with immediate operands: 152 arm the
+  draw (periods 240-900, counts 1-3) and 29 have a count of 0.
 - Flag counts: 0x08 21, 0x10 13, 0x20 1002, 0x40 3076, 0x80 2506. 0x01 and 0x02 are
   set in 340 formations each, though no reader tests them; 0x04 is never set. Byte 7
   is always 0. Of the 40835 enemies placed, 15534 fight in a gear; their flag bytes
@@ -81,15 +102,18 @@ invented sets, bundles, area files and discs. On the user's discs:
 - Field scripts: 348 battle requests in 125 maps. 334 are immediate, naming formations
   0-15 of maps that have a set; 14 take variable `v0400` (maps 480, 485 and 486).
   Opcode 24 occurs in event sets 2, 41 and 46, naming formations 0, 6 and 13 of the
-  set they run from: maps 2 and 489 chain to 0, 713 to 6, 174 to 13.
+  set they run from. A named formation runs each: map 2's formation 2 (set 2) chains
+  to 0, map 713's 5 (set 41) to 6 and map 174's 14 (set 46) to 13. Map 489's formation
+  2 also runs set 2, but only its weight could start it, and map 489's scripts reach
+  no f7.
 - Disc 2 holds 205 bundles (525 placeholder files). Its 176 sets, the area files and
   the debug files are identical to disc 1's, as are the enemy files and the event
   archive (their sweeps), so disc 1's cross-check covers both: disc 2 places no pair
-  disc 1 does not.
+  disc 1 does not, and draws, names or chains none that disc 1 does not.
 - **(battle, enemy id) pairs**, against the enemy files of `tools.analysis.battle_ai`:
-  the formations place 256 pairs, every one a block of its battle's enemy file. 146
-  are placed by formations that can be drawn, 152 by named ones and 7 by chained ones;
-  10 only by formations nothing starts. None of the 33 blocks without a script table
+  the formations place 256 pairs, every one a block of its battle's enemy file. 120
+  are placed by formations that can be drawn, 152 by named ones and 6 by chained ones;
+  11 only by formations nothing starts. None of the 33 blocks without a script table
   is placed. No formation names battle 58, not even a debug one. 319 script tables are
   placed by no formation. 313 of these are byte-identical to a placed block (277 are
   copies of one 84-byte block); the other six are battle 5 id 4, 8 id 4, 25 id 2,
@@ -113,3 +137,8 @@ invented sets, bundles, area files and discs. On the user's discs:
   `func_801E4160`. A read through another view is not ruled out.
 - Whether the modes that load the five tableless area files can roll: their timers
   (`func_8007528C`) are not traced.
+- The draws' other gates. "Can be drawn" means the weights, the arming and player
+  control do not rule a formation out. `func_80079288` also returns while other field
+  states are set (`D_800ADBDC`, `D_800ADBE4`, `D_800ADBEC`, `D_8004F308`, `D_800ADB2C`,
+  `D_800ADB04`, `encounter_inhibition`), and the world map loop has its own
+  (`func_800712D0`); when scripts set them is not traced.

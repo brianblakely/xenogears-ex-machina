@@ -11,7 +11,9 @@ from:
   which func_80070CC8 decodes into D_800658DC itself: the set, then the 16
   weights D_80065ADC of the random draw (func_80079288). The packed stream may
   end a few bytes later, in D_80065AEC; an empty component leaves the set in
-  place.
+  place. Player control (events 0c, a7: func_8009F5F4) runs the draw, which
+  waits until a script of the map runs event f7 with a nonzero period and count
+  (func_8008E85C; every map load clears both).
 - the world map: area files (0x24, 0) area + 1 of D_8009B584. func_80073530
   points D_8009D73C[kind] at the offsets in header words 11-26; the roll
   (func_80075E7C) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
@@ -97,6 +99,8 @@ STAGE_COUNT = 5  # func_800379D8: scene < the file count of entry 5 / 2
 SCRIPT_DIRECTORY = (0x20, 0)  # ovl3087's
 SCRIPT_ARCHIVE = 2  # ovl3087 func_801E5160
 REQUESTS = ("71", "fe 84")  # field events that set D_80059508 from operand 1
+ARMING = "f7"  # func_8008E85C: the field draw's period and count from operands 1 and 3
+CONTROL = ("0c", "a7")  # player control (func_8009F5F4), which runs the draw func_80079288
 CHAIN = 0x24  # battle event opcode next_battle (func_801E7700)
 
 
@@ -111,6 +115,35 @@ class Request(NamedTuple):
     event: str  # 71 or fe 84
     formation: int | None  # an immediate operand's value (D_80059508 is a u8)
     variable: int | None  # the variable it names otherwise
+
+
+class Arming(NamedTuple):
+    """A field event f7 (func_8008E85C): it sets the draw's period
+    D_800B2078.unk2298 from operand 1 and its count unk229C from operand 3 (the
+    debug monitor's TIME and ENCOUNT), then func_8008E718 draws that many
+    distinct countdowns. func_80079288 returns while the period is 0, and
+    func_8008E718 clears the period when the count is 0."""
+
+    pc: int
+    period: int | None  # an immediate operand's value; None for a variable
+    count: int | None
+
+    @property
+    def arms(self) -> bool:
+        """Both operands are nonzero immediates (a variable's value is not known)."""
+        return bool(self.period) and bool(self.count)
+
+    @property
+    def text(self) -> str:
+        return "/".join("var" if v is None else str(v) for v in (self.period, self.count))
+
+
+class Scripts(NamedTuple):
+    """What a map's scripts can reach (events.walk)."""
+
+    requests: list[Request]
+    armings: list[Arming]
+    control: bool  # player control, 0c or a7
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +402,8 @@ class Census:
     debug_files: list[tuple[int, int]] = field(default_factory=list)  # (file, size)
     debug_end: str = ""
     requests: dict[int, list[Request]] = field(default_factory=dict)
+    armings: dict[int, list[Arming]] = field(default_factory=dict)  # map -> its f7s
+    controls: set[int] = field(default_factory=set)  # maps whose scripts reach 0c or a7
     chains: dict[int, list[int | None]] = field(default_factory=dict)  # script set -> formations
     script_sets: int = 0
     stages: int = 0
@@ -405,28 +440,51 @@ def read_field(census: Census, files: DiscFiles) -> None:
         else:
             census.sources.append(source)
             census.stream_tails[len(stream) - FIELD_SIZE] += 1
-        census.requests[map_id] = field_requests(data)
+        scripts = field_scripts(data)
+        census.requests[map_id], census.armings[map_id] = scripts.requests, scripts.armings
+        if scripts.control:
+            census.controls.add(map_id)
 
 
-def field_requests(data: bytes) -> list[Request]:
-    """Every 71 and fe 84 a script can reach (events.walk)."""
+def field_scripts(data: bytes) -> Scripts:
+    """Every 71, fe 84 and f7 a script can reach, and whether it reaches player
+    control (events.walk)."""
     try:
         package = events.map_events(data)
     except (FieldError, PackedError):
-        return []
+        return Scripts([], [], False)
     if package is None:
-        return []
+        return Scripts([], [], False)
     starts, _ = events.script_entries(package)
     result = events.walk(package.bytecode, [pc for _, _, pc in starts])
-    found = []
+    requests, armings, control = [], [], False
     for pc, ins in sorted(result.instructions.items()):
         if ins.key in REQUESTS:
-            value = ins.operands[0]
-            if ins.immediate[0]:
-                found.append(Request(pc, ins.key, (value & 0x7FFF) & 0xFF, None))
+            value = immediate(ins, 0)
+            if value is None:
+                requests.append(Request(pc, ins.key, None, ins.operands[0]))
             else:
-                found.append(Request(pc, ins.key, None, value))
-    return found
+                requests.append(Request(pc, ins.key, value & 0xFF, None))
+        elif ins.key == ARMING:
+            armings.append(Arming(pc, immediate(ins, 0), immediate(ins, 1)))
+        control |= ins.key in CONTROL
+    return Scripts(requests, armings, control)
+
+
+def immediate(ins: events.Instruction, n: int) -> int | None:
+    """Operand n's 15-bit immediate, None when it names a variable (func_800ACDEC)."""
+    return ins.operands[n] & 0x7FFF if ins.immediate[n] else None
+
+
+def arming_f7(census: Census, map_id: int) -> bool:
+    """Whether the map's scripts reach an f7 that arms the field's draw."""
+    return any(arming.arms for arming in census.armings.get(map_id, []))
+
+
+def armed(census: Census, map_id: int) -> bool:
+    """Whether the map's scripts reach an f7 that arms the field's draw and the
+    player control that runs it."""
+    return map_id in census.controls and arming_f7(census, map_id)
 
 
 def read_worldmap(census: Census, files: DiscFiles, root: Path) -> None:
@@ -518,17 +576,22 @@ def sweep(root: Path, repository: Path = ROOT) -> list[Census]:
 
 def reach(census: Census) -> dict[tuple[str, int, int | None, int], set[str]]:
     """How each formation of a field or world map set can start a battle:
-    drawn (a nonzero weight), named (a field script's immediate request on its
-    map), chained (opcode 24 of the script set of a reachable event formation of
-    the same set), or none of these ('set' only)."""
+    drawn (a nonzero weight; on a field map also scripts that arm the draw),
+    named (a field script's immediate request on its map), chained (opcode 24
+    of the script set of a reachable event formation of the same set), or none
+    of these ('set' only). The draws' other gates (func_80079288, func_800712D0)
+    are not traced."""
     result = {}
     for source in census.sources:
         if source.kind == "debug":
             continue
-        found = census.requests.get(source.item, []) if source.kind == "field" else []
+        field_map = source.kind == "field"
+        found = census.requests.get(source.item, []) if field_map else []
         named = {r.formation for r in found if r.formation is not None}
         formations = source.formations
-        reached = {n for n in range(FORMATIONS) if any(source.weight(n)) or n in named}
+        drawable = not field_map or armed(census, source.item)
+        drawn = {n for n in range(FORMATIONS) if drawable and any(source.weight(n))}
+        reached = drawn | named
         chained = set()
         pending = list(reached)
         while pending:
@@ -544,7 +607,7 @@ def reach(census: Census) -> dict[tuple[str, int, int | None, int], set[str]]:
                         pending.append(target)
         for n in range(FORMATIONS):
             ways = set()
-            if any(source.weight(n)):
+            if n in drawn:
                 ways.add("drawn")
             if n in named:
                 ways.add("named")
@@ -647,10 +710,13 @@ def report(results: list[Census]) -> list[str]:
     shared = first.keys() & second.keys()
     same = sum(1 for key in shared if first[key] == second[key])
     out.append(f"sets on both discs: {len(shared)}, identical: {same}")
-    placed = [set(cross_check(c).pairs) for c in results]
+    checks = [cross_check(c).pairs for c in results]
+    placed = [set(pairs) for pairs in checks]
+    ways = [{(p, w) for p, found in pairs.items() for w in found - {"set"}} for pairs in checks]
     out.append(
         f"pairs placed on either disc: {len(set().union(*placed))};"
-        f" placed on disc 2 only: {len(placed[1] - placed[0])}"
+        f" placed on disc 2 only: {len(placed[1] - placed[0])};"
+        f" drawn, named or chained on disc 2 only: {len(ways[1] - ways[0])}"
     )
     return out
 
@@ -687,6 +753,19 @@ def disc_report(census: Census) -> list[str]:
     chains = ", ".join(f"set {n} -> {t}" for n, t in census.chains.items() if t) or "none"
     chain_targets = ", ".join(f"{label(key)} formation {key[3]}" for key in chained) or "none"
     party_bits = sum(g >> 7 for f in formations for g in f.party_groups)
+    armings = Counter(a.text for found in census.armings.values() for a in found)
+    weighted = [s.item for s in field_sets if any(map(any, s.rows))]
+    arming = [m for m in weighted if armed(census, m)]
+    uncontrolled = [m for m in weighted if arming_f7(census, m) and m not in census.controls]
+    clearing = [m for m in weighted if census.armings.get(m) and not arming_f7(census, m)]
+    empty_armed = [m for m in census.empty_maps if armed(census, m)] or "none"
+    unarmed = sum(
+        1
+        for s in field_sets
+        if not armed(census, s.item)
+        for n in range(FORMATIONS)
+        if any(s.weight(n))
+    )
     out = [
         f"disc {census.disc}:",
         f"  field maps: {census.maps} bundles ({census.placeholders} placeholder files),"
@@ -695,6 +774,14 @@ def disc_report(census: Census) -> list[str]:
         f"    component 6 sizes: {_counts(census.component_sizes)};"
         f" stream bytes past 0x{FIELD_SIZE:x} (into D_80065AEC):"
         f" {_counts(census.stream_tails, '{}')}",
+        f"    f7 reached (func_8008E85C, period/count): {sum(armings.values())},"
+        f" {_counts(armings, '{}')}",
+        f"    maps with a weight: {len(weighted)}; armed (an f7 with a nonzero period and"
+        f" count, and player control 0c or a7): {len(arming)}; such an f7 but no player"
+        f" control: {uncontrolled or 'none'}; only f7s that do not arm:"
+        f" {clearing or 'none'}; no f7:"
+        f" {len(weighted) - len(arming) - len(uncontrolled) - len(clearing)}; with an empty"
+        f" component 6 and armed: {empty_armed}; weighted formations never armed: {unarmed}",
         f"  world map area files: {len(census.area_files)}, {tables} with {KINDS} terrain"
         f" tables ({len(terrain)} tables); without: {tableless}",
         f"    weight rows: {len(brackets()) - 1} (D_8009B578 {list(brackets())});"
@@ -793,6 +880,12 @@ def listing(census: Census, kind: str, item: int | None) -> list[str]:
                 for r in requests
             )
             lines.append(f";   battle requests: {named or 'none'}")
+            draws = " ".join(f"+0x{a.pc:x} {a.text}" for a in census.armings.get(source.item, []))
+            arms = "armed" if armed(census, source.item) else "never armed"
+            control = "yes" if source.item in census.controls else "no"
+            lines.append(
+                f";   draw: {arms}; f7 period/count: {draws or 'none'}; player control: {control}"
+            )
         width = 4 * len(source.rows)
         weights = f"{'weights':<{width}} " if width else ""
         lines.append(f";  #  {weights}formation (enemies id[g]/group[h][.][^])")
