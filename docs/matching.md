@@ -54,8 +54,9 @@ property of each translation unit: most code is `-G0`, while units that address
 small string constants (resident heap report), so such units expand `la` before GNU as.
 
 The ABI, the same under all three cc1, is GCC's o32 convention for little-endian
-MIPS I (R3000) with soft float: arguments in `$a0`-`$a3` above a 16-byte home area,
-results in `$v0`, every structure returned through a hidden pointer
+MIPS I (R3000) with soft float: the first four argument words in `$a0`-`$a3`, the
+rest on the stack after 16 bytes the caller reserves for those four, results in
+`$v0`, every structure returned through a hidden pointer
 (`-fpcc-struct-return`, the default), unsigned plain `char` (`lbu`), 16-bit
 `short`, 32-bit `int`, `long` and pointers, 8-byte `long long` and `double`, both
 8-aligned, and `$gp` = 0x80059170 for `-G8` units.

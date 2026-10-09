@@ -80,7 +80,7 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # 801e8958-801e8968: five u8, stored and loaded bytewise; menu3
 # 80092678-800926a0; slot39 801ea710/801ea714) and for the commons PSYLINK
 # allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
-# Stsector_offset alone at 801e89bc; the ASPSX 2.79 world map's u16 at
+# Stsector_offset alone at 801e89bc; the world map's u16 at
 # 8009bd10-8009bd1c, shared by three units), which the commons units
 # reproduce. Under 2.34 and the world map's setting 2.79 (no 2.79 unit
 # allocates any in C yet), this filter gives each object a whole number of
