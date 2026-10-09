@@ -724,7 +724,7 @@ void func_801C7314(u8 index) {
 
 /* Initialise panel `index`'s background, draw modes and edge sprite parts. */
 void func_801C7370(u8 index) {
-    Panel *panel;
+    MenuPanel *panel;
     RECT window;
     u8 i;
 
@@ -736,238 +736,238 @@ void func_801C7370(u8 index) {
     D_800625A0->flags->panels_shown[index] = 0;
     D_800625A0->flags->panels_growing[index] = 0;
     for (i = 0; i < 2; i++) {
-        SetPolyG4(&panel->back[i]);
-        (panel->back + i)->r0 = 0x68;
-        (panel->back + i)->g0 = 0x68;
-        (panel->back + i)->b0 = 0x68;
-        (panel->back + i)->r1 = 0x68;
-        (panel->back + i)->g1 = 0x68;
-        (panel->back + i)->b1 = 0x68;
-        (panel->back + i)->r2 = 0x68;
-        (panel->back + i)->g2 = 0x68;
-        (panel->back + i)->b2 = 0x68;
-        (panel->back + i)->r3 = 0x68;
-        (panel->back + i)->g3 = 0x68;
-        (panel->back + i)->b3 = 0x68;
-        SetSemiTrans(&panel->back[i], 1);
-        SetDrawMode(&panel->mode[i], 0, 0,
+        SetPolyG4(&panel->fill[i]);
+        (panel->fill + i)->r0 = 0x68;
+        (panel->fill + i)->g0 = 0x68;
+        (panel->fill + i)->b0 = 0x68;
+        (panel->fill + i)->r1 = 0x68;
+        (panel->fill + i)->g1 = 0x68;
+        (panel->fill + i)->b1 = 0x68;
+        (panel->fill + i)->r2 = 0x68;
+        (panel->fill + i)->g2 = 0x68;
+        (panel->fill + i)->b2 = 0x68;
+        (panel->fill + i)->r3 = 0x68;
+        (panel->fill + i)->g3 = 0x68;
+        (panel->fill + i)->b3 = 0x68;
+        SetSemiTrans(&panel->fill[i], 1);
+        SetDrawMode(&panel->fill_mode[i], 0, 0,
                       GetTPage(0, 0, D_800625A0->sheet_entries[0].page_x, D_800625A0->sheet_entries[0].page_y),
                       &window);
     }
     for (i = 0; i < 4; i++) {
-        SetPolyFT4(&panel->parts[i + 8]);
-        SetShadeTex(&panel->parts[i + 8], 1);
-        (panel->parts + i + 8)->r0 = 0xFF;
-        (panel->parts + i + 8)->g0 = 0xFF;
-        (panel->parts + i + 8)->b0 = 0xFF;
-        (panel->parts + i + 8)->tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0,
+        SetPolyFT4(&panel->edge[0][i]);
+        SetShadeTex(&panel->edge[0][i], 1);
+        (panel->edge[0] + i)->r0 = 0xFF;
+        (panel->edge[0] + i)->g0 = 0xFF;
+        (panel->edge[0] + i)->b0 = 0xFF;
+        (panel->edge[0] + i)->tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0,
                                                       D_800625A0->sheet_entries[0].page_x,
                                                       D_800625A0->sheet_entries[0].page_y);
-        (panel->parts + i + 8)->clut = GetClut(D_800625A0->sheet_entries[0].clut_x,
+        (panel->edge[0] + i)->clut = GetClut(D_800625A0->sheet_entries[0].clut_x,
                                                      D_800625A0->sheet_entries[0].clut_y);
-        SetPolyFT4(&panel->parts[i + 12]);
-        SetShadeTex(&panel->parts[i + 12], 1);
-        (panel->parts + i + 12)->r0 = 0xFF;
-        (panel->parts + i + 12)->g0 = 0xFF;
-        (panel->parts + i + 12)->b0 = 0xFF;
-        (panel->parts + i + 12)->tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0,
+        SetPolyFT4(&panel->edge[1][i]);
+        SetShadeTex(&panel->edge[1][i], 1);
+        (panel->edge[1] + i)->r0 = 0xFF;
+        (panel->edge[1] + i)->g0 = 0xFF;
+        (panel->edge[1] + i)->b0 = 0xFF;
+        (panel->edge[1] + i)->tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0,
                                                        D_800625A0->sheet_entries[1].page_x,
                                                        D_800625A0->sheet_entries[1].page_y);
-        (panel->parts + i + 12)->clut = GetClut(D_800625A0->sheet_entries[1].clut_x,
+        (panel->edge[1] + i)->clut = GetClut(D_800625A0->sheet_entries[1].clut_x,
                                                       D_800625A0->sheet_entries[1].clut_y);
-        SetPolyFT4(&panel->parts[i + 16]);
-        SetShadeTex(&panel->parts[i + 16], 1);
-        (panel->parts + i + 16)->r0 = 0xFF;
-        (panel->parts + i + 16)->g0 = 0xFF;
-        (panel->parts + i + 16)->b0 = 0xFF;
-        (panel->parts + i + 16)->tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0,
+        SetPolyFT4(&panel->edge[2][i]);
+        SetShadeTex(&panel->edge[2][i], 1);
+        (panel->edge[2] + i)->r0 = 0xFF;
+        (panel->edge[2] + i)->g0 = 0xFF;
+        (panel->edge[2] + i)->b0 = 0xFF;
+        (panel->edge[2] + i)->tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0,
                                                        D_800625A0->sheet_entries[2].page_x,
                                                        D_800625A0->sheet_entries[2].page_y);
-        (panel->parts + i + 16)->clut = GetClut(D_800625A0->sheet_entries[2].clut_x,
+        (panel->edge[2] + i)->clut = GetClut(D_800625A0->sheet_entries[2].clut_x,
                                                       D_800625A0->sheet_entries[2].clut_y);
-        SetPolyFT4(&panel->parts[i + 20]);
-        SetShadeTex(&panel->parts[i + 20], 1);
-        (panel->parts + i + 20)->r0 = 0xFF;
-        (panel->parts + i + 20)->g0 = 0xFF;
-        (panel->parts + i + 20)->b0 = 0xFF;
-        (panel->parts + i + 20)->tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0,
+        SetPolyFT4(&panel->edge[3][i]);
+        SetShadeTex(&panel->edge[3][i], 1);
+        (panel->edge[3] + i)->r0 = 0xFF;
+        (panel->edge[3] + i)->g0 = 0xFF;
+        (panel->edge[3] + i)->b0 = 0xFF;
+        (panel->edge[3] + i)->tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0,
                                                        D_800625A0->sheet_entries[3].page_x,
                                                        D_800625A0->sheet_entries[3].page_y);
-        (panel->parts + i + 20)->clut = GetClut(D_800625A0->sheet_entries[3].clut_x,
+        (panel->edge[3] + i)->clut = GetClut(D_800625A0->sheet_entries[3].clut_x,
                                                       D_800625A0->sheet_entries[3].clut_y);
     }
 }
 
 /* Place panel `index`'s scroll bar (top arrow, bottom arrow, track) at its right edge. */
 void func_801C768C(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    func_8002675C(D_800625A0->sheet, 0x105, &panel->parts[26], D_800625A0->buffer_index, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, &panel->parts[28], D_800625A0->buffer_index, x,
+    func_8002675C(D_800625A0->sheet, 0x105, &panel->bar_ends[0], D_800625A0->buffer_index, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, &panel->bar_ends[2], D_800625A0->buffer_index, x,
                   y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, &panel->parts[24], D_800625A0->buffer_index, x, y + 8,
+    func_8002675C(D_800625A0->sheet, 0x106, &panel->bar_side[0], D_800625A0->buffer_index, x, y + 8,
                   0x1000);
-    func_801C6E90(&panel->quads[56], x, y, 8, 8);
-    func_801C6E90(&panel->quads[60], x, y + h, 8, -8);
-    func_801C6E90(&panel->quads[52], x, y + 8, 8, h - 8);
+    func_801C6E90(&panel->ends_at[0], x, y, 8, 8);
+    func_801C6E90(&panel->ends_at[4], x, y + h, 8, -8);
+    func_801C6E90(&panel->side_at[0], x, y + 8, 8, h - 8);
 }
 
 /* Build panel `index`'s four corners around (x, y, w, h). */
 void func_801C77F0(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    Panel *panel;
+    MenuPanel *panel;
     s32 i;
 
     panel = D_800625A0->panels[index];
-    panel->part_count = 0;
-    panel->part_count += func_8002675C(D_800625A0->sheet, 0xFD, &panel->parts[panel->part_count * 2],
+    panel->corner_parts = 0;
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0xFD, &panel->corner[panel->corner_parts * 2],
                                        D_800625A0->buffer_index, 0, 0, 0x1000);
-    panel->part_count += func_8002675C(D_800625A0->sheet, 0xFF, &panel->parts[panel->part_count * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0xFF, &panel->corner[panel->corner_parts * 2],
                                        D_800625A0->buffer_index, 0, 0, 0x1000);
-    panel->part_count += func_8002675C(D_800625A0->sheet, 0x102, &panel->parts[panel->part_count * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0x102, &panel->corner[panel->corner_parts * 2],
                                        D_800625A0->buffer_index, 0, 0, 0x1000);
-    panel->part_count += func_8002675C(D_800625A0->sheet, 0x104, &panel->parts[panel->part_count * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0x104, &panel->corner[panel->corner_parts * 2],
                                        D_800625A0->buffer_index, 0, 0, 0x1000);
-    func_801C6E90(&panel->quads[0], x - 8, y + 8, 0x10, -0x10);
-    func_801C6E90(&panel->quads[4], x + w + 8, y + 8, -0x10, -0x10);
-    func_801C6E90(&panel->quads[8], x - 8, y + h - 8, 0x10, 0x10);
-    func_801C6E90(&panel->quads[12], x + w + 8, y + h - 8, -0x10, 0x10);
+    func_801C6E90(&panel->corner_at[0], x - 8, y + 8, 0x10, -0x10);
+    func_801C6E90(&panel->corner_at[4], x + w + 8, y + 8, -0x10, -0x10);
+    func_801C6E90(&panel->corner_at[8], x - 8, y + h - 8, 0x10, 0x10);
+    func_801C6E90(&panel->corner_at[12], x + w + 8, y + h - 8, -0x10, 0x10);
     for (i = 0; i < 4; i++) {
-        func_801C6EE8(&panel->parts[i * 2 + D_800625A0->buffer_index]);
+        func_801C6EE8(&panel->corner[i * 2 + D_800625A0->buffer_index]);
     }
 }
 
 /* Build panel `index`'s top edge, two pieces across the width. */
 void func_801C7A38(u8 index, u16 x, u16 y, u16 w) {
-    Panel *panel;
+    MenuPanel *panel;
     s32 half;
     s32 i;
 
     panel = D_800625A0->panels[index];
-    (panel->parts + D_800625A0->buffer_index + 8)->u0 = 0;
-    (panel->parts + D_800625A0->buffer_index + 8)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 8)->u1 = 7;
-    (panel->parts + D_800625A0->buffer_index + 8)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 8)->u2 = 0;
-    (panel->parts + D_800625A0->buffer_index + 8)->v2 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 8)->u3 = 7;
-    (panel->parts + D_800625A0->buffer_index + 8)->v3 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 10)->u0 = 0;
-    (panel->parts + D_800625A0->buffer_index + 10)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 10)->u1 = 7;
-    (panel->parts + D_800625A0->buffer_index + 10)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 10)->u2 = 0;
-    (panel->parts + D_800625A0->buffer_index + 10)->v2 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 10)->u3 = 7;
-    (panel->parts + D_800625A0->buffer_index + 10)->v3 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C6E90(&panel->quads[16], x + 8, y - 8, half, 0x10);
-    func_801C6E90(&panel->quads[20], x + (half + 8), y - 8, half, 0x10);
+    func_801C6E90(&panel->edge_at[0][0][0], x + 8, y - 8, half, 0x10);
+    func_801C6E90(&panel->edge_at[0][1][0], x + (half + 8), y - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->parts[i * 2 + D_800625A0->buffer_index + 8]);
+        func_801C6EE8(&panel->edge[0][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
 /* Build panel `index`'s bottom edge, two pieces across the width. */
 void func_801C7D7C(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    Panel *panel;
+    MenuPanel *panel;
     s32 half;
     s32 i;
 
     panel = D_800625A0->panels[index];
-    (panel->parts + D_800625A0->buffer_index + 12)->u0 = 8;
-    (panel->parts + D_800625A0->buffer_index + 12)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 12)->u1 = 0xF;
-    (panel->parts + D_800625A0->buffer_index + 12)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 12)->u2 = 8;
-    (panel->parts + D_800625A0->buffer_index + 12)->v2 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 12)->u3 = 0xF;
-    (panel->parts + D_800625A0->buffer_index + 12)->v3 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 14)->u0 = 8;
-    (panel->parts + D_800625A0->buffer_index + 14)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 14)->u1 = 0xF;
-    (panel->parts + D_800625A0->buffer_index + 14)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 14)->u2 = 8;
-    (panel->parts + D_800625A0->buffer_index + 14)->v2 = 0x94;
-    (panel->parts + D_800625A0->buffer_index + 14)->u3 = 0xF;
-    (panel->parts + D_800625A0->buffer_index + 14)->v3 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C6E90(&panel->quads[24], x + 8, y + h - 8, half, 0x10);
-    func_801C6E90(&panel->quads[28], x + (half + 8), y + h - 8, half, 0x10);
+    func_801C6E90(&panel->edge_at[1][0][0], x + 8, y + h - 8, half, 0x10);
+    func_801C6E90(&panel->edge_at[1][1][0], x + (half + 8), y + h - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->parts[i * 2 + D_800625A0->buffer_index + 12]);
+        func_801C6EE8(&panel->edge[1][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
 /* Build panel `index`'s left edge, two pieces down the height. */
 void func_801C80C8(u8 index, u16 x, u16 y, u16 h) {
-    Panel *panel;
+    MenuPanel *panel;
     s32 half;
     s32 i;
 
     panel = D_800625A0->panels[index];
-    (panel->parts + D_800625A0->buffer_index + 16)->u0 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 16)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 16)->u1 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 16)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 16)->u2 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 16)->v2 = 0x8B;
-    (panel->parts + D_800625A0->buffer_index + 16)->u3 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 16)->v3 = 0x8B;
-    (panel->parts + D_800625A0->buffer_index + 18)->u0 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 18)->v0 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 18)->u1 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 18)->v1 = 0x84;
-    (panel->parts + D_800625A0->buffer_index + 18)->u2 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 18)->v2 = 0x8B;
-    (panel->parts + D_800625A0->buffer_index + 18)->u3 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 18)->v3 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v3 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v3 = 0x8B;
     half = (h - 0x10) / 2;
-    func_801C6E90(&panel->quads[32], x - 8, y + 8, 0x10, half);
-    func_801C6E90(&panel->quads[36], x - 8, y + (half + 8), 0x10, half);
+    func_801C6E90(&panel->edge_at[2][0][0], x - 8, y + 8, 0x10, half);
+    func_801C6E90(&panel->edge_at[2][1][0], x - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->parts[i * 2 + D_800625A0->buffer_index + 16]);
+        func_801C6EE8(&panel->edge[2][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
 /* Build panel `index`'s right edge, two pieces down the height. */
 void func_801C8410(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    Panel *panel;
+    MenuPanel *panel;
     s32 half;
     s32 i;
 
     panel = D_800625A0->panels[index];
-    (panel->parts + D_800625A0->buffer_index + 20)->u0 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 20)->v0 = 0x8C;
-    (panel->parts + D_800625A0->buffer_index + 20)->u1 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 20)->v1 = 0x8C;
-    (panel->parts + D_800625A0->buffer_index + 20)->u2 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 20)->v2 = 0x93;
-    (panel->parts + D_800625A0->buffer_index + 20)->u3 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 20)->v3 = 0x93;
-    (panel->parts + D_800625A0->buffer_index + 22)->u0 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 22)->v0 = 0x8C;
-    (panel->parts + D_800625A0->buffer_index + 22)->u1 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 22)->v1 = 0x8C;
-    (panel->parts + D_800625A0->buffer_index + 22)->u2 = 0x10;
-    (panel->parts + D_800625A0->buffer_index + 22)->v2 = 0x93;
-    (panel->parts + D_800625A0->buffer_index + 22)->u3 = 0x20;
-    (panel->parts + D_800625A0->buffer_index + 22)->v3 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v3 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v3 = 0x93;
     half = (h - 0x10) / 2;
-    func_801C6E90(&panel->quads[40], x + w - 8, y + 8, 0x10, half);
-    func_801C6E90(&panel->quads[44], x + w - 8, y + (half + 8), 0x10, half);
+    func_801C6E90(&panel->edge_at[3][0][0], x + w - 8, y + 8, 0x10, half);
+    func_801C6E90(&panel->edge_at[3][1][0], x + w - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->parts[i * 2 + D_800625A0->buffer_index + 20]);
+        func_801C6EE8(&panel->edge[3][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
 /* Lay out panel `index` at (x, y, w, h) for this buffer and mark it shown. */
 void func_801C875C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar) {
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
     D_800625A0->flags->panels_shown[index] = 0;
-    func_801C6E90(&panel->quads[48], x, y, w, h);
+    func_801C6E90(&panel->fill_at[0], x, y, w, h);
     func_801C77F0(index, x, y, w, h);
     func_801C7A38(index, x, y, w);
     func_801C7D7C(index, x, y, w, h);
@@ -997,8 +997,8 @@ void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 o
     MenuGrowth *growth;
 
     if (index >= 2) {
-        D_800625A0->panels[index] = func_80031BDC(sizeof(Panel), 0);
-        bzero(D_800625A0->panels[index], sizeof(Panel));
+        D_800625A0->panels[index] = func_80031BDC(sizeof(MenuPanel), 0);
+        bzero(D_800625A0->panels[index], sizeof(MenuPanel));
         D_800625A0->growth[index] = func_80031BDC(sizeof(MenuGrowth), 0);
         bzero(D_800625A0->growth[index], sizeof(MenuGrowth));
         func_801C7370(index);
@@ -1048,7 +1048,7 @@ void func_801C8AF0(void) {
             }
             func_801C875C(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
                           growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
-                          growth->cur_h, growth->flat, growth->ot_entry, growth->framed);
+                          growth->cur_h, growth->flat, growth->ot_entry, growth->has_bar);
         }
     }
 }
@@ -1100,108 +1100,108 @@ void func_801C8E28(void) {
 void func_801C8EB8(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->quads[16], &panel->quads[17], &panel->quads[18], &panel->quads[19],
-                  &panel->parts[panel->buffer + 8].x0, &panel->parts[panel->buffer + 8].x1,
-                  &panel->parts[panel->buffer + 8].x2, &panel->parts[panel->buffer + 8].x3,
+    RotTransPers4(&panel->edge_at[0][0][0], &panel->edge_at[0][0][1], &panel->edge_at[0][0][2], &panel->edge_at[0][0][3],
+                  &panel->edge[0][panel->buffer].x0, &panel->edge[0][panel->buffer].x1,
+                  &panel->edge[0][panel->buffer].x2, &panel->edge[0][panel->buffer].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 8]);
-    RotTransPers4(&panel->quads[20], &panel->quads[21], &panel->quads[22], &panel->quads[23],
-                  &panel->parts[panel->buffer + 10].x0, &panel->parts[panel->buffer + 10].x1,
-                  &panel->parts[panel->buffer + 10].x2, &panel->parts[panel->buffer + 10].x3,
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[0][panel->buffer]);
+    RotTransPers4(&panel->edge_at[0][1][0], &panel->edge_at[0][1][1], &panel->edge_at[0][1][2], &panel->edge_at[0][1][3],
+                  &panel->edge[0][panel->buffer + 2].x0, &panel->edge[0][panel->buffer + 2].x1,
+                  &panel->edge[0][panel->buffer + 2].x2, &panel->edge[0][panel->buffer + 2].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 10]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[0][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s bottom edge. */
 void func_801C908C(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->quads[24], &panel->quads[25], &panel->quads[26], &panel->quads[27],
-                  &panel->parts[panel->buffer + 12].x0, &panel->parts[panel->buffer + 12].x1,
-                  &panel->parts[panel->buffer + 12].x2, &panel->parts[panel->buffer + 12].x3,
+    RotTransPers4(&panel->edge_at[1][0][0], &panel->edge_at[1][0][1], &panel->edge_at[1][0][2], &panel->edge_at[1][0][3],
+                  &panel->edge[1][panel->buffer].x0, &panel->edge[1][panel->buffer].x1,
+                  &panel->edge[1][panel->buffer].x2, &panel->edge[1][panel->buffer].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 12]);
-    RotTransPers4(&panel->quads[28], &panel->quads[29], &panel->quads[30], &panel->quads[31],
-                  &panel->parts[panel->buffer + 14].x0, &panel->parts[panel->buffer + 14].x1,
-                  &panel->parts[panel->buffer + 14].x2, &panel->parts[panel->buffer + 14].x3,
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[1][panel->buffer]);
+    RotTransPers4(&panel->edge_at[1][1][0], &panel->edge_at[1][1][1], &panel->edge_at[1][1][2], &panel->edge_at[1][1][3],
+                  &panel->edge[1][panel->buffer + 2].x0, &panel->edge[1][panel->buffer + 2].x1,
+                  &panel->edge[1][panel->buffer + 2].x2, &panel->edge[1][panel->buffer + 2].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 14]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[1][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s left edge. */
 void func_801C9260(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->quads[32], &panel->quads[33], &panel->quads[34], &panel->quads[35],
-                  &panel->parts[panel->buffer + 16].x0, &panel->parts[panel->buffer + 16].x1,
-                  &panel->parts[panel->buffer + 16].x2, &panel->parts[panel->buffer + 16].x3,
+    RotTransPers4(&panel->edge_at[2][0][0], &panel->edge_at[2][0][1], &panel->edge_at[2][0][2], &panel->edge_at[2][0][3],
+                  &panel->edge[2][panel->buffer].x0, &panel->edge[2][panel->buffer].x1,
+                  &panel->edge[2][panel->buffer].x2, &panel->edge[2][panel->buffer].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 16]);
-    RotTransPers4(&panel->quads[36], &panel->quads[37], &panel->quads[38], &panel->quads[39],
-                  &panel->parts[panel->buffer + 18].x0, &panel->parts[panel->buffer + 18].x1,
-                  &panel->parts[panel->buffer + 18].x2, &panel->parts[panel->buffer + 18].x3,
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[2][panel->buffer]);
+    RotTransPers4(&panel->edge_at[2][1][0], &panel->edge_at[2][1][1], &panel->edge_at[2][1][2], &panel->edge_at[2][1][3],
+                  &panel->edge[2][panel->buffer + 2].x0, &panel->edge[2][panel->buffer + 2].x1,
+                  &panel->edge[2][panel->buffer + 2].x2, &panel->edge[2][panel->buffer + 2].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 18]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[2][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s right edge. */
 void func_801C9434(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->quads[40], &panel->quads[41], &panel->quads[42], &panel->quads[43],
-                  &panel->parts[panel->buffer + 20].x0, &panel->parts[panel->buffer + 20].x1,
-                  &panel->parts[panel->buffer + 20].x2, &panel->parts[panel->buffer + 20].x3,
+    RotTransPers4(&panel->edge_at[3][0][0], &panel->edge_at[3][0][1], &panel->edge_at[3][0][2], &panel->edge_at[3][0][3],
+                  &panel->edge[3][panel->buffer].x0, &panel->edge[3][panel->buffer].x1,
+                  &panel->edge[3][panel->buffer].x2, &panel->edge[3][panel->buffer].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 20]);
-    RotTransPers4(&panel->quads[44], &panel->quads[45], &panel->quads[46], &panel->quads[47],
-                  &panel->parts[panel->buffer + 22].x0, &panel->parts[panel->buffer + 22].x1,
-                  &panel->parts[panel->buffer + 22].x2, &panel->parts[panel->buffer + 22].x3,
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[3][panel->buffer]);
+    RotTransPers4(&panel->edge_at[3][1][0], &panel->edge_at[3][1][1], &panel->edge_at[3][1][2], &panel->edge_at[3][1][3],
+                  &panel->edge[3][panel->buffer + 2].x0, &panel->edge[3][panel->buffer + 2].x1,
+                  &panel->edge[3][panel->buffer + 2].x2, &panel->edge[3][panel->buffer + 2].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 22]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[3][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s background and its draw mode. */
 void func_801C9608(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->quads[48], &panel->quads[49], &panel->quads[50], &panel->quads[51],
-                  &(panel->back + panel->buffer)->x0, &(panel->back + panel->buffer)->x1,
-                  &(panel->back + panel->buffer)->x2, &(panel->back + panel->buffer)->x3, &depth,
+    RotTransPers4(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
+                  &(panel->fill + panel->buffer)->x0, &(panel->fill + panel->buffer)->x1,
+                  &(panel->fill + panel->buffer)->x2, &(panel->fill + panel->buffer)->x3, &depth,
                   &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->back[panel->buffer]);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->mode[panel->buffer]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill[panel->buffer]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
 
 /* Project and link panel `index`'s four corners. */
 void func_801C9744(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
     s32 i;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
-        RotTransPers4(&panel->quads[i * 4], &panel->quads[i * 4 + 1], &panel->quads[i * 4 + 2], &panel->quads[i * 4 + 3],
-                      &(panel->parts + (i * 2 + panel->buffer))->x0,
-                      &(panel->parts + (i * 2 + panel->buffer))->x1,
-                      &(panel->parts + (i * 2 + panel->buffer))->x2,
-                      &(panel->parts + (i * 2 + panel->buffer))->x3, &depth, &flag);
-        AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[i * 2 + panel->buffer]);
+        RotTransPers4(&panel->corner_at[i * 4], &panel->corner_at[i * 4 + 1], &panel->corner_at[i * 4 + 2], &panel->corner_at[i * 4 + 3],
+                      &(panel->corner + (i * 2 + panel->buffer))->x0,
+                      &(panel->corner + (i * 2 + panel->buffer))->x1,
+                      &(panel->corner + (i * 2 + panel->buffer))->x2,
+                      &(panel->corner + (i * 2 + panel->buffer))->x3, &depth, &flag);
+        AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->corner[i * 2 + panel->buffer]);
     }
 }
 
@@ -1209,20 +1209,20 @@ void func_801C9744(s32 index) {
 void func_801C9890(s32 index) {
     s32 depth;
     s32 flag;
-    Panel *panel;
+    MenuPanel *panel;
     s32 i;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 2; i++) {
-        RotTransPers4(&panel->quads[i * 4 + 56], &panel->quads[i * 4 + 57], &panel->quads[i * 4 + 58],
-                      &panel->quads[i * 4 + 59], &panel->parts[i * 2 + panel->buffer + 26].x0, &panel->parts[i * 2 + panel->buffer + 26].x1, &panel->parts[i * 2 + panel->buffer + 26].x2, &panel->parts[i * 2 + panel->buffer + 26].x3, &depth, &flag);
-        AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[i * 2 + panel->buffer + 26]);
+        RotTransPers4(&panel->ends_at[i * 4], &panel->ends_at[i * 4 + 1], &panel->ends_at[i * 4 + 2],
+                      &panel->ends_at[i * 4 + 3], &panel->bar_ends[i * 2 + panel->buffer].x0, &panel->bar_ends[i * 2 + panel->buffer].x1, &panel->bar_ends[i * 2 + panel->buffer].x2, &panel->bar_ends[i * 2 + panel->buffer].x3, &depth, &flag);
+        AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->bar_ends[i * 2 + panel->buffer]);
     }
-    RotTransPers4(&panel->quads[52], &panel->quads[53], &panel->quads[54], &panel->quads[55],
-                  &panel->parts[panel->buffer + 24].x0, &panel->parts[panel->buffer + 24].x1,
-                  &panel->parts[panel->buffer + 24].x2, &panel->parts[panel->buffer + 24].x3,
+    RotTransPers4(&panel->side_at[0], &panel->side_at[1], &panel->side_at[2], &panel->side_at[3],
+                  &panel->bar_side[panel->buffer].x0, &panel->bar_side[panel->buffer].x1,
+                  &panel->bar_side[panel->buffer].x2, &panel->bar_side[panel->buffer].x3,
                   &depth, &flag);
-    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->parts[panel->buffer + 24]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->bar_side[panel->buffer]);
 }
 
 /* Draw every shown panel; panels that are not flat get their own 3D matrices. */
@@ -1231,7 +1231,7 @@ void func_801C9AB4(void) {
     VECTOR translation;
     MATRIX matrix;
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
-    Panel *panel;
+    MenuPanel *panel;
     s32 i;
 
     for (i = 0; i < 7; i++) {

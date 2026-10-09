@@ -3126,7 +3126,7 @@ void func_801E5178(void) {
 /* Set up portrait `index`: hide it and its mark, set the grey covers and
  * their draw modes, and the four edge lists' quads (sheet records 0-3). */
 void func_801E53CC(u8 index) {
-    MenuPortrait *portrait;
+    MenuPanel *portrait;
     RECT window;
     u8 i;
 
@@ -3152,7 +3152,7 @@ void func_801E53CC(u8 index) {
         (portrait->fill + i)->g3 = 0x68;
         (portrait->fill + i)->b3 = 0x68;
         SetSemiTrans(&portrait->fill[i], 1);
-        SetDrawMode(&portrait->fillMode[i], 0, 0,
+        SetDrawMode(&portrait->fill_mode[i], 0, 0,
                     GetTPage(0, 0, D_800625A0->sheet_entries[0].page_x, D_800625A0->sheet_entries[0].page_y), &window);
     }
     for (i = 0; i < 4; i++) {

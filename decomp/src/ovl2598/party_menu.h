@@ -45,28 +45,6 @@ typedef struct {
     POLY_FT4 poly[2];
 } SpriteParts;
 
-/* A 3D menu panel: four edge strips (two pieces per draw buffer), the frame
- * sprites, the translucent fill and the corner vectors it is projected from. */
-typedef struct MenuPanel {
-    POLY_FT4 corner[8];       /* 0x0: corner sprite parts, two per part */
-    POLY_FT4 edge[4][4];      /* 0x140 */
-    POLY_FT4 frame_side[2];   /* 0x3C0: sprite 0x106 */
-    POLY_FT4 frame_ends[4];   /* 0x410: sprite 0x105 at the top, flipped at the bottom */
-    POLY_G4 fill[2];          /* 0x4B0 */
-    DR_MODE fill_mode[2];     /* 0x4F8 */
-    SVECTOR corner_at[16];    /* 0x510: four corner quads */
-    SVECTOR edge_at[4][2][4]; /* 0x590: two quads per edge */
-    SVECTOR fill_at[4];       /* 0x690 */
-    SVECTOR side_at[4];       /* 0x6B0 */
-    SVECTOR ends_at[8];       /* 0x6D0: top and bottom quads */
-    s32 corner_parts;         /* 0x710: corner parts built */
-    s32 style;                /* 0x714 */
-    s32 param;                /* 0x718 */
-    u8 buffer;                /* 0x71C: buffer it was laid out for */
-    u8 framed;                /* 0x71D: frame sprites built */
-    u8 pad_71E[2];
-} Panel;
-
 /* A character status panel (0xBEC bytes): sprite quads, two per sprite
  * (one per draw buffer). */
 typedef struct MenuStatusPanel {

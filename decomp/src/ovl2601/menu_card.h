@@ -112,27 +112,6 @@ typedef struct ModelParts {
 } ModelParts;
 
 /*
- * A framed 3D panel (menu state + 364 + n * 4, 720h bytes). Its sprite parts
- * come in buffer pairs: corners 0-7, top edge 8-11, bottom 12-15, left
- * 16-19, right 20-23, then the scroll bar 24-29; each part has a quad of
- * corner vectors (quads[]) that is projected when drawn.
- */
-typedef struct MenuPanel {
-    POLY_FT4 parts[30];  /* 000 */
-    POLY_G4 back[2];     /* 4b0: background */
-    DR_MODE mode[2];     /* 4f8 */
-    SVECTOR quads[64];   /* 510: four corners each for the corner pieces 0-3,
-                            top 4-5, bottom 6-7, left 8-9, right 10-11,
-                            background 12 and bar 13-15 */
-    s32 part_count;      /* 710: corner parts the sprite sheet produced */
-    s32 flat;            /* 714: drawn with the current matrices, not the panel's own */
-    s32 ot_entry;        /* 718 */
-    u8 buffer;           /* 71c */
-    u8 has_bar;          /* 71d */
-    u8 unk71E[2];
-} Panel;
-
-/*
  * Card state block (menu state + 32c, 5034h bytes): the directory scan, the
  * file heads and this game's save header.
  */

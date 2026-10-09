@@ -494,7 +494,7 @@ typedef struct MenuStatusPanel {
     u8 shown; /* BE7 */
     u8 count0; /* BE8 */
     u8 padBE9[0x3];
-} MenuPanel;
+} MenuStatusPanel;
 
 /* A field-menu block (*(state + 39c)): frame quads and part lists. */
 typedef struct MenuFieldBlock {
@@ -533,28 +533,6 @@ typedef struct MenuEquipList {
     u8 extraShown; /* A18 */
     u8 padA19[0x3];
 } MenuBlock434;
-
-/* A portrait window (*(state + 364), 720 bytes): a 3D panel of corner, edge
- * and frame sprites around a translucent fill, two quads per piece (one per
- * draw buffer); the same layout as ovl2600's panels. */
-typedef struct MenuPanel {
-    POLY_FT4 corner[8];      /* 0: corner sprite parts */
-    POLY_FT4 edge[4][4];     /* 140: top, bottom, left and right edges, two pieces each */
-    POLY_FT4 frameSide[2];   /* 3C0: sprite 106 */
-    POLY_FT4 frameEnds[4];   /* 410: sprite 105 at the top, flipped at the bottom */
-    POLY_G4 fill[2];         /* 4B0 */
-    DR_MODE fillMode[2];     /* 4F8 */
-    SVECTOR cornerAt[16];    /* 510: four corner quads */
-    SVECTOR edgeAt[4][2][4]; /* 590: two quads per edge */
-    SVECTOR fillAt[4];       /* 690 */
-    SVECTOR sideAt[4];       /* 6B0 */
-    SVECTOR endsAt[8];       /* 6D0: top and bottom quads */
-    s32 cornerParts;         /* 710: corner parts built */
-    s32 style;               /* 714: 0 draws under an identity rotation */
-    s32 depth;               /* 718: ordering table depth */
-    u8 buffer;               /* 71C: buffer it was laid out for */
-    u8 framed;               /* 71D: frame sprites built */
-} MenuPortrait;
 
 /* The card access indicator (*(state + 44c), 7bc bytes). */
 typedef struct MenuIndicator {
@@ -956,15 +934,15 @@ void func_801C8694(u8 arg0);
 u8 func_801CAA38(u8 arg);
 s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
 void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first);
-void func_801CD81C(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
-void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y);
-void func_801CDC6C(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
+void func_801CD81C(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
+void func_801CDB1C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y);
+void func_801CDC6C(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
 void func_801CE540(void);
 void func_801CE660(void);
 void func_801CEB5C(void);
 void func_801CEBB4(void);
 void func_801CE464(void);
-void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
+void func_801CE0CC(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
 void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first);
 void func_801CE338(void);
 void func_801CE3C8(void);
@@ -991,7 +969,7 @@ void func_801D0FD4(void);
 void func_801D1030(void);
 void func_801D10DC(void);
 void func_801D1160(void);
-void func_801D12D4(MenuPanel *panel, u8 extra);
+void func_801D12D4(MenuStatusPanel *panel, u8 extra);
 void func_801D13F8(void);
 void func_801D1464(void);
 void func_801D14B0(void);

@@ -285,9 +285,9 @@ void func_801E8F60(u8 index, u8 mode) {
         func_801E8EAC(&D_800625A0->panels[index]->edge[3][i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->frameEnds[i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->bar_ends[i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
-    func_801E8EAC(&D_800625A0->panels[index]->frameSide[D_800625A0->panels[index]->buffer], mode);
+    func_801E8EAC(&D_800625A0->panels[index]->bar_side[D_800625A0->panels[index]->buffer], mode);
 }
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */

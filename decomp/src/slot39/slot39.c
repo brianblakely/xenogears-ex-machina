@@ -3414,7 +3414,7 @@ u8 func_801CD710(u8 arg) {
 /* Build status panel `panel`'s layout sprites (layout `layout`) for character
  * `ch` on row `row` at the positions of `x` and `y`, its frame sprite (14b +
  * row) and its name label (the character's or, in layout 1, its gear's). */
-void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+void func_801CD81C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
     s32 i;
 
     panel->count0 = 0;
@@ -3441,7 +3441,7 @@ void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
 
 /* Lay out character `ch`'s level digits (the last three of +62) at row `row`
  * of `panel` and prepare the +63 digits. */
-void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y) {
+void func_801CDB1C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y) {
     s32 i;
     u8 digit;
 
@@ -3463,7 +3463,7 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
  * hp (by digit position) and hp maximum (packed) of the character (three
  * digits) or, in layout 1, of its gear (five digits); in layout 0 also ep and
  * ep maximum (two digits). */
-void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+void func_801CDC6C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
     s32 digits;
     s32 first;
     s32 i;
@@ -3526,7 +3526,7 @@ void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
 }
 
 /* Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
-void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
+void func_801CE0CC(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
     func_801CD81C(panel, a, b, c, d, e);
     func_801CDB1C(panel, a, b, c, d);
     func_801CDC6C(panel, a, b, c, d, e);
@@ -4041,35 +4041,35 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
 /* Draw portrait window `index`: its corners, the frame sprites when
  * `framed`, the edges and the fill. */
 void func_801D09F0(s32 index, u8 framed) {
-    MenuPortrait *portrait;
+    MenuPanel *portrait;
     s32 i;
     s32 p;
     s32 flag;
 
     portrait = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
-        func_801D0954(&portrait->cornerAt[i * 4], &portrait->corner[i * 2], portrait->buffer, portrait->depth);
+        func_801D0954(&portrait->corner_at[i * 4], &portrait->corner[i * 2], portrait->buffer, portrait->ot_entry);
     }
     if (framed) {
         for (i = 0; i < 2; i++) {
-            func_801D0954(&portrait->endsAt[i * 4], &portrait->frameEnds[i * 2], portrait->buffer, portrait->depth);
+            func_801D0954(&portrait->ends_at[i * 4], &portrait->bar_ends[i * 2], portrait->buffer, portrait->ot_entry);
         }
-        func_801D0954(portrait->sideAt, portrait->frameSide, portrait->buffer, portrait->depth);
+        func_801D0954(portrait->side_at, portrait->bar_side, portrait->buffer, portrait->ot_entry);
     }
-    func_801D0954(portrait->edgeAt[0][0], &portrait->edge[0][0], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[0][1], &portrait->edge[0][2], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[1][0], &portrait->edge[1][0], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[1][1], &portrait->edge[1][2], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[2][0], &portrait->edge[2][0], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[2][1], &portrait->edge[2][2], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[3][0], &portrait->edge[3][0], portrait->buffer, portrait->depth);
-    func_801D0954(portrait->edgeAt[3][1], &portrait->edge[3][2], portrait->buffer, portrait->depth);
-    RotTransPers4(&portrait->fillAt[0], &portrait->fillAt[1], &portrait->fillAt[2], &portrait->fillAt[3],
+    func_801D0954(portrait->edge_at[0][0], &portrait->edge[0][0], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[0][1], &portrait->edge[0][2], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[1][0], &portrait->edge[1][0], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[1][1], &portrait->edge[1][2], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[2][0], &portrait->edge[2][0], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[2][1], &portrait->edge[2][2], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[3][0], &portrait->edge[3][0], portrait->buffer, portrait->ot_entry);
+    func_801D0954(portrait->edge_at[3][1], &portrait->edge[3][2], portrait->buffer, portrait->ot_entry);
+    RotTransPers4(&portrait->fill_at[0], &portrait->fill_at[1], &portrait->fill_at[2], &portrait->fill_at[3],
                   (s32 *)&portrait->fill[portrait->buffer].x0, (s32 *)&portrait->fill[portrait->buffer].x1,
                   (s32 *)&portrait->fill[portrait->buffer].x2, (s32 *)&portrait->fill[portrait->buffer].x3, &p,
                   &flag);
-    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fill[portrait->buffer]);
-    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fillMode[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[portrait->ot_entry], &portrait->fill[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[portrait->ot_entry], &portrait->fill_mode[portrait->buffer]);
 }
 
 /* Draw the shown portrait windows; those of style 0 are drawn under an
@@ -4083,7 +4083,7 @@ void func_801D0C78(void) {
 
     for (i = 0; i < 7; i++) {
         if (D_800625A0->flags->panels_shown[i] != 0) {
-            if (D_800625A0->panels[i]->style == 0) {
+            if (D_800625A0->panels[i]->flat == 0) {
                 PushMatrix();
                 angles.vz = 0;
                 angles.vy = 0;
@@ -4095,10 +4095,10 @@ void func_801D0C78(void) {
                 TransMatrix(&m, &offset);
                 SetRotMatrix(&m);
                 SetTransMatrix(&m);
-                func_801D09F0(i, D_800625A0->panels[i]->framed);
+                func_801D09F0(i, D_800625A0->panels[i]->has_bar);
                 PopMatrix();
             } else {
-                func_801D09F0(i, D_800625A0->panels[i]->framed);
+                func_801D09F0(i, D_800625A0->panels[i]->has_bar);
             }
         }
     }
@@ -4240,7 +4240,7 @@ void func_801D1258(void) {
 
 /* Draw `panel` when shown: its frame quads and part lists (and the extra list
  * when `extra`). */
-void func_801D12D4(MenuPanel *panel, u8 extra) {
+void func_801D12D4(MenuStatusPanel *panel, u8 extra) {
     if (panel->shown != 0) {
         AddPrim(&D_800625A0->current->ot[4], &panel->frameA[panel->buffer]);
         AddPrim(&D_800625A0->current->ot[4], &panel->frameB[panel->buffer]);
@@ -5018,7 +5018,7 @@ void func_801D3B00(void) {
             }
             func_801D4D1C(mark->index, mark->x + (mark->w >> 1) - (mark->cur_w >> 1),
                           mark->y + (mark->h >> 1) - (mark->cur_h >> 1), mark->cur_w, mark->cur_h, mark->flat,
-                          mark->ot_entry, mark->framed);
+                          mark->ot_entry, mark->has_bar);
         }
     }
 }
@@ -5026,38 +5026,38 @@ void func_801D3B00(void) {
 /* Lay out portrait `slot`'s frame at (x, y), `h` high: the top, the flipped
  * bottom and the side pieces. */
 void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
-    MenuPortrait *portrait;
+    MenuPanel *portrait;
 
     portrait = D_800625A0->panels[slot];
-    func_8002675C(D_800625A0->sheet, 0x105, portrait->frameEnds, D_800625A0->buffer_index, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, &portrait->frameEnds[2], D_800625A0->buffer_index, x, y + h - 8, 0x1000,
+    func_8002675C(D_800625A0->sheet, 0x105, portrait->bar_ends, D_800625A0->buffer_index, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, &portrait->bar_ends[2], D_800625A0->buffer_index, x, y + h - 8, 0x1000,
                   0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, portrait->frameSide, D_800625A0->buffer_index, x, y + 8, 0x1000);
-    func_801C851C(&portrait->endsAt[0], x, y, 8, 8);
-    func_801C851C(&portrait->endsAt[4], x, y + h, 8, -8);
-    func_801C851C(portrait->sideAt, x, y + 8, 8, h - 8);
+    func_8002675C(D_800625A0->sheet, 0x106, portrait->bar_side, D_800625A0->buffer_index, x, y + 8, 0x1000);
+    func_801C851C(&portrait->ends_at[0], x, y, 8, 8);
+    func_801C851C(&portrait->ends_at[4], x, y + h, 8, -8);
+    func_801C851C(portrait->side_at, x, y + 8, 8, h - 8);
 }
 
 /* Build portrait window `index`'s four corner sprites (sheet fd, ff, 102,
  * 104) for this buffer and place them around the w x h rectangle at (x, y),
  * mirrored by negative extents; make them semi-transparent. */
 void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPortrait *portrait = D_800625A0->panels[index];
+    MenuPanel *portrait = D_800625A0->panels[index];
     s32 i;
 
-    portrait->cornerParts = 0;
-    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xfd, portrait->corner, D_800625A0->buffer_index, 0, 0,
+    portrait->corner_parts = 0;
+    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0xfd, portrait->corner, D_800625A0->buffer_index, 0, 0,
                                            0x1000);
-    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xff, &portrait->corner[portrait->cornerParts * 2],
+    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0xff, &portrait->corner[portrait->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x102, &portrait->corner[portrait->cornerParts * 2],
+    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0x102, &portrait->corner[portrait->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x104, &portrait->corner[portrait->cornerParts * 2],
+    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0x104, &portrait->corner[portrait->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    func_801C851C(&portrait->cornerAt[0], x - 8, y + 8, 16, -16);
-    func_801C851C(&portrait->cornerAt[4], x + w + 8, y + 8, -16, -16);
-    func_801C851C(&portrait->cornerAt[8], x - 8, y + h - 8, 16, 16);
-    func_801C851C(&portrait->cornerAt[12], x + w + 8, y + h - 8, -16, 16);
+    func_801C851C(&portrait->corner_at[0], x - 8, y + 8, 16, -16);
+    func_801C851C(&portrait->corner_at[4], x + w + 8, y + 8, -16, -16);
+    func_801C851C(&portrait->corner_at[8], x - 8, y + h - 8, 16, 16);
+    func_801C851C(&portrait->corner_at[12], x + w + 8, y + h - 8, -16, 16);
     for (i = 0; i < 4; i++) {
         func_801E91C4(&portrait->corner[i * 2 + D_800625A0->buffer_index]);
     }
@@ -5066,7 +5066,7 @@ void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
 /* Map portrait window `index`'s top edge pieces for this buffer and place them in two
  * halves along the top of (x, y, w). */
 void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
-    MenuPortrait *portrait = D_800625A0->panels[index];
+    MenuPanel *portrait = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
@@ -5087,8 +5087,8 @@ void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
     (portrait->edge[0] + D_800625A0->buffer_index + 2)->u3 = 7;
     (portrait->edge[0] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 16) / 2;
-    func_801C851C(portrait->edgeAt[0][0], x + 8, y - 8, half, 16);
-    func_801C851C(portrait->edgeAt[0][1], x + (half + 8), y - 8, half, 16);
+    func_801C851C(portrait->edge_at[0][0], x + 8, y - 8, half, 16);
+    func_801C851C(portrait->edge_at[0][1], x + (half + 8), y - 8, half, 16);
     for (i = 0; i < 2; i++) {
         func_801E91C4(&portrait->edge[0][i * 2 + D_800625A0->buffer_index]);
     }
@@ -5097,7 +5097,7 @@ void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
 /* Map portrait window `index`'s bottom edge pieces for this buffer and place them in
  * two halves along the bottom of (x, y, w, h). */
 void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPortrait *portrait = D_800625A0->panels[index];
+    MenuPanel *portrait = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
@@ -5118,8 +5118,8 @@ void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (portrait->edge[1] + D_800625A0->buffer_index + 2)->u3 = 0xF;
     (portrait->edge[1] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 16) / 2;
-    func_801C851C(portrait->edgeAt[1][0], x + 8, y + h - 8, half, 16);
-    func_801C851C(portrait->edgeAt[1][1], x + (half + 8), y + h - 8, half, 16);
+    func_801C851C(portrait->edge_at[1][0], x + 8, y + h - 8, half, 16);
+    func_801C851C(portrait->edge_at[1][1], x + (half + 8), y + h - 8, half, 16);
     for (i = 0; i < 2; i++) {
         func_801E91C4(&portrait->edge[1][i * 2 + D_800625A0->buffer_index]);
     }
@@ -5128,7 +5128,7 @@ void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
 /* Map portrait window `index`'s left edge pieces for this buffer and place them in two
  * halves down the left of (x, y, h). */
 void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
-    MenuPortrait *portrait = D_800625A0->panels[index];
+    MenuPanel *portrait = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
@@ -5149,8 +5149,8 @@ void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
     (portrait->edge[2] + D_800625A0->buffer_index + 2)->u3 = 0x20;
     (portrait->edge[2] + D_800625A0->buffer_index + 2)->v3 = 0x8B;
     half = (h - 16) / 2;
-    func_801C851C(portrait->edgeAt[2][0], x - 8, y + 8, 16, half);
-    func_801C851C(portrait->edgeAt[2][1], x - 8, y + (half + 8), 16, half);
+    func_801C851C(portrait->edge_at[2][0], x - 8, y + 8, 16, half);
+    func_801C851C(portrait->edge_at[2][1], x - 8, y + (half + 8), 16, half);
     for (i = 0; i < 2; i++) {
         func_801E91C4(&portrait->edge[2][i * 2 + D_800625A0->buffer_index]);
     }
@@ -5159,7 +5159,7 @@ void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
 /* Map portrait window `index`'s right edge pieces for this buffer and place them in two
  * halves down the right of (x, y, w, h). */
 void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPortrait *portrait = D_800625A0->panels[index];
+    MenuPanel *portrait = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
@@ -5180,8 +5180,8 @@ void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (portrait->edge[3] + D_800625A0->buffer_index + 2)->u3 = 0x20;
     (portrait->edge[3] + D_800625A0->buffer_index + 2)->v3 = 0x93;
     half = (h - 16) / 2;
-    func_801C851C(portrait->edgeAt[3][0], x + w - 8, y + 8, 16, half);
-    func_801C851C(portrait->edgeAt[3][1], x + w - 8, y + (half + 8), 16, half);
+    func_801C851C(portrait->edge_at[3][0], x + w - 8, y + 8, 16, half);
+    func_801C851C(portrait->edge_at[3][1], x + w - 8, y + (half + 8), 16, half);
     for (i = 0; i < 2; i++) {
         func_801E91C4(&portrait->edge[3][i * 2 + D_800625A0->buffer_index]);
     }
@@ -5189,11 +5189,11 @@ void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
 
 /* Lay out portrait window `index` at (x, y) of w x h and show it. */
 void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8 framed) {
-    MenuPortrait *portrait;
+    MenuPanel *portrait;
 
     portrait = D_800625A0->panels[index];
     D_800625A0->flags->panels_shown[index] = 0;
-    func_801C851C(portrait->fillAt, x, y, w, h);
+    func_801C851C(portrait->fill_at, x, y, w, h);
     func_801D3DB0(index, x, y, w, h);
     func_801D3FF8(index, x, y, w);
     func_801D433C(index, x, y, w, h);
@@ -5202,9 +5202,9 @@ void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8
     if (framed) {
         func_801D3C4C(index, x, y, w, h);
     }
-    portrait->framed = framed;
-    portrait->style = style;
-    portrait->depth = depth;
+    portrait->has_bar = framed;
+    portrait->flat = style;
+    portrait->ot_entry = depth;
     portrait->buffer = D_800625A0->buffer_index;
     D_800625A0->flags->panels_shown[index] = 1;
 }
@@ -6918,7 +6918,7 @@ void func_801DB39C(u8 mode) {
 void func_801DB5E4(u8 mode) {
     MenuAnchor *xs;
     MenuAnchor *ys;
-    MenuPanel *panel;
+    MenuStatusPanel *panel;
     void *block;
     s32 i;
     u8 ok;
