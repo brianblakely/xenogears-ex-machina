@@ -1215,7 +1215,7 @@ typedef struct {
 
 extern Zone *D_800ADBF4;            /* trigger zones */
 
-/* Up to 32 text windows created by func_800921E8. */
+/* Up to 32 texture scrolls (80027d64) created by func_800921E8. */
 typedef struct {
     s16 count;
     s32 handles[32];

@@ -6,7 +6,8 @@
 
 #include "field.h"
 
-extern u16 D_800B236C; /* script flag set by instruction FE 99 (read by 80094xxx) */
+extern u16 D_800B236C; /* menu parameter set by ext 99; the field loop and ext 55
+                        * pass it to the menu (80059171) */
 extern u32 *D_800B1F74; /* TIM image held by instruction 0x77 */
 
 /* Sound-effect bank instruction 0xb0 (resident sound state). */
@@ -90,7 +91,7 @@ extern s32 func_8009C538(s32 id);
 /* Dialogue window opening (8009c5a8). */
 extern s32 D_800AFD04;     /* dialogue gate */
 extern s32 D_800C4268;     /* dialogue windows opened this pass */
-extern s32 D_800ADB64;     /* 0xff when no input jump is pending */
+extern s32 D_800ADB64;     /* requested menu kind (800799d4 runs it), 0xff none */
 extern void *D_800ADBF0;   /* field message table */
 extern s32 func_8003373C(void *table, s32 message); /* message columns */
 extern s32 func_80033760(void *table, s32 message); /* message rows */

@@ -214,10 +214,7 @@ struct Emitter {
 extern SparkShape D_80091C74[];
 extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
 extern void (*D_80091CDC[1])(Spark *spark);
-extern Emitter *D_80092834; /* the menu's spark emitter */
-extern Emitter *D_80092644; /* the menu's glow emitter */
 extern Vector D_80092A24; /* glow emitter position */
-extern s32 D_80092838;      /* spark burst strength, fading by 4 per frame */
 
 /* Sparks drawn as a line through their last positions, with one primitive
  * per draw buffer. */
@@ -254,20 +251,12 @@ typedef struct {
     Tile1Tag dot[2];
 } SparkDot;
 
-extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
-extern SVector *D_80092830;   /* view origin subtracted before projection */
-
-/* Glow field buffers: bytes, previous and current halfword fields. */
-extern u8 *D_80092844;
-extern s16 *D_8009283C;
-extern s16 *D_80092840;
 extern u16 D_80091CE0[]; /* glow palette (256 entries) */
 
 typedef struct {
     u32 tag;
     u32 code[2];
 } DrawMode;
-
 
 #define setShadeTex(p, tge) \
     ((tge) ? setcode(p, getcode(p) | 0x01) : setcode(p, getcode(p) & ~0x01))

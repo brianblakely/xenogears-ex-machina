@@ -2,14 +2,19 @@
  * A 3D scene module: up to ten actors (D_801E8670), each a model hierarchy
  * (0x7c-byte nodes built from a relocated model group, 8002c3e8/8002cb54/
  * 8002c8cc) with rotation/movement tweens from a 0x14-byte slot pool, a
- * 16-particle pool of textured quads, and actor scripts. It drives the GTE
- * directly (RotMatrix/CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and
- * 801e0398) and uses the resident heap (80031bdc/800320e8, tag 4), libgpu
- * and sound effect banks (8003852c). It has no strings. The coverage census
- * runs it only on the title -> New Game routes (sound-mode scenarios), so it
- * is presumably part of the opening scene; no resident or overlay code in
- * the split images names 0x801dc000 directly (loaded as a file). Built with
- * GCC 2.6.3 (see func_801DF7A8) and ASPSX-style checked divisions. */
+ * 16-particle pool of textured quads, and actor effect scripts (801e39f0,
+ * docs/scripts/battle-effect-vm.md). It drives the GTE directly (RotMatrix/
+ * CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and 801e0398) and uses the
+ * resident heap (80031bdc/800320e8, tag 4), libgpu and sound effect banks
+ * (8003852c). It has no strings. It is directory (4, 0) file 0x6b9, the
+ * field's 801e module: field 80077884 loads it with the model file pair
+ * 0x6ba/0x6bb + id of each layer that field actors take. The Gear parts shop
+ * (menu screen 5, ovl2602) draws its gear models through it (801cf9bc loads
+ * the pair, 801cfab8 makes the layer); for that screen the field's menu
+ * runner 800799d4 loads directory 0x10 file 0xc, a byte-identical copy, at
+ * 0x1dc000, and the resident's debug menu start 8001c1a8 loads file 0x6b9 at
+ * 0x801dc000. Built with GCC 2.6.3 (see func_801DF7A8) and ASPSX-style
+ * checked divisions. */
 #include "ovl2143.h"
 
 /* Copies of the battle overlay's extra file bases (800c3530) and gear file
@@ -2212,44 +2217,12 @@ void func_801E1880(Actor **actors) {
  * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
- * then `count` zeroed entries. On an allocation failure the record is left
- * empty. The original keeps the loop state in caller-saved registers across
- * SetPolyGT3 (saved on the stack).
- * NON_MATCHING: the frame and size agree, but the table/scale/angle registers
- * and strip-loop spills still differ. This C also hoists v_step * k ahead
- * of the second triangle's SetPolyGT3 call, unlike the original. */
-#ifdef NON_MATCHING
-/* The two triangles of a cell between neighbouring point strands. */
-#define SET_RING_FIRST_INDICES(_p, _first, _count) \
-    do { \
-        (_p)->index[0] = (_first); \
-        (_p)->index[1] = (_first) + (_count) + 1; \
-        (_p)->index[2] = (_first) + 1; \
-    } while (0)
-
-#define SET_RING_SECOND_INDICES(_p, _first, _count) \
-    do { \
-        s32 next_index = (_first) + 1; \
-        (_p)->index[0] = next_index + (_count); \
-        (_p)->index[1] = next_index + (_count) + 1; \
-        (_p)->index[2] = next_index; \
-    } while (0)
-
-/* Initialize one buffer's textured triangle, whose vertices are filled when drawn. */
-#define SET_RING_TRIANGLE(_p, _page, _clut, _u0, _v0, _u1, _v1, _u2, _v2) \
-    do { \
-        SetPolyGT3(_p); \
-        (_p)->tpage = (_page); \
-        (_p)->u0 = (_u0); \
-        (_p)->v0 = (_v0); \
-        (_p)->clut = (_clut); \
-        (_p)->u1 = (_u1); \
-        (_p)->v1 = (_v1); \
-        (_p)->u2 = (_u2); \
-        (_p)->v2 = (_v2); \
-    } while (0)
-
-void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+ * then `count` zeroed entries. The texture page origin is tx/ty rounded down
+ * to a multiple of 64/256 as a halfword; the u/v bases and steps are signed
+ * halfwords, and the cells between two strands use the smaller of their
+ * point counts. On an allocation failure the record is left empty. The same
+ * code as the battle overlay's func_800A7064. */
+void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
@@ -2263,12 +2236,11 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     Record24Entry *entry;
     s32 start;
     u16 tpage, clut;
-    s32 page_x, page_y;
-    s32 u_base;
+    s16 page_x, page_y;
+    s16 u_base;
     s16 v_base;
     s16 u_step;
-    u16 v_step;
-    s32 first;
+    s16 v_step;
     s32 i, k, b;
     s32 n;
     u16 total;
@@ -2310,8 +2282,8 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     }
     centre = record->centres;
     points_base = point;
-    for (i = 0; i < record->rings; i++, counts++, centre++) {
-        *rings++ = point;
+    for (i = 0; i < record->rings; rings++, counts++, centre++, i++) {
+        *rings = point;
         for (k = 0; k < *counts; k++) {
             point->length = *radii++ * scale / 4096;
             point->sag = *angles++ + angle_base;
@@ -2337,36 +2309,50 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
         return;
     }
     record->block20 = polys;
-    page_x = tx / 64;
-    page_y = ty / 256;
-    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    page_x = tx / 64 * 64;
+    page_y = ty / 256 * 256;
+    tpage = GetTPage(0, 1, page_x, page_y);
     clut = GetClut(clut_x, clut_y);
-    u_base = (tx - (s16)(page_x << 6)) * 4;
-    v_base = ty - (page_y << 8);
+    u_base = (tx - page_x) * 4;
+    v_base = ty - page_y;
     start = 0;
     u_step = u_span / (record->rings - 1);
     for (i = 0; i < record->rings - 1; i++) {
-        n = counts[1];
         if (counts[0] < counts[1]) {
             n = counts[0];
+        } else {
+            n = counts[1];
         }
         v_step = v_span / n;
         for (k = 0; k < n; k++) {
-            first = start + k;
-            SET_RING_FIRST_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k;
+            polys->index[1] = start + k + counts[0] + 1;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * i, v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * i;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * k;
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
-            SET_RING_SECOND_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k + counts[0] + 1;
+            polys->index[1] = start + k + counts[0] + 2;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * (k + 1),
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * (i + 1);
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * (k + 1);
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
         }
@@ -2401,13 +2387,6 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
         record->block18 = NULL;
     }
 }
-
-#undef SET_RING_TRIANGLE
-#undef SET_RING_SECOND_INDICES
-#undef SET_RING_FIRST_INDICES
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
-#endif
 
 /* Simulate and draw a records24 surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
@@ -2902,11 +2881,11 @@ aim:
         arg = word >> 8;
         op = (u8)word;
         switch (op) {
-        case 0x00: /* wait */
+        case 0x00: /* end: stay on this command */
             pc = start;
             running = 0;
             break;
-        case 0x01: /* wait for a number of frames */
+        case 0x01: /* wait (word) frames */
             if (changed != -1) {
                 word = *pc++;
                 actor->h40 += ticks;
@@ -2922,17 +2901,17 @@ aim:
                 running = 0;
             }
             break;
-        case 0x02: /* redraw */
+        case 0x02: /* call 800796f4 after the run (`redraw`) */
             redraw = 1;
             break;
-        case 0x03:
+        case 0x03: /* the same */
             redraw = 1;
             break;
         case 0x08: /* drop the node tweens and the animation */
             func_801DFE8C(pool, actor->parts);
             func_801E632C(actor);
             break;
-        case 0x0A:
+        case 0x0A: /* release node `arg`'s attachments 0-2 */
             func_801DF52C(pool, actor->parts, arg, 7);
             break;
         case 0x0B: { /* drop the tweens and reset every node below the root */
@@ -2968,16 +2947,16 @@ aim:
             actor->drift_accel[1] = 0;
             actor->drift_accel[2] = 0;
             break;
-        case 0x0D:
+        case 0x0D: /* release node `arg`'s rotation attachment */
             func_801DF52C(pool, actor->parts, arg, 1);
             break;
-        case 0x0E:
+        case 0x0E: /* release node `arg`'s position attachment */
             func_801DF52C(pool, actor->parts, arg, 2);
             break;
         case 0x10: /* apply keyframe `arg` */
             func_801DEF10(actor->parts, (s16 *)func_801E6910(actor, arg, &n));
             break;
-        case 0x11: { /* start animation `arg` */
+        case 0x11: { /* start animation `arg` (word: loop high, tag low byte) */
             s32 size;
 
             key = func_801E6910(actor, arg, &n);
@@ -2993,7 +2972,8 @@ aim:
             }
             break;
         }
-        case 0x13: /* tween to keyframe */
+        case 0x13: /* tween to keyframe (word 0: keyframe low, tag high; word 1:
+                    * smoothing low, duration high; mode `arg`) */
             word = *pc++;
             entry = word >> 8;
             reference = (u8)word;
@@ -3011,7 +2991,8 @@ aim:
             changed = -1;
             func_801E632C(actor);
             break;
-        case 0x14: /* call an entry in the masked actors */
+        case 0x14: /* call entry (word high byte) of a source (low byte; 0xff each
+                    * actor's own) in the actors of code `arg`; 0xfd hands over */
             word = *pc++;
             reference = (u8)word;
             entry = word >> 8;
@@ -3035,7 +3016,8 @@ aim:
                 return;
             }
             break;
-        case 0x15: { /* clone this actor into a free slot 8 or 9 */
+        case 0x15: { /* clone this actor into a free slot 8 or 9; node (word) moves
+                      * to the copy, which runs entry `arg` (0xff none) */
             ModelPart *parts;
 
             word = *pc++;
@@ -3091,14 +3073,15 @@ aim:
         case 0x17: /* release this actor */
             func_801E8030(actor->index);
             return;
-        case 0x18: /* start animation `arg` looping from a frame */
+        case 0x18: /* start animation `arg`, looping when the word is set */
             key = func_801E6910(actor, arg, &n);
             func_801E5C74(actor, (Animation *)key, (s16)*pc++);
             break;
         case 0x19: /* stop the animation */
             func_801E632C(actor);
             break;
-        case 0x1A: { /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+        case 0x1A: { /* move a VRAM rectangle (words x, y, dst x, dst y, w, h;
+                      * arg bit 0: by the actor's image offset) */
             s16 x, y;
 
             rect.x = *pc++;
@@ -3120,7 +3103,8 @@ aim:
             MoveImage(&rect, x, y);
             break;
         }
-        case 0x1D: /* tween node `arg` between two poses */
+        case 0x1D: /* tween node `arg` between two poses (words: flags/mode,
+                    * tag/field, start x y z, end x y z, duration) */
             word = *pc++;
             entry = word >> 8;
             reference = (u8)word;
@@ -3161,7 +3145,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x22: /* wait for a number of loops (of all, or those tagged `arg`) */
+        case 0x22: /* wait for (word) loops (of all, or those tagged `arg`) */
             if (changed != -1) {
                 word = *pc++;
                 if (arg == 0xFF) {
@@ -3196,7 +3180,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x23:
+        case 0x23: /* show or hide node (word) by flags `arg` (801e6d94) */
             func_801E6D94(actor, &actor->parts[(s16)*pc++], arg);
             break;
         case 0x24: /* show or hide */
@@ -3328,7 +3312,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x2E: /* jump when near the target */
+        case 0x2E: /* jump (word: offset; `arg` 0 cancels) when near the target */
             actor->h48 = actor->h8E;
             word = *pc++;
             actor->w4C = arg ? (s32)((u8 *)start + (s16)word) : 0;
@@ -3359,7 +3343,7 @@ aim:
                 pc = (u16 *)((u8 *)start + (s16)word);
             }
             break;
-        case 0x36: /* jump after a number of frames */
+        case 0x36: /* jump after a number of frames (words: frames, offset) */
             actor->h44 = 0;
             actor->h46 = *pc++;
             word = *pc++;
@@ -3369,22 +3353,24 @@ aim:
             word = *pc++;
             actor->w54 = arg ? (s32)((u8 *)start + (s16)word) : 0;
             break;
-        case 0x38: /* move node `arg` toward the target */
+        case 0x38: /* turn the root toward the target each frame within a limit from
+                    * `arg` (801e5b50 kind 7; gain the word's low byte, rate its high) */
             word = *pc++;
             func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
-        case 0x39: /* the same, flag 1 */
+        case 0x39: /* the same, heading only (kind 8) */
             word = *pc++;
             func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
-        case 0x33:
+        case 0x33: /* the battle's conditional jumps: consume the word */
         case 0x34:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* play a sound */
+        case 0x3C: /* fade sound (word low byte) of view `arg`'s bank to silence over
+                    * (high byte) frames (8003a3b8) */
             word = *pc++;
             reference = word;
             entry = word >> 8;
@@ -3445,27 +3431,27 @@ aim:
             func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
             changed = -1;
             break;
-        case 0x44:
+        case 0x44: /* spin = three words */
             actor->spin[0] = *pc++;
             actor->spin[1] = *pc++;
             actor->spin[2] = *pc++;
             break;
-        case 0x45:
+        case 0x45: /* spin += three words */
             actor->spin[0] += *pc++;
             actor->spin[1] += *pc++;
             actor->spin[2] += *pc++;
             break;
-        case 0x46:
+        case 0x46: /* spin acceleration = three words */
             actor->spin_accel[0] = *pc++;
             actor->spin_accel[1] = *pc++;
             actor->spin_accel[2] = *pc++;
             break;
-        case 0x47:
+        case 0x47: /* spin acceleration += three words */
             actor->spin_accel[0] += *pc++;
             actor->spin_accel[1] += *pc++;
             actor->spin_accel[2] += *pc++;
             break;
-        case 0x48:
+        case 0x48: /* b36 = arg */
             actor->b36 = arg;
             break;
         case 0x49: /* place the root */
@@ -3489,22 +3475,22 @@ aim:
                 actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
             }
             break;
-        case 0x4B:
+        case 0x4B: /* drift = three words */
             actor->drift[0] = *pc++;
             actor->drift[1] = *pc++;
             actor->drift[2] = *pc++;
             break;
-        case 0x4C:
+        case 0x4C: /* drift += three words */
             actor->drift[0] += *pc++;
             actor->drift[1] += *pc++;
             actor->drift[2] += *pc++;
             break;
-        case 0x4D:
+        case 0x4D: /* drift acceleration = three words */
             actor->drift_accel[0] = *pc++;
             actor->drift_accel[1] = *pc++;
             actor->drift_accel[2] = *pc++;
             break;
-        case 0x4E:
+        case 0x4E: /* drift acceleration += three words */
             actor->drift_accel[0] += *pc++;
             actor->drift_accel[1] += *pc++;
             actor->drift_accel[2] += *pc++;
@@ -3530,16 +3516,16 @@ aim:
             actor->target[1] = *pc++;
             actor->target[2] = *pc++;
             break;
-        case 0x54:
+        case 0x54: /* h8e = word scaled by the actor and root scales */
             actor->h8E = (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
             break;
-        case 0x55:
+        case 0x55: /* h8e += word scaled */
             actor->h8E += (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
             break;
-        case 0x56:
+        case 0x56: /* h8e += word */
             actor->h8E += *pc++;
             break;
-        case 0x57:
+        case 0x57: /* h8e += the width of the actor of code `arg` */
             n = func_801E6830(actor, arg, &word) & 0xFF;
             actor->h8E += func_801E8480(n);
             break;
@@ -3569,19 +3555,20 @@ aim:
                 pc = (u16 *)((u8 *)start + (s16)word);
             }
             break;
-        case 0x5D:
+        case 0x5D: /* node (word)'s billboard mode = `arg` */
             word = *pc++;
             actor->parts[(s16)word].billboard = arg;
             break;
-        case 0x5E:
+        case 0x5E: /* scale = word */
             word = *pc++;
             actor->scale = word;
             break;
-        case 0x5F:
+        case 0x5F: /* flags = word */
             word = *pc++;
             actor->flags = word;
             break;
-        case 0x62:
+        case 0x62: /* set or add node (word 0)'s transform to words 1-3 (801e7094,
+                    * flags `arg`) */
             /* The operands are read in order. */
             func_801E7094(actor, &actor->parts[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
@@ -3594,10 +3581,10 @@ aim:
             actor->anim_pos = (u8 *)pc;
             pc = (u16 *)((u8 *)start + (s16)word);
             break;
-        case 0x64:
+        case 0x64: /* h3e = word */
             actor->h3E = *pc++;
             break;
-        case 0x6B:
+        case 0x6B: /* node (word) uses RotMatrixYXZ = `arg` */
             word = *pc++;
             actor->parts[(s16)word].yxz = arg;
             break;
@@ -3607,7 +3594,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x6D:
+        case 0x6D: /* b38 = `arg` bit 0 */
             actor->b38 = arg & 1;
             break;
         case 0x6E: { /* wait while an actor's b38 equals the word's bit 0 */
@@ -3622,7 +3609,7 @@ aim:
             }
             break;
         }
-        case 0x6F:
+        case 0x6F: /* h3a = the current mask (801e863c), or -1 for `arg` 0 */
             actor->h3A = arg ? D_801E863C : -1;
             break;
         case 0x70: /* jump and stop when h3a is the current value */
@@ -3632,7 +3619,7 @@ aim:
                 running = 0;
             }
             break;
-        case 0x04:
+        case 0x04: /* the battle-only commands: no effect, no words */
         case 0x05:
         case 0x06:
         case 0x07:
@@ -3723,8 +3710,10 @@ void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry
     }
 }
 
-/* Start a movement tween (kind `type` + 7) of a node towards (x, y, z) over
- * `duration` ticks in its first attachment; value 0 is the distance + 1. */
+/* Start a homing turn (kind `type` + 7: 7 pitch and yaw, 8 yaw) of a node
+ * towards (x, y, z) in its first attachment: each tick it turns by at most
+ * value 1 + (distance + time) * value 2 / value 0 (the first distance + 1),
+ * time growing by `duration`, until released. */
 void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
                    s32 x, s32 y, s32 z) {
     PoolSlot *tween;
@@ -3792,8 +3781,10 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
 /* Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
- * loop frame. The call event (type 8) reads a local the original never
- * sets; it is spilled, so it is loaded from its stack slot. */
+ * loop frame. The events have the battle's layout (800AE2A4); anim_frame
+ * counts them and anim_state is the frame. The call event (type 8) reads a
+ * local the original never sets; it is spilled, so it is loaded from its
+ * stack slot. */
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
     u16 unset;
     AnimEvent *event;
@@ -3824,10 +3815,10 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             break;
         }
         switch (event->type) {
-        case 1:
+        case 1: /* a battle sprite: stepped over */
             actor->anim_pos += 0x14;
             break;
-        case 2:
+        case 2: /* set up or deactivate (6 bytes) an anchor */
             if (event->u.anchor.active) {
                 if (event->index < 2) {
                     anchor = event;
@@ -3852,7 +3843,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             }
             break;
         case 3:
-        case 4:
+        case 4: /* stop a channel (the battle's colour fade events) */
             func_801E0844(&actor->channels[event->index].id, arg2);
             if (event->u.more) {
                 actor->anim_pos += 0x1C;
@@ -3860,17 +3851,17 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
                 actor->anim_pos += 6;
             }
             break;
-        case 5:
+        case 5: /* a battle sound: stepped over */
             actor->anim_pos += 8;
             break;
-        case 6:
+        case 6: /* a battle menu update: stepped over */
             actor->anim_pos += 4;
             break;
-        case 7:
+        case 7: /* show or hide a node */
             actor->parts[event->u.show.node].visible = event->u.show.visible & 1;
             actor->anim_pos += 6;
             break;
-        case 8:
+        case 8: /* call an entry of the masked actors */
             /* The original tests a local it never sets. */
             call = event;
             state = unset;
@@ -3893,7 +3884,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             D_801E863C = saved_mask;
             actor->anim_pos += 0xA;
             break;
-        case 9:
+        case 9: /* start or stop (6 bytes) an image animation */
             if (event->u.image.active) {
                 if (event->index < actor->count10E) {
                     if (event->u.image.target != 0xFF && event->u.image.target < actor->count10E) {

@@ -63,6 +63,15 @@ maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
 LA_ABSOLUTE := -e 's/^la\t(\$$[0-9a-z]+),((\$$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
 extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\.extern/d')
 asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
+# The original assembler gave every uninitialized variable (.lcomm, and the
+# .comm that maspsx allocates in its unit) a slot of whole words: two u8
+# variables lie four bytes apart and a u8[3][2] takes eight (ovl2596
+# 801e44e0-801e4500). BSS := slots (per target; BSS_<file> per unit) rounds each
+# object of the .bss that maspsx appends up to a whole word; maspsx itself
+# packs them without alignment.
+BSS_SLOTS := awk '/^\.section[ \t]+\.bss$$/ {bss = 1} bss && $$1 == ".space" {$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4} {print}'
+bss_of = $(or $(BSS_$(basename $(notdir $(1)))),$(BSS))
+bss_filter_of = $(if $(filter slots,$(call bss_of,$(1))),| $(BSS_SLOTS))
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.
@@ -80,6 +89,7 @@ $(ROOT)/$(BUILD)/%.cflags: matching-flags-force
 		$(call shell_quote,MASPSX=$(MASPSX)) \
 		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
 		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
+		$(call shell_quote,BSS=$(call bss_of,$*)) \
 		$(call shell_quote,AS=$(AS)) \
 		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
 		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \
@@ -107,10 +117,10 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) $(call cc1flags_of,$<) -G$(call gp_of,$<) -o $@.cc1.s
-	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call asm_filter_of,$<) > $@.s
+	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call asm_filter_of,$<) $(call bss_filter_of,$<) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
-$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)
+$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(LINKER_EXTRA))) $(CONFIG)
 	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }
 	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
 		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_EXTRA)) -o $(IMAGE).elf

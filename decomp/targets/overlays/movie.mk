@@ -12,3 +12,9 @@ SOURCE_DIRS := decomp/src/movie
 CONTAINERS := 1:40 2:35
 # Division checks (break 7 / break 6) are inline in the menu drawing code.
 MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
+# The data ends at 0x80076f3c (file 0x744c), where the BSS starts. The
+# original packer appended zero literal tokens until its last group held eight
+# and recorded the padded length: the plain encoding of the 0x744c linked
+# bytes plus seven zero literals is the disc stream. The seven zero bytes are
+# reproduced here as file padding.
+OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x7453

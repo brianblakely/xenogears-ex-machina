@@ -35,7 +35,7 @@ def execute_music_wait(
     control: InterpreterControl,
     load_result_u32: int,
 ) -> EventEffect:
-    if instruction.opcode != 0xFE or instruction.operands != (0xA2,):
+    if instruction.opcode != 0xFE or instruction.extended != 0xA2:
         raise EventError("music wait requires recovered primary fe / extended a2")
     if instruction.pc != actor.pc:
         raise EventError("music-wait instruction and working PC disagree")

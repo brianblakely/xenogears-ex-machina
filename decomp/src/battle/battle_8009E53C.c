@@ -2596,16 +2596,23 @@ void func_800A4CF8(s32 index) {
 /* Draw the stage sky seen from eye towards target: the horizon bands at the
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
- * each front-facing tile textured from the scroll position. Differs in the
- * tile loop's register allocation: the original also copies half (for the
- * multiplies) and u0 before the rows and loads the tag masks per row; here
- * the masks and the row copy of half are hoisted out of both loops. The
- * original's row loop was not loop-optimized at all (the masks hoisted out
- * of the tile loop stay in the row body); a goto row loop reproduces that,
- * but then ot loses its loop-weighted references and swaps $s4/$s5 with
- * &turn, so the for loop stays here. */
-/* Link a ceiling tile after its screen coordinates and texture corners. */
-#define LINK_SKY_TILE(table, tile) do { addPrim((table), (tile)); } while (0)
+ * each front-facing tile textured from the scroll position (the u and v
+ * corners only use their low byte). Differs in one word: before the rows
+ * the original copies the masked u0 (addu t8, t0, zero) where (u8)u0 here
+ * zero-extends it (andi t8, t0, 0xff). The cast is what makes the u0 term a
+ * two-insn invariant (a QImode lowpart copy and its extension) like the
+ * original's: loop.c moves it out of the tile loop and then the row loop
+ * with the half extension, and each of those four moved_once insns doubles
+ * the row loop's insn count, so (u8)half for the + half - 1 corners and
+ * the addPrim masks stay in the row body. A plain s32 u0 needs no
+ * conversion and those three move out too; an s16 u0 is sign-extended
+ * (sll/sra, one word longer). combine cannot drop the andi: the masked
+ * value's nonzero bits are unbounded (size - 1 may be -1). Also measured
+ * without effect: u/v/u0/half/col types, u0 first, row-level v, setUV4 and
+ * setUVWH corners, two-step and in-loop masks, statement macros around the
+ * corners. addPrim is not wrapped in a statement macro: in 2.6.3 the insn
+ * after a loop note is a scheduling barrier, and the original loads the
+ * tile tag before the last UV stores. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2622,13 +2629,11 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s32 angle;
     s32 tilt;
     s32 size;
-    s32 half;
-    s32 halfU;
+    s16 half;
     s32 u0;
     s32 v0;
     s32 u;
     s32 v;
-    s32 vEnd;
     s32 row;
     s32 col;
     s32 n;
@@ -2722,14 +2727,11 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     sky->scrollY += sky->speedY;
     u0 = (sky->scrollX / 16 + delta.vx / 12) & ((size = sky->tileSize) - 1);
     v0 = (sky->scrollY / 16 + delta.vz / 12) & (size - 1);
-    half = (s16)size / 2;
-    vertex = &sky->grid[0][0];
     n = buffer * 64;
+    vertex = &sky->grid[0][0];
+    half = (s16)size / 2;
     for (row = 0; row < 8; row++) {
-        halfU = half;
-        v = (row & 1) * half + v0;
-        vEnd = v + halfU - 1;
-        for (col = 0; col < 8; col++) {
+        for (col = 0; col < 8; col++, n++, vertex++) {
             gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
             gte_rtpt();
             gte_nclip();
@@ -2739,18 +2741,17 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 gte_ldv0(&vertex[10]);
                 gte_rtps();
                 gte_stsxy(&sky->tiles[n].x3);
+                v = (row & 1) * half + v0;
+                u = (col & 1) * half + (u8)u0;
                 sky->tiles[n].v0 = v;
                 sky->tiles[n].v1 = v;
-                sky->tiles[n].v2 = vEnd;
-                sky->tiles[n].v3 = vEnd;
-                u = (col & 1) * half + u0;
+                sky->tiles[n].v2 = v + half - 1;
+                sky->tiles[n].v3 = v + half - 1;
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
-                sky->tiles[n].u3 = sky->tiles[n].u1 = u + halfU - 1;
-                LINK_SKY_TILE(ot, &sky->tiles[n]);
+                sky->tiles[n].u3 = sky->tiles[n].u1 = u + half - 1;
+                addPrim(ot, &sky->tiles[n]);
             }
-            n++;
-            vertex++;
         }
         vertex++;
     }
@@ -2762,7 +2763,6 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     }
     addPrim(ot, &sky->modes[buffer]);
 }
-#undef LINK_SKY_TILE
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
 #endif
@@ -3283,45 +3283,13 @@ void func_800A6F98(void) {
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
  * then `count` zeroed entries (using its signed low halfword). The table's
  * first halfword is the ring count; h0 is the mesh identifier set by the caller.
- * Texture steps narrow to a signed halfword in u and an unsigned one in v.
+ * The texture page origin is tx/ty rounded down to a multiple of 64/256 as a
+ * halfword; the u/v bases and steps are signed halfwords, and the cells
+ * between two strands use the smaller of their point counts.
  * On an allocation failure the surface is left empty; the original clears
  * centres before passing NULL to the free service, even when a centre block
- * was allocated.
- * NON_MATCHING: the frame and size agree, but the table/scale/angle registers
- * and strip-loop spills still differ. This C also hoists v_step * k ahead
- * of the second triangle's SetPolyGT3 call, unlike the original. */
-#ifdef NON_MATCHING
-/* The two triangles of a cell between neighbouring point strands. */
-#define SET_RING_FIRST_INDICES(_p, _first, _count) \
-    do { \
-        (_p)->index[0] = (_first); \
-        (_p)->index[1] = (_first) + (_count) + 1; \
-        (_p)->index[2] = (_first) + 1; \
-    } while (0)
-
-#define SET_RING_SECOND_INDICES(_p, _first, _count) \
-    do { \
-        s32 next_index = (_first) + 1; \
-        (_p)->index[0] = next_index + (_count); \
-        (_p)->index[1] = next_index + (_count) + 1; \
-        (_p)->index[2] = next_index; \
-    } while (0)
-
-/* Initialize one buffer's textured triangle, whose vertices are filled when drawn. */
-#define SET_RING_TRIANGLE(_p, _page, _clut, _u0, _v0, _u1, _v1, _u2, _v2) \
-    do { \
-        SetPolyGT3(_p); \
-        (_p)->tpage = (_page); \
-        (_p)->u0 = (_u0); \
-        (_p)->v0 = (_v0); \
-        (_p)->clut = (_clut); \
-        (_p)->u1 = (_u1); \
-        (_p)->v1 = (_v1); \
-        (_p)->u2 = (_u2); \
-        (_p)->v2 = (_v2); \
-    } while (0)
-
-void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+ * was allocated. */
+void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
@@ -3335,12 +3303,11 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     SurfaceEntry *entry;
     s32 start;
     u16 tpage, clut;
-    s32 page_x, page_y;
-    s32 u_base;
+    s16 page_x, page_y;
+    s16 u_base;
     s16 v_base;
     s16 u_step;
-    u16 v_step;
-    s32 first;
+    s16 v_step;
     s32 i, k, b;
     s32 n;
     u16 total;
@@ -3382,8 +3349,8 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     }
     centre = surface->centres;
     points_base = point;
-    for (i = 0; i < surface->rings; i++, counts++, centre++) {
-        *rings++ = point;
+    for (i = 0; i < surface->rings; rings++, counts++, centre++, i++) {
+        *rings = point;
         for (k = 0; k < *counts; k++) {
             point->length = *radii++ * scale / 4096;
             point->sag = *angles++ + angle_base;
@@ -3409,36 +3376,50 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         return;
     }
     surface->polyList = polys;
-    page_x = tx / 64;
-    page_y = ty / 256;
-    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    page_x = tx / 64 * 64;
+    page_y = ty / 256 * 256;
+    tpage = GetTPage(0, 1, page_x, page_y);
     clut = GetClut(clut_x, clut_y);
-    u_base = (tx - (s16)(page_x << 6)) * 4;
-    v_base = ty - (page_y << 8);
+    u_base = (tx - page_x) * 4;
+    v_base = ty - page_y;
     start = 0;
     u_step = u_span / (surface->rings - 1);
     for (i = 0; i < surface->rings - 1; i++) {
-        n = counts[1];
         if (counts[0] < counts[1]) {
             n = counts[0];
+        } else {
+            n = counts[1];
         }
         v_step = v_span / n;
         for (k = 0; k < n; k++) {
-            first = start + k;
-            SET_RING_FIRST_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k;
+            polys->index[1] = start + k + counts[0] + 1;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * i, v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * i;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * k;
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
-            SET_RING_SECOND_INDICES(polys, first, counts[0]);
+            polys->index[0] = start + k + counts[0] + 1;
+            polys->index[1] = start + k + counts[0] + 2;
+            polys->index[2] = start + k + 1;
             for (b = 0; b < 2; b++) {
-                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
-                                  u_base + u_step * (i + 1), v_base + v_step * k,
-                                  u_base + u_step * (i + 1), v_base + v_step * (k + 1),
-                                  u_base + u_step * i, v_base + v_step * (k + 1));
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u0 = u_base + u_step * (i + 1);
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].u1 = u_base + u_step * (i + 1);
+                polys->prim[b].v1 = v_base + v_step * (k + 1);
+                polys->prim[b].u2 = u_base + u_step * i;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
         }
@@ -3473,13 +3454,6 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         surface->entries = NULL;
     }
 }
-
-#undef SET_RING_TRIANGLE
-#undef SET_RING_SECOND_INDICES
-#undef SET_RING_FIRST_INDICES
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
-#endif
 
 /* Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
@@ -4525,7 +4499,6 @@ void func_800AAB34(BattleObject *object) {
 /* A script jump: offset is in bytes from the command's start. */
 #define SCRIPT_JUMP(start, offset) ((u16 *)((u8 *)(start) + (offset)))
 
-#ifdef NON_MATCHING
 /* Run a battle object's effect script for steps frames: first move it by its
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
@@ -4533,11 +4506,12 @@ void func_800AAB34(BattleObject *object) {
  * (-1 when called to start a script). The command word is signed; its
  * opcode and argument views are unsigned bytes. Jump offsets are in bytes
  * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
- * the first and second parameter words, shared by several commands, as is
- * the looked-up animation of 11/12. Still NON_MATCHING: decoded-byte register
- * allocation, part-reset loop scheduling and camera temporaries differ from
- * the original. The compiled frame is eight bytes smaller; the decoded high
- * fields still do not use the original caller-save home. */
+ * the first and second parameter words, decoded the same way by every
+ * command that takes bytes; m1 is the first word's high byte of 1B, 25 and
+ * the camera commands. ptr holds the looked-up animation of 11/12 and the
+ * target image of 1B, and 1F looks its slot up into op. The turn towards a
+ * position passes a roll that is only ever zero, and a relative camera turn
+ * (67 with 0x20) ends where it started (to is the old from). */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4559,10 +4533,8 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     u8 b1;
     u8 b2;
     u8 b3;
-    Animation *animation;
+    void *ptr;
     u8 m1;
-    u8 c0;
-    u8 c3;
 
     if (steps == 0 || object->script == NULL) {
         return;
@@ -4761,14 +4733,14 @@ chosen:
             break;
         case 0x0B: /* stop the parts' effects and reset their transforms */
             {
-                ModelPart *root = object->hierarchy;
-                ModelPart *part;
+                ModelPart *part = object->hierarchy;
                 s32 count;
                 s32 k;
 
-                func_800A2ACC(pool, root);
-                count = root->index - 1;
-                for (k = 0, part = root + 1; k < count; k++, part++) {
+                func_800A2ACC(pool, part);
+                count = part->index - 1;
+                for (k = 0; k < count; k++) {
+                    part++;
                     part->rotation.vx = 0;
                     part->rotation.vy = 0;
                     part->rotation.vz = 0;
@@ -4812,24 +4784,27 @@ chosen:
             {
                 u8 loop;
 
-                animation = (Animation *)func_800AF518(object, arg, &i);
+                ptr = func_800AF518(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
                     loop = word >> 8;
-                    func_800A2434(pool, object->hierarchy, (u16 *)animation, loop, (u8)word);
+                    b0 = word;
+                    func_800A2434(pool, object->hierarchy, ptr, loop, b0);
                     flags = -1;
-                    object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, animation, loop);
+                    object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                    func_800AE1BC(object, ptr, loop);
                 }
             }
             break;
         case 0x12:
-            animation = (Animation *)func_800AF518(object, arg, &i);
+            ptr = func_800AF518(object, arg, &i);
             word = *pc++;
             if (i == 0) {
-                func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
+                b1 = word >> 8;
+                b0 = word;
+                func_800A2704(pool, object->hierarchy, ptr, b1, b0);
                 flags = -1;
-                object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
+                object->field8E = ABS(ANIMATION_SPAN(ptr) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
             break;
         case 0x13:
@@ -4869,8 +4844,6 @@ chosen:
             {
                 BattleObject *created;
                 ModelPart *parts;
-                ModelPart *from;
-                ModelPart *to;
 
                 word = *pc++;
                 for (i = 0x13; i < 0x1F; i++) {
@@ -4961,16 +4934,16 @@ chosen:
             break;
         case 0x1B: /* start an image animation */
             if (arg < object->imageCount) {
-                ImageAnim *target;
                 ColorRow *colors;
                 FrameCurve curve;
                 s16 x, y, z, x2, y2, z2, x3, y3;
 
                 word = *pc++;
-                if ((u8)word != 0xFF && (u8)word < object->imageCount) {
-                    target = &object->images[(u8)word];
+                b0 = word;
+                if (b0 != 0xFF && b0 < object->imageCount) {
+                    ptr = &object->images[b0];
                 } else {
-                    target = NULL;
+                    ptr = NULL;
                 }
                 if (((m1 = (s16)word >> 8) & 0x7F) < 4) {
                     colors = NULL;
@@ -4979,7 +4952,8 @@ chosen:
                 }
                 word = *pc++;
                 b2 = word;
-                curve = func_800AA820((u8)(word >> 8));
+                b3 = word >> 8;
+                curve = func_800AA820(b3);
                 x = *pc++;
                 y = *pc++;
                 z = *pc++;
@@ -5004,7 +4978,7 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
+                func_800A3640(&object->images[arg], ptr, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
@@ -5032,13 +5006,10 @@ chosen:
         case 0x1E:
             object->field37 = arg;
             break;
-        case 0x1F: /* continue on another object */
-            {
-                BattleObject *other = D_800D3368[func_800AF438(self, arg, &word)];
-
-                if (other != NULL) {
-                    object = other;
-                }
+        case 0x1F: /* continue on another object (the slot reuses op) */
+            op = func_800AF438(self, arg, &word);
+            if (D_800D3368[op] != NULL) {
+                object = D_800D3368[op];
             }
             break;
         case 0x20: /* wait for the animation to loop */
@@ -5120,7 +5091,8 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                func_800AF438(object, (u8)word, &word);
+                b0 = word;
+                func_800AF438(object, b0, &word);
                 ax = *pc++;
                 ay = *pc++;
                 az = *pc++;
@@ -5201,7 +5173,8 @@ chosen:
                 }
                 word = *pc++;
                 b1 = word >> 8;
-                part = &object->hierarchy[(u8)word];
+                b0 = word;
+                part = &object->hierarchy[b0];
                 frames = distance / object->field8E;
                 found = 0;
                 if (part->effects[0] != NULL) {
@@ -5333,12 +5306,16 @@ chosen:
             break;
         case 0x38:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 0, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
+            b0 = word;
+            b1 = word >> 8;
+            func_800AE098(pool, object->hierarchy, 0, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x39:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 1, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
+            b0 = word;
+            b1 = word >> 8;
+            func_800AE098(pool, object->hierarchy, 1, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x3A:
@@ -5435,6 +5412,7 @@ chosen:
                 s32 dz = object->position[2] - root->translation[2];
                 s16 pitch;
                 s16 yaw;
+                s16 roll;
 
                 if (op == 0x43) {
                     pitch = 0;
@@ -5443,8 +5421,9 @@ chosen:
                     pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
                 }
                 yaw = ratan2(-dx, -dz);
+                roll = 0;
                 if (dx != 0 || dy != 0 || dz != 0) {
-                    func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, 0);
+                    func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, roll);
                     flags = -1;
                 }
             }
@@ -5682,9 +5661,9 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                c0 = word;
+                b0 = word;
                 word = *pc++;
-                c3 = word >> 8;
+                b3 = word >> 8;
                 b2 = word;
                 if (op == 0x65) {
                     camX = D_800D335C.vx;
@@ -5726,7 +5705,7 @@ chosen:
                     mode = 0;
                     y = -1;
                 }
-                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, c0, camX, camY, camZ, x, (s16)value, y, c3);
+                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, b0, camX, camY, camZ, x, (s16)value, y, (s16)b3);
             }
             break;
         case 0x67: /* start a camera turn */
@@ -5738,9 +5717,9 @@ chosen:
 
                 word = *pc++;
                 m1 = word >> 8;
-                c0 = word;
+                b0 = word;
                 word = *pc++;
-                c3 = word >> 8;
+                b3 = word >> 8;
                 b2 = word;
                 angle = *pc++;
                 word = *pc++;
@@ -5770,15 +5749,18 @@ chosen:
                     word = (s16)word * D_800658C8->objectScale >> 12;
                 }
                 if (b2 & 0x20) {
+                    to = from;
                     from += angle;
-                } else if (m1 < 2) {
-                    from = (angle + base) & 0xFFF;
-                } else if (m1 < 3) {
-                    from = angle & 0xFFF;
                 } else {
-                    from = angle;
+                    if (m1 < 2) {
+                        from = (angle + base) & 0xFFF;
+                    } else if (m1 < 3) {
+                        from = angle & 0xFFF;
+                    } else {
+                        from = angle;
+                    }
+                    to = from;
                 }
-                to = from;
                 if (b2 & 0x40) {
                     to += (u16)word;
                 } else if (m1 < 3) {
@@ -5799,7 +5781,7 @@ chosen:
                 } else {
                     to = (u16)word;
                 }
-                ((void (*)())func_800B0164)(pool, m1, arg + 2, c0, (s16)from, 0, 0, (s16)to, 0, 0, c3);
+                ((void (*)())func_800B0164)(pool, m1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, (s16)b3);
             }
             break;
         case 0x68: /* start the camera */
@@ -5916,9 +5898,6 @@ chosen:
         func_800B9258();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AAD54);
-#endif
 
 /* Turn a part to rotation (x, y, z): at once for a duration below 2, else by
  * a turning effect (kind 0xFE) over duration frames along the shortest way
@@ -5969,8 +5948,10 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
     }
 }
 
-/* Attach a travelling effect (kind 0xFE) to a part: from its translation to
- * (x, y, z), over a length of its distance plus one. */
+/* Attach a homing turn (kind 0xFE) toward (x, y, z) to a part's rotation: type
+ * 0 (step type 7) turns pitch and yaw, 1 (8) the yaw only. Each frame 800A0838
+ * turns by at most param1 + (distance + time) * param2 / params[0] (the first
+ * distance plus one), time growing by field12; it runs until released. */
 void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x,
                    s32 y, s32 z) {
     EffectEntry *entry;
@@ -6044,7 +6025,11 @@ s32 func_800AE220(BattleObject *object, s32 source) {
 
 /* Run the events of object's animation for its current frame (sprites,
  * lights, effect channels, sounds, part flags, the slots' effect scripts and
- * image animations), then advance the frame, looping at its loop length. */
+ * image animations), then advance the frame, looping at its loop length.
+ * An event is an s16 frame time and a type byte, then the type's fields
+ * (AnimEvent); an animation (800AE1BC) or effect command 63 supplies the
+ * list and its count. Each case steps over its event; a type without a case
+ * is not stepped over (tools/analysis/battle_effect_vm.py decodes them). */
 void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     AnimEvent *event;
     SpriteCommand *sprite;
@@ -6091,7 +6076,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     break;
                 }
                 switch (event->header.type) {
-                case 1:
+                case 1: /* create a sprite (SpriteCommand, 0x14 bytes) */
                     slot = 0;
                     m = (MATRIX *)0x1F800000;
                     sprite = &event->sprite;
@@ -6159,7 +6144,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     object->animationStart += sizeof(SpriteCommand);
                     break;
-                case 2:
+                case 2: /* a light follows a part, or goes off (LightEvent; 6 bytes off) */
                     if (event->light.on) {
                         if (event->light.light < 2) {
                             light = &event->light;
@@ -6184,7 +6169,8 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     break;
                 case 3:
-                case 4:
+                case 4: /* stop a colour fade channel; on: restart it in mode type - 3
+                         * (ChannelEvent; 6 bytes off) */
                     func_800A3484(&object->channels[event->channel.channel], arg2);
                     if (event->channel.on) {
                         if (event->channel.channel < object->channelCount) {
@@ -6202,7 +6188,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         object->animationStart += 6;
                     }
                     break;
-                case 5:
+                case 5: /* play a sound (SoundEvent) */
                     sound = &event->sound;
                     if (func_800B12D0(func_800AF400(), sound->flags)) {
                         variant = 0;
@@ -6228,15 +6214,15 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     }
                     object->animationStart += sizeof(SoundEvent);
                     break;
-                case 6:
+                case 6: /* update the battle menu (4 bytes) */
                     func_800BF6CC();
                     object->animationStart += 4;
                     break;
-                case 7:
+                case 7: /* draw part (byte 4) = byte 5 bit 0 (6 bytes) */
                     object->hierarchy[event->header.arg4].flag7 = event->header.arg5 & 1;
                     object->animationStart += 6;
                     break;
-                case 8:
+                case 8: /* start effect scripts on the object's slots (SlotEvent) */
                     slots = &event->slots;
                     i = 0;
                     objects = D_800D3368;
@@ -6286,7 +6272,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     D_800C3E30 = savedMask;
                     object->animationStart += sizeof(SlotEvent);
                     break;
-                case 9:
+                case 9: /* start or stop an image animation (ImageEvent; 6 bytes off) */
                     if (event->image.on) {
                         if (event->image.anim < object->imageCount) {
                             if (event->image.source != 0xFF && event->image.source < object->imageCount) {

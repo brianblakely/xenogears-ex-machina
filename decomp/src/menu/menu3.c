@@ -7,6 +7,44 @@
 #include "window.h"
 #include "gte.h"
 
+/* The unit's small uninitialized variables, zero in the file after every
+ * unit's data, each in a slot of whole words (BSS in menu.mk). */
+static s32 D_80092638;
+static s32 D_8009263C;
+static s32 D_80092640;
+static Emitter *D_80092644; /* the menu's glow emitter */
+static s32 D_80092648;
+static u8 D_8009264C[4]; /* default combo state */
+static s32 D_80092650; /* trail segments added */
+static s32 D_80092654; /* last crossing point x, z */
+static s32 D_80092658;
+static s32 D_8009265C[2]; /* unreferenced */
+static u8 D_80092664;
+static s32 D_80092668;
+static s32 D_8009266C;
+static s32 D_80092670;
+static s32 D_80092674;
+static u16 D_80092678;
+static u16 D_8009267C;
+static s16 D_80092680;
+static s16 D_80092684;
+static s16 D_80092688;
+static s16 D_8009268C;
+static s16 D_80092690;
+static u16 D_80092694; /* texture page */
+static s16 D_80092698;
+static s16 D_8009269C;
+static u16 D_800926A0; /* its CLUT id */
+static s32 D_800926A4; /* frame counter */
+static u16 D_800926A8[4];
+static s32 D_800926B0; /* scene lines added this frame */
+static s32 D_800926B4;
+static Color D_800926B8; /* colour of kind-2 sparkles */
+static SceneCell10 *D_800926BC;
+static Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
+static SceneCell12 *D_800926C8;
+static TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
+
 ShotKind D_800910F4[] = {
     { 0x0600, 0, 0x2D, 0x40, 1, 0x0B, 0 },
     { 0x0600, 2, 0x19, 0xC0, 3, 0x00, 0 },
@@ -4177,27 +4215,4 @@ void func_8007E3CC(u32 *ot) {
         ot[z >> 4] = addr;
         *(u32 *)addr = prev | 0x03000000;
     }
-}
-
-/* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
-void func_8007E528(s32 state) {
-    if (D_80092708 == 0 && state == 10) {
-        func_8008EB4C(0x24);
-    }
-    D_80092708 = state;
-}
-
-/* While the scene state counts down, draw its sprite (when flag 2 is set). */
-void func_8007E574(void *ot) {
-    if (D_80092708 != 0) {
-        if (D_800928E8 & 2) {
-            AddPrim(ot, &D_800954D8[D_800928A0].sprite);
-            AddPrim(ot, &D_800954D8[D_800928A0].tpage);
-        }
-        D_80092708--;
-    }
-}
-
-s32 func_8007E624(void) {
-    return D_800926DC;
 }

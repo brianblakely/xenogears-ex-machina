@@ -204,7 +204,6 @@ decomp/src/mdec/commons/skipped_frames.c
 decomp/src/mdec/commons/slice_width.c
 decomp/src/mdec/commons/stall_count.c
 decomp/src/mdec/mdec.c
-decomp/src/mdec/mdec_bss.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
 decomp/src/menu/func_80072D18.s
@@ -234,6 +233,7 @@ decomp/src/menu/menu4.c
 decomp/src/menu/menu5.c
 decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
+decomp/src/menu/menu_common.c
 decomp/src/menu/mesh_packet.s
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h
@@ -343,6 +343,7 @@ decomp/src/resident/header.c
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/heap_80032DCC.c
+decomp/src/resident/kernel_settings.c
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/main2_800366E0.c
@@ -366,6 +367,7 @@ decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/sprite_80025C04.c
+decomp/src/resident/sprite_settings.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h
@@ -505,6 +507,15 @@ docs/phase1-progress.md
 docs/platforms.json
 docs/recovery-inventory.md
 docs/reverse-engineering.md
+docs/scripts/arena-scene.md
+docs/scripts/battle-ai.md
+docs/scripts/battle-effect-vm.md
+docs/scripts/battle-event-vm.md
+docs/scripts/field-events.md
+docs/scripts/sound-sequence.md
+docs/scripts/sprite-vm.md
+docs/scripts/text-control.md
+docs/scripts/worldmap-actor.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
@@ -697,7 +708,10 @@ tests/test_audio_modes.py
 tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
+tests/test_battle_ai.py
 tests/test_battle_continuation.py
+tests/test_battle_effect_vm.py
+tests/test_battle_event_vm.py
 tests/test_battle_loader.cpp
 tests/test_battle_request.py
 tests/test_battle_setup.cpp
@@ -709,6 +723,7 @@ tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
 tests/test_event_state.py
+tests/test_events.py
 tests/test_execution.py
 tests/test_field_actor.cpp
 tests/test_field_analysis.py
@@ -753,6 +768,7 @@ tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
+tests/test_overlay_scripts.py
 tests/test_packed_container.py
 tests/test_packed_field.cpp
 tests/test_planar_motion.py
@@ -770,6 +786,7 @@ tests/test_scenario_program.py
 tests/test_sector_survey.py
 tests/test_sound_driver.cpp
 tests/test_sound_output.cpp
+tests/test_sound_sequence.py
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
 tests/test_sprite_model.cpp
@@ -778,8 +795,10 @@ tests/test_sprite_return.py
 tests/test_sprite_tasks.cpp
 tests/test_sprite_upload.cpp
 tests/test_sprite_vm.py
+tests/test_staff_roll.py
 tests/test_sweep_math.py
 tests/test_sweep_trace.py
+tests/test_text_control.py
 tests/test_workflow.py
 tests/validation-results.json
 tools/analysis/active_motion.py
@@ -789,10 +808,14 @@ tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
 tools/analysis/audio_modes.py
+tools/analysis/battle_ai.py
 tools/analysis/battle_continuation.py
+tools/analysis/battle_effect_vm.py
+tools/analysis/battle_event_vm.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
+tools/analysis/disc_index.py
 tools/analysis/event_media.py
 tools/analysis/event_schedule.py
 tools/analysis/event_state.py
@@ -811,6 +834,7 @@ tools/analysis/movement_sweep.py
 tools/analysis/movie_chain.py
 tools/analysis/music_loading.py
 tools/analysis/original_trace.py
+tools/analysis/overlay_scripts.py
 tools/analysis/packed.py
 tools/analysis/party_sprites.py
 tools/analysis/planar_motion.py
@@ -820,6 +844,7 @@ tools/analysis/position_trace.py
 tools/analysis/query_trace.py
 tools/analysis/replay_trace.py
 tools/analysis/return_case.py
+tools/analysis/sound_sequence.py
 tools/analysis/sprite_animation.py
 tools/analysis/sprite_creation.py
 tools/analysis/sprite_matrix.py
@@ -827,9 +852,11 @@ tools/analysis/sprite_replay.py
 tools/analysis/sprite_return.py
 tools/analysis/sprite_state.py
 tools/analysis/sprite_vm.py
+tools/analysis/staff_roll.py
 tools/analysis/sweep_math.py
 tools/analysis/sweep_math_trace.py
 tools/analysis/sweep_trace.py
+tools/analysis/text_control.py
 tools/analysis/verify_active_motion.py
 tools/analysis/verify_collision_math.py
 tools/analysis/verify_decoder.py

@@ -67,7 +67,7 @@ typedef struct {
 } LineF4;
 
 /* Gouraud-less textured triangle packet (libgpu POLY_FT3). */
-typedef struct {
+typedef struct PolyFT3 {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;

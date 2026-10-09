@@ -238,8 +238,9 @@ u8 func_8007A744(u8 slot) {
     return result;
 }
 
-/* AI action default: queue an entry of type 0x80 carrying the four opcode
- * bytes. Returns the new entry count. */
+/* AI action default (00, 6e, 6f, 75-7f): queue an entry of type 0x80
+ * carrying the four opcode bytes, which 800793f0 rejects with its script
+ * error (800792f8). Returns the new entry count. */
 u8 func_8007A7BC(u8 **pc, u8 *list, u8 enemy, u8 count) {
     list[count * 8] = 0x80;
     list[count * 8 + 1] = (*pc)[0];
@@ -566,14 +567,14 @@ void func_8007B360(u8 **pc, u8 enemy) {
     D_800D3400[enemy].vars[op[3]] = D_800D3400[enemy].vars[op[1]] ^ D_800D3400[enemy].vars[op[2]];
 }
 
-/* AI action 28: 80079ed8 for the enemy's slot with b1, b2. */
+/* AI action 28: the enemy's byte attribute b1 (80079ed8) = b2. */
 void func_8007B3B0(u8 **pc, u8 enemy) {
     u8 *op = *pc;
 
     func_80079ED8(enemy + 3, op[1], op[2], 0);
 }
 
-/* AI action 29: 8007a280 for the enemy's slot with b1 and b2 | b3 << 8. */
+/* AI action 29: the enemy's halfword attribute b1 (8007a280) = b2 | b3 << 8. */
 void func_8007B3E4(u8 **pc, u8 enemy) {
     u8 *op = *pc;
 
@@ -587,8 +588,9 @@ void func_8007B424(u8 **pc, u8 enemy) {
     D_800D3400[enemy].bytes[(*pc)[1]] = func_80079ED8(slot, (*pc)[2], 0, 1);
 }
 
-/* AI action 2b: set attribute b1 of the first slot in var b3 to byte b1's
- * value; a party slot instead queues action type 0x20. */
+/* AI action 2b: set byte attribute b2 of the first slot in var b3 to byte
+ * variable b1; for a party slot instead set list entry 0's type to 0x20
+ * (800793f0 rejects it) and count an entry. */
 u8 func_8007B4B8(u8 **pc, u8 enemy, u8 count) {
     u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[3]]);
 
@@ -610,7 +612,8 @@ void func_8007B578(u8 **pc, u8 enemy) {
 }
 
 /* AI action 2d: set 16-bit attribute b2 of the first slot in var b3 to var b1;
- * a party slot instead queues action type 0x20. */
+ * for a party slot instead set list entry 0's type to 0x20 and count an
+ * entry. */
 u8 func_8007B608(u8 **pc, u8 enemy, u8 count) {
     u16 *vars = D_800D3400[enemy].vars;
     u8 slot = func_80079E7C(vars[(*pc)[3]]);
@@ -641,7 +644,8 @@ void func_8007B6C0(u8 **pc, u8 enemy) {
 }
 
 /* AI action 2f: record +0x108 (b2 0) or +0x104 of the first slot in var b3 =
- * long b1; a party slot instead queues action type 0x20. */
+ * long b1; for a party slot instead set list entry 0's type to 0x20 and count
+ * an entry. */
 u8 func_8007B7B0(u8 **pc, u8 enemy, u8 count) {
     u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[3]]);
 
@@ -1491,14 +1495,14 @@ void func_8007E780(u8 **pc, u8 enemy) {
     D_800D3400[enemy].longs[op[1]] = (u32)D_800D3400[enemy].longs[op[1]] / op[2];
 }
 
-/* AI action 6e: halfword b1 of the table at *800d3278 + 0x394 = b2. */
+/* AI action 70: halfword b1 of the table at *800d3278 + 0x394 = b2. */
 void func_8007E7C0(u8 **pc) {
     u8 *op = *pc;
 
     D_800D3278->unk394[op[1]] = op[2];
 }
 
-/* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
+/* AI action 71: set (b2 != 0) or clear flag b1 + 7 in every party record's
  * +0x7a. */
 void func_8007E7E4(u8 **pc, u8 enemy) {
     s32 i;
@@ -1513,19 +1517,20 @@ void func_8007E7E4(u8 **pc, u8 enemy) {
     }
 }
 
-/* AI action 70: formation group distance b1 -> b2 = b3. */
+/* AI action 72: formation group distance b1 -> b2 = b3. */
 void func_8007E8AC(u8 **pc) {
     u8 *op = *pc;
 
     D_800D3364->links[op[1]][op[2]].distance = op[3];
 }
 
-/* AI action 71: the first slot of var b1 takes the next turn. */
+/* AI action 73: the first slot of var b1 takes the next turn. */
 void func_8007E8E0(u8 **pc, u8 enemy) {
     D_800D2DC0 = func_80079E7C(D_800D3400[enemy].vars[(*pc)[1]]) + 1;
 }
 
-/* AI action 72: rebuild the turn order (80078508) into a scratch buffer. */
+/* AI action 74: reset every slot's turn timers (80078508), its order output
+ * going to a scratch buffer. */
 void func_8007E934(void) {
     u8 order[16];
 
@@ -1722,10 +1727,11 @@ s32 func_8007EF44(u8 enemy) {
     return D_800C3EB4[enemy + 3].hidden >> 7;
 }
 
-/* Run the AI action at *pc (opcodes 01-74; 62 does nothing here, other
- * values queue the opcode as an action, 8007a7bc) for `enemy`, with `count`
- * actions in the list at 800d2e5c, and step past it. Returns the new
- * action count. */
+/* Run the AI action at *pc (opcodes 01-74; 62 does nothing here, 00, 6e,
+ * 6f and 75-7f queue the opcode as an action, 8007a7bc) for `enemy`, with
+ * `count` actions in the list at 800d2e5c, and step past it. Returns the new
+ * action count. Instructions are op, b1, b2, b3 (docs/scripts/battle-ai.md,
+ * tools/analysis/battle_ai.py). */
 u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count) {
     u8 *list = (u8 *)D_800D2E5C;
 

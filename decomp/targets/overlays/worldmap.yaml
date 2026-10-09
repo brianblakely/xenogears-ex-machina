@@ -84,9 +84,9 @@ segments:
       - [0x2b6bc, .data, worldmap_8008E190]
       - [0x2b724, .data, worldmap_80090A84]
       - [0x2ba74, .data, worldmap_80094A5C]
-      # The decoded length is not word-aligned; its final bytes are zero.
-      # They are not program data: the packer completed its last group of
-      # eight tokens with two zero literals (the program ends at 0x2c0c4,
-      # where the BSS terrain origin D_8009BBB4 starts) and counted them.
-      - [0x2c0c4, databin, worldmap_tail]
+  - [0x2c0c4]
+  # The packer completes its last group of eight tokens with zero literals
+  # and records the padded length (worldmap.mk), so the decoded image ends
+  # two zero bytes after the data, inside the BSS (from the terrain origin
+  # D_8009BBB4).
   - [0x2c0c6]

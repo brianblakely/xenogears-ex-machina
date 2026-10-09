@@ -2182,14 +2182,18 @@ void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
 }
 
 /* Sequence opcode handlers: each takes the opcode's operands, the sequence
- * and the channel, and returns the position after the operands. */
+ * and the channel, and returns the position after the operands. Each comment
+ * gives the opcode (D_80050624[op - 0x80]), its operands and its effect;
+ * tools/analysis/sound_sequence.py decodes the sequences with them. */
 
-/* No operands, no effect. */
+/* The 31 unused opcode slots: no operands, no effect. D_80050824 gives them
+ * length 0, so the look-ahead of 8003c6e8 would never step past one. */
 u8 *func_8003CD00(u8 *data) {
     return data;
 }
 
-/* Set `unk5C` from the operand and flag it for update. */
+/* 80 rest(u8 ticks): wait `ticks` with the key released (unk5C; flags 0x400
+ * and flags2 2, the key-off request of an expired gate). */
 u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->unk5C = *data++;
     channel->flags |= 0x400;
@@ -2197,6 +2201,7 @@ u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* 81 tie(u8 ticks): wait `ticks` holding the note (unk5C, flags 0x100). */
 u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2205,11 +2210,14 @@ u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* 8A nop_8a(): no effect. */
 u8 *func_8003CD4C(u8 *data) {
     return data;
 }
 
-/* Mark the loop point when the operand matches the sequence's selector. */
+/* 8D loop_point_if(u8 selector): mark the loop point after the operand (and
+ * the transpose) when `selector` equals sequence byte 0x1B (set by
+ * 8003abe8). */
 u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (*data++ == seq->unk1B) {
         channel->loop = data;
@@ -2218,16 +2226,19 @@ u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Skip three operand bytes. */
+/* 8E skip3_8e(unused byte, unused byte, unused byte): skip three operand
+ * bytes; no effect. */
 u8 *func_8003CD7C(u8 *data) {
     return data + 3;
 }
 
+/* 8F nop_8f(): no effect. */
 u8 *func_8003CD84(u8 *data) {
     return data;
 }
 
-/* End of the channel's data: go back to the loop point, or stop. */
+/* 90 end(): continue at the loop point (counting the pass, restoring its
+ * transpose); without one release the voice and stop the channel. */
 u8 *func_8003CD8C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->loop != NULL) {
         data = channel->loop;
@@ -2241,32 +2252,34 @@ u8 *func_8003CD8C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Mark the loop point. */
+/* 91 loop_point(): mark the loop point here and save the transpose. */
 u8 *func_8003CE04(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->loop = data;
     channel->unk23 = channel->transpose;
     return data;
 }
 
-/* Set the octave. */
+/* 94 octave(u8 octave): transpose = octave * 12. */
 u8 *func_8003CE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose = *data * 12;
     return data + 1;
 }
 
-/* Octave up. */
+/* 95 octave_up(): transpose += 12. */
 u8 *func_8003CE38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose += 12;
     return data;
 }
 
-/* Octave down. */
+/* 96 octave_down(): transpose -= 12. */
 u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose -= 12;
     return data;
 }
 
-/* Set the time signature. */
+/* 97 time_signature(u8 beats, u8 unit): `beats` beats per bar of 0xC0 / unit
+ * ticks each (the bar and beat counters 8003c020 advances); restart the
+ * current beat's ticks. */
 u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
     s16 beats = data[0];
     s16 unit = data[1];
@@ -2279,6 +2292,8 @@ u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
+/* F9 position(u8 bar, u8 beat): set the bar and beat counters and restart
+ * the beat's ticks. */
 u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
     u16 length;
 
@@ -2289,17 +2304,21 @@ u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
+/* A4 set_1a(u8 value): sequence byte 0x1A = value (no recovered code reads
+ * it). */
 u8 *func_8003CEC0(u8 *data, SoundSeq *seq) {
     seq->unk1A = *data;
     return data + 1;
 }
 
+/* A5 add_1a(u8 value): sequence byte 0x1A += value. */
 u8 *func_8003CED4(u8 *data, SoundSeq *seq) {
     seq->unk1A += *data;
     return data + 1;
 }
 
-/* Open a repeat of `count` passes. */
+/* 98 repeat(u8 count): open a repeat of `count` passes one level deeper,
+ * saving its start and transpose. */
 u8 *func_8003CEF0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop;
 
@@ -2311,7 +2330,9 @@ u8 *func_8003CEF0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Close a repeat: go back to its start while passes are left. */
+/* 99 repeat_end(): while passes remain go back to the repeat start
+ * (recording this end, restoring the start transpose); else close the
+ * repeat. */
 u8 *func_8003CF38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop = &channel->loops[channel->loop_depth];
 
@@ -2326,7 +2347,8 @@ u8 *func_8003CF38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Leave the repeat on its last pass. */
+/* 9A repeat_break(): on the last pass jump to the recorded repeat end and
+ * close the repeat. */
 u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop = &channel->loops[channel->loop_depth];
 
@@ -2340,20 +2362,24 @@ u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
 extern void func_80039F18(s32 channel, s32 volume, s32 pan);
 
-/* Play a sound effect (16-bit operand) at full volume, centred. */
+/* 9C play_effect(u16 effect, unused byte): play effect `effect` of bank 0 at
+ * volume 0x7F, pan 0x40 (80039f18). */
 u8 *func_8003CFF0(u8 *data) {
     func_80039F18(data[0] | (data[1] << 8), 0x7F, 0x40);
     return data + 3;
 }
 
-/* Stop a sound effect (16-bit operand). */
+/* 9D stop_effect(u16 effect): stop the effect channels playing id `effect`
+ * (8003a14c). The look-ahead (D_80050824) steps 4 bytes over it. */
 u8 *func_8003D034(u8 *data) {
     func_8003A14C(data[0] | (data[1] << 8));
     return data + 2;
 }
 
-/* Continue with a channel of another effect of the channel's bank
- * (the first bank when it has none). */
+/* 9E goto_effect(u16 effect, u8 part): continue three bytes into channel
+ * `part` of effect `effect` of the channel's bank (the first bank when it
+ * has none); with no loaded bank of that id it returns the operand pointer,
+ * so the operands are executed as opcodes. */
 u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundBank *bank = D_80059440;
     s16 effect = data[0] | (data[1] << 8);
@@ -2372,7 +2398,7 @@ u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Set the tick rate and recompute ticks per frame from the current tempo. */
+/* A0 rate(u8 rate): tick rate = rate; ticks per frame = rate * tempo. */
 u8 *func_8003D0E8(u8 *data, SoundSeq *seq) {
     u8 rate = *data++;
     seq->rate.value = rate << 16;
@@ -2380,7 +2406,8 @@ u8 *func_8003D0E8(u8 *data, SoundSeq *seq) {
     return data;
 }
 
-/* Add a signed operand to the tick rate. */
+/* A1 rate_add(s8 delta): tick rate += delta; zero the ticks per frame until
+ * a rate or tempo opcode or slide recomputes them. */
 u8 *func_8003D110(s8 *data, SoundSeq *seq) {
     u8 reserved[4]; /* Retain the original unused eight-byte stack frame. */
     s32 rate = *data;
@@ -2391,7 +2418,8 @@ u8 *func_8003D110(s8 *data, SoundSeq *seq) {
     return data + 1;
 }
 
-/* Slide the tick rate to a target over a number of frames. */
+/* A2 rate_slide(u8 frames, u8 target): slide the tick rate to `target` over
+ * `frames`. */
 u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
     s16 frames = data[0];
     u8 target = data[1];
@@ -2406,14 +2434,16 @@ u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* Set the fade level. */
+/* A6 fade_level(u8 level): sequence level = level << 24; flag every
+ * channel's volume. */
 u8 *func_8003D17C(u8 *data, SoundSeq *seq) {
     seq->fade.value = *data++ << 24;
     func_8003E680(0x100, seq);
     return data;
 }
 
-/* Slide the fade level over 32-frame units. */
+/* A7 fade_slide(u8 units, u8 target): slide the sequence level to `target`
+ * over units * 32 frames. */
 u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
     s16 frames = data[0] << 5;
     u8 target = data[1];
@@ -2427,12 +2457,14 @@ u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
+/* A9 gate(u8 sixteenths): release point of each note in sixteenths of its
+ * ticks (15: ticks - 1, 16: all). */
 u8 *func_8003D208(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->gate_fraction = *data;
     return data + 1;
 }
 
-/* Move the channel to hardware voice `voice` (0-24). */
+/* AA voice(u8 voice): move the channel to hardware voice `voice` (< 25). */
 u8 *func_8003D21C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 voice = *data++;
 
@@ -2443,12 +2475,15 @@ u8 *func_8003D21C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Select an instrument. */
+/* AC instrument(u8 instrument): select an instrument of the wave bank
+ * (8003e5bc). */
 u8 *func_8003D298(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     func_8003E5BC(*data++, channel);
     return data;
 }
 
+/* AD duration_adjust(u8 ticks): add to the signed note-length bias (0 resets
+ * it). */
 u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2460,8 +2495,8 @@ u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Channel flag 0x10 on (only when the sequence has a table), off, and
- * flag 0x800 on and off. */
+/* AE drum_on(): notes select entries of the sequence table (8003cc84), when
+ * the sequence has one. */
 u8 *func_8003D300(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (seq->table != NULL) {
         channel->flags |= 0x10;
@@ -2469,22 +2504,26 @@ u8 *func_8003D300(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* AF drum_off(): notes play the channel's instrument. */
 u8 *func_8003D328(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags &= ~0x10;
     return data;
 }
 
+/* B0 legato_on(): channel flag 0x800: notes keep the key held (no gate
+ * release). */
 u8 *func_8003D340(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags |= 0x800;
     return data;
 }
 
+/* B1 legato_off(): clear channel flag 0x800. */
 u8 *func_8003D358(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags &= ~0x800;
     return data;
 }
 
-/* Pitch modulation on (odd hardware voices only). */
+/* B2 pitch_mod_on(): SPU pitch modulation on (odd hardware voices). */
 u8 *func_8003D370(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->voice & 1) {
         channel->state.flags |= 0x1000;
@@ -2493,7 +2532,7 @@ u8 *func_8003D370(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Pitch modulation off (odd hardware voices only). */
+/* B3 pitch_mod_off(): SPU pitch modulation off (odd hardware voices). */
 u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->voice & 1) {
         channel->state.flags |= 0x1000;
@@ -2502,7 +2541,7 @@ u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Noise on at clock `n`. */
+/* B4 noise_clock(u8 clock): noise on at SPU noise clock `clock`. */
 u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = *data++;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2511,7 +2550,7 @@ u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Noise on, adding to the clock (modulo 64). */
+/* B5 noise_clock_add(u8 delta): noise on, clock += delta (modulo 64). */
 u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = (*data++ + seq->noise_clock) & 0x3F;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2520,20 +2559,22 @@ u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Noise on and off. */
+/* B6 noise_on(): noise on. */
 u8 *func_8003D4A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x2000;
     channel->state.mode |= 0x20;
     return data;
 }
 
+/* B7 noise_off(): noise off. */
 u8 *func_8003D4C4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x2000;
     channel->state.mode &= ~0x20;
     return data;
 }
 
-/* Set the reverb depth, delay and feedback, keeping the type. */
+/* B8 reverb_settings(u8 depth, s8 delay, s8 feedback): reverb depth (<< 8),
+ * delay and feedback through 80038934, keeping the type. */
 u8 *func_8003D4E4(u8 *data, SoundSeq *seq) {
     s16 depth = data[0] << 8;
     s32 delay;
@@ -2546,8 +2587,8 @@ u8 *func_8003D4E4(u8 *data, SoundSeq *seq) {
     return data + 3;
 }
 
-/* Reverb on, unless the sequence is an effect set and the driver keeps
- * effects dry (or the channel is flagged dry). */
+/* BA reverb_on(): reverb on, unless an effect set's channel stays dry
+ * (driver flag 0x2000 clear or channel flag 2). */
 u8 *func_8003D53C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if ((seq->flags & 6) && (!(D_8005957C & 0x2000) || (channel->flags & 2))) {
         return data;
@@ -2557,32 +2598,37 @@ u8 *func_8003D53C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Reverb off. */
+/* BB reverb_off(): reverb off. */
 u8 *func_8003D59C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x4000;
     channel->state.mode &= ~0x40;
     return data;
 }
 
+/* BC skip3_bc(unused byte, unused byte, unused byte): skip three operand
+ * bytes; no effect. */
 u8 *func_8003D5BC(u8 *data) {
     return data + 3;
 }
 
+/* BD nop_bd(): no effect. */
 u8 *func_8003D5C4(u8 *data) {
     return data;
 }
 
+/* BE nop_be(): no effect. */
 u8 *func_8003D5CC(u8 *data) {
     return data;
 }
 
-/* Reselect the channel's instrument. */
+/* C0 instrument_reload(): reselect the current instrument. */
 u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     func_8003E5BC(channel->instrument, channel);
     return data;
 }
 
-/* Envelope: set parameters 0-2 at once. */
+/* C1 envelope_modes(u8 attack, u8 sustain, u8 release): ADSR attack, sustain
+ * and release modes. */
 u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
@@ -2594,7 +2640,7 @@ u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Envelope: set one parameter each, flagging its register update. */
+/* C2 attack_rate(u8 rate): ADSR attack rate. */
 u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2603,6 +2649,7 @@ u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* C3 decay_rate(u8 rate): ADSR decay rate. */
 u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2611,6 +2658,7 @@ u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* C4 sustain_rate(u8 rate): ADSR sustain rate. */
 u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2619,6 +2667,7 @@ u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* C5 release_rate(u8 rate): ADSR release rate, also each note's default. */
 u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data;
 
@@ -2628,6 +2677,7 @@ u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
+/* C6 sustain_level(u8 level): ADSR sustain level. */
 u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2636,6 +2686,7 @@ u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* C7 decay_sustain(u8 decay, u8 level): ADSR decay rate and sustain level. */
 u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
@@ -2646,6 +2697,7 @@ u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
+/* C8 attack_mode(u8 mode): ADSR attack mode. */
 u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2654,6 +2706,7 @@ u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* C9 sustain_mode(u8 mode): ADSR sustain mode. */
 u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2662,6 +2715,7 @@ u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
+/* CA release_mode(u8 mode): ADSR release mode. */
 u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2670,27 +2724,29 @@ u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Set the detune (signed operand, 1/8 semitone units). */
+/* D0 detune(s8 eighths): detune (1/256 semitones) = eighths << 5. */
 u8 *func_8003D74C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune = *data << 5;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
-/* Add to the detune, coarse and fine. */
+/* D1 detune_add(s8 eighths): detune += eighths << 5. */
 u8 *func_8003D770(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune += *data << 5;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
+/* D2 detune_add_fine(s8 steps): detune += steps << 3. */
 u8 *func_8003D79C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune += *data << 3;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
-/* Add a 16-bit (big-endian) value to the detune. */
+/* D3 detune_add_word(s16 big-endian delta): detune += a big-endian signed
+ * halfword. */
 u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 delta = data[1] + (s16)(data[0] << 8);
 
@@ -2699,8 +2755,8 @@ u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* Start a slide of `unk84` per frame over `frames` frames (flags3 bit 0),
- * or stop it. */
+/* D4 pitch_slide(u8 frames, s8 semitones): slide the pitch by `semitones`
+ * over `frames` (either zero: stop the slide). */
 u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = ((s8 *)data)[1] << 24;
@@ -2715,16 +2771,21 @@ u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
+/* D5 pitch_slide_hold(): toggle flags3 bit 1: the pitch slide keeps going
+ * without counting frames. */
 u8 *func_8003D854(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags3 ^= 2;
     return data;
 }
 
+/* DC pitch_slide_off(): stop the pitch slide. */
 u8 *func_8003D86C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags3 &= ~1;
     return data;
 }
 
+/* D6 portamento(u8 frames): each new note slides from the previous one over
+ * `frames` (0: off). */
 u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
@@ -2742,8 +2803,9 @@ extern s32 func_8003E290();
 extern void func_8003E3E0(SoundModulator *modulator);
 extern s32 func_8003F2A0(SoundModulator *modulator);
 
-/* Vibrato: start the pitch modulator with a signed depth (squared), a rate
- * (with a quadratic boost), a delay and the triangle shape. */
+/* D8 vibrato(u8 rate, s8 depth, u8 delay): pitch modulator on: signed
+ * squared depth << 14, rate + rate*rate/64, delay * 4 frames, wave 3
+ * (8003f2a0), restarted by each note; nothing when rate or depth is 0. */
 u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
@@ -2772,9 +2834,10 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 
-/* Vibrato with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave). The mode is a halfword: the masked shape is
- * computed for the call and copied back into it, like the rate. */
+/* D9 vibrato_wave(u8 rate, s8 depth, u8 mode): as vibrato without delay,
+ * wave mode & 0xF (800508a4); mode bit 4 keeps it running across notes. The
+ * mode is a halfword: the masked shape is computed for the call and copied
+ * back into it, like the rate. */
 u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
@@ -2807,7 +2870,8 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Set the pitch modulator's period. */
+/* D7 vibrato_period(u8 period): fade the pitch modulator in over (period +
+ * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2817,20 +2881,21 @@ u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Pitch modulator on and off. */
+/* DA vibrato_on(): pitch modulator on. */
 u8 *func_8003DAEC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 1;
     channel->modulator[0].flags |= 1;
     return data;
 }
 
+/* DB vibrato_off(): pitch modulator off. */
 u8 *func_8003DB0C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~1;
     channel->modulator[0].flags &= ~1;
     return data;
 }
 
-/* Set the channel level, ending its slides. */
+/* E0 level(u8 level): channel level = level << 24; stop level slides. */
 u8 *func_8003DB2C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->level.value = *data << 24;
     channel->flags2 |= 0x100;
@@ -2838,7 +2903,7 @@ u8 *func_8003DB2C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* Add to the channel level. */
+/* E1 level_add(s8 delta): channel level += delta << 24; stop level slides. */
 u8 *func_8003DB58(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->level.value = ((*data << 24) + channel->level.value) & 0x7FFFFFFF;
     channel->flags2 |= 0x100;
@@ -2846,7 +2911,8 @@ u8 *func_8003DB58(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* Slide the channel level to a target over `frames`. */
+/* E2 level_slide(u8 frames, s8 target): slide the channel level to `target`
+ * over `frames`. */
 u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = (((s8 *)data)[1] << 24) - channel->level.value;
@@ -2859,7 +2925,8 @@ u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* Sweep the channel level between two values in steps of `frames`. */
+/* F8 level_sweep(u8 from, u8 frames, u8 to): each note sweeps the channel
+ * level from `from` to `to` over `frames` (equal levels or 0 frames: off). */
 u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 from = data[0] << 24;
     s16 frames = data[1];
@@ -2878,8 +2945,9 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
 extern s32 func_8003F240(SoundModulator *modulator);
 
-/* Tremolo: start the volume modulator with a signed depth, a rate (with a
- * quadratic boost), a delay and the sawtooth shape. */
+/* E4 tremolo(u8 rate, s8 depth, u8 delay): volume modulator on: depth << 24,
+ * rate + rate*rate/64, delay * 4 frames, wave 2 (8003f240), restarted by
+ * each note; nothing when rate or depth is 0. */
 u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
@@ -2902,8 +2970,8 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Tremolo with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave), as 8003D9A4. */
+/* E5 tremolo_wave(u8 rate, s8 depth, u8 mode): as tremolo without delay,
+ * wave mode & 0xF; mode bit 4 keeps it running across notes. */
 u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
@@ -2931,7 +2999,8 @@ u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Set the volume modulator's period. */
+/* E3 tremolo_period(u8 period): fade the volume modulator in over (period +
+ * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2941,34 +3010,37 @@ u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Volume modulator on and off. */
+/* E6 tremolo_on(): volume modulator on. */
 u8 *func_8003DE54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 2;
     channel->modulator[1].flags |= 1;
     return data;
 }
 
+/* E7 tremolo_off(): volume modulator off. */
 u8 *func_8003DE74(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~2;
     channel->modulator[1].flags &= ~1;
     return data;
 }
 
-/* Set the pan (0 left, 0x40 centre, 0x7F right). */
+/* E8 pan(u8 pan): pan = pan << 8 (0 left, 0x40 centre, 0x7F right). */
 u8 *func_8003DE94(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->pan = *data << 8;
     channel->flags2 |= 0x100;
     return data + 1;
 }
 
-/* Add to the pan (wrapping). */
+/* E9 pan_add(s8 delta): pan += delta << 8 (wrapping in 15 bits). */
 u8 *func_8003DEB4(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->pan = (channel->pan + (s16)(*data << 8)) & 0x7FFF;
     channel->flags2 |= 0x100;
     return data + 1;
 }
 
-/* Slide the pan to a target over `frames`. */
+/* EA pan_slide(u8 frames, s8 target): step the pan toward `target` over
+ * `frames`; the last frame sets it to the stored difference (target - start)
+ * << 8. */
 u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = ((s8 *)data)[1] - (channel->pan >> 8);
@@ -2982,7 +3054,8 @@ u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* Set the pan modulator's period. */
+/* EB autopan_period(u8 period): fade the pan modulator in over (period + 1)
+ * * 4 frames (step 0x400 / that; 0xFF changes nothing). */
 u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
@@ -2992,8 +3065,9 @@ u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Auto-pan: start the pan modulator with a signed depth, a rate (with a
- * quadratic boost), a delay and the triangle shape. */
+/* EC autopan(u8 rate, s8 depth, u8 delay): pan modulator on: depth << 24,
+ * rate + rate*rate/64, delay * 4 frames, wave 3, restarted by each note;
+ * nothing when rate or depth is 0. */
 u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
@@ -3016,8 +3090,8 @@ u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Auto-pan with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave), as 8003D9A4. */
+/* ED autopan_wave(u8 rate, s8 depth, u8 mode): as autopan without delay,
+ * wave mode & 0xF; mode bit 4 keeps it running across notes. */
 u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
@@ -3045,20 +3119,23 @@ u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Pan modulator on and off. */
+/* EE autopan_on(): pan modulator on. */
 u8 *func_8003E140(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 4;
     channel->modulator[2].flags |= 1;
     return data;
 }
 
+/* EF autopan_off(): pan modulator off. */
 u8 *func_8003E160(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~4;
     channel->modulator[2].flags &= ~1;
     return data;
 }
 
-/* Select a modulator and set its shape (bit 4: one-sided) and target. */
+/* F0 modulator_select(u8 index, u8 mode, u8 target): select modulator
+ * `index` and set its wave (mode & 0xF), target (0 pitch, 1 level, 2 pan),
+ * no delay; left off; mode bit 4 keeps it running across notes. */
 u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundModulator *modulator;
     u8 mode;
@@ -3081,7 +3158,8 @@ u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Set the selected modulator's rate and 16-bit depth. */
+/* F1 modulator_depth(u8 rate, s8 depth_high, u8 depth_low): selected
+ * modulator: rate + rate*rate/64 and a 16-bit depth. */
 u8 *func_8003E1F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 square = data[0] * data[0];
     SoundModulator *modulator = &channel->modulator[channel->modulator_index];
@@ -3116,7 +3194,9 @@ s32 func_8003E290(depth, rate, shape)
     return depth;
 }
 
-/* Set the selected modulator's delay and period. */
+/* F2 modulator_timing(u8 delay, u8 period): selected modulator: delay * 4
+ * frames, fade-in over (period + 1) * 4 frames (period 0xFF: neither
+ * changes). */
 u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundModulator *modulator = &channel->modulator[channel->modulator_index];
     u8 period = data[1] + 1;
@@ -3128,11 +3208,12 @@ u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
+/* F5 nop_f5(): no effect. The look-ahead (D_80050824) steps 2 bytes over it. */
 u8 *func_8003E358(u8 *data) {
     return data;
 }
 
-/* Restart modulator `index` and switch it on. */
+/* F6 modulator_on(u8 index): restart modulator `index` and switch it on. */
 u8 *func_8003E360(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 index = *data++;
     SoundModulator *modulator = &channel->modulator[index];
@@ -3152,7 +3233,7 @@ void func_8003E3E0(SoundModulator *modulator) {
     modulator->period_count = modulator->period;
 }
 
-/* Switch modulator `index` off. */
+/* F7 modulator_off(u8 index): switch modulator `index` off. */
 u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 index = *data;
 
@@ -3161,8 +3242,9 @@ u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* Select a wave bank (the default when it is not loaded) and an
- * instrument of it. */
+/* FC wave_bank_instrument(u8 key, u8 instrument): select the wave bank with
+ * `key` (the first loaded wave bank when none has it) and an instrument of
+ * it. */
 u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = data[0];
     u8 instrument = data[1];
@@ -3178,7 +3260,7 @@ u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* Set the tempo (0 keeps it). */
+/* FD tempo(u8 tempo): tempo = tempo << 24 unless 0. */
 u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
     s32 tempo = *data++;
 
@@ -3189,7 +3271,8 @@ u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
     return data;
 }
 
-/* Select a wave bank (the default when it is not loaded). */
+/* FE wave_bank(u8 key): select the wave bank with `key` (the first loaded
+ * wave bank when none has it). */
 u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = *data++;
     SoundSequence *bank;
@@ -3203,7 +3286,8 @@ u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Stop the channel once its voice's envelope has decayed to silence. */
+/* FF stop_when_silent(): stop the channel when its voice's envelope level is
+ * 0; else continue. */
 u8 *func_8003E54C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     long status;
     short level;

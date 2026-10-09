@@ -7,6 +7,33 @@
 #include "window.h"
 #include "gte.h"
 
+/* The unit's small uninitialized variables, zero in the file after every
+ * unit's data, each in a slot of whole words (BSS in menu.mk). */
+static s32 D_800925D4; /* message the scene shows */
+static s32 D_800925D8;
+static s32 D_800925DC;
+static s32 D_800925E0; /* marker sprite x, y */
+static s32 D_800925E4;
+static s32 D_800925E8; /* marker sprite target x, y */
+static s32 D_800925EC;
+static u8 D_800925F0; /* marker sprite shown */
+static s32 D_800925F4; /* vertical camera lift of the current view */
+static u8 *D_800925F8; /* running scene script */
+static s32 D_800925FC; /* scene script frame counter */
+static s16 D_80092600; /* scene script charge hold */
+static s8 D_80092604; /* scene choice cursor */
+static u8 D_80092608;
+static s16 D_8009260C; /* knock-down flash level */
+static Node *D_80092610; /* the scene's root node */
+static Actor *D_80092614;
+static s8 D_80092618; /* odd: show the record text */
+static s32 D_8009261C;
+static s32 D_80092620;
+static s32 D_80092624;
+static s32 D_80092628;
+static s32 D_8009262C;
+static SVector D_80092630; /* model view angles */
+
 /* Scene scripts: bytecode run by func_8007107C (opcode 0x12 shows a message,
  * 0x19 waits for the message window). The opening's is empty. */
 u8 D_80090F38[] = { 0x00 };
@@ -72,6 +99,49 @@ u8 D_800910C4[] = {
 };
 
 LightRig *D_800910F0 = NULL;
+
+/* Start the menu camera: mode 3 setup and its script block. */
+void func_800707A8(void) {
+    func_80083C0C(3);
+    func_800346D4(&D_80092954);
+}
+
+/* One easing step from current toward target: the remaining distance
+ * (rounded away from zero) divided by the number of steps. */
+s32 func_800707D8(s32 target, s32 current, s32 steps) {
+    s32 delta = target - current;
+
+    if (delta < 0) {
+        delta++;
+        delta -= steps;
+    } else {
+        delta--;
+        delta += steps;
+    }
+    return delta / steps;
+}
+
+/* Ease the camera eye toward target over the given number of steps; the
+ * eye height is compared including the current lift. */
+void func_80070808(Vector *target, s32 steps) {
+    D_8009867C.vx += func_800707D8(target->vx, D_8009867C.vx, steps);
+    D_8009867C.vz += func_800707D8(target->vz, D_8009867C.vz, steps);
+    D_8009867C.vy += func_800707D8(target->vy, D_8009867C.vy + D_800925F4, steps);
+}
+
+/* Ease the camera look-at point toward target, limited by the collision
+ * step check. */
+void func_800708C4(Vector *target, s32 steps) {
+    Vector step;
+
+    step.vx = func_800707D8(target->vx, D_8009871C.vx, steps);
+    step.vy = func_800707D8(target->vy, D_8009871C.vy, steps);
+    step.vz = func_800707D8(target->vz, D_8009871C.vz, steps);
+    func_800828F8(&D_8009871C, &step, 0x3D00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vy += step.vy;
+    D_8009871C.vz += step.vz;
+}
 
 /* Place the menu camera for one of the view modes. */
 void func_8007099C(u32 mode) {
@@ -199,8 +269,8 @@ void func_80070F80(u8 *script) {
     D_80097010.flags &= ~0x8000;
 }
 
-/* Turn an actor toward one of two headings depending on which side of the
- * scene centre it stands, and reset its state. */
+/* Walk an actor at stick speed 0xFF toward one of two fixed directions,
+ * chosen by which side of the scene centre it stands. */
 s32 func_80070FD8(Actor *actor) {
     Vector pos = actor->pos;
 
@@ -216,11 +286,15 @@ s32 func_80070FD8(Actor *actor) {
     return 0;
 }
 
-/* Run the scene script (D_800925F8) until a command waits: select the
- * driven actor, queue its inputs, turn it, wait frames or for the message
- * window, and set scene values (screen offset, caption, camera view,
- * layout, sequence step, hit points and charge). Declared int with no
- * value returned, which keeps $v0 live at its exits as in the original. */
+/* Run the scene script (D_800925F8) until a command waits. Each run first
+ * releases the driven actor's stick (state 0) and applies command 32's
+ * charge hold. A command is a byte and up to two byte operands: it selects
+ * the driven actor, queues its inputs, walks it, waits frames or for the
+ * message window, or sets scene values (marker sprite, message, camera
+ * view, layout, bout-end step, hit points, charge, guard). Headings are
+ * relative to the actor's facing toward its opponent. tools/analysis/
+ * overlay_scripts.py disassembles the scripts. Declared int with no value
+ * returned, which keeps $v0 live at its exits as in the original. */
 s32 func_8007107C(void) {
     Actor *actor = D_80092894;
 
@@ -233,6 +307,7 @@ s32 func_8007107C(void) {
     }
     for (;;) {
         switch (*D_800925F8) {
+        /* 1 n: wait n frames (the first run loads the counter and yields). */
         case 1:
             if (D_800925FC == 0) {
                 D_800925FC = D_800925F8[1];
@@ -243,42 +318,53 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 2: drive the first actor. */
         case 2:
             actor = D_80092894 = &D_8009872C;
             D_800925F8++;
             break;
+        /* 3: drive the second actor. */
         case 3:
             actor = D_80092894 = &D_80097010;
             D_800925F8++;
             break;
+        /* 4: empty the driven actor's input queue. */
         case 4:
             func_80076424(actor);
             D_800925F8++;
             break;
+        /* 5: queue input 1 (combo button A, as pad button 0x10 does). */
         case 5:
             func_8007639C(actor, 1);
             D_800925F8++;
             break;
+        /* 6: queue input 2 (combo button B, as pad button 0x20 does). */
         case 6:
             func_8007639C(actor, 2);
             D_800925F8++;
             break;
+        /* 8: queue input 3 (charged shot, as pad button 8 does). */
         case 8:
             func_8007639C(actor, 3);
             D_800925F8++;
             break;
+        /* 7: queue input 4 (jump, as pad button 0x80 does). */
         case 7:
             func_8007639C(actor, 4);
             D_800925F8++;
             break;
+        /* 10: queue input 5 (animation 0xF with effect 0xE). */
         case 10:
             func_8007639C(actor, 5);
             D_800925F8++;
             break;
+        /* 9: the same as 10. */
         case 9:
             func_8007639C(actor, 5);
             D_800925F8++;
             break;
+        /* 11: while 0x100 or more apart, walk at the opponent (stick speed 0xF0,
+         * heading 0) and yield; then advance. */
         case 11:
             if (D_8009284C >= 0x100) {
                 actor->state = 0xF0;
@@ -288,6 +374,7 @@ s32 func_8007107C(void) {
             }
             D_800925F8++;
             break;
+        /* 12: while at most 0x400 apart, walk away (heading 0x800) and yield. */
         case 12:
             if (D_8009284C <= 0x400) {
                 actor->state = 0xF0;
@@ -297,6 +384,9 @@ s32 func_8007107C(void) {
             }
             D_800925F8++;
             break;
+        /* 13: while in the far quadrant or on floor kind 1, walk out of it
+         * (func_80070FD8); then while at most 0x800 apart, walk away; each
+         * yields. */
         case 13:
             if (func_8008F9B0(actor)) {
                 func_80070FD8(actor);
@@ -310,6 +400,7 @@ s32 func_8007107C(void) {
             }
             D_800925F8++;
             break;
+        /* 15 n: walk sideways (heading 0x400) for n frames. */
         case 15:
             if (D_800925FC == 0) {
                 D_800925FC = D_800925F8[1];
@@ -323,6 +414,7 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 14 n: walk sideways (heading -0x400) for n frames. */
         case 14:
             if (D_800925FC == 0) {
                 D_800925FC = D_800925F8[1];
@@ -336,6 +428,7 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 20 n: as 14, also setting the actor's 0x8000 flag. */
         case 20:
             if (D_800925FC != 0) {
                 if (--D_800925FC != 0) {
@@ -350,42 +443,53 @@ s32 func_8007107C(void) {
             }
             D_800925FC = D_800925F8[1];
             return;
+        /* 16, 17: never advance; this loop runs them forever. */
         case 16:
         case 17:
             break;
+        /* 18 m: show message m (D_800925D4) in the message window. */
         case 18:
             D_800925F8++;
             D_800925D4 = *D_800925F8;
             D_800925F8++;
             break;
+        /* 19: resume the message window (func_800345E0). */
         case 19:
             func_800345E0(&D_8009868C);
             D_800925F8++;
             break;
+        /* 27: hide the marker sprite and put it back at 0xA0, 0x6D. */
         case 27:
             D_800925E0 = D_800925E8 = 0xA0;
             D_800925F0 = 0;
             D_800925E4 = D_800925EC = 0x6D;
             D_800925F8++;
             break;
+        /* 21 x y: show the marker sprite, easing to x * 2, y. */
         case 21:
             D_800925E8 = D_800925F8[1] * 2;
             D_800925EC = D_800925F8[2];
             D_800925F0 = 1;
             D_800925F8 += 3;
             break;
+        /* 22 c: scene callback c (func_80071F8C). */
         case 22:
             func_80071F8C(D_800925F8[1]);
             D_800925F8 += 2;
             break;
+        /* 23 v: camera view v (D_80092904, func_8007099C). */
         case 23:
             D_80092904 = D_800925F8[1];
             D_800925F8 += 2;
             break;
+        /* 24 s: bout-end sequence step s (D_80092900, func_80072170). */
         case 24:
             D_80092900 = D_800925F8[1];
             D_800925F8 += 2;
             break;
+        /* 25: wait until the message window stops with code 1 while pad button
+         * 0x20 is newly pressed, then resume it and advance; a stop with
+         * another code is resumed in place. */
         case 25:
             if (func_80033CD0(&D_8009868C) == 0 || !(D_8005948C & 0x20)) {
                 return;
@@ -395,6 +499,8 @@ s32 func_8007107C(void) {
             }
             func_800345E0(&D_8009868C);
             break;
+        /* 26: wait for a stop with code 2 or 3 while pad button 0x20 is newly
+         * pressed, then resume the window and advance; yields on every run. */
         case 26:
             if (func_80033CD0(&D_8009868C) != 0 && (D_8005948C & 0x20)) {
                 s32 answer = func_80033CD0(&D_8009868C);
@@ -407,6 +513,7 @@ s32 func_8007107C(void) {
                 }
             }
             return;
+        /* 28 o: full HP for the driven actor (o = 0) or its opponent. */
         case 28:
             if (D_800925F8[1]) {
                 actor->opponent->hp = actor->opponent->max_hp;
@@ -415,6 +522,7 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 29 o: 1 HP for the driven actor (o = 0) or its opponent. */
         case 29:
             if (D_800925F8[1]) {
                 actor->opponent->hp = 1;
@@ -423,22 +531,29 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 30: scene mode 3 and close the choice window (func_800707A8). */
         case 30:
             func_800707A8();
             D_800925F8++;
             break;
+        /* 31 c: set the driven actor's charge to c * 16 (0x1000 is full). */
         case 31:
             actor->charge = D_800925F8[1] * 16;
             D_800925F8 += 2;
             break;
+        /* 32 c: hold the driven actor's charge at no less than c * 16 and its
+         * highest value since (0 releases). */
         case 32:
             D_80092600 = D_800925F8[1] * 16;
             D_800925F8 += 2;
             break;
+        /* 33 l: re-centre the scene on layout l (func_80070C7C). */
         case 33:
             func_80070C7C(D_800925F8[1]);
             D_800925F8 += 2;
             break;
+        /* 34 g: guard (flag 2) when g is nonzero; otherwise clear the guard and
+         * its count (flags 0x38). */
         case 34:
             if (D_800925F8[1]) {
                 actor->flags |= 2;
@@ -448,6 +563,8 @@ s32 func_8007107C(void) {
             }
             D_800925F8 += 2;
             break;
+        /* 0 and bytes without a case: stop without advancing (func_80071AD0
+         * restarts scene 0 once the script stands on 0). */
         case 0:
         default:
             return;
@@ -455,11 +572,12 @@ s32 func_8007107C(void) {
     }
 }
 
-/* Link the screen offset packet and this frame's texture page packet. */
+/* Link the marker sprite (16x16, at D_800925E0, D_800925E4) and this
+ * frame's texture page packet. */
 void func_80071724(u32 *ot) {
     Window *frame = D_80092868;
 
-    /* x0 and y0 of the offset sprite, stored as one word */
+    /* x0 and y0 of the sprite, stored as one word */
     *(u32 *)&frame->sprite.x0 = D_800925E0 | (D_800925E4 << 16);
     AddPrim(ot, &frame->sprite);
     AddPrim(ot, &D_800929E4[D_800928A0]);
@@ -496,8 +614,8 @@ void func_800718C0(void) {
 }
 
 /* Enter a menu scene: the first scene also starts sound 0x37 and uses a
- * taller window; restarts both actors at full HP and centres the screen
- * offset. */
+ * taller window; centres the marker sprite, releases the charge hold and
+ * restarts both actors at full HP. */
 void func_8007191C(s32 scene) {
     D_80092608 = scene == 0;
     if (scene == 0) {
@@ -538,7 +656,8 @@ void func_800719F0(void) {
 }
 
 /* Per-frame menu scene update: scene choice input, the scene script, the
- * screen offset easing, the message window and the camera. */
+ * marker sprite (shown while D_800925F0 is set, blinking every 4 frames)
+ * and its easing, the message window and the camera. */
 void func_80071AD0(void) {
     MenuWindow *message;
 

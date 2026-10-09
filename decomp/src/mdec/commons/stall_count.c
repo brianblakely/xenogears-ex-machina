@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-s32 movie_stall_count = 0;
+s32 movie_stall_count;

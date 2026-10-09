@@ -19,11 +19,12 @@
 #include "result_input.h"
 #include "area.h"
 
-/* The battle's shared tables and state, 800c2054-800c3488, which open .data.
- * The flags D_800C204C and D_800C2050 before them (with the unused word
- * D_800C2048) and the unused object at 800c3488 after them have stray
- * assembler bytes in their padding, so they stay original data
- * (battle.yaml). */
+/* The battle's shared tables and state, which open .data (800c2048-800c348c).
+ * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488
+ * have stray assembler bytes in their padding, so they stay original data. */
+s32 D_800C2048 = 0; /* unreferenced */
+INCLUDE_ORIGINAL(".data", D_800C204C, 0x800C204C, 4);
+INCLUDE_ORIGINAL(".data", D_800C2050, 0x800C2050, 4);
 s32 D_800C2054[2][5] = {{160, 190, 130, 100, 220}, {100, 110, 90, 80, 120}};
 u8 D_800C207C = 1;
 s32 D_800C2080 = 0;
@@ -266,6 +267,9 @@ u16 D_800C3468[16] = {
     0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 0x8, 0x4,
     0x2, 0x1,
 };
+/* Unreferenced; which unit it ends is not known, its padding holds stray
+ * assembler bytes. The units up to 8008CCCC have no other data. */
+INCLUDE_ORIGINAL(".data", D_800C3488, 0x800C3488, 4);
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {

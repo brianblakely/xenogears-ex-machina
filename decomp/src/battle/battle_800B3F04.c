@@ -27,6 +27,10 @@ MATRIX D_800C3574 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}
 SVECTOR D_800C3594[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
 SVECTOR D_800C35AC[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
 VECTOR D_800C35C4 = {0, 0, -1536 << 16};
+/* The sound fade flag that 800B7870 and 800B8098 also use; whether it ends
+ * this unit's data or is 800B7870's only object is not known. Its padding
+ * holds stray assembler bytes, so it stays original data. */
+INCLUDE_ORIGINAL(".data", D_800C35D4, 0x800C35D4, 4);
 
 /* Run battle sprite script command (1-107) on sprite with its argument
  * bytes: motion, velocity and gravity settings, render flags, camera and
@@ -45,14 +49,17 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
     u16 played;
 
     switch (command) {
+    /* 6b: copy the three VRAM columns away (800b3e04). */
     case 0x6B:
         func_800B3E04();
         break;
+    /* 6a: flags 800c492a = 1, 800c35d4 = 0; fade sequence 800c3e54 to 0 over 120 frames. */
     case 0x6A:
         D_800C492A = 1;
         D_800C35D4 = 0;
         func_8003A89C(D_800C3E54, 0, 0x78);
         break;
+    /* 69: rebind the block idle bit 10 names: +4c when set, else +48 (bit 10 kept). */
     case 0x69:
         if ((sprite->idle.word >> 10) & 1) {
             func_800222BC(sprite, sprite->field4C);
@@ -62,6 +69,7 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
             sprite->idle.word &= ~0x400;
         }
         break;
+    /* 68: bind +4c (idle bit 10 set) for a negative animation, else +48. */
     case 0x68:
         if (sprite->motion.bytes[3] < 0) {
             func_800222BC(sprite, sprite->field4C);
@@ -71,11 +79,14 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
             sprite->idle.word &= ~0x400;
         }
         break;
+    /* 66: flag 800c3688 = 1. */
     case 0x66:
         D_800C3688 = 1;
         break;
+    /* 64: idle bit 9, then as 63. */
     case 0x64:
         sprite->idle.word |= 0x200;
+    /* 63: when (s16)80059454 > 0x200: field3a = it, facing group 3, render bit 28. */
     case 0x63:
         if ((s16)D_80059454 > 0x200) {
             sprite->field3A = D_80059454;
@@ -83,9 +94,12 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
             sprite->render.word |= 0x10000000;
         }
         break;
+    /* 62: show the current event's result on this slot (800bd1fc). */
     case 0x62:
         func_800BD1FC(SPRITE_SLOT(sprite));
         break;
+    /* 61 s8: y = ground - 1; aim the jump (800ba768) at the target point (+a0) = the
+     * partner's x + s8 (scaled; the side by its home place), y 0 and z. */
     case 0x61:
         sprite->y.fixed = (sprite->ground - 1) << 16;
         other = sprite->partner;
@@ -102,24 +116,32 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         sprite->target[1] = 0;
         func_800BA768(sprite);
         break;
+    /* 5f: 800c3564 = 1 (nothing recovered reads it). */
     case 0x5F:
         D_800C3564 = 1;
         break;
+    /* 60: 800c3564 = the sprite's slot + 2. */
     case 0x60:
         D_800C3564 = SPRITE_SLOT(sprite) + 2;
         break;
+    /* 59: screen fades work again (800d3638 = 0). */
     case 0x59:
         D_800D3638 = 0;
         break;
+    /* 5a: screen fades are ignored (800d3638 = 1: 800b39c0 returns at once). */
     case 0x5A:
         D_800D3638 = 1;
         break;
+    /* 57: flag 800c3b74 = 1 (800aa788). */
     case 0x57:
         func_800AA788(1);
         break;
+    /* 58: flag 800c3b74 = 0 (800aa788). */
     case 0x58:
         func_800AA788(0);
         break;
+    /* 56: with 800c3622, play sound kind + 0x52 of the scripts' bank for the slot's kind
+     * (8, 9, 10 as 15, 2, 6), once per slot (800c3626). */
     case 0x56: {
         s32 slot;
         s32 low_slot;
@@ -144,35 +166,44 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         }
         break;
     }
+    /* 54: the loaded battle module's 801fc898 (ovl3387: its effect on an 8 KB stack). */
     case 0x54:
         func_801FC898();
         break;
+    /* 4f u8: play sound u8 of the sprite's bank on the last two effect voices (80039db8). */
     case 0x4F:
         if (sprite->sound != NULL) {
             func_80039DB8(args[0] | (((SoundSystem *)sprite->sound)->bank << 16));
         }
         break;
+    /* 52 u8 v: play sound u8 of the sprite's bank on effect voices (v & fe) ^ 8 (80039ec4). */
     case 0x52:
         if (sprite->sound != NULL) {
             func_80039EC4(args[0] | (((SoundSystem *)sprite->sound)->bank << 16), args[1]);
         }
         break;
+    /* 4d u8: stop effect u8 of the sprite's bank (8003a14c). */
     case 0x4D:
         if (sprite->sound != NULL) {
             func_8003A14C(args[0] | (((SoundSystem *)sprite->sound)->bank << 16));
         }
         break;
+    /* 4e u8: stop effect u8 of the scripts' bank (8003a14c). */
     case 0x4E:
         if (D_8005919C != NULL) {
             func_8003A14C(args[0] | (D_8005919C->bank << 16));
         }
         break;
+    /* 4c: flags bit 1 (a lit model). */
     case 0x4C:
         sprite->flags.word |= 2;
         break;
+    /* 48: flags bit 0. */
     case 0x48:
         sprite->flags.word |= 1;
         break;
+    /* 67: wait until the camera eye and look-at are within 4 of the marked points (800d3354,
+     * 800d335c): back two bytes and a frame (c3 form). */
     case 0x67:
         sprite->countdown++;
         eye.vx = D_800D309C.eye.vx - D_800D3354.vx;
@@ -188,6 +219,8 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         }
         sprite->script -= 2;
         break;
+    /* 50: wait a frame; with a hit counted (800d36bc, 800bf998) take one and go on, else
+     * retry: back two bytes (the c3 form). */
     case 0x50:
         sprite->countdown++;
         if (D_800D36BC != 0) {
@@ -196,174 +229,235 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         }
         sprite->script -= 2;
         break;
+    /* 46 u8: load the battle's sound bank set u8 (800b61f8, 800a96b4); both hit counts
+     * (800d36bc, 800d2d4c) = 0. */
     case 0x46:
         func_800B61F8(sprite, args);
         D_800D2D4C = 0;
         break;
+    /* 51: free stage object 11 (800b626c). */
     case 0x51:
         func_800B626C(sprite, args);
         break;
+    /* 47 u8: show stage object 11 in mode u8 (800b62c8). */
     case 0x47:
         func_800B62C8(sprite, args);
         break;
+    /* 44: the debug actor tool (debug2611) selects this sprite (800c3568), unless
+     * 80010000 is -1. */
     case 0x44:
         if (*(s32 *)0x80010000 != -1) {
             D_800C3568 = sprite;
         }
         break;
+    /* 45: the debug actor tool selects none (800c3568), unless 80010000 is -1. */
     case 0x45:
         if (*(s32 *)0x80010000 != -1) {
             D_800C3568 = NULL;
         }
         break;
+    /* 43: render bit 31 (drawn about the screen centre). */
     case 0x43:
         sprite->render.word |= 0x80000000;
         break;
+    /* 3e: partner = the next of the event's targets (800bf8cc). */
     case 0x3E:
         func_800BF8CC(sprite);
         break;
+    /* 3d: copy the current part's texture block and CLUT row (800b4edc). */
     case 0x3D:
         func_800B4EDC(sprite);
         break;
+    /* 3a s16: fade the lights with the six bytes at the arguments + s16 (800b639c). */
     case 0x3A:
         func_800B639C(sprite, args);
         break;
+    /* 42: motion bit 5 off. */
     case 0x42:
         sprite->motion.word &= ~0x20;
         break;
+    /* 38 s16: upload the image list at the arguments + s16 (800b63f0). */
     case 0x38:
         func_800B63F0(sprite, args);
         break;
+    /* 37: request the upload of directory 2c file 1's images (800c3621; 800bf9ec does it
+     * and clears the flag). */
     case 0x37:
         D_800C3621 = 1;
         break;
+    /* 34 s8: gravity = (s8 * 2 * (+82) / 4096 << 5) * (skip + 1)^2. */
     case 0x34:
         sprite->gravity = (((s8)args[0] << 1) * sprite->field82 / 4096) << 5;
         sprite->gravity *= (D_80059198 + 1) * (D_80059198 + 1);
         break;
+    /* 33 u8: with an animation block (+48), play animation u8. */
     case 0x33:
         if (sprite->field48 != 0) {
             func_800245D8(sprite, args[0]);
         }
         break;
+    /* 31: geometry offset 160, 112. */
     case 0x31:
         SetGeomOffset(0xA0, 0x70);
         break;
+    /* 32: geometry offset 160, 164. */
     case 0x32:
         SetGeomOffset(0xA0, 0xA4);
         break;
+    /* 30 u8: one-sided views: offset (+3c, +3d) = anchor u8's x, y. */
     case 0x30:
         if (sprite->view != NULL && (sprite->render.word & 3) == 1 && sprite->view->anchors != NULL) {
             sprite->view->field3D = sprite->view->anchors[args[0]].y;
             sprite->view->field3C = sprite->view->anchors[args[0]].x;
         }
         break;
+    /* 2f: 800c3628 = this sprite (800bf730). */
     case 0x2F:
         func_800BF730((s32)sprite);
         break;
+    /* 2c: draw as an unlit model (draw task update 80025a88, 800b6438). */
     case 0x2C:
         func_800B6438(sprite, args);
         break;
+    /* 27 x y: move the parts' CLUTs by x, y (800b6464). */
     case 0x27:
         func_800B6464(sprite, args);
         break;
+    /* 26 a s: battle sprite s plays animation a (800b64d4). */
     case 0x26:
         func_800B64D4(sprite, args);
         break;
+    /* 28 s8: x velocity = s8 * 16 * (+82) / 4096 << 8. */
     case 0x28:
         sprite->velocity[0] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
         break;
+    /* 29 s8: x velocity += s8 * 16 * (+82) / 4096 << 8. */
     case 0x29:
         sprite->velocity[0] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
         break;
+    /* 21 s8: z velocity = s8 * 16 * (+82) / 4096 << 12. */
     case 0x21:
         sprite->velocity[2] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 12;
         break;
+    /* 22 s8: z velocity += s8 * 16 * (+82) / 4096 << 8. */
     case 0x22:
         sprite->velocity[2] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
         break;
+    /* 2a s8: y velocity = s8 * 16 * (+82) / 4096 << 12. */
     case 0x2A:
         sprite->velocity[1] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 12;
         break;
+    /* 2b s8: y velocity += s8 * 16 * (+82) / 4096 << 8. */
     case 0x2B:
         sprite->velocity[1] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
         break;
+    /* 1f: render bit 26 off; rest on the stage floor (800ba8f4). */
     case 0x1F:
         sprite->render.word &= ~0x04000000;
         func_800BA8F4(sprite);
         break;
+    /* 3f: render bit 26 on. */
     case 0x3F:
         sprite->render.word |= 0x04000000;
         break;
+    /* 3b: render bit 29 on (drawn at the creator's depth). */
     case 0x3B:
         sprite->render.word |= 0x20000000;
         break;
+    /* 3c: render bit 29 off. */
     case 0x3C:
         sprite->render.word &= ~0x20000000;
         break;
+    /* 35: render bit 27 on. */
     case 0x35:
         sprite->render.word |= 0x08000000;
         break;
+    /* 36: render bit 27 off. */
     case 0x36:
         sprite->render.word &= ~0x08000000;
         break;
+    /* 23: face the target point (+a0) (800b6518). */
     case 0x23:
         func_800B6518(sprite, args);
         break;
+    /* 40 u8: turn the velocity towards the target point (+a0) by at most u8 * 4 in yaw and
+     * in pitch (800b65b0). */
     case 0x40:
         func_800B65B0(sprite, args);
         break;
+    /* 1c: velocity = the walking speed towards the target point (+a0); face that way
+     * (800b6808). */
     case 0x1C:
         func_800B6808(sprite, args);
         break;
+    /* 1b: take the parent's velocity (800b6a50). */
     case 0x1B:
         func_800B6A50(sprite, args);
         break;
+    /* 1a: destroy the tasks the sprite's task created (8001ce74). */
     case 0x1A:
         func_8001CE74(sprite->task);
         break;
+    /* 2d s16: position = the three s16 at the arguments + s16 (800b6930). */
     case 0x2D:
         func_800B6930(sprite, args);
         break;
+    /* 2e s16: target = the three s16 at the arguments + s16 (800b6990). */
     case 0x2E:
         func_800B6990(sprite->target, args);
         break;
+    /* 5b s16: view vector +44 = the three s16 at the arguments + s16. */
     case 0x5B:
         func_800B6990(sprite->view->field44, args);
         break;
+    /* 5c s16: view vector +4c = the three s16 at the arguments + s16. */
     case 0x5C:
         func_800B6990(sprite->view->field4C, args);
         break;
+    /* 5d s16: view vector +44 += the three s16 at the arguments + s16 (800b69e4). */
     case 0x5D:
         func_800B69E4(sprite->view->field44, args);
         break;
+    /* 5e s16: view vector +4c += the three s16 at the arguments + s16. */
     case 0x5E:
         func_800B69E4(sprite->view->field4C, args);
         break;
+    /* 1d s16: break the image into pieces with the six bytes at the arguments + s16
+     * (800b6a7c). */
     case 0x1D:
         func_800B6A7C(sprite, args);
         break;
+    /* 19 s16: start a burst with the six bytes at the arguments + s16 (800b6b98). */
     case 0x19:
         func_800B6B98(sprite, args);
         break;
+    /* 18: copy the screen and shatter it (800b6bfc). */
     case 0x18:
         func_800B6BFC(sprite, args);
         break;
+    /* 17 s8: velocity *= s8 * 4 / 256. */
     case 0x17:
         scale = (s8)args[0] << 2;
         sprite->velocity[0] = sprite->velocity[0] * scale / 256;
         sprite->velocity[1] = sprite->velocity[1] * scale / 256;
         sprite->velocity[2] = sprite->velocity[2] * scale / 256;
         break;
+    /* 16: render bit 25 (drawn at the back). */
     case 0x16:
         sprite->render.word |= 0x02000000;
         break;
+    /* 15: render bit 24 (its own placement). */
     case 0x15:
         sprite->render.word |= 0x01000000;
         break;
+    /* 11: pause the battle sprites (800c3664 = 1): their task update 800bac50 and draw
+     * 800bab0c skip them, and resident sprites with passive children are not drawn
+     * (80025258). */
     case 0x11:
         D_800C3664 = 1;
         break;
+    /* 12: 800c372c = 1; both draw buffers clear to black (the first's colour and flag
+     * saved). */
     case 0x12:
         D_800C372C = 1;
         isbg = BATTLE_AREA.buffers[0].drawEnv.isbg;
@@ -383,9 +477,11 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         D_800C3CB0[1] = g;
         D_800C3CB0[2] = b;
         break;
+    /* 13: resume them (800c3664 = 0). */
     case 0x13:
         D_800C3664 = 0;
         break;
+    /* 14: 800c372c = 0; restore the saved clear colour and flag. */
     case 0x14:
         D_800C372C = 0;
         BATTLE_AREA.buffers[1].drawEnv.isbg = D_800C3CAC;
@@ -397,17 +493,20 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         BATTLE_AREA.buffers[0].drawEnv.b0 = D_800C3CB0[2];
         BATTLE_AREA.buffers[1].drawEnv.b0 = D_800C3CB0[2];
         break;
+    /* 10: position = the camera look-at point (800d335c). */
     case 0x10:
         sprite->x.fixed = D_800D335C.vx << 16;
         sprite->y.fixed = D_800D335C.vy << 16;
         sprite->z.fixed = D_800D335C.vz << 16;
         break;
+    /* 53: mirror and flip bits off. */
     case 0x53:
         sprite->motion.word &= ~8;
         sprite->motion.word &= ~4;
         sprite->render.word &= ~8;
         sprite->render.word &= ~0x10;
         break;
+    /* 0f: mirror and flip bits off, direction 0. */
     case 0xF:
         sprite->motion.word &= ~8;
         sprite->motion.word &= ~4;
@@ -415,96 +514,125 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         sprite->render.word &= ~0x10;
         func_80021FE0(sprite, 0);
         break;
+    /* 0e s8: direction = s8 * 16. */
     case 0xE:
         func_80021FE0(sprite, (s8)args[0] * 16);
         break;
+    /* 0d s8: turn the velocity about z by s8 * 16 (800b6e84). */
     case 0xD:
         func_800B6E84(sprite, args);
         break;
+    /* 0a: view z angle from the velocity's x-y direction (800b6c44). */
     case 0xA:
         func_800B6C44(sprite, args);
         break;
+    /* 0b: view x angle from the velocity's x-z direction (800b6c98). */
     case 0xB:
         func_800B6C98(sprite, args);
         break;
+    /* 49 s8: view x angle += s8, render bit 28. */
     case 0x49:
         if (sprite->view != NULL) {
             sprite->view->angle[0] += (s8)args[0];
             sprite->render.word |= 0x10000000;
         }
         break;
+    /* 4a s8: view y angle += s8, render bit 28. */
     case 0x4A:
         if (sprite->view != NULL) {
             sprite->view->angle[1] += (s8)args[0];
             sprite->render.word |= 0x10000000;
         }
         break;
+    /* 4b s8: view z angle += s8, render bit 28. */
     case 0x4B:
         if (sprite->view != NULL) {
             sprite->view->angle[2] += (s8)args[0];
             sprite->render.word |= 0x10000000;
         }
         break;
+    /* 0c: view angles from the velocity's direction (800b6cec). */
     case 0xC:
         func_800B6CEC(sprite, args);
         break;
+    /* 09: direction += 0x800 (half a turn) and the velocity negated. */
     case 0x9:
         sprite->direction += 0x800;
         sprite->velocity[0] = -sprite->velocity[0];
         sprite->velocity[1] = -sprite->velocity[1];
         sprite->velocity[2] = -sprite->velocity[2];
         break;
+    /* 01 var: a trail in the colours at the variable (a count first, 0: 4) (800b572c). */
     case 0x1:
         func_8001D4E8(sprite);
         func_800B572C(sprite, func_8001FBA4(sprite, args));
         break;
+    /* 24: the loaded battle module's 801fc7b0 (ovl3385: hold the sprite in place under its
+     * effect). */
     case 0x24:
         func_801FC7B0(sprite, args);
         break;
+    /* 25: the loaded battle module's 801fc6fc (ovl3386: hold the sprite where it is under
+     * the scrolling effect). */
     case 0x25:
         func_801FC6FC(sprite, args);
         break;
+    /* 02: end the trail (the child task running 800b5588). */
     case 0x2:
         task = func_8001D0A4(sprite->task, func_800B5588);
         if (task != NULL) {
             task->destroy(task);
         }
         break;
+    /* 03 u8: link the partner at anchors u8: low nibble its own, high the partner's
+     * (800b5c18). */
     case 0x3:
         func_800B5C18(sprite, args);
         break;
+    /* 04: end every link (the tasks running 800b5b3c). */
     case 0x4:
         while ((task = func_8001D164(func_800B5B3C)) != NULL) {
             task->destroy(task);
         }
         break;
+    /* 1e: draw as a line in its colour to the parent (800b61b0: frame 1, primitive code
+     * 0x40). */
     case 0x1E:
         func_800B61B0(sprite, args);
         break;
+    /* 20: start an orbit (800b5dc4). */
     case 0x20:
         func_800B5DC4(sprite);
         break;
+    /* 05: draw as a streak, a line in its colour back along the velocity (800b5fbc: frame
+     * 1, primitive code 0x40). */
     case 0x5:
         func_800B5FBC(sprite, args);
         break;
+    /* 06: camera move to the acting sprite's slot (800bc404). */
     case 0x6:
         func_800BC404(1 << SPRITE_SLOT(D_800C3E1C));
         break;
+    /* 55: camera move to the acting sprite's slot and the slots 800d3634. */
     case 0x55:
         func_800BC404((1 << SPRITE_SLOT(D_800C3E1C)) | D_800D3634);
         break;
+    /* 07: camera move to the partner's slot. */
     case 0x7:
         func_800BC404(1 << SPRITE_SLOT(sprite->partner));
         break;
+    /* 65: camera move to the slots 800d3634. */
     case 0x65:
         func_800BC404(D_800D3634);
         break;
+    /* 41: camera move to the partner's and the acting sprite's slots. */
     case 0x41: {
         BattleSprite **active = &D_800C3E1C;
         s32 a = SPRITE_SLOT(sprite->partner);
         func_800BC404((1 << a) | (1 << SPRITE_SLOT(*active)));
         break;
     }
+    /* 08: flags bit 19; clear the eight anchors (800b6dc0). */
     case 0x8:
         sprite->flags.word |= 0x80000;
         func_800B6DC0(sprite, args);
@@ -952,7 +1080,8 @@ void func_800B5DF4(BattleTask *draw) {
     }
 }
 
-/* Draw sprite with 800B5DF4, uncoloured. */
+/* Draw sprite with 800B5DF4: frame 1, its colour word's primitive code 0x40
+ * (LINE_F2). */
 void func_800B5FBC(BattleSprite *sprite) {
     sprite->frame = 1;
     func_8001CD64(&sprite->task->draw, func_800B5DF4);
@@ -1009,14 +1138,15 @@ void func_800B6004(BattleTask *draw) {
     }
 }
 
-/* Draw sprite with 800B6004, uncoloured. */
+/* Draw sprite with 800B6004: frame 1, its colour word's primitive code 0x40
+ * (LINE_F2). */
 void func_800B61B0(BattleSprite *sprite) {
     sprite->frame = 1;
     func_8001CD64(&sprite->task->draw, func_800B6004);
     sprite->colourFlags = 0x40;
 }
 
-/* Script command: reset D_800D36BC and load stage object set args[0]
+/* Script command: reset D_800D36BC and load sound bank set args[0]
  * (800A96B4, on a stack in a heap block). */
 void func_800B61F8(BattleSprite *sprite, u8 *args) {
     u8 *stack = func_80031BDC(0x4000, 1);

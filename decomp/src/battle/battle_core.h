@@ -376,12 +376,16 @@ typedef struct {
 extern ListPrims *D_800D2DB4;
 extern s32 D_800D2DAC;
 
-/* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
+/* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). The
+ * script pointers come from the enemy's table in the enemy data file
+ * (ovl2615 801e4870; docs/scripts/battle-ai.md). */
 typedef struct {
-    u8 *script;        /* +0x00 */
-    u8 *unk4;
-    u8 *reaction;      /* +0x08 reaction script */
-    u8 *turnScript;    /* +0x0C script run each turn */
+    u8 *script;        /* +0x00 table +0: the enemy's turn script (800799c8) */
+    u8 *unk4;          /* table +2: only copied (80078e24), never run */
+    u8 *reaction;      /* +0x08 table +4: reaction script, run by a party
+                        * member's attack step on the enemy (80079ab0) */
+    u8 *turnScript;    /* +0x0C table +6: run after a party member's turn for
+                        * each enemy it targeted (80079c24) */
     s32 longs[4];      /* +0x10 */
     u16 vars[8];       /* +0x20 */
     u8 bytes[16];      /* +0x30 */
