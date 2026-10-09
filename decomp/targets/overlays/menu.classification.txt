@@ -3,8 +3,11 @@
 # allocates $v0/$v1/$a* temporaries first and never emits the $t-register-only
 # leaf code, frameless negative-offset register saves or raw coprocessor moves
 # seen here. asset: game data embedded in the image in a format the game parses.
+# included NAME: an object a C unit links from the original image, with the
+# reason it stays original.
 80072d18 800732cc handwritten scratchpad ground-map triangle batch (80072D18: callee saves below $sp without a frame, $t registers, `add`) and GTE vector/colour/matrix helpers 80073064-800732AC (mtc2/gpf/mfc2 on $t0-$t2, a word-copy loop)
 8008bb00 8008bcc8 handwritten task context switch: context save/restore to D_80096D88/D_80096D8C in $t0/$t1, and full register-file save/resume through $at including $k0/$k1/$gp/$sp/$fp
 8008c3a8 8008c7c0 handwritten GTE mesh transform (mvmva loop with lwc2/mfc2 on $t registers) and two packet builders that keep every resident pointer in $a2/$a3/$t7/$t8/$v0/$v1
 8008ddfc 8008df30 handwritten GTE vector transform (lwc2/mtc2/mvmva/gpf on $t0-$t2) and a separate packet stub, which builds its stack vector through $t0/$t1, reads the existing projection FIFO without RTPS and returns without restoring $sp
 80091fb0 800925a4 asset sprite model D_80091FB0 (1524 bytes; resident SpriteModel format, decomp/src/resident/model.h): header with self-relative offsets (41 vertices, 70 primitives in one group, texture coordinate block), relocated by resident 8002C59C and attached to the actor model by menu5 80084BEC
+800925a4 800925d4 included D_800925A4 u8[15][3] each combo's command inputs (brain.h), ending menu7's data (INCLUDE_ORIGINAL); its padding holds stray assembler bytes, "ind"

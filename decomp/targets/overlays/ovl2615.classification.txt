@@ -1,0 +1,5 @@
+# START END CLASS NAME NOTE (hex VRAM, END exclusive). included: an object a C
+# unit links from the original image (INCLUDE_ORIGINAL) at its place among the
+# unit's .data, with the reason: C cannot emit the stray bytes the original
+# assembler left in its alignment padding, which nothing reads.
+801e9638 801e963c included D_801E9638 u16 0, the next member image column (battle_loader.c); padding 00 e0

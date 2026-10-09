@@ -241,12 +241,18 @@ the audit; they are never counted as matches. This diagnostic does not replace
   set elsewhere in the function (`model`, `$a0` at the top, and the scratch `value`,
   `$a1` as the step count and the facing), which sched1 does not sink as births.
 - Strings whose alignment padding holds stray assembler bytes stay original data:
-  mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
-  function and reference it as `extern char[]`. A .data object whose padding holds
+  mark the symbol `force_not_migration:True` (with `size:` and a symbol after it where
+  splat would join the strings that follow, menu6's `D_800705F0`), link it with
+  INCLUDE_RODATA beside the function and reference it as `extern char[]`; never spell
+  the stray bytes in a C initializer. A .data object whose padding holds
   such bytes (a byte flag followed by `04`, a halfword table ending in `"Mt"`) is
   linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
   among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
   only where the padding is non-zero and nothing reads it. Both count as `included`.
+  The coverage report finds a string's stray byte itself; every other included object
+  needs an `included` line in the target's classification with its reason (those data
+  objects, and the resident's libcd/libgpu/libspu strings that several library
+  functions share, which splat leaves to INCLUDE_RODATA). Any other string is C (below).
 - A routine is classified handwritten (reviewed `.s` beside the C) only on code GCC
   does not emit: trapping `add`/`addi`/`sub`/`neg`, saves below `$sp` or beyond the
   frame, `ori` for a small positive constant where the unit's ASPSX emits `addiu`,
@@ -391,8 +397,13 @@ converted to C per unit. What converting the targets' `.data` established:
   scaffolding, deleted when their last assembly user matches (slot39's and field's
   have gone). One of a static resolves only because maspsx makes `.lcomm` symbols
   global, where ASPSX kept them local.
-- GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
-  heap tag names).
+- GCC emits a function's string literals into `.rodata` ahead of its code, in the order
+  of first use, and its jump tables after it; an initializer's literals in reverse
+  order once the definition ends (menu6's gear list and heap tag names). A unit emits
+  identical literals once, so a second copy is an array (movie's second `"\n"`), and a
+  table whose strings follow some function's literals is defined after that function,
+  with the data defined around it in data order (menu3's ether name and combo names,
+  menu4's level, command and menu line names).
 - Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
@@ -508,7 +519,17 @@ that several library functions share), the other bytes of an INCLUDE_ASM'd `.s` 
 `remaining_data_asm_bytes`), authored assembly, a classified `sdk`/`asset` range, or a
 generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss included).
 `asset` marks user-supplied game data or bytecode that is parsed and documented rather
-than rewritten as source.
+than rewritten as source. Each included object (a statement's bytes in one section,
+from its label) that no classified range covers needs its reason, or the report fails:
+either it is one text string whose terminator is followed by 1-3 bytes of alignment
+padding, one of them non-zero, or a `START END included NAME REASON` line of the
+target's classification names its range and label; a line that names no included
+object fails too. Handwritten bytes count only inside a `handwritten` range, an
+authored `.s` unit's too, so the classification stays the record of every
+handwritten routine. `make coverage` passes these files as `CLASSIFICATION`, and
+`matching_coverage.py ... --list CLASS` prints a class's functions, its .text bytes
+outside every function and its data ranges with their section and object (`placeholder`,
+`included`, `asset`, `bss`, ...).
 
 The report attributes a C unit's bytes by where GAS put them, not by how the source
 spells them. `make coverage` compiles each C unit again (`<unit>.cov.o` beside the
