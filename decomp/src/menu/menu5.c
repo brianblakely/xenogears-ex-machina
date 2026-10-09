@@ -469,7 +469,7 @@ void func_80082A70(void) {
 /* Load the stage's floor texture (a TIM, palette made semi-transparent)
  * and build the two pools of 64 textured floor quads, alternating the two
  * halves of the texture. */
-void func_80082C4C(MenuImages *files) {
+void func_80082C4C(MenuImageFile *files) {
     TIM_IMAGE tim;
     POLY_FT4 *quad;
     s16 *clut;
@@ -1811,7 +1811,7 @@ void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth) {
  * pair pointer walks the icons and then the gauges (the original keeps it
  * in $s2). Each bar quad gets its colour/code word and then its length, and
  * the gauge sprite its length, code, size and texture position. */
-void func_800868E0(MenuImages *files) {
+void func_800868E0(MenuImageFile *files) {
     TIM_IMAGE tim;
     RECT rect;
     s16 *clut;
@@ -2127,7 +2127,7 @@ void func_80087830(void) {
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
  * first entry is transparent and the rest semi-transparent. */
-void func_800878DC(MenuImages *files) {
+void func_800878DC(MenuImageFile *files) {
     TIM_IMAGE tim;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;

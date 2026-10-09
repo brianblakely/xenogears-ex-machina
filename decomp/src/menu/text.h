@@ -28,7 +28,7 @@ extern s32 D_80092880;     /* the menu's message table (func_80033728) */
 
 void func_8007E528(s32 state);
 void func_8007E574(void *ot);
-void func_8007E634(MenuImages *files);
+void func_8007E634(MenuImageFile *files);
 void func_8007E894(s32 x, s32 y);
 Glyph *func_8007E8AC(s32 ch);
 void func_8007E954(s32 value);

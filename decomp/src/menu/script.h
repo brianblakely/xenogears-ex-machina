@@ -31,7 +31,7 @@ extern Window D_8009868C;         /* message window */
 void func_80070F80(u8 *script);
 s32 func_8007107C(void);
 void func_80071724(u32 *ot);
-void func_80071794(MenuImages *files);
+void func_80071794(MenuImageFile *files);
 void func_800718C0(void);
 void func_8007191C(s32 scene);
 void func_800719F0(void);

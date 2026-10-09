@@ -156,7 +156,7 @@ s32 func_8007E624(void) {
 
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
  * and 3 replaced) and the banner image, and build the banner sprite. */
-void func_8007E634(MenuImages *files) {
+void func_8007E634(MenuImageFile *files) {
     TIM_IMAGE image;
     SceneSprite *banner;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */

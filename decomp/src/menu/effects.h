@@ -120,7 +120,7 @@ extern s32 D_800928E8;    /* owner of the segments started now */
 void func_800732CC(void);
 void func_8007334C(u32 *ot, MATRIX *view);
 void func_8007B270(CVECTOR *first, CVECTOR *second);
-void func_8007B388(MenuImages *files);
+void func_8007B388(MenuImageFile *files);
 void func_8007BACC(void);
 void func_8007BB7C(void);
 void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot);

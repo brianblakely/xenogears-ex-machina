@@ -60,13 +60,13 @@ void func_80082458(SVECTOR *out);
 s32 func_80082488(VECTOR *pos, s32 lift);
 s32 func_800828C4(VECTOR *pos);
 void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius);
-void func_80082C4C(MenuImages *files);
+void func_80082C4C(MenuImageFile *files);
 void func_800875EC(void);
 void func_80087650(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* widen the map's row spans along a line */
 void func_8008779C(u32 *ot, s32 originX, s32 originZ);
 void func_80087830(void);
-void func_800878DC(MenuImages *files);
+void func_800878DC(MenuImageFile *files);
 void func_80087AB0(Actor *actor);
 void func_80087B74(Actor *actor, u32 *ot, MATRIX *view);
 
