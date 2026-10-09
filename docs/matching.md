@@ -536,10 +536,11 @@ converted to C per unit. What converting the targets' `.data` established:
   constant-offset access reads (`tail`, noted `text` or `outlier` where they look
   stray), that nothing references (`unref`), that is declared wider than every access
   with a byte none touches (`wide`), or whose string holds bytes after its terminator
-  (`string`). After the four it reports `2310 C data objects, 194 to review; objects
+  (`string`). After the four it reports `2312 C data objects, 194 to review; objects
   per flag: tail 157, tail read 6, unref 44` (175 distinct, 146 with a tail and 35
-  unreferenced; the second executable repeats the resident's), each reviewed against
-  its readers. None other spells stray fill: the tails are read (masks `& 7` and
+  unreferenced; the second executable repeats the resident's; the resident's zero
+  byte D_80050622 is an object in each executable and is not flagged), each reviewed
+  against its readers. None other spells stray fill: the tails are read (masks `& 7` and
   `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
   and 16-entry glyph label loops of ovl2596 and battle) or complete their structure
   (single-bit masks, permutations of the eight facings, a CLUT LoadImage'd 16 wide,
