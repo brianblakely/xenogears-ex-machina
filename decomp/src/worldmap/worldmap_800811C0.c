@@ -205,7 +205,7 @@ s32 func_80081470(s32 index) {
 }
 
 /* Build `count` semi-transparent textured quads on page 0x180,0. */
-void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_800816DC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -214,7 +214,7 @@ void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setSemiTrans(quads, 1);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Start the actor above the player and build scene object 2 there. */
@@ -242,7 +242,7 @@ s32 func_800817A0(s32 index) {
 s32 func_80081868(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     actor = &D_8009BE24[index];
@@ -339,7 +339,7 @@ s32 func_80081B24(s32 index) {
 
 /* Allocate the shared quad pool (two display copies) and mark every quad free. */
 s32 func_80081C3C(void) {
-    PolyFT4 *quads;
+    POLY_FT4 *quads;
     s32 i;
     s16 *flags;
 
@@ -365,7 +365,7 @@ s32 func_80081C3C(void) {
 /* Heat haze: offset each of 192 one-pixel rows by a random amount and copy the result back to the frame. */
 s32 func_80081D80(void) {
     RECT rect;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     u16 *spread;
     s32 row;
     s32 next;
@@ -853,7 +853,7 @@ void func_80082F64(WorldmapActor *actor, SceneObject *object, ScaleScratch *scra
 }
 
 /* Build `count` semi-transparent black textured triangles on page 0x2C0,0x100. */
-void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {
+void func_80083108(SceneObject *object, POLY_FT3 *prims, s32 count, s32 abr) {
     s32 i;
 
     for (i = count - 1; i != -1; i--) {
@@ -866,11 +866,11 @@ void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {
         prims->code |= 2;
         prims++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT3));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT3));
 }
 
 /* Set the colour of `count` textured triangles. */
-void func_800831D8(PolyFT3 *prims, s32 count, s32 r, s32 g, s32 b) {
+void func_800831D8(POLY_FT3 *prims, s32 count, s32 r, s32 g, s32 b) {
     for (count--; count != -1; count--) {
         setRGB0(prims, r, g, b);
         prims++;

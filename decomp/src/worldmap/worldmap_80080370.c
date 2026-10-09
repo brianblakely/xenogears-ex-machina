@@ -205,7 +205,7 @@ s32 func_80080944(s32 index) {
 }
 
 /* Set the colour of `count` textured quads. */
-void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b) {
+void func_800809EC(POLY_FT4 *quads, s32 count, s32 r, s32 g, s32 b) {
     s32 i;
 
     for (i = 0; i < count; i++, quads++) {

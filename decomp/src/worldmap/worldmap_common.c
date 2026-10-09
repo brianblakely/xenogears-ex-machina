@@ -82,15 +82,15 @@ DR_TPAGE D_8009C5A0;
 s32 D_8009C5A8; /* arrival kind */
 VECTOR D_8009C5AC; /* player position (20.12) */
 s32 D_8009C5BC;
-struct PolyFT4 D_8009C5C0[2]; /* overlay picture, per buffer */
+POLY_FT4 D_8009C5C0[2]; /* overlay picture, per buffer */
 s32 D_8009C610;
 void *D_8009C614;
 s32 D_8009C618;
 s32 D_8009C61C; /* unreferenced */
 struct SceneObject *D_8009C620; /* scene objects */
 struct HostReadRequest *D_8009C624[16]; /* submitted host-file request lists */
-struct PolyG3 D_8009C664[8];
-struct PolyFT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
+POLY_G3 D_8009C664[8];
+POLY_FT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
 void *D_8009C7E4; /* free memory block kept while away */
 s32 D_8009C7E8;
 struct TerrainTexture *D_8009C7EC;
@@ -109,7 +109,7 @@ void *D_8009C888;
 void *D_8009C88C;
 void *D_8009C890; /* saved VRAM area */
 s32 D_8009C894; /* nonzero when resuming a saved state */
-struct Tile D_8009C898[0x40];
+TILE D_8009C898[0x40];
 s32 D_8009CC98;
 s32 D_8009CC9C;
 s32 D_8009CCA0;
@@ -128,7 +128,7 @@ u16 D_8009CD54[7]; /* terrain texture pages */
 s32 D_8009CD64;
 struct FerryHeading D_8009CD68[32];
 s16 D_8009CE68; /* destination id, -1 none */
-struct PolyG4v D_8009CE6C[2]; /* full-screen fade, per display buffer */
+POLY_G4 D_8009CE6C[2]; /* full-screen fade, per display buffer */
 struct DriftVelocity *D_8009CEB4;
 s32 D_8009CEB8;
 CdlLOC D_8009CEBC; /* request position */
@@ -144,7 +144,7 @@ s32 D_8009D160;
 DR_MOVE D_8009D164[2]; /* haze copy-back, per display buffer */
 struct PolyG4 D_8009D194[4][2]; /* sky gradient bands, per buffer */
 s32 D_8009D2B4;
-struct PolyFT4 D_8009D2B8[2]; /* destination marker, per display buffer */
+POLY_FT4 D_8009D2B8[2]; /* destination marker, per display buffer */
 void *D_8009D308;
 struct WorldmapSpot *D_8009D30C; /* ring of 16 recent positions */
 DR_TPAGE D_8009D310; /* fade blend mode */

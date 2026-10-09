@@ -1459,12 +1459,12 @@ void func_80097800(void) {
 
 /* The 2048-triangle terrain packet buffer, copied as a whole. */
 typedef struct {
-    PolyFT3 prims[0x800];
+    POLY_FT3 prims[0x800];
 } TriangleBuffer;
 
 /* Allocate both 2048-triangle terrain packet buffers and initialise them. */
 void func_800978FC(void) {
-    PolyFT3 *prim;
+    POLY_FT3 *prim;
     s32 i;
 
     D_8009BBC8[0].packets = func_80031BDC(0x10000, 1);

@@ -447,7 +447,7 @@ s32 func_8007E4E4(s32 index) {
 }
 
 /* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
-void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_8007EBBC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -458,7 +458,7 @@ void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setRGB0(quads, 0x3C, 0x3C, 0xC0);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */

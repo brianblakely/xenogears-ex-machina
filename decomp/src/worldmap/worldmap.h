@@ -8,6 +8,7 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/inline_c.h"
 #include "psyq/libsn.h"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
@@ -285,26 +286,7 @@ extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
 extern s32 D_80050100;          /* ordering-table depth shift */
 
-
-/* Textured quad packet (PsyQ POLY_FT4 layout). */
-typedef struct PolyFT4 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} PolyFT4;
-
-extern PolyFT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
+extern POLY_FT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
 extern DR_TWIN D_8009D3D8[2];
 
 extern s16 D_8009C854[16];
@@ -378,28 +360,13 @@ extern u16 D_8009A6C0[];
 extern u16 D_8009A70C[];
 extern s16 D_8009A758[], D_8009AC60[]; /* scripts */
 
-/* Flat-textured triangle packet (PsyQ POLY_FT3 layout). */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-} PolyFT3;
-
-void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
+void func_80083108(SceneObject *object, POLY_FT3 *prims, s32 count, s32 mode);
 
 extern void *D_8009D7E8[2], *D_8009D7F8[2]; /* quad buffers, per display buffer */
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
-void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
+void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
 extern u16 D_8006EF64[]; /* scene id (first of the scene words) */
@@ -632,7 +599,7 @@ extern u16 D_8009A68C[]; /* exhaust flame sizes */
 extern DiscReadRequest *D_8009D788[16]; /* submitted disc request lists */
 
 s32 func_80084DB8(s32 probe, s32 object);
-void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
+void func_8007EBBC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr);
 void func_800963E4(DiscReadRequest *list);
 
 extern s16 D_8009B224[], D_8009B22C[], D_8009B234[], D_8009B23C[]; /* pitches, heights */
@@ -768,7 +735,7 @@ typedef struct {
 #define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
 
 extern SVECTOR D_8009A674[]; /* flight path start per entry */
-void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b);
+void func_800809EC(POLY_FT4 *quads, s32 count, s32 r, s32 g, s32 b);
 /* worldmap_80094A5C, 8008C364, 8008E190 */
 
 /* Stream reader: disc read requests (sector, bytes, destination) and
@@ -817,7 +784,6 @@ typedef struct {
 } LookAtScratch;
 
 #define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
-
 
 /* Actor slot entry points (kind: start, update: step); they return the
  * next command. */
@@ -909,7 +875,7 @@ s32 func_80093978(s32 x, s32 z); /* ground height at a position */
 
 /* Shared quad pool (192 quads), one copy per display buffer. */
 typedef struct QuadBuffer {
-    PolyFT4 quads[0xC0];
+    POLY_FT4 quads[0xC0];
 } QuadBuffer;
 
 extern QuadBuffer *D_8009D158[2]; /* per display buffer */
@@ -918,7 +884,7 @@ void func_80034714(void *window, s32 text);   /* set the window text */
 s32 func_80033728(void *table, s32 id);         /* text by id */
 void func_80034888(void *window, u32 *ot, s32 buffer); /* draw the window */
 
-extern PolyFT4 D_8009D2B8[2]; /* destination marker, per display buffer */
+extern POLY_FT4 D_8009D2B8[2]; /* destination marker, per display buffer */
 
 /* worldmap_80072238, 80077E68, worldmap */
 
@@ -930,7 +896,7 @@ void func_80093484(VECTOR *offset);
 
 /* Sixteen footprint quads, copied between display buffers as a whole. */
 typedef struct {
-    PolyFT4 quad[16];
+    POLY_FT4 quad[16];
 } QuadSet;
 
 /* Whole-set copies of runtime tables. */
@@ -1042,29 +1008,10 @@ typedef struct {
     SVECTOR view;     /* 0xA0: swap space */
 } CameraScratch;
 
-/* Gouraud triangle packet (PsyQ POLY_G3 layout). */
-typedef struct PolyG3 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-} PolyG3;
-
-/* Flat rectangle packet (PsyQ TILE layout). */
-typedef struct Tile {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 w, h;
-} Tile;
-
-extern PolyFT4 D_8009C5C0[2]; /* overlay picture, per buffer */
+extern POLY_FT4 D_8009C5C0[2]; /* overlay picture, per buffer */
 extern DR_TPAGE D_8009C5A0;
-extern PolyG3 D_8009C664[8];
-extern Tile D_8009C898[0x40];
+extern POLY_G3 D_8009C664[8];
+extern TILE D_8009C898[0x40];
 
 void func_80076954(void);
 void func_80074E58(void);
@@ -1098,19 +1045,6 @@ void func_80074594(void);
 void func_8007565C(void);
 void func_80097CB8(Camera *camera);
 void func_800976FC(s32 kind, s32 index);
-
-/* PsyQ POLY_G4 with per-vertex fields. */
-typedef struct PolyG4v {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} PolyG4v;
 
 /* Scratchpad work area of the scene rigs. */
 typedef struct {
@@ -1155,15 +1089,15 @@ void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
 s32 func_80093978(s32 x, s32 z); /* terrain height */
 
 typedef struct {
-    PolyFT4 quads[256];
+    POLY_FT4 quads[256];
 } EffectQuads;
 
 typedef struct {
-    PolyFT4 quads[0x200];
+    POLY_FT4 quads[0x200];
 } QuadBlock512;
 
 typedef struct {
-    PolyFT4 quads[0x120];
+    POLY_FT4 quads[0x120];
 } QuadBlock288;
 
 /* Saved flight position: fraction and world-unit halves. */
@@ -1218,7 +1152,7 @@ typedef struct {
 
 extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
 extern s16 D_8009BE04;     /* quads used this frame; a word in 80099BFC */
-void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads); /* draw billboards (assembly) */
+void func_80099BFC(u8 *data, s32 count, u32 *ot, POLY_FT4 *quads); /* draw billboards (assembly) */
 
 /* Scene object placement (16 bytes; the list follows a count halfword). */
 typedef struct {
@@ -1316,20 +1250,11 @@ void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
 
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 
-/* Indirect GTE reads need memory clobbers to keep their producer stores. */
-#define gte_ldv0(r0) \
-    __asm__ volatile("lwc2 $0, 0(%0);" \
-                     "lwc2 $1, 4(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "memory")
-#define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
-#define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 /* lead: screen fade (80090A84) */
 extern DR_TPAGE D_8009D310;       /* fade blend mode */
-extern PolyG4v D_8009CE6C[2];    /* full-screen fade, per display buffer */
+extern POLY_G4 D_8009CE6C[2];    /* full-screen fade, per display buffer */
 
 /* worldmap_8007DE98 (round 2) */
 
@@ -1571,21 +1496,7 @@ typedef struct {
 
 #define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
 
-/* PsyQ inline_c.h style GTE macros (worldmap_80083A00). */
-#define gte_SetRotMatrix(r0) \
-    __asm__ volatile("lw $12, 0(%0);" \
-                     "lw $13, 4(%0);" \
-                     "ctc2 $12, $0;" \
-                     "ctc2 $13, $1;" \
-                     "lw $12, 8(%0);" \
-                     "lw $13, 12(%0);" \
-                     "lw $14, 16(%0);" \
-                     "ctc2 $12, $2;" \
-                     "ctc2 $13, $3;" \
-                     "ctc2 $14, $4" \
-                     : \
-                     : "r"(r0) \
-                     : "$12", "$13", "$14", "memory")
+/* PsyQ GTE macros that psyq/inline_c.h does not define. */
 #define gte_SetTransMatrix(r0) \
     __asm__ volatile("lw $12, 20(%0);" \
                      "lw $13, 24(%0);" \
@@ -1593,26 +1504,6 @@ typedef struct {
                      "lw $14, 28(%0);" \
                      "ctc2 $13, $6;" \
                      "ctc2 $14, $7" \
-                     : \
-                     : "r"(r0) \
-                     : "$12", "$13", "$14", "memory")
-#define gte_ldclmv(r0) \
-    __asm__ volatile("lhu $12, 0(%0);" \
-                     "lhu $13, 6(%0);" \
-                     "lhu $14, 12(%0);" \
-                     "mtc2 $12, $9;" \
-                     "mtc2 $13, $10;" \
-                     "mtc2 $14, $11" \
-                     : \
-                     : "r"(r0) \
-                     : "$12", "$13", "$14", "memory")
-#define gte_stclmv(r0) \
-    __asm__ volatile("mfc2 $12, $9;" \
-                     "mfc2 $13, $10;" \
-                     "mfc2 $14, $11;" \
-                     "sh $12, 0(%0);" \
-                     "sh $13, 6(%0);" \
-                     "sh $14, 12(%0)" \
                      : \
                      : "r"(r0) \
                      : "$12", "$13", "$14", "memory")
@@ -1626,20 +1517,7 @@ typedef struct {
                      : \
                      : "r"(r0) \
                      : "$12", "$13", "memory")
-#define gte_ldv3(r0, r1, r2) \
-    __asm__ volatile("lwc2 $0, 0(%0);" \
-                     "lwc2 $1, 4(%0);" \
-                     "lwc2 $2, 0(%1);" \
-                     "lwc2 $3, 4(%1);" \
-                     "lwc2 $4, 0(%2);" \
-                     "lwc2 $5, 4(%2)" \
-                     : \
-                     : "r"(r0), "r"(r1), "r"(r2) \
-                     : "memory")
-#define gte_rtir() __asm__ volatile("nop;nop;.word 0x4A49E012")
 #define gte_rt() __asm__ volatile("nop;nop;.word 0x4A480012")
-#define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
-#define gte_nclip() __asm__ volatile("nop;nop;.word 0x4B400006")
 #define gte_stlvnl(r0) \
     __asm__ volatile("swc2 $25, 0(%0);" \
                      "swc2 $26, 4(%0);" \
@@ -1647,35 +1525,6 @@ typedef struct {
                      : \
                      : "r"(r0) \
                      : "memory")
-#define gte_stflg(r0) \
-    __asm__ volatile("cfc2 $12, $31;" \
-                     "nop;" \
-                     "sw $12, 0(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "$12", "memory")
-#define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
-#define gte_stsxy3(r0, r1, r2) \
-    __asm__ volatile("swc2 $12, 0(%0);" \
-                     "swc2 $13, 0(%1);" \
-                     "swc2 $14, 0(%2)" \
-                     : \
-                     : "r"(r0), "r"(r1), "r"(r2) \
-                     : "memory")
-#define gte_stopz(r0) __asm__ volatile("swc2 $24, 0(%0)" : : "r"(r0) : "memory")
-#define gte_MulMatrix0(r1, r2, r3) \
-    {                                  \
-        gte_SetRotMatrix(r1);          \
-        gte_ldclmv(r2);                \
-        gte_rtir();                    \
-        gte_stclmv(r3);                \
-        gte_ldclmv((u8 *)(r2) + 2);    \
-        gte_rtir();                    \
-        gte_stclmv((u8 *)(r3) + 2);    \
-        gte_ldclmv((u8 *)(r2) + 4);    \
-        gte_rtir();                    \
-        gte_stclmv((u8 *)(r3) + 4);    \
-    }
 #define gte_CompMatrix(r1, r2, r3)       \
     {                                    \
         gte_MulMatrix0(r1, r2, r3);      \
@@ -1691,13 +1540,6 @@ typedef struct {
         gte_stlvnl(r2);          \
         gte_stflg(r3);           \
     }
-#define gte_stsz3(r0, r1, r2) \
-    __asm__ volatile("swc2 $17, 0(%0);" \
-                     "swc2 $18, 0(%1);" \
-                     "swc2 $19, 0(%2)" \
-                     : \
-                     : "r"(r0), "r"(r1), "r"(r2) \
-                     : "memory")
 
 /* Scratchpad work area of the footprint pass (worldmap_80072238). */
 typedef struct {

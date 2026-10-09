@@ -487,16 +487,16 @@ void func_80072BB0(void) {
  * textured quads under a translucent black quad whose level starts at `level`
  * and changes by `step`, blended with mode `abr`. */
 void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
-    PolyFT4 *quads;
-    PolyG4v *shades;
+    POLY_FT4 *quads;
+    POLY_G4 *shades;
     DR_TPAGE *mode;
     DisplayBuffer *buffer;
-    PolyG4v *shade;
+    POLY_G4 *shade;
     s32 side;
     s32 i;
 
-    quads = func_80031BDC(3 * sizeof(PolyFT4), 1);
-    shades = func_80031BDC(2 * sizeof(PolyG4v), 1);
+    quads = func_80031BDC(3 * sizeof(POLY_FT4), 1);
+    shades = func_80031BDC(2 * sizeof(POLY_G4), 1);
     mode = func_80031BDC(sizeof(DR_TPAGE), 1);
     for (i = 0; i < 3; i++) {
         setPolyFT4(&quads[i]);
@@ -536,7 +536,7 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
         addPrim(buffer->ot + 1, &quads[1]);
         addPrim(buffer->ot + 1, &quads[2]);
         side ^= 1;
-        shade = (PolyG4v *)(side * sizeof(PolyG4v) + (u32)shades);
+        shade = (POLY_G4 *)(side * sizeof(POLY_G4) + (u32)shades);
         setRGB0(shade, i, i, i);
         setRGB1(shade, i, i, i);
         setRGB2(shade, i, i, i);
@@ -722,7 +722,7 @@ void func_800737EC(void) {
 /* Initialise the four textured horizon quads and the two texture windows. */
 void func_800739B8(void) {
     RECT window;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     u16 tpage;
     u16 clut;
     s32 i;
@@ -767,7 +767,7 @@ void func_800739B8(void) {
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 u;
     s32 right;
     s32 i;
@@ -809,8 +809,8 @@ void func_80073B04(void) {
 /* Initialise the overlay picture quad (both buffers), its texture page, eight
  * red Gouraud triangles and 64 small tiles. */
 void func_80073E30(void) {
-    PolyG3 *triangle;
-    Tile *tile;
+    POLY_G3 *triangle;
+    TILE *tile;
     s32 i;
 
     setPolyFT4(&D_8009C5C0[0]);
@@ -846,8 +846,8 @@ void func_800740B8(void) {
     MATRIX *matrix;
     VECTOR *target;
     SVECTOR *corners;
-    PolyG3 *marker;
-    Tile *dot;
+    POLY_G3 *marker;
+    TILE *dot;
     u32 bits;
     u16 *position_x;
     u16 *position_z;
@@ -914,7 +914,7 @@ void func_800740B8(void) {
  * and initialise them. */
 void func_80074594(void) {
     WorldmapSpot *spot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009D30C = func_80031BDC(0x80, 0);
@@ -969,7 +969,7 @@ void func_80074794(s16 id, VECTOR *position) {
 void func_800747DC(void) {
     FootprintScratch *scratch;
     WorldmapSpot *spot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 z;
     s32 flag;

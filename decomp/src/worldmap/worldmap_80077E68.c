@@ -663,8 +663,8 @@ s32 func_80079778(s32 index) {
 }
 
 /* Build `count` semi-transparent textured quads for a scene sprite. */
-void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
-    PolyFT4 *quad;
+void func_8007A06C(SceneObject *object, POLY_FT4 *quads, s32 count) {
+    POLY_FT4 *quad;
     s32 i;
 
     quad = quads;
@@ -676,7 +676,7 @@ void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Rebuild both scene sprites' quads. */

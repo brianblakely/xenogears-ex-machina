@@ -888,7 +888,7 @@ void func_80085F58(void) {
 /* Allocate the two buffers of 512 opaque textured 32x48 quads on the
  * 0x380,0x100 page, the second a copy of the first. */
 void func_80085FE0(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009D7E8[0] = func_80031BDC(sizeof(QuadBlock512), 1);
@@ -952,7 +952,7 @@ void func_8008615C(void) {
                 index = D_8009D570.cells[(row + D_8009C838.vz) * 9 + i + D_8009C838.vx];
                 if (textures[index].unk4 != 0) {
                     func_80099BFC(textures[index].data, textures[index].unk4, D_8009BE3C->ot,
-                                  (PolyFT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
+                                  (POLY_FT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
                 }
             }
         }
@@ -999,7 +999,7 @@ void func_80086568(void) {
 /* Allocate the two buffers of 0x120 semi-transparent grey textured quads
  * on the 0x3C0,0x100 page, the second a copy of the first. */
 void func_800865A0(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 code;
     s32 colour;
@@ -1157,7 +1157,7 @@ typedef struct {
  * declared them as register variables too. */
 void func_80086798(void) {
     DriftScratch *scratch;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 layer;
     s32 x;
@@ -1484,7 +1484,7 @@ s32 func_80087804(s32 index) {
 }
 
 /* Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
-void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -1492,7 +1492,7 @@ void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setSemiTrans(quads, 1);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 s32 func_800879E0(s32 index);
@@ -1995,7 +1995,7 @@ void func_80088FF4(void) {
 /* Allocate the two effect quad buffers: semi-transparent textured quads
  * on the 0x340,0x100 page, the second a copy of the first. */
 void func_8008901C(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009BE1C[0] = func_80031BDC(sizeof(EffectQuads), 1);
@@ -2344,7 +2344,7 @@ void func_80089748(void) {
 void func_80089C78(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 camera_x;
     s32 camera_z;
     s32 i;
