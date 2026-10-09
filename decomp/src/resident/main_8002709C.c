@@ -35,10 +35,14 @@ static s32 D_80059F0C;        /* the file being read */
 static CdlLOC D_80059F10;     /* CD position of the current read */
 static CdlFILTER D_80059F14;  /* CdlSetfilter parameter */
 /* The CD mode byte, the first of the 4-byte CdlSetmode parameter, which
- * takes the whole word (decomp/Makefile, slots). A scalar: 80028f30's tests
- * of it match only so (an array or aggregate view makes GCC keep its
- * address in a register); 8002a428 stores and passes the parameter through
- * a pointer. */
+ * takes the whole word slot (decomp/Makefile, slots). A compromise: 80029690
+ * and 8002a428 clear all four bytes through &D_80059F18 + 3, beyond the
+ * declared byte, and pass it as the parameter, while 80028f30's tests match
+ * only with a u8 scalar (a u8[4], a union of the byte and the four, or a word
+ * read through a u8 lvalue each make GCC keep the address in a register: one
+ * more saved register, a 0x58-byte frame). The byte lies among this unit's
+ * declaration-ordered statics, not among the commons, so all three functions
+ * are this unit's and see one declaration. */
 static u8 D_80059F18;
 static u8 D_80059F1C[8];      /* CD command result */
 /* Image stream parameters set by 80029eb0: for images of type 0x1200 and

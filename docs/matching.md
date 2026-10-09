@@ -589,6 +589,11 @@ converted to C per unit. What converting the targets' `.data` established:
   2.6.3 lays out such a tentative definition once a header completes the type.
   Functions on both sides of a supposed unit boundary that read the same statics
   are one unit: the resident's main_8002709C.c runs from 8002709C to 8002C3E8.
+  One declaration then serves every user, which leaves one accepted compromise
+  there: the CD mode byte D_80059F18 is a `u8` (80028f30's tests match only with a
+  scalar; a `u8[4]`, a union or a word read bytewise keep its address in a
+  register), while 80029690 and 8002a428 clear and pass all four bytes of the
+  CdlSetmode parameter in its word slot through `&D_80059F18 + 3`.
   Zeros a packer added past the program are file padding (Compressed containers).
 - Code shows where an object starts and how far it reaches. A member at a nonzero
   offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
