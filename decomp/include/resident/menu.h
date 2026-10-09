@@ -121,7 +121,7 @@ typedef struct MenuState {
     struct MenuSlotImage *slots[32]; /* +0x3a8: slot39's file screen slots */
     struct MenuMarkers *markers;   /* +0x428 */
     struct MenuItemList *item_list; /* +0x42c: slot39 */
-    struct MenuFileList *file_list; /* +0x430: slot39 */
+    struct MenuArtsList *arts_list; /* +0x430: slot39 */
     struct MenuEquipList *equip_list; /* +0x434: slot39 */
     struct MenuStatusList *status_list; /* +0x438: slot39 */
     struct MenuScrollBar *scroll;  /* +0x43c */

@@ -1,7 +1,21 @@
 /* Menu overlay unit 801E8070. Its rodata starts at 801C5278, where the jump
  * tables return to 0 mod 8 after 801E433C's odd-length table: the text
  * boundary lies between 801E433C and 801E8070. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libsn.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/stream.h"
+#include "menu/card.h"
+#include "menu/screen.h"
 #include "menu.h"
+#include "file.h"
 
 /* The unit's uninitialized variable, zero in the file after
  * slot39_801DBE54's: the CdControlB result bytes. */

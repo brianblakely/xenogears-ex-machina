@@ -40,7 +40,7 @@ typedef struct MenuFlags {
     u8 name_entry_shown;      /* 0x47 */
     u8 item_list_shown;       /* 0x48 */
     u8 scroll_shown;          /* 0x49 */
-    u8 file_list_shown;       /* 0x4a */
+    u8 arts_list_shown;       /* 0x4a */
     u8 equip_labels_shown;    /* 0x4b */
     u8 equip_list_shown;      /* 0x4c */
     u8 status_list_shown;     /* 0x4d */

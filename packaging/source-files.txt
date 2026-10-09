@@ -387,6 +387,8 @@ decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/sprite_80025C04.c
 decomp/src/resident/sprite_settings.c
+decomp/src/slot39/field.h
+decomp/src/slot39/file.h
 decomp/src/slot39/menu.h
 decomp/src/slot39/slot39.c
 decomp/src/slot39/slot39_801DBE54.c

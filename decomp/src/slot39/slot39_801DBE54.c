@@ -9,7 +9,22 @@
  * split 801D84B4/801D8644 or 801D9C84/801D9E3C, which share variables; the
  * item screen's helpers from 801DA4A8, which only this unit's functions
  * call, may belong here too. */
+#include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
+#include "menu/tables.h"
 #include "menu.h"
+#include "file.h"
+#include "field.h"
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
  * in a slot of whole words (decomp/Makefile). */
@@ -182,7 +197,9 @@ u8 func_801DBE54(void) {
     return 1;
 }
 
-/* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
+/* Open the arts screen of `kind` (0 the character's arts, data view 2; 1 its
+ * gear's, view 5; 2 the gear's other list, view 6, with the second label
+ * page): its labels, its 1094-byte list block and the view's data. */
 void func_801DC1D4(u8 kind) {
     void *block;
     u8 view;
@@ -190,7 +207,7 @@ void func_801DC1D4(u8 kind) {
 
     page = 0;
     block = func_80031BDC(0x1094, 0);
-    D_800625A0->file_list = block;
+    D_800625A0->arts_list = block;
     bzero(block, 0x1094);
     switch (kind) {
     case 0:
@@ -210,8 +227,8 @@ void func_801DC1D4(u8 kind) {
     func_801D3488(2, kind);
 }
 
-/* Close the file list screen of `kind`: portraits 3-6, its block; back to the
- * view of the kind (| 10). */
+/* Close the arts screen of `kind`: panels 3-6, its list block and the
+ * view's data (the view | 10 releases it). */
 void func_801DC2CC(u8 kind) {
     u8 view;
 
@@ -220,7 +237,7 @@ void func_801DC2CC(u8 kind) {
     func_801D4EA0(5);
     func_801D4EA0(6);
     func_801D2484();
-    D_800625A0->flags->file_list_shown = 0;
+    D_800625A0->flags->arts_list_shown = 0;
     func_801C7BF4();
     switch (kind) {
     case 0:
@@ -234,7 +251,7 @@ void func_801DC2CC(u8 kind) {
         break;
     }
     func_801C72BC(view | 0x10);
-    func_800320E8(D_800625A0->file_list);
+    func_800320E8(D_800625A0->arts_list);
     D_800625A0->flags->field_menu2_shown = 1;
     D_800625A0->flags->panels_shown[1] = 1;
 }
@@ -294,17 +311,17 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
                         func_80033908(D_800625A0->flags->party[slot] * 16 + row), image, 0x24, 0);
                     cost = D_800625A0->tables->arts[D_800625A0->flags->party[slot]][22 + row].cost;
                     break;
                 case 1:
-                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
                         func_800339FC(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 16 + row), image, 0x24, 0);
                     cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][21 + row].cost;
                     break;
                 case 2:
-                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
                         func_80033A8C(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 4 + row / 2), image, 0x24, 0);
                     ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
                     cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][37 + row / 2].gearCost;
@@ -339,7 +356,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             codes[pos * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, digits);
             grey = 0x80;
-            D_800625A0->file_list->values[row].width = func_80034EAC(text, image, 0x24, 1);
+            D_800625A0->arts_list->values[row].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = row / 2 * 0xd + 0x80;
             rect.w = 0x28;
@@ -368,28 +385,28 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 }
             }
             if (row < 12) {
-                func_801E7C50(&D_800625A0->file_list->names[row], row, 0x80, grey | 1);
-                func_801C851C(D_800625A0->file_list->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
-                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->file_list->names[row].width, 0xd);
+                func_801E7C50(&D_800625A0->arts_list->names[row], row, 0x80, grey | 1);
+                func_801C851C(D_800625A0->arts_list->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
+                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->arts_list->names[row].width, 0xd);
             }
-            func_801E7C50(&D_800625A0->file_list->values[row], row, 0x80, grey | 2);
-            func_801C851C(D_800625A0->file_list->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
-                          D_800625A0->file_list->values[row].width, 0xd);
-            D_800625A0->file_list->names[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->file_list->values[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->file_list->shown[row] = grey | 1;
+            func_801E7C50(&D_800625A0->arts_list->values[row], row, 0x80, grey | 2);
+            func_801C851C(D_800625A0->arts_list->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
+                          D_800625A0->arts_list->values[row].width, 0xd);
+            D_800625A0->arts_list->names[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->arts_list->values[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->arts_list->shown[row] = grey | 1;
         } else {
-            D_800625A0->file_list->shown[row] = 0;
+            D_800625A0->arts_list->shown[row] = 0;
         }
     }
     func_800320E8(image);
     func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 6, 1, fuel + 2);
     func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 7, 1, fuel + 2);
-    func_801D36E0(&D_800625A0->file_list->footer, slot, kind, 1);
-    D_800625A0->flags->file_list_shown = 1;
+    func_801D36E0(&D_800625A0->arts_list->footer, slot, kind, 1);
+    D_800625A0->flags->arts_list_shown = 1;
 }
 
-/* Show the description of file list row `row` for party slot `slot` (`kind`
+/* Show the description of arts list row `row` for party slot `slot` (`kind`
  * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
@@ -414,34 +431,34 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         text = D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 8 + (row & ~1);
         break;
     }
-    if (D_800625A0->file_list->shown[row] != 0) {
+    if (D_800625A0->arts_list->shown[row] != 0) {
         image = func_80031BDC(0x618, 0);
         bzero(image, 0x618);
-        D_800625A0->file_list->extra[0].width =
-            func_80034EAC(func_80033728(D_800625A0->file_list->texts, text), image, 0x39, 0);
-        D_800625A0->file_list->extra[1].width =
-            func_80034EAC(func_80033728(D_800625A0->file_list->texts, text + 1), image, 0x39, 1);
+        D_800625A0->arts_list->extra[0].width =
+            func_80034EAC(func_80033728(D_800625A0->arts_list->texts, text), image, 0x39, 0);
+        D_800625A0->arts_list->extra[1].width =
+            func_80034EAC(func_80033728(D_800625A0->arts_list->texts, text + 1), image, 0x39, 1);
         rect.x = 0x140;
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
         LoadImage(&rect, image);
         DrawSync(0);
-        func_801E7C50(&D_800625A0->file_list->extra[0], 0, 0, 0);
-        func_801E920C(&D_800625A0->file_list->extra[0].polys[D_800625A0->buffer_index], 0x1c, 0x9e, 0, 0x4e,
-                      D_800625A0->file_list->extra[0].width, 0xd);
-        func_801C851C(D_800625A0->file_list->extra[0].verts, 0x1c, 0x9e, D_800625A0->file_list->extra[0].width, 0xd);
-        func_801E7C50(&D_800625A0->file_list->extra[1], 1, 0, 0);
-        func_801E920C(&D_800625A0->file_list->extra[1].polys[D_800625A0->buffer_index], 0x1c, 0xae, 0, 0x4e,
-                      D_800625A0->file_list->extra[1].width, 0xd);
-        func_801C851C(D_800625A0->file_list->extra[1].verts, 0x1c, 0xae, D_800625A0->file_list->extra[1].width, 0xd);
+        func_801E7C50(&D_800625A0->arts_list->extra[0], 0, 0, 0);
+        func_801E920C(&D_800625A0->arts_list->extra[0].polys[D_800625A0->buffer_index], 0x1c, 0x9e, 0, 0x4e,
+                      D_800625A0->arts_list->extra[0].width, 0xd);
+        func_801C851C(D_800625A0->arts_list->extra[0].verts, 0x1c, 0x9e, D_800625A0->arts_list->extra[0].width, 0xd);
+        func_801E7C50(&D_800625A0->arts_list->extra[1], 1, 0, 0);
+        func_801E920C(&D_800625A0->arts_list->extra[1].polys[D_800625A0->buffer_index], 0x1c, 0xae, 0, 0x4e,
+                      D_800625A0->arts_list->extra[1].width, 0xd);
+        func_801C851C(D_800625A0->arts_list->extra[1].verts, 0x1c, 0xae, D_800625A0->arts_list->extra[1].width, 0xd);
         func_800320E8(image);
-        memmove(&D_800625A0->file_list->headA, &D_800625A0->file_list->names[row], sizeof(MenuLabel));
-        func_801C851C(D_800625A0->file_list->headA.verts, 0x12, 0x8e, D_800625A0->file_list->names[row].width, 0xd);
-        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->r0 = 0x80;
-        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->g0 = 0x80;
-        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->b0 = 0x80;
-        SetSemiTrans(&D_800625A0->file_list->headA.polys[D_800625A0->buffer_index], 0);
+        memmove(&D_800625A0->arts_list->headA, &D_800625A0->arts_list->names[row], sizeof(MenuLabel));
+        func_801C851C(D_800625A0->arts_list->headA.verts, 0x12, 0x8e, D_800625A0->arts_list->names[row].width, 0xd);
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->r0 = 0x80;
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->g0 = 0x80;
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->arts_list->headA.polys[D_800625A0->buffer_index], 0);
         func_801E8044(8, D_800625A0->flags->labels10e0_shown);
         switch (kind) {
         case 0:
@@ -465,15 +482,15 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, all, 0, 2);
         targetKind = (effect->target & 3) + 3;
         func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, targetKind, 0, 2);
-        D_800625A0->file_list->headA.buffer = D_800625A0->buffer_index;
-        D_800625A0->file_list->headB.buffer = D_800625A0->buffer_index;
-        D_800625A0->file_list->extra[0].buffer = D_800625A0->buffer_index;
-        D_800625A0->file_list->extra[1].buffer = D_800625A0->buffer_index;
-        D_800625A0->file_list->extraShown = 1;
+        D_800625A0->arts_list->headA.buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->headB.buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extra[0].buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extra[1].buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extraShown = 1;
         D_800625A0->flags->labels10e0_shown[6] = 1;
         D_800625A0->flags->labels10e0_shown[7] = 1;
     } else {
-        D_800625A0->file_list->extraShown = 0;
+        D_800625A0->arts_list->extraShown = 0;
         for (i = 0; i < 6; i++) {
             D_800625A0->flags->labels10e0_shown[i] = 0;
         }
@@ -489,15 +506,15 @@ void func_801DD5E8(u8 mode) {
     func_801E8F60(5, mode);
     func_801E8F60(6, mode);
     for (i = 0; i < 12; i++) {
-        if (D_800625A0->file_list->names[i].polys[D_800625A0->file_list->names[i].buffer].r0 != 0x20) {
-            func_801E8EAC(&D_800625A0->file_list->names[i].polys[D_800625A0->file_list->names[i].buffer], mode);
-            func_801E8EAC(&D_800625A0->file_list->values[i].polys[D_800625A0->file_list->values[i].buffer], mode);
+        if (D_800625A0->arts_list->names[i].polys[D_800625A0->arts_list->names[i].buffer].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->arts_list->names[i].polys[D_800625A0->arts_list->names[i].buffer], mode);
+            func_801E8EAC(&D_800625A0->arts_list->values[i].polys[D_800625A0->arts_list->values[i].buffer], mode);
         }
     }
     func_801E8EAC(&D_800625A0->cursors[0]->polys[D_800625A0->cursors[0]->buffer], mode);
-    func_801E8EAC(&D_800625A0->file_list->headA.polys[D_800625A0->file_list->headA.buffer], mode);
+    func_801E8EAC(&D_800625A0->arts_list->headA.polys[D_800625A0->arts_list->headA.buffer], mode);
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->file_list->extra[i].polys[D_800625A0->file_list->extra[i].buffer], mode);
+        func_801E8EAC(&D_800625A0->arts_list->extra[i].polys[D_800625A0->arts_list->extra[i].buffer], mode);
     }
 }
 
@@ -692,7 +709,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
         }
         switch (D_800625A0->input) {
         case 4:
-            if (D_800625A0->file_list->shown[cursor] & 0x80) {
+            if (D_800625A0->arts_list->shown[cursor] & 0x80) {
                 func_801DD790(slot, cursor, kind);
                 slotShown = 0xff;
                 cursorShown = 0xff;

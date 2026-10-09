@@ -7,7 +7,32 @@
  * (kind 2) or kind 6. It keeps its state behind D_800625A0 and reads and
  * writes "bu00:"/"bu10:" memory-card files (BASLUS-00664...).
  */
+#include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
+#include "menu/tables.h"
 #include "menu.h"
+#include "file.h"
+#include "field.h"
 
 /* Declared here only: slot39_801DBE54.c calls it without a prototype. */
 void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
@@ -296,7 +321,7 @@ u8 D_801EA53C[12] = {
     0x1B, 0x1A, 0x19, 0x18, 0x16, 0x17,
     0x1B, 0x1A, 0x18, 0x19, 0x16, 0x17,
 };
-u8 D_801EA548[8] = { 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F }; /* save/load screen labels */
+u8 D_801EA548[8] = { 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F }; /* item and arts screen labels */
 u8 D_801EA550[8] = { 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x7A, 0x7B }; /* item target labels */
 u8 D_801EA558[12] = {
     0x70, 0x71, 0x72, 0x73, 0x74, 0x75,
@@ -1067,7 +1092,7 @@ void func_801C72BC(u8 code) {
                 D_800625A0->tables->arts[D_800625A0->flags->party[i]] = func_80032E88(archive->effects[id], 0);
             }
         }
-        D_800625A0->file_list->texts = func_80032E88(archive->unk40, 0);
+        D_800625A0->arts_list->texts = func_80032E88(archive->unk40, 0);
         break;
     case 3:
         D_800625A0->tables->equipment = func_80032E88(archive->weapons, 0);
@@ -1098,9 +1123,9 @@ void func_801C72BC(u8 code) {
             }
         }
         if (code == 5) {
-            D_800625A0->file_list->texts = func_80032E88(archive->unk54, 0);
+            D_800625A0->arts_list->texts = func_80032E88(archive->unk54, 0);
         } else {
-            D_800625A0->file_list->texts = func_80032E88(archive->unk58, 0);
+            D_800625A0->arts_list->texts = func_80032E88(archive->unk58, 0);
         }
         break;
     case 7:
@@ -1126,7 +1151,7 @@ void func_801C72BC(u8 code) {
                 func_800320E8(D_800625A0->tables->arts[id]);
             }
         }
-        func_800320E8(D_800625A0->file_list->texts);
+        func_800320E8(D_800625A0->arts_list->texts);
         break;
     case 0x13:
         func_800320E8(D_800625A0->tables->equipment);
@@ -1154,7 +1179,7 @@ void func_801C72BC(u8 code) {
                 }
             }
         }
-        func_800320E8(D_800625A0->file_list->texts);
+        func_800320E8(D_800625A0->arts_list->texts);
         break;
     case 0x17:
         func_800320E8(D_800625A0->equip_list->texts[0]);
@@ -4318,27 +4343,27 @@ void func_801D14FC(void) {
 void func_801D1640(void) {
     s32 i;
 
-    if (D_800625A0->flags->file_list_shown != 0) {
+    if (D_800625A0->flags->arts_list_shown != 0) {
         for (i = 0; i < 14; i++) {
-            if (D_800625A0->file_list->shown[i] != 0) {
-                func_801CE198(1, D_800625A0->file_list->names[i].verts, D_800625A0->file_list->names[i].polys,
-                              D_800625A0->file_list->names[i].buffer);
-                func_801CE198(1, D_800625A0->file_list->values[i].verts, D_800625A0->file_list->values[i].polys,
-                              D_800625A0->file_list->values[i].buffer);
+            if (D_800625A0->arts_list->shown[i] != 0) {
+                func_801CE198(1, D_800625A0->arts_list->names[i].verts, D_800625A0->arts_list->names[i].polys,
+                              D_800625A0->arts_list->names[i].buffer);
+                func_801CE198(1, D_800625A0->arts_list->values[i].verts, D_800625A0->arts_list->values[i].polys,
+                              D_800625A0->arts_list->values[i].buffer);
             }
         }
-        if (D_800625A0->file_list->extraShown != 0) {
-            func_801CE198(1, D_800625A0->file_list->headA.verts, D_800625A0->file_list->headA.polys,
-                          D_800625A0->file_list->headA.buffer);
-            func_801CE198(1, D_800625A0->file_list->headB.verts, D_800625A0->file_list->headB.polys,
-                          D_800625A0->file_list->headB.buffer);
+        if (D_800625A0->arts_list->extraShown != 0) {
+            func_801CE198(1, D_800625A0->arts_list->headA.verts, D_800625A0->arts_list->headA.polys,
+                          D_800625A0->arts_list->headA.buffer);
+            func_801CE198(1, D_800625A0->arts_list->headB.verts, D_800625A0->arts_list->headB.polys,
+                          D_800625A0->arts_list->headB.buffer);
             for (i = 0; i < 2; i++) {
-                func_801CE198(1, D_800625A0->file_list->extra[i].verts, D_800625A0->file_list->extra[i].polys,
-                              D_800625A0->file_list->extra[i].buffer);
+                func_801CE198(1, D_800625A0->arts_list->extra[i].verts, D_800625A0->arts_list->extra[i].polys,
+                              D_800625A0->arts_list->extra[i].buffer);
             }
         }
-        func_801CE198(1, D_800625A0->file_list->footer.verts, D_800625A0->file_list->footer.polys,
-                      D_800625A0->file_list->footer.buffer);
+        func_801CE198(1, D_800625A0->arts_list->footer.verts, D_800625A0->arts_list->footer.polys,
+                      D_800625A0->arts_list->footer.buffer);
     }
 }
 
@@ -6622,7 +6647,8 @@ u8 func_801D9F98(u8 loading, u8 save) {
     return result;
 }
 
-/* Open the save/load screen: its labels, its 1198-byte block and view 0. */
+/* Open the item screen: its labels, its 1198-byte list block and data view 0
+ * (the item table and descriptions). */
 void func_801DA4A8(void) {
     void *block;
 
@@ -6634,8 +6660,8 @@ void func_801DA4A8(void) {
     func_801C72BC(0);
 }
 
-/* Close the save/load screen: its labels, portraits 3-4, blocks and the
- * item table; view 10. */
+/* Close the item screen: its labels, panels 3-4, its list block and the item
+ * data (view 10). */
 void func_801DA518(void) {
     func_801D3444();
     func_801D4EA0(3);
