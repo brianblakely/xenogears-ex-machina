@@ -795,9 +795,9 @@ def listing(disc: Disc, name: str, item: int | None = None, *, chars: bool = Fal
     threshold = font_threshold(unpack(disc.sectors(disc.slot(0, 1, 6))))
     glyphs, head_lines = None, []
     if chars:
-        known = character_map(disc, threshold)
-        glyphs = known.glyphs
-        head_lines.append(f"disc {disc.number} characters: {known.summary()}")
+        characters = character_map(disc, threshold)
+        glyphs = characters.glyphs
+        head_lines.append(f"disc {disc.number} characters: {characters.summary()}")
     lines = []
     for group, number, data in text_tables(disc):
         if group not in GROUPS[name] or item is not None and number != item:
@@ -911,8 +911,8 @@ def report(result: Sweep) -> str:
         f"  initial names (directory 0x10 file 3 via the pairs): {result.names} decoded; "
         + ", ".join(f"{name} {count}" for name, count in sorted(result.name_uses.items()))
     )
-    for disc, known in sorted(result.characters.items()):
-        lines.append(f"  disc {disc} characters (--chars): {known.summary()}")
+    for disc, characters in sorted(result.characters.items()):
+        lines.append(f"  disc {disc} characters (--chars): {characters.summary()}")
     return "\n".join(lines)
 
 
