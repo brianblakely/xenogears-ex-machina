@@ -57,7 +57,7 @@ The scan finds 4436 compiled game functions and these library entries
 | libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, primitive setters |
 | libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix, TransMatrix, lighting (NormalColor*), Push/PopMatrix, SetGeomOffset/SetGeomScreen, SetFogNearFar, and 16 entries without a signature name (below) |
 | libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the St* streaming ring |
-| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Cards), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
+| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Memory card and saves), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
 | libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite are func_8004D818/func_8004D878 by inspection (unattributed, called by sound.c func_8003BE68) |
 | libcard | InitCARD, StartCARD, `_bu_init` (A(70h)) |
@@ -149,10 +149,9 @@ Outside the libraries the game itself uses:
 - Files: devices "bu00:" and "bu10:" (D_801C50A8/D_801C50B0); a save is
   "BASLUS-00664" followed by the character '0' + digit, digit 0-14
   (func_801CB9E8), so digits 10-14 give ':' ';' '<' '=' '>', which a host
-  filesystem may reject.
-  func_801C8D78 lists a card with B(42h)/B(43h); func_801C9038 reads each
-  file's first 0x200 bytes. func_801C65F4 also stores "BASLUS-01160" in
-  MenuCard.otherPrefix, which no recovered code reads.
+  filesystem may reject. func_801C8D78 lists a card with B(42h)/B(43h);
+  func_801C9038 reads each file's first 0x200 bytes. func_801C65F4 also stores
+  "BASLUS-01160" in MenuCard.otherPrefix, which no recovered code reads.
 - Save (func_801CBD90): erase "bu0X:__tmp_file" (B(45h)), create it with
   `open(name, blocks << 16 | 0x200)`, reopen it for writing (mode 2), write the
   0x100-byte header (magic "SC", icon flag 0x11, one block, a 0x5C-byte
@@ -167,11 +166,12 @@ Outside the libraries the game itself uses:
   fields that are not saved, D_80059488 = the saved play time and
   D_8005A3A0[16] (battle-AI globals) come back from GameData +0x2324. The field
   finishes a load through event variables 0x46 and 4 (field.c func_800799D4).
-- Payload layout: MenuSavePayload (play time in vblanks, the party summary,
-  file digit at +0x23) then SaveData (slot39/menu.h: names +0x24, characters
-  +0x290, gear subsets +0x99C, GameData blocks at +0xE4C, +0xEC4, +0x1024 and
-  +0x1124, up to +0x1B5C; the rest is zero). tools/analysis/menu_save_file.py
-  checks the serialisation against a card image a capture wrote.
+- Payload layout (slot39/menu.h): the play time in vblanks at +0 and the party
+  summary with the file digit at +0x23 (MenuSavePayload), then SaveData's
+  blocks: names +0x24, GameData +0xDC at +0x100, characters +0x290, gear
+  subsets +0x99C, more GameData blocks at +0xE4C, +0xEC4, +0x1024 and +0x1124,
+  ending at +0x1B5C; the rest is zero. tools/analysis/menu_save_file.py checks
+  the serialisation against a card image a capture wrote.
 
 ## Timing
 
