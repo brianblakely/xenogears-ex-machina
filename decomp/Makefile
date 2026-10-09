@@ -65,20 +65,25 @@ extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\
 asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
 # Uninitialized variables: GCC emits a unit's statics as .lcomm and its
 # tentative definitions as .comm after the code, and maspsx allocates both in
-# the unit's .sbss/.bss, packed without alignment. In the original images
-# every such object takes a slot of whole words, evidenced separately for
-# ASPSX's .lcomm statics (mdec 801e8958-801e8968: five u8, stored and loaded
-# bytewise; menu3 80092678-800926a0; slot39 801ea710/801ea714; under 2.79
-# worldmap 8009bd10-8009bd1c: four u16) and for the commons PSYLINK allocated
-# after every unit's own (ovl2596 801e44e0/801e44e4; libcd's Stsector_offset
-# alone at 801e89bc), which the commons units reproduce. Under the qualified
-# ASPSX versions (2.34, 2.79) this filter rounds each object up to a whole
-# word; under any other (2.56 units define only words so far) it rejects a
-# smaller one, whose placement nothing evidences. Only the .sbss/.bss that
-# maspsx appends are touched.
+# the unit's .sbss/.bss (packed without alignment; in .sbss an 8-byte object
+# 8-aligned). In the original images every such object takes a slot of whole
+# words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39 801ea8e4). That
+# is evidenced separately for ASPSX 2.34's .lcomm statics (mdec
+# 801e8958-801e8968: five u8, stored and loaded bytewise; menu3
+# 80092678-800926a0; slot39 801ea710/801ea714) and for the commons PSYLINK
+# allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
+# Stsector_offset alone at 801e89bc; the ASPSX 2.79 world map's u16 at
+# 8009bd10-8009bd1c, shared by three units), which the commons units
+# reproduce. Under the qualified ASPSX versions, 2.34 and 2.79 (no 2.79 unit
+# allocates any in C yet), this filter gives each object a whole number of
+# words at a word boundary; under any other (2.56 units define only words so
+# far) it rejects a smaller one, whose placement nothing evidences. Only the
+# .sbss/.bss that maspsx appends are touched: any other section directive ends
+# them.
 SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
 bss_filter_of = | awk -v slots=$(if $(filter $(SLOT_ASPSX),$(call maspsx_of,$(1))),1,0) \
-	'$$1 == ".section" || $$1 ~ /^\.(text|data|rdata|sdata|previous)$$/ { bss = $$1 == ".section" && $$2 ~ /^\.s?bss$$/ } \
+	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { bss = $$0 ~ /^\.section \.s?bss$$/ } \
+	bss && slots && $$1 == ".align" && $$2 > 2 { $$0 = "\t.align\t2" } \
 	bss && $$1 == ".space" && $$2 % 4 { if (!slots) { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
 	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } { print }'
 

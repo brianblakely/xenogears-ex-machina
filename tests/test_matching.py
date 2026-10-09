@@ -602,6 +602,20 @@ class MatchingTests(unittest.TestCase):
         "enter the matching Nix shell to test uninitialized variable slots",
     )
     def test_bss_slots_give_each_uninitialized_variable_whole_words(self):
+        def layout(source, section, settings=()):
+            obj = self.build_fixture_unit(source, settings)
+            symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                     capture_output=True, text=True).stdout
+            sections = subprocess.run(["psx-readelf", "-SW", str(obj)], check=True,
+                                      capture_output=True, text=True).stdout
+            size = re.search(r"\] " + re.escape(section) + r"\s+NOBITS\s+\w+\s+\w+\s+(\w+)", sections)
+            offsets = {
+                name: int(value, 16)
+                for value, name in re.findall(r"\d+: ([0-9a-f]{8})\s+\d+ \w+\s+\w+\s+\w+\s+\d+ (\w+)\n", symbols)
+                if name in ("flag", "pairs", "half", "word", "point")
+            }
+            return offsets, int(size.group(1), 16)
+
         # Statics (.lcomm), so the unit's own allocation order is tested. A
         # tentative definition (.comm) maspsx would allocate among them in
         # GCC's order, where the original linker placed commons after every
@@ -614,23 +628,21 @@ class MatchingTests(unittest.TestCase):
             "static int word;\n"
             "int use(void) { return flag + pairs[1][1] + half + word; }\n"
         )
-        obj = self.build_fixture_unit(source)
-        symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
-                                 capture_output=True, text=True).stdout
-        sections = subprocess.run(["psx-readelf", "-SW", str(obj)], check=True,
-                                  capture_output=True, text=True).stdout
-        bss = re.search(r"\] \.bss\s+NOBITS\s+\w+\s+\w+\s+(\w+)", sections)
-        offsets = {
-            name: int(value, 16)
-            for value, name in re.findall(r"\d+: ([0-9a-f]{8})\s+\d+ \w+\s+\w+\s+\w+\s+\d+ (\w+)\n", symbols)
-            if name in ("flag", "pairs", "half", "word")
-        }
         # Declaration order, each object in whole words (ASPSX 2.34, the
         # fixture's default), so every one is naturally aligned.
-        self.assertEqual((offsets, int(bss.group(1), 16)),
-                         ({"flag": 0, "pairs": 4, "half": 12, "word": 16}, 20))
+        offsets, size = layout(source, ".bss")
+        self.assertEqual((offsets, size), ({"flag": 0, "pairs": 4, "half": 12, "word": 16}, 20))
         for name, alignment in {"flag": 1, "pairs": 1, "half": 2, "word": 4}.items():
             self.assertEqual(offsets[name] % alignment, 0, name)
+        # Small data takes the same slots: an 8-byte object follows a byte at
+        # 4 mod 8, as in the original images, where maspsx would 8-align it.
+        small = (
+            '#include "include_asm.h"\n'
+            "static unsigned char flag;\n"
+            "static struct { int x, y; } point;\n"
+            "int use(void) { return flag + point.y; }\n"
+        )
+        self.assertEqual(layout(small, ".sbss", ["GP_unit=8"]), ({"flag": 0, "point": 4}, 12))
         # No slot rule is evidenced for other ASPSX versions: a sub-word
         # variable fails the build instead of keeping maspsx's packing.
         _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.56"])

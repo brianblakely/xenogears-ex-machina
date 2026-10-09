@@ -393,19 +393,22 @@ converted to C per unit. What converting the targets' `.data` established:
   `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
-  and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment.
-  In the original images each object takes a slot of whole words, evidenced
-  separately for ASPSX's `.lcomm` statics (mdec 801e8958-801e8968: five u8, stored
-  and loaded bytewise; menu3 80092678-800926a0; slot39 801ea710/801ea714; under ASPSX
-  2.79 worldmap 8009bd10-8009bd1c: four u16) and for the commons PSYLINK allocated
-  (ovl2596 801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc). The build
-  rounds each object up to whole words under the qualified ASPSX 2.34 and 2.79 and
-  rejects a smaller one under any other version (decomp/Makefile); no target or unit
-  setting selects it. Variables that share a word are therefore one object, also in
-  the resident's generated `.bss`: the sprite position D_800592E8 is a DVECTOR. The
-  window colour D_800594D4, the overlays' `u8[3]`, is still a `u8` with extern +1/+2
-  bytes: ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it),
-  but GNU as moves a small common's offset accesses to `$gp`.
+  and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
+  (in `.sbss` it 8-aligns an 8-byte object). In the original images each object takes
+  a slot of whole words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39's RECT
+  801ea8e4), evidenced separately for ASPSX 2.34's `.lcomm` statics (mdec
+  801e8958-801e8968: five u8, stored and loaded bytewise; menu3 80092678-800926a0;
+  slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
+  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
+  map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
+  object whole words at a word boundary under the qualified ASPSX 2.34 and 2.79 (no
+  2.79 unit allocates any in C yet) and rejects a smaller one under any other version
+  (decomp/Makefile); no target or unit setting selects it. Variables that share a word
+  are therefore one object, also in the resident's generated `.bss`: the sprite
+  position D_800592E8 is a DVECTOR. The window colour D_800594D4, the overlays'
+  `u8[3]`, is still a `u8` with extern +1/+2 bytes: ASPSX 2.34 addressed a common at
+  an offset absolutely (maspsx models it), but GNU as moves a small common's offset
+  accesses to `$gp`.
 - A unit's own variables come first, in unit order, as statics where the commons
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
   reports every FOREIGN reference into a unit's own `.bss` (none in any target) and,
