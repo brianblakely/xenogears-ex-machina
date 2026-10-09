@@ -882,18 +882,20 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
-/* A RECT is four signed halfwords (x, y, width, height). Copy one row of
- * a piece from `src` and return the destination advanced by the piece width
- * rounded down to words; the width is reread after the copy. */
-static inline u8 *copy_picture_row(u8 *dest, u_long *src, s32 piece) {
-    memcpy(dest, src, ((s16 *)D_800AF5C0)[piece * 4 + 2]);
-    return dest + ((s16 *)D_800AF5C0)[piece * 4 + 2] / 4 * 4;
-}
-
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is
  * clear to the 8-bit page area at (300, 100): each piece's rows (80 words
  * per image row) are gathered into a buffer, then loaded at half the x and
- * width. */
+ * width. A piece RECT is four signed halfwords (x, y, width, height); each
+ * row advances the buffer by the width rounded down to words, rereading the
+ * width after the copy.
+ *
+ * PsyQ's MEMORY.H declares memcpy without a prototype, which keeps GCC's
+ * builtin; the prototype in psyq/libc.h drops it (cc1 warns of conflicting
+ * types), so the copy names the builtin. The builtin expands the source
+ * address as a sum, giving the original's `addu a1,a1,v0`. The guard tests
+ * the zeroed row counter, not the height: combine folds that compare into
+ * the branch and leaves its result a stack slot nothing accesses, the
+ * original's unused sp+64. */
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -918,8 +920,11 @@ void func_800AB808(void) {
                 if (row < height_base[i * 4]) {
                     do {
                         column = ((s16 *)D_800AF5C0)[i * 4] / 4;
-                        row_pixels = copy_picture_row(
-                            row_pixels, tim.paddr + ((((s16 *)D_800AF5C0)[i * 4 + 1] + row) * 0x50 + column), i);
+                        __builtin_memcpy(
+                            row_pixels,
+                            tim.paddr + ((((s16 *)D_800AF5C0)[i * 4 + 1] + row) * 0x50 + column),
+                            ((s16 *)D_800AF5C0)[i * 4 + 2]);
+                        row_pixels += ((s16 *)D_800AF5C0)[i * 4 + 2] / 4 * 4;
                     } while (++row < ((s16 *)D_800AF5C0)[i * 4 + 3]);
                 }
                 tim.prect->x = ((s16 *)D_800AF5C0)[i * 4] / 2 + 0x300;
