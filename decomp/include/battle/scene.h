@@ -163,18 +163,6 @@ typedef struct {
     u8 field5;
 } LightSlot;
 
-/* A position tracker (0x14 bytes, D_800D3304): an offset from a part of a
- * stage object. */
-typedef struct Tracker {
-    s16 x;
-    s16 y;
-    s16 z;
-    s16 active;     /* 0x06 */
-    SVECTOR offset; /* 0x08 */
-    s16 object;     /* 0x10: stage object, negative none */
-    s16 part;       /* 0x12: its part less one */
-} Tracker;
-
 /* Battle scene and effect state. */
 extern SVECTOR *D_800D3344;       /* scene points */
 extern SceneTriangle *D_800D39CC; /* scene triangles */

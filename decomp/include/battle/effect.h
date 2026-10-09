@@ -258,6 +258,18 @@ typedef union {
     ImageEvent image;
 } AnimEvent;
 
+/* A position tracker (0x14 bytes, D_800D3304; ovl2143's D_801E8648): an
+ * offset from a part of a stage object, placed by 800A44C0 (801E1880). */
+typedef struct Tracker {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 active;     /* 0x06 */
+    SVECTOR offset; /* 0x08 */
+    s16 object;     /* 0x10: stage object, negative none */
+    s16 part;       /* 0x12: its part less one */
+} Tracker;
+
 /* A collision sphere of a surface (0x10 bytes). */
 typedef struct {
     s16 h0, h2, h4, h6, h8, hA, hC, hE;

@@ -60,7 +60,7 @@ u8 *D_801E8638;
 u16 D_801E863C;
 s32 D_801E8640;
 MATRIX *D_801E8644;
-Anchor D_801E8648[2];
+Tracker D_801E8648[2];
 Actor *D_801E8670[10];
 s16 D_801E8698;
 s16 D_801E869C;
@@ -2220,20 +2220,20 @@ void func_801E1880(Actor **actors) {
     m = SCRATCH_MATRIX;
     for (i = 0; i < 2; i++) {
         if (D_801E8648[i].active) {
-            if (D_801E8648[i].actor >= 0 && (actor = actors[D_801E8648[i].actor]) != NULL) {
-                CompMatrix(&actor->parts->transform, &actor->parts[D_801E8648[i].node + 1].world, m);
+            if (D_801E8648[i].object >= 0 && (actor = actors[D_801E8648[i].object]) != NULL) {
+                CompMatrix(&actor->parts->transform, &actor->parts[D_801E8648[i].part + 1].world, m);
                 SetRotMatrix(m);
                 SetTransMatrix(m);
                 gte_ldv0(&D_801E8648[i].offset);
                 gte_rtv0tr();
                 gte_stlvnl(&world);
-                D_801E8648[i].pos[0] = world.vx;
-                D_801E8648[i].pos[1] = world.vy;
-                D_801E8648[i].pos[2] = world.vz;
+                D_801E8648[i].x = world.vx;
+                D_801E8648[i].y = world.vy;
+                D_801E8648[i].z = world.vz;
             } else {
-                D_801E8648[i].pos[0] = D_801E8648[i].offset.vx;
-                D_801E8648[i].pos[1] = D_801E8648[i].offset.vy;
-                D_801E8648[i].pos[2] = D_801E8648[i].offset.vz;
+                D_801E8648[i].x = D_801E8648[i].offset.vx;
+                D_801E8648[i].y = D_801E8648[i].offset.vy;
+                D_801E8648[i].z = D_801E8648[i].offset.vz;
             }
         }
     }
@@ -3849,11 +3849,11 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
                 if (event->light.light < 2) {
                     anchor = event;
                     if (anchor->light.free) {
-                        D_801E8648[anchor->light.light].actor = -1;
+                        D_801E8648[anchor->light.light].object = -1;
                     } else {
-                        D_801E8648[anchor->light.light].actor = actor->index;
+                        D_801E8648[anchor->light.light].object = actor->index;
                     }
-                    D_801E8648[anchor->light.light].node = anchor->light.part;
+                    D_801E8648[anchor->light.light].part = anchor->light.part;
                     D_801E8644->m[0][anchor->light.light + 1] = anchor->light.r << 4;
                     D_801E8644->m[1][anchor->light.light + 1] = anchor->light.g << 4;
                     D_801E8644->m[2][anchor->light.light + 1] = anchor->light.b << 4;
@@ -4279,7 +4279,7 @@ void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
 
 /* Create a resident sprite linked to an actor node. */
 void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value, s16 scale,
-                   SpriteSpec *spec, Actor *actor) {
+                   SpriteCommand *command, Actor *actor) {
     SpriteTask *sprite;
     SpriteLink *link;
 
@@ -4289,14 +4289,14 @@ void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value
     func_80022000(&sprite->sprite, scale);
     link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
     link->actor = actor;
-    link->node = spec->node;
-    if (spec->linked) {
+    link->node = command->part;
+    if (command->follow) {
         link->update = func_8001CD7C(&sprite->task);
         func_8001CD6C(&sprite->task, (void (*)(Task *))func_801E6F64);
-        link->offset.vx = spec->offset[0];
-        link->offset.vy = spec->offset[1];
-        link->offset.vz = spec->offset[2];
-        link->follow = spec->follow;
+        link->offset.vx = command->offset[0];
+        link->offset.vy = command->offset[1];
+        link->offset.vz = command->offset[2];
+        link->follow = command->mode;
     }
 }
 
@@ -4428,7 +4428,7 @@ void func_801E738C(s32 slot_count) {
         D_801E85F4[j].models = NULL;
     }
     /* Both anchors' active flags, by byte offset. */
-    for (offset = sizeof(Anchor); offset >= 0; offset -= sizeof(Anchor)) {
+    for (offset = sizeof(Tracker); offset >= 0; offset -= sizeof(Tracker)) {
         *(s16 *)((u8 *)&D_801E8648[0].active + offset) = 0;
     }
 }

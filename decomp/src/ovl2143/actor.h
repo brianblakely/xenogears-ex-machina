@@ -132,26 +132,6 @@ typedef struct {
     SVECTOR offset;         /* +10 */
 } SpriteLink;
 
-/* A sprite attachment of an actor script. */
-typedef struct {
-    u8 pad0[5];
-    u8 node;                /* +5 */
-    u16 offset[3];          /* +6 */
-    u8 follow;              /* +c */
-    u8 padD[6];
-    u8 linked;              /* +13 */
-} SpriteSpec;
-
-/* A point attached to an actor node (0x14 bytes): its world position is
- * the node's matrix applied to `offset` (func_801E1880). */
-typedef struct {
-    s16 pos[3];
-    s16 active;             /* +6 */
-    SVECTOR offset;         /* +8 */
-    s16 actor;              /* +10: -1 none */
-    s16 node;               /* +12 */
-} Anchor;
-
 /* An actor's scene description (the file's +10 record's +4). */
 typedef struct {
     u8 pad0[2];
