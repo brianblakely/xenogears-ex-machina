@@ -3,7 +3,9 @@
 import re
 import struct
 import unittest
+from collections import Counter
 
+from tools.analysis.events import EXTENDED
 from tools.analysis.overlay_scripts import (
     ARENA,
     BASE,
@@ -12,10 +14,17 @@ from tools.analysis.overlay_scripts import (
     EVENT_TABLE,
     FRAME_EVENT,
     HIT_SPEC,
+    MOVIE_SOUND_DIRECTORY,
+    MOVIE_SOUND_END,
+    MOVIE_SOUND_ENTRIES,
+    MOVIE_SOUND_FILE,
+    MOVIE_SOUND_REQUEST,
+    MOVIE_SOUNDS,
     ROOT,
     SPARKLE_SIZES,
     WORLDMAP,
     EventSweep,
+    MovieSound,
     ScriptError,
     UnknownKind,
     UnknownOpcode,
@@ -28,6 +37,12 @@ from tools.analysis.overlay_scripts import (
     hit_form,
     loaded,
     model_file,
+    movie_sound_bank_file,
+    movie_sound_banks,
+    movie_sound_run,
+    movie_sound_seek,
+    movie_sound_step,
+    movie_sound_sweep,
     run,
     scene_sweep,
     sequence_tables,
@@ -194,6 +209,113 @@ class SceneDirectorTests(unittest.TestCase):
         data[0x8009A65C - BASE] ^= 4
         with self.assertRaises(ScriptError):
             sequence_tables(scene, bytes(data))
+
+
+END = (MOVIE_SOUND_END, 0)
+
+
+def movie_table(*runs: list) -> list[tuple[int, int]]:
+    """A timeline table: a leading end, then each run and its end."""
+    table = [END]
+    for each in runs:
+        table += [*each, END]
+    return table
+
+
+def movie_bytes(*runs: list) -> bytes:
+    """D_800AE060 holding movie_table(*runs), the last run repeating its last
+    entry to fill the table's 96 entries."""
+    table = movie_table(*runs)
+    filler = [table[-2]] * (MOVIE_SOUND_ENTRIES - len(table))
+    table = table[:-1] + filler + [END]
+    return b"".join(struct.pack("<HH", frame, sound) for frame, sound in table)
+
+
+def seds(effects: int, size: int = 0x40) -> bytes:
+    """An effect bank func_8003F614 accepts: magic, version 0x101 at +0xC,
+    the effect count at +0x12, and a last word that zeroes the word sum."""
+    data = bytearray(size)
+    data[:4] = b"seds"
+    struct.pack_into("<IHxxxxH", data, 8, size, 0x101, effects)
+    struct.pack_into("<H", data, 0x18, 0x20 + 4 * effects)
+    total = sum(struct.unpack_from(f"<{size // 4}I", data))
+    struct.pack_into("<I", data, size - 4, -total & 0xFFFFFFFF)
+    return bytes(data)
+
+
+class BankFiles:
+    """Directory (0x1C, 0) of a disc index whose slots are the file numbers."""
+
+    def __init__(self, banks: dict):
+        self.blobs = {MOVIE_SOUND_FILE + bank: blob for bank, blob in banks.items()}
+        self.entries = {slot: {"size": len(blob)} for slot, blob in self.blobs.items()}
+
+    def slot(self, group: int, index: int, file: int) -> int:
+        assert (group, index) == MOVIE_SOUND_DIRECTORY
+        return file
+
+    def data(self, slot: int) -> bytes:
+        return self.blobs[slot]
+
+
+class MovieSoundTests(unittest.TestCase):
+    def test_a_bank_seeks_past_bank_plus_one_ends(self):
+        table = movie_table([(1, 0x301), (41, 0xB)], [], [(0, 0x202)])
+        self.assertEqual(movie_sound_banks(table), 3)
+        self.assertEqual([movie_sound_seek(table, bank) for bank in range(3)], [1, 4, 5])
+        self.assertEqual(
+            [(s.frame, s.effect, s.pair) for s in movie_sound_run(table, 0)],
+            [(1, 1, 3), (41, 0xB, 0)],
+        )
+        self.assertEqual(movie_sound_run(table, 1), [])
+        self.assertEqual(movie_sound_run(table, 2)[0].index, 5)
+        self.assertEqual(movie_sound_seek(table, 3), len(table))  # past the last end
+        with self.assertRaises(ScriptError):
+            movie_sound_seek(table, 4)
+        with self.assertRaises(ScriptError):
+            movie_sound_run(table, 3)
+        with self.assertRaises(ScriptError):
+            movie_sound_run(table[:-1], 2)
+
+    def test_a_sound_holds_the_effect_and_the_voice_pair(self):
+        sound = MovieSound(0, 360, 0x70D)
+        self.assertEqual((sound.effect, sound.pair, sound.unread), (0xD, 7, 0))
+        high = MovieSound(0, 0, 0xF80D)
+        self.assertEqual((high.pair, high.unread), (0, 0x1F))
+        self.assertEqual(sound.text(), "frame  360: effect 0x0d voice pair 7")
+
+    def test_a_step_plays_every_entry_whose_frame_has_come(self):
+        table = movie_table([(1, 0x301), (1, 0x202), (60, 0x11)])
+        played, position = movie_sound_step(table, movie_sound_seek(table, 0), 3, 2)
+        self.assertEqual(([s.index for s in played], position), ([1, 2], 3))
+        self.assertEqual(movie_sound_step(table, position, 61, 2), ([], 3))  # 61 < 60 + 2
+        played, position = movie_sound_step(table, position, 62, 2)
+        self.assertEqual(([s.effect for s in played], position), ([0x11], 4))
+        self.assertEqual(movie_sound_step(table, position, 4000, 2), ([], 4))  # the end waits
+        with self.assertRaises(ScriptError):
+            movie_sound_step(table, 5, 0, 0)
+
+    def test_the_sweep_checks_each_bank_file_and_the_requested_banks(self):
+        table = movie_bytes([(1, 0x301), (5, 0x202)], [(0, 0x101)])
+        data = bytes(image(0x3FAFE, D_800AE060=table))
+        files = BankFiles({0: seds(3), 1: seds(2)})
+        requests = Counter({0: 1, 1: 2, 0xFF: 3, "variable": 1})
+        result = movie_sound_sweep(data, files, requests)
+        self.assertEqual((result.banks, result.entries, result.failures), (2, 2 + 91, []))
+        self.assertEqual(result.files, [(0, 0x115, 3, [0], []), (1, 0x116, 2, [0], [1])])
+        self.assertEqual(result.pairs, Counter({3: 1, 2: 1, 1: 91}))
+        self.assertEqual(movie_sound_bank_file(files, 1), (0x116, 2))
+        result = movie_sound_sweep(data, BankFiles({0: seds(2)}), requests + Counter({2: 1}))
+        self.assertEqual(
+            [where for where, _ in result.failures], ["bank 0", "bank 1", "bank 2"]
+        )  # effect 2 past 2 effects, no file, a request without a run
+        broken = bytearray(seds(3))
+        broken[0x20] ^= 1
+        with self.assertRaises(ScriptError):
+            movie_sound_bank_file(BankFiles({0: bytes(broken)}), 0)
+        tail = bytearray(data)
+        tail[MOVIE_SOUNDS - BASE + 4 * (MOVIE_SOUND_ENTRIES - 1)] = 1
+        self.assertEqual(movie_sound_sweep(bytes(tail)).failures[0][0], "table")
 
 
 def frame_event(first: int, last: int, spec: int) -> bytes:
@@ -373,7 +495,7 @@ class AssetTests(unittest.TestCase):
             with self.subTest(overlay=overlay, address=f"{address:08x}"):
                 size = asset_size(sources, address)
                 self.assertTrue(any(s <= address and address + size <= e for s, e in ranges))
-                self.assertNotRegex(code(sources), rf"\bD_{address:08X}\[\w*\] = ")
+                self.assertNotRegex(code(sources), rf"\bD_{address:08X}(\[\w*\])+ = ")
 
     def test_world_map_scripts_and_cue_tables(self):
         tables = [a for d in DIRECTORS for s in d.sequences for a in (s.states, s.durations)]
@@ -384,6 +506,9 @@ class AssetTests(unittest.TestCase):
         table = re.search(r"u8 \*D_8009105C\[\] = \{(.*?)\};", text, re.S).group(1)
         scenes = [int(name, 16) for name in re.findall(r"D_([0-9A-F]{8})", table)]
         self.check("menu", [0x80090F38, 0x800910C4, 0x80091050, *scenes])
+
+    def test_field_movie_sound_timelines(self):
+        self.check("field", [MOVIE_SOUNDS])
 
 
 def function(text: str, name: str) -> str:
@@ -622,10 +747,53 @@ class FrameEventSourceTests(unittest.TestCase):
         self.assertEqual(len(sizes.split(",")), SPARKLE_SIZES)
 
 
+class MovieSoundSourceTests(unittest.TestCase):
+    """The timeline decoder follows func_80085788, func_80085678 and event fe a0."""
+
+    def setUp(self):
+        self.text = (ROOT / "decomp/src/field/field_800854D0.c").read_text()
+
+    def test_the_seek_loads_file_0x115_plus_bank_and_skips_bank_plus_one_ends(self):
+        body = function(self.text, "func_80085788")
+        group, index = MOVIE_SOUND_DIRECTORY
+        self.assertIn(f"func_80028470(0x{group:X}, {index});", body)
+        self.assertIn(f"file = bank + 0x{MOVIE_SOUND_FILE:X};", body)
+        self.assertIn("for (i = 0; i < bank + 1; i++) {", body)
+        self.assertIn(f"[pos * 2] == 0x{MOVIE_SOUND_END:X}) {{", body)
+        self.assertIn("pos++;\n            D_800C3A64 = pos;", body)
+
+    def test_the_player_plays_the_low_byte_on_the_pair_in_bits_8_to_10(self):
+        body = function(self.text, "func_80085678")
+        self.assertIn("if (D_800B06A0 < times[D_800C3A64 * 2] + FIELD_MOVIE.sound_start) {", body)
+        self.assertIn(
+            "func_80039EC4((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);", body
+        )
+        self.assertIn("D_800C3A64++;", body)
+        full = MovieSound(0, 0, 0xFFFF)
+        self.assertEqual((full.effect, full.pair), (0xFF, 7))
+
+    def test_event_fe_a0_names_the_bank_in_operand_9(self):
+        prefix, extended, offset = MOVIE_SOUND_REQUEST
+        body = function(self.text, "func_8008EA58")
+        self.assertIn(
+            f"FIELD_MOVIE.sound_bank = func_8009D088({offset}, EVENT_OPERAND_BYTE(0xB));", body
+        )
+        self.assertEqual(prefix, 0xFE)
+        forms = EXTENDED[extended]
+        self.assertEqual(
+            [(form.mnemonic, form.handler) for form in forms],
+            [("play_movie_sound", "func_8008EA58")],
+        )
+        self.assertIn(offset, [operand.offset for operand in forms[0].operands])
+
+    def test_the_whole_table_is_linked(self):
+        self.assertEqual(asset_size(self.text, MOVIE_SOUNDS), 4 * MOVIE_SOUND_ENTRIES)
+
+
 class TargetTests(unittest.TestCase):
     def test_overlays_name_their_recovered_images(self):
-        for machine in (WORLDMAP, ARENA):
-            self.assertRegex(expected_sha256(machine.overlay), "^[0-9a-f]{64}$")
+        for overlay in (WORLDMAP.overlay, ARENA.overlay, "field"):
+            self.assertRegex(expected_sha256(overlay), "^[0-9a-f]{64}$")
 
 
 if __name__ == "__main__":

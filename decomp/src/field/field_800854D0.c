@@ -15,33 +15,13 @@
 #include "field_motion.h"
 #include "field_music.h"
 
-/* The movie sound timelines: one run per movie sound-effect bank, each of
- * (time, sound) entries ended by 0xffff; 80085788 skips bank + 1 ends. A
- * sound holds its id in the low byte and its voice pair in bits 8-10. */
-u16 D_800AE060[96][2] = {
-    {0xFFFF, 0},
-    {1, 0x301}, {41, 0xB}, {85, 0x202}, {152, 0x203}, {154, 0xC}, {275, 0x204},
-    {284, 0x105}, {292, 0x206}, {299, 0x107}, {345, 0x208}, {370, 0xD}, {421, 0xE},
-    {518, 0xF}, {638, 0x10}, {677, 0x11}, {735, 0x12}, {760, 0x209}, {787, 0x10A},
-    {0xFFFF, 0},
-    {0, 0x301}, {0xFFFF, 0},
-    {0, 0x301}, {0, 0x202}, {0, 0x103}, {60, 0x11}, {84, 0x304}, {84, 0x205}, {84, 0x106},
-    {118, 0x30A}, {118, 0x20B}, {118, 0x10C}, {142, 0x10}, {320, 0x307}, {320, 0x208},
-    {320, 0x109}, {335, 0x30D}, {335, 0x20E}, {335, 0x10F}, {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {360, 0x306}, {360, 0x207},
-    {360, 0x108}, {360, 0x9}, {360, 0x40A}, {360, 0x50B}, {360, 0x60C}, {360, 0x70D},
-    {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
-    {1, 0x708}, {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
-    {1, 0x708}, {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
-    {1, 0x708}, {0xFFFF, 0},
-    {1, 0x301}, {0xFFFF, 0},
-    {1, 0x301}, {1, 0x202}, {1, 0x103}, {1, 0x4}, {1, 0x405}, {1, 0x506}, {1, 0x607},
-    {0xFFFF, 0},
-};
+/* The movie sound timelines, user-supplied cue data (an asset in
+ * field.classification.txt): u16 (frame, sound) pairs, one run per movie
+ * sound-effect bank after a leading end, each ended by frame 0xffff.
+ * 80085788 seeks past bank + 1 ends and 80085678 plays the run in order; a
+ * sound holds its effect in the low byte and its voice pair in bits 8-10
+ * (tools/analysis/overlay_scripts.py decodes them). */
+INCLUDE_ASSET(".data", D_800AE060, 0x800AE060, 0x180);
 
 /* Portrait files per character (- 0x46): first and second image. */
 u8 D_800AE1E0[90][2] = {

@@ -1,4 +1,4 @@
-"""Disassembly of the script machines of the menu and world map overlays.
+"""Disassembly of the scripts and cue timelines of the menu, world map and field overlays.
 
 Every table is read from the recovered interpreter, not inferred from the
 data:
@@ -31,6 +31,14 @@ data:
   records {first, last, spec} ending in first 0xFF; each record whose frame
   range holds the frame runs the HitSpec at header + spec through a switch on
   its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
+* Field movie sound timelines, func_80085678 (decomp/src/field/
+  field_800854D0.c). u16 (frame, sound) pairs, one run per movie sound-effect
+  bank, each ended by frame 0xFFFF; func_80085788 seeks the bank's run and the
+  player plays its entries in order as the movie's frames reach them.
+* World map terrain texture animations, func_80074F2C and func_80075104
+  (decomp/src/worldmap/worldmap_80072238.c). Runs of (image, duration) frames
+  ended by a negative duration, one per slot of D_8009A1E8 and D_8009A250; each
+  update steps a slot's frame when its timer runs out and uploads the image.
 
 None of the machines has jumps: a script runs straight to its stop. The
 scripts and cue tables embedded in the overlays stay user-supplied: the units
@@ -38,9 +46,9 @@ link them from the user's image (INCLUDE_ASSET, `asset` ranges in the
 targets' classification files), so the decoders read them from each disc.
 Sizes and flow follow each handler's advance; the C comments of the handlers
 give each opcode's effect. `--sweep` decodes every script of every machine
-from each disc's own files (the packed overlays and model files) and prints
-aggregate counts only; `--list` prints the disassembly of the user's discs
-to stdout.
+from each disc's own files (the packed overlays, model files and sound banks)
+and prints aggregate counts only; `--list` prints the disassembly of the
+user's discs to stdout.
 """
 
 from __future__ import annotations
@@ -60,7 +68,7 @@ from tools.analysis.packed import PackedError, PackedTruncated, decode_block
 from tools.extraction.overlays import OVERLAYS, image
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = 0x8006FAF0  # load address of both overlays (decomp/targets/overlays/*.yaml)
+BASE = 0x8006FAF0  # load address of the three overlays (decomp/targets/overlays/*.yaml)
 
 
 class ScriptError(ValueError):
@@ -1138,25 +1146,404 @@ def event_listing(number: int, root: Path = ROOT) -> None:
                 print(f"    +0x{event.offset:x} spec +0x{event.spec:x}: {event.text()}")
 
 
+# Field movie sound timelines -------------------------------------------------
+#
+# D_800AE060 (decomp/src/field/field_800854D0.c) holds u16 (frame, sound)
+# pairs: a leading end, then one run per movie sound-effect bank, each ended
+# by an entry whose frame is 0xFFFF. func_80085788 loads the movie's bank,
+# file 0x115 + bank of directory (0x1C, 0), and leaves D_800C3A64 past bank + 1
+# ends. Once per movie frame func_80085678 then plays every entry from there
+# whose frame plus the movie's sound start (FIELD_MOVIE.sound_start) the movie
+# frame D_800B06A0 has reached: the bank's effect in the low byte on the voice
+# pair in bits 8-10 (func_80039EC4 gets pair * 2). Neither tests the run's end
+# itself: frame 0xFFFF lies past every movie. Event fe a0 (func_8008EA58)
+# names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset value)
+# loads none and plays nothing.
+
+MOVIE_SOUNDS = 0x800AE060
+MOVIE_SOUND_ENTRIES = 0x60  # the INCLUDE_ASSET size 0x180, four bytes per entry
+MOVIE_SOUND_END = 0xFFFF
+MOVIE_SOUND_DIRECTORY = (0x1C, 0)  # func_80028470(0x1C, 0) before the bank is read
+MOVIE_SOUND_FILE = 0x115  # + bank
+MOVIE_SOUND_NONE = 0xFF
+MOVIE_SOUND_REQUEST = (0xFE, 0xA0, 9)  # event fe a0, its bank operand's offset
+
+
+@dataclass(frozen=True)
+class MovieSound:
+    index: int  # table entry
+    frame: int  # movie frames after the sound start
+    sound: int
+
+    @property
+    def effect(self) -> int:
+        return self.sound & 0xFF
+
+    @property
+    def pair(self) -> int:
+        return (self.sound >> 8) & 7
+
+    @property
+    def unread(self) -> int:
+        """Bits 11-15, which func_80085678 does not read."""
+        return self.sound >> 11
+
+    def text(self) -> str:
+        return f"frame {self.frame:4d}: effect {self.effect:#04x} voice pair {self.pair}"
+
+
+def movie_sound_table(data: bytes, base: int = BASE) -> list[tuple[int, int]]:
+    """The (frame, sound) entries of D_800AE060 in a field image."""
+    values = halfwords(data, MOVIE_SOUNDS, 2 * MOVIE_SOUND_ENTRIES, base)
+    return list(zip(values[0::2], values[1::2], strict=True))
+
+
+def movie_sound_seek(table: list[tuple[int, int]], bank: int) -> int:
+    """The position func_80085788 leaves in D_800C3A64: past bank + 1 ends."""
+    position = 0
+    for _ in range(bank + 1):
+        while position < len(table) and table[position][0] != MOVIE_SOUND_END:
+            position += 1
+        if position >= len(table):
+            raise ScriptError(
+                f"movie sound bank {bank}: the table holds fewer than {bank + 1} ends"
+            )
+        position += 1
+    return position
+
+
+def movie_sound_run(table: list[tuple[int, int]], bank: int) -> list[MovieSound]:
+    """Bank `bank`'s entries in play order, up to its end."""
+    run = []
+    position = movie_sound_seek(table, bank)
+    while position < len(table) and table[position][0] != MOVIE_SOUND_END:
+        run.append(MovieSound(position, *table[position]))
+        position += 1
+    if position >= len(table):
+        raise ScriptError(f"movie sound bank {bank}: its run has no end inside the table")
+    return run
+
+
+def movie_sound_banks(table: list[tuple[int, int]]) -> int:
+    """The banks the table holds a run for: one per end after the leading one."""
+    return max(0, sum(1 for frame, _ in table if frame == MOVIE_SOUND_END) - 1)
+
+
+def movie_sound_step(
+    table: list[tuple[int, int]], position: int, frame: int, start: int
+) -> tuple[list[MovieSound], int]:
+    """One call of func_80085678 at movie frame `frame`: the entries it plays
+    from `position` (D_800C3A64) and the position it leaves."""
+    played = []
+    while True:
+        if position >= len(table):
+            raise ScriptError(f"movie sound position {position} lies past the table")
+        if frame < table[position][0] + start:
+            return played, position
+        played.append(MovieSound(position, *table[position]))
+        position += 1
+
+
+def movie_sound_bank_file(disc: Disc, bank: int) -> tuple[int, int]:
+    """(slot, effect count) of bank `bank`'s file, which func_80038428 opens
+    in place: func_8003F614 wants magic "seds", a zero word sum and version
+    0x101 at +0xC; the effect count is at +0x12 (sound_sequence.parse_bank)."""
+    from tools.analysis.sound_sequence import SequenceError, parse_bank, word_sum
+
+    slot = disc.slot(*MOVIE_SOUND_DIRECTORY, MOVIE_SOUND_FILE + bank)
+    entry = disc.entries.get(slot)
+    if entry is None or entry["size"] <= 0:
+        raise ScriptError(f"movie sound bank {bank}: no file at slot {slot}")
+    data = disc.data(slot)
+    try:
+        parse_bank(data)
+    except SequenceError as error:
+        raise ScriptError(f"movie sound bank {bank} (slot {slot}): {error}") from error
+    if struct.unpack_from("<H", data, 0xC)[0] != 0x101 or word_sum(data, len(data)):
+        raise ScriptError(f"movie sound bank {bank} (slot {slot}): func_8003F614 rejects it")
+    return slot, struct.unpack_from("<H", data, 0x12)[0]
+
+
+def movie_sound_requests(number: int, root: Path = ROOT) -> Counter:
+    """The bank operand of every reachable event fe a0 in the disc's field
+    maps (tools.analysis.events): its value when immediate, "variable" when
+    the operand names a variable."""
+    from tools.analysis import events
+
+    prefix, extended, offset = MOVIE_SOUND_REQUEST
+    found = Counter()
+    extract, raw = root / f".local/extract/disc{number}", root / f".local/discs/disc{number}.bin"
+    for _, path in events.map_files(extract, raw):
+        package = events.map_events(path.read_bytes())
+        if package is None:
+            continue
+        starts, _ = events.script_entries(package)
+        result = events.walk(package.bytecode, [pc for _, _, pc in starts])
+        for instruction in result.instructions.values():
+            if instruction.opcode != prefix or instruction.extended != extended:
+                continue
+            (index,) = [i for i, o in enumerate(instruction.spec.operands) if o.offset == offset]
+            immediate = instruction.immediate[index]
+            found[instruction.operands[index] if immediate else "variable"] += 1
+    return found
+
+
+@dataclass
+class MovieSoundSweep:
+    banks: int = 0
+    entries: int = 0
+    pairs: Counter = field(default_factory=Counter)
+    unread: int = 0  # entries with bits 11-15 set
+    unordered: list = field(default_factory=list)  # (bank, entry): an earlier frame than the last
+    # (bank, slot, effect count, effects it never plays, effects it plays twice or more)
+    files: list = field(default_factory=list)
+    requests: Counter = field(default_factory=Counter)
+    failures: list = field(default_factory=list)
+
+
+def movie_sound_sweep(data: bytes, disc: Disc | None = None, requests: Counter | None = None):
+    """Decode every bank's run; with a disc, check each bank's file and the
+    effects its run plays; with requests, the banks the events ask for."""
+    result = MovieSoundSweep()
+    table = movie_sound_table(data)
+    result.banks = movie_sound_banks(table)
+    if table[-1][0] != MOVIE_SOUND_END:
+        result.failures.append(("table", "entries after the last end belong to no run"))
+    for bank in range(result.banks):
+        try:
+            run = movie_sound_run(table, bank)
+        except ScriptError as error:
+            result.failures.append((f"bank {bank}", str(error)))
+            continue
+        result.entries += len(run)
+        result.pairs.update(sound.pair for sound in run)
+        result.unread += sum(1 for sound in run if sound.unread)
+        result.unordered += [
+            (bank, b.index) for a, b in zip(run, run[1:], strict=False) if b.frame < a.frame
+        ]
+        if disc is None:
+            continue
+        try:
+            slot, effects = movie_sound_bank_file(disc, bank)
+        except ScriptError as error:
+            result.failures.append((f"bank {bank}", str(error)))
+            continue
+        played = Counter(sound.effect for sound in run)
+        past = sorted(effect for effect in played if effect >= effects)
+        if past:
+            result.failures.append((f"bank {bank}", f"effects {past} past its {effects}"))
+        unplayed = sorted(set(range(effects)) - set(played))
+        repeated = sorted(effect for effect, count in played.items() if count > 1)
+        result.files.append((bank, slot, effects, unplayed, repeated))
+    if requests is not None:
+        result.requests = requests
+        for bank in requests:
+            if bank not in ("variable", MOVIE_SOUND_NONE) and bank >= result.banks:
+                result.failures.append((f"bank {bank}", "requested by fe a0, but has no run"))
+    return result
+
+
+def movie_sound_report(root: Path = ROOT) -> int:
+    print(
+        f"movie-sounds: player func_80085678, seek func_80085788, table D_800AE060"
+        f" ({MOVIE_SOUND_ENTRIES} entries), overlay field"
+    )
+    failures = 0
+    for number in (1, 2):
+        disc = Disc(number, root)
+        result = movie_sound_sweep(
+            disc_image("field", number), disc, movie_sound_requests(number, root)
+        )
+        failures += len(result.failures)
+        print(
+            f"  disc {number}: {result.banks} banks, {result.entries} entries,"
+            f" {len(result.failures)} undecodable; frames out of order: {len(result.unordered)},"
+            f" entries with bits 11-15 set: {result.unread}"
+        )
+        for where, error in result.failures:
+            print(f"    {where}: {error}")
+        for bank, slot, effects, unplayed, repeated in result.files:
+            print(
+                f"    bank {bank}: file {MOVIE_SOUND_FILE + bank:#x} (slot {slot}),"
+                f" {effects} effects; never played: {unplayed or 'none'},"
+                f" played twice or more: {repeated or 'none'}"
+            )
+        pairs = " ".join(f"{pair}:{count}" for pair, count in sorted(result.pairs.items()))
+        print(f"    voice pairs (pair:entries): {pairs}")
+        named = sorted(bank for bank in result.requests if isinstance(bank, int))
+        print(
+            "    event fe a0 bank operands: "
+            + ", ".join(f"{bank:#x} x{result.requests[bank]}" for bank in named)
+            + f", from a variable x{result.requests['variable']}"
+        )
+    return failures
+
+
+def movie_sound_listing(number: int) -> None:
+    table = movie_sound_table(disc_image("field", number))
+    for bank in range(movie_sound_banks(table)):
+        run = movie_sound_run(table, bank)
+        print(f"bank {bank} (file {MOVIE_SOUND_FILE + bank:#x}): {len(run)} entries")
+        for sound in run:
+            extra = f" (bits 11-15: {sound.unread:#x})" if sound.unread else ""
+            print(f"  entry {sound.index:2d}: {sound.text()}{extra}")
+
+
+# World map terrain texture animations ----------------------------------------
+#
+# D_8009A1E8[2] and D_8009A250[3] (decomp/src/worldmap/worldmap_80072238.c)
+# are TexAnimSlot rows {RECT rect; s32; TexAnimFrame *frames}; a TexAnimFrame
+# run {s16 image; s16 duration} ends with a negative duration. func_80074E58
+# and func_80075030 give animation i of the area file's two animation sections
+# (+0x20 and +0x24: a count, then image offsets) slot i, frame 0 and timer 1.
+# Each update func_80074F2C and func_80075104 count the timer down; at 0 they
+# step to the next frame and take its duration, restart at frame 0 with that
+# frame's duration when it is negative, and upload the frame's image into the
+# slot's rect (the first set's images are 16 bytes, the second's w * h * 2).
+
+TEXTURE_SLOTS = (
+    ("D_8009A1E8", 0x8009A1E8, 2, "func_80074F2C"),
+    ("D_8009A250", 0x8009A250, 3, "func_80075104"),
+)
+TEXTURE_SLOT_BYTES = 16  # RECT, s32, frames pointer
+
+
+@dataclass(frozen=True)
+class TextureSlot:
+    table: str
+    index: int
+    rect: tuple[int, int, int, int]  # x, y, w, h
+    frames: int  # address of its run
+    stepper: str
+
+
+def texture_slots(data: bytes, base: int = BASE) -> list[TextureSlot]:
+    slots = []
+    for table, address, count, stepper in TEXTURE_SLOTS:
+        for index in range(count):
+            offset = address + TEXTURE_SLOT_BYTES * index - base
+            if offset < 0 or offset + TEXTURE_SLOT_BYTES > len(data):
+                raise ScriptError(f"{table}[{index}] lies outside the image")
+            x, y, w, h, _, frames = struct.unpack_from("<4hiI", data, offset)
+            slots.append(TextureSlot(table, index, (x, y, w, h), frames, stepper))
+    return slots
+
+
+def texture_frames(data: bytes, address: int, base: int = BASE) -> list[tuple[int, int]]:
+    """The (image, duration) run at `address`, its negative end included."""
+    run = []
+    while True:
+        offset = address + 4 * len(run) - base
+        if offset < 0 or offset + 4 > len(data):
+            raise ScriptError(f"texture run 0x{address:08x} has no end inside the image")
+        image, duration = struct.unpack_from("<2h", data, offset)
+        run.append((image, duration))
+        if duration < 0:
+            return run
+
+
+def texture_uploads(run: list[tuple[int, int]], updates: int) -> list[tuple[int, int, int]]:
+    """(update, frame, image) of every upload in the first `updates` updates
+    of a slot, stepped as func_80074F2C does from frame 0 and timer 1."""
+    frame, timer, uploads = 0, 1, []
+    for update in range(1, updates + 1):
+        timer = s16(timer - 1)
+        if timer != 0:
+            continue
+        frame += 1
+        timer = run[frame][1]
+        if timer < 0:
+            frame, timer = 0, run[0][1]
+        uploads.append((update, frame, run[frame][0]))
+    return uploads
+
+
+@dataclass
+class TextureSweep:
+    slots: int = 0
+    frames: int = 0  # entries before each run's end
+    cycles: list = field(default_factory=list)  # (slot, updates per cycle)
+    failures: list = field(default_factory=list)
+
+
+def texture_sweep(data: bytes, base: int = BASE) -> TextureSweep:
+    result = TextureSweep()
+    for slot in texture_slots(data, base):
+        where = f"{slot.table}[{slot.index}]"
+        result.slots += 1
+        try:
+            run = texture_frames(data, slot.frames, base)
+        except ScriptError as error:
+            result.failures.append((where, str(error)))
+            continue
+        frames = run[:-1]
+        result.frames += len(frames)
+        if not frames or frames[0][1] <= 0:
+            result.failures.append((where, "frame 0 has no positive duration to restart with"))
+        elif any(duration == 0 for _, duration in frames):
+            result.failures.append((where, "a zero duration: the timer would wrap past 0"))
+        else:
+            result.cycles.append((where, sum(duration for _, duration in frames)))
+    return result
+
+
+def texture_report() -> int:
+    print(
+        "worldmap-textures: steppers func_80074F2C, func_80075104, slots D_8009A1E8[2],"
+        " D_8009A250[3], overlay worldmap"
+    )
+    failures = 0
+    for number in (1, 2):
+        result = texture_sweep(disc_image("worldmap", number))
+        failures += len(result.failures)
+        print(
+            f"  disc {number}: {result.slots} slots, {result.frames} frames,"
+            f" {len(result.failures)} undecodable"
+        )
+        for where, error in result.failures:
+            print(f"    {where}: {error}")
+        for where, updates in result.cycles:
+            print(f"    {where}: a cycle of {updates} updates")
+    return failures
+
+
+def texture_listing(number: int) -> None:
+    data = disc_image("worldmap", number)
+    for slot in texture_slots(data):
+        run = texture_frames(data, slot.frames)
+        x, y, w, h = slot.rect
+        print(
+            f"{slot.table}[{slot.index}] (stepped by {slot.stepper}): rect ({x}, {y}, {w}, {h}),"
+            f" frames at 0x{slot.frames:08x}"
+        )
+        for index, (picture, duration) in enumerate(run):
+            what = "end: restart at frame 0" if duration < 0 else f"for {duration} updates"
+            print(f"  frame {index}: image {picture} {what}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sweep", action="store_true", help="aggregate decode of both discs")
+    listings = {
+        "worldmap-scene": scene_listing,
+        "arena-events": event_listing,
+        "movie-sounds": movie_sound_listing,
+        "worldmap-textures": texture_listing,
+    }
     parser.add_argument(
         "--list",
-        choices=sorted([*MACHINES, "worldmap-scene", "arena-events"]),
+        choices=sorted([*MACHINES, *listings]),
         help="print one machine's scripts",
     )
     parser.add_argument("--disc", type=int, choices=(1, 2), default=1)
     args = parser.parse_args()
-    if args.list == "worldmap-scene":
-        scene_listing(args.disc)
-    elif args.list == "arena-events":
-        event_listing(args.disc)
+    if args.list in listings:
+        listings[args.list](args.disc)
     elif args.list:
         listing(MACHINES[args.list], args.disc)
     if args.sweep:
         failures = sum(report(machine) for machine in MACHINES.values())
-        failures += scene_report() + event_report()
+        failures += scene_report() + event_report() + movie_sound_report() + texture_report()
         if failures:
             raise SystemExit(f"{failures} undecodable scripts")
     if not (args.sweep or args.list):

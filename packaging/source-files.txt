@@ -420,6 +420,7 @@ decomp/targets/overlays/debug595.mk
 decomp/targets/overlays/debug595.symbols.txt
 decomp/targets/overlays/debug595.yaml
 decomp/targets/overlays/field.bss.ld
+decomp/targets/overlays/field.classification.txt
 decomp/targets/overlays/field.mk
 decomp/targets/overlays/field.symbols.txt
 decomp/targets/overlays/field.yaml
@@ -536,6 +537,7 @@ docs/scripts/interpreters.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
 docs/scripts/text-control.md
+docs/scripts/timelines.md
 docs/scripts/worldmap-actor.md
 docs/scripts/worldmap-scene.md
 docs/verification/phase0-agent.json
