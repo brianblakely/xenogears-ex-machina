@@ -241,7 +241,10 @@ alignment fill after D_8005061C[6]; main2_800366E0.c now defines it (D_80050622)
 whether apart or as part of D_8005061C left open.
 
 ```sh
-# the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
+# the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2); chdman
+# (0.289) does not create the output directory: into a missing one it fails with
+# "Unable to open file ... No such file or directory"
+mkdir -p .local/discs
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis -c \
   chdman extractcd -i 'discs/Xenogears disc 1.chd' -o .local/discs/disc1.cue -ob .local/discs/disc1.bin
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
