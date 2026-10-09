@@ -30,7 +30,15 @@
 
 ```sh
 python3 -m tools.analysis.text_control --sweep    # aggregate, both discs
+python3 -m tools.analysis.text_control --list field --item 2 --disc 1 > .local/text-field-2.txt
 ```
+
+`--list GROUP` (system, field, menu-labels, worldmap-labels, menu-data, menu-mode,
+battle-archive, enemy, battle-menu, battle-events, world-areas) prints every table of
+the group, or with `--item` one table (a field map's number, an archive entry or a
+file, as the sweep names them): each entry's offset, (columns, rows) and tokens, with
+glyphs as hex codes and controls by mnemonic, then the texts no entry reaches.
+Listings stay under `.local/`.
 
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files
 skipped), 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D

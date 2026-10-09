@@ -22,6 +22,13 @@ every table those callers use, classifies the pairs and decodes the initial
 names (func_8001B970).
 
     python3 -m tools.analysis.text_control --sweep    # both discs, aggregate only
+    python3 -m tools.analysis.text_control --list field --item 3 --disc 2
+
+`--list GROUP` prints one group's tables (`--item`: one table, a field map's
+number, an archive entry or a file as the sweep names them) to stdout; keep
+listings under .local/. Each entry shows its offset, (columns, rows) and
+tokens: one-byte glyphs as two hex digits, two-byte glyphs as four, controls
+by mnemonic in brackets; text no entry reaches follows as `unreached`.
 """
 
 from __future__ import annotations
@@ -476,29 +483,122 @@ class Sweep:
         """Count the nonzero text bytes no entry reaches and decode each run
         of them as texts of its own (text no entry shows, kept out of the use
         counts)."""
-        position, dead = start, 0
-        while position < stop:
-            if covered[position] or not data[position]:
-                position += 1
-                continue
-            end = position
-            while end < stop and not covered[end]:
-                end += 1
-            dead += sum(1 for byte in data[position:end] if byte)
-            while position < end:
-                if not data[position]:
-                    position += 1
-                    continue
-                try:
-                    tokens = decode_text(data, position, threshold)
-                except TextError as error:
-                    self.unreferenced_errors.append(f"{where}: {error}")
-                    break
+        dead, texts = unreached_texts(data, covered, start, stop, threshold)
+        for _, tokens in texts:
+            if isinstance(tokens, TextError):
+                self.unreferenced_errors.append(f"{where}: {tokens}")
+            else:
                 self.unreferenced_texts += 1
-                position = tokens[-1].offset + tokens[-1].length
-            position = max(position, end)
         self.unreferenced += dead
         self.unreferenced_tables += dead > 0
+
+
+def unreached_texts(
+    data: bytes, covered: bytearray, start: int, stop: int, threshold: int
+) -> tuple[int, list[tuple[int, tuple[Token, ...] | TextError]]]:
+    """The nonzero bytes in [start, stop) that no entry reaches, and each run
+    of them decoded as texts of its own: (offset, tokens), or (offset, error)
+    for the rest of a run that does not decode."""
+    position, dead, texts = start, 0, []
+    while position < stop:
+        if covered[position] or not data[position]:
+            position += 1
+            continue
+        end = position
+        while end < stop and not covered[end]:
+            end += 1
+        dead += sum(1 for byte in data[position:end] if byte)
+        while position < end:
+            if not data[position]:
+                position += 1
+                continue
+            try:
+                tokens = decode_text(data, position, threshold)
+            except TextError as error:
+                texts.append((position, error))
+                break
+            texts.append((position, tokens))
+            position = tokens[-1].offset + tokens[-1].length
+        position = max(position, end)
+    return dead, texts
+
+
+def render(tokens: tuple[Token, ...]) -> str:
+    """Glyphs as hex codes (two digits for one byte, four for two), controls
+    by mnemonic and operands in brackets."""
+    parts = []
+    for token in tokens:
+        if token.mnemonic == "glyph":
+            parts.append(f"{token.code:0{2 * token.length}x}")
+        else:
+            operands = "".join(f" {name}={value}" for name, value in token.operands)
+            parts.append(f"[{token.mnemonic}{operands}]")
+    return " ".join(parts)
+
+
+def table_listing(data: bytes, threshold: int) -> list[str]:
+    """Each entry of a text table: number, offset, (columns, rows) and its
+    tokens; then the texts in bytes no entry reaches."""
+    offsets, end = text_table(data)
+    if not offsets:
+        return ["  no messages (count 0xFFFF)"]
+    pairs = 4 + 2 * (len(offsets) + 1)
+    lines, covered = [], bytearray(len(data))
+    for number, offset in enumerate(offsets):
+        size = f"{data[pairs + 2 * number]}x{data[pairs + 2 * number + 1]}"
+        try:
+            tokens = decode_text(data, offset, threshold)
+        except TextError as error:
+            lines.append(f"  {number:4d} +0x{offset:04x} {size}: undecodable, {error}")
+            continue
+        last = tokens[-1].offset + tokens[-1].length
+        covered[offset:last] = b"\1" * (last - offset)
+        lines.append(f"  {number:4d} +0x{offset:04x} {size}: {render(tokens)}")
+    _, texts = unreached_texts(data, covered, min(offsets), min(end, len(data)), threshold)
+    for offset, tokens in texts:
+        text = f"undecodable, {tokens}" if isinstance(tokens, TextError) else render(tokens)
+        lines.append(f"  unreached +0x{offset:04x}: {text}")
+    return lines
+
+
+# --list names of the groups text_tables yields.
+GROUPS = {
+    "system": ("system data",),
+    "field": ("field messages", "field messages (packed stream reads past its file)"),
+    "menu-labels": ("menu labels",),
+    "worldmap-labels": ("menu labels (world map file 0x26)",),
+    "menu-data": ("menu data",),
+    "menu-mode": ("menu mode",),
+    "battle-archive": ("battle archive",),
+    "enemy": ("enemy data",),
+    "battle-menu": ("battle menu",),
+    "battle-events": ("battle events",),
+    "world-areas": ("world areas",),
+}
+
+
+def listing(disc: Disc, name: str, item: int | None = None) -> list[str]:
+    """The tables of one group (GROUPS), or its table `item` (a field map's
+    number, an archive entry or a file, as the sweep names them)."""
+    threshold = font_threshold(unpack(disc.sectors(disc.slot(0, 1, 6))))
+    lines = []
+    for group, number, data in text_tables(disc):
+        if group not in GROUPS[name] or item is not None and number != item:
+            continue
+        head = f"disc {disc.number} {group} {number}"
+        if data is None:
+            lines.append(f"{head}: placeholder map file")
+        elif isinstance(data, TextError):
+            lines.append(f"{head}: {data}")
+        else:
+            try:
+                body = table_listing(data, threshold)
+            except TextError as error:
+                body = [f"  not a text table: {error}"]
+            lines += [f"{head}: {len(data)} bytes", *body]
+    if not lines:
+        raise SystemExit(f"disc {disc.number} has no {name} table {item}")
+    return lines
 
 
 def sweep() -> Sweep:
@@ -600,8 +700,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--sweep", action="store_true", required=True)
-    parser.parse_args(argv)
+    parser.add_argument("--sweep", action="store_true", help="aggregate decode of both discs")
+    parser.add_argument("--list", choices=sorted(GROUPS), help="print one group's tables")
+    parser.add_argument("--item", type=int, help="only this table of --list (field: map number)")
+    parser.add_argument("--disc", type=int, choices=(1, 2), default=1)
+    args = parser.parse_args(argv)
+    if not (args.sweep or args.list):
+        parser.error("choose --sweep or --list GROUP")
+    if args.list:
+        print("\n".join(listing(discs()[args.disc - 1], args.list, args.item)))
+    if not args.sweep:
+        return 0
     result = sweep()
     print(report(result))
     return 1 if result.unknown or result.table_problems else 0
