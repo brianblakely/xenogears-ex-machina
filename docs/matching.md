@@ -218,15 +218,15 @@ lie in battle), to a particular target; naming them as their definers do needs t
 importing C to use those names (left open). Values outside every target (the
 resident's sizes, a constant) are not checked, nor is an address the C spells as a
 number, which neither this check nor the relocation scan (a target's own range only)
-sees. `tools/cross_image.py --numbers` lists those (each other target's address a
-link holds without a relocation, outside asset and included bytes and the mode
-table); in the 26 links they are battle's three reads of the boot word D_80010000
-(battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45, battle_800BFE48.c
-func_800C0FAC), a number in the original too: its CDK units load it with one
-register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they compile
-`lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link fails its
-BSS bounds; and the load addresses of overlays and the heap's end (resident
-main.c:79, main_8001B6C4.c:180/428/436; battle_80070E2C.c:287/350/363/464,
+sees. `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those
+(each other target's address a link holds without a relocation, outside asset and
+included bytes and the mode table); in the 26 links they are battle's three reads of
+the boot word D_80010000 (battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45,
+battle_800BFE48.c func_800C0FAC), a number in the original too: its CDK units load
+it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
+compile `lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link
+fails its BSS bounds; and the load addresses of overlays and the heap's end
+(resident main.c:79, main_8001B6C4.c:180/428/436; battle_80070E2C.c:287/350/363/464,
 battle_800BD3AC.c:723; field.c:2940), which no check ties to the images loaded
 there. In data the only such words are the mode table's, compared below, and five
 in each resident's packed boot logo and console font, asset bytes that merely look
@@ -257,8 +257,8 @@ python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxx
 
 ## Compressed containers
 
-The six packed overlay files (mode overlays in slots 35-40 and the slot-39
-image's second copy) are reproduced from the rebuilt images by
+The seven packed overlay files of each disc (14 in all: the mode overlays in slots
+35-40 and the slot-39 image's second copy) are reproduced from the rebuilt images by
 `tools/packed_container.py` (`make -C decomp all-container`). The packer is
 Okumura's LZSS binary-tree encoder without preset-ring matches; it completes the
 last eight-token group with zero literals, which count in the decoded length.
@@ -638,10 +638,12 @@ converted to C per unit. What converting the targets' `.data` established:
   whatever the declared shape (a flat table's last elements, the end of a 2-D table's
   last row, a structure's last members), would be alignment fill before the next
   object and hold a non-zero byte that no constant-offset access reads (`tail`, noted
-  `text` or `outlier` where they look stray), that nothing references (`unref`), that
-  is declared wider than every access with a byte none touches (`wide`), or whose
-  string holds bytes after its terminator (`string`). It reports
-  `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8,
+  `unread` where every access is exact and none reaches them, `text` or `outlier`
+  where they look stray), whose accesses are all exact and leave an unread rest with a
+  non-zero byte in an alignment slot, word elements too (`unread`), that nothing
+  references (`unref`), that is declared wider than every access with a byte none
+  touches (`wide`), or whose string holds bytes after its terminator (`string`).
+  It reports `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8,
   unref 42` (222 distinct, 195 with a tail and 33 unreferenced; the second executable
   repeats the resident's; the resident's zero byte D_80050622 is an object in each
   executable and is not flagged), each reviewed against its readers. None other
