@@ -1,6 +1,8 @@
 # Explicit per-target recipes; no implicit host compiler or invented game image.
 # Run inside: nix develop path:./nix/ghidra#matching
 ROOT := $(abspath ..)
+# The repository's tools beside this Makefile (ROOT may name another tree).
+TOOLS := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))../tools)
 PYTHON ?= python3
 AS := psx-as
 LD := psx-ld
@@ -131,11 +133,29 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $<
 
+# A C unit $(1) compiled (cpp, then $(2), then cc1), and the GAS input from its
+# cc1 output $(2) (maspsx and the filters above): shared by the object and its
+# coverage build.
+cc1_of = psx-cpp-$(call cc_of,$(1)) $(CPPFLAGS) $(1) $(2) | psx-cc1-$(call cc_of,$(1)) $(CC1FLAGS) $(call cc1flags_of,$(1)) -G$(call gp_of,$(1))
+gas_input_of = $(MASPSX) $(call maspsx_of,$(1)) -G$(call gp_of,$(1)) < $(2) $(call asm_filter_of,$(1)) $(call bss_filter_of,$(1))
+
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
 	@mkdir -p $(dir $@)
-	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) $(call cc1flags_of,$<) -G$(call gp_of,$<) -o $@.cc1.s
-	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call asm_filter_of,$<) $(call bss_filter_of,$<) > $@.s
+	cd $(ROOT) && $(call cc1_of,$<) -o $@.cc1.s
+	cd $(ROOT) && $(call gas_input_of,$<,$@.cc1.s) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
+
+# Source coverage attributes every byte of a C unit's object by where GAS put
+# it (tools/matching_coverage.py): the coverage build compiles the unit again
+# with a label line at both ends of each asm statement's text and assembles it
+# with each label recording its position in every section and the GAS macro
+# expansions so far. The report checks that without the labels the cc1
+# output, the GAS input and the sections are the object's own.
+$(ROOT)/$(BUILD)/%.cov.o: $(ROOT)/%.c $(ROOT)/$(BUILD)/%.o $(TOOLS)/matching_coverage.py
+	cd $(ROOT) && $(call cc1_of,$<,| $(PYTHON) $(TOOLS)/matching_coverage.py --mark-asm) -o $@.cc1.s
+	cd $(ROOT) && $(call gas_input_of,$<,$@.cc1.s) > $@.s
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py --mark-gas < $@.s > $@.marks.s
+	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.marks.s
 
 $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(LINKER_EXTRA))) $(CONFIG)
 	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }
@@ -147,7 +167,10 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 verify: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
 
-coverage: $(ROOT)/$(IMAGE)
+# The coverage builds of the C units among the objects.
+COVERAGE_OBJECTS = $(foreach object,$(OBJECTS),$(if $(wildcard $(patsubst $(ROOT)/$(BUILD)/%.o,$(ROOT)/%.c,$(object))),$(object:.o=.cov.o)))
+
+coverage: $(ROOT)/$(IMAGE) $(COVERAGE_OBJECTS)
 	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
 
 audit: coverage

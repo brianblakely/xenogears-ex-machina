@@ -376,102 +376,90 @@ class MatchingTests(unittest.TestCase):
         digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
         self.assertTrue(compare(self.original, self.rebuilt, digest)["matched"])
 
-    @unittest.skipUnless(
-        all(shutil.which(tool) for tool in ("psx-as", "psx-ld", "psx-readelf")),
-        "enter the matching Nix shell to test coverage counts",
-    )
-    def test_coverage_counts_remaining_functions_and_instructions(self):
-        repo = Path(__file__).resolve().parents[1]
-        assembly = self.root / "coverage.s"
-        obj = self.root / "coverage.o"
-        elf = self.root / "coverage.elf"
-        linker = self.root / "coverage.ld"
-        source = self.root / "coverage.c"
-        classification = self.root / "classification.txt"
-        cases = {"c": 3, "asm": 6, "nonmatching": 4, "sdk": 5, "handwritten": 2}
-        lines = ['.section .text,"ax"', ".set noreorder",
-                 ".globl fixture_TEXT_START", "fixture_TEXT_START:"]
-        ranges = []
-        address = 0x80010000
-        for cls, count in cases.items():
-            name = "covered_" + cls
-            lines += [".globl " + name, ".type " + name + ", @function", name + ":"]
-            lines += ["nop"] * (count - 2) + ["jr $31", "nop"]
-            lines += [".size " + name + ", .-" + name, ".space 4"]
-            if cls in ("sdk", "handwritten"):
-                ranges.append(f"{address:08x} {address + count * 4:08x} {cls}")
-            address += (count + 1) * 4
-        lines += [
-            ".globl fixture_TEXT_END", "fixture_TEXT_END:",
-            ".globl __maspsx_include_asm_hack_fixture",
-            ".type __maspsx_include_asm_hack_fixture, @function",
-            ".set __maspsx_include_asm_hack_fixture, covered_c",
-            '.section .rodata,"a"', ".type outside_text, @function",
-            "outside_text:", ".word 42", ".size outside_text, .-outside_text",
-        ]
-        assembly.write_text("\n".join(lines) + "\n")
-        linker.write_text("SECTIONS { .text 0x80010000 : { *(.text) } .rodata : { *(.rodata) } }\n")
-        source.write_text(
-            'int covered_c(void) { return 0; }\n'
-            'INCLUDE_ASM("fixture", covered_asm);\n'
-            '#ifdef NON_MATCHING\nint covered_nonmatching(void) { return 1; }\n'
-            '#else\nINCLUDE_ASM("fixture", covered_nonmatching);\n#endif\n'
-            'INCLUDE_ASM("fixture", covered_sdk);\n'
-            'INCLUDE_ASM("fixture", covered_handwritten);\n'
-        )
-        classification.write_text("\n".join(ranges) + "\n")
-        subprocess.run(["psx-as", "-EL", "-mips1", "-o", str(obj), str(assembly)], check=True)
-        subprocess.run(["psx-ld", "-EL", "-T", str(linker), "-o", str(elf), str(obj)], check=True)
-        result = subprocess.run(
-            [sys.executable, str(repo / "tools/matching_coverage.py"), str(elf),
-             "--src", str(self.root), "--classification", str(classification)],
-            text=True, capture_output=True, check=True,
-        )
-        report = json.loads(result.stdout)
-        self.assertEqual(report["binary_agreement"], "not_measured")
-        self.assertEqual(report["text_bytes"], 80)
-        self.assertEqual(report["text_instructions"], 20)
-        self.assertEqual(report["remaining_asm_functions"], 2)
-        self.assertEqual(report["remaining_asm_bytes"], 40)
-        self.assertEqual(report["remaining_asm_instructions"], 10)
-        self.assertEqual(report["classes"], {
-            cls: {"functions": 1, "bytes": count * 4, "instructions": count}
-            for cls, count in cases.items()
-        })
+    def test_map_sections_skip_discarded_input_and_join_long_names(self):
+        from tools.matching_coverage import map_sections
 
-    def test_data_coverage_attributes_map_sections_by_object(self):
-        from tools.matching_coverage import data_coverage, map_sections
-
-        build = ".local/decomp/build/t"
-        (self.root / "decomp/src/t").mkdir(parents=True)
-        (self.root / "decomp/src/t/unit.c").write_text("int x = 1;\n")
+        unit = ".local/decomp/build/t/decomp/src/t/unit.o"
+        data = ".local/decomp/build/t/.local/decomp/t/asm/data/t.data.o"
         mapfile = self.root / "image.map"
         mapfile.write_text(
-            f" .rodata        0x80010000       0x20 {build}/decomp/src/t/unit.o\n"
-            f" .rodata.str1.4\n                0x80010020        0x8 {build}/decomp/src/t/unit.o\n"
-            f" .text          0x80010028       0x40 {build}/decomp/src/t/unit.o\n"
-            f" .data          0x80010068        0x0 {build}/decomp/src/t/unit.o\n"
-            f" .data          0x80010068       0x30 {build}/.local/decomp/t/asm/data/t.data.o\n"
-            f" .sdata         0x80010098        0x8 {build}/decomp/src/t/unit.o\n"
+            "Discarded input sections\n\n"
+            f" .reginfo       0x00000000       0x18 {unit}\n"
+            f" .rodata        0x00000000       0x10 {unit}\n\n"
+            "Memory Configuration\n\n"
+            "Linker script and memory map\n\n"
+            f" .rodata        0x80010000       0x20 {unit}\n"
+            "                0x80010000                D_80010000\n"
+            f" .rodata.str1.4\n                0x80010020        0x8 {unit}\n"
+            f" .text          0x80010028       0x40 {unit}\n"
+            f" .data          0x80010068        0x0 {unit}\n"
+            " *fill*         0x80010068        0x8 \n"
+            f" .data          0x80010070       0x30 {data}\n"
         )
-        sections = map_sections(mapfile)
-        self.assertEqual([(n, a, s) for n, a, s, _ in sections], [
-            (".rodata", 0x80010000, 0x20), (".rodata.str1.4", 0x80010020, 8),
-            (".data", 0x80010068, 0x30), (".sdata", 0x80010098, 8),
+        self.assertEqual(map_sections(mapfile), [
+            (".rodata", 0x80010000, 0x20, unit), (".rodata.str1.4", 0x80010020, 8, unit),
+            (".text", 0x80010028, 0x40, unit), (".data", 0x80010070, 0x30, data),
         ])
-        ranges = [(0x80010070, 0x80010078, "sdk", ""), (0x80010090, 0x800100a0, "asset", "")]
-        # An included object, a jump table an INCLUDE_ASM'd SDK function
-        # carries, and an included object inside the asset range: the range
-        # takes those bytes and none counts twice.
-        objects = [
-            (0x80010004, 0x80010010, "included"), (0x80010010, 0x80010018, "sdk"),
-            (0x80010098, 0x8001009C, "included"),
-        ]
-        totals = data_coverage(sections, objects, ranges, self.root)
-        self.assertEqual(totals, {
-            "c": 0x20 - 12 - 8 + 8 + 8 - 8, "included": 12,
-            "placeholder": 0x30 - 8 - 8, "sdk": 8 + 8, "asset": 8 + 8,
-        })
+
+    def test_mark_asm_labels_the_text_of_each_asm_statement(self):
+        from tools.matching_coverage import mark_asm
+
+        source = (
+            '# 1 "decomp/src/t/unit.c"\n'
+            '__asm__(".include \\"macro.inc\\"\\n");\n'
+            'register int pinned asm("$14");\n'
+            'int renamed(void) asm("other");\n'
+            "void __maspsx_include_asm_hack_f() {\n"
+            '    __asm__(".text # maspsx-keep\\n" "\\t.set at # maspsx-keep\\n");\n'
+            "}\n"
+            "int g(int *p) {\n"
+            '    register int (*call)(void) asm("$15");\n'
+            '    char *s = "asm(\\"no\\")";\n'
+            '    if (p) __asm__ volatile("lwc2 $0, 0(%0)" : : "r"(p));\n'
+            '    else asm("nop");\n'
+            '    __asm__ const("break 1");\n'
+            "    return ';';\n"
+            "}\n"
+        )
+        self.assertEqual(mark_asm(source), (
+            '# 1 "decomp/src/t/unit.c"\n'
+            '__asm__("Lcovb_0:\\n\\t" ".include \\"macro.inc\\"\\n" "\\nLcove_0:");\n'
+            'register int pinned asm("$14");\n'
+            'int renamed(void) asm("other");\n'
+            "void __maspsx_include_asm_hack_f() {\n"
+            '    __asm__("Lcovb_1: # maspsx-keep\\n\\t" ".text # maspsx-keep\\n" '
+            '"\\t.set at # maspsx-keep\\n" "\\nLcove_1: # maspsx-keep");\n'
+            "}\n"
+            "int g(int *p) {\n"
+            '    register int (*call)(void) asm("$15");\n'
+            '    char *s = "asm(\\"no\\")";\n'
+            '    if (p) __asm__ volatile("Lcovb_2:\\n\\t" "lwc2 $0, 0(%0)" "\\nLcove_2:"'
+            ' : : "r"(p));\n'
+            '    else asm("Lcovb_3:\\n\\t" "nop" "\\nLcove_3:");\n'
+            '    __asm__ const("Lcovb_4:\\n\\t" "break 1" "\\nLcove_4:");\n'
+            "    return ';';\n"
+            "}\n"
+        ))
+
+    def write_fixture(self, source, root=None):
+        """decomp/src/t/unit.c, the include files it may use and a target
+        configuration for it at root (the test's own by default)."""
+        repo = Path(__file__).resolve().parents[1]
+        root = root or self.root
+        include = root / "decomp/include"
+        include.mkdir(parents=True, exist_ok=True)
+        for name in ("include_asm.h", "macro.inc"):
+            shutil.copy(repo / "decomp/include" / name, include / name)
+        unit = root / "decomp/src/t/unit.c"
+        unit.parent.mkdir(parents=True, exist_ok=True)
+        unit.write_text(source)
+        digest = hashlib.sha256((root / "original.bin").read_bytes()).hexdigest()
+        (root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
+        (root / "fixture.mk").write_text(
+            "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + digest + "\n"
+            "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\n"
+            "SPLAT_CONFIG := unused.yaml\nBUILD := build\nCC_VERSION := 2.7.2\n"
+        )
 
     def build_fixture_unit(self, source, settings=()):
         """Compile decomp/src/t/unit.c with the target Makefile; returns the object."""
@@ -482,19 +470,7 @@ class MatchingTests(unittest.TestCase):
     def make_fixture_unit(self, source, settings=()):
         """Run the target Makefile's object rule on decomp/src/t/unit.c."""
         repo = Path(__file__).resolve().parents[1]
-        include = self.root / "decomp/include"
-        include.mkdir(parents=True, exist_ok=True)
-        for name in ("include_asm.h", "macro.inc"):
-            shutil.copy(repo / "decomp/include" / name, include / name)
-        unit = self.root / "decomp/src/t/unit.c"
-        unit.parent.mkdir(parents=True, exist_ok=True)
-        unit.write_text(source)
-        (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
-        (self.root / "fixture.mk").write_text(
-            "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
-            "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\n"
-            "SPLAT_CONFIG := unused.yaml\nBUILD := build\nCC_VERSION := 2.7.2\n"
-        )
+        self.write_fixture(source)
         obj = self.root / "build/decomp/src/t/unit.o"
         result = subprocess.run(
             ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
@@ -505,33 +481,35 @@ class MatchingTests(unittest.TestCase):
 
     def section_bytes(self, obj, section):
         out = self.root / (section.strip(".") + ".bin")
-        subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)], check=True)
+        subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)],
+                       check=True)
         return out.read_bytes()
 
-    def cover_linked_fixture(self, image, settings=(), sections=(".data", ".bss"), arguments=()):
-        """Link the fixture unit's `sections` (loaded, .text between splat's
-        boundary symbols) at 0x80010000 with the target Makefile, then run the
-        coverage report on its ELF and map."""
+    def cover_linked_fixture(self, image, settings=(), sections=(".data", ".bss"), arguments=(),
+                             root=None, extra=()):
+        """Link the fixture unit's `sections` (loaded) at 0x80010000, then the
+        `extra` input sections, and build its coverage object with the target
+        Makefile; then run the coverage report on the ELF and map."""
         repo = Path(__file__).resolve().parents[1]
-        inputs = "".join(
-            "    t_TEXT_START = .;\n    build/decomp/src/t/unit.o(.text)\n    t_TEXT_END = .;\n"
-            if section == ".text" else f"    build/decomp/src/t/unit.o({section})\n"
-            for section in sections
-        )
-        (self.root / "fixture.ld").write_text(
-            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n" + inputs + "  }\n  /DISCARD/ : { *(*) }\n}\n"
+        root = root or self.root
+        inputs = "".join(f"    build/decomp/src/t/unit.o({section})\n" for section in sections)
+        inputs += "".join(f"    {line}\n" for line in extra)
+        (root / "fixture.ld").write_text(
+            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n" + inputs
+            + "  }\n  /DISCARD/ : { *(*) }\n}\n"
         )
         build = subprocess.run(
             ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
-             "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=" + image,
-             "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings, str(self.root / image)],
-            cwd=self.root, text=True, capture_output=True, check=False,
+             "ROOT=" + str(root), "CONFIG=fixture.mk", "IMAGE=" + image,
+             "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings,
+             str(root / image), str(root / "build/decomp/src/t/unit.cov.o")],
+            cwd=root, text=True, capture_output=True, check=False,
         )
         self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
         return subprocess.run(
             [sys.executable, str(repo / "tools/matching_coverage.py"), image + ".elf",
              "--map", image + ".map", "--src", "decomp/src", *arguments],
-            cwd=self.root, text=True, capture_output=True, check=False,
+            cwd=root, text=True, capture_output=True, check=False,
         )
 
     @unittest.skipUnless(
@@ -542,10 +520,7 @@ class MatchingTests(unittest.TestCase):
         "enter the matching Nix shell to test original data objects",
     )
     def test_original_object_links_in_place_and_counts_as_included(self):
-        from tools.matching_coverage import source_names
-
         self.original.write_bytes(bytes(range(16)))
-        self.digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
         obj = self.build_fixture_unit(
             '#include "include_asm.h"\n'
             "int before = 0x11111111;\n"
@@ -563,109 +538,20 @@ class MatchingTests(unittest.TestCase):
         symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                  capture_output=True, text=True).stdout
         self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
-        _asm, _nonmatching, included, assets, _files = source_names([self.root / "decomp/src"])
-        self.assertEqual((included, assets), ({"D_80010004"}, set()))
-        # The report on the link resolves the name through the ELF and counts
-        # every loaded byte, the loaded .bss included.
+        # The report counts every loaded byte by where GAS put it, the loaded
+        # .bss included.
         result = self.cover_linked_fixture("image.bin")
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["data_classes"], {"bss": 4, "c": 8, "included": 4})
         self.assertEqual(report["remaining_data_placeholder_bytes"], 0)
-        # A linker-script assignment shadowing the object would leave its
-        # original bytes counted as C: the report fails instead.
+        # It looks no object up by name, so a linker-script assignment
+        # shadowing the name changes nothing.
         (self.root / "shadow.ld").write_text("D_80010004 = 0x80010004;\n")
         result = self.cover_linked_fixture("shadow.bin", ["LINKER_EXTRA=shadow.ld"])
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("D_80010004: an absolute symbol", result.stderr)
-
-    def test_original_objects_must_resolve_to_one_sized_symbol(self):
-        from tools.matching_coverage import original_objects, source_names
-
-        table = [
-            (0x80010004, 4, "NOTYPE", "1", "D_ok"),
-            (0x80010010, 0, "NOTYPE", "1", "D_empty"),
-            (0x80010014, 4, "NOTYPE", "ABS", "D_shadowed"),
-            (0x80010018, 4, "OBJECT", "1", "D_twice"),
-            (0x8001001C, 4, "OBJECT", "2", "D_twice"),
-            (0x80010020, 8, "NOTYPE", "1", "D_asset"),
-        ]
-        assets = [(0x80010020, 0x80010028, "asset", "a packed image")]
-        self.assertEqual(original_objects(table, {"D_ok"}, {"D_asset"}, assets),
-                         [(0x80010004, 0x80010008)])
-        for name, message in (("D_missing", "no ELF symbols"), ("D_empty", "no size"),
-                              ("D_shadowed", "absolute"), ("D_twice", "2 ELF symbols")):
-            with self.assertRaisesRegex(SystemExit, message):
-                original_objects(table, {name}, set(), assets)
-        with self.assertRaisesRegex(SystemExit, "outside every asset range"):
-            original_objects(table, set(), {"D_ok"}, assets)
-        # A wrapper macro would hide its names from the scan.
-        header = self.root / "decomp/src/t/wrap.h"
-        header.parent.mkdir(parents=True, exist_ok=True)
-        header.write_text('#define PALETTE(name) \\\n    INCLUDE_ASSET(".data", name, 0x80010020, 8)\n')
-        with self.assertRaisesRegex(SystemExit, "wrap.h: a macro wrapping"):
-            source_names([self.root / "decomp/src"])
-
-    def test_include_spellings_the_scan_cannot_read_fail(self):
-        from tools.matching_coverage import source_names
-
-        unit = self.root / "decomp/src/t/unit.c"
-        unit.parent.mkdir(parents=True)
-        # Comments may name the macros; their text is not scanned.
-        unit.write_text(
-            '/* INCLUDE_ASSET (".data", D_comment, 0x80010000, 4) */\n'
-            '// INCLUDE_ASM ("asm", in_comment)\n'
-            'INCLUDE_ASM("asm", func_a);\n'
-            'INCLUDE_ORIGINAL(\n    ".data", D_80010004, 0x80010004, 4);\n'
-        )
-        asm_names, _nonmatching, included, assets, files = source_names([self.root / "decomp/src"])
-        self.assertEqual((asm_names, included, assets), ({"func_a"}, {"D_80010004"}, set()))
-        self.assertEqual(files, [("ASM", Path("asm/func_a.s"), "func_a")])
-        # Spellings the preprocessor accepts but the patterns would miss: the
-        # function would count as C, the object's original bytes as C.
-        for line in (
-            'INCLUDE_ORIGINAL (".data", D_x, 0x80010004, 4);',
-            "INCLUDE_ORIGINAL(SECTION, D_x, 0x80010004, 4);",
-            'INCLUDE_ASSET\t(".data", D_x, 0x80010004, 4);',
-            "INCLUDE_RODATA(FOLDER, D_x);",
-            'INCLUDE_ASM (".local/asm", func_b);',
-        ):
-            unit.write_text('#include "include_asm.h"\n' + line + "\n")
-            with self.subTest(line=line), self.assertRaisesRegex(SystemExit, r"unit\.c:2: INCLUDE_\w+ is not spelled"):
-                source_names([self.root / "decomp/src"])
-        # A macro wrapping INCLUDE_ASM would hide the function's name too.
-        unit.write_text('#define ASM(name) INCLUDE_ASM("asm", name)\nASM(func_c);\n')
-        with self.assertRaisesRegex(SystemExit, "unit.c: a macro wrapping"):
-            source_names([self.root / "decomp/src"])
-
-    def test_included_assembly_data_must_be_labelled_objects(self):
-        from tools.matching_coverage import asm_data_objects
-
-        good = self.root / "good.s"
-        good.write_text(
-            ".section .rodata\n.align 3\nnonmatching jtbl_a\n\ndlabel jtbl_a\n"
-            "    /* 0 80010000 */ .word .L1\nenddlabel jtbl_a\n"
-            '.align 2\ndlabel D_b\n    /* 4 80010004 */ .asciz "a#b /* c"\n.align 2\nenddlabel D_b\n'
-            ".section .text\nglabel f\n.L1:\n    jr $ra\n    nop\nendlabel f\n"
-        )
-        self.assertEqual(asm_data_objects(good, ".text"), [(".rodata", "jtbl_a"), (".rodata", "D_b")])
-        # An INCLUDE_RODATA file is read from .rodata on.
-        string = self.root / "D_c.s"
-        string.write_text('dlabel D_c\n    .asciz "c"\nenddlabel D_c\n')
-        self.assertEqual(asm_data_objects(string, ".rodata"), [(".rodata", "D_c")])
-        # Data the objects would not cover fails the report.
-        for body, message in (
-            (".section .rodata\n    .word 1\n", "no labelled object's data"),
-            (".section .rodata\ntable_macro D_d\n", "no labelled object's data"),
-            ('.section .rodata\n.include "more.s"\n', "no labelled object's data"),
-            (".section .data\ndlabel D_d\n    .word 1\n", "D_d has no enddlabel"),
-            (".section .rodata\ndlabel D_d\n.section .text\n", "before the section changes"),
-            (".pushsection .rodata\n", "not followed"),
-        ):
-            bad = self.root / "bad.s"
-            bad.write_text(body)
-            with self.subTest(body=body), self.assertRaisesRegex(SystemExit, message):
-                asm_data_objects(bad, ".text")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["data_classes"],
+                         {"bss": 4, "c": 8, "included": 4})
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -674,44 +560,61 @@ class MatchingTests(unittest.TestCase):
         )),
         "enter the matching Nix shell to test data carried by assembly",
     )
-    def test_data_of_included_assembly_counts_under_its_function_class(self):
+    def test_functions_and_data_count_by_how_they_were_built(self):
         # splat moves rodata that only one function uses into the function's
         # .s file, so INCLUDE_ASM carries it into the C unit's .rodata.
         asm = self.root / "asm"
         asm.mkdir()
 
-        def function(name, rodata):
+        def function(name, rodata=""):
             (asm / f"{name}.s").write_text(
                 ".section .rodata\n" + rodata + ".section .text\n"
                 f"glabel {name}\n.L{name}:\n    jr $ra\n    nop\nendlabel {name}\n"
             )
 
-        function("func_sdk",
-                 '.align 2\nnonmatching D_sdk\ndlabel D_sdk\n    .asciz "sdk"\nenddlabel D_sdk\n'
-                 ".align 3\ndlabel jtbl_sdk\n    .word .Lfunc_sdk\n    .word .Lfunc_sdk\nenddlabel jtbl_sdk\n")
-        function("func_draft",
-                 ".align 2\ndlabel jtbl_draft\n    .word .Lfunc_draft\n    .word .Lfunc_draft\nenddlabel jtbl_draft\n")
+        def table(name, target, align):
+            return (f".align {align}\ndlabel {name}\n    .word {target}\n    .word {target}\n"
+                    f"enddlabel {name}\n")
+
+        function("func_sdk", '.align 2\nnonmatching D_sdk\ndlabel D_sdk\n    .asciz "sdk"\n'
+                             "enddlabel D_sdk\n" + table("jtbl_sdk", ".Lfunc_sdk", 3))
+        function("func_hand")
+        function("func_draft", table("jtbl_draft", ".Lfunc_draft", 2))
         function("func_asm", ".align 2\ndlabel D_asm\n    .word 0\nenddlabel D_asm\n")
         (asm / "D_shared.s").write_text(
-            '.section .rodata\n.align 2\ndlabel D_shared\n    .asciz "both"\n.align 2\nenddlabel D_shared\n'
+            '.section .rodata\n.align 2\ndlabel D_shared\n    .asciz "both"\n.align 2\n'
+            "enddlabel D_shared\n"
         )
         self.build_fixture_unit(
             '#include "include_asm.h"\n'
             'INCLUDE_ASM("asm", func_sdk);\n'
+            'INCLUDE_ASM("asm", func_hand);\n'
             'const char *name(void) { return "c strin"; }\n'
             '#ifdef NON_MATCHING\nint func_draft(int i) { return i; }\n'
             '#else\nINCLUDE_ASM("asm", func_draft);\n#endif\n'
             'INCLUDE_ASM("asm", func_asm);\n'
             'INCLUDE_RODATA("asm", D_shared);\n'
         )
-        # .text is linked first: func_sdk is at 0x80010000.
-        (self.root / "classification.txt").write_text("80010000 80010008 sdk a library function\n")
+        # .text is linked first: func_sdk is at 0x80010000, func_hand follows.
+        (self.root / "classification.txt").write_text(
+            "80010000 80010008 sdk a library function\n"
+            "80010008 80010010 handwritten an authored routine\n"
+        )
         result = self.cover_linked_fixture(
             "image.bin", sections=(".text", ".rodata"),
             arguments=["--classification", "classification.txt"],
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
+        self.assertEqual(report["binary_agreement"], "not_measured")
+        sizes = {"c": 16, "sdk": 8, "handwritten": 8, "nonmatching": 8, "asm": 8}
+        self.assertEqual(report["classes"], {
+            cls: {"functions": 1, "bytes": size, "instructions": size // 4}
+            for cls, size in sizes.items()
+        })
+        self.assertEqual((report["text_bytes"], report["text_instructions"]), (48, 12))
+        self.assertEqual((report["remaining_asm_functions"], report["remaining_asm_bytes"],
+                          report["remaining_asm_instructions"]), (2, 16, 4))
         # Only the compiler's string counts as C. The SDK function's string,
         # the padding before its 8-aligned jump table and the table count as
         # sdk; the draft's table, the unrecovered function's word and the
@@ -719,8 +622,184 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(report["data_classes"],
                          {"c": 8, "sdk": 16, "nonmatching": 8, "asm": 4, "included": 8})
         self.assertEqual(report["remaining_data_asm_bytes"], 12)
-        self.assertEqual({k: v["bytes"] for k, v in report["classes"].items() if k != "c"},
-                         {"sdk": 8, "nonmatching": 8, "asm": 8})
+        # The report reads the coverage build as made from this object: one
+        # changed after it fails.
+        side = self.root / "build/decomp/src/t/unit.cov.o.s"
+        side.write_text(side.read_text() + "\tnop\n")
+        tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
+        result = subprocess.run(
+            [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map"],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not the unit's GAS input", result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test data classes",
+    )
+    def test_data_counts_by_unit_and_classified_range(self):
+        # The C unit's word, a generated data unit's four words (GAS aligns the
+        # section to 16: at 80010010) and an authored assembly unit's word,
+        # linked in that order; a classified range takes precedence over the
+        # class of each.
+        self.build_fixture_unit("int c_data = 0x11111111;\n")
+        (self.root / "asm/data").mkdir(parents=True)
+        (self.root / "asm/data/generated.s").write_text(".section .data\n.word 1, 2, 3, 4\n")
+        (self.root / "decomp/src/t/authored.s").write_text(".section .data\n.word 5\n")
+        (self.root / "classification.txt").write_text(
+            "80010000 80010002 sdk half the C word\n80010014 80010018 asset a generated word\n"
+        )
+        result = self.cover_linked_fixture(
+            "image.bin", sections=(".data",), arguments=["--classification", "classification.txt"],
+            extra=("build/asm/data/generated.o(.data)", "build/decomp/src/t/authored.o(.data)"),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["data_classes"],
+                         {"c": 2, "sdk": 2, "placeholder": 12, "asset": 4, "handwritten": 4})
+        self.assertEqual(report["remaining_data_placeholder_bytes"], 12)
+
+    def cover_probe(self, name, source, files, headers, original):
+        """cover_linked_fixture on a unit of its own (.text, .rodata, .data)."""
+        root = self.root / name
+        root.mkdir()
+        (root / "original.bin").write_bytes(original)
+        self.write_fixture(source, root)
+        headers = {f"decomp/include/{path}": text for path, text in headers.items()}
+        for path, text in {**files, **headers}.items():
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text(text)
+        return self.cover_linked_fixture("image.bin", sections=(".text", ".rodata", ".data"),
+                                         root=root)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test coverage attribution",
+    )
+    def test_bytes_the_compiler_did_not_emit_never_count_as_c(self):
+        """Each case links original or hand-written bytes into a C unit; the
+        report counts them as what they are, or fails. Expected: the text and
+        data bytes per class, or the failure."""
+
+        def function(name, body="    jr $ra\n    nop\n"):
+            return f"glabel {name}\n{body}endlabel {name}\n"
+
+        def asm_unit(name):
+            return include + f'INCLUDE_ASM("asm", {name});\n'
+
+        def data_unit(line, prefix=""):
+            return (include + prefix + "int before = 0x11111111;\n" + line
+                    + "\nint after = 0x22222222;\n")
+
+        include = '#include "include_asm.h"\n'
+        three = "    addiu $v0, $zero, 0x1234\n    jr $ra\n    nop\n"
+        place = 'INCLUDE_ORIGINAL(".data", D_80010004, 0x80010004, 4);'
+        c_func = "int c_func(int x) { return x + 1; }\n"
+        in_data = ({}, {"c": 8, "included": 4})
+        in_text = "original bytes into .text"
+        cases = [
+            # Whatever an INCLUDE_ASM'd file emits is its function's: a `;`
+            # statement separator, a nested include, a redefined macro, a later
+            # .size, alignment fill after its last object.
+            ("statement_separator", asm_unit("func_f"), {"asm/func_f.s":
+                ".section .rodata\n.align 2; .word 0x11223344, 0x55667788\n.align 2\n"
+                "dlabel D_f\n    .word 0x99AABBCC\nenddlabel D_f\n"
+                ".section .text\n" + function("func_f")},
+             ({"asm": 8}, {"asm": 12})),
+            ("nested_include", asm_unit("func_b"), {
+                "asm/func_b.s": '.include "asm/extra.s"\n' + function("func_b"),
+                "asm/extra.s": ".section .rodata\ndlabel D_hidden\n"
+                               "    .word 0x11223344, 0x55667788\nenddlabel D_hidden\n"
+                               ".section .text\n"},
+             ({"asm": 8}, {"asm": 8})),
+            ("macro_redefinition", asm_unit("func_g"), {"asm/func_g.s":
+                ".purgem nonmatching\n.macro nonmatching label, size=1\n.word 0x5A5A5A5A\n.endm\n"
+                ".section .rodata\n.align 2\nnonmatching D_g\ndlabel D_g\n    .word 1\n"
+                "enddlabel D_g\n.section .text\n" + function("func_g")},
+             ({"asm": 8}, {"asm": 8})),
+            ("size_override", asm_unit("func_d"), {"asm/func_d.s":
+                ".section .rodata\n.align 2\ndlabel D_big\n"
+                "    .word 0x11111111, 0x22222222, 0x33333333, 0x44444444\nenddlabel D_big\n"
+                ".section .text\n.size D_big, 4\n" + function("func_d")},
+             ({"asm": 8}, {"asm": 16})),
+            ("align_fill", asm_unit("func_c"), {"asm/func_c.s":
+                ".section .rodata\n.align 2\ndlabel D_obj\n    .byte 1\nenddlabel D_obj\n"
+                ".balign 4, 0xAB\n.balign 8, 0xCD\n.balign 16, 0xEF\n"
+                ".section .text\n" + function("func_c")},
+             ({"asm": 8}, {"asm": 16})),
+            # However the source spells an INCLUDE_* use, the report reads the
+            # statement cc1 emitted.
+            ("token_paste", data_unit(
+                'CAT(INCLUDE_, ORIGINAL)(".data", D_80010004, 0x80010004, 4);',
+                "#define CAT(a, b) a##b\n"), {}, in_data),
+            ("splice_original", data_unit(
+                'INCLUDE_ORIG\\\nINAL(".data", D_80010004, 0x80010004, 4);'), {}, in_data),
+            ("other_extension", data_unit('#include "orig.inc"'),
+             {"decomp/src/t/orig.inc": place + "\n"}, in_data),
+            ("header_wrapper", data_unit("ORIG(D_80010004, 0x80010004, 4);",
+                                         '#include "wrap.h"\n'), {}, in_data,
+             {"wrap.h": '#define ORIG(name, vram, size) '
+                        'INCLUDE_ORIGINAL(".data", name, vram, size)\n'}),
+            ("splice_asm", include + 'INCLUDE_\\\nASM("asm", func_s);\n',
+             {"asm/func_s.s": function("func_s", three)}, ({"asm": 12}, {})),
+            # A function counts as C only where cc1 emitted it.
+            ("rodata_function", include + c_func + 'INCLUDE_RODATA("asm", func_rod);\n',
+             {"asm/func_rod.s": ".section .text\n.set noreorder\n" + function("func_rod", three)
+                                + ".set reorder\n"},
+             ({"c": 8, "asm": 12}, {})),
+            ("extra_glabel", asm_unit("func_a"),
+             {"asm/func_a.s": function("func_a") + function("func_hidden", three)},
+             ({"asm": 20}, {})),
+            ("original_in_function", include + "int func_e(void) {\n"
+             '    INCLUDE_ORIGINAL(".text", D_body, 0x80010000, 16);\n    return 0;\n}\n',
+             {}, in_text),
+            ("original_text_filescope", include + c_func
+             + 'INCLUDE_ORIGINAL(".text", func_orig, 0x80010000, 24);\n', {}, in_text),
+            # Other inline asm may emit only code into the compiled function
+            # it is written in, with no GAS macro or file.
+            ("inline_data", include + "int before = 1;\n"
+             '__asm__(".section .data\\n\\t.word 0x12345678\\n.previous");\n',
+             {}, "inline asm emits .data bytes"),
+            ("inline_text", include + '__asm__(".text\\n\\t.word 0x24020001");\n'
+             "int f(void) { return 0; }\n", {}, "inline asm emits .text bytes"),
+            ("inline_incbin", include + "int f(void) {\n"
+             '    __asm__ volatile(".incbin \\"original.bin\\", 0, 4");\n    return 0;\n}\n',
+             {}, "expands a GAS macro or reads a file"),
+            ("inline_macro", include
+             + 'int f(void) {\n    __asm__ volatile("rtps");\n    return 0;\n}\n',
+             {}, "expands a GAS macro or reads a file"),
+            ("instruction_macro", asm_unit("func_m") + "int g(int x) { return x + 1; }\n",
+             {"asm/func_m.s": function("func_m") + ".macro j target\n.word 0x0000000D\n.endm\n"},
+             "cc1's lines expanded a GAS macro"),
+            # GTE code in a compiled function counts with it; data a unit
+            # places in .text is attributed but not counted.
+            ("inline_code", include + "int f(int *p) {\n"
+             '    __asm__ volatile("lwc2 $0, 0(%0)" : : "r"(p));\n    return 0;\n}\n',
+             {}, ({"c": 12}, {})),
+            ("text_data", include + 'int table[] __attribute__((section(".text"))) = { 1 };\n'
+             "int f(void) { return table[0]; }\n", {}, ({"c": 16}, {})),
+        ]
+        original = struct.pack("<8I", 0x24020011, 0x24030022, 0x24040033, 0x24050044,
+                               0x03E00008, 0, 0, 0)
+        for name, source, files, expected, *headers in cases:
+            with self.subTest(name):
+                result = self.cover_probe(name, source, files, headers[0] if headers else {},
+                                          bytes(range(16)) if expected is in_data else original)
+                if isinstance(expected, str):
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertIn(expected, result.stderr)
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                text = {k: v["bytes"] for k, v in report["classes"].items()}
+                self.assertEqual((text, report["data_classes"]), expected)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
