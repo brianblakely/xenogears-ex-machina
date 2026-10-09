@@ -1,7 +1,25 @@
-/* Menu overlay unit 801E8070. Its rodata starts at 801C5278, where the jump
- * tables return to 0 mod 8 after 801E433C's odd-length table: the text
- * boundary lies between 801E433C and 801E8070. */
+/* Menu overlay unit 801E8070, the last code unit: label placement, the
+ * command and choice windows, the name images, the quads' blending and
+ * set-up helpers, the drive reset, the development host file read and the
+ * disc check. Rodata 801C5278-801C531C, text 801E8070-801E96A4 and its
+ * variable at 801EA8F4. Its rodata starts where the jump tables return to
+ * 0 mod 8 after 801E433C's odd-length table: the text boundary lies between
+ * 801E433C and 801E8070. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libsn.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/stream.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 #include "menu.h"
+#include "file.h"
 
 /* The unit's uninitialized variable, zero in the file after
  * slot39_801DBE54's: the CdControlB result bytes. */
@@ -10,7 +28,7 @@ static u8 D_801EA8F4[8];
 /* Place label `selected` for layout `mode` (0: window row `row`, clearing the
  * other flags first; 1-3, 5, 6: 3D label vertices from the mode's tables;
  * 4: fixed at (4c, 12)) and mark it shown in `flags`. */
-void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
+void func_801E8070(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
                    u8 mode) {
     s32 first;
 
@@ -18,16 +36,16 @@ void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 
     switch (mode) {
     case 0:
         func_801E8044(count, flags);
-        (labels[selected].polys + D_800625A0->bufferIndex)->x0 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
-        (labels[selected].polys + D_800625A0->bufferIndex)->y0 = D_801E9A2C[row + selected] - 0x22;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x1 =
+        (labels[selected].polys + D_800625A0->buffer_index)->x0 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + D_800625A0->buffer_index)->y0 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + D_800625A0->buffer_index)->x1 =
             D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y1 = D_801E9A2C[row + selected] - 0x22;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x2 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
-        (labels[selected].polys + D_800625A0->bufferIndex)->y2 = D_801E9A2C[row + selected] - 0x15;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x3 =
+        (labels[selected].polys + D_800625A0->buffer_index)->y1 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + D_800625A0->buffer_index)->x2 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + D_800625A0->buffer_index)->y2 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + D_800625A0->buffer_index)->x3 =
             D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y3 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + D_800625A0->buffer_index)->y3 = D_801E9A2C[row + selected] - 0x15;
         break;
     case 1:
         func_801C851C(labels[selected].verts, D_801E9EC4[selected], D_801E9EE4, labels[selected].width, 0xd);
@@ -42,20 +60,20 @@ void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 
         func_801C851C(labels[selected].verts, 0x18, D_801E9F30[row], labels[selected].width, 0xd);
         break;
     case 4:
-        (labels[selected].polys + D_800625A0->bufferIndex)->x0 = 0x4c;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y0 = 0x12;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x1 = labels->width + 0x4c;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y1 = 0x12;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x2 = 0x4c;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y2 = 0x1f;
-        (labels[selected].polys + D_800625A0->bufferIndex)->x3 = labels->width + 0x4c;
-        (labels[selected].polys + D_800625A0->bufferIndex)->y3 = 0x1f;
+        (labels[selected].polys + D_800625A0->buffer_index)->x0 = 0x4c;
+        (labels[selected].polys + D_800625A0->buffer_index)->y0 = 0x12;
+        (labels[selected].polys + D_800625A0->buffer_index)->x1 = labels->width + 0x4c;
+        (labels[selected].polys + D_800625A0->buffer_index)->y1 = 0x12;
+        (labels[selected].polys + D_800625A0->buffer_index)->x2 = 0x4c;
+        (labels[selected].polys + D_800625A0->buffer_index)->y2 = 0x1f;
+        (labels[selected].polys + D_800625A0->buffer_index)->x3 = labels->width + 0x4c;
+        (labels[selected].polys + D_800625A0->buffer_index)->y3 = 0x1f;
         break;
     case 6:
         func_801C851C(labels[selected].verts, D_801E9F68[selected], D_801E9F70[selected], labels[selected].width, 0xd);
         break;
     }
-    labels[selected].count = D_800625A0->bufferIndex;
+    labels[selected].buffer = D_800625A0->buffer_index;
     flags[selected] = 1;
 }
 
@@ -65,29 +83,29 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
     s32 n;
     s32 i;
 
-    D_800625A0->screenImages->captured = 0;
-    D_800625A0->screenImages->refresh = 0;
-    D_800625A0->party->redraw9 = 1;
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->flags->images_shown = 1;
     for (n = 1; n <= count; n++) {
         if (n != count) {
-            D_800625A0->screenImages->count = 0;
+            D_800625A0->images->count = 0;
             for (i = 0; i < n; i++) {
-                D_800625A0->screenImages->count +=
+                D_800625A0->images->count +=
                     func_8002675C(D_800625A0->sheet, images[i].cursor,
-                                  &D_800625A0->screenImages->packets[D_800625A0->screenImages->count * 2],
-                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                                  &D_800625A0->images->packets[D_800625A0->images->count * 2],
+                                  D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
             }
-            D_800625A0->screenImages->buffer = D_800625A0->bufferIndex;
+            D_800625A0->images->buffer = D_800625A0->buffer_index;
         }
-        D_800625A0->screenImages->count2 = 0;
+        D_800625A0->images->count2 = 0;
         if (n != 1) {
             for (i = 0; i < n - 1; i++) {
-                D_800625A0->screenImages->count2 +=
+                D_800625A0->images->count2 +=
                     func_8002675C(D_800625A0->sheet, images[i].label,
-                                  &D_800625A0->screenImages->packets2[D_800625A0->screenImages->count2 * 2],
-                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                                  &D_800625A0->images->packets2[D_800625A0->images->count2 * 2],
+                                  D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
             }
-            D_800625A0->screenImages->buffer2 = D_800625A0->bufferIndex;
+            D_800625A0->images->buffer2 = D_800625A0->buffer_index;
         }
         for (i = 0; i < 2; i++) {
             func_801C7BF4();
@@ -100,7 +118,7 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
  * hoisted to the function entry as in the original. */
 #define ADD_SPRITES(count, list, text)                                                                  \
     do {                                                                                                \
-        (count) += func_8002675C(D_800625A0->sheet, (text), &(list)[(count) * 2], D_800625A0->bufferIndex, \
+        (count) += func_8002675C(D_800625A0->sheet, (text), &(list)[(count) * 2], D_800625A0->buffer_index, \
                                  0xa0, 0x96, 0x1000);                                                   \
     } while (0)
 
@@ -112,36 +130,36 @@ void func_801E86C8(u8 offset) {
     s32 i;
     s32 growing;
 
-    D_800625A0->spriteLists->firstCount = 0;
-    D_800625A0->spriteLists->secondCount = 0;
-    D_800625A0->party->redrawA = 1;
+    D_800625A0->lists->first_count = 0;
+    D_800625A0->lists->second_count = 0;
+    D_800625A0->flags->lists_shown = 1;
     growing = 1;
     for (n = 1; n < 5; n++) {
-        D_800625A0->spriteLists->firstCount = 0;
-        D_800625A0->choiceCount = 0;
+        D_800625A0->lists->first_count = 0;
+        D_800625A0->choice_count = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->spriteLists->firstCount, D_800625A0->spriteLists->first,
+                ADD_SPRITES(D_800625A0->lists->first_count, D_800625A0->lists->first,
                             D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2]);
-                D_800625A0->choiceCount++;
+                D_800625A0->choice_count++;
             } else {
                 growing = 0;
             }
         }
-        D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
+        D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
             }
         }
-        D_800625A0->spriteLists->secondCount = 0;
+        D_800625A0->lists->second_count = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->spriteLists->secondCount, D_800625A0->spriteLists->second,
+                ADD_SPRITES(D_800625A0->lists->second_count, D_800625A0->lists->second,
                             D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1]);
             }
         }
-        D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+        D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
@@ -157,27 +175,27 @@ void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
     s32 i;
     s32 image;
 
-    D_800625A0->screenImages->count = 0;
-    D_800625A0->screenImages->count2 = 0;
+    D_800625A0->images->count = 0;
+    D_800625A0->images->count2 = 0;
     for (i = 0; i < count; i++) {
         if (i == cursor) {
             image = images[i].cursor + 0xd;
         } else {
             image = images[i].cursor;
         }
-        D_800625A0->screenImages->count +=
+        D_800625A0->images->count +=
             func_8002675C(D_800625A0->sheet, image,
-                          &D_800625A0->screenImages->packets[D_800625A0->screenImages->count * 2],
-                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
-        D_800625A0->screenImages->count2 +=
+                          &D_800625A0->images->packets[D_800625A0->images->count * 2],
+                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+        D_800625A0->images->count2 +=
             func_8002675C(D_800625A0->sheet, images[i].label,
-                          &D_800625A0->screenImages->packets2[D_800625A0->screenImages->count2 * 2],
-                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                          &D_800625A0->images->packets2[D_800625A0->images->count2 * 2],
+                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
     }
-    D_800625A0->screenImages->buffer = D_800625A0->bufferIndex;
-    D_800625A0->screenImages->buffer2 = D_800625A0->bufferIndex;
+    D_800625A0->images->buffer = D_800625A0->buffer_index;
+    D_800625A0->images->buffer2 = D_800625A0->buffer_index;
     func_801D1EE0(cursor, 1);
-    D_800625A0->party->redraw4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
 }
 
 /* Lay out the choice cursor sprites of the command at `offset` past the top
@@ -186,27 +204,27 @@ void func_801E8B4C(u8 offset) {
     s32 i;
     s32 image;
 
-    D_800625A0->spriteLists->firstCount = 0;
-    D_800625A0->spriteLists->secondCount = 0;
-    for (i = 0; i < D_800625A0->choiceCount; i++) {
+    D_800625A0->lists->first_count = 0;
+    D_800625A0->lists->second_count = 0;
+    for (i = 0; i < D_800625A0->choice_count; i++) {
         if (i == D_800625A0->choice) {
             image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] + 0xd;
         } else {
             image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2];
         }
-        D_800625A0->spriteLists->firstCount +=
+        D_800625A0->lists->first_count +=
             func_8002675C(D_800625A0->sheet, image,
-                          &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
-                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
-        D_800625A0->spriteLists->secondCount +=
+                          &D_800625A0->lists->first[D_800625A0->lists->first_count * 2],
+                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+        D_800625A0->lists->second_count +=
             func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
-                          &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
-                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                          &D_800625A0->lists->second[D_800625A0->lists->second_count * 2],
+                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
     }
-    D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
-    D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+    D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
+    D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
     func_801D1EE0(D_800625A0->choice + 7, 1);
-    D_800625A0->party->redraw4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
 }
 
 /* Render the two name lines of name pair `image` (ff: blank) and upload them
@@ -218,8 +236,8 @@ void func_801E8DA8(u8 image, u8 row) {
     pixels = func_80031BDC(0x3f6, 0);
     bzero(pixels, 0x3f6);
     if (image != 0xff) {
-        func_80034EAC(D_8006D634.names[image >> 1][0], pixels, 0x24, 0);
-        func_80034EAC(D_8006D634.names[image >> 1][1], pixels, 0x24, 1);
+        func_80034EAC(D_8006D634.names[(image >> 1) * 2], pixels, 0x24, 0);
+        func_80034EAC(D_8006D634.names[(image >> 1) * 2 + 1], pixels, 0x24, 1);
     }
     rect.x = D_801EA578[row >> 1] + 0x180;
     rect.y = D_801EA5C4[row >> 1];
@@ -256,7 +274,7 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->b0 = shade;
 }
 
-/* Set the blending of portrait `index`'s quads of the current buffer: plain
+/* Set the blending of panel `index`'s quads of the current buffer: plain
  * (2), or dim (3) when the dim flag `mode` is set. Every edge list is walked
  * four pairs deep, so each pass also covers the list after it, as the
  * original does. */
@@ -270,24 +288,24 @@ void func_801E8F60(u8 index, u8 mode) {
         mode = 2;
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->corner[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->corner[i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->edge[0][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->edge[0][i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->edge[1][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->edge[1][i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->edge[2][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->edge[2][i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->edge[3][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->edge[3][i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->portraits[index]->frameEnds[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+        func_801E8EAC(&D_800625A0->panels[index]->bar_ends[i * 2 + D_800625A0->panels[index]->buffer], mode);
     }
-    func_801E8EAC(&D_800625A0->portraits[index]->frameSide[D_800625A0->portraits[index]->buffer], mode);
+    func_801E8EAC(&D_800625A0->panels[index]->bar_side[D_800625A0->panels[index]->buffer], mode);
 }
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */

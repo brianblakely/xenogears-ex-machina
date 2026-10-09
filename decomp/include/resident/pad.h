@@ -23,6 +23,11 @@ extern PadBuffer D_800625FC[];
 extern u16 D_80059570;    /* held pad buttons */
 extern u16 D_8005948C;    /* pad buttons pressed */
 extern u16 D_800594A4;    /* pad buttons repeated */
+/* The vertical blank count D_80059488 (an s32 that 8003634c increments; saves
+ * keep it as the play time in frames) is declared by its users: the mode 4
+ * menu reads it as volatile at each use (decomp/src/menu/resident_views.h),
+ * the other targets as a plain s32 (volatile, 8003634c's increment would
+ * load it again after the store). */
 extern u8 D_80059484;     /* play time hours */
 extern u8 D_80059420;     /* play time minutes */
 extern u8 D_80059418;     /* play time seconds */

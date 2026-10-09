@@ -1,15 +1,32 @@
-/* Menu overlay unit from 801DBDB4 (screens reached from the field menu),
- * named after 801DBE54, where it started before its variables moved the
- * boundary. Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump
- * tables), where 801DBE54's table sits; func_801CD2AC is the last function
- * using the previous unit's rodata. Its uninitialized variables open with
- * the item list's scroll bar, which 801DBDB4 sizes and 801DBE54 reads, so
- * the text boundary lies after 801CD2AC and at or before 801DBDB4, where it
- * is kept. An earlier one would move the .bss boundary with it and must not
- * split 801D84B4/801D8644 or 801D9C84/801D9E3C, which share variables; the
- * item screen's helpers from 801DA4A8, which only this unit's functions
- * call, may belong here too. */
+/* Menu overlay unit from 801DBDB4: the field menu's arts, equipment and
+ * status screens, the gear stat computations, the file screen's views and
+ * the label builders. Rodata 801C50FC-801C5278, text 801DBDB4-801E8070 and
+ * its variables 801EA724-801EA8F4. Named after 801DBE54, where it started
+ * before its variables moved the boundary. Its rodata starts at 801C50FC,
+ * 4 mod 8 (docs/matching.md, jump tables), where 801DBE54's table sits;
+ * func_801CD2AC is the last function using the previous unit's rodata. Its
+ * uninitialized variables open with the item list's scroll bar, which
+ * 801DBDB4 sizes and 801DBE54 reads, so the text boundary lies after
+ * 801CD2AC and at or before 801DBDB4, where it is kept. An earlier one would
+ * move the .bss boundary with it and must not split 801D84B4/801D8644 or
+ * 801D9C84/801D9E3C, which share variables; the item screen's helpers from
+ * 801DA4A8, which only this unit's functions call, may belong here too. */
+#include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
+#include "menu/tables.h"
 #include "menu.h"
+#include "file.h"
+#include "field.h"
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
  * in a slot of whole words (decomp/Makefile). */
@@ -30,7 +47,7 @@ void func_801DBDB4(void) {
     s32 pages;
 
     for (i = 0; i < 150; i++) {
-        if (D_8006F65A[i] != 0) {
+        if (D_8006D634.itemIds[i] != 0) {
             last = i;
         }
     }
@@ -178,11 +195,13 @@ u8 func_801DBE54(void) {
     func_801D2484();
     func_801DB340(0);
     func_801DB340(1);
-    func_801E8044(8, D_800625A0->party->unk38);
+    func_801E8044(8, D_800625A0->flags->labels10e0_shown);
     return 1;
 }
 
-/* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
+/* Open the arts screen of `kind` (0 the character's arts, data view 2; 1 its
+ * gear's, view 5; 2 the gear's other list, view 6, with the second label
+ * page): its labels, its 1094-byte list block and the view's data. */
 void func_801DC1D4(u8 kind) {
     void *block;
     u8 view;
@@ -190,7 +209,7 @@ void func_801DC1D4(u8 kind) {
 
     page = 0;
     block = func_80031BDC(0x1094, 0);
-    D_800625A0->block430 = block;
+    D_800625A0->arts_list = block;
     bzero(block, 0x1094);
     switch (kind) {
     case 0:
@@ -204,14 +223,14 @@ void func_801DC1D4(u8 kind) {
         page = 1;
         break;
     }
-    func_801E8018(8, D_800625A0->labels10E0, D_801EA548 + page * 8, D_800625A0->party->unk38);
+    func_801E8018(8, D_800625A0->labels10e0, D_801EA548 + page * 8, D_800625A0->flags->labels10e0_shown);
     func_801C72BC(view);
     func_801D22F4(2);
     func_801D3488(2, kind);
 }
 
-/* Close the file list screen of `kind`: portraits 3-6, its block; back to the
- * view of the kind (| 10). */
+/* Close the arts screen of `kind`: panels 3-6, its list block and the
+ * view's data (the view | 10 releases it). */
 void func_801DC2CC(u8 kind) {
     u8 view;
 
@@ -220,7 +239,7 @@ void func_801DC2CC(u8 kind) {
     func_801D4EA0(5);
     func_801D4EA0(6);
     func_801D2484();
-    D_800625A0->party->unk4A = 0;
+    D_800625A0->flags->arts_list_shown = 0;
     func_801C7BF4();
     switch (kind) {
     case 0:
@@ -234,9 +253,9 @@ void func_801DC2CC(u8 kind) {
         break;
     }
     func_801C72BC(view | 0x10);
-    func_800320E8(D_800625A0->block430);
-    D_800625A0->party->redraw6 = 1;
-    D_800625A0->party->unk20[1] = 1;
+    func_800320E8(D_800625A0->arts_list);
+    D_800625A0->flags->field_menu2_shown = 1;
+    D_800625A0->flags->panels_shown[1] = 1;
 }
 
 /* Build the arts list of party slot `slot` (`kind` 0 the character's, 1 its
@@ -263,7 +282,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
     u8 fuel;
 
     fuel = 0;
-    ep = D_8006D8A0[D_800625A0->party->ids[slot]].ep;
+    ep = D_8006D634.characters[D_800625A0->flags->party[slot]].ep;
     image = func_80031BDC(0x3f6, 0);
     powers[0] = 1;
     powers[1] = 10;
@@ -278,14 +297,14 @@ void func_801DC3D8(u8 slot, u8 kind) {
         known = 0;
         switch (kind) {
         case 0:
-            known = func_801C8640(D_8006ECF6[D_800625A0->party->ids[slot] * 16], row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].levelSkills, row) || row >= 12;
             break;
         case 1:
-            known = func_801C8640(D_8006ECFA[D_800625A0->party->ids[slot] * 16], row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].unlocksB, row) || row >= 12;
             break;
         case 2:
             if (!(row & 1)) {
-                known = func_801C8640(D_8006ED0E[D_800625A0->party->ids[slot] * 16], row / 2) || row >= 12;
+                known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].flags1A, row / 2) || row >= 12;
             }
             break;
         }
@@ -294,33 +313,33 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_80033908(D_800625A0->party->ids[slot] * 16 + row), image, 0x24, 0);
-                    cost = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][22 + row].cost;
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
+                        func_80033908(D_800625A0->flags->party[slot] * 16 + row), image, 0x24, 0);
+                    cost = D_800625A0->tables->arts[D_800625A0->flags->party[slot]][22 + row].cost;
                     break;
                 case 1:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_800339FC(D_8006D8A0[D_800625A0->party->ids[slot]].gear * 16 + row), image, 0x24, 0);
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear][21 + row].cost;
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
+                        func_800339FC(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 16 + row), image, 0x24, 0);
+                    cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][21 + row].cost;
                     break;
                 case 2:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_80033A8C(D_8006D8A0[D_800625A0->party->ids[slot]].gear * 4 + row / 2), image, 0x24, 0);
-                    ep = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38;
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear][37 + row / 2].gearCost;
+                    D_800625A0->arts_list->names[row].width = func_80034EAC(
+                        func_80033A8C(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 4 + row / 2), image, 0x24, 0);
+                    ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
+                    cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][37 + row / 2].gearCost;
                     digits = 4;
                     break;
                 }
             } else if (row == 12) {
                 if (kind != 2) {
-                    cost = D_8006D8A0[D_800625A0->party->ids[slot]].ep;
+                    cost = D_8006D634.characters[D_800625A0->flags->party[slot]].ep;
                 } else {
                     fuel = 3;
-                    cost = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38;
+                    cost = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
                     digits = 5;
                 }
             } else {
-                cost = D_8006D8A0[D_800625A0->party->ids[slot]].epMax;
+                cost = D_8006D634.characters[D_800625A0->flags->party[slot]].maxEp;
             }
             value = cost;
             started = 0;
@@ -339,7 +358,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             codes[pos * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, digits);
             grey = 0x80;
-            D_800625A0->block430->values[row].width = func_80034EAC(text, image, 0x24, 1);
+            D_800625A0->arts_list->values[row].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = row / 2 * 0xd + 0x80;
             rect.w = 0x28;
@@ -349,7 +368,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    if (func_801C865C(D_801E97F0[D_800625A0->party->ids[slot]], row)) {
+                    if (func_801C865C(D_801E97F0[D_800625A0->flags->party[slot]], row)) {
                         if (ep < cost) {
                             grey = 0;
                         }
@@ -368,34 +387,34 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 }
             }
             if (row < 12) {
-                func_801E7C50(&D_800625A0->block430->names[row], row, 0x80, grey | 1);
-                func_801C851C(D_800625A0->block430->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
-                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->block430->names[row].width, 0xd);
+                func_801E7C50(&D_800625A0->arts_list->names[row], row, 0x80, grey | 1);
+                func_801C851C(D_800625A0->arts_list->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
+                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->arts_list->names[row].width, 0xd);
             }
-            func_801E7C50(&D_800625A0->block430->values[row], row, 0x80, grey | 2);
-            func_801C851C(D_800625A0->block430->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
-                          D_800625A0->block430->values[row].width, 0xd);
-            D_800625A0->block430->names[row].count = D_800625A0->bufferIndex;
-            D_800625A0->block430->values[row].count = D_800625A0->bufferIndex;
-            D_800625A0->block430->shown[row] = grey | 1;
+            func_801E7C50(&D_800625A0->arts_list->values[row], row, 0x80, grey | 2);
+            func_801C851C(D_800625A0->arts_list->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
+                          D_800625A0->arts_list->values[row].width, 0xd);
+            D_800625A0->arts_list->names[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->arts_list->values[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->arts_list->shown[row] = grey | 1;
         } else {
-            D_800625A0->block430->shown[row] = 0;
+            D_800625A0->arts_list->shown[row] = 0;
         }
     }
     func_800320E8(image);
-    func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, 6, 1, fuel + 2);
-    func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, 7, 1, fuel + 2);
-    func_801D36E0(&D_800625A0->block430->footer, slot, kind, 1);
-    D_800625A0->party->unk4A = 1;
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 6, 1, fuel + 2);
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 7, 1, fuel + 2);
+    func_801D36E0(&D_800625A0->arts_list->footer, slot, kind, 1);
+    D_800625A0->flags->arts_list_shown = 1;
 }
 
-/* Show the description of file list row `row` for party slot `slot` (`kind`
+/* Show the description of arts list row `row` for party slot `slot` (`kind`
  * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
-    MenuEffect *effect;
+    ArtInfo *effect;
     u8 *image;
     u16 text;
     u16 target;
@@ -405,53 +424,53 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
 
     switch (kind) {
     case 0:
-        text = (D_800625A0->party->ids[slot] << 5) + row * 2;
+        text = (D_800625A0->flags->party[slot] << 5) + row * 2;
         break;
     case 1:
-        text = (D_8006D8A0[D_800625A0->party->ids[slot]].gear << 5) + row * 2;
+        text = (D_8006D634.characters[D_800625A0->flags->party[slot]].gearId << 5) + row * 2;
         break;
     case 2:
-        text = D_8006D8A0[D_800625A0->party->ids[slot]].gear * 8 + (row & ~1);
+        text = D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 8 + (row & ~1);
         break;
     }
-    if (D_800625A0->block430->shown[row] != 0) {
+    if (D_800625A0->arts_list->shown[row] != 0) {
         image = func_80031BDC(0x618, 0);
         bzero(image, 0x618);
-        D_800625A0->block430->extra[0].width =
-            func_80034EAC(func_80033728(D_800625A0->block430->texts, text), image, 0x39, 0);
-        D_800625A0->block430->extra[1].width =
-            func_80034EAC(func_80033728(D_800625A0->block430->texts, text + 1), image, 0x39, 1);
+        D_800625A0->arts_list->extra[0].width =
+            func_80034EAC(func_80033728(D_800625A0->arts_list->texts, text), image, 0x39, 0);
+        D_800625A0->arts_list->extra[1].width =
+            func_80034EAC(func_80033728(D_800625A0->arts_list->texts, text + 1), image, 0x39, 1);
         rect.x = 0x140;
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
         LoadImage(&rect, image);
         DrawSync(0);
-        func_801E7C50(&D_800625A0->block430->extra[0], 0, 0, 0);
-        func_801E920C(&D_800625A0->block430->extra[0].polys[D_800625A0->bufferIndex], 0x1c, 0x9e, 0, 0x4e,
-                      D_800625A0->block430->extra[0].width, 0xd);
-        func_801C851C(D_800625A0->block430->extra[0].verts, 0x1c, 0x9e, D_800625A0->block430->extra[0].width, 0xd);
-        func_801E7C50(&D_800625A0->block430->extra[1], 1, 0, 0);
-        func_801E920C(&D_800625A0->block430->extra[1].polys[D_800625A0->bufferIndex], 0x1c, 0xae, 0, 0x4e,
-                      D_800625A0->block430->extra[1].width, 0xd);
-        func_801C851C(D_800625A0->block430->extra[1].verts, 0x1c, 0xae, D_800625A0->block430->extra[1].width, 0xd);
+        func_801E7C50(&D_800625A0->arts_list->extra[0], 0, 0, 0);
+        func_801E920C(&D_800625A0->arts_list->extra[0].polys[D_800625A0->buffer_index], 0x1c, 0x9e, 0, 0x4e,
+                      D_800625A0->arts_list->extra[0].width, 0xd);
+        func_801C851C(D_800625A0->arts_list->extra[0].verts, 0x1c, 0x9e, D_800625A0->arts_list->extra[0].width, 0xd);
+        func_801E7C50(&D_800625A0->arts_list->extra[1], 1, 0, 0);
+        func_801E920C(&D_800625A0->arts_list->extra[1].polys[D_800625A0->buffer_index], 0x1c, 0xae, 0, 0x4e,
+                      D_800625A0->arts_list->extra[1].width, 0xd);
+        func_801C851C(D_800625A0->arts_list->extra[1].verts, 0x1c, 0xae, D_800625A0->arts_list->extra[1].width, 0xd);
         func_800320E8(image);
-        memmove(&D_800625A0->block430->headA, &D_800625A0->block430->names[row], sizeof(MenuLabelSlot));
-        func_801C851C(D_800625A0->block430->headA.verts, 0x12, 0x8e, D_800625A0->block430->names[row].width, 0xd);
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->r0 = 0x80;
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->g0 = 0x80;
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->b0 = 0x80;
-        SetSemiTrans(&D_800625A0->block430->headA.polys[D_800625A0->bufferIndex], 0);
-        func_801E8044(8, D_800625A0->party->unk38);
+        memmove(&D_800625A0->arts_list->headA, &D_800625A0->arts_list->names[row], sizeof(MenuLabel));
+        func_801C851C(D_800625A0->arts_list->headA.verts, 0x12, 0x8e, D_800625A0->arts_list->names[row].width, 0xd);
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->r0 = 0x80;
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->g0 = 0x80;
+        (D_800625A0->arts_list->headA.polys + D_800625A0->buffer_index)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->arts_list->headA.polys[D_800625A0->buffer_index], 0);
+        func_801E8044(8, D_800625A0->flags->labels10e0_shown);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
+            effect = D_800625A0->tables->arts[D_800625A0->flags->party[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
+            effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1) + 37;
+            effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -462,20 +481,20 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         } else {
             all = 1;
         }
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, all, 0, 2);
         targetKind = (effect->target & 3) + 3;
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, targetKind, 0, 2);
-        D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
-        D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extra[1].count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extraShown = 1;
-        D_800625A0->party->unk38[6] = 1;
-        D_800625A0->party->unk38[7] = 1;
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, targetKind, 0, 2);
+        D_800625A0->arts_list->headA.buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->headB.buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extra[0].buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extra[1].buffer = D_800625A0->buffer_index;
+        D_800625A0->arts_list->extraShown = 1;
+        D_800625A0->flags->labels10e0_shown[6] = 1;
+        D_800625A0->flags->labels10e0_shown[7] = 1;
     } else {
-        D_800625A0->block430->extraShown = 0;
+        D_800625A0->arts_list->extraShown = 0;
         for (i = 0; i < 6; i++) {
-            D_800625A0->party->unk38[i] = 0;
+            D_800625A0->flags->labels10e0_shown[i] = 0;
         }
     }
 }
@@ -489,15 +508,15 @@ void func_801DD5E8(u8 mode) {
     func_801E8F60(5, mode);
     func_801E8F60(6, mode);
     for (i = 0; i < 12; i++) {
-        if (D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count].r0 != 0x20) {
-            func_801E8EAC(&D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count], mode);
-            func_801E8EAC(&D_800625A0->block430->values[i].polys[D_800625A0->block430->values[i].count], mode);
+        if (D_800625A0->arts_list->names[i].polys[D_800625A0->arts_list->names[i].buffer].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->arts_list->names[i].polys[D_800625A0->arts_list->names[i].buffer], mode);
+            func_801E8EAC(&D_800625A0->arts_list->values[i].polys[D_800625A0->arts_list->values[i].buffer], mode);
         }
     }
-    func_801E8EAC(&D_800625A0->blocks444[0]->polys[D_800625A0->blocks444[0]->count], mode);
-    func_801E8EAC(&D_800625A0->block430->headA.polys[D_800625A0->block430->headA.count], mode);
+    func_801E8EAC(&D_800625A0->cursors[0]->polys[D_800625A0->cursors[0]->buffer], mode);
+    func_801E8EAC(&D_800625A0->arts_list->headA.polys[D_800625A0->arts_list->headA.buffer], mode);
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->block430->extra[i].polys[D_800625A0->block430->extra[i].count], mode);
+        func_801E8EAC(&D_800625A0->arts_list->extra[i].polys[D_800625A0->arts_list->extra[i].buffer], mode);
     }
 }
 
@@ -506,7 +525,7 @@ void func_801DD5E8(u8 mode) {
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
-    MenuEffect *effect;
+    ArtInfo *effect;
     s32 x;
     s32 cursor;
     s32 all;
@@ -520,17 +539,17 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     targets = 1;
     redraw = 1;
     x = 0;
-    cursor = D_800625A0->firstMember;
+    cursor = D_800625A0->first_member;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
+        effect = D_800625A0->tables->arts[D_800625A0->flags->party[slot]] + row + 22;
         break;
     case 1:
-        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
+        effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
         break;
     case 2:
         x = 0x18;
-        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 37;
+        effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 37;
         cursor = slot;
         break;
     }
@@ -546,25 +565,25 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             redraw = 0;
         }
         targets = 0;
-        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
         if (all) {
             for (i = 0; i < 3; i++) {
-                if (D_800625A0->party->ids[i] != 0xff) {
+                if (D_800625A0->flags->party[i] != 0xff) {
                     targets |= 1 << i;
-                    D_800625A0->markers->visible[i] = 1;
+                    D_800625A0->markers->shown[i] = 1;
                 }
             }
         } else {
             targets = 1 << cursor;
-            D_800625A0->markers->visible[cursor] = 1;
+            D_800625A0->markers->shown[cursor] = 1;
         }
-        D_800625A0->party->unk2F = 1;
+        D_800625A0->flags->markers_shown = 1;
         if (kind != 2) {
-            if (D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost < 0) {
+            if (D_8006D634.characters[D_800625A0->flags->party[slot]].ep - effect->cost < 0) {
                 targets = 0;
             }
         } else {
-            if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost < 0) {
+            if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel - effect->gearCost < 0) {
                 targets = 0;
             }
         }
@@ -581,28 +600,28 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                 hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
-                        if (D_8006D8A0[D_800625A0->party->ids[i]].hp != D_8006D8A0[D_800625A0->party->ids[i]].hpMax) {
+                        if (D_8006D634.characters[D_800625A0->flags->party[i]].hp != D_8006D634.characters[D_800625A0->flags->party[i]].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     } else {
-                        if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60 !=
-                            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64) {
+                        if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[i]].gearId].hp !=
+                            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[row]].gearId].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     }
                     if (hit) {
-                        func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
+                        func_801E35BC(D_800625A0->tables, D_800625A0->flags->party[slot], D_800625A0->flags->party[i],
                                       row, kind);
                     }
                 }
             }
             if (used) {
                 if (kind != 2) {
-                    D_8006D8A0[D_800625A0->party->ids[slot]].ep -= effect->cost;
+                    D_8006D634.characters[D_800625A0->flags->party[slot]].ep -= effect->cost;
                 } else {
-                    D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 -= effect->gearCost;
+                    D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel -= effect->gearCost;
                 }
                 sound = 0x37;
             } else {
@@ -623,13 +642,13 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             break;
         }
     }
-    D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+    D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
     func_801DD5E8(0);
-    D_800625A0->party->unk46 = 0;
+    D_800625A0->flags->party_panels_shown = 0;
     func_801C7BF4();
     if (D_801E9785 != 0) {
         for (i = 0; i < 3; i++) {
-            func_800320E8(D_800625A0->panels[i]);
+            func_800320E8(D_800625A0->party_panels[i]);
         }
         D_801E9785 = 0;
     }
@@ -646,8 +665,8 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             func_801D29A8(0, 0);                       \
             func_801C7BF4();                           \
         }                                              \
-        D_800625A0->party->redraw6 = 0;                \
-        D_800625A0->party->unk20[1] = 0;               \
+        D_800625A0->flags->field_menu2_shown = 0;      \
+        D_800625A0->flags->panels_shown[1] = 0;        \
     } while (0)
 
 /* The arts screen of party slot `member` (`kind` 0 the character's, 1 its
@@ -692,7 +711,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
         }
         switch (D_800625A0->input) {
         case 4:
-            if (D_800625A0->block430->shown[cursor] & 0x80) {
+            if (D_800625A0->arts_list->shown[cursor] & 0x80) {
                 func_801DD790(slot, cursor, kind);
                 slotShown = 0xff;
                 cursorShown = 0xff;
@@ -733,7 +752,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
             break;
         }
     } while (running);
-    func_801E8044(8, D_800625A0->party->unk38);
+    func_801E8044(8, D_800625A0->flags->labels10e0_shown);
     func_801DB340(0);
 }
 
@@ -748,36 +767,36 @@ void func_801DE2C8(u8 page) {
     void *block;
 
     block = func_80031BDC(0xa1c, 0);
-    D_800625A0->block434 = block;
+    D_800625A0->equip_list = block;
     bzero(block, 0xa1c);
-    func_801E8018(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_800625A0->party->unk40);
+    func_801E8018(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_800625A0->flags->labels14e0_shown);
     func_801C72BC(7);
     func_801D22F4(3);
     func_801DB02C(0);
     func_801D3488(1, page);
 }
 
-/* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
+/* Close the 801ddf24 screen: panels 2-5, its labels and block (+434); view 17. */
 void func_801DE36C(void) {
-    D_800625A0->party->unk4C = 0;
+    D_800625A0->flags->equip_list_shown = 0;
     func_801D4EA0(2);
     func_801D4EA0(3);
     func_801D4EA0(4);
     func_801D4EA0(5);
     func_801C7BF4();
-    func_801E8044(6, D_800625A0->party->unk40);
+    func_801E8044(6, D_800625A0->flags->labels14e0_shown);
     func_801C72BC(0x17);
-    func_800320E8(D_800625A0->block434);
+    func_800320E8(D_800625A0->equip_list);
     func_801D3444();
 }
 
 /* Close the 801ddf24 screen: hide its sprites and free its blocks. */
 void func_801DE400(void) {
-    D_800625A0->party->unk8 = 0;
-    D_800625A0->party->unk4B = 0;
+    D_800625A0->flags->equipment_shown = 0;
+    D_800625A0->flags->equip_labels_shown = 0;
     func_801C7BF4();
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->equip_panel);
+    func_800320E8(D_800625A0->equip_labels);
 }
 
 /* Lay out the page `page` labels of the 801ddf24 screen (rows 2-5 when
@@ -789,7 +808,7 @@ void func_801DE474(u8 wide, u8 page) {
     s32 h;
 
     for (i = 0; i < 6; i++) {
-        D_800625A0->party->unk40[i] = 0;
+        D_800625A0->flags->labels14e0_shown[i] = 0;
     }
     if (wide) {
         first = 2;
@@ -801,10 +820,10 @@ void func_801DE474(u8 wide, u8 page) {
         h = 0x5a;
     }
     for (i = first; i < end; i++) {
-        func_801E8070(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->party->unk40, i,
+        func_801E8070(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->flags->labels14e0_shown, i,
                       i, 3);
     }
-    if (D_800625A0->party->unk20[4] != 0) {
+    if (D_800625A0->flags->panels_shown[4] != 0) {
         func_801D4EA0(4);
     }
     func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
@@ -823,12 +842,12 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     s32 length;
     u8 kind;
     s32 count;
-    MenuWeapon *weapon;
-    MenuAccessory *accessory;
-    MenuWeapon *keptWeapon;
-    GearWeapon *gearWeapon;
-    GearWeapon *keptGearWeapon;
-    MenuGearAccessory *gearAccessory;
+    EquipInfo *weapon;
+    AccessoryInfo *accessory;
+    EquipInfo *keptWeapon;
+    GearWeaponInfo *gearWeapon;
+    GearWeaponInfo *keptGearWeapon;
+    GearAccessoryInfo *gearAccessory;
     u16 own;
     u16 used;
     s32 i;
@@ -842,20 +861,20 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (!gear) {
             kind = part + 1;
             count = 100;
-            keptWeapon = &D_800625A0->tables->weapons[D_800625A0->labels360->parts[0][part]];
+            keptWeapon = &D_800625A0->tables->equipment[D_800625A0->equip_labels->parts[0][part]];
         } else {
             kind = part + 1;
             count = 100;
-            keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->labels360->parts[0][part]];
+            keptGearWeapon = &D_800625A0->tables->gear_weapons[D_800625A0->equip_labels->parts[0][part]];
         }
     } else if (!gear) {
         if (part != 0) {
             kind = 5;
             count = 200;
-            accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]];
+            accessory = &D_800625A0->tables->accessories[D_800625A0->equip_labels->parts[2][part - 1]];
             own = accessory->groups;
             for (i = 0, used = 0; i < 3; i++) {
-                accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]];
+                accessory = &D_800625A0->tables->accessories[D_800625A0->equip_labels->parts[2][i]];
                 used |= accessory->groups;
             }
         } else {
@@ -865,10 +884,10 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]];
+        gearAccessory = &D_800625A0->tables->gear_accessories[D_800625A0->equip_labels->parts[2][part - 1]];
         own = gearAccessory->groups;
         for (i = 0, used = 0; i < 3; i++) {
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]];
+            gearAccessory = &D_800625A0->tables->gear_accessories[D_800625A0->equip_labels->parts[2][i]];
             used |= gearAccessory->groups;
         }
     } else {
@@ -883,16 +902,16 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     for (i = 0; i < count; i++) {
         if (!gear) {
             accessory = &D_800625A0->tables->accessories[D_8006D634.accessoryIds[i]];
-            weapon = &D_800625A0->tables->weapons[D_8006D634.weaponIds[i]];
+            weapon = &D_800625A0->tables->equipment[D_8006D634.weaponIds[i]];
         } else {
-            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006D634.gearPartIds[i]];
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006D634.gearAccessoryIds[i]];
+            gearWeapon = &D_800625A0->tables->gear_weapons[D_8006D634.gearPartIds[i]];
+            gearAccessory = &D_800625A0->tables->gear_accessories[D_8006D634.gearAccessoryIds[i]];
         }
         ok = 0;
         if (!gear) {
             switch (kind) {
             case 0:
-                if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) && weapon->kind < 5 &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->party[slot]) && weapon->kind < 5 &&
                     D_8006D634.weaponIds[i] < 50) {
                     ok = 1;
                 }
@@ -901,13 +920,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->party[slot]) &&
                     weapon->kind == keptWeapon->kind && D_8006D634.weaponIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C865C(accessory->users, D_800625A0->party->ids[slot])) {
+                if (func_801C865C(accessory->users, D_800625A0->flags->party[slot])) {
                     if (accessory->groups == 0 || (own & accessory->groups)) {
                         ok = 1;
                     } else if (!(used & accessory->groups)) {
@@ -919,7 +938,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         } else {
             switch (kind) {
             case 0:
-                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId) &&
                     gearWeapon->kind < 5 && D_8006D634.gearPartIds[i] < 50) {
                     ok = 1;
                 }
@@ -928,13 +947,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId) &&
                     gearWeapon->kind == keptGearWeapon->kind && D_8006D634.gearPartIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
+                if (func_801C8678(gearAccessory->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId)) {
                     if (gearAccessory->groups == 0 || (own & gearAccessory->groups)) {
                         ok = 1;
                     } else if (!(used & gearAccessory->groups)) {
@@ -968,43 +987,43 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (D_801EA730[top + i] != 0) {
             if (!gear) {
                 if (kind != 5) {
-                    D_800625A0->block434->names[i].width = func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
+                    D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
                 } else {
-                    D_800625A0->block434->names[i].width = func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
+                    D_800625A0->equip_list->names[i].width = func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
                 }
             } else if (kind != 5) {
-                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
+                D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
             } else {
-                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
+                D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
             }
             tens = D_801EA7F8[top + i] / 10;
             codes[0] = tens != 0 ? tens + 0x10 : 0xc3;
             codes[2] = D_801EA7F8[top + i] % 10 + 0x10;
             func_80033B34(codes, text, 2);
-            D_800625A0->block434->values[i].width = func_80034EAC(text, image, 0x24, 1);
+            D_800625A0->equip_list->values[i].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (i & 1) * 0x18 + 0x180;
             rect.y = i / 2 * 0xd + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
             LoadImage(&rect, image);
             DrawSync(0);
-            func_801E7C50(&D_800625A0->block434->names[i], i, 0x80, 0x81);
-            func_801E7C50(&D_800625A0->block434->values[i], i, 0x80, 0x82);
-            func_801C851C(D_800625A0->block434->names[i].verts, 0xa8, i * 0xd + 0x12,
-                          D_800625A0->block434->names[i].width, 0xd);
-            func_801C851C(D_800625A0->block434->values[i].verts, 0x10c, i * 0xd + 0x12,
-                          D_800625A0->block434->values[i].width, 0xd);
-            D_800625A0->block434->names[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block434->values[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block434->shown[i] = 1;
+            func_801E7C50(&D_800625A0->equip_list->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->equip_list->values[i], i, 0x80, 0x82);
+            func_801C851C(D_800625A0->equip_list->names[i].verts, 0xa8, i * 0xd + 0x12,
+                          D_800625A0->equip_list->names[i].width, 0xd);
+            func_801C851C(D_800625A0->equip_list->values[i].verts, 0x10c, i * 0xd + 0x12,
+                          D_800625A0->equip_list->values[i].width, 0xd);
+            D_800625A0->equip_list->names[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->equip_list->values[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->equip_list->shown[i] = 1;
         } else {
-            D_800625A0->block434->shown[i] = 0;
+            D_800625A0->equip_list->shown[i] = 0;
         }
     }
     func_800320E8(image);
-    func_801D36E0(&D_800625A0->block434->title, slot, gear, 0);
+    func_801D36E0(&D_800625A0->equip_list->title, slot, gear, 0);
     length -= 8;
-    D_800625A0->party->unk4C = 1;
+    D_800625A0->flags->equip_list_shown = 1;
     if (length < 0) {
         length = 0;
     }
@@ -1033,17 +1052,17 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     swap = 1;
     result = 0;
     if (!gear) {
-        ids = D_8006F3D0;
+        ids = D_8006D634.weaponIds;
         counts = ids - 100;
     } else {
-        ids = D_8006F754;
+        ids = D_8006D634.gearPartIds;
         counts = ids - 100;
     }
     length = 100;
     if (special) {
         if (!gear) {
-            kept = D_800625A0->labels360->parts[1][part];
-            at = &D_8006D634.chars[D_800625A0->party->ids[slot]].specials[part];
+            kept = D_800625A0->equip_labels->parts[1][part];
+            at = &D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1055,8 +1074,8 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 D_8006F8BA[*at] = 100;
             }
         } else {
-            kept = D_800625A0->labels360->parts[1][part];
-            at = &D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk4[part];
+            kept = D_800625A0->equip_labels->parts[1][part];
+            at = &D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1070,39 +1089,39 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
         }
     } else if (!gear) {
         if (part == 0) {
-            id = D_800625A0->party->ids[slot];
-            selected = D_8006D634.chars[id].weapons[0];
-            kept = D_800625A0->labels360->parts[0][0];
+            id = D_800625A0->flags->party[slot];
+            selected = D_8006D634.characters[id].weapons[0];
+            kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
-                D_8006D634.chars[id].weapons[0] = kept;
+                D_8006D634.characters[id].weapons[0] = kept;
                 swap = 0;
             } else if (id == 4) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.chars[D_800625A0->party->ids[slot]].accessories[part - 1];
+            selected = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1];
             ids = D_8006D634.accessoryIds;
             counts = D_8006D634.accessoryCounts;
-            kept = D_800625A0->labels360->parts[2][part - 1];
+            kept = D_800625A0->equip_labels->parts[2][part - 1];
             length = 200;
         }
     } else {
         if (part == 0) {
-            id = D_800625A0->party->ids[slot];
-            selected = D_8006D634.gears[D_8006D634.chars[id].gear].unkC[0];
-            kept = D_800625A0->labels360->parts[0][0];
+            id = D_800625A0->flags->party[slot];
+            selected = D_8006D634.gears[D_8006D634.characters[id].gearId].weapons[0];
+            kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
-                D_8006D634.gears[D_8006D634.chars[id].gear].unkC[0] = kept;
+                D_8006D634.gears[D_8006D634.characters[id].gearId].weapons[0] = kept;
                 swap = 0;
             } else if (id == 4) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+            selected = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1];
             ids = D_8006D634.gearAccessoryIds;
             counts = D_8006D634.gearAccessoryCounts;
             length = 150;
-            kept = D_800625A0->labels360->parts[2][part - 1];
+            kept = D_800625A0->equip_labels->parts[2][part - 1];
         }
     }
     if (swap) {
@@ -1149,19 +1168,19 @@ void func_801DF5D0(u8 slot, u8 gear) {
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        D_800625A0->labels360->stats[i] = D_800625A0->tables->shown[i];
+        D_800625A0->equip_labels->stats[i] = D_800625A0->tables->stats[i];
     }
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_800625A0->labels360->parts[0][i] = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i];
-            D_800625A0->labels360->parts[1][i] = D_8006D8A0[D_800625A0->party->ids[slot]].specials[i];
-            D_800625A0->labels360->parts[2][i] = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_800625A0->labels360->parts[0][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[i];
-            D_800625A0->labels360->parts[1][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[i];
-            D_800625A0->labels360->parts[2][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[i];
         }
     }
 }
@@ -1173,19 +1192,19 @@ void func_801DF890(u8 slot, u8 gear) {
 
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i] = D_800625A0->labels360->parts[0][i];
-            D_8006D8A0[D_800625A0->party->ids[slot]].specials[i] = D_800625A0->labels360->parts[1][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i] = D_800625A0->labels360->parts[2][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[i] = D_800625A0->equip_labels->parts[2][i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[i] = D_800625A0->labels360->parts[0][i];
-            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[i] = D_800625A0->labels360->parts[1][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[i] = D_800625A0->labels360->parts[2][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[i] = D_800625A0->equip_labels->parts[2][i];
         }
     }
 }
@@ -1198,45 +1217,45 @@ void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D8A0[D_800625A0->party->ids[slot]].specials[part] = D_801EA730[top + row];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part] = D_801EA730[top + row];
         }
     } else {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part] = D_801EA730[top + row];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part] = D_801EA730[top + row];
         }
     }
 }
 
 /* Compute party slot `slot`'s gear stats and copy them to the shown values. */
 void func_801DFE2C(u8 slot) {
-    func_801E3ECC(D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[slot]].gear);
-    func_801E3C2C(D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[slot]].gear);
-    D_800625A0->tables->shown[0] = D_800625A0->tables->unkB0;
-    D_800625A0->tables->shown[1] = D_800625A0->tables->unkA4;
-    D_800625A0->tables->shown[2] = D_800625A0->tables->unkA6;
-    D_800625A0->tables->shown[3] = D_800625A0->tables->unkB2;
-    D_800625A0->tables->shown[4] = D_800625A0->tables->unkB3;
-    D_800625A0->tables->shown[5] = D_800625A0->tables->unkB4;
+    func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
+    func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
+    D_800625A0->tables->stats[0] = D_800625A0->tables->gear.attack;
+    D_800625A0->tables->stats[1] = D_800625A0->tables->gear.defense;
+    D_800625A0->tables->stats[2] = D_800625A0->tables->gear.ether_defense;
+    D_800625A0->tables->stats[3] = D_800625A0->tables->gear.hit;
+    D_800625A0->tables->stats[4] = D_800625A0->tables->gear.speed;
+    D_800625A0->tables->stats[5] = D_800625A0->tables->gear.frame_factor;
 }
 
 /* Show the three-line description of equipment list entry `top` + `row` (or,
@@ -1262,35 +1281,35 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
         kind += gear * 2;
         switch (kind) {
         case 0:
-            table = D_800625A0->block434->texts[0];
+            table = D_800625A0->equip_list->texts[0];
             if (current) {
                 if (!special) {
-                    id = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0];
+                    id = D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[0];
                 } else {
-                    id = D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
+                    id = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part];
                 }
             }
             break;
         case 1:
-            table = D_800625A0->block434->texts[1];
+            table = D_800625A0->equip_list->texts[1];
             if (current) {
-                id = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
+                id = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1];
             }
             break;
         case 2:
-            table = D_800625A0->block434->texts[2];
+            table = D_800625A0->equip_list->texts[2];
             if (current) {
                 if (!special) {
-                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[0];
                 } else {
-                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part];
                 }
             }
             break;
         case 3:
-            table = D_800625A0->block434->texts[3];
+            table = D_800625A0->equip_list->texts[3];
             if (current) {
-                id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+                id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1];
             }
             break;
         }
@@ -1298,7 +1317,7 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
             image = func_80031BDC(0x3f6, 0);
             bzero(image, 0x3f6);
             for (line = 0; line < 3; line++) {
-                D_800625A0->block434->extra[line].width =
+                D_800625A0->equip_list->extra[line].width =
                     func_80034EAC(func_80033728(table, id * 3 + line), image, 0x24, 0);
                 rect.x = ((line + 8) & 1) * 0x18 + 0x180;
                 rect.y = (line + 8) / 2 * 0xd + 0x80;
@@ -1306,17 +1325,17 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                func_801E7C50(&D_800625A0->block434->extra[line], line + 8, 0x80, 0x81);
-                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
-                              D_800625A0->block434->extra[line].width, 0xd);
-                D_800625A0->block434->extra[line].count = D_800625A0->bufferIndex;
+                func_801E7C50(&D_800625A0->equip_list->extra[line], line + 8, 0x80, 0x81);
+                func_801C851C(D_800625A0->equip_list->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
+                              D_800625A0->equip_list->extra[line].width, 0xd);
+                D_800625A0->equip_list->extra[line].buffer = D_800625A0->buffer_index;
             }
-            D_800625A0->block434->extraShown = 1;
+            D_800625A0->equip_list->extraShown = 1;
             func_800320E8(image);
             return;
         }
     }
-    D_800625A0->block434->extraShown = 0;
+    D_800625A0->equip_list->extraShown = 0;
 }
 
 /* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
@@ -1332,17 +1351,17 @@ void func_801E0434(u8 slot, u8 gear) {
 
     fresh = 1;
     if (!gear) {
-        ids = D_8006F3D0;
+        ids = D_8006D634.weaponIds;
         counts = ids - 100;
-        item = D_8006D8A0[D_800625A0->party->ids[slot]].specials[0];
-        D_8006D8A0[D_800625A0->party->ids[slot]].specials[0] = 0;
+        item = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[0];
+        D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[0] = 0;
         size = 100;
     } else {
-        ids = D_8006F754;
+        ids = D_8006D634.gearPartIds;
         counts = ids - 100;
-        item = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[0];
+        item = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[0];
         size = 100;
-        D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[0] = 0;
+        D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[0] = 0;
     }
     for (i = 0; i < size; i++) {
         if (ids[i] == item) {
@@ -1370,7 +1389,7 @@ void func_801E0434(u8 slot, u8 gear) {
     do {                                               \
         func_801DF5D0(slot, gear);                     \
         cursor = 0;                                    \
-        D_800625A0->markers->visible[0] = 1;           \
+        D_800625A0->markers->shown[0] = 1;             \
         reset = 1;                                     \
         func_801DB0A8(0, top, 3, 0);                   \
     } while (0)
@@ -1419,7 +1438,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     listing = 0;
     drawnTop = 0xff;
     top = 0;
-    D_800625A0->party->redraw7 = 0;
+    D_800625A0->flags->detail_shown = 0;
     func_801DE2C8(gear);
     func_801DF5D0(slot, gear);
     while (running) {
@@ -1444,7 +1463,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
         if (cursor) {
             func_801DB0A8(row, top, 3, 0);
         } else {
-            D_800625A0->party->unk50[0] = 0;
+            D_800625A0->flags->cursors_shown[0] = 0;
         }
         if (row != drawnRow || slot != drawnSlot || top != drawnTop) {
             if (previewed) {
@@ -1452,8 +1471,8 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             }
             previewed = 1;
             if (!gear) {
-                func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-                func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+                func_801E36D4(D_800625A0->tables, D_800625A0->flags->party[slot]);
+                func_801E3A80(D_800625A0->tables, D_800625A0->flags->party[slot]);
             } else {
                 func_801DFE2C(slot);
             }
@@ -1464,16 +1483,16 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
         }
         if (part != drawnPart || slot != drawnSlot) {
             func_801DFF5C(part, row, top, special, gear, 1, slot);
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x0 = 0x8c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y0 = D_801E9DBC[special * 4 + part];
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x1 = 0x9c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y1 = D_801E9DBC[special * 4 + part];
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x2 = 0x8c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y2 = D_801E9DBC[special * 4 + part] + 0x10;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x3 = 0x9c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x0 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y0 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x1 = 0x9c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y1 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x2 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y2 = D_801E9DBC[special * 4 + part] + 0x10;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x3 = 0x9c;
             drawnPart = part;
             drawnSlot = slot;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y3 = D_801E9DBC[special * 4 + part] + 0x10;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y3 = D_801E9DBC[special * 4 + part] + 0x10;
         }
         if (first) {
             func_801D397C(2, 0x94, 0xa, 0x94, 0x74, 0, 1, 4, 1);
@@ -1482,16 +1501,16 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             if (fade) {
                 func_801D1E80();
                 func_801D29A8(0, 0);
-                while (D_800625A0->viewMotion != 0) {
+                while (D_800625A0->view_motion != 0) {
                     func_801C7BF4();
                 }
             }
-            D_800625A0->markers->visible[0] = 1;
-            D_800625A0->party->redraw6 = 0;
+            D_800625A0->markers->shown[0] = 1;
+            D_800625A0->flags->field_menu2_shown = 0;
             first = 0;
-            D_800625A0->party->unk20[1] = 0;
+            D_800625A0->flags->panels_shown[1] = 0;
         }
-        D_800625A0->party->unk2F = 1;
+        D_800625A0->flags->markers_shown = 1;
         if (committed) {
             committed = 0;
             D_800625A0->input = 4;
@@ -1507,15 +1526,15 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 top = 0;
                 drawnTop = 0xff;
                 drawnRow = 0xff;
-                D_800625A0->markers->visible[0] = 0;
+                D_800625A0->markers->shown[0] = 0;
                 panel = 1;
                 cursor = 1;
                 row = 0;
-                D_800625A0->party->unk50[0] = 1;
+                D_800625A0->flags->cursors_shown[0] = 1;
                 break;
             case 0:
             case 2:
-                if (D_800625A0->party->ids[slot] == 4) {
+                if (D_800625A0->flags->party[slot] == 4) {
                     special ^= 1;
                     drawnPart = 0xff;
                     panel = 1;
@@ -1559,12 +1578,12 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             case 5:
                 func_801DF890(slot, gear);
                 cursor = 0;
-                D_800625A0->markers->visible[0] = 1;
+                D_800625A0->markers->shown[0] = 1;
                 reset = 1;
                 func_801DB0A8(0, top, 3, 0);
                 row = 0;
                 drawnSlot = 0xff;
-                D_800625A0->party->unk50[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 break;
             case 4:
                 swapped = func_801DF0D4(slot, part, special, gear);
@@ -1576,7 +1595,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                     func_801E0434(slot, gear);
                 }
                 KEEP_AND_LEAVE_LIST();
-                D_800625A0->party->unk50[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 row = 0;
                 break;
             case 1:
@@ -1605,7 +1624,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 drawnRow = 0xff;
                 panel = 1;
                 previewed = 0;
-                D_800625A0->block35C->highlighted = 0;
+                D_800625A0->equip_panel->highlighted = 0;
             }
         }
     }
@@ -1618,10 +1637,10 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     void *block;
 
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     func_801E05D0(slot, arg1, 0);
@@ -1632,24 +1651,24 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
 /* Open the 801e1544 screen: its block (+438), labels and window, the party
  * panel when two or more members can take part, and the green gauges. */
 void func_801E1014(void) {
-    MenuBlock438 *block;
+    MenuStatusList *block;
     s32 i;
     s32 j;
 
     block = func_80031BDC(0x25c0, 0);
-    D_800625A0->block438 = block;
+    D_800625A0->status_list = block;
     bzero(block, 0x25c0);
     func_801C72BC(4);
-    func_801E8018(2, D_800625A0->labels17E0, D_801EA564, &D_800625A0->party->unk4E);
-    func_801E8070(2, D_800625A0->labels17E0, D_801EA564, D_801E9EA0, &D_800625A0->party->unk4E, 0, 0, 4);
+    func_801E8018(2, D_800625A0->labels17e0, D_801EA564, &D_800625A0->flags->label17e0_shown);
+    func_801E8070(2, D_800625A0->labels17e0, D_801EA564, D_801E9EA0, &D_800625A0->flags->label17e0_shown, 0, 0, 4);
     func_801D397C(2, 0x44, 0xa, 0xe4, 0xc4, 0, 1, 4, 0);
-    D_800625A0->party->redraw6 = 0;
+    D_800625A0->flags->field_menu2_shown = 0;
     i = 0;
     j = 0; /* members that can take part */
-    D_800625A0->party->unk20[1] = 0;
+    D_800625A0->flags->panels_shown[1] = 0;
     for (; i < 3; i++) {
-        if (D_800625A0->party->ids[i] != 0xff) {
-            if (D_800625A0->party->ids[i] != 7 && D_800625A0->party->ids[i] != 8) {
+        if (D_800625A0->flags->party[i] != 0xff) {
+            if (D_800625A0->flags->party[i] != 7 && D_800625A0->flags->party[i] != 8) {
                 j++;
             }
         }
@@ -1657,24 +1676,24 @@ void func_801E1014(void) {
     if (j >= 2) {
         func_801D3488(3, 0);
     } else {
-        D_800625A0->party->unk53 = 0;
+        D_800625A0->flags->marks_shown = 0;
     }
     for (i = 0; i < 13; i++) {
         j = 0;
         do {
-            SetPolyG4(&D_800625A0->block438->gauges[i][j]);
-            (D_800625A0->block438->gauges[i] + j)->r0 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g0 = 0xff;
-            (D_800625A0->block438->gauges[i] + j)->b0 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r1 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g1 = 0xff;
-            (D_800625A0->block438->gauges[i] + j)->b1 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->b2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r3 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g3 = 0;
-            (D_800625A0->block438->gauges[i] + j)->b3 = 0;
+            SetPolyG4(&D_800625A0->status_list->gauges[i][j]);
+            (D_800625A0->status_list->gauges[i] + j)->r0 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g0 = 0xff;
+            (D_800625A0->status_list->gauges[i] + j)->b0 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r1 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g1 = 0xff;
+            (D_800625A0->status_list->gauges[i] + j)->b1 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->b2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r3 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g3 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->b3 = 0;
             j++;
         } while (j < 2);
     }
@@ -1683,12 +1702,12 @@ void func_801E1014(void) {
 /* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
 void func_801E1398(void) {
     func_801D3674();
-    D_800625A0->party->unk4D = 0;
+    D_800625A0->flags->status_list_shown = 0;
     func_801D4EA0(2);
     func_801C7BF4();
-    func_801E8044(2, &D_800625A0->party->unk4E);
+    func_801E8044(2, &D_800625A0->flags->label17e0_shown);
     func_801C72BC(0x14);
-    func_800320E8(D_800625A0->block438);
+    func_800320E8(D_800625A0->status_list);
 }
 
 /* Rate target `i` of the row: a nonzero target counts towards the average,
@@ -1740,13 +1759,13 @@ u32 func_801E1418(u8 slot, u8 row) {
     u32 percent;
 
     sum = 0;
-    if (row < 7 || (D_8006F8EA & 0x4000)) {
+    if (row < 7 || (D_8006D634.flags & 0x4000)) {
         i = 0;
         count = 0;
         r = row;
-        id = D_800625A0->party->ids[slot];
-        table = D_800625A0->block438->unk2578;
-        values = D_8006D8A0[id].unk90;
+        id = D_800625A0->flags->party[slot];
+        table = D_800625A0->status_list->unk2578;
+        values = D_8006D634.characters[id].useCounts;
     loop:
         RATE_TARGET();
         if (i < 7) {
@@ -1777,13 +1796,13 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
     case 1:
         for (i = 0; i < 5; i++) {
             if (D_801E97AC[row * 5 + i] != 0xff) {
-                D_800625A0->block438->counts[row] +=
+                D_800625A0->status_list->counts[row] +=
                     func_8002675C(D_800625A0->sheet, D_801E97AC[row * 5 + i],
-                                  &D_800625A0->block438->lists[row][D_800625A0->block438->counts[row] * 2],
-                                  D_800625A0->bufferIndex, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
+                                  &D_800625A0->status_list->lists[row][D_800625A0->status_list->counts[row] * 2],
+                                  D_800625A0->buffer_index, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
             }
         }
-        D_800625A0->block438->starts[row] = D_800625A0->bufferIndex;
+        D_800625A0->status_list->starts[row] = D_800625A0->buffer_index;
         break;
     case 2:
         if (percent / 100) {
@@ -1801,41 +1820,41 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
             text[4] = 0xc3;
         }
         func_80033B34(text, glyphs, 3);
-        D_800625A0->block438->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+        D_800625A0->status_list->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
         rect.x = (row & 1) * 24 + 0x180;
         rect.y = (row >> 1) * 13 + 0x80;
         rect.w = 0x28;
         rect.h = 0xd;
         LoadImage(&rect, pixels);
         DrawSync(0);
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x0 = 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y0 = row * 13 + 0x1f;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x1 =
-            D_800625A0->block438->values[row].width + 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y1 = row * 13 + 0x1f;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x2 = 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2c;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x3 =
-            D_800625A0->block438->values[row].width + 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2c;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x0 = 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y0 = row * 13 + 0x1f;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x1 =
+            D_800625A0->status_list->values[row].width + 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y1 = row * 13 + 0x1f;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x2 = 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y2 = row * 13 + 0x2c;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x3 =
+            D_800625A0->status_list->values[row].width + 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y3 = row * 13 + 0x2c;
         percent = percent * 5400 / 10000;
-        func_801E7C50(&D_800625A0->block438->values[row], row, 0x80, 0x82);
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x0 = 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y0 = row * 13 + 0x23;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x1 = percent + 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y1 = row * 13 + 0x23;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x2 = 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2b;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x3 = percent + 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2b;
-        D_800625A0->block438->gaugeBuffer[row] = D_800625A0->bufferIndex;
-        D_800625A0->block438->gaugeShown[row] = 1;
+        func_801E7C50(&D_800625A0->status_list->values[row], row, 0x80, 0x82);
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x0 = 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y0 = row * 13 + 0x23;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x1 = percent + 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y1 = row * 13 + 0x23;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x2 = 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y2 = row * 13 + 0x2b;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x3 = percent + 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y3 = row * 13 + 0x2b;
+        D_800625A0->status_list->gaugeBuffer[row] = D_800625A0->buffer_index;
+        D_800625A0->status_list->gaugeShown[row] = 1;
         break;
     }
 }
 
 /* Lay out the 801e1544 screen's thirteen rows for party slot `slot`: rows
- * the character has (bit of its D_8006ECF4 record) show their name and
+ * the character has (bit of its D_8006D634.skills record) show their name and
  * level digit (rows 0-6); others show only at 50% progress or more, with
  * the progress gauge; then the title. Owned rows pass `percent` unset, as
  * the original does. */
@@ -1853,8 +1872,8 @@ void func_801E1AC8(u8 slot) {
     text[1] = 0;
     pixels = func_80031BDC(0x3f6, 0);
     for (i = 0; i < 13; i++) {
-        D_800625A0->block438->gaugeShown[i] = 0;
-        if (func_801C8640(D_8006ECF4[D_800625A0->party->ids[slot]].values[0], i)) {
+        D_800625A0->status_list->gaugeShown[i] = 0;
+        if (func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].counterSkills, i)) {
             show = 1;
             kind = 1;
             learned = 1;
@@ -1870,54 +1889,54 @@ void func_801E1AC8(u8 slot) {
             learned = 0;
         }
         if (show) {
-            D_800625A0->block438->names[i].width =
-                func_80034EAC(func_80033784(D_800625A0->party->ids[slot], i), pixels, 0x24, 0);
+            D_800625A0->status_list->names[i].width =
+                func_80034EAC(func_80033784(D_800625A0->flags->party[slot], i), pixels, 0x24, 0);
             if (i < 7 && learned) {
-                text[0] = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][i + 7].unk17 + 0x10;
+                text[0] = D_800625A0->tables->arts[D_800625A0->flags->party[slot]][i + 7].unk17 + 0x10;
             } else {
                 text[0] = 0xf;
             }
             func_80033B34(text, glyphs, 1);
-            D_800625A0->block438->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+            D_800625A0->status_list->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
             rect.x = (i & 1) * 24 + 0x180;
             rect.y = i / 2 * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
             LoadImage(&rect, pixels);
             DrawSync(0);
-            func_801E7C50(&D_800625A0->block438->names[i], i, 0x80, 0x81);
-            func_801E7C50(&D_800625A0->block438->values[i], i, 0x80, 0x82);
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x0 = 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x1 =
-                D_800625A0->block438->names[i].width + 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x2 = 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x3 =
-                D_800625A0->block438->names[i].width + 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x0 = 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x1 =
-                D_800625A0->block438->values[i].width + 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x2 = 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x3 =
-                D_800625A0->block438->values[i].width + 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
-            D_800625A0->block438->names[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block438->shown[i] = 1;
+            func_801E7C50(&D_800625A0->status_list->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->status_list->values[i], i, 0x80, 0x82);
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x0 = 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y0 = i * 13 + 0x1f;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x1 =
+                D_800625A0->status_list->names[i].width + 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y1 = i * 13 + 0x1f;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x2 = 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y2 = i * 13 + 0x2c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x3 =
+                D_800625A0->status_list->names[i].width + 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y3 = i * 13 + 0x2c;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x0 = 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y0 = i * 13 + 0x1f;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x1 =
+                D_800625A0->status_list->values[i].width + 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y1 = i * 13 + 0x1f;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x2 = 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y2 = i * 13 + 0x2c;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x3 =
+                D_800625A0->status_list->values[i].width + 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y3 = i * 13 + 0x2c;
+            D_800625A0->status_list->names[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->status_list->shown[i] = 1;
         } else {
-            D_800625A0->block438->shown[i] = 0;
+            D_800625A0->status_list->shown[i] = 0;
         }
-        D_800625A0->block438->counts[i] = 0;
+        D_800625A0->status_list->counts[i] = 0;
         func_801E1544(i, kind, pixels, percent);
     }
     func_800320E8(pixels);
-    func_801D36E0(&D_800625A0->block438->title, slot, 0, 2);
-    D_800625A0->party->unk4D = 1;
+    func_801D36E0(&D_800625A0->status_list->title, slot, 0, 2);
+    D_800625A0->flags->status_list_shown = 1;
 }
 
 /* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
@@ -1929,7 +1948,7 @@ u8 func_801E20C8(u8 slot) {
 
     stay = 1;
     shown = 0xff;
-    if ((u32)(D_800625A0->party->ids[slot] - 7) < 2) {
+    if ((u32)(D_800625A0->flags->party[slot] - 7) < 2) {
         func_801C8574(4);
         return 1;
     }
@@ -1947,12 +1966,12 @@ u8 func_801E20C8(u8 slot) {
         case 9:
             do {
                 slot = func_801D9704(slot, 0, 0);
-            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->party[slot] - 7) < 2);
             break;
         case 10:
             do {
                 slot = func_801D9704(slot, 1, 0);
-            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->party[slot] - 7) < 2);
             break;
         }
     } while (stay);
@@ -1966,18 +1985,18 @@ u8 func_801E2250(void) {
     s32 i;
 
     block = func_80031BDC(0x2af0, 0);
-    D_800625A0->block358 = block;
+    D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     i = 0;
     while (1) {
-        if (D_800625A0->party->ready[i] != 0) {
+        if (D_800625A0->flags->ready[i] != 0) {
             break;
         }
         i++;
@@ -1988,14 +2007,14 @@ u8 func_801E2250(void) {
 
 /* Lay out the six labels of page `page` (D_801EA568) at +18e0. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, D_800625A0->labels18E0, D_801EA568 + page, D_800625A0->party->unk54);
+    func_801E8018(6, D_800625A0->labels18e0, D_801EA568 + page, D_800625A0->flags->labels18e0_shown);
 }
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2368(void) {
-    func_800320E8(D_800625A0->block358);
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->detail);
+    func_800320E8(D_800625A0->equip_panel);
+    func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
 
@@ -2018,7 +2037,7 @@ u8 func_801E23CC(void) {
     shown = 0xf3;
     first = 1;
     D_800625A0->choice = 0;
-    D_800625A0->choiceShown = 0xff;
+    D_800625A0->choice_shown = 0xff;
     slot = func_801E2250();
     while (stay) {
         func_801C7BF4();
@@ -2026,12 +2045,12 @@ u8 func_801E23CC(void) {
             func_801DFE2C(slot);
             func_801D2EC0(slot, 1);
             shown = slot;
-            page = D_8006F8E5[slot] ? 6 : 0;
+            page = D_8006D634.inGear[slot] ? 6 : 0;
             func_801E2324(page);
-            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
-            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
-            D_800625A0->labels18E0[4].visible = 1;
-            D_800625A0->labels18E0[5].visible = 1;
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->labels18e0_shown, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->labels18e0_shown, 5, 7, 6);
+            D_800625A0->labels18e0[4].projected = 1;
+            D_800625A0->labels18e0[5].projected = 1;
             if (first) {
                 first = 0;
                 func_801D1E80();
@@ -2039,37 +2058,37 @@ u8 func_801E23CC(void) {
                 func_801E86C8(0);
             }
         }
-        if (D_800625A0->choice != D_800625A0->choiceShown) {
-            func_801E8070(4, D_800625A0->labels18E0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->party->unk54,
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
+            func_801E8070(4, D_800625A0->labels18e0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->flags->labels18e0_shown,
                           D_800625A0->choice, 7, 0);
             func_801E8B4C(0);
-            D_800625A0->choiceShown = D_800625A0->choice;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801D22C4();
-            func_801E8044(4, D_800625A0->party->unk54);
-            D_800625A0->party->redraw7 = 0;
-            D_800625A0->party->unk8 = 0;
-            D_800625A0->party->unk4B = 0;
-            D_800625A0->party->unk54[4] = 0;
-            D_800625A0->party->unk54[5] = 0;
+            func_801E8044(4, D_800625A0->flags->labels18e0_shown);
+            D_800625A0->flags->detail_shown = 0;
+            D_800625A0->flags->equipment_shown = 0;
+            D_800625A0->flags->equip_labels_shown = 0;
+            D_800625A0->flags->labels18e0_shown[4] = 0;
+            D_800625A0->flags->labels18e0_shown[5] = 0;
             switch (D_800625A0->choice) {
             case 0:
-                if (D_800625A0->party->ids[slot] != 7) {
-                    D_800625A0->party->redrawA = 0;
+                if (D_800625A0->flags->party[slot] != 7) {
+                    D_800625A0->flags->lists_shown = 0;
                     func_801E05D0(slot, 0, 1);
                     func_801DE36C();
                     func_801D8DE4(slot, 0, 0, 1);
                     func_801D8EA4(slot, 0, 0, 1);
-                    D_800625A0->party->redrawA = 1;
+                    D_800625A0->flags->lists_shown = 1;
                 } else {
                     func_801C8574(4);
                 }
                 shown = 0xff;
                 break;
             case 1:
-                if (D_800625A0->party->ids[slot] != 7) {
+                if (D_800625A0->flags->party[slot] != 7) {
                     func_801DDF24(slot, 0, 1);
                     func_801DC2CC(1);
                 } else {
@@ -2078,7 +2097,7 @@ u8 func_801E23CC(void) {
                 shown = 0xff;
                 break;
             case 2:
-                if (D_800625A0->party->ids[slot] != 7) {
+                if (D_800625A0->flags->party[slot] != 7) {
                     func_801DDF24(slot, 0, 2);
                     func_801DC2CC(2);
                 } else {
@@ -2088,29 +2107,29 @@ u8 func_801E23CC(void) {
                 break;
             case 3:
                 if (D_80059179 == 0) {
-                    if (D_8006F8E5[slot] != 0) {
-                        D_8006F8E5[slot] = 0;
+                    if (D_8006D634.inGear[slot] != 0) {
+                        D_8006D634.inGear[slot] = 0;
                         page = 0;
-                    } else if (D_8006D8A0[D_800625A0->party->ids[slot]].gear != 0xff) {
+                    } else if (D_8006D634.characters[D_800625A0->flags->party[slot]].gearId != 0xff) {
                         page = 6;
-                        D_8006F8E5[slot] = 1;
+                        D_8006D634.inGear[slot] = 1;
                     }
-                    func_801D7CFC(slot, 1, D_8006F8E5[slot]);
+                    func_801D7CFC(slot, 1, D_8006D634.inGear[slot]);
                 } else {
                     func_801C8574(4);
                 }
                 shown = 0xff;
                 break;
             }
-            D_800625A0->party->unk54[4] = 1;
-            D_800625A0->party->unk54[5] = 1;
-            func_801E8018(6, D_800625A0->labels18E0, &D_801EA568[page], D_800625A0->party->unk54);
-            D_800625A0->party->redraw7 = 1;
-            D_800625A0->party->unk8 = 1;
-            D_800625A0->party->unk4B = 1;
+            D_800625A0->flags->labels18e0_shown[4] = 1;
+            D_800625A0->flags->labels18e0_shown[5] = 1;
+            func_801E8018(6, D_800625A0->labels18e0, &D_801EA568[page], D_800625A0->flags->labels18e0_shown);
+            D_800625A0->flags->detail_shown = 1;
+            D_800625A0->flags->equipment_shown = 1;
+            D_800625A0->flags->equip_labels_shown = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->party->redraw4 = 1;
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->flags->sprite_shown = 1;
+            D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 1);
             break;
         case 5:
@@ -2125,27 +2144,27 @@ u8 func_801E23CC(void) {
             if (D_800625A0->choice != 0) {
                 D_800625A0->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choiceCount - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
                 D_800625A0->choice = 0;
             }
             break;
         case 9:
             slot = func_801D9704(slot, 0, 1);
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->choice_shown = 0xff;
             break;
         case 10:
             slot = func_801D9704(slot, 1, 1);
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->choice_shown = 0xff;
             break;
         }
     }
-    func_801E8044(6, D_800625A0->party->unk54);
-    D_800625A0->party->redraw4 = 0;
-    D_800625A0->party->redraw3 = 0;
+    func_801E8044(6, D_800625A0->flags->labels18e0_shown);
+    D_800625A0->flags->sprite_shown = 0;
+    D_800625A0->flags->cursor_shown = 0;
     return 1;
 }
 
@@ -2155,13 +2174,13 @@ void func_801E2AE0(void) {
 
     func_801D249C(1);
     block = func_80031BDC(0x2af0, 0);
-    D_800625A0->block358 = block;
+    D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     func_801D3488(0, 0);
@@ -2169,9 +2188,9 @@ void func_801E2AE0(void) {
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2B80(void) {
-    func_800320E8(D_800625A0->block358);
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->detail);
+    func_800320E8(D_800625A0->equip_panel);
+    func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
 
@@ -2188,12 +2207,12 @@ u8 func_801E2BE4(void) {
     stay = 1;
     shown = 0xf3;
     first = 1;
-    slot = D_800625A0->firstMember;
+    slot = D_800625A0->first_member;
     D_800625A0->choice = 2;
-    D_800625A0->choiceShown = 0xff;
+    D_800625A0->choice_shown = 0xff;
     func_801E2AE0();
     for (i = 0; i < 3; i++) {
-        if (D_800625A0->party->ids[i] != 0xff) {
+        if (D_800625A0->flags->party[i] != 0xff) {
             slot = i;
             break;
         }
@@ -2201,8 +2220,8 @@ u8 func_801E2BE4(void) {
     while (stay) {
         func_801C7BF4();
         if (slot != shown) {
-            func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-            func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            func_801E36D4(D_800625A0->tables, D_800625A0->flags->party[slot]);
+            func_801E3A80(D_800625A0->tables, D_800625A0->flags->party[slot]);
             func_801D2EC0(slot, 0);
             shown = slot;
             if (first) {
@@ -2212,27 +2231,27 @@ u8 func_801E2BE4(void) {
                 func_801E86C8(0);
             }
         }
-        if (D_800625A0->choice != D_800625A0->choiceShown) {
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801D261C();
             func_801E8B4C(0);
-            D_800625A0->choiceShown = D_800625A0->choice;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801D22C4();
             func_801D25E4();
-            D_800625A0->party->redraw7 = 0;
-            D_800625A0->party->unk8 = 0;
-            D_800625A0->party->unk4B = 0;
+            D_800625A0->flags->detail_shown = 0;
+            D_800625A0->flags->equipment_shown = 0;
+            D_800625A0->flags->equip_labels_shown = 0;
             switch (D_800625A0->choice) {
             case 0:
-                D_800625A0->party->redrawA = 0;
+                D_800625A0->flags->lists_shown = 0;
                 func_801E05D0(slot, 0, 0);
                 func_801DE36C();
                 func_801D8DE4(slot, 0, 0, 0);
                 func_801D8EA4(slot, 0, 0, 0);
                 shown = 0xff;
-                D_800625A0->party->redrawA = 1;
+                D_800625A0->flags->lists_shown = 1;
                 break;
             case 1:
                 func_801DDF24(slot, 0, 0);
@@ -2244,12 +2263,12 @@ u8 func_801E2BE4(void) {
                 break;
             }
             func_801D249C(1);
-            D_800625A0->party->redraw7 = 1;
-            D_800625A0->party->unk8 = 1;
-            D_800625A0->party->unk4B = 1;
+            D_800625A0->flags->detail_shown = 1;
+            D_800625A0->flags->equipment_shown = 1;
+            D_800625A0->flags->equip_labels_shown = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->party->redraw4 = 1;
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->flags->sprite_shown = 1;
+            D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 0);
             break;
         case 5:
@@ -2264,11 +2283,11 @@ u8 func_801E2BE4(void) {
             if (D_800625A0->choice != 0) {
                 D_800625A0->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choiceCount - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
                 D_800625A0->choice = 0;
             }
             break;
@@ -2281,8 +2300,8 @@ u8 func_801E2BE4(void) {
         }
     }
     func_801D249C(0);
-    D_800625A0->party->redraw4 = 0;
-    D_800625A0->party->redraw3 = 0;
+    D_800625A0->flags->sprite_shown = 0;
+    D_800625A0->flags->cursor_shown = 0;
     return 1;
 }
 
@@ -2294,9 +2313,9 @@ void func_801E3088(u8 offset) {
         func_801D9E3C();
         break;
     case 2:
-        D_800625A0->party->redraw7 = 0;
-        D_800625A0->party->unk8 = 0;
-        D_800625A0->party->unk4B = 0;
+        D_800625A0->flags->detail_shown = 0;
+        D_800625A0->flags->equipment_shown = 0;
+        D_800625A0->flags->equip_labels_shown = 0;
         func_801E2368();
         break;
     case 3:
@@ -2310,9 +2329,9 @@ void func_801E3088(u8 offset) {
         func_801DE400();
         break;
     case 6:
-        D_800625A0->party->redraw7 = 0;
-        D_800625A0->party->unk8 = 0;
-        D_800625A0->party->unk4B = 0;
+        D_800625A0->flags->detail_shown = 0;
+        D_800625A0->flags->equipment_shown = 0;
+        D_800625A0->flags->equip_labels_shown = 0;
         func_801D25E4();
         func_801E2B80();
         break;
@@ -2327,8 +2346,8 @@ void func_801E3088(u8 offset) {
  * raise stats (capped at 200, HP max 999, EP max 99), change +78, or run a
  * debug fill. Returns nonzero when the restoring item had no effect. */
 u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
-    CharRecord *chara;
-    MenuItem *record;
+    CharacterRecord *chara;
+    ItemInfo *record;
     u8 hpFull;
     u8 epFull;
     s32 hpRate;
@@ -2338,10 +2357,10 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
     epFull = 0;
     record = tables->items;
     record += item;
-    chara = D_8006D8A0 + id;
+    chara = D_8006D634.characters + id;
     epRate = 10;
     if (record->flags & 0x8000) {
-        if (chara->hp == chara->hpMax) {
+        if (chara->hp == chara->maxHp) {
             hpFull = 1;
         } else {
             hpRate = 50;
@@ -2349,66 +2368,66 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
         }
     }
     if (record->flags & 0x4000) {
-        if (chara->ep == chara->epMax) {
+        if (chara->ep == chara->maxEp) {
             epFull = 1;
         } else {
             chara->ep += epRate * record->amount;
         }
     }
-    if (chara->hp > chara->hpMax) {
-        chara->hp = chara->hpMax;
+    if (chara->hp > chara->maxHp) {
+        chara->hp = chara->maxHp;
     }
-    if (chara->ep > chara->epMax) {
-        chara->ep = chara->epMax;
+    if (chara->ep > chara->maxEp) {
+        chara->ep = chara->maxEp;
     }
     if (record->flags & 4) {
         if (record->stats & 0x8000) {
-            chara->unk58 += record->amount;
+            chara->attack += record->amount;
         }
         if (record->stats & 0x4000) {
-            chara->unk59 += record->amount;
+            chara->defense += record->amount;
         }
         if (record->stats & 0x2000) {
-            chara->unk5B += record->amount;
+            chara->accuracy += record->amount;
         }
         if (record->stats & 0x1000) {
-            chara->unk5C += record->amount;
+            chara->etherDefense += record->amount;
         }
         if (record->stats & 0x800) {
-            chara->hpMax += record->amount;
+            chara->maxHp += record->amount;
         }
         if (record->stats & 0x400) {
-            chara->epMax += record->amount;
+            chara->maxEp += record->amount;
         }
-        if (chara->unk58 > 200) {
-            chara->unk58 = 200;
+        if (chara->attack > 200) {
+            chara->attack = 200;
         }
-        if (chara->unk59 > 200) {
-            chara->unk59 = 200;
+        if (chara->defense > 200) {
+            chara->defense = 200;
         }
-        if (chara->unk5B > 200) {
-            chara->unk5B = 200;
+        if (chara->accuracy > 200) {
+            chara->accuracy = 200;
         }
-        if (chara->unk5C > 200) {
-            chara->unk5C = 200;
+        if (chara->etherDefense > 200) {
+            chara->etherDefense = 200;
         }
-        if (chara->hpMax >= 1000) {
-            chara->hpMax = 999;
+        if (chara->maxHp >= 1000) {
+            chara->maxHp = 999;
         }
-        if (chara->epMax >= 100) {
-            chara->epMax = 99;
+        if (chara->maxEp >= 100) {
+            chara->maxEp = 99;
         }
     }
     if (record->flags & 2) {
         if (record->stats & 0x8000) {
-            chara->accessories[4] += record->stats;
-            if (chara->accessories[4] > 200) {
-                chara->accessories[4] = 200;
+            chara->field78 += record->stats;
+            if (chara->field78 > 200) {
+                chara->field78 = 200;
             }
-        } else if (chara->accessories[4] < (record->stats & 0xff)) {
-            chara->accessories[4] = 0;
+        } else if (chara->field78 < (record->stats & 0xff)) {
+            chara->field78 = 0;
         } else {
-            chara->accessories[4] -= record->stats;
+            chara->field78 -= record->stats;
         }
     }
     if (record->flags & 1) {
@@ -2446,25 +2465,25 @@ u8 target;
 u8 effect;
 u8 gear;
 {
-    CharRecord *source;
-    CharRecord *dest;
+    CharacterRecord *source;
+    CharacterRecord *dest;
     GearRecord *machine;
-    MenuEffect *record;
+    ArtInfo *record;
 
-    source = &D_8006D8A0[user];
-    dest = &D_8006D8A0[target];
-    machine = (GearRecord *)&D_8006D8A0[D_8006D8A0[user].gear + 11];
+    source = &D_8006D634.characters[user];
+    dest = &D_8006D634.characters[target];
+    machine = (GearRecord *)&D_8006D634.characters[D_8006D634.characters[user].gearId + 11];
     if (!gear) {
-        record = tables->effects[user];
+        record = tables->arts[user];
         record += effect;
-        dest->hp += source->unk5B * record->unk11;
-        if (dest->hp > dest->hpMax) {
-            dest->hp = dest->hpMax;
+        dest->hp += source->accuracy * record->unk11;
+        if (dest->hp > dest->maxHp) {
+            dest->hp = dest->maxHp;
         }
     } else {
-        machine->unk60 += machine->unk64 / 10;
-        if (machine->unk64 < machine->unk60) {
-            machine->unk60 = machine->unk64;
+        machine->hp += machine->maxHp / 10;
+        if (machine->maxHp < machine->hp) {
+            machine->hp = machine->maxHp;
         }
     }
 }
@@ -2473,109 +2492,109 @@ u8 gear;
  * (amount, kind bits and stat bonuses) and take its weapon's values (kind 4
  * characters: both weapons). */
 void func_801E36D4(MenuTables *tables, u8 id) {
-    CharRecord *chara;
-    MenuAccessory *accessory;
-    MenuWeapon *weapon;
+    CharacterRecord *chara;
+    AccessoryInfo *accessory;
+    EquipInfo *weapon;
     u8 i;
     u8 amount;
 
-    chara = &D_8006D8A0[id];
-    chara->bonus[5] = 0;
-    chara->unk32 = 0;
-    chara->bonus[0] = 0;
-    chara->bonus[1] = 0;
-    chara->bonus[2] = 0;
-    chara->bonus[3] = 0;
-    chara->bonus[4] = 0;
-    chara->bonus[6] = 0;
-    chara->bonus[7] = 0;
-    chara->unk30 = 0;
-    chara->unk31 = 0;
-    chara->unk7E = 0;
-    chara->unk82 = 0;
-    chara->unk86 = 0;
-    chara->unk8A = 0;
-    chara->unk8E = 0;
-    chara->unkA1 = 0;
+    chara = &D_8006D634.characters[id];
+    chara->bodyDefense = 0;
+    chara->flags32 = 0;
+    chara->equipAttack = 0;
+    chara->equipDefense = 0;
+    chara->equipSpeed = 0;
+    chara->equipAccuracy = 0;
+    chara->equipEtherDefense = 0;
+    chara->equip5E = 0;
+    chara->equip5F = 0;
+    chara->hpBonus = 0;
+    chara->epBonus = 0;
+    chara->status7E = 0;
+    chara->status82 = 0;
+    chara->status84.half.permanent = 0;
+    chara->status88.half.permanent = 0;
+    chara->status8C.half.permanent = 0;
+    chara->fieldA1 = 0;
     for (i = 0; i < 3; i++) {
         accessory = tables->accessories;
         accessory += chara->accessories[i];
-        chara->bonus[5] += accessory->amount;
+        chara->bodyDefense += accessory->amount;
         switch (accessory->kind) {
         case 1:
-            chara->unk7E |= accessory->value;
+            chara->status7E |= accessory->value;
             break;
         case 2:
-            chara->unk82 |= accessory->value;
+            chara->status82 |= accessory->value;
             break;
         case 3:
-            chara->unk86 |= accessory->value;
+            chara->status84.half.permanent |= accessory->value;
             break;
         case 4:
-            chara->unk8A |= accessory->value;
+            chara->status88.half.permanent |= accessory->value;
             break;
         case 7:
-            chara->unk8E |= accessory->value;
+            chara->status8C.half.permanent |= accessory->value;
             break;
         case 5:
-            chara->unk32 |= accessory->value;
+            chara->flags32 |= accessory->value;
             break;
         case 8:
         case 9:
-            chara->unk30 += accessory->value;
+            chara->hpBonus += accessory->value;
             break;
         case 10:
-            chara->unkA1 += accessory->value;
+            chara->fieldA1 += accessory->value;
             break;
         }
         amount = accessory->stats;
         if (accessory->stats & 0x8000) {
-            chara->bonus[0] += amount;
+            chara->equipAttack += amount;
         }
         if (accessory->stats & 0x4000) {
-            chara->bonus[1] += amount;
+            chara->equipDefense += amount;
         }
         if (accessory->stats & 0x2000) {
-            chara->bonus[2] += amount;
+            chara->equipSpeed += amount;
         }
         if (accessory->stats & 0x1000) {
-            chara->bonus[3] += amount;
+            chara->equipAccuracy += amount;
         }
         if (accessory->stats & 0x800) {
-            chara->bonus[4] += amount;
+            chara->equipEtherDefense += amount;
         }
         if (accessory->stats & 0x400) {
-            chara->bonus[6] += amount;
+            chara->equip5E += amount;
         }
         if (accessory->stats & 0x200) {
-            chara->bonus[7] += amount;
+            chara->equip5F += amount;
         }
         if (accessory->stats & 0x100) {
-            chara->bonus[5] += amount;
+            chara->bodyDefense += amount;
         }
     }
-    weapon = tables->weapons;
+    weapon = tables->equipment;
     weapon += chara->weapons[0];
-    chara->level = weapon->level;
-    chara->weaponValue = weapon->value;
-    chara->weaponA = weapon->a;
-    chara->weaponB = weapon->b;
-    if (chara->unk56 == 4) {
-        weapon = tables->weapons;
-        weapon += chara->specials[0];
-        chara->level = weapon->level;
-        chara->weaponValue = weapon->value;
-        chara->weaponA = weapon->a;
-        chara->weaponB = weapon->b;
-        weapon = tables->weapons;
-        weapon += chara->specials[3];
-        chara->unk1C = weapon->level;
-        chara->weapon2Value = weapon->value;
-        chara->weapon2A = weapon->a;
-        chara->weapon2B = weapon->b;
+    chara->entries[0].value4 = weapon->power;
+    chara->entries[0].field0 = weapon->value;
+    chara->entries[0].value2 = weapon->a;
+    chara->entries[0].value3 = weapon->b;
+    if (chara->characterId == 4) {
+        weapon = tables->equipment;
+        weapon += chara->entryItems[0];
+        chara->entries[0].value4 = weapon->power;
+        chara->entries[0].field0 = weapon->value;
+        chara->entries[0].value2 = weapon->a;
+        chara->entries[0].value3 = weapon->b;
+        weapon = tables->equipment;
+        weapon += chara->entryItems[3];
+        chara->entries[3].value4 = weapon->power;
+        chara->entries[3].field0 = weapon->value;
+        chara->entries[3].value2 = weapon->a;
+        chara->entries[3].value3 = weapon->b;
     }
-    if (chara->weaponB == 100) {
-        chara->unk8E |= chara->weaponValue;
+    if (chara->entries[0].value3 == 100) {
+        chara->status8C.half.permanent |= chara->entries[0].field0;
     }
 }
 
@@ -2583,40 +2602,40 @@ void func_801E36D4(MenuTables *tables, u8 id) {
  * (the first from the level, scaled 6/10 with +1c for kind 4), capped at
  * 250, 99 or 16. */
 void func_801E3A80(MenuTables *tables, u8 id) {
-    CharRecord *chara;
+    CharacterRecord *chara;
 
-    chara = &D_8006D8A0[id];
-    if (chara->unk56 == 4) {
-        tables->shown[0] = (chara->level + chara->unk1C) * 6 / 10;
+    chara = &D_8006D634.characters[id];
+    if (chara->characterId == 4) {
+        tables->stats[0] = (chara->entries[0].value4 + chara->entries[3].value4) * 6 / 10;
     } else {
-        tables->shown[0] = chara->level + (chara->unk58 + chara->bonus[0]);
+        tables->stats[0] = chara->entries[0].value4 + (chara->attack + chara->equipAttack);
     }
-    tables->shown[1] = chara->unk5E + chara->bonus[6];
-    tables->shown[2] = chara->bonus[5] + (chara->unk59 + chara->bonus[1]);
-    tables->shown[3] = chara->unk5F + chara->bonus[7];
-    tables->shown[4] = chara->unk5B + chara->bonus[3];
-    tables->shown[5] = chara->unk5C + chara->bonus[4];
-    tables->shown[6] = chara->unk5A + chara->bonus[2];
-    if (tables->shown[0] >= 251) {
-        tables->shown[0] = 250;
+    tables->stats[1] = chara->field5E + chara->equip5E;
+    tables->stats[2] = chara->bodyDefense + (chara->defense + chara->equipDefense);
+    tables->stats[3] = chara->field5F + chara->equip5F;
+    tables->stats[4] = chara->accuracy + chara->equipAccuracy;
+    tables->stats[5] = chara->etherDefense + chara->equipEtherDefense;
+    tables->stats[6] = chara->speed + chara->equipSpeed;
+    if (tables->stats[0] >= 251) {
+        tables->stats[0] = 250;
     }
-    if (tables->shown[1] >= 100) {
-        tables->shown[1] = 99;
+    if (tables->stats[1] >= 100) {
+        tables->stats[1] = 99;
     }
-    if (tables->shown[2] >= 251) {
-        tables->shown[2] = 250;
+    if (tables->stats[2] >= 251) {
+        tables->stats[2] = 250;
     }
-    if (tables->shown[3] >= 100) {
-        tables->shown[3] = 99;
+    if (tables->stats[3] >= 100) {
+        tables->stats[3] = 99;
     }
-    if (tables->shown[4] >= 251) {
-        tables->shown[4] = 250;
+    if (tables->stats[4] >= 251) {
+        tables->stats[4] = 250;
     }
-    if (tables->shown[5] >= 251) {
-        tables->shown[5] = 250;
+    if (tables->stats[5] >= 251) {
+        tables->stats[5] = 250;
     }
-    if (tables->shown[6] >= 21) {
-        tables->shown[6] = 16;
+    if (tables->stats[6] >= 21) {
+        tables->stats[6] = 16;
     }
 }
 
@@ -2625,41 +2644,41 @@ void func_801E3A80(MenuTables *tables, u8 id) {
  * character 7 (HP x50, stats plus bonuses). */
 void func_801E3C2C(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    CharRecord *pilot;
+    CharacterRecord *pilot;
     s32 bonus;
 
     if (D_8006D634.flags & 0x1000) {
         D_801E9808[9] = 10;
     }
     if (gear == 7) {
-        D_8006D634.gears[7].unk60 = D_8006D634.chars[7].hp * 50;
-        D_8006D634.gears[7].unk64 = D_8006D634.chars[7].hpMax * 50;
-        D_8006D634.gears[7].unk3C = D_8006D634.chars[7].unk58 + D_8006D634.chars[7].bonus[0];
-        D_8006D634.gears[7].unk70 = (D_8006D634.chars[7].unk59 + D_8006D634.chars[7].bonus[1]) * 12;
-        D_8006D634.gears[7].unk72 = (D_8006D634.chars[7].unk5C + D_8006D634.chars[7].bonus[4]) * 6;
-        D_8006D634.gears[7].unk98 = D_8006D634.chars[7].unk5A + D_8006D634.chars[7].bonus[2];
+        D_8006D634.gears[7].hp = D_8006D634.characters[7].hp * 50;
+        D_8006D634.gears[7].maxHp = D_8006D634.characters[7].maxHp * 50;
+        D_8006D634.gears[7].attack = D_8006D634.characters[7].attack + D_8006D634.characters[7].equipAttack;
+        D_8006D634.gears[7].bodyDefense = (D_8006D634.characters[7].defense + D_8006D634.characters[7].equipDefense) * 12;
+        D_8006D634.gears[7].armor = (D_8006D634.characters[7].etherDefense + D_8006D634.characters[7].equipEtherDefense) * 6;
+        D_8006D634.gears[7].speed = D_8006D634.characters[7].speed + D_8006D634.characters[7].equipSpeed;
     }
     record = &D_8006D634.gears[gear];
-    pilot = &D_8006D634.chars[D_801E9808[gear]];
-    tables->unk9C = record->unk60;
-    tables->unkA0 = record->unk64;
-    tables->unkA4 = record->unk70 + record->unk40;
-    tables->unkA6 = pilot->unk5C + pilot->bonus[4] + record->unk42 + record->unk72;
-    tables->unkA8 = record->unk68 + record->unk44;
-    tables->unkAA = record->unk6A;
-    tables->unkAC = record->unk38;
-    tables->unkAE = record->unk3A;
-    bonus = record->unk3C * (record->unk74 + record->unk55[1]);
+    pilot = &D_8006D634.characters[D_801E9808[gear]];
+    tables->gear.hp = record->hp;
+    tables->gear.max_hp = record->maxHp;
+    tables->gear.defense = record->bodyDefense + record->equipBodyDefense;
+    tables->gear.ether_defense = pilot->etherDefense + pilot->equipEtherDefense + record->equipArmor + record->armor;
+    tables->gear.value68 = record->field68 + record->equip68a;
+    tables->gear.value6a = record->field6A;
+    tables->gear.fuel = record->fuel;
+    tables->gear.max_fuel = record->maxFuel;
+    bonus = record->attack * (record->field74 + record->equipAttackScale);
     if (gear == 5 || gear == 13) {
-        tables->unkB0 = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10 + bonus;
+        tables->gear.attack = (record->entries[0].valueE + record->entries[2].valueE) * 6 / 10 + bonus;
     } else {
-        tables->unkB0 = record->slots[0].unk2 + bonus;
+        tables->gear.attack = record->entries[0].valueE + bonus;
     }
-    tables->unkB2 = record->unk9F + record->unk4D;
-    tables->unkB3 = record->unk98 - record->unk4A;
-    tables->unkB4 = record->unk9E + record->unk54;
-    tables->unkB5 = record->unk9D;
-    tables->unkB6 = record->unk9C;
+    tables->gear.hit = record->hitBonus + record->equipHitBonus;
+    tables->gear.speed = record->speed - record->speedPenalty;
+    tables->gear.frame_factor = record->frameFactor + record->equipFrameFactor;
+    tables->gear.value9d = record->field9D;
+    tables->gear.guard = record->guard;
 }
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
@@ -2673,50 +2692,50 @@ void func_801E3ECC(MenuTables *tables, u8 gear) {
     switch (gear) {
     case 0:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[1].unk9[i] = D_8006DFAC[0].unk9[i];
+            D_8006D634.gears[1].parts[i] = D_8006D634.gears[0].parts[i];
         }
         func_801E433C(tables, 1);
         break;
     case 1:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[15].unk9[i] = D_8006DFAC[1].unk9[i];
+            D_8006D634.gears[15].parts[i] = D_8006D634.gears[1].parts[i];
         }
         func_801E433C(tables, 15);
         break;
     case 2:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[10].unk9[i] = D_8006DFAC[2].unk9[i];
+            D_8006D634.gears[10].parts[i] = D_8006D634.gears[2].parts[i];
         }
         func_801E433C(tables, 10);
         break;
     case 3:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[11].unk9[i] = D_8006DFAC[3].unk9[i];
+            D_8006D634.gears[11].parts[i] = D_8006D634.gears[3].parts[i];
         }
         func_801E433C(tables, 11);
         break;
     case 4:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[12].unk9[i] = D_8006DFAC[4].unk9[i];
+            D_8006D634.gears[12].parts[i] = D_8006D634.gears[4].parts[i];
         }
         func_801E433C(tables, 12);
-        D_8006DFAC[12].unkC[0] = D_8006DFAC[4].unkC[0];
+        D_8006D634.gears[12].weapons[0] = D_8006D634.gears[4].weapons[0];
         func_801E4754(tables, 12);
         break;
     case 5:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[13].unk9[i] = D_8006DFAC[5].unk9[i];
+            D_8006D634.gears[13].parts[i] = D_8006D634.gears[5].parts[i];
         }
         func_801E433C(tables, 13);
-        D_8006DFAC[13].unkC[0] = D_8006DFAC[5].unkC[0];
-        D_8006DFAC[13].unkC[3] = D_8006DFAC[5].unkC[3];
-        D_8006DFAC[13].unk4[0] = D_8006DFAC[5].unk4[0];
-        D_8006DFAC[13].unk4[3] = D_8006DFAC[5].unk4[3];
+        D_8006D634.gears[13].weapons[0] = D_8006D634.gears[5].weapons[0];
+        D_8006D634.gears[13].weapons[3] = D_8006D634.gears[5].weapons[3];
+        D_8006D634.gears[13].partItems[0] = D_8006D634.gears[5].partItems[0];
+        D_8006D634.gears[13].partItems[3] = D_8006D634.gears[5].partItems[3];
         func_801E4754(tables, 13);
         break;
     case 6:
         for (i = 0; i < 3; i++) {
-            D_8006DFAC[14].unk9[i] = D_8006DFAC[6].unk9[i];
+            D_8006D634.gears[14].parts[i] = D_8006D634.gears[6].parts[i];
         }
         func_801E433C(tables, 14);
         break;
@@ -2733,19 +2752,19 @@ void func_801E4170(MenuTables *tables, u8 gear) {
 /* Take gear `gear`'s engine values from the tables, keeping +60 within +64. */
 void func_801E41C0(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearEngine *engine;
+    GearEngineInfo *engine;
 
-    record = &D_8006DFAC[gear];
+    record = &D_8006D634.gears[gear];
     engine = tables->engines;
     engine += record->engine;
-    record->unk60 = engine->unk4;
-    record->unk64 = engine->unk4;
-    record->unk98 = engine->unk14;
-    record->unk9E = engine->unk15;
-    record->unk9D = engine->unk16;
-    record->unk9F = engine->unk17;
-    if (record->unk64 < record->unk60) {
-        record->unk60 = record->unk64;
+    record->hp = engine->unk4;
+    record->maxHp = engine->unk4;
+    record->speed = engine->unk14;
+    record->frameFactor = engine->unk15;
+    record->field9D = engine->unk16;
+    record->hitBonus = engine->unk17;
+    if (record->maxHp < record->hp) {
+        record->hp = record->maxHp;
     }
 }
 
@@ -2753,30 +2772,30 @@ void func_801E41C0(MenuTables *tables, u8 gear) {
  * gear record (+70, +72). */
 void func_801E4258(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearFrame *frame;
+    GearFrameInfo *frame;
 
-    record = &D_8006DFAC[gear];
+    record = &D_8006D634.gears[gear];
     frame = tables->frames;
     frame += record->frame;
-    record->unk70 = frame->unk8;
-    record->unk72 = frame->unkA;
+    record->bodyDefense = frame->unk8;
+    record->armor = frame->unkA;
 }
 
 /* Take gear `gear`'s part values from the tables, keeping +38 within +3a. */
 void func_801E42AC(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearPart *part;
+    GearPartInfo *part;
 
-    record = &D_8006DFAC[gear];
+    record = &D_8006D634.gears[gear];
     part = tables->parts;
-    part += record->unk3;
-    record->unk3A = part->unk6;
-    record->unk3C = part->unkC;
-    record->unk3D = part->unkD;
-    record->unk3E = part->unkE;
-    record->unk3F = part->unkE;
-    if (record->unk38 > record->unk3A) {
-        record->unk38 = record->unk3A;
+    part += record->field3;
+    record->maxFuel = part->unk6;
+    record->attack = part->unkC;
+    record->pad3D = part->unkD;
+    record->field3E = part->unkE;
+    record->attackScale = part->unkE;
+    if (record->fuel > record->maxFuel) {
+        record->fuel = record->maxFuel;
     }
 }
 
@@ -2786,70 +2805,70 @@ void func_801E42AC(MenuTables *tables, u8 gear) {
  * cleared when the pilot flies this gear). */
 void func_801E433C(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    MenuGearAccessory *part;
+    GearAccessoryInfo *part;
     u16 *bits;
     u16 *flags;
     u8 i;
     u8 j;
 
     record = &D_8006D634.gears[gear];
-    bits = &D_8006D634.records[D_801E9808[gear]].values[2];
-    flags = &D_8006D634.records[D_801E9808[gear]].unk1A;
-    record->unk40 = 0;
-    record->unk42 = 0;
-    record->unk44 = 0;
-    record->unk48 = 0;
-    record->unk4C = 0;
-    record->unk4D = 0;
-    record->unk4E = 0;
-    record->unk4F = 0;
-    record->unk6E = 0;
-    record->unk54 = 0;
+    bits = &D_8006D634.skills[D_801E9808[gear]].unlocksA;
+    flags = &D_8006D634.skills[D_801E9808[gear]].flags1A;
+    record->equipBodyDefense = 0;
+    record->equipArmor = 0;
+    record->equip68a = 0;
+    record->field48 = 0;
+    record->equipGuard = 0;
+    record->equipHitBonus = 0;
+    record->equipSpeed = 0;
+    record->field4F = 0;
+    record->field6E = 0;
+    record->equipFrameFactor = 0;
     for (i = 0; i < 16; i++) {
-        record->unk88[i] = 0;
+        record->resistances[i] = 0;
     }
     for (i = 0; i < 4; i++) {
-        record->unk50[i] = 0;
+        record->speedBonus[i] = 0;
     }
     for (i = 0; i < 3; i++) {
-        record->unk55[i] = 0;
+        ((GearRecordBytes55 *)record)->bytes55[i] = 0;
     }
-    record->unk7E = 0;
-    record->unk82 = 0;
-    record->unk86 &= 0xf000;
+    record->field7E = 0;
+    record->status82 = 0;
+    record->status84.half.permanent &= 0xf000;
     *bits &= 0xfb6f;
     for (j = 0; j < 3; j++) {
-        part = tables->gearAccessories;
-        part += record->unk9[j];
-        record->unk40 += part->unkD;
-        record->unk42 += part->unkE;
-        record->unk44 += part->unk6;
-        record->unk4C += part->unk18;
-        record->unk4D += part->unk14;
-        record->unk54 += part->unk1B;
+        part = tables->gear_accessories;
+        part += record->parts[j];
+        record->equipBodyDefense += part->unkD;
+        record->equipArmor += part->unkE;
+        record->equip68a += part->unk6;
+        record->equipGuard += part->unk18;
+        record->equipHitBonus += part->unk14;
+        record->equipFrameFactor += part->unk1B;
         for (i = 0; i < 4; i++) {
-            record->unk50[i] += part->unk10[i];
+            record->speedBonus[i] += part->unk10[i];
         }
         switch (part->kind) {
         case 1:
-            record->unk7E |= part->value;
+            record->field7E |= part->value;
             break;
         case 2:
-            record->unk82 |= part->value;
+            record->status82 |= part->value;
             break;
         case 3:
-            record->unk86 |= part->value;
+            record->status84.half.permanent |= part->value;
             break;
         case 4:
-            record->unk6E |= part->value;
+            record->field6E |= part->value;
             for (i = 0; i < 16; i++) {
                 if (part->value & (0x8000 >> i)) {
-                    record->unk88[i] += part->unk1A;
+                    record->resistances[i] += part->unk1A;
                 }
             }
             break;
         case 5:
-            record->unk4F += part->value;
+            record->field4F += part->value;
             break;
         case 6:
             if ((*bits & 0x1000) && (*bits & 0x800)) {
@@ -2867,19 +2886,19 @@ void func_801E433C(MenuTables *tables, u8 gear) {
             }
             break;
         case 9:
-            record->unk48 |= part->value;
+            record->field48 |= part->value;
         case 10:
-            record->unk55[1] += part->value;
+            record->equipAttackScale += part->value;
             break;
         case 11:
-            record->unk55[2] += part->value;
+            record->chargeRate += part->value;
             break;
         }
     }
-    record->unk4A = func_801E4928(gear);
-    if (record->unk4F) {
+    record->speedPenalty = func_801E4928(gear);
+    if (record->field4F) {
         *flags |= 0x8000;
-    } else if (gear == D_8006D8A0[D_801E9808[gear]].gear) {
+    } else if (gear == D_8006D634.characters[D_801E9808[gear]].gearId) {
         *flags &= 0x7fff;
     }
 }
@@ -2888,45 +2907,45 @@ void func_801E433C(MenuTables *tables, u8 gear) {
  * attributes; gears 5 and 13 instead take their three slot weapons. */
 void func_801E4754(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearWeapon *weapon;
+    GearWeaponInfo *weapon;
 
-    record = &D_8006DFAC[gear];
-    weapon = tables->gearWeapons;
-    weapon += record->unkC[0];
-    record->slots[0].unk2 = weapon->unkE;
-    record->slots[0].value = weapon->unk12;
-    record->slots[0].unk3 = weapon->unk10;
-    record->slots[0].unk4 = weapon->unk11;
-    record->attrs[0] = weapon->attrs[0];
-    record->attrs[1] = weapon->attrs[1];
-    record->attrs[2] = weapon->attrs[2];
-    record->attrs[3] = weapon->attrs[3];
-    if (record->slots[0].unk4 == 100) {
-        record->unk86 &= 0xfff;
-        record->unk86 |= record->slots[0].value;
+    record = &D_8006D634.gears[gear];
+    weapon = tables->gear_weapons;
+    weapon += record->weapons[0];
+    record->entries[0].valueE = weapon->unkE;
+    record->entries[0].field0 = weapon->unk12;
+    record->entries[0].value10 = weapon->unk10;
+    record->entries[0].value11 = weapon->unk11;
+    record->fileVariant = weapon->attrs[0];
+    record->spriteVariants[0] = weapon->attrs[1];
+    record->spriteVariants[1] = weapon->attrs[2];
+    record->spriteVariants[2] = weapon->attrs[3];
+    if (record->entries[0].value11 == 100) {
+        record->status84.half.permanent &= 0xfff;
+        record->status84.half.permanent |= record->entries[0].field0;
     }
     if (gear == 5 || gear == 13) {
-        weapon = tables->gearWeapons;
-        weapon += record->unk4[0];
-        record->slots[0].unk2 = weapon->unkE;
-        record->slots[0].value = weapon->unk12;
-        record->slots[0].unk3 = weapon->unk10;
-        record->slots[0].unk4 = weapon->unk11;
-        record->attrs[1] = weapon->attrs[1];
-        weapon = tables->gearWeapons;
-        weapon += record->unk4[1];
-        record->slots[1].unk2 = weapon->unkE;
-        record->slots[1].value = weapon->unk12;
-        record->slots[1].unk3 = weapon->unk10;
-        record->slots[1].unk4 = weapon->unk11;
-        record->attrs[2] = weapon->attrs[2];
-        weapon = tables->gearWeapons;
-        weapon += record->unk4[3];
-        record->slots[2].unk2 = weapon->unkE;
-        record->slots[2].value = weapon->unk12;
-        record->slots[2].unk3 = weapon->unk10;
-        record->slots[2].unk4 = weapon->unk11;
-        record->attrs[3] = weapon->attrs[3];
+        weapon = tables->gear_weapons;
+        weapon += record->partItems[0];
+        record->entries[0].valueE = weapon->unkE;
+        record->entries[0].field0 = weapon->unk12;
+        record->entries[0].value10 = weapon->unk10;
+        record->entries[0].value11 = weapon->unk11;
+        record->spriteVariants[0] = weapon->attrs[1];
+        weapon = tables->gear_weapons;
+        weapon += record->partItems[1];
+        record->entries[1].valueE = weapon->unkE;
+        record->entries[1].field0 = weapon->unk12;
+        record->entries[1].value10 = weapon->unk10;
+        record->entries[1].value11 = weapon->unk11;
+        record->spriteVariants[1] = weapon->attrs[2];
+        weapon = tables->gear_weapons;
+        weapon += record->partItems[3];
+        record->entries[2].valueE = weapon->unkE;
+        record->entries[2].field0 = weapon->unk12;
+        record->entries[2].value10 = weapon->unk10;
+        record->entries[2].value11 = weapon->unk11;
+        record->spriteVariants[2] = weapon->attrs[3];
     }
 }
 
@@ -2935,23 +2954,24 @@ u8 func_801E4928(u8 gear) {
     GearRecord *record;
     s16 value;
 
-    record = &D_8006DFAC[gear];
-    value = ((u16)(record->unk44 / 120) - record->unk75) / 2;
+    record = &D_8006D634.gears[gear];
+    value = ((u16)(record->equip68a / 120) - record->field75) / 2;
     if (value < 0) {
         value = 0;
     }
     return value;
 }
 
-/* Set view `gear`'s value to 2/90 of the gear's +64, in steps of ten. */
-void func_801E4998(MenuGearViews *views, u8 gear) {
-    MenuGearValue *value;
+/* Set the fuel cost of gear `gear`'s art record 37, the first of its
+ * fuel-cost list, to 2/90 of the gear's maximum HP, in steps of ten. */
+void func_801E4998(MenuTables *tables, u8 gear) {
+    ArtInfo *art;
 
-    /* One pointer walks from the view to its value record. */
-    value = (MenuGearValue *)views->views[gear];
-    value = &((MenuGearView *)value)->value;
-    value->unk24 = D_8006DFAC[gear].unk64 / 10 * 2 / 9;
-    value->unk24 = value->unk24 / 10 * 10;
+    /* One pointer walks from the gear's art records to the record. */
+    art = (tables->arts + 11)[gear];
+    art = &art[37];
+    art->gearCost = D_8006D634.gears[gear].maxHp / 10 * 2 / 9;
+    art->gearCost = art->gearCost / 10 * 10;
 }
 
 /* Copy the game data into save buffer `save`: characters, gears (their
@@ -2964,26 +2984,26 @@ void func_801E4A28(SaveData *save) {
 
     for (i = 0; i < 11; i++) {
         chara = &save->chars[i];
-        *chara = *(SaveWordsA4 *)&D_8006D8A0[i];
+        *chara = *(SaveWordsA4 *)&D_8006D634.characters[i];
     }
     for (i = 0; i < 20; i++) {
         dst = &save->gears[i];
-        src = &D_8006DFAC[i];
+        src = &D_8006D634.gears[i];
         dst->head = *(SaveWords10 *)src;
-        dst->slots = *(SaveWords18 *)src->slots;
-        dst->attrs = *(s32 *)src->attrs;
-        dst->unk38 = src->unk38;
-        dst->unk60 = src->unk60;
-        dst->unk99 = src->unk99;
-        dst->unk74 = src->unk74;
-        dst->unk75 = src->unk75;
+        dst->entries = *(SaveWords18 *)src->entries;
+        dst->variants = *(s32 *)&src->fileVariant;
+        dst->fuel = src->fuel;
+        dst->hp = src->hp;
+        dst->defense = src->defense;
+        dst->field74 = src->field74;
+        dst->field75 = src->field75;
     }
     save->names = *(SaveWordsDC *)&D_8006D634.names;
-    save->unk100 = *(SaveWords190 *)D_8006D634.unkDC;
+    save->unk100 = *(SaveWords190 *)D_8006D634.names[11];
     save->unkE4C = *(SaveWords78 *)D_8006D634.unk1648;
-    save->records = *(SaveWords160 *)D_8006D634.records;
-    save->unk1024 = *(SaveWords100 *)D_8006D634.unk1820;
-    memcpy(save->unk1124, D_8006D634.unk1920, 0xa38);
+    save->records = *(SaveWords160 *)D_8006D634.skills;
+    save->unk1024 = *(SaveWords100 *)&D_8006D634.worldmap;
+    memcpy(save->unk1124, ((u8 *)&D_8006D634 + 0x1920), 0xa38);
 }
 
 /* Load the game data from save buffer `save`: characters, records, gears
@@ -2997,32 +3017,32 @@ void func_801E4D10(SaveData *save, MenuTables *tables) {
     u8 i;
 
     for (i = 0; i < 11; i++) {
-        chara = (SaveWordsA4 *)&D_8006D634.chars[i];
+        chara = (SaveWordsA4 *)&D_8006D634.characters[i];
         saved = &save->chars[i];
         *chara = *saved;
     }
-    *(SaveWords160 *)D_8006D634.records = save->records;
+    *(SaveWords160 *)D_8006D634.skills = save->records;
     for (i = 0; i < 20; i++) {
         dst = &D_8006D634.gears[i];
         src = &save->gears[i];
         *(SaveWords10 *)dst = src->head;
-        *(SaveWords18 *)dst->slots = src->slots;
-        *(s32 *)dst->attrs = src->attrs;
+        *(SaveWords18 *)dst->entries = src->entries;
+        *(s32 *)&dst->fileVariant = src->variants;
         func_801E41C0(tables, i);
         func_801E4258(tables, i);
         func_801E42AC(tables, i);
         func_801E433C(tables, i);
-        dst->unk38 = src->unk38;
-        dst->unk60 = src->unk60;
-        dst->unk99 = src->unk99;
-        dst->unk74 = src->unk74;
-        dst->unk75 = src->unk75;
+        dst->fuel = src->fuel;
+        dst->hp = src->hp;
+        dst->defense = src->defense;
+        dst->field74 = src->field74;
+        dst->field75 = src->field75;
     }
     *(SaveWordsDC *)D_8006D634.names = save->names;
-    *(SaveWords190 *)D_8006D634.unkDC = save->unk100;
+    *(SaveWords190 *)D_8006D634.names[11] = save->unk100;
     *(SaveWords78 *)D_8006D634.unk1648 = save->unkE4C;
-    *(SaveWords100 *)D_8006D634.unk1820 = save->unk1024;
-    memcpy(D_8006D634.unk1920, save->unk1124, 0xa38);
+    *(SaveWords100 *)&D_8006D634.worldmap = save->unk1024;
+    memcpy(((u8 *)&D_8006D634 + 0x1920), save->unk1124, 0xa38);
 }
 
 /* Debug: put ten of every entry into the five inventory lists. */
@@ -3030,171 +3050,171 @@ void func_801E5058(void) {
     u8 i;
 
     for (i = 1; i < 0x48; i++) {
-        D_8006F3D0[i] = i;
-        D_8006F36C[i] = 10;
+        D_8006D634.weaponIds[i] = i;
+        D_8006D634.weaponCounts[i] = 10;
     }
     for (i = 1; i < 0x96; i++) {
-        D_8006F4FC[i] = i;
-        D_8006F434[i] = 10;
+        D_8006D634.accessoryIds[i] = i;
+        D_8006D634.accessoryCounts[i] = 10;
     }
     for (i = 1; i < 0x4c; i++) {
-        D_8006F65C[i] = i;
-        D_8006F5C6[i] = 10;
+        D_8006D634.itemIds[i + 2] = i;
+        D_8006D634.itemCounts[i + 2] = 10;
     }
     for (i = 1; i < 0x48; i++) {
-        D_8006F754[i] = i;
-        D_8006F6F0[i] = 10;
+        D_8006D634.gearPartIds[i] = i;
+        D_8006D634.gearPartCounts[i] = 10;
     }
     for (i = 1; i < 0x69; i++) {
-        D_8006F84E[i] = i;
-        D_8006F7B8[i] = 10;
+        D_8006D634.gearAccessoryIds[i] = i;
+        D_8006D634.gearAccessoryCounts[i] = 10;
     }
 }
 
-/* Debug: reset D_8006F364 and the eleven D_8006ECF4 records (four values,
+/* Debug: reset D_8006D634.joined and the eleven D_8006D634.skills records (four values,
  * flag 7 and the +1a value) to their defaults. */
 void func_801E5178(void) {
-    D_8006F364 = 0x7ff;
-    D_8006ECF4[0].values[0] = 0xfff8;
-    D_8006ECF4[0].values[1] = 0xff00;
-    D_8006ECF4[0].values[2] = 0xfff0;
-    D_8006ECF4[0].values[3] = 0xfe00;
-    D_8006ECF4[0].unk1A = 0xe000;
-    D_8006ECF4[0].flag = 7;
-    D_8006ECF4[1].values[0] = 0xffe0;
-    D_8006ECF4[1].values[1] = 0xfff0;
-    D_8006ECF4[1].values[2] = 0xfff0;
-    D_8006ECF4[1].values[3] = 0xfff0;
-    D_8006ECF4[1].unk1A = 0xc000;
-    D_8006ECF4[1].flag = 7;
-    D_8006ECF4[2].values[0] = 0xffe0;
-    D_8006ECF4[2].values[1] = 0xffe0;
-    D_8006ECF4[2].values[2] = 0xfff0;
-    D_8006ECF4[2].values[3] = 0xff00;
-    D_8006ECF4[2].unk1A = 0x8000;
-    D_8006ECF4[2].flag = 7;
-    D_8006ECF4[3].values[0] = 0xffe0;
-    D_8006ECF4[3].values[1] = 0xffc0;
-    D_8006ECF4[3].values[2] = 0xfff0;
-    D_8006ECF4[3].values[3] = 0xff00;
-    D_8006ECF4[3].unk1A = 0xf000;
-    D_8006ECF4[3].flag = 7;
-    D_8006ECF4[4].values[0] = 0xffc0;
-    D_8006ECF4[4].values[1] = 0xffc0;
-    D_8006ECF4[4].values[2] = 0xfff0;
-    D_8006ECF4[4].values[3] = 0xffc0;
-    D_8006ECF4[4].unk1A = 0xe000;
-    D_8006ECF4[4].flag = 7;
-    D_8006ECF4[5].values[0] = 0xffc0;
-    D_8006ECF4[5].values[1] = 0xf000;
-    D_8006ECF4[5].values[2] = 0xfff0;
-    D_8006ECF4[5].values[3] = 0xf000;
-    D_8006ECF4[5].unk1A = 0x8000;
-    D_8006ECF4[5].flag = 7;
-    D_8006ECF4[6].values[0] = 0xffc0;
-    D_8006ECF4[6].values[1] = 0xff00;
-    D_8006ECF4[6].values[2] = 0xfff0;
-    D_8006ECF4[6].values[3] = 0xff00;
-    D_8006ECF4[6].unk1A = 0x8000;
-    D_8006ECF4[6].flag = 7;
-    D_8006ECF4[7].values[0] = 0;
-    D_8006ECF4[7].values[1] = 0xff00;
-    D_8006ECF4[7].values[2] = 0;
-    D_8006ECF4[7].values[3] = 0xff00;
-    D_8006ECF4[7].unk1A = 0;
-    D_8006ECF4[7].flag = 7;
-    D_8006ECF4[8].values[0] = 0;
-    D_8006ECF4[8].values[1] = 0xf800;
-    D_8006ECF4[8].values[2] = 0xfff0;
-    D_8006ECF4[8].values[3] = 0;
-    D_8006ECF4[8].unk1A = 0xe000;
-    D_8006ECF4[8].flag = 7;
-    D_8006ECF4[9].values[0] = 0xffe0;
-    D_8006ECF4[9].values[1] = 0xffe0;
-    D_8006ECF4[9].values[2] = 0xfff0;
-    D_8006ECF4[9].values[3] = 0xffe0;
-    D_8006ECF4[9].unk1A = 0x8000;
-    D_8006ECF4[9].flag = 7;
-    D_8006ECF4[10].values[0] = 0xffc0;
-    D_8006ECF4[10].values[1] = 0xff00;
-    D_8006ECF4[10].values[2] = 0xfff0;
-    D_8006ECF4[10].values[3] = 0xff00;
-    D_8006ECF4[10].unk1A = 0x8000;
-    D_8006ECF4[10].flag = 7;
+    D_8006D634.joined = 0x7ff;
+    D_8006D634.skills[0].counterSkills = 0xfff8;
+    D_8006D634.skills[0].levelSkills = 0xff00;
+    D_8006D634.skills[0].unlocksA = 0xfff0;
+    D_8006D634.skills[0].unlocksB = 0xfe00;
+    D_8006D634.skills[0].flags1A = 0xe000;
+    D_8006D634.skills[0].tier = 7;
+    D_8006D634.skills[1].counterSkills = 0xffe0;
+    D_8006D634.skills[1].levelSkills = 0xfff0;
+    D_8006D634.skills[1].unlocksA = 0xfff0;
+    D_8006D634.skills[1].unlocksB = 0xfff0;
+    D_8006D634.skills[1].flags1A = 0xc000;
+    D_8006D634.skills[1].tier = 7;
+    D_8006D634.skills[2].counterSkills = 0xffe0;
+    D_8006D634.skills[2].levelSkills = 0xffe0;
+    D_8006D634.skills[2].unlocksA = 0xfff0;
+    D_8006D634.skills[2].unlocksB = 0xff00;
+    D_8006D634.skills[2].flags1A = 0x8000;
+    D_8006D634.skills[2].tier = 7;
+    D_8006D634.skills[3].counterSkills = 0xffe0;
+    D_8006D634.skills[3].levelSkills = 0xffc0;
+    D_8006D634.skills[3].unlocksA = 0xfff0;
+    D_8006D634.skills[3].unlocksB = 0xff00;
+    D_8006D634.skills[3].flags1A = 0xf000;
+    D_8006D634.skills[3].tier = 7;
+    D_8006D634.skills[4].counterSkills = 0xffc0;
+    D_8006D634.skills[4].levelSkills = 0xffc0;
+    D_8006D634.skills[4].unlocksA = 0xfff0;
+    D_8006D634.skills[4].unlocksB = 0xffc0;
+    D_8006D634.skills[4].flags1A = 0xe000;
+    D_8006D634.skills[4].tier = 7;
+    D_8006D634.skills[5].counterSkills = 0xffc0;
+    D_8006D634.skills[5].levelSkills = 0xf000;
+    D_8006D634.skills[5].unlocksA = 0xfff0;
+    D_8006D634.skills[5].unlocksB = 0xf000;
+    D_8006D634.skills[5].flags1A = 0x8000;
+    D_8006D634.skills[5].tier = 7;
+    D_8006D634.skills[6].counterSkills = 0xffc0;
+    D_8006D634.skills[6].levelSkills = 0xff00;
+    D_8006D634.skills[6].unlocksA = 0xfff0;
+    D_8006D634.skills[6].unlocksB = 0xff00;
+    D_8006D634.skills[6].flags1A = 0x8000;
+    D_8006D634.skills[6].tier = 7;
+    D_8006D634.skills[7].counterSkills = 0;
+    D_8006D634.skills[7].levelSkills = 0xff00;
+    D_8006D634.skills[7].unlocksA = 0;
+    D_8006D634.skills[7].unlocksB = 0xff00;
+    D_8006D634.skills[7].flags1A = 0;
+    D_8006D634.skills[7].tier = 7;
+    D_8006D634.skills[8].counterSkills = 0;
+    D_8006D634.skills[8].levelSkills = 0xf800;
+    D_8006D634.skills[8].unlocksA = 0xfff0;
+    D_8006D634.skills[8].unlocksB = 0;
+    D_8006D634.skills[8].flags1A = 0xe000;
+    D_8006D634.skills[8].tier = 7;
+    D_8006D634.skills[9].counterSkills = 0xffe0;
+    D_8006D634.skills[9].levelSkills = 0xffe0;
+    D_8006D634.skills[9].unlocksA = 0xfff0;
+    D_8006D634.skills[9].unlocksB = 0xffe0;
+    D_8006D634.skills[9].flags1A = 0x8000;
+    D_8006D634.skills[9].tier = 7;
+    D_8006D634.skills[10].counterSkills = 0xffc0;
+    D_8006D634.skills[10].levelSkills = 0xff00;
+    D_8006D634.skills[10].unlocksA = 0xfff0;
+    D_8006D634.skills[10].unlocksB = 0xff00;
+    D_8006D634.skills[10].flags1A = 0x8000;
+    D_8006D634.skills[10].tier = 7;
 }
 
-/* Set up portrait `index`: hide it and its mark, set the grey covers and
+/* Set up panel `index`: hide it and stop its opening, set the grey fills and
  * their draw modes, and the four edge lists' quads (sheet records 0-3). */
 void func_801E53CC(u8 index) {
-    MenuPortrait *portrait;
+    MenuPanel *panel;
     RECT window;
     u8 i;
 
-    portrait = D_800625A0->portraits[index];
+    panel = D_800625A0->panels[index];
     window.y = 0;
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    D_800625A0->party->unk20[index] = 0;
-    D_800625A0->party->unk27[index] = 0;
+    D_800625A0->flags->panels_shown[index] = 0;
+    D_800625A0->flags->panels_growing[index] = 0;
     for (i = 0; i < 2; i++) {
-        SetPolyG4(&portrait->fill[i]);
-        (portrait->fill + i)->r0 = 0x68;
-        (portrait->fill + i)->g0 = 0x68;
-        (portrait->fill + i)->b0 = 0x68;
-        (portrait->fill + i)->r1 = 0x68;
-        (portrait->fill + i)->g1 = 0x68;
-        (portrait->fill + i)->b1 = 0x68;
-        (portrait->fill + i)->r2 = 0x68;
-        (portrait->fill + i)->g2 = 0x68;
-        (portrait->fill + i)->b2 = 0x68;
-        (portrait->fill + i)->r3 = 0x68;
-        (portrait->fill + i)->g3 = 0x68;
-        (portrait->fill + i)->b3 = 0x68;
-        SetSemiTrans(&portrait->fill[i], 1);
-        SetDrawMode(&portrait->fillMode[i], 0, 0,
-                    GetTPage(0, 0, D_800625A0->sheetEntries[0][4], D_800625A0->sheetEntries[0][5]), &window);
+        SetPolyG4(&panel->fill[i]);
+        (panel->fill + i)->r0 = 0x68;
+        (panel->fill + i)->g0 = 0x68;
+        (panel->fill + i)->b0 = 0x68;
+        (panel->fill + i)->r1 = 0x68;
+        (panel->fill + i)->g1 = 0x68;
+        (panel->fill + i)->b1 = 0x68;
+        (panel->fill + i)->r2 = 0x68;
+        (panel->fill + i)->g2 = 0x68;
+        (panel->fill + i)->b2 = 0x68;
+        (panel->fill + i)->r3 = 0x68;
+        (panel->fill + i)->g3 = 0x68;
+        (panel->fill + i)->b3 = 0x68;
+        SetSemiTrans(&panel->fill[i], 1);
+        SetDrawMode(&panel->fill_mode[i], 0, 0,
+                    GetTPage(0, 0, D_800625A0->sheet_entries[0].page_x, D_800625A0->sheet_entries[0].page_y), &window);
     }
     for (i = 0; i < 4; i++) {
-        SetPolyFT4(&portrait->edge[0][i]);
-        SetShadeTex(&portrait->edge[0][i], 1);
-        (portrait->edge[0] + i)->r0 = 0xff;
-        (portrait->edge[0] + i)->g0 = 0xff;
-        (portrait->edge[0] + i)->b0 = 0xff;
-        portrait->edge[0][i].tpage = GetTPage(D_800625A0->sheetEntries[0][1], 0, D_800625A0->sheetEntries[0][4],
-                                            D_800625A0->sheetEntries[0][5]);
-        portrait->edge[0][i].clut = GetClut(D_800625A0->sheetEntries[0][2], D_800625A0->sheetEntries[0][3]);
-        SetPolyFT4(&portrait->edge[1][i]);
-        SetShadeTex(&portrait->edge[1][i], 1);
-        (portrait->edge[1] + i)->r0 = 0xff;
-        (portrait->edge[1] + i)->g0 = 0xff;
-        (portrait->edge[1] + i)->b0 = 0xff;
-        portrait->edge[1][i].tpage = GetTPage(D_800625A0->sheetEntries[1][1], 0, D_800625A0->sheetEntries[1][4],
-                                            D_800625A0->sheetEntries[1][5]);
-        portrait->edge[1][i].clut = GetClut(D_800625A0->sheetEntries[1][2], D_800625A0->sheetEntries[1][3]);
-        SetPolyFT4(&portrait->edge[2][i]);
-        SetShadeTex(&portrait->edge[2][i], 1);
-        (portrait->edge[2] + i)->r0 = 0xff;
-        (portrait->edge[2] + i)->g0 = 0xff;
-        (portrait->edge[2] + i)->b0 = 0xff;
-        portrait->edge[2][i].tpage = GetTPage(D_800625A0->sheetEntries[2][1], 0, D_800625A0->sheetEntries[2][4],
-                                            D_800625A0->sheetEntries[2][5]);
-        portrait->edge[2][i].clut = GetClut(D_800625A0->sheetEntries[2][2], D_800625A0->sheetEntries[2][3]);
-        SetPolyFT4(&portrait->edge[3][i]);
-        SetShadeTex(&portrait->edge[3][i], 1);
-        (portrait->edge[3] + i)->r0 = 0xff;
-        (portrait->edge[3] + i)->g0 = 0xff;
-        (portrait->edge[3] + i)->b0 = 0xff;
-        portrait->edge[3][i].tpage = GetTPage(D_800625A0->sheetEntries[3][1], 0, D_800625A0->sheetEntries[3][4],
-                                            D_800625A0->sheetEntries[3][5]);
-        portrait->edge[3][i].clut = GetClut(D_800625A0->sheetEntries[3][2], D_800625A0->sheetEntries[3][3]);
+        SetPolyFT4(&panel->edge[0][i]);
+        SetShadeTex(&panel->edge[0][i], 1);
+        (panel->edge[0] + i)->r0 = 0xff;
+        (panel->edge[0] + i)->g0 = 0xff;
+        (panel->edge[0] + i)->b0 = 0xff;
+        panel->edge[0][i].tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0, D_800625A0->sheet_entries[0].page_x,
+                                            D_800625A0->sheet_entries[0].page_y);
+        panel->edge[0][i].clut = GetClut(D_800625A0->sheet_entries[0].clut_x, D_800625A0->sheet_entries[0].clut_y);
+        SetPolyFT4(&panel->edge[1][i]);
+        SetShadeTex(&panel->edge[1][i], 1);
+        (panel->edge[1] + i)->r0 = 0xff;
+        (panel->edge[1] + i)->g0 = 0xff;
+        (panel->edge[1] + i)->b0 = 0xff;
+        panel->edge[1][i].tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0, D_800625A0->sheet_entries[1].page_x,
+                                            D_800625A0->sheet_entries[1].page_y);
+        panel->edge[1][i].clut = GetClut(D_800625A0->sheet_entries[1].clut_x, D_800625A0->sheet_entries[1].clut_y);
+        SetPolyFT4(&panel->edge[2][i]);
+        SetShadeTex(&panel->edge[2][i], 1);
+        (panel->edge[2] + i)->r0 = 0xff;
+        (panel->edge[2] + i)->g0 = 0xff;
+        (panel->edge[2] + i)->b0 = 0xff;
+        panel->edge[2][i].tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0, D_800625A0->sheet_entries[2].page_x,
+                                            D_800625A0->sheet_entries[2].page_y);
+        panel->edge[2][i].clut = GetClut(D_800625A0->sheet_entries[2].clut_x, D_800625A0->sheet_entries[2].clut_y);
+        SetPolyFT4(&panel->edge[3][i]);
+        SetShadeTex(&panel->edge[3][i], 1);
+        (panel->edge[3] + i)->r0 = 0xff;
+        (panel->edge[3] + i)->g0 = 0xff;
+        (panel->edge[3] + i)->b0 = 0xff;
+        panel->edge[3][i].tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0, D_800625A0->sheet_entries[3].page_x,
+                                            D_800625A0->sheet_entries[3].page_y);
+        panel->edge[3][i].clut = GetClut(D_800625A0->sheet_entries[3].clut_x, D_800625A0->sheet_entries[3].clut_y);
     }
 }
 
 /* Set up image block `index`'s 16x16 sprite and semi-transparent cover at
  * its position for both buffers, and the two draw modes (blend mode 2). */
 void func_801E56E8(s32 index) {
-    MenuImage *image;
+    MenuSlotImage *image;
     s16 *x;
     s16 *y;
     s32 i;
@@ -3203,75 +3223,75 @@ void func_801E56E8(s32 index) {
     i = 0;
     x = D_801E9894[index];
     y = D_801E9914[index];
-    image = D_800625A0->images[index];
+    image = D_800625A0->slots[index];
     for (; i < 2; i++) {
-        func_801E927C(&image->polys[i]);
-        image->polys[i].x0 = *x;
-        image->polys[i].y0 = *y;
-        image->polys[i].x1 = *x + 0x10;
-        image->polys[i].y1 = *y;
-        image->polys[i].x2 = *x;
-        image->polys[i].y2 = *y + 0x10;
-        image->polys[i].x3 = *x + 0x10;
-        image->polys[i].y3 = *y + 0x10;
-        image->polys[i].tpage = GetTPage(0, 0, 0x140, 0x80);
-        SetPolyF4(&image->shade[i]);
-        image->shade[i].r0 = 0x80;
-        image->shade[i].g0 = 0x80;
-        image->shade[i].b0 = 0x80;
-        SetSemiTrans(&image->shade[i], 1);
-        image->shade[i].x0 = *x;
-        image->shade[i].y0 = *y;
-        image->shade[i].x1 = *x + 0x10;
-        image->shade[i].y1 = *y;
-        image->shade[i].x2 = *x;
-        image->shade[i].y2 = *y + 0x10;
-        image->shade[i].x3 = *x + 0x10;
-        image->shade[i].y3 = *y + 0x10;
-        func_801C851C(image->shadeVerts, *x, *y, 0x10, 0x10);
+        func_801E927C(&image->icon[i]);
+        image->icon[i].x0 = *x;
+        image->icon[i].y0 = *y;
+        image->icon[i].x1 = *x + 0x10;
+        image->icon[i].y1 = *y;
+        image->icon[i].x2 = *x;
+        image->icon[i].y2 = *y + 0x10;
+        image->icon[i].x3 = *x + 0x10;
+        image->icon[i].y3 = *y + 0x10;
+        image->icon[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyF4(&image->box[i]);
+        image->box[i].r0 = 0x80;
+        image->box[i].g0 = 0x80;
+        image->box[i].b0 = 0x80;
+        SetSemiTrans(&image->box[i], 1);
+        image->box[i].x0 = *x;
+        image->box[i].y0 = *y;
+        image->box[i].x1 = *x + 0x10;
+        image->box[i].y1 = *y;
+        image->box[i].x2 = *x;
+        image->box[i].y2 = *y + 0x10;
+        image->box[i].x3 = *x + 0x10;
+        image->box[i].y3 = *y + 0x10;
+        func_801C851C(image->iconAt, *x, *y, 0x10, 0x10);
     }
     window.y = 0;
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    SetDrawMode(&image->modes[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
-    SetDrawMode(&image->modes[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->boxMode[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->boxMode[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
 }
 
 /* Set up image block `index`'s green 16x16 frame at its position: the
  * top/right and left/bottom lines and their vertices, for both buffers. */
 void func_801E5924(s32 index) {
-    MenuImage *image;
+    MenuSlotImage *image;
     s16 *x;
     s16 *y;
     s32 i;
 
     x = D_801E9894[index];
     y = D_801E9914[index];
-    image = D_800625A0->images[index];
+    image = D_800625A0->slots[index];
     for (i = 0; i < 2; i++) {
-        SetLineF3(&image->top[i]);
-        image->top[i].r0 = 0;
-        image->top[i].g0 = 0xff;
-        image->top[i].b0 = 0;
-        image->top[i].x0 = *x;
-        image->top[i].y0 = *y;
-        image->top[i].x1 = *x + 0x10;
-        image->top[i].y1 = *y;
-        image->top[i].x2 = *x + 0x10;
-        image->top[i].y2 = *y + 0x10;
-        func_801C851C(image->topVerts, *x, *y, 0x10, 0x10);
-        SetLineF3(&image->bottom[i]);
-        image->bottom[i].r0 = 0;
-        image->bottom[i].g0 = 0xff;
-        image->bottom[i].b0 = 0;
-        image->bottom[i].x0 = *x;
-        image->bottom[i].y0 = *y;
-        image->bottom[i].x1 = *x;
-        image->bottom[i].y1 = *y + 0x10;
-        image->bottom[i].x2 = *x + 0x10;
-        image->bottom[i].y2 = *y + 0x10;
-        func_801C851C(image->bottomVerts, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->lineA[i]);
+        image->lineA[i].r0 = 0;
+        image->lineA[i].g0 = 0xff;
+        image->lineA[i].b0 = 0;
+        image->lineA[i].x0 = *x;
+        image->lineA[i].y0 = *y;
+        image->lineA[i].x1 = *x + 0x10;
+        image->lineA[i].y1 = *y;
+        image->lineA[i].x2 = *x + 0x10;
+        image->lineA[i].y2 = *y + 0x10;
+        func_801C851C(image->lineAAt, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->lineB[i]);
+        image->lineB[i].r0 = 0;
+        image->lineB[i].g0 = 0xff;
+        image->lineB[i].b0 = 0;
+        image->lineB[i].x0 = *x;
+        image->lineB[i].y0 = *y;
+        image->lineB[i].x1 = *x;
+        image->lineB[i].y1 = *y + 0x10;
+        image->lineB[i].x2 = *x + 0x10;
+        image->lineB[i].y2 = *y + 0x10;
+        func_801C851C(image->lineBAt, *x, *y, 0x10, 0x10);
     }
 }
 
@@ -3282,7 +3302,7 @@ void func_801E5ACC(void) {
 
     for (i = 0; i < 32; i++) {
         block = func_80031BDC(0x158, 0);
-        D_800625A0->images[i] = block;
+        D_800625A0->slots[i] = block;
         bzero(block, 0x158);
         func_801E56E8(i);
         func_801E5924(i);
@@ -3294,7 +3314,7 @@ void func_801E5B3C(void) {
     s32 i;
 
     for (i = 0; i < 32; i++) {
-        func_800320E8(D_800625A0->images[i]);
+        func_800320E8(D_800625A0->slots[i]);
     }
 }
 
@@ -3306,25 +3326,25 @@ void func_801E5B88(void) {
 
     for (i = 0; i < 32; i++) {
         for (buffer = 0; buffer < 2; buffer++) {
-            func_801E927C(&D_800625A0->block34C->chars[i * 2 + buffer]);
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x0 = D_801E9994[i % 21] + i / 21 * 8;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y0 = D_801E99E8[i / 21];
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x1 = D_801E9994[i % 21] + i / 21 * 8 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y1 = D_801E99E8[i / 21];
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x2 = D_801E9994[i % 21] + i / 21 * 8;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y2 = D_801E99E8[i / 21] + 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x3 = D_801E9994[i % 21] + i / 21 * 8 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y3 = D_801E99E8[i / 21] + 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u0 = i % 16 * 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v0 = i / 16 * 16 - 0x20;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u1 = i % 16 * 16 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v1 = i / 16 * 16 - 0x20;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u2 = i % 16 * 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v2 = i / 16 * 16 - 0x11;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u3 = i % 16 * 16 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v3 = i / 16 * 16 - 0x11;
-            D_800625A0->block34C->chars[i * 2 + buffer].tpage = GetTPage(0, 0, 0x140, 0x80);
-            D_800625A0->block34C->chars[i * 2 + buffer].clut = GetClut(0, 0x1c0);
+            func_801E927C(&D_800625A0->file_info->chars[i * 2 + buffer]);
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x0 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y0 = D_801E99E8[i / 21];
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x1 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y1 = D_801E99E8[i / 21];
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x2 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y2 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x3 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y3 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u0 = i % 16 * 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v0 = i / 16 * 16 - 0x20;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u1 = i % 16 * 16 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v1 = i / 16 * 16 - 0x20;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u2 = i % 16 * 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v2 = i / 16 * 16 - 0x11;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u3 = i % 16 * 16 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v3 = i / 16 * 16 - 0x11;
+            D_800625A0->file_info->chars[i * 2 + buffer].tpage = GetTPage(0, 0, 0x140, 0x80);
+            D_800625A0->file_info->chars[i * 2 + buffer].clut = GetClut(0, 0x1c0);
         }
     }
 }
@@ -3342,37 +3362,37 @@ void func_801E5E4C(void) {
     x = &D_801E99F0;
     y = &D_801E99F8;
     for (; i < 2; i++) {
-        func_801E927C(&D_800625A0->block34C->cursor[i]);
-        (D_800625A0->block34C->cursor + i)->x0 = *x;
-        (D_800625A0->block34C->cursor + i)->y0 = *y;
-        (D_800625A0->block34C->cursor + i)->x1 = *x + 0x20;
-        (D_800625A0->block34C->cursor + i)->y1 = *y;
-        (D_800625A0->block34C->cursor + i)->x2 = *x;
-        (D_800625A0->block34C->cursor + i)->y2 = *y + 0x20;
-        (D_800625A0->block34C->cursor + i)->x3 = *x + 0x20;
-        (D_800625A0->block34C->cursor + i)->y3 = *y + 0x20;
-        D_800625A0->block34C->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
-        SetPolyG4(&D_800625A0->block34C->band[i]);
-        (D_800625A0->block34C->band + i)->r0 = 0x80;
-        (D_800625A0->block34C->band + i)->g0 = 0;
-        (D_800625A0->block34C->band + i)->b0 = 0x80;
-        (D_800625A0->block34C->band + i)->r1 = 0;
-        (D_800625A0->block34C->band + i)->g1 = 0;
-        (D_800625A0->block34C->band + i)->b1 = 0x80;
-        (D_800625A0->block34C->band + i)->r2 = 0x10;
-        (D_800625A0->block34C->band + i)->g2 = 0;
-        (D_800625A0->block34C->band + i)->b2 = 0x10;
-        (D_800625A0->block34C->band + i)->r3 = 0;
-        (D_800625A0->block34C->band + i)->g3 = 0;
-        (D_800625A0->block34C->band + i)->b3 = 0x10;
-        (D_800625A0->block34C->band + i)->x0 = 0;
-        (D_800625A0->block34C->band + i)->y0 = 0x4a;
-        (D_800625A0->block34C->band + i)->x1 = right;
-        (D_800625A0->block34C->band + i)->y1 = 0x4a;
-        (D_800625A0->block34C->band + i)->x2 = 0;
-        (D_800625A0->block34C->band + i)->y2 = 0x8a;
-        (D_800625A0->block34C->band + i)->x3 = right;
-        (D_800625A0->block34C->band + i)->y3 = 0x8a;
+        func_801E927C(&D_800625A0->file_info->cursor[i]);
+        (D_800625A0->file_info->cursor + i)->x0 = *x;
+        (D_800625A0->file_info->cursor + i)->y0 = *y;
+        (D_800625A0->file_info->cursor + i)->x1 = *x + 0x20;
+        (D_800625A0->file_info->cursor + i)->y1 = *y;
+        (D_800625A0->file_info->cursor + i)->x2 = *x;
+        (D_800625A0->file_info->cursor + i)->y2 = *y + 0x20;
+        (D_800625A0->file_info->cursor + i)->x3 = *x + 0x20;
+        (D_800625A0->file_info->cursor + i)->y3 = *y + 0x20;
+        D_800625A0->file_info->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyG4(&D_800625A0->file_info->band[i]);
+        (D_800625A0->file_info->band + i)->r0 = 0x80;
+        (D_800625A0->file_info->band + i)->g0 = 0;
+        (D_800625A0->file_info->band + i)->b0 = 0x80;
+        (D_800625A0->file_info->band + i)->r1 = 0;
+        (D_800625A0->file_info->band + i)->g1 = 0;
+        (D_800625A0->file_info->band + i)->b1 = 0x80;
+        (D_800625A0->file_info->band + i)->r2 = 0x10;
+        (D_800625A0->file_info->band + i)->g2 = 0;
+        (D_800625A0->file_info->band + i)->b2 = 0x10;
+        (D_800625A0->file_info->band + i)->r3 = 0;
+        (D_800625A0->file_info->band + i)->g3 = 0;
+        (D_800625A0->file_info->band + i)->b3 = 0x10;
+        (D_800625A0->file_info->band + i)->x0 = 0;
+        (D_800625A0->file_info->band + i)->y0 = 0x4a;
+        (D_800625A0->file_info->band + i)->x1 = right;
+        (D_800625A0->file_info->band + i)->y1 = 0x4a;
+        (D_800625A0->file_info->band + i)->x2 = 0;
+        (D_800625A0->file_info->band + i)->y2 = 0x8a;
+        (D_800625A0->file_info->band + i)->x3 = right;
+        (D_800625A0->file_info->band + i)->y3 = 0x8a;
     }
 }
 
@@ -3383,22 +3403,22 @@ void func_801E61B0(void) {
     s32 i;
 
     for (view = 0; view < 3; view++) {
-        D_800625A0->block34C->views[view].frameCount = 0;
+        D_800625A0->file_info->views[view].frameCount = 0;
         for (i = 0; i < 9; i++) {
             if (D_801EA494[i] != 0xffff) {
-                D_800625A0->block34C->views[view].frameCount +=
+                D_800625A0->file_info->views[view].frameCount +=
                     func_8002675C(D_800625A0->sheet, D_801EA494[i],
-                                  D_800625A0->block34C->views[view].frame[D_800625A0->block34C->views[view].frameCount],
-                                  D_800625A0->bufferIndex, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
+                                  D_800625A0->file_info->views[view].frame[D_800625A0->file_info->views[view].frameCount],
+                                  D_800625A0->buffer_index, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
             }
         }
-        D_800625A0->block34C->views[view].frameBuffer = D_800625A0->bufferIndex;
-        func_801E927C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex]);
-        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
-        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].clut = D_800595D4;
-        func_801E920C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex], D_801E9F98[0] + view * 0x50,
+        D_800625A0->file_info->views[view].frameBuffer = D_800625A0->buffer_index;
+        func_801E927C(&D_800625A0->file_info->views[view].name[D_800625A0->buffer_index]);
+        D_800625A0->file_info->views[view].name[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
+        D_800625A0->file_info->views[view].name[D_800625A0->buffer_index].clut = D_800595D4;
+        func_801E920C(&D_800625A0->file_info->views[view].name[D_800625A0->buffer_index], D_801E9F98[0] + view * 0x50,
                       D_801E9FBC[0] + 7, D_801EA578[view + 6] * 4, D_801EA5C4[view + 6], 0x48, 0xd);
-        D_800625A0->block34C->views[view].nameBuffer = D_800625A0->bufferIndex;
+        D_800625A0->file_info->views[view].nameBuffer = D_800625A0->buffer_index;
     }
 }
 
@@ -3408,7 +3428,7 @@ void func_801E6450(void) {
     u8 reserved[8]; /* the original frame reserves 8 unused bytes */
 
     block = func_80031BDC(0x2dc0, 0);
-    D_800625A0->block34C = block;
+    D_800625A0->file_info = block;
     bzero(block, 0x2dc0);
     func_801E5B88();
     func_801E5E4C();
@@ -3416,8 +3436,8 @@ void func_801E6450(void) {
 
 /* Free the 2dc0-byte block at +34c and clear party flag +b. */
 void func_801E649C(void) {
-    func_800320E8(D_800625A0->block34C);
-    D_800625A0->party->unkB = 0;
+    func_800320E8(D_800625A0->file_info);
+    D_800625A0->flags->file_info_shown = 0;
 }
 
 /* Clear the 64x32 image area at (140, e0) to black and clear party flag +b. */
@@ -3429,7 +3449,7 @@ void func_801E64E0(void) {
     rect.w = 0x40;
     rect.h = 0x20;
     ClearImage(&rect, 0, 0, 0);
-    D_800625A0->party->unkB = 0;
+    D_800625A0->flags->file_info_shown = 0;
 }
 
 /* Pack each of the 16 rows of `rows` in place, merging bytes 1-2, 5-6, 9-10
@@ -3544,124 +3564,125 @@ void func_801E6668(s32 index) {
 }
 
 /* Lay out the save's play time (two separators and seven digits at y 7a)
- * and its two-digit number (+23, plus one) with its label at (8, 66). */
-void func_801E68AC(MenuViewSet *set) {
+ * and its file digit plus one, as two digits, with its label at (8, 66). */
+void func_801E68AC(SaveSummary *set) {
     s32 i;
 
-    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon0, D_800625A0->bufferIndex, D_801E9FE0[0], 0x7a,
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->file_info->colon0, D_800625A0->buffer_index, D_801E9FE0[0], 0x7a,
                   0x1000);
-    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon1, D_800625A0->bufferIndex, D_801E9FE0[1], 0x7a,
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->file_info->colon1, D_800625A0->buffer_index, D_801E9FE0[1], 0x7a,
                   0x1000);
     func_801C7F34(set->time);
     for (i = 0; i < 7; i++) {
-        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->block34C->timeDigits[i],
-                      D_800625A0->bufferIndex, D_801E9FE0[i + 2], 0x7a, 0x1000);
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->file_info->timeDigits[i],
+                      D_800625A0->buffer_index, D_801E9FE0[i + 2], 0x7a, 0x1000);
     }
-    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->block34C->discLabel, D_800625A0->bufferIndex, 8, 0x66, 0x1000);
-    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->block34C->discMark, D_800625A0->bufferIndex, 0x10, 0x66, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->block34C->discDigits[0],
-                  D_800625A0->bufferIndex, 0x10, 0x6e, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->block34C->discDigits[1],
-                  D_800625A0->bufferIndex, 0x18, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->file_info->discLabel, D_800625A0->buffer_index, 8, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->file_info->discMark, D_800625A0->buffer_index, 0x10, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->digit + 1) / 10, D_800625A0->file_info->discDigits[0],
+                  D_800625A0->buffer_index, 0x10, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->digit + 1) % 10, D_800625A0->file_info->discDigits[1],
+                  D_800625A0->buffer_index, 0x18, 0x6e, 0x1000);
 }
 
-/* Set up view `index` of the block at +34c from its sheet image (14e + set). */
-void func_801E6AE8(u8 index, MenuViewSet *set) {
-    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, &D_800625A0->block34C->views[index],
-                  D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
+/* Set up view `index` of the block at +34c from its character's sheet image
+ * (14e + id). */
+void func_801E6AE8(u8 index, SaveSummary *set) {
+    func_8002675C(D_800625A0->sheet, set->ids[index] + 0x14e, &D_800625A0->file_info->views[index],
+                  D_800625A0->buffer_index, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
-/* Lay out view `index`'s number (the set's +16 value) as up to three digit
- * sprites, and reset its second digit row for the +19 value. */
-void func_801E6B70(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s level as up to three digit sprites, and reset its
+ * second digit row for the +63 value. */
+void func_801E6B70(u8 index, SaveSummary *set) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(set->levels[index]);
-    D_800625A0->block34C->views[index].levelCount = 0;
+    func_801C80B8(set->level[index]);
+    D_800625A0->file_info->views[index].levelCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].levelCount +=
+            D_800625A0->file_info->views[index].levelCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              &D_800625A0->block34C->views[index].levelDigits[D_800625A0->block34C->views[index].levelCount],
-                              D_800625A0->bufferIndex, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
+                              &D_800625A0->file_info->views[index].levelDigits[D_800625A0->file_info->views[index].levelCount],
+                              D_800625A0->buffer_index, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
         }
     }
-    func_801C80B8(set->unk19[index]);
-    D_800625A0->block34C->views[index].unk871 = 0;
+    func_801C80B8(set->level2[index]);
+    D_800625A0->file_info->views[index].level2Count = 0;
 }
 
-/* Lay out view `index`'s values A (+4) and B (+a) as up to three digit
- * sprites each (B packed without leading blanks). */
-void func_801E6CFC(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s HP and maximum HP as up to three digit sprites
+ * each (the maximum packed without leading blanks). */
+void func_801E6CFC(u8 index, SaveSummary *set) {
     s32 i;
     s32 drawn;
     u8 digit;
 
-    func_801C80B8(set->valueA[index]);
-    D_800625A0->block34C->views[index].aCount = 0;
+    func_801C80B8(set->hp[index]);
+    D_800625A0->file_info->views[index].hpCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].aCount +=
+            D_800625A0->file_info->views[index].hpCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].aDigits[D_800625A0->block34C->views[index].aCount],
-                              D_800625A0->bufferIndex, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
+                              D_800625A0->file_info->views[index].hpDigits[D_800625A0->file_info->views[index].hpCount],
+                              D_800625A0->buffer_index, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
         }
     }
     drawn = 0;
-    func_801C80B8(set->valueB[index]);
-    D_800625A0->block34C->views[index].bCount = 0;
+    func_801C80B8(set->hpMax[index]);
+    D_800625A0->file_info->views[index].hpMaxCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].bCount +=
+            D_800625A0->file_info->views[index].hpMaxCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].bDigits[D_800625A0->block34C->views[index].bCount],
-                              D_800625A0->bufferIndex, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
+                              D_800625A0->file_info->views[index].hpMaxDigits[D_800625A0->file_info->views[index].hpMaxCount],
+                              D_800625A0->buffer_index, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
             drawn++;
         }
     }
 }
 
-/* Lay out view `index`'s values C (+10) and D (+13) as up to two digit
- * sprites each (D packed without leading blanks). */
-void func_801E6F5C(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s EP and maximum EP as up to two digit sprites each
+ * (the maximum packed without leading blanks). */
+void func_801E6F5C(u8 index, SaveSummary *set) {
     s32 i;
     s32 drawn;
     u8 digit;
 
-    func_801C80B8(set->valueC[index]);
-    D_800625A0->block34C->views[index].cCount = 0;
+    func_801C80B8(set->ep[index]);
+    D_800625A0->file_info->views[index].epCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].cCount +=
+            D_800625A0->file_info->views[index].epCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].cDigits[D_800625A0->block34C->views[index].cCount],
-                              D_800625A0->bufferIndex, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
+                              D_800625A0->file_info->views[index].epDigits[D_800625A0->file_info->views[index].epCount],
+                              D_800625A0->buffer_index, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
         }
     }
     drawn = 0;
-    func_801C80B8(set->valueD[index]);
-    D_800625A0->block34C->views[index].dCount = 0;
+    func_801C80B8(set->epMax[index]);
+    D_800625A0->file_info->views[index].epMaxCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].dCount +=
+            D_800625A0->file_info->views[index].epMaxCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].dDigits[D_800625A0->block34C->views[index].dCount],
-                              D_800625A0->bufferIndex, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
+                              D_800625A0->file_info->views[index].epMaxDigits[D_800625A0->file_info->views[index].epMaxCount],
+                              D_800625A0->buffer_index, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
             drawn++;
         }
     }
 }
 
-/* Render the name of view `index`'s sheet entry from listed file `file`'s
- * header (up to ten two-byte characters) and upload it to label row
+/* Render the name of view `index`'s character from listed file `file`'s
+ * name table (up to ten two-byte characters) and upload it to label row
  * `index` of the view rows. */
-void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
+void func_801E71B4(u8 index, SaveSummary *set, s32 file) {
     RECT rect;
     u8 name[24];
     u8 text[24];
@@ -3669,10 +3690,10 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     MenuSaveInfo *info;
     s32 i;
 
-    info = (MenuSaveInfo *)(D_800625A0->card->headers[file] + 0x100);
+    info = (MenuSaveInfo *)(D_800625A0->card->heads[file] + 0x100);
     for (i = 0; i < 20; i += 2) {
-        name[i] = info->names[set->images[index]].text[i];
-        name[i + 1] = info->names[set->images[index]].text[i + 1];
+        name[i] = info->names[set->ids[index]].text[i];
+        name[i + 1] = info->names[set->ids[index]].text[i + 1];
         if (name[i] == 0 && name[i + 1] == 0) {
             break;
         }
@@ -3696,47 +3717,47 @@ void func_801E733C(void) {
     s32 i;
 
     for (i = 0; i < 16; i++) {
-        func_801E927C(&D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex]);
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x0 = D_801EA04C + i * 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y0 = D_801EA050;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x1 = D_801EA04C + i * 12 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y1 = D_801EA050;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x2 = D_801EA04C + i * 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y2 = D_801EA050 + 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x3 = D_801EA04C + i * 12 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y3 = D_801EA050 + 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u0 = i * 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v0 = 0xf0;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u1 = i * 16 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v1 = 0xf0;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u2 = i * 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v2 = 0xff;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u3 = i * 16 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v3 = 0xff;
-        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x140, 0x80);
-        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].clut = GetClut(0, 0x1c0);
+        func_801E927C(&D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index]);
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x0 = D_801EA04C + i * 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y0 = D_801EA050;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x1 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y1 = D_801EA050;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x2 = D_801EA04C + i * 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y2 = D_801EA050 + 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x3 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y3 = D_801EA050 + 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u0 = i * 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v0 = 0xf0;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u1 = i * 16 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v1 = 0xf0;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u2 = i * 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v2 = 0xff;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u3 = i * 16 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v3 = 0xff;
+        D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x140, 0x80);
+        D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index].clut = GetClut(0, 0x1c0);
     }
 }
 
 /* Build the three views of card file `index`'s save information. */
 void func_801E76EC(s32 index) {
-    MenuViewSet *set;
+    SaveSummary *set;
     s32 i;
 
-    set = (MenuViewSet *)(D_800625A0->card->headers[index] + 0x100);
+    set = (SaveSummary *)(D_800625A0->card->heads[index] + 0x100);
     func_801E61B0();
     for (i = 0; i < 3; i++) {
-        if (set->images[i] != 0xff) {
-            D_800625A0->block34C->views[i].shown = 1;
+        if (set->ids[i] != 0xff) {
+            D_800625A0->file_info->views[i].shown = 1;
             func_801E6AE8(i, set);
             func_801E6B70(i, set);
             func_801E6CFC(i, set);
             func_801E6F5C(i, set);
             func_801E71B4(i, set, index);
         } else {
-            D_800625A0->block34C->views[i].shown = 0;
+            D_800625A0->file_info->views[i].shown = 0;
         }
-        D_800625A0->block34C->views[i].buffer = D_800625A0->bufferIndex;
+        D_800625A0->file_info->views[i].buffer = D_800625A0->buffer_index;
     }
     func_801E68AC(set);
     func_801E733C();
@@ -3749,12 +3770,12 @@ void func_801E781C(s32 index, u8 rebuild) {
         if (rebuild) {
             func_801E76EC(index);
             func_801E6668(index);
-            D_800625A0->block34C->rebuilt = 1;
+            D_800625A0->file_info->rebuilt = 1;
         } else {
             func_801E6668(index);
-            D_800625A0->block34C->rebuilt = 0;
+            D_800625A0->file_info->rebuilt = 0;
         }
-        D_800625A0->party->unkB = 1;
+        D_800625A0->flags->file_info_shown = 1;
     }
 }
 
@@ -3782,15 +3803,15 @@ void func_801E78C8(s32 file) {
     D_801EA8EC.y = 0x1c1 + file / 16;
     D_801EA8EC.w = 0x10;
     D_801EA8EC.h = 1;
-    memmove(D_801EA8C4, &D_800625A0->card->headers[file][0x60], 0x20);
+    memmove(D_801EA8C4, &D_800625A0->card->heads[file][0x60], 0x20);
     LoadImage(&D_801EA8EC, D_801EA8C4);
     DrawSync(0);
     for (i = 0; i < 3; i++) {
         D_801EA8E4.y = 0x80 + i * 32 + file / 16 * 16;
-        LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
+        LoadImage(&D_801EA8E4, &D_800625A0->card->heads[file][0x80 + i * 0x80]);
         DrawSync(0);
     }
-    switch (D_800625A0->card->headers[file][2]) {
+    switch (D_800625A0->card->heads[file][2]) {
     case 0x11:
         D_800625A0->card->files[file].frames[0] = 0x80 + file / 16 * 16;
         D_800625A0->card->files[file].frames[1] = 0x80 + file / 16 * 16;
@@ -3819,18 +3840,18 @@ void func_801E78C8(s32 file) {
         noIcon = 0;
         break;
     }
-    D_801EA900[file / 16] += D_800625A0->card->headers[file][3];
+    D_801EA900[file / 16] += D_800625A0->card->heads[file][3];
     if (noIcon) {
         D_800625A0->card->files[file].state = 0;
     }
 }
 
-/* Point the current quad at its palette (D_80059414 or the plain
+/* Point the current quad at its CLUT (the highlighted D_80059414 or the plain
  * D_800595D4). A statement macro. */
 #define SET_QUAD_CLUT()                                                \
     do {                                                               \
         POLY_FT4 *p = poly;                                            \
-        p->clut = label->palette != 0 ? D_80059414 : D_800595D4;      \
+        p->clut = label->highlight != 0 ? D_80059414 : D_800595D4;      \
     } while (0)
 
 /* Set up the current quad of `label`: mode 0 takes image `index` from the
@@ -3842,7 +3863,7 @@ void func_801E78C8(s32 file) {
         semi = 0;                                                      \
         func_801E927C(poly);                                           \
         if (mode == 0) {                                               \
-            label->palette = half;                                     \
+            label->highlight = half;                                     \
             poly->tpage = GetTPage(0, 0, 0x140, 0);                    \
             setUVWH(poly, column, (index + first) / 4 * 0xd, label->width, 0xd); \
         } else {                                                       \
@@ -3851,7 +3872,7 @@ void func_801E78C8(s32 file) {
                 SetSemiTrans(poly, 1);                                 \
                 setRGB0(poly, semi, semi, semi);                       \
             }                                                          \
-            label->palette = (mode & 0x7f) - 1;                        \
+            label->highlight = (mode & 0x7f) - 1;                        \
             poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);          \
             setUVWH(poly, half * 0x60, row * 0xd + first, label->width, 0xd); \
         }                                                              \
@@ -3872,7 +3893,7 @@ void func_801E78C8(s32 file) {
 /* Set up `label`'s two quads for label image `index` (the quad loop is
  * not loop-optimized: each quad's palette and window are recomputed) and
  * hide the label. */
-void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
+void func_801E7C50(MenuLabel *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
     u16 semi;
@@ -3888,21 +3909,21 @@ void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
 loop:
     SET_QUAD();
     NEXT_QUAD();
-    label->visible = 0;
+    label->projected = 0;
 }
 
 /* Render `count` labels (text ids in `layout`) in pairs into one 28x13
  * image each (two columns of 32 from x 140, rows of 13 from label `first`),
  * lay them out and upload the images. */
-void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
+void func_801E7E68(MenuLabel *labels, u8 *layout, s32 first, s32 count) {
     s32 i;
     RECT *image;
 
     for (i = 0; i < count; i += 2) {
-        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->label_text, layout[i]), D_800625A0->labels[0].pixels,
                                         0x18, 0);
         image = &labels[i].rect;
-        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
+        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->label_text, layout[i + 1]), D_800625A0->labels[0].pixels,
                                         0x18, 1);
         labels[i].rect.x = (i / 2 & 1) * 0x20 + 0x140;
         labels[i].rect.y = (i + first) / 4 * 0xd;
@@ -3911,13 +3932,13 @@ void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
         labels[i + 1].rect = labels[i].rect;
         func_801E7C50(&labels[i], i, first, 0);
         func_801E7C50(&labels[i + 1], i + 1, first, 0);
-        LoadImage(image, D_800625A0->topLabels[0].pixels);
+        LoadImage(image, D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }
 
 /* Lay out `count` labels from `table` into `labels` (the placement is unused). */
-void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
+void func_801E8018(u8 count, MenuLabel *labels, u8 *table, u8 *flags) {
     func_801E7E68(labels, table, 4, count);
 }
 

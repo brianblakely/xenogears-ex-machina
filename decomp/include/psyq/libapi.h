@@ -36,7 +36,14 @@ void func_80040C3C(unsigned char *data0, long size0, unsigned char *data1, long 
 
 /* BIOS file calls the symbol file does not name yet (the memory card's
  * file system), and the start of a card check. */
-struct DIRENTRY;
+struct DIRENTRY { /* a directory entry (LIBAPI.H) */
+    char name[20];
+    long attr;
+    long size;
+    struct DIRENTRY *next;
+    long head;
+    char system[4];
+};
 long func_80040574(char *device);                                 /* format */
 struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
 struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
