@@ -96,15 +96,15 @@ void func_802846CC(s32 axis, u32 item);
 /* The monitor's views of the field's own objects, whose types stay in the
  * field's headers (src/field). The view at 800af880 (FieldView) and the
  * work block at 800b2078 (FieldWork) it addresses member by member through
- * symbols of its own: as FieldView members, func_80281B90 and func_80284EA4
- * compile differently (a member's address is kept in a register), and it
- * reads 800af9fc and 800af9fe as s16 and u16 where the field has u16 and
- * s16; the work block's members build the same either way. It reads the
- * current draw block as its ordering table words (FieldDrawBlock +0xcc),
- * names the emitter templates (the field's Record78) from its editor's
- * labels, reading their flags as bit-fields and their colour offsets as one
- * s8 array (the field reads +0x70 as u8), and takes the actors and their
- * descriptors as below (80281b90). */
+ * symbols of its own: as FieldView members, func_80284EA4 keeps 800af9fc's
+ * address in a register, and func_80281B90 differs only because it reads
+ * 800af9fc as s16 where the field has u16 (lh, not lhu). Its u16 view of
+ * 800af9fe builds the same as the field's s16, and the work block's members
+ * build the same either way. It reads the current draw block as its
+ * ordering table words (FieldDrawBlock +0xcc), names the emitter templates
+ * (the field's Record78) from its editor's labels, reading their flags as
+ * bit-fields and their colour offsets as one s8 array (the field reads +0x70
+ * as u8), and takes the actors and their descriptors as below (80281b90). */
 extern u_long *D_800C426C;     /* the current draw block */
 extern ParticleEmitter D_800B02CC[8]; /* the eight template emitters */
 
