@@ -233,7 +233,9 @@ the audit; they are never counted as matches. This diagnostic does not replace
   (world map 80086798: four projected corners in t6-t9, read with the exact
   three-`mfc2`-plus-`nop` shapes of LIBGTE.H's register-argument SXY macros).
   The function comment states that evidence. A pin that merely forces a register
-  the plain C misses is not enough (field 80099AC0's `$a0`/`$a1` pair stays a draft).
+  the plain C misses is not enough: field 80099AC0's `$a0`/`$a1` pair were variables
+  set elsewhere in the function (`model`, `$a0` at the top, and the scratch `value`,
+  `$a1` as the step count and the facing), which sched1 does not sink as births.
 - Strings whose alignment padding holds stray assembler bytes stay original data:
   mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
   function and reference it as `extern char[]`. A .data object whose padding holds
