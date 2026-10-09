@@ -516,6 +516,7 @@ docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
 docs/scripts/text-control.md
 docs/scripts/worldmap-actor.md
+docs/scripts/worldmap-scene.md
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json

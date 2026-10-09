@@ -38,17 +38,23 @@ SVECTOR D_8009A674[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}
  * stray halfword (0x7965) in its alignment padding. */
 u16 D_8009A68C[6] = {0x800, 0x700, 0x600, 0x500, 0x300, 0x7965};
 
-/* Scene director: state 1 steps a timed state sequence (states at unk54,
- * durations at unk58); the other states start sounds and actor commands and
- * return to 1. */
+/* Scene director (mode 15): func_8007A9F8's cue sequencer on the sequence
+ * func_8007DE14 picks from D_8009A65C by D_8009D3D4 (states at unk54,
+ * durations at unk58). Actor slots (func_8007D918): 0 the screen fade, 2 the
+ * camera (func_8007E4E4), 3 the flying vehicle (func_8007EE34), 4-8 its
+ * exhaust flames (func_8007F968), 9 the growing objects 9 and 10
+ * (func_8007FD30). A fade with rate 1 adds the fade quad (white), with
+ * rate 2 subtracts it (black). */
 s32 func_8007DE98(s32 index) {
     WorldmapActor *actor;
     s32 unused[4]; /* unreferenced; the original frame reserves it */
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
+    /* 0: idle. */
     case 0:
         break;
+    /* 1: wait, then fetch the next entry. */
     case 1:
         if (--actor->wait < 0) {
             actor->state = ((u16 *)actor->unk54)[actor->u.step];
@@ -56,6 +62,7 @@ s32 func_8007DE98(s32 index) {
             actor->u.step++;
         }
         break;
+    /* 2: area sounds 0x1C-0x1E; slots 2 and 3 request 2, the flames 3. */
     case 2:
         func_80039E60((D_8006259C->id << 16) | 0x1C);
         func_80039E60((D_8006259C->id << 16) | 0x1D);
@@ -69,6 +76,8 @@ s32 func_8007DE98(s32 index) {
         func_80097770(8, 3);
         actor->state = 1;
         break;
+    /* 3: stop the effects of emitter groups 0x22-0x24; slots 2 and 3
+     * request 3, the flames 3. */
     case 3:
         func_80089514(0x22);
         func_80089514(0x23);
@@ -82,6 +91,7 @@ s32 func_8007DE98(s32 index) {
         func_80097770(8, 3);
         actor->state = 1;
         break;
+    /* 4: slots 2 and 3 request 4, the flames 3. */
     case 4:
         func_80097770(2, 4);
         func_80097770(3, 4);
@@ -92,16 +102,19 @@ s32 func_8007DE98(s32 index) {
         func_80097770(8, 3);
         actor->state = 1;
         break;
+    /* 5: slot 2 request 5. */
     case 5:
         func_80097770(2, 5);
         actor->state = 1;
         break;
+    /* 6: fade out at rate 1, 0x40 per frame. */
     case 6:
         func_80097770(0, 0xD);
         D_8009CCA4 = 1;
         D_8009D3CC = 0x40;
         actor->state = 1;
         break;
+    /* 7: slot 3 request 5, the flames 4; fade in at rate 1, 0x40 per frame. */
     case 7:
         func_80097770(3, 5);
         func_80097770(4, 4);
@@ -114,16 +127,20 @@ s32 func_8007DE98(s32 index) {
         D_8009D3CC = 0x40;
         actor->state = 1;
         break;
+    /* 8: slot 2 request 6. */
     case 8:
         func_80097770(2, 6);
         actor->state = 1;
         break;
+    /* 9: fade out at rate 1, 0x80 per frame. */
     case 9:
         func_80097770(0, 0xD);
         D_8009CCA4 = 1;
         D_8009D3CC = 0x80;
         actor->state = 1;
         break;
+    /* 10: fade in at rate 1, 0x80 per frame; slot 9 request 1, slot 2
+     * request 7. */
     case 10:
         func_80097770(0, 0xC);
         D_8009CCA4 = 1;
@@ -132,6 +149,7 @@ s32 func_8007DE98(s32 index) {
         func_80097770(2, 7);
         actor->state = 1;
         break;
+    /* 16: slot 2 request 4, slot 3 request 0x10, the flames 3. */
     case 16:
         func_80097770(2, 4);
         func_80097770(3, 0x10);
@@ -142,14 +160,17 @@ s32 func_8007DE98(s32 index) {
         func_80097770(8, 3);
         actor->state = 1;
         break;
+    /* 17: slot 2 request 0x10. */
     case 17:
         func_80097770(2, 0x10);
         actor->state = 1;
         break;
+    /* 18: slot 2 request 0x11 (no sequence holds it). */
     case 18:
         func_80097770(2, 0x11);
         actor->state = 1;
         break;
+    /* 24: slot 2 request 4, slot 3 request 0x18, the flames 3. */
     case 24:
         func_80097770(2, 4);
         func_80097770(3, 0x18);
@@ -160,28 +181,33 @@ s32 func_8007DE98(s32 index) {
         func_80097770(8, 3);
         actor->state = 1;
         break;
+    /* 25: slot 2 request 0x18. */
     case 25:
         func_80097770(2, 0x18);
         actor->state = 1;
         break;
+    /* 61: the three ambient sounds of D_8009A5A0[D_8009D3D4]. */
     case 61:
         func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][0]);
         func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][1]);
         func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][2]);
         actor->state = 1;
         break;
+    /* 62: area sounds 0x19-0x1B. */
     case 62:
         func_80039E60((D_8006259C->id << 16) | 0x19);
         func_80039E60((D_8006259C->id << 16) | 0x1A);
         func_80039E60((D_8006259C->id << 16) | 0x1B);
         actor->state = 1;
         break;
+    /* 63: fade out at rate 2, 4 per frame. */
     case 63:
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
         actor->state = 1;
         break;
+    /* 64: end the world-map loop with exit 0; idle. */
     case 64:
         D_8009D554 = 0;
         D_8009D7CC = 0;

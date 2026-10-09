@@ -69,14 +69,20 @@ s16 D_8009AC60[102] = {
     11, 2, 4, 0,  1, 64,  0, 0,
 };
 
-/* Effect scene director: step through its timed sequence and run each cue. */
+/* Heat-haze scene director (mode 16): func_8007A9F8's cue sequencer on
+ * D_8009A6C0/D_8009A70C. Actor slots (func_80080D00): 0 the screen fade, 2
+ * the camera (func_80081470), 3 object 2's fade (func_80081868), 4 objects
+ * 0 and 1 (func_80081B24), 6 the heat-haze strength (func_80081FD8). The
+ * fade with rate 2 subtracts the fade quad (black). */
 s32 func_800811C0(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
+    /* 0: idle. */
     case 0:
         break;
+    /* 1: wait, then fetch the next entry. */
     case 1:
         if (--actor->wait < 0) {
             actor->state = D_8009A6C0[actor->u.step];
@@ -84,45 +90,56 @@ s32 func_800811C0(s32 index) {
             actor->u.step++;
         }
         break;
+    /* 2: slot 6 request 1. */
     case 0x2:
         func_80097770(6, 1);
         actor->state = 1;
         break;
+    /* 3: slot 6 request 0, which no case of func_80081FD8 takes. */
     case 0x3:
         func_80097770(6, 0);
         actor->state = 1;
         break;
+    /* 4: slot 6 request 2. */
     case 0x4:
         func_80097770(6, 2);
         actor->state = 1;
         break;
+    /* 5: slot 6 request 3. */
     case 0x5:
         func_80097770(6, 3);
         actor->state = 1;
         break;
+    /* 6: slot 6 request 4. */
     case 0x6:
         func_80097770(6, 4);
         actor->state = 1;
         break;
+    /* 7: slot 6 request 5. */
     case 0x7:
         func_80097770(6, 5);
         actor->state = 1;
         break;
+    /* 8: area sounds 0x2E-0x30. */
     case 0x8:
         func_80039E60((D_8006259C->id << 16) | 0x2E);
         func_80039E60((D_8006259C->id << 16) | 0x2F);
         func_80039E60((D_8006259C->id << 16) | 0x30);
         actor->state = 1;
         break;
+    /* 0x10: slots 3 and 4 request 1. */
     case 0x10:
         func_80097770(3, 1);
         func_80097770(4, 1);
         actor->state = 1;
         break;
+    /* 0x11: slot 3 request 2. */
     case 0x11:
         func_80097770(3, 2);
         actor->state = 1;
         break;
+    /* 0x3F: fade the music out over 0xF0 frames; fade out at rate 2, 4 per
+     * frame. */
     case 0x3F:
         func_8003A89C(D_80062528, 0, 0xF0);
         func_80097770(0, 0xD);
@@ -130,6 +147,7 @@ s32 func_800811C0(s32 index) {
         D_8009D3CC = 4;
         actor->state = 1;
         break;
+    /* 0x40: end the world-map loop with exit 0; idle. */
     case 0x40:
         D_8009D554 = 0;
         D_8009D7CC = 0;
