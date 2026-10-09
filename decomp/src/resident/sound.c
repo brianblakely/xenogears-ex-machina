@@ -1818,7 +1818,7 @@ s32 func_8003C020(void) {
             if (seq->voices != 0) {
                 seq->unk24++;
                 if (seq->fade.value == 0) {
-                    func_80039C4C((SoundTrack *)seq);
+                    func_80039C4C(seq);
                     seq->flags |= 0x100;
                 }
                 if (seq->unk32 == seq->unk1E) {
@@ -3956,7 +3956,7 @@ void func_8003F6B0(s32 error) {
     D_80059500 = error;
     func_800396E0(0x10000);
     func_80037FD8((SoundSequence *)D_80050940, 0);
-    func_80038428(D_80050910);
+    func_80038428((SoundBank *)D_80050910);
     func_8003BDFC(0x10);
     func_80039E60((((SoundBank *)D_80050910)->id << 16) | 1);
 }

@@ -71,7 +71,7 @@ extern s32 D_800ADBB4;         /* it is saved */
 
 /* The saved 64x256 16-bit VRAM column at (3c0, 100). */
 typedef struct ScreenColumn {
-    u32 words[0x2000];
+    u_long words[0x2000];
 } ScreenColumn;
 
 extern RECT D_800AFC28;          /* its area */

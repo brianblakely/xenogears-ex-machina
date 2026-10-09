@@ -47,7 +47,7 @@ typedef struct {
     s32 point;         /* 10: the queried x << 16 | z */
     SVECTOR v[4];      /* 14: transformed vertices */
     SVECTOR p;         /* 34: query point; vy receives the height */
-    s32 flag;          /* 3C */
+    long flag;         /* 3C */
     MATRIX transform;  /* 40 */
     MATRIX local;      /* 60 */
     MATRIX view;       /* 80 */

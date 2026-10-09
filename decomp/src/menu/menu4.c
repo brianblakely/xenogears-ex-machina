@@ -932,9 +932,9 @@ void func_80080644(s32 first, s32 second) {
     u8 *other;
     GridCell *cell;
 
-    func_8002954C((u16 *)func_800289D0(6) + first, data, 0x1000, 0, 0);
+    func_8002954C(func_800289D0(6) + first * 2, data, 0x1000, 0, 0);
     other = data + 0x1000;
-    func_8002954C((u16 *)func_800289D0(6) + second, other, 0x1000, 0, 0);
+    func_8002954C(func_800289D0(6) + second * 2, other, 0x1000, 0, 0);
     D_80092700 = first;
     D_80092704 = second;
     D_80092714 = first;

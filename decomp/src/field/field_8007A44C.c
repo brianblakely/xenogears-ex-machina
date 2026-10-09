@@ -344,14 +344,14 @@ void func_8007AA44(FieldMarker *m) {
  * textured polygon and link that polygon into the ordering table entry. */
 void func_8007AB6C(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     POLY_FT4 *poly = &marker->poly[buffer];
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 
     PushMatrix();
     SetRotMatrix(m);
     SetTransMatrix(m);
-    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
-                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3], (long *)&poly->x0,
+                (long *)&poly->x1, (long *)&poly->x2, (long *)&poly->x3, &p, &flag);
     addPrim(ot + 1, poly);
     PopMatrix();
 }
@@ -361,8 +361,8 @@ void func_8007AB6C(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
  * table entry. */
 void func_8007AC58(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     POLY_FT4 *poly = &marker->poly[buffer];
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     s32 x;
     s32 y;
     s32 right;
@@ -370,8 +370,8 @@ void func_8007AC58(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     PushMatrix();
     SetRotMatrix(m);
     SetTransMatrix(m);
-    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
-                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3], (long *)&poly->x0,
+                (long *)&poly->x1, (long *)&poly->x2, (long *)&poly->x3, &p, &flag);
     x = (poly->x3 + poly->x2) / 2;
     right = x + 8;
     x -= 8;
@@ -1902,9 +1902,9 @@ s32 func_8007F6F8(s16 window) {
 void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     SVECTOR point;
     MATRIX m;
-    s32 screen;
-    s32 depth;
-    s32 flag;
+    long screen;
+    long depth;
+    long flag;
 
     CompMatrix(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[index].matrix, &m);
     SetRotMatrix(&m);

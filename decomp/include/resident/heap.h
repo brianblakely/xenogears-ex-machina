@@ -54,7 +54,7 @@ void func_800322B4(void);
 s32 func_80032340(void);
 s32 func_800323B4(void);
 u32 func_80032404(void);
-void func_80032498(s32 tag, s32 value);
+void func_80032498(s32 tag, char **names);
 void func_800324C4(u32 address, char *out);
 void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags);
 void *func_80032B0C(s32 size);

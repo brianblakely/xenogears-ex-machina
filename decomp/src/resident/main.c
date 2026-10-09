@@ -958,7 +958,7 @@ void func_8001B5A8(void) {
 /* Stop the active sequence; release it unless it is kept for reuse, in which case it becomes the cached sequence. */
 void func_8001B5E8(void) {
     if (D_8004F35C == 1) {
-        func_80039C4C((SoundTrack *)D_80062528);
+        func_80039C4C((SoundSeq *)D_80062528);
         if (D_8004F348 == 0) {
             func_800399D4((struct SoundSeq *)D_80062528);
         } else {

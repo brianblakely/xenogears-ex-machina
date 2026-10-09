@@ -351,10 +351,10 @@ next:
             offset = ((s8)args[2] << 16) + (args[1] << 8) + args[0];
             data = (u8 *)(offset + (s32)args);
             if (offset != 0) {
-                size = func_800B16A4(func_800B168C(data, 0));
+                size = func_800B16A4((ScriptEntry *)func_800B168C(data, 0));
                 buffer = func_80031BDC(size * 2, 0);
                 if (sprite->rate != 0) {
-                    func_800B1EA0(func_800B168C(data, 0), 3);
+                    func_800B1EA0((VertexList *)func_800B168C(data, 0), 3);
                 }
                 func_800B1720(func_800B168C(data, 0), buffer, ((u8 *)&sprite->render)[0] >> 5, sprite->colour_flags & 1);
                 part = buffer + size;

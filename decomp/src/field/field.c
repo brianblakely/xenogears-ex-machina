@@ -161,7 +161,7 @@ s16 D_800ADCC8[12] = {0x2C0, 0, 0x2C0, 0x20, 0x2C0, 0x40, 0x2C0, 0x60, 0x2C0, 0x
  * matrix under it, then the three lights and background color from the
  * field's view record, and the light matrix under the world matrix. */
 void func_8006FDEC(s16 *record) {
-    s32 flag;
+    long flag;
 
     func_80073750(&D_800AF880.previous_view, &D_800AF880.eye, &D_800AF880.target, &D_800AF880.up);
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
@@ -204,7 +204,7 @@ void func_8006FDEC(s16 *record) {
     D_800AF880.back_color[2] = record[2] << 4;
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
-    func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
+    func_8004A6DC(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
     func_80030B14(&D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.scaled_world);
     SetTransMatrix(&D_800AF880.scaled_world);
@@ -283,7 +283,7 @@ void func_800700B0(void) {
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h) {
     TIM_IMAGE image;
 
-    OpenTIM(tim);
+    OpenTIM((u_long *)tim);
     if (ReadTIM(&image) != NULL) {
         if (image.caddr != NULL) {
             if (clut_y != -1) {
@@ -971,7 +971,7 @@ void func_80072150(void) {
     VECTOR scale;
     MATRIX unused;
     MATRIX composed;
-    s32 flag;
+    long flag;
 
     func_8003F738(&D_800AF880.orbit_angles, &D_800AF880.orbit);
     func_80072140(&D_800AF880.orbit);
@@ -983,7 +983,7 @@ void func_80072150(void) {
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
-    func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
+    func_8004A6DC(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
     scale.vx = D_800AF880.scale;
     scale.vy = D_800AF880.scale;
     scale.vz = D_800AF880.scale;
@@ -2407,8 +2407,8 @@ void func_800764B4(u_long *ot, s32 buffer) {
     MATRIX placed;
     MATRIX world;
     VECTOR scale;
-    s32 interpolation;
-    s32 flag;
+    long interpolation;
+    long flag;
     s32 depth;
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -2608,7 +2608,7 @@ void func_800771B0(u32 *pixels, s32 count) {
 void func_800771F8(u32 *tim) {
     TIM_IMAGE image;
 
-    OpenTIM(tim);
+    OpenTIM((u_long *)tim);
     while (ReadTIM(&image) != NULL) {
         if (image.caddr != NULL) {
             LoadImage(image.crect, image.caddr);
@@ -2719,7 +2719,7 @@ void func_80077620(void) {
     D_800B004C.y = 0xFB;
     D_800B004C.w = 0x10;
     D_800B004C.h = 1;
-    StoreImage(&D_800B004C, (u32 *)D_800AFC08);
+    StoreImage(&D_800B004C, (u_long *)D_800AFC08);
     DrawSync(0);
     func_800320E8(D_8005A4A0);
 }
@@ -3172,7 +3172,7 @@ s32 func_80078BC8(void) {
  * dithering. */
 void func_80078C5C(void) {
     RECT rect;
-    u32 *pixels;
+    u_long *pixels;
     s32 i;
 
     if (D_800B2078.jump_mode != 0) {
@@ -3295,7 +3295,7 @@ void func_80078D44(void) {
         MoveImage(&rect, 0x200, 0);
     }
     if (D_8004F304 != 0) {
-        func_80039C4C((SoundTrack *)D_80062528);
+        func_80039C4C((SoundSeq *)D_80062528);
         func_800399D4((SoundSeq *)D_80062528);
         func_80038310(D_8006258C);
         D_8004F304 = 0;
@@ -3558,8 +3558,8 @@ void func_800799D4(void) {
     void *source;
     void *menu;
     void *sprites;
-    u32 *saved_a;
-    u32 *saved_b;
+    u_long *saved_a;
+    u_long *saved_b;
     s32 i;
 
     module = NULL;

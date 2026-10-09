@@ -176,7 +176,7 @@ s32 func_801E563C(void) {
     func_800320E8(D_801E9C38);
     if (D_800D3278->musicPlaying != 0) {
         musicWasPlaying = 1;
-        func_80039C4C((SoundTrack *)D_800C3E54);
+        func_80039C4C((SoundSeq *)D_800C3E54);
         func_800716D8();
         func_800399D4((SoundSeq *)D_800C3E54);
         func_800716D8();
@@ -1129,7 +1129,7 @@ s32 func_801E8074(s32 thread, u8 *insn) {
 /* Opcode 33 (1 byte): stop the music. */
 s32 func_801E807C(s32 thread, u8 *insn) {
     if (D_800D3278->musicPlaying != 0) {
-        func_80039C4C((SoundTrack *)D_800C3E54);
+        func_80039C4C((SoundSeq *)D_800C3E54);
         func_800716D8();
         func_800399D4((SoundSeq *)D_800C3E54);
         D_800D3278->musicPlaying = 0;

@@ -371,9 +371,9 @@ static s32 D_801EA708;
 static s32 D_801EA70C;
 static u8 D_801EA710;
 static u8 D_801EA714;
-static s32 D_801EA718; /* card event and handler ids */
-static s32 D_801EA71C;
-static s32 D_801EA720;
+static CdlCB D_801EA718; /* the CD sync, ready and read callbacks, saved in card mode */
+static CdlCB D_801EA71C;
+static CdlCB D_801EA720;
 
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
@@ -900,7 +900,7 @@ void func_801C65F4(void) {
     for (i = 0; i < 3; i++) {
         id = D_800625A0->flags->party[i];
         if (id != 0xff) {
-            OpenTIM((u8 *)data + id * 0xb20);
+            OpenTIM((u_long *)((u8 *)data + id * 0xb20));
             ReadTIM(&tim);
             tim.crect->x = tex[i * 6 + 2];
             tim.crect->y = tex[i * 6 + 3];
@@ -994,13 +994,13 @@ void func_801C6D90(void) {
     u16 *clut;
 
     clut = func_80031BDC(0x20, 0);
-    bzero(clut, 0x20);
+    bzero((u_char *)clut, 0x20);
     clut[1] = 0x7fff;
     rect.x = 0;
     rect.y = 0x1c0;
     rect.w = 0x10;
     rect.h = 1;
-    LoadImage(&rect, clut);
+    LoadImage(&rect, (u_long *)clut);
     DrawSync(0);
     func_800320E8(clut);
 }
@@ -2457,7 +2457,7 @@ void func_801CAE08(u8 mode) {
         break;
     case 1:
         D_800625A0->indicator = func_80031BDC(sizeof(MenuIndicator), 0);
-        bzero(D_800625A0->indicator, sizeof(MenuIndicator));
+        bzero((u_char *)D_800625A0->indicator, sizeof(MenuIndicator));
         SetPolyF4(&D_800625A0->indicator->fills[D_800625A0->buffer_index]);
         setRGB0(&D_800625A0->indicator->fills[D_800625A0->buffer_index], 0xa0, 0xa0, 0);
         func_8002675C(D_800625A0->sheet, 0x160, D_800625A0->indicator->spriteA, D_800625A0->buffer_index, 0xa0, 0x64, 0x1000);
@@ -3563,14 +3563,15 @@ void func_801CE0CC(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor
 /* Project `count` quads: each takes the next four of `verts` into every
  * other quad of `polys` from `index` and is added to the frame. */
 void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first) {
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     s32 i;
 
     for (i = 0; i < count; i++) {
         RotTransPers4(&verts[i * 4], &verts[i * 4 + 1], &verts[i * 4 + 2], &verts[i * 4 + 3],
-                      (s32 *)&polys[first + i * 2].x0, (s32 *)&polys[first + i * 2].x1,
-                      (s32 *)&polys[first + i * 2].x2, (s32 *)&polys[first + i * 2].x3, &p, &flag);
+                      (long *)&polys[first + i * 2].x0, (long *)&polys[first + i * 2].x1,
+                      (long *)&polys[first + i * 2].x2, (long *)&polys[first + i * 2].x3, &p,
+                      &flag);
         AddPrim(&D_800625A0->current->ot[4], &polys[first + i * 2]);
     }
 }
@@ -3664,25 +3665,33 @@ void func_801CE660(void) {
  * highlight quad and second part list; then its bar and first part list. */
 void func_801CE860(void) {
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 
     for (i = 0; i < 7; i++) {
         if (D_800625A0->equip_panel->rowShown[i] != 0) {
             if (D_800625A0->equip_panel->highlighted != 0) {
-                RotTransPers4(&D_800625A0->equip_panel->highlightAt[i][0], &D_800625A0->equip_panel->highlightAt[i][1], &D_800625A0->equip_panel->highlightAt[i][2],
+                RotTransPers4(&D_800625A0->equip_panel->highlightAt[i][0],
+                              &D_800625A0->equip_panel->highlightAt[i][1],
+                              &D_800625A0->equip_panel->highlightAt[i][2],
                               &D_800625A0->equip_panel->highlightAt[i][3],
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x0,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x1,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x2,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x3, &p, &flag);
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x0,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x1,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x2,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x3,
+                              &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]]);
                 func_801CE198(D_800625A0->equip_panel->rowBCount[i], D_800625A0->equip_panel->rowBAt[i], D_800625A0->equip_panel->rowB[i], D_800625A0->equip_panel->rowBBuffer[i]);
             }
-            RotTransPers4(&D_800625A0->equip_panel->barAt[i][0], &D_800625A0->equip_panel->barAt[i][1], &D_800625A0->equip_panel->barAt[i][2], &D_800625A0->equip_panel->barAt[i][3],
-                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x0, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x1,
-                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x2, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x3, &p,
-                          &flag);
+            RotTransPers4(&D_800625A0->equip_panel->barAt[i][0],
+                          &D_800625A0->equip_panel->barAt[i][1],
+                          &D_800625A0->equip_panel->barAt[i][2],
+                          &D_800625A0->equip_panel->barAt[i][3],
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x0,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x1,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x2,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x3,
+                          &p, &flag);
             AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]]);
             func_801CE198(D_800625A0->equip_panel->rowACount[i], D_800625A0->equip_panel->rowAAt[i], D_800625A0->equip_panel->rowA[i], D_800625A0->equip_panel->rowABuffer[i]);
         }
@@ -3778,8 +3787,8 @@ void func_801CF308(void) {
 void func_801CF37C(void) {
     MenuSlotImage *image;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     u8 file;
     u8 match;
 
@@ -3796,11 +3805,12 @@ void func_801CF37C(void) {
                     (image->box + D_800625A0->buffer_index)->r0 = D_800625A0->unknown4d4;
                     (image->box + D_800625A0->buffer_index)->g0 = D_800625A0->unknown4d4;
                     (image->box + D_800625A0->buffer_index)->b0 = D_800625A0->unknown4d4;
-                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2], &image->iconAt[3],
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x0,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x1,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x2,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x3, &p, &flag);
+                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2],
+                                  &image->iconAt[3],
+                                  (long *)&image->box[D_800625A0->buffer_index].x0,
+                                  (long *)&image->box[D_800625A0->buffer_index].x1,
+                                  (long *)&image->box[D_800625A0->buffer_index].x2,
+                                  (long *)&image->box[D_800625A0->buffer_index].x3, &p, &flag);
                     AddPrim(&D_800625A0->current->ot[4], &image->box[D_800625A0->buffer_index]);
                     AddPrim(&D_800625A0->current->ot[4], &image->boxMode[D_800625A0->buffer_index]);
                 }
@@ -3887,8 +3897,8 @@ void func_801CF8D8(void) {
 void func_801CFB48(void) {
     MenuSlotImage *image;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     u8 file;
     u8 match;
 
@@ -3920,14 +3930,14 @@ void func_801CFB48(void) {
                     (image->lineB + D_800625A0->buffer_index)->b0 = 0;
                 }
                 RotTransPers3(&image->lineAAt[0], &image->lineAAt[1], &image->lineAAt[3],
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x0,
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x1,
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x2, &p, &flag);
+                              (long *)&image->lineA[D_800625A0->buffer_index].x0,
+                              (long *)&image->lineA[D_800625A0->buffer_index].x1,
+                              (long *)&image->lineA[D_800625A0->buffer_index].x2, &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &image->lineA[D_800625A0->buffer_index]);
                 RotTransPers3(&image->lineBAt[0], &image->lineBAt[2], &image->lineBAt[3],
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x0,
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x1,
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x2, &p, &flag);
+                              (long *)&image->lineB[D_800625A0->buffer_index].x0,
+                              (long *)&image->lineB[D_800625A0->buffer_index].x1,
+                              (long *)&image->lineB[D_800625A0->buffer_index].x2, &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &image->lineB[D_800625A0->buffer_index]);
             }
         }
@@ -4054,13 +4064,13 @@ void func_801D02D8(void) {
 /* Project the four vertices `v` into quad `index` of `polys` and add it at
  * depth `otz`. */
 void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     POLY_FT4 *poly;
 
     poly = &polys[index];
-    RotTransPers4(&v[0], &v[1], &v[2], &v[3], (s32 *)&poly->x0, (s32 *)&poly->x1, (s32 *)&poly->x2,
-                  (s32 *)&poly->x3, &p, &flag);
+    RotTransPers4(&v[0], &v[1], &v[2], &v[3], (long *)&poly->x0, (long *)&poly->x1,
+                  (long *)&poly->x2, (long *)&poly->x3, &p, &flag);
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
@@ -4069,8 +4079,8 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
 void func_801D09F0(s32 index, u8 has_bar) {
     MenuPanel *panel;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
@@ -4091,9 +4101,9 @@ void func_801D09F0(s32 index, u8 has_bar) {
     func_801D0954(panel->edge_at[3][0], &panel->edge[3][0], panel->buffer, panel->ot_entry);
     func_801D0954(panel->edge_at[3][1], &panel->edge[3][2], panel->buffer, panel->ot_entry);
     RotTransPers4(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
-                  (s32 *)&panel->fill[panel->buffer].x0, (s32 *)&panel->fill[panel->buffer].x1,
-                  (s32 *)&panel->fill[panel->buffer].x2, (s32 *)&panel->fill[panel->buffer].x3, &p,
-                  &flag);
+                  (long *)&panel->fill[panel->buffer].x0, (long *)&panel->fill[panel->buffer].x1,
+                  (long *)&panel->fill[panel->buffer].x2, (long *)&panel->fill[panel->buffer].x3,
+                  &p, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill[panel->buffer]);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
@@ -4861,8 +4871,10 @@ void func_801D2F4C(u8 message) {
         line->buffer = D_800625A0->buffer_index;
         line->projected = 1;
     }
-    LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
-    LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    LoadImage(&D_800625A0->message_labels[0]->rect,
+              (u_long *)D_800625A0->message_labels[0]->pixels);
+    LoadImage(&D_800625A0->message_labels[2]->rect,
+              (u_long *)D_800625A0->message_labels[2]->pixels);
     DrawSync(0);
     D_800625A0->flags->messages_shown = 1;
     func_800320E8(D_800625A0->message_labels[0]->pixels);
@@ -6275,7 +6287,7 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
             rect.y = i / 4 * 0xd + 0x27;
             rect.w = 0x28;
             rect.h = 0xd;
-            LoadImage(&rect, image);
+            LoadImage(&rect, (u_long *)image);
             DrawSync(0);
         }
         func_801E7C50(&D_800625A0->equip_labels->labels[i], i, 0xc, 0);
@@ -6726,7 +6738,7 @@ void func_801DA5BC(s32 row) {
                 rect.y = (i / 2) * 0xd + 0x80;
                 rect.w = 0x28;
                 rect.h = 0xd;
-                LoadImage(&rect, image);
+                LoadImage(&rect, (u_long *)image);
                 DrawSync(0);
                 kind = D_800625A0->tables->items[D_8006D634.itemIds[row * 2 + i]].use;
                 if (kind & 0x20) {
@@ -6787,7 +6799,7 @@ void func_801DA9A8(s32 entry, s32 row) {
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
-        LoadImage(&rect, image);
+        LoadImage(&rect, (u_long *)image);
         DrawSync(0);
         func_801E7C50(&D_800625A0->item_list->extra[2], 0, 0, 0);
         func_801E920C(&D_800625A0->item_list->extra[2].polys[D_800625A0->buffer_index], 0x1c, 0xa1, 0, 0x4e,
@@ -6962,7 +6974,7 @@ void func_801DB5E4(u8 mode) {
         D_801E9785 = 1;
     }
     for (i = 0; i < 3; i++) {
-        bzero(D_800625A0->party_panels[i], 0xbec);
+        bzero((u_char *)D_800625A0->party_panels[i], 0xbec);
     }
     if (mode != 2) {
         xs = D_801EA054;

@@ -337,7 +337,7 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     SVECTOR rotation;
     VECTOR size;
     s32 otz;
-    s32 p;
+    long p;
 
     rotation.vx = 0;
     rotation.vy = 0;
@@ -409,7 +409,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     VECTOR up;
     VECTOR rotated;
     VECTOR scale;
-    s32 flag;
+    long flag;
     s32 scaled;
 
     if (particle->unk02 != 0) {
@@ -445,7 +445,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = emitter->unk0C.vx;
                 sv.vy = emitter->unk0C.vy;
                 sv.vz = emitter->unk0C.vz;
-                func_8004A6DC(&sv, &origin.vx, &flag);
+                func_8004A6DC(&sv, &origin, &flag);
                 emitter->unk50 = 0x1000;
                 break;
             case 2:
@@ -455,7 +455,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = emitter->unk0C.vx;
                 sv.vy = emitter->unk0C.vy;
                 sv.vz = emitter->unk0C.vz;
-                func_8004A6DC(&sv, &origin.vx, &flag);
+                func_8004A6DC(&sv, &origin, &flag);
                 emitter->unk50 = 0x1000;
                 break;
             }
@@ -480,7 +480,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
             sv.vx = particle->position.vx;
             sv.vy = particle->position.vy;
             sv.vz = particle->position.vz;
-            func_8004A6DC(&sv, &v.vx, &flag);
+            func_8004A6DC(&sv, &v, &flag);
             if (scaled == 1) {
                 sv.vz = 0;
                 sv.vx = D_800B00B4 - 0x400;
@@ -626,16 +626,16 @@ void func_800AA9DC(FieldInstance *instance) {
 s32 func_800AAA74(FieldInstance *instance) {
     VECTOR position;
     SVECTOR corner;
-    s32 flag;
-    s32 sxy;
-    s32 depth;
+    long flag;
+    long sxy;
+    long depth;
     s32 radius;
     s32 top;
     s32 left;
     s32 bottom;
     s32 right;
 
-    func_8004A6DC((SVECTOR *)instance->center, &position.vx, &flag);
+    func_8004A6DC((SVECTOR *)instance->center, &position, &flag);
     D_800B00E8.t[0] = position.vx;
     D_800B00E8.t[1] = position.vy;
     D_800B00E8.t[2] = position.vz;
@@ -885,13 +885,11 @@ s32 func_800AB748(u32 which) {
  * row advances the buffer by the width rounded down to words, rereading the
  * width after the copy.
  *
- * PsyQ's MEMORY.H declares memcpy without a prototype, which keeps GCC's
- * builtin; the prototype in psyq/libc.h drops it (cc1 warns of conflicting
- * types), so the copy names the builtin. The builtin expands the source
- * address as a sum, giving the original's `addu a1,a1,v0`. The guard tests
- * the zeroed row counter, not the height: combine folds that compare into
- * the branch and leaves its result a stack slot nothing accesses, the
- * original's unused sp+64. */
+ * PsyQ's MEMORY.H (and psyq/libc.h) declares memcpy without a prototype,
+ * which keeps GCC's built-in: it expands the source address as a sum, giving
+ * the original's `addu a1,a1,v0`. The guard tests the zeroed row counter,
+ * not the height: combine folds that compare into the branch and leaves its
+ * result a stack slot nothing accesses, the original's unused sp+64. */
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -916,7 +914,7 @@ void func_800AB808(void) {
                 if (row < height_base[i * 4]) {
                     do {
                         column = ((s16 *)D_800AF5C0)[i * 4] / 4;
-                        __builtin_memcpy(
+                        memcpy(
                             row_pixels,
                             tim.paddr + ((((s16 *)D_800AF5C0)[i * 4 + 1] + row) * 0x50 + column),
                             ((s16 *)D_800AF5C0)[i * 4 + 2]);
@@ -1262,7 +1260,7 @@ void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s
  * fill the 64x4 VRAM block at (3c0, 100) with ones. */
 void func_800ACB90(void) {
     RECT rect;
-    u32 *pixels;
+    u_long *pixels;
     s32 i;
 
     func_80070340(D_800AF784, 0x380, 0x100, 0, 0x1FF, 0, 0);

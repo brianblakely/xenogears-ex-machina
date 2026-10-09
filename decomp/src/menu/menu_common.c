@@ -75,7 +75,7 @@ u32 *D_80092938; /* ordering table of the buffer being built */
 u8 D_8009293C;
 s32 D_80092940;
 s32 D_80092944;
-s32 D_80092948;
+struct SoundSeq *D_80092948;
 s32 D_8009294C;
 s32 D_80092950;
 

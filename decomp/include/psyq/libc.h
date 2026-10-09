@@ -8,8 +8,11 @@ char *strcpy(char *dst, const char *src);
 char *strcat(char *dst, const char *src);
 void *bzero(unsigned char *p, int n);
 void *memchr(void *s, int c, int n);
-void *memcpy(void *dest, void *src, int n);
-void *memset(void *dest, int c, int n);
+/* As in MEMORY.H (PsyQ 4.6), memcpy and memset are unprototyped "to avoid
+ * conflicting" with GCC's built-ins, which they keep: field 800AB808 needs the
+ * built-in memcpy. slot39_801DBE54 declares its own, which drops it. */
+void *memcpy();
+void *memset();
 void *memmove(void *dest, void *src, int n);
 int rand(void);
 int abs(int i);

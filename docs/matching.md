@@ -362,6 +362,40 @@ before the first use. A function that is understood but does not yet match stays
 linked as assembly inside `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`;
 the coverage report counts it separately.
 
+Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
+headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
+hand; the game's own is not identified) for 164 of the 181 functions both declare,
+compared by cc1 `-aux-info`. The other 17 differ in parameter types (memmove and
+memchr take `void *` where MEMORY.H has `unsigned char *` and memchr's byte is an
+`int`, SpuReadDecodedData takes a `void *`, DrawSyncCallback and VSyncCallback a
+`void (*)()`), in result types (CdDataCallback, DrawSyncCallback,
+EnterCriticalSection, InitCARD, InitPAD, StartPAD, VectorNormalSS) or in having a
+prototype (strlen, strcpy, InitGeom, PushMatrix, PopMatrix, ReadGeomScreen). Every
+unit compiles to the same code under 4.6's declarations, which would warn at 21
+memmove calls and both SpuReadDecodedData calls. Data the SDK names has its type
+where the code handles it only in that form: VRAM words saved and reloaded through
+StoreImage and LoadImage `u_long` (battle's CLUT strips, the field's saved VRAM
+areas and the pixel buffers it edits as words), the GTE's depth, flag and screen
+outputs `long`, a `CdlLOC`, a `CdlCB`. Data the code holds in another type keeps
+it, and the call casts as the SDK's samples do: `(long *)&poly->x0`, `(u_char *)`
+for bzero, and `(u_long *)` for image data in bytes or halfwords, for TIMs inside
+larger buffers and for words that `u32` views hold, among them the ordering tables
+of the battle's and the menu's shared views and drawing code and the field's packed
+screen words.
+
+`psyq/libc.h` declares memcpy and memset unprototyped, as MEMORY.H does "to avoid
+conflicting" with GCC's built-ins, which they keep: field 800AB808's copy needs the
+built-in memcpy (with its computed length the built-in still calls memcpy).
+slot39_801DBE54's two 0xa38-byte save copies call memcpy in the original; the
+built-in would move them inline, their length being constant. That unit declares a
+memcpy prototype, which drops the built-in there (cc1 warns of the conflict);
+passing the length in a variable instead keeps the built-in and gives the same code
+without the warning, and nothing in the bytes decides between the two. No other
+unit's code depends on how libc.h declares them. To count the warnings, rebuild
+every unit and read the log:
+`make -B -j8 -O -C decomp all-verify > .local/build.log 2>&1`, then
+`python3 tools/compiler_warnings.py .local/build.log` (`--list` prints each one).
+
 A new file (a split or data-only unit, an overlay-number unit, a `.data.ld` alias
 script, authored `.s`) also goes into packaging/source-files.txt, which lists every
 tracked file. `source_archive.py --check` validates only the listed paths, so

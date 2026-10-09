@@ -1257,7 +1257,7 @@ void func_801E252C(void) {
     func_800320E8(D_800D2F5C);
     func_8003218C(2);
     if (D_800594F8 != 0) {
-        func_80039C4C((SoundTrack *)D_800C3E54);
+        func_80039C4C((SoundSeq *)D_800C3E54);
         func_800399D4((SoundSeq *)D_800C3E54);
     }
     func_800B8774();

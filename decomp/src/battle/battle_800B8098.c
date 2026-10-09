@@ -377,7 +377,7 @@ void func_800B88C4(void) {
     }
     BATTLE_AREA.current = buffer;
     BATTLE_AREA.ot = buffer->ot;
-    ClearOTagR(buffer->ot, 0x1000);
+    ClearOTagR((u_long *)buffer->ot, 0x1000);
     BATTLE_AREA.buffer = 1;
     BATTLE_AREA.current = &BATTLE_AREA.buffers[1];
     BATTLE_AREA.field8DA8 = 0;
@@ -1182,7 +1182,7 @@ SpriteTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x
 /* Draw a sprite task: its depth in the view, and its parts when visible. */
 void func_800BAB0C(Task *task) {
     SVECTOR point;
-    s32 result[2]; /* screen position, then the GTE flags */
+    long result[2]; /* screen position, then the GTE flags */
     VECTOR unused;
     Sprite *sprite;
     s32 depth;
@@ -1239,7 +1239,7 @@ void func_800BAC50(Task *task) {
 void func_800BACBC(s32 slot, s16 *x, s16 *y, s16 *depth, s16 *left, s16 *width, s16 *centre) {
     SVECTOR point;
     s16 sxy[2];
-    s32 p;
+    long p;
     Sprite *sprite = BATTLE_AREA.sprites[slot];
 
     point.vx = sprite->x >> 16;
@@ -1248,7 +1248,7 @@ void func_800BACBC(s32 slot, s16 *x, s16 *y, s16 *depth, s16 *left, s16 *width, 
     PushMatrix();
     SetRotMatrix(&D_800D30BC);
     SetTransMatrix(&D_800D30BC);
-    *depth = RotTransPers(&point, (s32 *)sxy, &p, &p) >> 4;
+    *depth = RotTransPers(&point, (long *)sxy, &p, &p) >> 4;
     *x = sxy[0];
     *y = sxy[1];
     *left = sxy[0] - 0x30;
@@ -1372,7 +1372,7 @@ void func_800BB13C(Task *task) {
  * depth in the view. */
 void func_800BB248(Task *task) {
     SVECTOR point;
-    s32 result[2]; /* screen position, then the GTE flags */
+    long result[2]; /* screen position, then the GTE flags */
     Sprite *sprite = task->data;
     s32 depth;
     u32 low;
@@ -1843,9 +1843,9 @@ void func_800BC460(u32 mask) {
     MATRIX m;
     VECTOR offset;
     SVECTOR point;
-    s32 screen[2];
+    long screen[2];
     SVECTOR v;
-    s32 result[2];
+    long result[2];
     MATRIX m2;
     VECTOR out;
     SVECTOR v2;

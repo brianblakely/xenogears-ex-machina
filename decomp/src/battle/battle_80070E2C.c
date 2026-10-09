@@ -361,9 +361,9 @@ void func_80070F40(void) {
     D_800C3EA4 = (BattleGraphics *)func_8008ABB8(0xA2B4, 0);
     D_800D2D28 = (BattleUi *)func_8008ABB8(0x10C, 0);
     D_800C3EAC = (TurnState *)func_8008ABB8(0x2F8, 0);
-    bzero(D_800C3EA4, 0xA2B4);
-    bzero(D_800D2D28, 0x10C);
-    bzero(D_800C3EAC, 0x2F8);
+    bzero((u_char *)D_800C3EA4, 0xA2B4);
+    bzero((u_char *)D_800D2D28, 0x10C);
+    bzero((u_char *)D_800C3EAC, 0x2F8);
     D_8005959C = 0;
     D_800C3E28[1] = 0xFF;
     D_800C3E28[0] = 0xFF;
@@ -589,7 +589,7 @@ void func_80071964(void) {
         frames = 3;
         D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2C94.message),
                                          D_800D39B8.pixels, 0x39, 1);
-        LoadImage(&D_800D39B8.rect, D_800D39B8.pixels);
+        LoadImage(&D_800D39B8.rect, (u_long *)D_800D39B8.pixels);
         do {
             frames--;
             func_800716D8();
@@ -1767,7 +1767,7 @@ void func_80076710(s32 member) {
 
 /* Upload an image and wait for the transfer. */
 void func_800769E8(RECT *rect, u32 *pixels) {
-    LoadImage(rect, pixels);
+    LoadImage(rect, (u_long *)pixels);
     DrawSync(0);
 }
 
@@ -1921,7 +1921,7 @@ void func_80076EA4(void) {
     for (i = 0; i < 11; i++) {
         image = (u32 *)func_8008AC00(0x1B);
         images[i].pixels = image;
-        bzero(image, 0x30C);
+        bzero((u_char *)image, 0x30C);
         D_800D2F68[i].w = func_80034EAC(func_800338D8(i + 10), images[i].pixels, 0x1B, 0);
         D_800D2F68[i + 11].w = func_80034EAC(func_800338D8(i + 21), images[i].pixels, 0x1B, 1);
         D_800D2F68[i].u = D_800D2F68[i + 11].u = 0x78;
@@ -2028,7 +2028,7 @@ void func_80077610(void) {
     GraphicsBlock *block = (GraphicsBlock *)func_8008ABB8(0x670, 0);
 
     D_800C3EA4->unkA230 = block;
-    bzero(block, 0x670);
+    bzero((u_char *)block, 0x670);
     func_80077074();
 }
 
@@ -2044,7 +2044,7 @@ void func_80077698(void) {
     s32 dir;
     s32 buf;
 
-    bzero(D_800C3E24, sizeof(DirectionArrows));
+    bzero((u_char *)D_800C3E24, sizeof(DirectionArrows));
     for (dir = 0; dir < 4; dir++) {
         for (buf = 0; buf < 2; buf++) {
             SetPolyG3(&D_800C3E24->prims[dir * 2 + buf]);
@@ -2082,10 +2082,10 @@ void func_80077980(void) {
  * (for the CLUT cycle), look up the cursor and arrow sprites, place two of
  * them in VRAM, and set the texture windows and draw modes that use them. */
 void func_80077990(void) {
-    u32 *strip0 = D_800C3EA4->unk8970[0];
-    u32 *strip1 = D_800C3EA4->unk8970[1];
-    u32 *strip2 = D_800C3EA4->unk8970[2];
-    u32 *strip3 = D_800C3EA4->unk8970[3];
+    u_long *strip0 = D_800C3EA4->unk8970[0];
+    u_long *strip1 = D_800C3EA4->unk8970[1];
+    u_long *strip2 = D_800C3EA4->unk8970[2];
+    u_long *strip3 = D_800C3EA4->unk8970[3];
 
     D_800C3EA4->unk8950[0].x = 1;
     D_800C3EA4->unk8950[0].y = D_800C3EA4->sprites[0].clutY - 1;
@@ -2234,7 +2234,7 @@ void func_80078310(u8 *portraits, u8 glyph) {
             if (D_800D3294 != 0 && (i == 1 || i == 2)) {
                 character = 0xB;
             }
-            OpenTIM((u32 *)(portraits + character * 0x460));
+            OpenTIM((u_long *)(portraits + character * 0x460));
             ReadTIM(&tim);
             func_80026338(D_800D2F5C, glyph + i, info + i * 6, info + (i * 6 + 1), info + (i * 6 + 2),
                           info + (i * 6 + 3), info + (i * 6 + 4), info + (i * 6 + 5));
