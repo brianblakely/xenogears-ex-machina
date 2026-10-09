@@ -4,9 +4,10 @@
 reference reconstruction ([executable-reconstruction.md](executable-reconstruction.md)):
 which original dispatch entries its C++ library implements, the bounded original
 comparisons behind them and the connections it still lacks. It does not record the
-recovery of the original program. Every function of both discs is matching C under
-decomp/, and the formats, dispatch tables and script instructions are documented in
-[docs/scripts](scripts/interpreters.md) with their decoders under tools/analysis.
+recovery of the original program. That program is recovered under decomp/, every
+target byte-identical, and its formats, dispatch tables and script instructions are
+documented in [docs/scripts](scripts/interpreters.md) with their decoders under
+tools/analysis.
 An `unresolved` or `unimplemented` entry means only that the host library lacks it.
 
 - Dispatch rows: the field event primary and extended tables (`D_800AE2A0`,

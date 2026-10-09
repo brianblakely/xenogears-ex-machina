@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "Status of the host reference reconstruction (the C++ library and runner of docs/executable-reconstruction.md): which original dispatch entries and connected behaviour it implements, the bounded original comparisons behind them and the connections it still lacks. Each dispatch window keeps every original table value, including non-code extended values. The original program is not tracked here: every function of both discs is matching C under decomp/, and its formats, dispatch tables and script instructions are documented in docs/scripts with their decoders under tools/analysis. coverage_complete stays false because the host library implements a subset.",
+  "scope": "Status of the host reference reconstruction (the C++ library and runner of docs/executable-reconstruction.md): which original dispatch entries and connected behaviour it implements, the bounded original comparisons behind them and the connections it still lacks. Each dispatch window keeps every original table value, including non-code extended values. The original program is not tracked here: it is recovered under decomp/ (every target byte-identical), and its formats, dispatch tables and script instructions are documented in docs/scripts with their decoders under tools/analysis. coverage_complete stays false because the host library implements a subset.",
   "coverage_complete": false,
   "field_overlay": {
     "decoded_base": "0x8006faf0",
@@ -4828,7 +4828,7 @@
       "status": "automatic_output_with_explicit_source_annotations"
     }
   ],
-  "reconstruction_status_rule": "automatic_output is a review aid; inferred annotations require source support; source_reviewed means authored semantic review; observed_subset means only the explicitly compared execution. Authored C++ libraries do not imply a complete native runtime or broad subsystem promotion. On dispatch rows, analysis_status is the host reconstruction's own review of the entry (unresolved: none yet) and native_status what its C++ implements; neither describes the original handler, which is matching C in decomp/src.",
+  "reconstruction_status_rule": "automatic_output is a review aid; inferred annotations require source support; source_reviewed means authored semantic review; observed_subset means only the explicitly compared execution. Authored C++ libraries do not imply a complete native runtime or broad subsystem promotion. On dispatch rows, analysis_status is the host reconstruction's own review of the entry (unresolved: none yet) and native_status what its C++ implements; neither describes the original handler, which is recovered in decomp/src.",
   "source_modules": [
     {
       "id": "program_cpp",

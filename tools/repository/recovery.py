@@ -2,7 +2,7 @@
 
 The inventory (analysis/recovery.json, docs/recovery-inventory.md) records what
 the host reference reconstruction implements and compares, not the recovery of
-the original program, which is matching C under decomp/. This is a coverage
+the original program, which is recovered under decomp/. This is a coverage
 check, not an instruction interpreter: inventory membership, an observed subset
 and an authored library never grant a proof pass.
 """
@@ -144,7 +144,7 @@ def entries(
                 "analysis_status": analysis,
                 "native_status": native,
                 "table_value": target,
-                "detail": "The host library's status only; the original handler is matching C "
+                "detail": "The host library's status only; the original handler is recovered "
                 "in decomp/src. A shared table value does not make entries aliases or no-ops; "
                 "consult the finding's bounded scope.",
                 "evidence": references,
