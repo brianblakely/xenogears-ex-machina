@@ -33,80 +33,6 @@
  */
 
 /* structs: begin */
-/* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
-typedef struct MenuFlags {
-    u8 fieldShown[3]; /* 0 */
-    u8 redraw3; /* 3 */
-    u8 redraw4; /* 4 */
-    u8 redraw5; /* 5 */
-    u8 redraw6; /* 6 */
-    u8 redraw7; /* 7 */
-    u8 unk8; /* 8 */
-    u8 redraw9; /* 9 */
-    u8 redrawA; /* A */
-    u8 unkB; /* B */
-    u8 labels[8]; /* C: shown flags of the command labels */
-    u8 unk14[6]; /* 14 */
-    u8 unk1A[6]; /* 1A */
-    u8 unk20[7]; /* 20: per portrait: shown */
-    u8 unk27[7]; /* 27: per portrait mark: shown */
-    u8 unk2E; /* 2E */
-    u8 unk2F; /* 2F */
-    u8 ids[3]; /* 30 */
-    u8 messageShown; /* 33: a card message is shown */
-    u8 unk34[4]; /* 34 */
-    u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
-    u8 unk40[6]; /* 40 */
-    u8 unk46; /* 46 */
-    u8 pad47[0x1];
-    u8 unk48; /* 48 */
-    u8 unk49; /* 49 */
-    u8 unk4A; /* 4A */
-    u8 unk4B; /* 4B */
-    u8 unk4C; /* 4C */
-    u8 unk4D; /* 4D */
-    u8 unk4E; /* 4E */
-    u8 pad4F[0x1];
-    u8 unk50[3]; /* 50: per image block (+444): shown; block 2 (the card access indicator): 1 shown, 2 closing */
-    u8 unk53; /* 53 */
-    u8 unk54[6]; /* 54 */
-    u8 pad5A[0x2];
-    u8 unk5C[4]; /* 5C */
-    u8 ready[3]; /* 60 */
-    u8 pad63[0x4];
-    u8 unk67; /* 67 */
-    u8 cardMode; /* 68: the file screen is in card mode */
-    u8 pad69[0x3];
-} MenuParty;
-
-/* Screen images (*(state + 350)). */
-typedef struct MenuImages {
-    POLY_FT4 packets[56]; /* 0 */
-    POLY_FT4 packets2[56]; /* 8C0 */
-    RECT copy; /* 1180: the screen area copied into the other buffer each frame */
-    s32 count; /* 1188 */
-    s32 count2; /* 118C */
-    u8 buffer; /* 1190 */
-    u8 buffer2; /* 1191 */
-    u8 captured; /* 1192: images dimmed (inside a command) */
-    u8 refresh; /* 1193: dimming last applied */
-} MenuImages;
-
-/* Shared primitive block (*(state + 348)). */
-typedef struct MenuPrims {
-    POLY_FT4 polys[2]; /* 0 */
-    POLY_G4 box[2]; /* 50: highlight background */
-    POLY_F4 fills[2]; /* 98: per buffer: full-screen fade */
-    LINE_F3 edgeA[2]; /* C8: highlight outline, top and right */
-    LINE_F3 edgeB[2]; /* F8: highlight outline, left and bottom */
-    DR_MODE modes0[2]; /* 128 */
-    DR_MODE modes[2]; /* 140: per buffer */
-    u8 frame; /* 158 */
-    u8 mode; /* 159 */
-    u8 pad15A[0x1];
-    u8 shade; /* 15B */
-} MenuPrims;
-
 /* One file entry of a card listing. */
 typedef struct MenuCardFile {
     s32 frames[6]; /* 0: icon animation: image y of each step */
@@ -319,17 +245,6 @@ typedef struct {
     u8 pad[0x55];
     u8 bytes55[3];
 } GearRecordBytes55;
-
-/* Two sprite lists (*(state + 354)). */
-typedef struct MenuSpriteLists {
-    POLY_FT4 first[32]; /* 0 */
-    POLY_FT4 second[96]; /* 500 */
-    s32 firstCount; /* 1400 */
-    s32 secondCount; /* 1404 */
-    u8 firstStart; /* 1408 */
-    u8 secondStart; /* 1409 */
-    u8 pad140A[0x2];
-} MenuSpriteLists;
 
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {

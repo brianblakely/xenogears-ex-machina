@@ -388,8 +388,8 @@ void func_801C5BEC(void) {
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C5CF4(void) {
-    D_800625A0->flags->flag_4 = 0;
-    D_800625A0->flags->flag_3 = 0;
+    D_800625A0->flags->sprite_shown = 0;
+    D_800625A0->flags->cursor_shown = 0;
 }
 
 /* Make `poly` a gouraud quad fading from (r, g, b) at the top to black. */
@@ -421,16 +421,16 @@ void func_801C5DA0(void) {
     window.w = 0x100;
     func_801C5CF4();
     for (i = 0; i < 2; i++) {
-        func_801C5D24(&D_800625A0->prims->gradient[i], 0x80, 0x80, 0);
-        SetSemiTrans(&D_800625A0->prims->gradient[i], 1);
-        SetLineF3(&D_800625A0->prims->line_a[i]);
-        (D_800625A0->prims->line_a + i)->r0 = 0;
-        (D_800625A0->prims->line_a + i)->g0 = 0x40;
-        (D_800625A0->prims->line_a + i)->b0 = 0;
-        SetLineF3(&D_800625A0->prims->line_b[i]);
-        (D_800625A0->prims->line_b + i)->r0 = 0;
-        (D_800625A0->prims->line_b + i)->g0 = 0x40;
-        (D_800625A0->prims->line_b + i)->b0 = 0;
+        func_801C5D24(&D_800625A0->prims->shade[i], 0x80, 0x80, 0);
+        SetSemiTrans(&D_800625A0->prims->shade[i], 1);
+        SetLineF3(&D_800625A0->prims->upper[i]);
+        (D_800625A0->prims->upper + i)->r0 = 0;
+        (D_800625A0->prims->upper + i)->g0 = 0x40;
+        (D_800625A0->prims->upper + i)->b0 = 0;
+        SetLineF3(&D_800625A0->prims->lower[i]);
+        (D_800625A0->prims->lower + i)->r0 = 0;
+        (D_800625A0->prims->lower + i)->g0 = 0x40;
+        (D_800625A0->prims->lower + i)->b0 = 0;
         SetPolyF4(&D_800625A0->prims->fade[i]);
         (D_800625A0->prims->fade + i)->x0 = 0;
         (D_800625A0->prims->fade + i)->y0 = 0;
@@ -444,9 +444,9 @@ void func_801C5DA0(void) {
         (D_800625A0->prims->fade + i)->g0 = 0x80;
         (D_800625A0->prims->fade + i)->b0 = 0x80;
         SetSemiTrans(&D_800625A0->prims->fade[i], 1);
-        SetDrawMode(&D_800625A0->prims->mode_a[i], 0, 0, GetTPage(0, 0, 0x140, 0x80),
+        SetDrawMode(&D_800625A0->prims->mode_label[i], 0, 0, GetTPage(0, 0, 0x140, 0x80),
                       &window);
-        SetDrawMode(&D_800625A0->prims->mode_b[i], 0, 0, GetTPage(0, 2, 0x180, 0),
+        SetDrawMode(&D_800625A0->prims->mode_sprite[i], 0, 0, GetTPage(0, 2, 0x180, 0),
                       &window);
     }
 }
@@ -487,8 +487,8 @@ void func_801C618C(u8 index) {
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    D_800625A0->flags->panel_20[index] = 0;
-    D_800625A0->flags->panel_27[index] = 0;
+    D_800625A0->flags->panels_shown[index] = 0;
+    D_800625A0->flags->panels_growing[index] = 0;
     for (i = 0; i < 2; i++) {
         SetPolyG4(&panel->fill[i]);
         (panel->fill + i)->r0 = 0x68;
@@ -725,7 +725,7 @@ void func_801C722C(u8 index, u16 x, u16 y, u16 w, u16 h) {
 void func_801C7578(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 param, u8 framed) {
     Panel *panel = D_800625A0->panels[index];
 
-    D_800625A0->flags->panel_20[index] = 0;
+    D_800625A0->flags->panels_shown[index] = 0;
     func_801C60EC(panel->fill_at, x, y, w, h);
     func_801C660C(index, x, y, w, h);
     func_801C6854(index, x, y, w);
@@ -739,13 +739,13 @@ void func_801C7578(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 param, u8
     panel->style = style;
     panel->param = param;
     panel->buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->panel_20[index] = 1;
+    D_800625A0->flags->panels_shown[index] = 1;
 }
 
 /* Hide panel `index` and release its block and growth record. */
 void func_801C76FC(u8 index) {
-    D_800625A0->flags->panel_20[index] = 0;
-    D_800625A0->flags->panel_27[index] = 0;
+    D_800625A0->flags->panels_shown[index] = 0;
+    D_800625A0->flags->panels_growing[index] = 0;
     func_800320E8(D_800625A0->panels[index]);
     func_800320E8(D_800625A0->growth[index]);
 }
@@ -773,7 +773,7 @@ void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
         growth->h = h;
         growth->cur_w = 0;
         growth->cur_h = 0;
-        D_800625A0->flags->panel_27[index] = 1;
+        D_800625A0->flags->panels_growing[index] = 1;
         growth->flat = style;
         growth->ot_entry = param;
     } else {
@@ -790,7 +790,7 @@ void func_801C790C(void) {
 
     for (i = 0; i < 7; i++) {
         growth = D_800625A0->growth[i];
-        if (D_800625A0->flags->panel_27[i] && !growth->done) {
+        if (D_800625A0->flags->panels_growing[i] && !growth->done) {
             done = 0;
             if (growth->cur_w + 32 >= growth->w) {
                 growth->cur_w = growth->w;
@@ -820,7 +820,7 @@ void func_801C7A58(void) {
     s32 i;
     MenuState *state;
 
-    if (D_800625A0->flags->markers_on) {
+    if (D_800625A0->flags->markers_shown) {
         for (i = 0; i < 4; i++) {
             state = D_800625A0;
             if (state->markers->shown[i]) {
@@ -854,7 +854,7 @@ void func_801C7DA8(void) {
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        if (D_800625A0->flags->label_shown[i]) {
+        if (D_800625A0->flags->labels_shown[i]) {
             AddPrim(&D_800625A0->current->ot[4],
                           &D_800625A0->labels[i].polys[D_800625A0->labels[i].buffer]);
         }
@@ -866,7 +866,7 @@ void func_801C7E38(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if (D_800625A0->flags->list_label_shown[i]) {
+        if (D_800625A0->flags->list_labels_shown[i]) {
             AddPrim(&D_800625A0->current->ot[4],
                           &D_800625A0->list_labels[i].polys[D_800625A0->list_labels[i].buffer]);
         }
@@ -880,7 +880,7 @@ void func_801C7EC8(void) {
     s32 i;
 
     for (i = 0; i < 6; i++) {
-        if (D_800625A0->flags->row_label_shown[i]) {
+        if (D_800625A0->flags->row_labels_shown[i]) {
             if (D_800625A0->row_labels[i].projected) {
                 MenuLabel *label = &D_800625A0->row_labels[i];
 
@@ -905,7 +905,7 @@ void func_801C8040(void) {
     AddPrim(&D_800625A0->current->ot[8],
                   &D_800625A0->prims->fade[D_800625A0->buffer_index]);
     AddPrim(&D_800625A0->current->ot[8],
-                  &D_800625A0->prims->mode_b[D_800625A0->buffer_index]);
+                  &D_800625A0->prims->mode_sprite[D_800625A0->buffer_index]);
 }
 
 /* Draw a shown status panel for this buffer: face, label, layout sprites and
@@ -947,7 +947,7 @@ void func_801C80BC(StatusPanel *panel, u8 extra) {
 void func_801C83D0(void) {
     s32 i;
 
-    if (D_800625A0->flags->status_on) {
+    if (D_800625A0->flags->party_panels_shown) {
         for (i = 0; i < 6; i++) {
             func_801C80BC(D_800625A0->member_panels[i], 0);
         }
@@ -1103,7 +1103,7 @@ void func_801C9098(void) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        if (D_800625A0->flags->panel_20[i]) {
+        if (D_800625A0->flags->panels_shown[i]) {
             panel = D_800625A0->panels[i];
             if (panel->style == 0) {
                 PushMatrix();
@@ -1546,7 +1546,7 @@ void func_801CA690(u8 first) {
     }
     x = D_801CB1E8;
     y = D_801CB274;
-    D_800625A0->flags->status_on = 1;
+    D_800625A0->flags->party_panels_shown = 1;
     for (i = 0; i < 6; i++) {
         index = first + i;
         if (index >= 11) {
@@ -1578,7 +1578,7 @@ void func_801CA810(u8 list, s32 row, u8 marker) {
     }
     D_800625A0->markers->shown[marker] = 1;
     D_800625A0->markers->buffer[marker] = D_800625A0->buffer_index;
-    D_800625A0->flags->markers_on = 1;
+    D_800625A0->flags->markers_shown = 1;
 }
 
 /* Allocate the markers and set them up for `mode`: 0 and 2 build all four
@@ -1592,7 +1592,7 @@ void func_801CA944(u8 mode) {
     bzero(markers, 0x14C);
     switch (mode) {
     case 0:
-        D_800625A0->flags->markers_on = 1;
+        D_800625A0->flags->markers_shown = 1;
         D_800625A0->markers->at_cursor[0] = 1;
         D_800625A0->markers->at_cursor[1] = 1;
     case 2:
@@ -1606,7 +1606,7 @@ void func_801CA944(u8 mode) {
         func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys,
                       D_800625A0->buffer_index, 0, 0, 0x800);
         D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
-        D_800625A0->flags->markers_on = 1;
+        D_800625A0->flags->markers_shown = 1;
         break;
     case 1:
         break;
@@ -1615,7 +1615,7 @@ void func_801CA944(u8 mode) {
 
 /* Hide the markers, let one frame pass and release them. */
 void func_801CAB04(void) {
-    D_800625A0->flags->markers_on = 0;
+    D_800625A0->flags->markers_shown = 0;
     func_801C94A0();
     func_800320E8(D_800625A0->markers);
 }
@@ -1803,7 +1803,7 @@ void func_801CB0A8(void) {
     state->images->screen.y = 0x100;
     state->images->screen.w = 0x140;
     state->images->screen.h = 0xE0;
-    state->prims->b_15B = 0x40;
+    state->prims->width = 0x40;
     func_801C559C();
     func_801C5714();
     func_801C5B90();

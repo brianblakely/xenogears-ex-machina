@@ -178,7 +178,7 @@ u8 func_801DBE54(void) {
     func_801D2484();
     func_801DB340(0);
     func_801DB340(1);
-    func_801E8044(8, D_800625A0->flags->unk38);
+    func_801E8044(8, D_800625A0->flags->labels10e0_shown);
     return 1;
 }
 
@@ -204,7 +204,7 @@ void func_801DC1D4(u8 kind) {
         page = 1;
         break;
     }
-    func_801E8018(8, D_800625A0->labels10e0, D_801EA548 + page * 8, D_800625A0->flags->unk38);
+    func_801E8018(8, D_800625A0->labels10e0, D_801EA548 + page * 8, D_800625A0->flags->labels10e0_shown);
     func_801C72BC(view);
     func_801D22F4(2);
     func_801D3488(2, kind);
@@ -220,7 +220,7 @@ void func_801DC2CC(u8 kind) {
     func_801D4EA0(5);
     func_801D4EA0(6);
     func_801D2484();
-    D_800625A0->flags->unk4A = 0;
+    D_800625A0->flags->file_list_shown = 0;
     func_801C7BF4();
     switch (kind) {
     case 0:
@@ -235,8 +235,8 @@ void func_801DC2CC(u8 kind) {
     }
     func_801C72BC(view | 0x10);
     func_800320E8(D_800625A0->file_list);
-    D_800625A0->flags->redraw6 = 1;
-    D_800625A0->flags->unk20[1] = 1;
+    D_800625A0->flags->field_menu2_shown = 1;
+    D_800625A0->flags->panels_shown[1] = 1;
 }
 
 /* Build the arts list of party slot `slot` (`kind` 0 the character's, 1 its
@@ -263,7 +263,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
     u8 fuel;
 
     fuel = 0;
-    ep = D_8006D634.characters[D_800625A0->flags->ids[slot]].ep;
+    ep = D_8006D634.characters[D_800625A0->flags->party[slot]].ep;
     image = func_80031BDC(0x3f6, 0);
     powers[0] = 1;
     powers[1] = 10;
@@ -278,14 +278,14 @@ void func_801DC3D8(u8 slot, u8 kind) {
         known = 0;
         switch (kind) {
         case 0:
-            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].levelSkills, row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].levelSkills, row) || row >= 12;
             break;
         case 1:
-            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].unlocksB, row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].unlocksB, row) || row >= 12;
             break;
         case 2:
             if (!(row & 1)) {
-                known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].flags1A, row / 2) || row >= 12;
+                known = func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].flags1A, row / 2) || row >= 12;
             }
             break;
         }
@@ -295,32 +295,32 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 switch (kind) {
                 case 0:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
-                        func_80033908(D_800625A0->flags->ids[slot] * 16 + row), image, 0x24, 0);
-                    cost = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]][22 + row].cost;
+                        func_80033908(D_800625A0->flags->party[slot] * 16 + row), image, 0x24, 0);
+                    cost = D_800625A0->tables->effects[D_800625A0->flags->party[slot]][22 + row].cost;
                     break;
                 case 1:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
-                        func_800339FC(D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 16 + row), image, 0x24, 0);
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId][21 + row].cost;
+                        func_800339FC(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 16 + row), image, 0x24, 0);
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][21 + row].cost;
                     break;
                 case 2:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
-                        func_80033A8C(D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 4 + row / 2), image, 0x24, 0);
-                    ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel;
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId][37 + row / 2].gearCost;
+                        func_80033A8C(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 4 + row / 2), image, 0x24, 0);
+                    ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][37 + row / 2].gearCost;
                     digits = 4;
                     break;
                 }
             } else if (row == 12) {
                 if (kind != 2) {
-                    cost = D_8006D634.characters[D_800625A0->flags->ids[slot]].ep;
+                    cost = D_8006D634.characters[D_800625A0->flags->party[slot]].ep;
                 } else {
                     fuel = 3;
-                    cost = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel;
+                    cost = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
                     digits = 5;
                 }
             } else {
-                cost = D_8006D634.characters[D_800625A0->flags->ids[slot]].maxEp;
+                cost = D_8006D634.characters[D_800625A0->flags->party[slot]].maxEp;
             }
             value = cost;
             started = 0;
@@ -349,7 +349,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    if (func_801C865C(D_801E97F0[D_800625A0->flags->ids[slot]], row)) {
+                    if (func_801C865C(D_801E97F0[D_800625A0->flags->party[slot]], row)) {
                         if (ep < cost) {
                             grey = 0;
                         }
@@ -383,10 +383,10 @@ void func_801DC3D8(u8 slot, u8 kind) {
         }
     }
     func_800320E8(image);
-    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, 6, 1, fuel + 2);
-    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, 7, 1, fuel + 2);
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 6, 1, fuel + 2);
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, 7, 1, fuel + 2);
     func_801D36E0(&D_800625A0->file_list->footer, slot, kind, 1);
-    D_800625A0->flags->unk4A = 1;
+    D_800625A0->flags->file_list_shown = 1;
 }
 
 /* Show the description of file list row `row` for party slot `slot` (`kind`
@@ -405,13 +405,13 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
 
     switch (kind) {
     case 0:
-        text = (D_800625A0->flags->ids[slot] << 5) + row * 2;
+        text = (D_800625A0->flags->party[slot] << 5) + row * 2;
         break;
     case 1:
-        text = (D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId << 5) + row * 2;
+        text = (D_8006D634.characters[D_800625A0->flags->party[slot]].gearId << 5) + row * 2;
         break;
     case 2:
-        text = D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 8 + (row & ~1);
+        text = D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 8 + (row & ~1);
         break;
     }
     if (D_800625A0->file_list->shown[row] != 0) {
@@ -442,16 +442,16 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->g0 = 0x80;
         (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->b0 = 0x80;
         SetSemiTrans(&D_800625A0->file_list->headA.polys[D_800625A0->buffer_index], 0);
-        func_801E8044(8, D_800625A0->flags->unk38);
+        func_801E8044(8, D_800625A0->flags->labels10e0_shown);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]] + row + 22;
+            effect = D_800625A0->tables->effects[D_800625A0->flags->party[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 21;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + (row >> 1) + 37;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -462,20 +462,20 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         } else {
             all = 1;
         }
-        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, all, 0, 2);
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, all, 0, 2);
         targetKind = (effect->target & 3) + 3;
-        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, targetKind, 0, 2);
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->labels10e0_shown, targetKind, 0, 2);
         D_800625A0->file_list->headA.buffer = D_800625A0->buffer_index;
         D_800625A0->file_list->headB.buffer = D_800625A0->buffer_index;
         D_800625A0->file_list->extra[0].buffer = D_800625A0->buffer_index;
         D_800625A0->file_list->extra[1].buffer = D_800625A0->buffer_index;
         D_800625A0->file_list->extraShown = 1;
-        D_800625A0->flags->unk38[6] = 1;
-        D_800625A0->flags->unk38[7] = 1;
+        D_800625A0->flags->labels10e0_shown[6] = 1;
+        D_800625A0->flags->labels10e0_shown[7] = 1;
     } else {
         D_800625A0->file_list->extraShown = 0;
         for (i = 0; i < 6; i++) {
-            D_800625A0->flags->unk38[i] = 0;
+            D_800625A0->flags->labels10e0_shown[i] = 0;
         }
     }
 }
@@ -523,14 +523,14 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     cursor = D_800625A0->first_member;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]] + row + 22;
+        effect = D_800625A0->tables->effects[D_800625A0->flags->party[slot]] + row + 22;
         break;
     case 1:
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 21;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
         break;
     case 2:
         x = 0x18;
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 37;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 37;
         cursor = slot;
         break;
     }
@@ -549,7 +549,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
         if (all) {
             for (i = 0; i < 3; i++) {
-                if (D_800625A0->flags->ids[i] != 0xff) {
+                if (D_800625A0->flags->party[i] != 0xff) {
                     targets |= 1 << i;
                     D_800625A0->markers->shown[i] = 1;
                 }
@@ -558,13 +558,13 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             targets = 1 << cursor;
             D_800625A0->markers->shown[cursor] = 1;
         }
-        D_800625A0->flags->unk2F = 1;
+        D_800625A0->flags->markers_shown = 1;
         if (kind != 2) {
-            if (D_8006D634.characters[D_800625A0->flags->ids[slot]].ep - effect->cost < 0) {
+            if (D_8006D634.characters[D_800625A0->flags->party[slot]].ep - effect->cost < 0) {
                 targets = 0;
             }
         } else {
-            if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel - effect->gearCost < 0) {
+            if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel - effect->gearCost < 0) {
                 targets = 0;
             }
         }
@@ -581,28 +581,28 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                 hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
-                        if (D_8006D634.characters[D_800625A0->flags->ids[i]].hp != D_8006D634.characters[D_800625A0->flags->ids[i]].maxHp) {
+                        if (D_8006D634.characters[D_800625A0->flags->party[i]].hp != D_8006D634.characters[D_800625A0->flags->party[i]].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     } else {
-                        if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[i]].gearId].hp !=
-                            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[row]].gearId].maxHp) {
+                        if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[i]].gearId].hp !=
+                            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[row]].gearId].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     }
                     if (hit) {
-                        func_801E35BC(D_800625A0->tables, D_800625A0->flags->ids[slot], D_800625A0->flags->ids[i],
+                        func_801E35BC(D_800625A0->tables, D_800625A0->flags->party[slot], D_800625A0->flags->party[i],
                                       row, kind);
                     }
                 }
             }
             if (used) {
                 if (kind != 2) {
-                    D_8006D634.characters[D_800625A0->flags->ids[slot]].ep -= effect->cost;
+                    D_8006D634.characters[D_800625A0->flags->party[slot]].ep -= effect->cost;
                 } else {
-                    D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel -= effect->gearCost;
+                    D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel -= effect->gearCost;
                 }
                 sound = 0x37;
             } else {
@@ -625,7 +625,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     }
     D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
     func_801DD5E8(0);
-    D_800625A0->flags->unk46 = 0;
+    D_800625A0->flags->party_panels_shown = 0;
     func_801C7BF4();
     if (D_801E9785 != 0) {
         for (i = 0; i < 3; i++) {
@@ -646,8 +646,8 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             func_801D29A8(0, 0);                       \
             func_801C7BF4();                           \
         }                                              \
-        D_800625A0->flags->redraw6 = 0;                \
-        D_800625A0->flags->unk20[1] = 0;               \
+        D_800625A0->flags->field_menu2_shown = 0;      \
+        D_800625A0->flags->panels_shown[1] = 0;        \
     } while (0)
 
 /* The arts screen of party slot `member` (`kind` 0 the character's, 1 its
@@ -733,7 +733,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
             break;
         }
     } while (running);
-    func_801E8044(8, D_800625A0->flags->unk38);
+    func_801E8044(8, D_800625A0->flags->labels10e0_shown);
     func_801DB340(0);
 }
 
@@ -750,7 +750,7 @@ void func_801DE2C8(u8 page) {
     block = func_80031BDC(0xa1c, 0);
     D_800625A0->equip_list = block;
     bzero(block, 0xa1c);
-    func_801E8018(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_800625A0->flags->unk40);
+    func_801E8018(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_800625A0->flags->labels14e0_shown);
     func_801C72BC(7);
     func_801D22F4(3);
     func_801DB02C(0);
@@ -759,13 +759,13 @@ void func_801DE2C8(u8 page) {
 
 /* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
 void func_801DE36C(void) {
-    D_800625A0->flags->unk4C = 0;
+    D_800625A0->flags->equip_list_shown = 0;
     func_801D4EA0(2);
     func_801D4EA0(3);
     func_801D4EA0(4);
     func_801D4EA0(5);
     func_801C7BF4();
-    func_801E8044(6, D_800625A0->flags->unk40);
+    func_801E8044(6, D_800625A0->flags->labels14e0_shown);
     func_801C72BC(0x17);
     func_800320E8(D_800625A0->equip_list);
     func_801D3444();
@@ -773,8 +773,8 @@ void func_801DE36C(void) {
 
 /* Close the 801ddf24 screen: hide its sprites and free its blocks. */
 void func_801DE400(void) {
-    D_800625A0->flags->unk8 = 0;
-    D_800625A0->flags->unk4B = 0;
+    D_800625A0->flags->equipment_shown = 0;
+    D_800625A0->flags->equip_labels_shown = 0;
     func_801C7BF4();
     func_800320E8(D_800625A0->equipment);
     func_800320E8(D_800625A0->equip_labels);
@@ -789,7 +789,7 @@ void func_801DE474(u8 wide, u8 page) {
     s32 h;
 
     for (i = 0; i < 6; i++) {
-        D_800625A0->flags->unk40[i] = 0;
+        D_800625A0->flags->labels14e0_shown[i] = 0;
     }
     if (wide) {
         first = 2;
@@ -801,10 +801,10 @@ void func_801DE474(u8 wide, u8 page) {
         h = 0x5a;
     }
     for (i = first; i < end; i++) {
-        func_801E8070(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->flags->unk40, i,
+        func_801E8070(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->flags->labels14e0_shown, i,
                       i, 3);
     }
-    if (D_800625A0->flags->unk20[4] != 0) {
+    if (D_800625A0->flags->panels_shown[4] != 0) {
         func_801D4EA0(4);
     }
     func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
@@ -892,7 +892,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (!gear) {
             switch (kind) {
             case 0:
-                if (func_801C865C(weapon->users, D_800625A0->flags->ids[slot]) && weapon->kind < 5 &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->party[slot]) && weapon->kind < 5 &&
                     D_8006D634.weaponIds[i] < 50) {
                     ok = 1;
                 }
@@ -901,13 +901,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C865C(weapon->users, D_800625A0->flags->ids[slot]) &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->party[slot]) &&
                     weapon->kind == keptWeapon->kind && D_8006D634.weaponIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C865C(accessory->users, D_800625A0->flags->ids[slot])) {
+                if (func_801C865C(accessory->users, D_800625A0->flags->party[slot])) {
                     if (accessory->groups == 0 || (own & accessory->groups)) {
                         ok = 1;
                     } else if (!(used & accessory->groups)) {
@@ -919,7 +919,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         } else {
             switch (kind) {
             case 0:
-                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId) &&
                     gearWeapon->kind < 5 && D_8006D634.gearPartIds[i] < 50) {
                     ok = 1;
                 }
@@ -928,13 +928,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId) &&
                     gearWeapon->kind == keptGearWeapon->kind && D_8006D634.gearPartIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C8678(gearAccessory->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId)) {
+                if (func_801C8678(gearAccessory->users, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId)) {
                     if (gearAccessory->groups == 0 || (own & gearAccessory->groups)) {
                         ok = 1;
                     } else if (!(used & gearAccessory->groups)) {
@@ -1004,7 +1004,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     func_800320E8(image);
     func_801D36E0(&D_800625A0->equip_list->title, slot, gear, 0);
     length -= 8;
-    D_800625A0->flags->unk4C = 1;
+    D_800625A0->flags->equip_list_shown = 1;
     if (length < 0) {
         length = 0;
     }
@@ -1043,7 +1043,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     if (special) {
         if (!gear) {
             kept = D_800625A0->equip_labels->parts[1][part];
-            at = &D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part];
+            at = &D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1056,7 +1056,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
             }
         } else {
             kept = D_800625A0->equip_labels->parts[1][part];
-            at = &D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part];
+            at = &D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1070,7 +1070,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
         }
     } else if (!gear) {
         if (part == 0) {
-            id = D_800625A0->flags->ids[slot];
+            id = D_800625A0->flags->party[slot];
             selected = D_8006D634.characters[id].weapons[0];
             kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
@@ -1080,7 +1080,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1];
+            selected = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1];
             ids = D_8006D634.accessoryIds;
             counts = D_8006D634.accessoryCounts;
             kept = D_800625A0->equip_labels->parts[2][part - 1];
@@ -1088,7 +1088,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
         }
     } else {
         if (part == 0) {
-            id = D_800625A0->flags->ids[slot];
+            id = D_800625A0->flags->party[slot];
             selected = D_8006D634.gears[D_8006D634.characters[id].gearId].weapons[0];
             kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
@@ -1098,7 +1098,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1];
+            selected = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1];
             ids = D_8006D634.gearAccessoryIds;
             counts = D_8006D634.gearAccessoryCounts;
             length = 150;
@@ -1153,15 +1153,15 @@ void func_801DF5D0(u8 slot, u8 gear) {
     }
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_800625A0->equip_labels->parts[0][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[i];
-            D_800625A0->equip_labels->parts[1][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[i];
-            D_800625A0->equip_labels->parts[2][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_800625A0->equip_labels->parts[0][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[i];
-            D_800625A0->equip_labels->parts[1][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[i];
-            D_800625A0->equip_labels->parts[2][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[i];
         }
     }
 }
@@ -1173,19 +1173,19 @@ void func_801DF890(u8 slot, u8 gear) {
 
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[i] = D_800625A0->equip_labels->parts[0][i];
-            D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[i] = D_800625A0->equip_labels->parts[1][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[i] = D_800625A0->equip_labels->parts[2][i];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[i] = D_800625A0->equip_labels->parts[2][i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[i] = D_800625A0->equip_labels->parts[0][i];
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[i] = D_800625A0->equip_labels->parts[1][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[i] = D_800625A0->equip_labels->parts[2][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[i] = D_800625A0->equip_labels->parts[2][i];
         }
     }
 }
@@ -1198,39 +1198,39 @@ void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[0] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part] = D_801EA730[top + row];
+            D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part] = D_801EA730[top + row];
         }
     } else {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[0] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part] = D_801EA730[top + row];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part] = D_801EA730[top + row];
         }
     }
 }
 
 /* Compute party slot `slot`'s gear stats and copy them to the shown values. */
 void func_801DFE2C(u8 slot) {
-    func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId);
-    func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId);
+    func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
+    func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
     D_800625A0->tables->shown[0] = D_800625A0->tables->unkB0;
     D_800625A0->tables->shown[1] = D_800625A0->tables->unkA4;
     D_800625A0->tables->shown[2] = D_800625A0->tables->unkA6;
@@ -1265,32 +1265,32 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
             table = D_800625A0->equip_list->texts[0];
             if (current) {
                 if (!special) {
-                    id = D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[0];
+                    id = D_8006D634.characters[D_800625A0->flags->party[slot]].weapons[0];
                 } else {
-                    id = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part];
+                    id = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[part];
                 }
             }
             break;
         case 1:
             table = D_800625A0->equip_list->texts[1];
             if (current) {
-                id = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1];
+                id = D_8006D634.characters[D_800625A0->flags->party[slot]].accessories[part - 1];
             }
             break;
         case 2:
             table = D_800625A0->equip_list->texts[2];
             if (current) {
                 if (!special) {
-                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[0];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].weapons[0];
                 } else {
-                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[part];
                 }
             }
             break;
         case 3:
             table = D_800625A0->equip_list->texts[3];
             if (current) {
-                id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1];
+                id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].parts[part - 1];
             }
             break;
         }
@@ -1334,15 +1334,15 @@ void func_801E0434(u8 slot, u8 gear) {
     if (!gear) {
         ids = D_8006D634.weaponIds;
         counts = ids - 100;
-        item = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[0];
-        D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[0] = 0;
+        item = D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[0];
+        D_8006D634.characters[D_800625A0->flags->party[slot]].entryItems[0] = 0;
         size = 100;
     } else {
         ids = D_8006D634.gearPartIds;
         counts = ids - 100;
-        item = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[0];
+        item = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[0];
         size = 100;
-        D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[0] = 0;
+        D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].partItems[0] = 0;
     }
     for (i = 0; i < size; i++) {
         if (ids[i] == item) {
@@ -1419,7 +1419,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     listing = 0;
     drawnTop = 0xff;
     top = 0;
-    D_800625A0->flags->redraw7 = 0;
+    D_800625A0->flags->detail_shown = 0;
     func_801DE2C8(gear);
     func_801DF5D0(slot, gear);
     while (running) {
@@ -1444,7 +1444,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
         if (cursor) {
             func_801DB0A8(row, top, 3, 0);
         } else {
-            D_800625A0->flags->unk50[0] = 0;
+            D_800625A0->flags->cursors_shown[0] = 0;
         }
         if (row != drawnRow || slot != drawnSlot || top != drawnTop) {
             if (previewed) {
@@ -1452,8 +1452,8 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             }
             previewed = 1;
             if (!gear) {
-                func_801E36D4(D_800625A0->tables, D_800625A0->flags->ids[slot]);
-                func_801E3A80(D_800625A0->tables, D_800625A0->flags->ids[slot]);
+                func_801E36D4(D_800625A0->tables, D_800625A0->flags->party[slot]);
+                func_801E3A80(D_800625A0->tables, D_800625A0->flags->party[slot]);
             } else {
                 func_801DFE2C(slot);
             }
@@ -1487,11 +1487,11 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 }
             }
             D_800625A0->markers->shown[0] = 1;
-            D_800625A0->flags->redraw6 = 0;
+            D_800625A0->flags->field_menu2_shown = 0;
             first = 0;
-            D_800625A0->flags->unk20[1] = 0;
+            D_800625A0->flags->panels_shown[1] = 0;
         }
-        D_800625A0->flags->unk2F = 1;
+        D_800625A0->flags->markers_shown = 1;
         if (committed) {
             committed = 0;
             D_800625A0->input = 4;
@@ -1511,11 +1511,11 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 panel = 1;
                 cursor = 1;
                 row = 0;
-                D_800625A0->flags->unk50[0] = 1;
+                D_800625A0->flags->cursors_shown[0] = 1;
                 break;
             case 0:
             case 2:
-                if (D_800625A0->flags->ids[slot] == 4) {
+                if (D_800625A0->flags->party[slot] == 4) {
                     special ^= 1;
                     drawnPart = 0xff;
                     panel = 1;
@@ -1564,7 +1564,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 func_801DB0A8(0, top, 3, 0);
                 row = 0;
                 drawnSlot = 0xff;
-                D_800625A0->flags->unk50[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 break;
             case 4:
                 swapped = func_801DF0D4(slot, part, special, gear);
@@ -1576,7 +1576,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                     func_801E0434(slot, gear);
                 }
                 KEEP_AND_LEAVE_LIST();
-                D_800625A0->flags->unk50[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 row = 0;
                 break;
             case 1:
@@ -1640,16 +1640,16 @@ void func_801E1014(void) {
     D_800625A0->status_list = block;
     bzero(block, 0x25c0);
     func_801C72BC(4);
-    func_801E8018(2, D_800625A0->labels17e0, D_801EA564, &D_800625A0->flags->unk4E);
-    func_801E8070(2, D_800625A0->labels17e0, D_801EA564, D_801E9EA0, &D_800625A0->flags->unk4E, 0, 0, 4);
+    func_801E8018(2, D_800625A0->labels17e0, D_801EA564, &D_800625A0->flags->label17e0_shown);
+    func_801E8070(2, D_800625A0->labels17e0, D_801EA564, D_801E9EA0, &D_800625A0->flags->label17e0_shown, 0, 0, 4);
     func_801D397C(2, 0x44, 0xa, 0xe4, 0xc4, 0, 1, 4, 0);
-    D_800625A0->flags->redraw6 = 0;
+    D_800625A0->flags->field_menu2_shown = 0;
     i = 0;
     j = 0; /* members that can take part */
-    D_800625A0->flags->unk20[1] = 0;
+    D_800625A0->flags->panels_shown[1] = 0;
     for (; i < 3; i++) {
-        if (D_800625A0->flags->ids[i] != 0xff) {
-            if (D_800625A0->flags->ids[i] != 7 && D_800625A0->flags->ids[i] != 8) {
+        if (D_800625A0->flags->party[i] != 0xff) {
+            if (D_800625A0->flags->party[i] != 7 && D_800625A0->flags->party[i] != 8) {
                 j++;
             }
         }
@@ -1657,7 +1657,7 @@ void func_801E1014(void) {
     if (j >= 2) {
         func_801D3488(3, 0);
     } else {
-        D_800625A0->flags->unk53 = 0;
+        D_800625A0->flags->marks_shown = 0;
     }
     for (i = 0; i < 13; i++) {
         j = 0;
@@ -1683,10 +1683,10 @@ void func_801E1014(void) {
 /* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
 void func_801E1398(void) {
     func_801D3674();
-    D_800625A0->flags->unk4D = 0;
+    D_800625A0->flags->status_list_shown = 0;
     func_801D4EA0(2);
     func_801C7BF4();
-    func_801E8044(2, &D_800625A0->flags->unk4E);
+    func_801E8044(2, &D_800625A0->flags->label17e0_shown);
     func_801C72BC(0x14);
     func_800320E8(D_800625A0->status_list);
 }
@@ -1744,7 +1744,7 @@ u32 func_801E1418(u8 slot, u8 row) {
         i = 0;
         count = 0;
         r = row;
-        id = D_800625A0->flags->ids[slot];
+        id = D_800625A0->flags->party[slot];
         table = D_800625A0->status_list->unk2578;
         values = D_8006D634.characters[id].useCounts;
     loop:
@@ -1854,7 +1854,7 @@ void func_801E1AC8(u8 slot) {
     pixels = func_80031BDC(0x3f6, 0);
     for (i = 0; i < 13; i++) {
         D_800625A0->status_list->gaugeShown[i] = 0;
-        if (func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].counterSkills, i)) {
+        if (func_801C8640(D_8006D634.skills[D_800625A0->flags->party[slot]].counterSkills, i)) {
             show = 1;
             kind = 1;
             learned = 1;
@@ -1871,9 +1871,9 @@ void func_801E1AC8(u8 slot) {
         }
         if (show) {
             D_800625A0->status_list->names[i].width =
-                func_80034EAC(func_80033784(D_800625A0->flags->ids[slot], i), pixels, 0x24, 0);
+                func_80034EAC(func_80033784(D_800625A0->flags->party[slot], i), pixels, 0x24, 0);
             if (i < 7 && learned) {
-                text[0] = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]][i + 7].unk17 + 0x10;
+                text[0] = D_800625A0->tables->effects[D_800625A0->flags->party[slot]][i + 7].unk17 + 0x10;
             } else {
                 text[0] = 0xf;
             }
@@ -1917,7 +1917,7 @@ void func_801E1AC8(u8 slot) {
     }
     func_800320E8(pixels);
     func_801D36E0(&D_800625A0->status_list->title, slot, 0, 2);
-    D_800625A0->flags->unk4D = 1;
+    D_800625A0->flags->status_list_shown = 1;
 }
 
 /* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
@@ -1929,7 +1929,7 @@ u8 func_801E20C8(u8 slot) {
 
     stay = 1;
     shown = 0xff;
-    if ((u32)(D_800625A0->flags->ids[slot] - 7) < 2) {
+    if ((u32)(D_800625A0->flags->party[slot] - 7) < 2) {
         func_801C8574(4);
         return 1;
     }
@@ -1947,12 +1947,12 @@ u8 func_801E20C8(u8 slot) {
         case 9:
             do {
                 slot = func_801D9704(slot, 0, 0);
-            } while ((u32)(D_800625A0->flags->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->party[slot] - 7) < 2);
             break;
         case 10:
             do {
                 slot = func_801D9704(slot, 1, 0);
-            } while ((u32)(D_800625A0->flags->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->party[slot] - 7) < 2);
             break;
         }
     } while (stay);
@@ -1988,7 +1988,7 @@ u8 func_801E2250(void) {
 
 /* Lay out the six labels of page `page` (D_801EA568) at +18e0. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, D_800625A0->labels18e0, D_801EA568 + page, D_800625A0->flags->unk54);
+    func_801E8018(6, D_800625A0->labels18e0, D_801EA568 + page, D_800625A0->flags->labels18e0_shown);
 }
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
@@ -2028,8 +2028,8 @@ u8 func_801E23CC(void) {
             shown = slot;
             page = D_8006D634.inGear[slot] ? 6 : 0;
             func_801E2324(page);
-            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->unk54, 4, 7, 6);
-            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->unk54, 5, 7, 6);
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->labels18e0_shown, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->labels18e0_shown, 5, 7, 6);
             D_800625A0->labels18e0[4].projected = 1;
             D_800625A0->labels18e0[5].projected = 1;
             if (first) {
@@ -2040,7 +2040,7 @@ u8 func_801E23CC(void) {
             }
         }
         if (D_800625A0->choice != D_800625A0->choice_shown) {
-            func_801E8070(4, D_800625A0->labels18e0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->flags->unk54,
+            func_801E8070(4, D_800625A0->labels18e0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->flags->labels18e0_shown,
                           D_800625A0->choice, 7, 0);
             func_801E8B4C(0);
             D_800625A0->choice_shown = D_800625A0->choice;
@@ -2048,28 +2048,28 @@ u8 func_801E23CC(void) {
         switch (D_800625A0->input) {
         case 4:
             func_801D22C4();
-            func_801E8044(4, D_800625A0->flags->unk54);
-            D_800625A0->flags->redraw7 = 0;
-            D_800625A0->flags->unk8 = 0;
-            D_800625A0->flags->unk4B = 0;
-            D_800625A0->flags->unk54[4] = 0;
-            D_800625A0->flags->unk54[5] = 0;
+            func_801E8044(4, D_800625A0->flags->labels18e0_shown);
+            D_800625A0->flags->detail_shown = 0;
+            D_800625A0->flags->equipment_shown = 0;
+            D_800625A0->flags->equip_labels_shown = 0;
+            D_800625A0->flags->labels18e0_shown[4] = 0;
+            D_800625A0->flags->labels18e0_shown[5] = 0;
             switch (D_800625A0->choice) {
             case 0:
-                if (D_800625A0->flags->ids[slot] != 7) {
-                    D_800625A0->flags->redrawA = 0;
+                if (D_800625A0->flags->party[slot] != 7) {
+                    D_800625A0->flags->lists_shown = 0;
                     func_801E05D0(slot, 0, 1);
                     func_801DE36C();
                     func_801D8DE4(slot, 0, 0, 1);
                     func_801D8EA4(slot, 0, 0, 1);
-                    D_800625A0->flags->redrawA = 1;
+                    D_800625A0->flags->lists_shown = 1;
                 } else {
                     func_801C8574(4);
                 }
                 shown = 0xff;
                 break;
             case 1:
-                if (D_800625A0->flags->ids[slot] != 7) {
+                if (D_800625A0->flags->party[slot] != 7) {
                     func_801DDF24(slot, 0, 1);
                     func_801DC2CC(1);
                 } else {
@@ -2078,7 +2078,7 @@ u8 func_801E23CC(void) {
                 shown = 0xff;
                 break;
             case 2:
-                if (D_800625A0->flags->ids[slot] != 7) {
+                if (D_800625A0->flags->party[slot] != 7) {
                     func_801DDF24(slot, 0, 2);
                     func_801DC2CC(2);
                 } else {
@@ -2091,7 +2091,7 @@ u8 func_801E23CC(void) {
                     if (D_8006D634.inGear[slot] != 0) {
                         D_8006D634.inGear[slot] = 0;
                         page = 0;
-                    } else if (D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId != 0xff) {
+                    } else if (D_8006D634.characters[D_800625A0->flags->party[slot]].gearId != 0xff) {
                         page = 6;
                         D_8006D634.inGear[slot] = 1;
                     }
@@ -2102,14 +2102,14 @@ u8 func_801E23CC(void) {
                 shown = 0xff;
                 break;
             }
-            D_800625A0->flags->unk54[4] = 1;
-            D_800625A0->flags->unk54[5] = 1;
-            func_801E8018(6, D_800625A0->labels18e0, &D_801EA568[page], D_800625A0->flags->unk54);
-            D_800625A0->flags->redraw7 = 1;
-            D_800625A0->flags->unk8 = 1;
-            D_800625A0->flags->unk4B = 1;
+            D_800625A0->flags->labels18e0_shown[4] = 1;
+            D_800625A0->flags->labels18e0_shown[5] = 1;
+            func_801E8018(6, D_800625A0->labels18e0, &D_801EA568[page], D_800625A0->flags->labels18e0_shown);
+            D_800625A0->flags->detail_shown = 1;
+            D_800625A0->flags->equipment_shown = 1;
+            D_800625A0->flags->equip_labels_shown = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->flags->redraw4 = 1;
+            D_800625A0->flags->sprite_shown = 1;
             D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 1);
             break;
@@ -2143,9 +2143,9 @@ u8 func_801E23CC(void) {
             break;
         }
     }
-    func_801E8044(6, D_800625A0->flags->unk54);
-    D_800625A0->flags->redraw4 = 0;
-    D_800625A0->flags->redraw3 = 0;
+    func_801E8044(6, D_800625A0->flags->labels18e0_shown);
+    D_800625A0->flags->sprite_shown = 0;
+    D_800625A0->flags->cursor_shown = 0;
     return 1;
 }
 
@@ -2193,7 +2193,7 @@ u8 func_801E2BE4(void) {
     D_800625A0->choice_shown = 0xff;
     func_801E2AE0();
     for (i = 0; i < 3; i++) {
-        if (D_800625A0->flags->ids[i] != 0xff) {
+        if (D_800625A0->flags->party[i] != 0xff) {
             slot = i;
             break;
         }
@@ -2201,8 +2201,8 @@ u8 func_801E2BE4(void) {
     while (stay) {
         func_801C7BF4();
         if (slot != shown) {
-            func_801E36D4(D_800625A0->tables, D_800625A0->flags->ids[slot]);
-            func_801E3A80(D_800625A0->tables, D_800625A0->flags->ids[slot]);
+            func_801E36D4(D_800625A0->tables, D_800625A0->flags->party[slot]);
+            func_801E3A80(D_800625A0->tables, D_800625A0->flags->party[slot]);
             func_801D2EC0(slot, 0);
             shown = slot;
             if (first) {
@@ -2221,18 +2221,18 @@ u8 func_801E2BE4(void) {
         case 4:
             func_801D22C4();
             func_801D25E4();
-            D_800625A0->flags->redraw7 = 0;
-            D_800625A0->flags->unk8 = 0;
-            D_800625A0->flags->unk4B = 0;
+            D_800625A0->flags->detail_shown = 0;
+            D_800625A0->flags->equipment_shown = 0;
+            D_800625A0->flags->equip_labels_shown = 0;
             switch (D_800625A0->choice) {
             case 0:
-                D_800625A0->flags->redrawA = 0;
+                D_800625A0->flags->lists_shown = 0;
                 func_801E05D0(slot, 0, 0);
                 func_801DE36C();
                 func_801D8DE4(slot, 0, 0, 0);
                 func_801D8EA4(slot, 0, 0, 0);
                 shown = 0xff;
-                D_800625A0->flags->redrawA = 1;
+                D_800625A0->flags->lists_shown = 1;
                 break;
             case 1:
                 func_801DDF24(slot, 0, 0);
@@ -2244,11 +2244,11 @@ u8 func_801E2BE4(void) {
                 break;
             }
             func_801D249C(1);
-            D_800625A0->flags->redraw7 = 1;
-            D_800625A0->flags->unk8 = 1;
-            D_800625A0->flags->unk4B = 1;
+            D_800625A0->flags->detail_shown = 1;
+            D_800625A0->flags->equipment_shown = 1;
+            D_800625A0->flags->equip_labels_shown = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->flags->redraw4 = 1;
+            D_800625A0->flags->sprite_shown = 1;
             D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 0);
             break;
@@ -2281,8 +2281,8 @@ u8 func_801E2BE4(void) {
         }
     }
     func_801D249C(0);
-    D_800625A0->flags->redraw4 = 0;
-    D_800625A0->flags->redraw3 = 0;
+    D_800625A0->flags->sprite_shown = 0;
+    D_800625A0->flags->cursor_shown = 0;
     return 1;
 }
 
@@ -2294,9 +2294,9 @@ void func_801E3088(u8 offset) {
         func_801D9E3C();
         break;
     case 2:
-        D_800625A0->flags->redraw7 = 0;
-        D_800625A0->flags->unk8 = 0;
-        D_800625A0->flags->unk4B = 0;
+        D_800625A0->flags->detail_shown = 0;
+        D_800625A0->flags->equipment_shown = 0;
+        D_800625A0->flags->equip_labels_shown = 0;
         func_801E2368();
         break;
     case 3:
@@ -2310,9 +2310,9 @@ void func_801E3088(u8 offset) {
         func_801DE400();
         break;
     case 6:
-        D_800625A0->flags->redraw7 = 0;
-        D_800625A0->flags->unk8 = 0;
-        D_800625A0->flags->unk4B = 0;
+        D_800625A0->flags->detail_shown = 0;
+        D_800625A0->flags->equipment_shown = 0;
+        D_800625A0->flags->equip_labels_shown = 0;
         func_801D25E4();
         func_801E2B80();
         break;
@@ -3135,8 +3135,8 @@ void func_801E53CC(u8 index) {
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    D_800625A0->flags->unk20[index] = 0;
-    D_800625A0->flags->unk27[index] = 0;
+    D_800625A0->flags->panels_shown[index] = 0;
+    D_800625A0->flags->panels_growing[index] = 0;
     for (i = 0; i < 2; i++) {
         SetPolyG4(&portrait->fill[i]);
         (portrait->fill + i)->r0 = 0x68;
@@ -3417,7 +3417,7 @@ void func_801E6450(void) {
 /* Free the 2dc0-byte block at +34c and clear party flag +b. */
 void func_801E649C(void) {
     func_800320E8(D_800625A0->file_info);
-    D_800625A0->flags->unkB = 0;
+    D_800625A0->flags->file_info_shown = 0;
 }
 
 /* Clear the 64x32 image area at (140, e0) to black and clear party flag +b. */
@@ -3429,7 +3429,7 @@ void func_801E64E0(void) {
     rect.w = 0x40;
     rect.h = 0x20;
     ClearImage(&rect, 0, 0, 0);
-    D_800625A0->flags->unkB = 0;
+    D_800625A0->flags->file_info_shown = 0;
 }
 
 /* Pack each of the 16 rows of `rows` in place, merging bytes 1-2, 5-6, 9-10
@@ -3754,7 +3754,7 @@ void func_801E781C(s32 index, u8 rebuild) {
             func_801E6668(index);
             D_800625A0->file_info->rebuilt = 0;
         }
-        D_800625A0->flags->unkB = 1;
+        D_800625A0->flags->file_info_shown = 1;
     }
 }
 

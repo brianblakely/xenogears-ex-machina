@@ -151,7 +151,7 @@ void func_801CE1D0(void) {
 
 /* Hide the second marker block, let a frame pass, and release it. */
 void func_801CE2E8(void) {
-    D_800625A0->flags->marks_b_shown = 0;
+    D_800625A0->flags->marks_shown = 0;
     func_801CC1C4();
     func_800320E8(D_800625A0->marks);
 }
@@ -160,7 +160,7 @@ void func_801CE2E8(void) {
 void func_801CE32C(void) {
     s32 i;
 
-    if (D_800625A0->flags->unk5A != 0) {
+    if (D_800625A0->flags->unknown5a[0] != 0) {
         for (i = 0; i < 9; i++) {
             if (D_800625A0->details->bar_shown[i] != 0) {
                 AddPrim(&D_800625A0->current->ot[4],
@@ -223,7 +223,7 @@ void func_801CE32C(void) {
                           D_800625A0->details->cells_b_buffer[i]);
         }
     }
-    if (D_800625A0->flags->unk5B == 1) {
+    if (D_800625A0->flags->unknown5a[1] == 1) {
         func_801C94CC(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
                       D_800625A0->details->group1220_buffer);
     }
@@ -658,7 +658,7 @@ void func_801D0220(void) {
     s32 shown;
     s32 i;
 
-    D_800625A0->flags->unk5A = 1;
+    D_800625A0->flags->unknown5a[0] = 1;
     for (step = 1; step < 12; step++) {
         shown = 0;
         D_800625A0->details->members_count = 0;
@@ -843,7 +843,7 @@ void func_801D0C20(u32 value, u8 lower) {
         }
     }
     D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->unk5B = 2;
+    D_800625A0->flags->unknown5a[1] = 2;
 }
 
 /* Draw a nine-digit price and its unit sprite at (aah, aeh). */
@@ -875,7 +875,7 @@ void func_801D0D4C(u32 value) {
 void func_801D0EC8(u8 close) {
     s32 i;
 
-    D_800625A0->flags->unk5A = 0;
+    D_800625A0->flags->unknown5a[0] = 0;
     D_800625A0->details->label4430_shown = 0;
     D_800625A0->details->label44B0_shown = 0;
     D_800625A0->details->digits_shown = 0;
@@ -1255,7 +1255,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
             last_row = row;
             price = func_801D1304(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
         }
         func_801C78EC(row, top, 0, 0);
         if (first) {
@@ -1273,24 +1273,24 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         case 4:
             if (total != 0) {
                 func_801CB498(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
                 running = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 func_801D0C20(total, 0);
                 if (func_801CCC18(0x95, 0xFF, 1)) {
                     func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, remove, member);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CC4DC();
             } else {
@@ -1300,20 +1300,20 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         case 5:
             running = 0;
             if (total != 0) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 if (!func_801CCC18(0x92, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CC4DC();
             }
@@ -1375,10 +1375,10 @@ void func_801D27C4(void) {
 void func_801D2804(u8 page) {
     u8 close;
 
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
     D_800625A0->flags->lists_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
     close = 1;
     switch (D_800625A0->choice + page * 3) {
     case 3:
@@ -1390,9 +1390,9 @@ void func_801D2804(u8 page) {
     }
     func_801D0EC8(close);
     D_800625A0->flags->lists_shown = 1;
-    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
     D_800625A0->flags->cursor_shown = 1;
-    func_801CCE90(4, D_800625A0->list_labels, D_801D6A24, D_800625A0->flags->list_label_shown);
+    func_801CCE90(4, D_800625A0->list_labels, D_801D6A24, D_800625A0->flags->list_labels_shown);
 }
 
 /* Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
@@ -2057,7 +2057,7 @@ u8 func_801D498C(u8 page, u8 fit) {
             price = func_801D3C78(row, top, dims);
             last_row = row;
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
             if (fit) {
                 panel_x = 0xC8;
                 panel_w = 0x70;
@@ -2078,8 +2078,8 @@ u8 func_801D498C(u8 page, u8 fit) {
             func_801C90E0(2, 0xC, 0x2A, 0xC4 - fit * 0x14, 0x74, 0, 1, 4, 1);
             func_801C90E0(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
             func_801C90E0(5, panel_x, 0x7A, panel_w, 0x24, 0, 1, 4, 0);
-            func_801CCE90(2, D_800625A0->list_labels, D_801D6A2C, D_800625A0->flags->list_label_shown);
-            func_801CCEE8(2, D_800625A0->list_labels, D_801D6A2C, D_801D6A40, D_800625A0->flags->list_label_shown,
+            func_801CCE90(2, D_800625A0->list_labels, D_801D6A2C, D_800625A0->flags->list_labels_shown);
+            func_801CCEE8(2, D_800625A0->list_labels, D_801D6A2C, D_801D6A40, D_800625A0->flags->list_labels_shown,
                           fit, 0, 1);
             if (fit) {
                 func_801D2950(D_800625A0->choice + page * 3);
@@ -2096,14 +2096,14 @@ u8 func_801D498C(u8 page, u8 fit) {
         case 4:
             if (total != 0) {
                 func_801CB498(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
-                D_800625A0->flags->panel_shown[5] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
+                D_800625A0->flags->panels_shown[5] = 0;
                 running = 0;
-                D_800625A0->flags->list_label_shown[fit] = 0;
+                D_800625A0->flags->list_labels_shown[fit] = 0;
                 if (fit) {
                     if (func_801D4888(top + row)) {
                         message = 0xA3;
@@ -2122,14 +2122,14 @@ u8 func_801D498C(u8 page, u8 fit) {
                     func_801D44FC(new_gold);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
-                    D_800625A0->flags->list_label_shown[fit] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
+                    D_800625A0->flags->list_labels_shown[fit] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                 }
                 func_801CC4DC();
                 confirm = 0xFF;
@@ -2138,26 +2138,26 @@ u8 func_801D498C(u8 page, u8 fit) {
             }
             break;
         case 5:
-            D_800625A0->flags->panel_shown[5] = 0;
+            D_800625A0->flags->panels_shown[5] = 0;
             running = 0;
-            D_800625A0->flags->list_label_shown[fit] = 0;
+            D_800625A0->flags->list_labels_shown[fit] = 0;
             if (total != 0 && !fit) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 if (!func_801CCC18(0x8C, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
-                    D_800625A0->flags->list_label_shown[0] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
+                    D_800625A0->flags->list_labels_shown[0] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                 }
                 func_801CC4DC();
             }
@@ -2203,7 +2203,7 @@ u8 func_801D498C(u8 page, u8 fit) {
     }
     D_800625A0->details->label45B0_shown = 0;
     func_801C9054(5);
-    func_801CCEBC(2, D_800625A0->flags->list_label_shown);
+    func_801CCEBC(2, D_800625A0->flags->list_labels_shown);
     func_801D0EC8(1);
     return 1;
 }
@@ -2248,7 +2248,7 @@ void func_801D5398(void) {
     func_801CC1C4();
     func_801CC31C(0);
     if (func_801CCC18(message, 0xFF, confirm) != 0) {
-        D_800625A0->flags->unk5B = 0;
+        D_800625A0->flags->unknown5a[1] = 0;
         switch (mode) {
         case 1:
             if (D_8006D634.gold < price) {
@@ -2285,9 +2285,9 @@ void func_801D5398(void) {
 
 /* Leave the gear list: hide the cursor and labels and the shop list packets. */
 u8 func_801D573C(void) {
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
     func_801D0EC8(0);
     return 2;
 }
@@ -2332,16 +2332,16 @@ u8 func_801D5828(void) {
     while (running) {
         func_801CC1C4();
         if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
-            D_800625A0->flags->marks_b_shown = 1;
+            D_800625A0->flags->marks_shown = 1;
         }
         if (first) {
-            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_labels_shown);
             func_801CD564(0);
             first = 0;
         }
         if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801CCEE8(4, D_800625A0->list_labels, &D_801D6A24[base], &D_801D6A40[base],
-                          D_800625A0->flags->list_label_shown, D_800625A0->choice, 4, 0);
+                          D_800625A0->flags->list_labels_shown, D_800625A0->choice, 4, 0);
             func_801CDA0C(0);
             D_800625A0->choice_shown = D_800625A0->choice;
         }
@@ -2351,14 +2351,14 @@ u8 func_801D5828(void) {
         }
         switch (D_800625A0->input) {
         case 4:
-            D_800625A0->flags->unk4 = 0;
+            D_800625A0->flags->sprite_shown = 0;
             D_800625A0->flags->cursor_shown = 0;
             D_800625A0->flags->lists_shown = 0;
             D_800625A0->flags->gear_parts_shown = 0;
-            func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+            func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
             func_801CB498(2);
             func_801CFC60();
-            D_800625A0->flags->marks_b_shown = 0;
+            D_800625A0->flags->marks_shown = 0;
             switch (D_800625A0->cursor) {
             case 1:
                 func_801D2804(1);
@@ -2374,10 +2374,10 @@ u8 func_801D5828(void) {
             func_801CC1C4();
             func_801CF448();
             func_801CC1C4();
-            D_800625A0->flags->unk4 = 1;
+            D_800625A0->flags->sprite_shown = 1;
             D_800625A0->flags->cursor_shown = 1;
             D_800625A0->flags->lists_shown = 1;
-            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_labels_shown);
             D_800625A0->choice_shown = 0xFF;
             break;
         case 5:
@@ -2403,9 +2403,9 @@ u8 func_801D5828(void) {
             break;
         }
     }
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
     return 1;
 }
 

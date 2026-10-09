@@ -22,26 +22,6 @@
 #include "menu/screen.h"
 
 
-/* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
-typedef struct MenuPrims {
-    u8 pad_0[0x50];
-    POLY_G4 gradient[2]; /* 0x50 */
-    POLY_F4 fade[2];     /* 0x98 */
-    LINE_F3 line_a[2];   /* 0xC8 */
-    LINE_F3 line_b[2];   /* 0xF8 */
-    DR_MODE mode_a[2];   /* 0x128 */
-    DR_MODE mode_b[2];   /* 0x140 */
-    u8 pad_158[3];
-    u8 b_15B;            /* 0x15B */
-} Backdrop;
-
-/* The 0x1194-byte block at state + 0x350. */
-typedef struct MenuImages {
-    u8 pad_0[0x1180];
-    RECT screen;     /* 0x1180: VRAM area copied to the display buffer */
-    u8 pad_1188[0xC];
-} ListBlock;
-
 /* The 0x5034-byte menu work block. */
 typedef struct MenuCard {
     u8 pad_0[0xB80];
@@ -86,28 +66,6 @@ typedef struct MenuPanel {
     u8 framed;                /* 0x71D: frame sprites built */
     u8 pad_71E[2];
 } Panel;
-
-/* The menu flag block (0x6C bytes): per-window/panel state bytes and the
- * party being edited. */
-typedef struct MenuFlags {
-    u8 pad_0[3];
-    u8 flag_3; /* 0x3 */
-    u8 flag_4; /* 0x4 */
-    u8 pad_5[0xC - 0x5];
-    u8 list_label_shown[8]; /* 0xC */
-    u8 row_label_shown[6];  /* 0x14 */
-    u8 entry_label_shown[6]; /* 0x1A */
-    u8 panel_20[7]; /* 0x20: per panel */
-    u8 panel_27[7]; /* 0x27: per panel */
-    u8 b_2E;        /* 0x2E: message lines shown */
-    u8 markers_on;  /* 0x2F */
-    u8 party[3]; /* 0x30: party members, 0xFF empty */
-    u8 pad_33;
-    u8 label_shown[4]; /* 0x34 */
-    u8 pad_38[0x46 - 0x38];
-    u8 status_on;      /* 0x46: status panels drawn */
-    u8 pad_47[0x6C - 0x47];
-} MenuFlags;
 
 /* A character status panel (0xBEC bytes): sprite quads, two per sprite
  * (one per draw buffer). */

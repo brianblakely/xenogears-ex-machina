@@ -65,9 +65,9 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
     s32 n;
     s32 i;
 
-    D_800625A0->images->captured = 0;
-    D_800625A0->images->refresh = 0;
-    D_800625A0->flags->redraw9 = 1;
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->flags->images_shown = 1;
     for (n = 1; n <= count; n++) {
         if (n != count) {
             D_800625A0->images->count = 0;
@@ -112,36 +112,36 @@ void func_801E86C8(u8 offset) {
     s32 i;
     s32 growing;
 
-    D_800625A0->lists->firstCount = 0;
-    D_800625A0->lists->secondCount = 0;
-    D_800625A0->flags->redrawA = 1;
+    D_800625A0->lists->first_count = 0;
+    D_800625A0->lists->second_count = 0;
+    D_800625A0->flags->lists_shown = 1;
     growing = 1;
     for (n = 1; n < 5; n++) {
-        D_800625A0->lists->firstCount = 0;
+        D_800625A0->lists->first_count = 0;
         D_800625A0->choice_count = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->lists->firstCount, D_800625A0->lists->first,
+                ADD_SPRITES(D_800625A0->lists->first_count, D_800625A0->lists->first,
                             D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2]);
                 D_800625A0->choice_count++;
             } else {
                 growing = 0;
             }
         }
-        D_800625A0->lists->firstStart = D_800625A0->buffer_index;
+        D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
             }
         }
-        D_800625A0->lists->secondCount = 0;
+        D_800625A0->lists->second_count = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->lists->secondCount, D_800625A0->lists->second,
+                ADD_SPRITES(D_800625A0->lists->second_count, D_800625A0->lists->second,
                             D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1]);
             }
         }
-        D_800625A0->lists->secondStart = D_800625A0->buffer_index;
+        D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
@@ -177,7 +177,7 @@ void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
     D_800625A0->images->buffer = D_800625A0->buffer_index;
     D_800625A0->images->buffer2 = D_800625A0->buffer_index;
     func_801D1EE0(cursor, 1);
-    D_800625A0->flags->redraw4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
 }
 
 /* Lay out the choice cursor sprites of the command at `offset` past the top
@@ -186,27 +186,27 @@ void func_801E8B4C(u8 offset) {
     s32 i;
     s32 image;
 
-    D_800625A0->lists->firstCount = 0;
-    D_800625A0->lists->secondCount = 0;
+    D_800625A0->lists->first_count = 0;
+    D_800625A0->lists->second_count = 0;
     for (i = 0; i < D_800625A0->choice_count; i++) {
         if (i == D_800625A0->choice) {
             image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] + 0xd;
         } else {
             image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2];
         }
-        D_800625A0->lists->firstCount +=
+        D_800625A0->lists->first_count +=
             func_8002675C(D_800625A0->sheet, image,
-                          &D_800625A0->lists->first[D_800625A0->lists->firstCount * 2],
+                          &D_800625A0->lists->first[D_800625A0->lists->first_count * 2],
                           D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
-        D_800625A0->lists->secondCount +=
+        D_800625A0->lists->second_count +=
             func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
-                          &D_800625A0->lists->second[D_800625A0->lists->secondCount * 2],
+                          &D_800625A0->lists->second[D_800625A0->lists->second_count * 2],
                           D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
     }
-    D_800625A0->lists->firstStart = D_800625A0->buffer_index;
-    D_800625A0->lists->secondStart = D_800625A0->buffer_index;
+    D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
+    D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
     func_801D1EE0(D_800625A0->choice + 7, 1);
-    D_800625A0->flags->redraw4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
 }
 
 /* Render the two name lines of name pair `image` (ff: blank) and upload them

@@ -28,30 +28,6 @@ typedef struct {
 
 extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
 
-/* Two packet groups (menu state + 350, 1194h bytes). */
-typedef struct MenuImages {
-    POLY_FT4 packets[56];  /* 000 */
-    POLY_FT4 packets2[56]; /* 8c0 */
-    RECT screen;           /* 1180: area copied to the shown buffer */
-    s32 count;             /* 1188 */
-    s32 count2;            /* 118c */
-    u8 buffer;             /* 1190 */
-    u8 buffer2;            /* 1191 */
-    u8 dim;                /* 1192: requested dimming */
-    u8 dimmed;             /* 1193: applied dimming */
-} ImageBlock;
-
-/* Two list packet groups (menu state + 354, 140ch bytes). */
-typedef struct MenuSpriteLists {
-    POLY_FT4 packets[32];  /* 000 */
-    POLY_FT4 packets2[96]; /* 500 */
-    s32 count;             /* 1400 */
-    s32 count2;            /* 1404 */
-    u8 buffer;             /* 1408 */
-    u8 buffer2;            /* 1409 */
-    u8 unk140A[2];
-} ListBlock;
-
 /*
  * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
  * with their part counts and buffers, the bars and frames of nine rows, the
@@ -166,21 +142,6 @@ typedef struct ModelParts {
     u8 unk12;    /* 12 */
 } ModelParts;
 
-/* Cursor block (menu state + 348, 15ch bytes), per draw buffer. */
-typedef struct MenuPrims {
-    POLY_FT4 sprite[2];     /* 00 */
-    POLY_G4 shade[2];       /* 50 */
-    POLY_F4 screen[2];      /* 98 */
-    LINE_F3 upper[2];       /* c8 */
-    LINE_F3 lower[2];       /* f8 */
-    DR_MODE mode_label[2];  /* 128 */
-    DR_MODE mode_sprite[2]; /* 140 */
-    u8 sprite_buffer;       /* 158 */
-    u8 shade_buffer;        /* 159 */
-    u8 unk15A;
-    u8 width;               /* 15b */
-} CursorBlock;
-
 /*
  * A framed 3D panel (menu state + 364 + n * 4, 720h bytes). Its sprite parts
  * come in buffer pairs: corners 0-7, top edge 8-11, bottom 12-15, left
@@ -222,42 +183,6 @@ typedef struct MenuCard {
     char game_prefix[13]; /* 4fce */
     u8 unk4FDB[0x5034 - 0x4FDB];
 } CardState;
-
-/* Screen flag block (menu state + 33c, 6ch bytes): what is shown, and the party. */
-typedef struct MenuFlags {
-    u8 unk0[3];
-    u8 cursor_shown; /* 03 */
-    u8 unk4;         /* 04 */
-    u8 unk5[9 - 5];
-    u8 images_shown; /* 09 */
-    u8 lists_shown;  /* 0a */
-    u8 unkB;
-    u8 list_label_shown[8]; /* 0c */
-    u8 info_label_shown[6]; /* 14 */
-    u8 extra_label_shown[6]; /* 1a: ovl2602 */
-    u8 panel_shown[7];   /* 20 */
-    u8 panel_growing[7]; /* 27 */
-    u8 message_shown;    /* 2e */
-    u8 marks_shown;      /* 2f */
-    u8 members[3];   /* 30: party member ids, ff none */
-    u8 unk33;
-    u8 label_shown[4];   /* 34 */
-    u8 unk38[0x49 - 0x38];
-    u8 scroll_shown; /* 49 */
-    u8 unk4A[0x50 - 0x4A];
-    u8 marker_shown[2]; /* 50 */
-    u8 unk52;
-    u8 marks_b_shown; /* 53: ovl2602 */
-    u8 unk54[0x5A - 0x54];
-    u8 unk5A;
-    u8 unk5B;
-    u8 unk5C[0x63 - 0x5C];
-    u8 model_shown;  /* 63: ovl2602 */
-    u8 price_shown;  /* 64: ovl2602 */
-    u8 gear_shown;   /* 65: ovl2602 */
-    u8 gear_parts_shown; /* 66: ovl2602 */
-    u8 unk67[0x6C - 0x67];
-} ScreenFlags;
 
 /* A party member's detail view; its nine stat words at +b8. */
 typedef struct {

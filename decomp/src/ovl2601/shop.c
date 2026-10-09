@@ -80,7 +80,7 @@ void func_801CCE1C(ResourceSet *view, u8 id) {
 void func_801CCFF4(void) {
     s32 i;
 
-    if (D_800625A0->flags->unk5A != 0) {
+    if (D_800625A0->flags->unknown5a[0] != 0) {
         for (i = 0; i < 9; i++) {
             if (D_800625A0->details->bar_shown[i] != 0) {
                 AddPrim(&D_800625A0->current->ot[4],
@@ -135,7 +135,7 @@ void func_801CCFF4(void) {
                           D_800625A0->details->cells_b_buffer[i]);
         }
     }
-    if (D_800625A0->flags->unk5B == 1) {
+    if (D_800625A0->flags->unknown5a[1] == 1) {
         func_801C8D58(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
                       D_800625A0->details->group1220_buffer);
     }
@@ -168,7 +168,7 @@ void func_801CD5D0(void) {
     s32 shown;
     s32 i;
 
-    D_800625A0->flags->unk5A = 1;
+    D_800625A0->flags->unknown5a[0] = 1;
     for (step = 1; step < 12; step++) {
         shown = 0;
         D_800625A0->details->members_count = 0;
@@ -800,7 +800,7 @@ void func_801CF678(u32 value) {
         }
     }
     D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->unk5B = 2;
+    D_800625A0->flags->unknown5a[1] = 2;
 }
 
 /*
@@ -852,14 +852,14 @@ u8 func_801CF780(void) {
             price = func_801CEB3C(row, top, dims);
             last_row = row;
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
-            func_801CBC88(1, 2, D_800625A0->list_labels, D_801D1FD4, D_800625A0->flags->list_label_shown);
-            func_801CBCF0(2, D_800625A0->list_labels, D_801D1FD4, D_801D1FE8, D_800625A0->flags->list_label_shown, 0,
+            func_801CBC88(1, 2, D_800625A0->list_labels, D_801D1FD4, D_800625A0->flags->list_labels_shown);
+            func_801CBCF0(2, D_800625A0->list_labels, D_801D1FD4, D_801D1FE8, D_800625A0->flags->list_labels_shown, 0,
                           0, 1);
-            D_800625A0->flags->list_label_shown[0] = 0;
+            D_800625A0->flags->list_labels_shown[0] = 0;
             func_801C896C(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
             func_801C896C(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
             func_801C896C(5, 0xE0, 0x7A, 0x40, 0x24, 0, 1, 4, 0);
@@ -870,7 +870,7 @@ u8 func_801CF780(void) {
             while (D_800625A0->view_motion != 0) {
                 func_801CB014();
             }
-            D_800625A0->flags->list_label_shown[0] = 1;
+            D_800625A0->flags->list_labels_shown[0] = 1;
         }
         if (redraw) {
             func_801CD8D0(gold, total, new_gold);
@@ -880,28 +880,28 @@ u8 func_801CF780(void) {
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
-                D_800625A0->flags->panel_shown[5] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
+                D_800625A0->flags->panels_shown[5] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 running = 0;
-                D_800625A0->flags->list_label_shown[0] = 0;
+                D_800625A0->flags->list_labels_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x8F, 0xFF, 1)) {
                     func_801CF2A0(new_gold);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
                     D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_label_shown[0] = 1;
+                    D_800625A0->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             } else {
@@ -910,25 +910,25 @@ u8 func_801CF780(void) {
             break;
         case 5:
             running = 0;
-            D_800625A0->flags->list_label_shown[0] = 0;
+            D_800625A0->flags->list_labels_shown[0] = 0;
             if (total != 0) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
-                D_800625A0->flags->panel_shown[5] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
+                D_800625A0->flags->panels_shown[5] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x8C, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
                     D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_label_shown[0] = 1;
+                    D_800625A0->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             }
@@ -1324,7 +1324,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             last_row = row;
             price = func_801CFF58(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
@@ -1348,24 +1348,24 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
                 running = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x95, 0xFF, 1)) {
                     func_801D0C18(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind, member);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             } else {
@@ -1375,20 +1375,20 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 5:
             running = 0;
             if (total != 0) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x92, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             }
@@ -1530,7 +1530,7 @@ void func_801D1928(void) {
 void func_801D1968(u8 close, u8 all) {
     s32 i;
 
-    D_800625A0->flags->unk5A = 0;
+    D_800625A0->flags->unknown5a[0] = 0;
     D_800625A0->details->label4430_shown = 0;
     D_800625A0->details->label44B0_shown = 0;
     D_800625A0->details->digits_shown = 0;
@@ -1561,10 +1561,10 @@ void func_801D1968(u8 close, u8 all) {
 void func_801D1B18(void) {
     u8 close;
 
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
     D_800625A0->flags->lists_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
     close = 1;
     switch (D_800625A0->choice) {
     case 0:
@@ -1582,9 +1582,9 @@ void func_801D1B18(void) {
     }
     func_801D1968(close, 0);
     D_800625A0->flags->lists_shown = 1;
-    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
     D_800625A0->flags->cursor_shown = 1;
-    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
 }
 
 /* Command 1 (sell): choose one of the sell lists until cancelled. */
@@ -1599,14 +1599,14 @@ u8 func_801D1CA4(void) {
     do {
         func_801CB014();
         if (first) {
-            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
             first = 0;
             func_801CB340();
             func_801CC278(0);
         }
         if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801CBCF0(4, D_800625A0->list_labels, D_801D1FD0, D_801D1FE8,
-                          D_800625A0->flags->list_label_shown, D_800625A0->choice, 3, 0);
+                          D_800625A0->flags->list_labels_shown, D_800625A0->choice, 3, 0);
             func_801CC720(0);
             D_800625A0->choice_shown = D_800625A0->choice;
         }
@@ -1633,9 +1633,9 @@ u8 func_801D1CA4(void) {
             break;
         }
     } while (running);
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
     return 1;
 }
 
