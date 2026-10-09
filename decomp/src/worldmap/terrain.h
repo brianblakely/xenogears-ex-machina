@@ -62,9 +62,9 @@ s32 func_80095CD4(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
 
 /* Terrain streaming origin (world units, wrapped to the map) and the block
  * cell the camera is in. */
-extern u8 D_8009BBB4[];
-#define TERRAIN_ORIGIN (*(VECTOR *)D_8009BBB4)
-#define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
+extern VECTOR D_8009BBB4;
+#define TERRAIN_ORIGIN D_8009BBB4
+#define GROUND_SCROLL ((s32 *)&D_8009BBB4) /* ground scroll offset x, y, z */
 extern SVECTOR D_8009C838; /* block cell */
 extern s16 D_8009D558;     /* the map edges the camera crossed (8/4 x, 2/1 z) */
 

@@ -20,7 +20,7 @@
 #include "resident/cd.h"
 #include "resident/window.h"
 
-u8 D_8009BBB4[0x10]; /* terrain origin, a VECTOR (TERRAIN_ORIGIN, GROUND_SCROLL) */
+VECTOR D_8009BBB4; /* terrain origin (TERRAIN_ORIGIN, GROUND_SCROLL) */
 s32 D_8009BBC4;
 struct DisplayBuffer D_8009BBC8[2];
 s32 D_8009BCB8;

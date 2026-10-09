@@ -1283,9 +1283,9 @@ void func_80075460(void) {
     save->unk22D0 = D_8009BE0C;
     save->unk22E4[0] = ((s32 *)&D_8009C838)[0];
     save->unk22E4[1] = ((s32 *)&D_8009C838)[1];
-    save->unk22D4.vx = ((VECTOR *)D_8009BBB4)->vx;
-    save->unk22D4.vy = ((VECTOR *)D_8009BBB4)->vy;
-    save->unk22D4.vz = ((VECTOR *)D_8009BBB4)->vz;
+    save->unk22D4.vx = D_8009BBB4.vx;
+    save->unk22D4.vy = D_8009BBB4.vy;
+    save->unk22D4.vz = D_8009BBB4.vz;
     save->camera_target.vx = D_8009BE28.target.vx;
     save->camera_target.vy = D_8009BE28.target.vy;
     save->camera_target.vz = D_8009BE28.target.vz;
@@ -1309,7 +1309,7 @@ void func_8007565C(void) {
     D_8009BD38 = *(SVECTOR *)save->camera_angle;
     D_8009D3F0 = save->camera_distance;
     D_8009BE0C = save->unk22D0;
-    *(VECTOR *)D_8009BBB4 = save->unk22D4;
+    D_8009BBB4 = save->unk22D4;
     D_8009C838 = *(SVECTOR *)save->unk22E4;
     D_8009BE28.target = save->camera_target;
 }
@@ -1750,7 +1750,7 @@ s32 func_80076A1C(void) {
     func_80089C78();
     func_8008615C();
     func_800848F4();
-    func_800980D4(D_8009BBB4);
+    func_800980D4(&D_8009BBB4);
     if (D_8009D558 != 0) {
         func_800981C8(&D_8009BE28);
         func_80096130();
@@ -2153,7 +2153,7 @@ s32 func_8007795C(void) {
     }
     func_8008615C();
     func_800848F4();
-    func_800980D4(D_8009BBB4);
+    func_800980D4(&D_8009BBB4);
     if (D_8009D558 != 0) {
         func_800981C8(&D_8009BE28);
         func_80096130();
