@@ -305,6 +305,7 @@ decomp/src/ovl3386/scroll.h
 decomp/src/ovl3387/burst.h
 decomp/src/ovl3387/ovl3387.c
 decomp/src/resident/battle_mode.c
+decomp/src/resident/battle_overlay.h
 decomp/src/resident/commons/common_80059404.c
 decomp/src/resident/commons/common_8005A39C.c
 decomp/src/resident/commons/common_8005A4DC.c

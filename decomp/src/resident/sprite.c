@@ -13,6 +13,7 @@
 #include "resident/sprite.h"
 #include "resident/task.h"
 #include "resident/text.h"
+#include "battle_overlay.h"
 #include "own_declarations.h"
 
 TexturePosition D_8004FAB8[8] = {

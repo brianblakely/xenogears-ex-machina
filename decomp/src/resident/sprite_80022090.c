@@ -9,6 +9,7 @@
 #include "resident/heap.h"
 #include "resident/sprite.h"
 #include "resident/task.h"
+#include "battle_overlay.h"
 #include "own_declarations.h"
 
 /* Lengths in bytes of the frame script commands 0x80-0xff, including the

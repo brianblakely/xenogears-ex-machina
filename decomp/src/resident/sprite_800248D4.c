@@ -14,6 +14,7 @@
 #include "resident/model.h"
 #include "resident/sprite.h"
 #include "resident/task.h"
+#include "battle_overlay.h"
 #include "own_declarations.h"
 
 void func_80025258(Task *task);
