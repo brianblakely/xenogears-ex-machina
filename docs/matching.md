@@ -166,7 +166,52 @@ func_8008F280 loads absolutely at each of its three reads) and the world map's
 (`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
 loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
 `SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
-and passes, for a probe.
+and passes a single target's `verify`, for a probe, which then prints `NOT
+ACCEPTANCE: SCRIPT_SYMBOLS=warn`. `all-verify` gives every target
+`SCRIPT_SYMBOLS=strict` on its command line, which neither the environment nor
+all-verify's own command line overrides.
+
+`verify` also fails on each address of the target's own image or uninitialized data
+that the link did not produce (`matching_coverage.py --relocations`): an aligned word
+holding one without an `R_MIPS_32` relocation in its input section, in a loaded data
+section or in .text outside every function; in .text, a `lui` whose immediate is the
+`%hi` of one without `R_MIPS_HI16`, and any `j`/`jal` without `R_MIPS_26`. Bytes
+classified asset, included or handwritten are exempt by class; any other only by a
+`START END unrelocated REASON` line of the target's classification, which may lie in
+a class's range and must cover a reported word. No target needs one. Each resident's
+21 such words lie in its asset ranges (its disc file index, the packed boot logo and
+console font), and the mode table's overlay entries and BSS bounds (main.c
+D_8001808C) are other images' addresses, past the resident's BSS end 8006faf0; its
+own entries there carry relocations. The one such address in the 26 links was mdec's:
+splat had emitted DecDCTvlcSize2 (801d5030, VLC_C.OBJ) as raw words after its
+object's leading decode-call limit, so its `lui`/`addiu` of that word carried none.
+The PsyQ signatures place each VLC object's `text_0` word before
+DecDCTvlcSize/DecDCTvlcSize2 at +4; mdec.symbols.txt makes the two words data labels
+(D_801D4C94, D_801D502C, counted `sdk` bytes outside every function) and
+DecDCTvlcSize2 a function, relocated against D_801D502C.
+
+After every target links, `all-verify` runs `make -C decomp cross-image`
+(`tools/cross_image.py` over every configuration). Each name a target's linker
+scripts assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them,
+and the fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another
+target's image or uninitialized data is an address copied from the original. Each
+must agree with the rebuilt targets holding that address, by their own symbols: each
+that defines the name defines it there (2287 of 2510 at present); where none does,
+one has a symbol there (19: the movie library's functions and variables that field
+and movie address by number, battle functions whose addresses ovl3087 uses, two
+resident symbols the world map names differently); otherwise the address must lie
+inside an input section that target's link places (204 members or parts of objects
+that no symbol names, such as game data members; for these the check cannot tell
+which object). Values outside every target (the resident's sizes, a constant) are
+not checked. It also compares each resident's mode table (`MODE_TABLE`) with the mode
+overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
+mode 2 enters resident code and declares only `MODE`): the entry must be the
+overlay's entry symbol, and the words after bss_start through bss_end, which the
+dispatcher clears (func_80019560), must be the overlay's linked .sbss/.bss. The check
+found one resident byte that other images use outside every object: the arena bout's
+outcome at 80050622, which the menu writes and a field event reads, lay in the
+alignment fill after D_8005061C[6]; main2_800366E0.c now defines it (D_80050622),
+whether apart or as part of D_8005061C left open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)

@@ -767,7 +767,7 @@ class MatchingTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("up to 80010028, past its declared end 80010020", result.stderr)
         # verify runs the check after the exact comparison: strict, the
-        # default, fails; warn reports and passes.
+        # default, fails; warn reports and passes, marked as no acceptance.
         image = (self.root / "image.bin").read_bytes()
         self.original.write_bytes(image)
         fixture = self.root / "fixture.mk"
@@ -789,6 +789,187 @@ class MatchingTests(unittest.TestCase):
                 self.assertIn('"matched": true', result.stdout)
                 self.assertIn(f"{'error' if status else 'warning'}: image.bin.elf: 1 name(s)"
                               " that views.ld assigns", result.stderr)
+                self.assertEqual("NOT ACCEPTANCE: SCRIPT_SYMBOLS=warn" in result.stderr,
+                                 mode == "warn")
+        # all-verify gives each target SCRIPT_SYMBOLS=strict on its command
+        # line: warn from the environment or all-verify's own command line
+        # does not weaken it.
+        targets = self.root / "targets/overlays"
+        targets.mkdir(parents=True)
+        (targets / "fixture.mk").write_text(
+            fixture.read_text() + "TARGET_CPPFLAGS := -DORIGINAL_BASE=0x80010000\n"
+            "LINKER_EXTRA := auto/undefined_syms_auto.txt views.ld other.ld\n"
+            "LINK_VIEWS := views.ld\nBSS_END := 0x80010040\n")
+        (self.root / "Makefile").write_text(f"include {repo / 'decomp/Makefile'}\n")
+        for where in ("environment", "command line"):
+            with self.subTest(where):
+                result = subprocess.run(
+                    ["make", "--no-print-directory", "ROOT=" + str(self.root),
+                     *(["SCRIPT_SYMBOLS=warn"] if where == "command line" else []),
+                     "all-verify"],
+                    cwd=self.root, text=True, capture_output=True, check=False,
+                    env={**environment, **({"SCRIPT_SYMBOLS": "warn"}
+                                           if where == "environment" else {})})
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn('"matched": true', result.stdout)
+                self.assertIn("error: image.bin.elf: 1 name(s) that views.ld assigns",
+                              result.stderr)
+                self.assertNotIn("NOT ACCEPTANCE", result.stderr)
+
+    def link_assembly(self, name, source, script, scripts=()):
+        """Assemble NAME.s as the target Makefile does and link NAME.bin.elf
+        (with its map) from the script and the further scripts."""
+        (self.root / f"{name}.s").write_text(source)
+        (self.root / f"{name}.ld").write_text(script)
+        subprocess.run(["psx-as", "-EL", "-march=r3000", "-mtune=r3000", "-msoft-float",
+                        "-no-pad-sections", "-G0", "-o", f"{name}.o", f"{name}.s"],
+                       cwd=self.root, check=True)
+        subprocess.run(["psx-ld", "-nostdlib", "--no-check-sections", "-Map", f"{name}.bin.map",
+                        "-T", f"{name}.ld", *(f"-T{path}" for path in scripts),
+                        "-o", f"{name}.bin.elf"], cwd=self.root, check=True)
+
+    @unittest.skipUnless(shutil.which("psx-as") and shutil.which("psx-ld"),
+                         "enter the matching Nix shell to test the relocation scan")
+    def test_own_addresses_without_their_relocation_fail(self):
+        # The image is func (80010000-80010024), a word after it in .text and
+        # the .data table (80010028-80010038). Four of its own addresses are
+        # numbers: a lui of their %hi, a jal, a word in .text outside every
+        # function and one in .data; relocated ones and addresses outside
+        # the image (lui 0x8020, 80300000) are not reported.
+        self.link_assembly("image", (
+            ".set noreorder\n.set noat\n.text\n.globl func\n.type func, @function\nfunc:\n"
+            "lui $8, %hi(table)\naddiu $8, $8, %lo(table)\njal func\nnop\n"
+            "lui $9, 0x8001\n.word 0x0C004000\nlui $10, 0x8020\njr $31\nnop\n"
+            ".size func, . - func\n.word 0x80010008\n"
+            ".data\n.globl table\ntable:\n.word table\n.word 0x80010004\n.word 0x80300000\n"
+            ".word 1\n"),
+            "SECTIONS {\n  .image 0x80010000 : SUBALIGN(4) { image.o(.text) image.o(.data) }\n"
+            "  /DISCARD/ : { *(*) }\n}\n")
+        tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
+        classification = self.root / "classification.txt"
+
+        def check(lines=None):
+            if lines is not None:
+                classification.write_text(lines)
+            return subprocess.run(
+                [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map",
+                 "--relocations",
+                 *(["--classification", "classification.txt"] if lines is not None else [])],
+                cwd=self.root, text=True, capture_output=True, check=False)
+
+        result = check()
+        self.assertEqual(result.returncode, 1, result.stderr)
+        span = "an address in 80010000-80010038"
+        self.assertEqual(result.stderr.splitlines(), [
+            "error: image.bin.elf: 80010010 (.text of image.o): lui 3c098001: the %hi of"
+            f" {span} without R_MIPS_HI16",
+            "error: image.bin.elf: 80010014 (.text of image.o): jal 0c004000 without R_MIPS_26",
+            f"error: image.bin.elf: 80010024 (.text of image.o): word 80010008, {span},"
+            " without R_MIPS_32",
+            f"error: image.bin.elf: 8001002c (.data of image.o): word 80010004, {span},"
+            " without R_MIPS_32",
+        ])
+        # Bytes classified handwritten, asset or included are exempt; any
+        # other only by an unrelocated line with its reason, also inside a
+        # class's range.
+        reviewed = ("80010010 80010018 handwritten a routine the compiler does not emit\n"
+                    "80010024 80010028 asset an embedded file's bytes\n")
+        for lines in (reviewed + "8001002c 80010030 unrelocated a count, not an address\n",
+                      reviewed.replace("asset an", "included D_80010024 an")
+                      + "80010028 80010038 sdk a library's data\n"
+                      "8001002c 80010030 unrelocated a count, not an address\n"):
+            with self.subTest(lines):
+                result = check(lines)
+                self.assertEqual(result.returncode, 0, result.stderr)
+        for lines, message in (
+            (reviewed.replace("handwritten", "sdk"),
+             "80010010 (.text of image.o): lui 3c098001"),
+            (reviewed + "8001002c 80010030 unrelocated a count\n"
+             "80010030 80010034 unrelocated a word outside the image\n",
+             "unrelocated line 80010030-80010034: no word there that the relocation scan"
+             " reports"),
+            (reviewed + "8001002c 80010030 unrelocated\n", "gives the reason"),
+        ):
+            with self.subTest(lines):
+                result = check(lines)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+
+    @unittest.skipUnless(
+        shutil.which("psx-as") and shutil.which("psx-ld")
+        and importlib.util.find_spec("rabbitizer"),
+        "enter the matching Nix shell to test the cross-image check")
+    def test_cross_image_names_and_mode_table_agree_with_the_other_links(self):
+        # A resident r (80010000-80010028: res_func, fill, the mode table,
+        # res_var) and an overlay o (80020000-80020018, its .bss to 80020028)
+        # that takes res_func from a PROVIDE list and other names from a
+        # fragment: by name, by address (alias: the table) and inside an
+        # object (inner: res_var's second word).
+        def resident(entry=0x80020000, bss=(0x80020014, 0x80020024)):
+            self.link_assembly("r", (
+                ".set noreorder\n.text\n.globl res_func\n.type res_func, @function\n"
+                "res_func:\njr $31\nnop\n.size res_func, . - res_func\n"
+                f".section .rodata\n.globl table\ntable:\n.word {entry}, {bss[0]}, {bss[1]}, 1\n"
+                ".data\n.globl res_var\nres_var:\n.word 0, 0\n"),
+                "SECTIONS {\n  .r 0x80010000 : SUBALIGN(4) { r.o(.text) . = ALIGN(16); r.o(.rodata)"
+                " r.o(.data) }\n  /DISCARD/ : { *(*) }\n}\n")
+
+        def overlay(names):
+            (self.root / "o.resident.ld").write_text(names)
+            self.link_assembly("o", (
+                ".set noreorder\n.text\n.globl ov_entry\n.type ov_entry, @function\n"
+                "ov_entry:\nlui $8, %hi(res_var)\nlw $8, %lo(res_var)($8)\njal res_func\nnop\n"
+                "jr $31\nnop\n.size ov_entry, . - ov_entry\n"
+                ".bss\n.globl ov_bss\nov_bss:\n.space 0x10\n"),
+                "SECTIONS {\n  .o 0x80020000 : SUBALIGN(4) { o.o(.text) }\n"
+                "  .o_bss (NOLOAD) : SUBALIGN(4) { o.o(.bss) }\n  /DISCARD/ : { *(*) }\n}\n",
+                ["build/o/auto/undefined_funcs_auto.ld", "o.resident.ld"])
+
+        provide = self.root / "build/o/auto/undefined_funcs_auto.ld"
+        provide.parent.mkdir(parents=True)
+        provide.write_text("PROVIDE(res_func = 0x80010000);\nPROVIDE(unused = 0x80010004);\n")
+        (self.root / "r.mk").write_text(
+            "IMAGE := r.bin\nBUILD := build/r\nLINKER_SCRIPT := r.ld\nMODE_TABLE := table\n")
+        (self.root / "o.mk").write_text(
+            "IMAGE := o.bin\nBUILD := build/o\nLINKER_SCRIPT := o.ld\n"
+            "LINKER_EXTRA := auto/undefined_funcs_auto.txt o.resident.ld\n"
+            "MODE := 0\nMODE_ENTRY := ov_entry\n")
+        names = ("res_var = 0x80010020;\nalias = 0x80010010;\ninner = 0x80010024;\n"
+                 "timer = 0x1F801100;\n")
+        resident()
+        overlay(names)
+        tool = Path(__file__).resolve().parents[1] / "tools/cross_image.py"
+
+        def check():
+            return subprocess.run([sys.executable, str(tool), "r.mk", "o.mk"], cwd=self.root,
+                                  text=True, capture_output=True, check=False)
+
+        result = check()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {
+            "claim": "cross_image_agreement", "targets": 2, "names": 4, "by_name": 2,
+            "by_address": 1, "inside_object": 1, "mode_entries": 1})
+        # A name another link places elsewhere, one in no object (the fill
+        # after res_func) and a mode table that does not hold the overlay's
+        # entry and uninitialized data all fail.
+        for change, message in (
+            (lambda: overlay(names.replace("0x80010020", "0x80010024")),
+             "o: res_var = 80010024 (o.resident.ld), but r defines res_var at 80010020"),
+            (lambda: overlay(names + "gap = 0x8001000C;\n"),
+             "o: gap = 8001000c (o.resident.ld) lies in r but in no input section they place"),
+            (lambda: resident(entry=0x80020004),
+             "r: table[0] enters 80020004, not o's ov_entry (80020000)"),
+            (lambda: resident(bss=(0x80020014, 0x80020020)),
+             "r: table[0] clears 80020018-80020024, but o links its uninitialized data at"
+             " 80020018-80020028"),
+        ):
+            with self.subTest(message):
+                change()
+                result = check()
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertEqual(result.stderr, f"error: {message}\n")
+                resident()
+                overlay(names)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
