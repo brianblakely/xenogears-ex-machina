@@ -472,7 +472,8 @@ converted to C per unit. What converting the targets' `.data` established:
   taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
-  80076f38, counters at 80076f3c; field's RECT ring).
+  80076f38, counters at 80076f3c; field's RECT ring). `field.bss.ld` fails the link
+  unless field's linked `.bss` is exactly that span.
 - Embedded game data stays generated and is classified `asset` with its format
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
