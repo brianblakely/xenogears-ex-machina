@@ -233,8 +233,8 @@ void func_801C559C(u8 allocate) {
 /* Allocate (nonzero) or release the shop screen's packet block. */
 void func_801C5600(u8 allocate) {
     if (allocate) {
-        D_800625A0->details = func_80031BDC(sizeof(DetailBlock), 0);
-        bzero(D_800625A0->details, sizeof(DetailBlock));
+        D_800625A0->details = func_80031BDC(sizeof(ShopDetails), 0);
+        bzero(D_800625A0->details, sizeof(ShopDetails));
     } else {
         func_800320E8(D_800625A0->details);
     }

@@ -837,7 +837,7 @@ u8 func_801CF780(void) {
     for (i = 0; i < 11; i++) {
         func_801CCE1C(D_800625A0->tables, i);
         D_800625A0->details->attack[i] = D_800625A0->tables->stats[0];
-        D_800625A0->details->defence[i] = D_800625A0->tables->stats[2];
+        D_800625A0->details->defense[i] = D_800625A0->tables->stats[2];
     }
     bzero(D_800625A0->details->amounts, 0x30);
     D_800625A0->images->dim = 1;

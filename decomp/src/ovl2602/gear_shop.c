@@ -1644,8 +1644,8 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     func_801D5F94(D_800625A0->tables, D_8006D634.characters[member].gearId);
     values[0][0] = D_800625A0->tables->gear.attack;
     values[0][1] = D_800625A0->tables->gear.defense;
-    values[1][0] = D_800625A0->details->stat_b0[member];
-    values[1][1] = D_800625A0->details->stat_a4[member];
+    values[1][0] = D_800625A0->details->attack[member];
+    values[1][1] = D_800625A0->details->defense[member];
     for (k = 0; k < 2; k++) {
         if (values[0][k] >= values[1][k]) {
             change[k] = values[0][k] - values[1][k];
@@ -2027,8 +2027,8 @@ u8 func_801D498C(u8 page, u8 fit) {
         if (D_8006D634.characters[i].gearId != 0xFF) {
             func_801D6150(D_800625A0->tables, D_8006D634.characters[i].gearId);
             func_801D5F94(D_800625A0->tables, D_8006D634.characters[i].gearId);
-            D_800625A0->details->stat_b0[i] = D_800625A0->tables->gear.attack;
-            D_800625A0->details->stat_a4[i] = D_800625A0->tables->gear.defense;
+            D_800625A0->details->attack[i] = D_800625A0->tables->gear.attack;
+            D_800625A0->details->defense[i] = D_800625A0->tables->gear.defense;
         }
     }
     bzero(D_800625A0->shop_items, 0x30);

@@ -21,78 +21,10 @@
 #include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
+#include "menu/shop.h"
 #include "menu/tables.h"
 
 extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
-
-/*
- * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
- * with their part counts and buffers, the bars and frames of nine rows, the
- * name labels and the resources unpacked from file 2.
- */
-typedef struct ShopDetails {
-    POLY_FT4 members[18];     /* 0000: count 46a5, buffer 46a6 */
-    POLY_FT4 group2D0[18];    /* 02d0: count 46a9, buffer 46a8 */
-    POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
-    POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
-    POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
-    POLY_FT4 group1220[18];   /* 1220: count 46b4, buffer 46b3 */
-    POLY_FT4 digits4[18];     /* 14f0: count 46b8, buffer 46b7 */
-    POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
-    POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
-    POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
-    POLY_FT4 cells_a[9][6];   /* 27b0: counts 46bc, buffers 46ce */
-    POLY_FT4 cells_b[9][6];   /* 3020: counts 46c5, buffers 46d7 */
-    LINE_F3 bar_upper[18];    /* 3890: two per row */
-    LINE_F3 bar_lower[18];    /* 3a40 */
-    LINE_F2 frame[2];         /* 3bf0 */
-    u8 unk3C10[0x20];
-    MenuLabel names_a[8];         /* 3c30 */
-    MenuLabel names_b[8];         /* 4030 */
-    MenuLabel label4430;          /* 4430 */
-    MenuLabel label44B0;          /* 44b0 */
-    MenuLabel label4530;          /* 4530 */
-    MenuLabel label45B0;          /* 45b0 */
-    void *resources[9];       /* 4630: unpacked from file 2 */
-    u8 amounts[0x30];         /* 4654 */
-    u8 name_shown[8];         /* 4684 */
-    u8 row_count[8];          /* 468c */
-    u8 row_buffer[8];         /* 4694 */
-    u8 bar_shown[9];          /* 469c */
-    u8 members_count;         /* 46a5 */
-    u8 members_buffer;        /* 46a6 */
-    u8 label4430_shown;       /* 46a7 */
-    u8 group2D0_buffer;       /* 46a8 */
-    u8 group2D0_count;        /* 46a9 */
-    u8 heading_buffer;        /* 46aa */
-    u8 heading_count;         /* 46ab */
-    u8 digits1_buffer;        /* 46ac */
-    u8 digits1_count;         /* 46ad */
-    u8 digits2_buffer;        /* 46ae */
-    u8 digits2_count;         /* 46af */
-    u8 digits3_buffer;        /* 46b0 */
-    u8 digits3_count;         /* 46b1 */
-    u8 digits_shown;          /* 46b2 */
-    u8 group1220_buffer;      /* 46b3 */
-    u8 group1220_count;       /* 46b4 */
-    u8 label44B0_shown;       /* 46b5 */
-    u8 label4530_shown;       /* 46b6 */
-    u8 digits4_buffer;        /* 46b7 */
-    u8 digits4_count;         /* 46b8 */
-    u8 digits4_shown;         /* 46b9 */
-    u8 price_buffer;          /* 46ba */
-    u8 price_count;           /* 46bb */
-    u8 cells_a_count[9];      /* 46bc */
-    u8 cells_b_count[9];      /* 46c5 */
-    u8 cells_a_buffer[9];     /* 46ce */
-    u8 cells_b_buffer[9];     /* 46d7 */
-    u16 stat_b0[16];          /* 46e0: per member, the gear summary's b0 value */
-    u16 stat_a4[16];          /* 4700: and its a4 value */
-    u8 stock[5][20];          /* 4720: the shop's five gear part lists */
-    u8 unk4784;
-    u8 label45B0_shown;       /* 4785 */
-    u8 unk4786[2];
-} DetailBlock;
 
 /*
  * The gear screen block (ovl2602, menu state + 454, 1f00h bytes): its
