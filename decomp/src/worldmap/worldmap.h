@@ -629,7 +629,7 @@ s16 func_80093F18(VECTOR *position);
 void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
-extern u16 D_8009A68C[]; /* exhaust flame sizes */
+extern u16 D_8009A68C[5]; /* exhaust flame sizes, per flame (actors 4-8) */
 extern DiscReadRequest *D_8009D788[16]; /* submitted disc request lists */
 
 s32 func_80084DB8(s32 probe, s32 object);
@@ -651,7 +651,7 @@ extern SlopeNormal D_8009B264[16];
 
 void func_800964B0(HostReadRequest *list);
 
-extern s16 D_8009B18C[], D_8009B194[], D_8009B19C[], D_8009B1A4[];
+extern s16 D_8009B18C[3], D_8009B194[3], D_8009B19C[3], D_8009B1A4[3]; /* per party member */
 extern s32 D_8009CD44, D_8009BD2C;
 
 /* Frame state. */

@@ -47,7 +47,9 @@ static s16 D_800C3BA4; /* look-at distance */
 static s16 D_800C3BA8; /* look-at height */
 static EffectEntry *D_800C3BAC[9];
 
-/* Per gear: its first extra file in directory 0x28 and its variant count. */
+/* Per gear: its first extra file in directory 0x28 and its variant count.
+ * The last pair, 0, 0, is a twentieth gear's or the fill before D_800C3530
+ * (open, docs/matching.md; ovl2143 holds a copy). */
 u8 D_800C3508[] = {
     1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,
     34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 0,   0,

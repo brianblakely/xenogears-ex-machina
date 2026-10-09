@@ -10,3 +10,8 @@ LINKER_EXTRA := .local/decomp/ovl2143/undefined_syms_auto.txt .local/decomp/ovl2
 SOURCE_DIRS := decomp/src/ovl2143
 # Division checks are expanded inline (break 7 / break 6) in this image.
 MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
+# The reasons its included objects stay original (coverage class included).
+CLASSIFICATION := decomp/targets/overlays/ovl2143.classification.txt
+# INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
+# VRAM 0x801DC000.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x801DC000

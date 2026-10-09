@@ -86,11 +86,11 @@ segments:
       - [0x50358, c, battle_800BFE48]
       - [0x516DC, c, battle_800C11CC]
       # Each unit's .data follows in unit order; the shared tables open it in
-      # the main unit (80070E2C). Objects whose padding holds stray assembler
-      # bytes (D_800C204C, D_800C2050, D_800C35D4, D_800C3780, D_800C37C8,
-      # D_800C37D4, and 800C3488, unreferenced, whose object and padding are
-      # inferred by analogy with ovl2596's D_801E44C0) are included from the
-      # original in their units (INCLUDE_ORIGINAL).
+      # the main unit (80070E2C). Objects followed by stray bytes
+      # (D_800C204C, D_800C2050, D_800C34CC, D_800C35D4, D_800C3780,
+      # D_800C37C8, D_800C37D4, and 800C3488, unreferenced, whose object and
+      # padding are inferred by analogy with ovl2596's D_801E44C0) are
+      # included from the original in their units (INCLUDE_ORIGINAL).
       - [0x52558, .data, battle_80070E2C]
       - [0x5399C, .data, battle_8008CCCC]
       - [0x53A18, .data, battle_8009E53C]

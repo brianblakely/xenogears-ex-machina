@@ -160,7 +160,7 @@ u8 D_80091FA0[16] = {
 /* An embedded sprite model, user-supplied (menu.classification.txt). */
 INCLUDE_ASSET(".data", D_80091FB0, 0x80091FB0, 0x5F4);
 /* Each combo's command inputs (1 A, 2 B), by special move, ending the data:
- * its padding holds stray assembler bytes ("ind"), so it stays original. */
+ * stray bytes ("ind") that nothing reads follow it, so it stays original. */
 INCLUDE_ORIGINAL(".data", D_800925A4, 0x800925A4, 0x30);
 
 /* Load a whole file into a new allocation and return it. */

@@ -219,6 +219,6 @@ frame:
     goto frame;
 }
 
-/* "RATE   : %3dfps\n". The original assembler left stray bytes (0x94, 0x08)
- * in its alignment padding; it is linked as original rodata. */
+/* "RATE   : %3dfps\n". Stray bytes (0x94, 0x08) follow it at the end of the
+ * unit's rodata; it is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", D_800706D4);

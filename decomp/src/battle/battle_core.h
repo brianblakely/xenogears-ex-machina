@@ -508,7 +508,7 @@ extern u8 D_800D2C35;
 extern u8 D_800D2C36;
 extern u16 D_800D2C3A;
 extern u8 D_800C3214[5][6]; /* list separator rows by list size (3-7) */
-extern u8 D_800C34CC[];    /* combo step flags */
+extern u8 D_800C34CC[15];  /* combo step flags, by combo step index 0-14 */
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
 typedef struct DirectionArrows {

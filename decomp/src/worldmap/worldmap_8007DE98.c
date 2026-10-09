@@ -38,9 +38,11 @@ Sequence D_8009A65C[3] = {
 /* Per entry: the flight path start. */
 SVECTOR D_8009A674[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}};
 
-/* Exhaust flame sizes, per flame (actors 4-8). The original object keeps a
- * stray halfword (0x7965) in its alignment padding. */
-u16 D_8009A68C[6] = {0x800, 0x700, 0x600, 0x500, 0x300, 0x7965};
+/* Exhaust flame sizes, per flame (actors 4-8): 0x800, 0x700, 0x600, 0x500
+ * and 0x300. A stray halfword (65 79, "ey") that nothing reads follows them
+ * at the end of the unit's data, so the table stays original data
+ * (worldmap.classification.txt). */
+INCLUDE_ORIGINAL(".data", D_8009A68C, 0x8009A68C, 12);
 
 /* Scene director (mode 15): func_8007A9F8's cue sequencer on the sequence
  * func_8007DE14 picks from D_8009A65C by D_8009D3D4 (states at unk54,

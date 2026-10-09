@@ -43,8 +43,8 @@
             "\t.previous")
 
 /*
- * The .data analogue of INCLUDE_RODATA: an object whose alignment padding
- * holds stray bytes the original assembler left there and nothing reads.
+ * The .data analogue of INCLUDE_RODATA: an object followed by stray bytes
+ * that nothing reads, in its alignment padding or before the next unit's data.
  * C cannot emit them, so the object and its padding (SIZE bytes at VRAM)
  * stay original, linked from the pristine input as INCLUDE_ASSET does, at
  * the object's place among its unit's definitions.
@@ -52,6 +52,19 @@
  */
 #define INCLUDE_ORIGINAL(SECTION, NAME, VRAM, SIZE)                            \
     INCLUDE_ASSET(SECTION, NAME, VRAM, SIZE)
+
+/*
+ * INCLUDE_ORIGINAL for an object GCC aligns to a byte (a u8 flag ahead of
+ * its padding), which follows the object before it directly: no .align.
+ */
+#define INCLUDE_ORIGINAL_UNALIGNED(SECTION, NAME, VRAM, SIZE)                  \
+    __asm__(".section " SECTION "\n"                                          \
+            "\t.globl " #NAME "\n"                                            \
+            #NAME ":\n"                                                        \
+            "\t.incbin \"" ORIGINAL_IMAGE "\", " #VRAM " - "                  \
+            INCLUDE_ASSET_XSTR(ORIGINAL_BASE) ", " #SIZE "\n"                 \
+            "\t.size " #NAME ", " #SIZE "\n"                                  \
+            "\t.previous")
 
 __asm__(".include \"macro.inc\"\n");
 

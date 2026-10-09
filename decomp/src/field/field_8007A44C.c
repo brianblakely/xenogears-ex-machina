@@ -3926,6 +3926,6 @@ rollback:
     return 0;
 }
 
-/* "ERROR ID0 ACT=%d\n". The original assembler left two stray bytes (0x6f 0x74)
- * in the string's alignment padding, so it is linked as original rodata. */
+/* "ERROR ID0 ACT=%d\n". Two stray bytes (0x6f 0x74) follow the string at the
+ * end of the unit's rodata, so it is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field_8007A44C", D_8006FC74);

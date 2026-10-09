@@ -1,11 +1,13 @@
 # START END CLASS NAME NOTE (hex VRAM, END exclusive). included: an object a C
 # unit links from the original image (INCLUDE_ORIGINAL) at its place among the
-# unit's .data, with the reason: C cannot emit the stray bytes the original
-# assembler left in its alignment padding, which nothing reads.
-800c204c 800c2050 included D_800C204C u8 flag 0 (battle_core.h); padding 08 00 71
+# unit's .data, with the reason: C cannot emit the stray bytes after it, which
+# nothing reads, whether its alignment padding or, where they end a unit's
+# data, bytes before the next unit's (docs/matching.md).
+800c204c 800c2050 included D_800C204C u8 flag 0 (battle_core.h), then 08 00 71: GCC leaves no fill before the byte flag D_800C2050, so a unit's data ends there, the bytes are unreferenced data, or D_800C2050 is a word-aligned object
 800c2050 800c2054 included D_800C2050 u8 flag 0 (item_command.h, read with lbu); padding 08 00 00
-800c3488 800c348c included D_800C3488 00 04 77 68, unreferenced (no code in any image forms its address, tools/data_users.py --range): taken as a byte object with stray padding, as ovl2596's D_801E44C0 (00 04)
-800c35d4 800c35d8 included D_800C35D4 u8 sound fade flag 0 (battle_flow.h); padding 38 36 66
+800c3488 800c348c included D_800C3488 00 04 77 68, unreferenced (no code in any image forms its address, tools/data_users.py --range), the last data before battle_8008CCCC.c's: taken as a byte object followed by stray bytes, as ovl2596's D_801E44C0 (00 04)
+800c34cc 800c34dc included D_800C34CC u8[15] combo flag of each combo step index 0-14 (battle_core.h; func_80086B88, func_80086C88 and func_80086F98 index it up to 14); padding 35 ("5")
+800c35d4 800c35d8 included D_800C35D4 u8 sound fade flag 0 (battle_flow.h), the last data before battle_800B8098.c's; then 38 36 66
 800c3780 800c3784 included D_800C3780 u8 flag 0 (frame.h); padding 0b 6d 6f
-800c37c8 800c37cc included D_800C37C8 u8 flag 0 (scene.h, effects disabled); padding 74 72 73
+800c37c8 800c37cc included D_800C37C8 u8 flag 0 (scene.h, effects disabled), then 74 72 73: GCC leaves no fill before the byte flag D_800C37CC, so a unit's data ends there, the bytes are unreferenced data, or D_800C37CC is a word-aligned object
 800c37d4 800c37e8 included D_800C37D4 u16 idle motion of each shown condition (settle.h); its last two bytes, "Mt", are padding

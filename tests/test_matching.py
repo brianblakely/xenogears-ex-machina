@@ -651,6 +651,39 @@ class MatchingTests(unittest.TestCase):
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test original data objects",
+    )
+    def test_original_byte_object_follows_the_object_before_it(self):
+        # INCLUDE_ORIGINAL_UNALIGNED links a byte object and its padding where
+        # GCC places a byte, right after the object before it.
+        self.original.write_bytes(bytes(range(16)))
+        obj = self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            "unsigned char before = 0x11;\n"
+            'INCLUDE_ORIGINAL_UNALIGNED(".data", D_80010001, 0x80010001, 3);\n'
+            "int after = 0x22222222;\n",
+            ["TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000"],
+        )
+        self.assertEqual(self.section_bytes(obj, ".data"),
+                         bytes([0x11, 1, 2, 3]) + struct.pack("<I", 0x22222222))
+        symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                 capture_output=True, text=True).stdout
+        self.assertRegex(symbols, r"00000001\s+3 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010001\n")
+        result = self.cover_linked_fixture("image.bin")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("D_80010001 (80010001-80010004) has no stray byte", result.stderr)
+        (self.root / "classification.txt").write_text(
+            "80010001 80010004 included D_80010001 a byte flag whose padding holds 02 03\n")
+        result = self.cover_linked_fixture(
+            "image.bin", arguments=["--classification", "classification.txt"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["data_classes"], {"c": 5, "included": 3})
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
             "psx-ld", "psx-objcopy", "psx-readelf", "psx-nm",
         )),
         "enter the matching Nix shell to test the link's symbol files",
@@ -1562,6 +1595,39 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(formed_addresses(blob, 0x80010000), {
             0x800925D4: {"addiu"}, 0x800925D8: {"lw"}, 0x800925D6: {"lbu"}, 0x80059180: {"lb@gp"},
         })
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_stray_padding_flags_tails_unreferenced_bytes_and_strings(self):
+        from tools.stray_padding import c_objects, flags
+
+        gas = "\n".join([
+            ".section .data", ".align 2", ".globl D_1", "D_1:", ".byte\t0", ".byte\t1,2",
+            ".byte\t53", ".section .data", ".align 2", ".globl D_2", "D_2:",
+            '.incbin ".local/x.bin", 0x10 - 0x0, 4', ".size D_2, 4", ".previous",
+            ".section .rodata", ".align 2", "$LC0:", '.ascii "ab\\000k\\000"', ".text", "func:",
+            "jr\t$31",
+        ])
+        objects = c_objects(gas)
+        self.assertEqual(sorted(objects), ["$LC0", "D_1"])  # INCLUDE_* labels are not C
+        self.assertEqual(objects["D_1"]["elements"], [1, 1, 1, 1])
+        self.assertEqual(objects["$LC0"]["strings"], [b"ab\0k\0"])
+
+        # battle's combo flags as they were: 15 indexed bytes, then '5' in the fill
+        table = {"bytes": bytes(range(15)) + b"5", "elements": [1] * 16, "strings": [], "size": 1,
+                 "start": 0x800C34CC, "next": 0x800C34DC, "pointers": 0,
+                 "access": [(0, "indexed", "lbu", "func_80086B88")]}
+        self.assertEqual(flags(table)[0], ("tail", 1, "35", ["text", "outlier"]))
+        table["access"] = [(15, "exact", "lbu", "f")]  # a constant-offset read dismisses it
+        self.assertTrue(all("read" in f[3] for f in flags(table)))
+        table.update(size=16, access=[], pointers=1)  # a struct object: no element boundary
+        self.assertEqual(flags(table), [])
+        byte = {"bytes": b"\x08", "elements": [1], "strings": [], "size": 1, "start": 0x801E96A6,
+                "next": 0x801E96A8, "pointers": 0, "access": []}
+        self.assertEqual(flags(byte), [("unref", 1, "08", ["slot"])])
+        string = {"bytes": b"ab\0k\0", "elements": [1] * 5, "strings": [b"ab\0k\0"], "size": 1,
+                  "start": 0x80010000, "next": 0x80010008, "pointers": 0,
+                  "access": [(0, "formed", "addiu", "f")]}
+        self.assertEqual(flags(string), [("string", 2, "6b 00", [])])
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):

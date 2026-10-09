@@ -334,15 +334,21 @@ the audit; they are never counted as matches. This diagnostic does not replace
   the plain C misses is not enough: field 80099AC0's `$a0`/`$a1` pair were variables
   set elsewhere in the function (`model`, `$a0` at the top, and the scratch `value`,
   `$a1` as the step count and the facing), which sched1 does not sink as births.
-- Strings whose alignment padding holds stray assembler bytes stay original data:
+- Strings whose alignment padding holds stray bytes stay original data:
   mark the symbol `force_not_migration:True` (with `size:` and a symbol after it where
   splat would join the strings that follow, menu6's `D_800705F0`), link it with
   INCLUDE_RODATA beside the function and reference it as `extern char[]`; never spell
-  the stray bytes in a C initializer. A .data object whose padding holds
-  such bytes (a byte flag followed by `04`, a halfword table ending in `"Mt"`) is
+  the stray bytes in a C initializer, also not as invented trailing elements
+  (Recovering data). A .data object whose padding holds such bytes (a byte flag
+  followed by `04`, a halfword table ending in `"Mt"`) is
   linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
-  among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
-  only where the padding is non-zero and nothing reads it. Both count as `included`.
+  among the unit's definitions, from the pristine input as INCLUDE_ASSET does
+  (`INCLUDE_ORIGINAL_UNALIGNED`, without the `.align 2`, for a byte that directly
+  follows the object before it, slot39's flag D_801E96A5); use it only where the
+  padding is non-zero and nothing reads it. Both count as `included`. The same holds
+  where the object ends its unit's section and stray bytes run to the next unit's
+  (menu7's D_800925A4, then `ind`), which are not established as the assembler's
+  fill (Recovering data).
   The coverage report finds a string's stray byte itself; every other included object
   needs an `included` line in the target's classification with its reason (those data
   objects, and the resident's libcd/libgpu/libspu strings that several library
@@ -545,9 +551,92 @@ converted to C per unit. What converting the targets' `.data` established:
 - Unreferenced objects are shipped data: define them at their offsets (movie's unread
   words, ovl3381's unused copy of the cell triangles). Two units whose data opens with
   the same table include it as a `static` from a shared header (field_music.h).
+- A table's readers, not the span to the next symbol, give its extent, and stray fill
+  after it is not an element. Four tables spelled theirs as extra elements and are
+  INCLUDE_ORIGINAL objects with `included` lines now, their externs declaring the
+  true extent: the world map's flame sizes D_8009A68C (5 u16 for flame actors 4-8,
+  func_8007F8AC and func_8007F968; fill 65 79) and gear parameters D_8009B1A4 (3 s16
+  for the members 0-2 func_8008C364 passes; fill 00 3c), slot39's sheet images
+  D_801E97AC (13 rows of 5 u8, func_801E1544 for the rows of func_801E1AC8; fill 00 07
+  2e) and battle's combo flags D_800C34CC (15 u8: func_80086B88, func_80086C88 and
+  func_80086F98 index at most 14 from combo steps 0-2, or 0xff at attack level 4;
+  fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
+  object whose last elements, narrower than a word by its definition, would be
+  alignment fill before the next object and hold a non-zero byte that no
+  constant-offset access reads (`tail`, noted `text` or `outlier` where they look
+  stray), that nothing references (`unref`), that is declared wider than every access
+  with a byte none touches (`wide`), or whose string holds bytes after its terminator
+  (`string`). It reports `2307 C data objects, 192 to review; objects
+  per flag: tail 156, tail read 6, unref 42` (173 distinct, 145 with a tail and 33
+  unreferenced; the second executable repeats the resident's), each reviewed against
+  its readers. None other spells stray fill: the tails are read (masks `& 7` and
+  `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
+  and 16-entry glyph label loops of ovl2596 and battle) or complete their structure
+  (single-bit masks, permutations of the eight facings, a CLUT LoadImage'd 16 wide,
+  the round map's 128th row continuing both column curves, frame rates 60/n for
+  n = 2-60 dividing 60, the party panels' per-member pattern, a pilot per gear of the
+  20, lamp frames, per-character and per-gear tables), or are the sentinels their
+  loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
+  documented unread tables and copies, or tables read through a base formed before
+  them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
+  list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
+  D_801E96A4 and D_801E96A5 and the u16 masks D_801E96A8 (GCC 2.6.3 emits consecutive
+  byte scalars back to back and aligns the arrays to a word), are taken as the flag's
+  padding by analogy with the flags closure D links with theirs, battle's D_800C2050
+  (08 00 00) and ovl2596's D_801E44C0 (04 00 00): D_801E96A5 is linked with them, with
+  INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). Neither the bytes nor
+  the vendor tools decide it, here or for those two, which could as well each be a
+  flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
+  801E96A6; battle's flag D_800C3444 before the same two mask tables (D_800C3448,
+  D_800C3468) is followed by zeros, as slot39's other byte groups are (801E977B,
+  801E9786-87); and Psy-Q 3.5's CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the
+  whole slot39 unit, with or without a byte 8 there, to the original .data but for
+  zeros at every stray byte (08 without the byte, 07 2e after D_801E97AC in both).
+  Battle's D_800C204C and D_800C37C8 (00 08 00 71, 00 74 72 73) are no such analogue:
+  GCC would put the byte flag that follows each (D_800C2050, D_800C37CC) directly
+  after it, so their three bytes need a unit boundary, unreferenced data or a
+  word-aligned next flag.
+- An object that ends its unit's section can be followed by stray bytes up to the
+  next unit's. In the targets' links eleven included objects end their unit's section
+  so: the strings D_8006FB80 and D_8006FC74 (field), D_800706D4 (menu6), D_8028007C
+  (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects D_800925A4
+  (menu7, `ind` before menu2's .sbss) and D_800C3488 (battle), all of ASPSX 2.34
+  units, and D_800C35D4 (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
+  map's D_8009A68C and D_8009B1A4 of 2.79 units; so does the world map's cue sequence
+  asset D_8009A6AC. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
+  .data or a 5-byte .rdata stays that long, also when another section follows, and a
+  section entered again goes on at that offset. If the original 2.34 assembler did the
+  same, the stray bytes of its units lie in the gap the link left before the next
+  section, not in the assembler's fill (the later assemblers' section ends are not
+  probed). PSYLINK 2.37 writes zeros in such a gap under DOSBox when every section is
+  in its default group (also after 64 KB of pattern data and between two objects'
+  .data); with text and bss groups `/p` writes the file only to the .data's end. The
+  DOSBox runs also write zeros at the stray bytes inside sections, so which tool
+  wrote any of these is open. The nine gaps GNU ld leaves between input sections in
+  the targets' links (resident 6, menu 1, slot39 2) are zero in the originals; the
+  non-zero ones lie inside the included objects and the asset above.
+- One table's extent stays open. ovl2143's unread copy D_801E85A4 of battle's gear
+  file table D_800C3508 is battle's byte for byte, as its copy D_801E8590 of the
+  18-byte extra file bases D_800C3530 is, but for the last pair: 66 00 where battle's
+  has 00 00. The bases of gears 0-18 chain (each is the previous gear's base plus 2
+  plus that gear's variant count, the files func_800A9540 reads) and fill directory
+  (0x28, 1) exactly: on both discs its file 1 heads a sub-directory of the 62 files
+  2-63 that gears 0-18 take (tools/analysis/disc_index.py). Neither twentieth pair
+  continues the chain or names gear files (base 0 reads that header, base 102 the
+  `wds ` wave banks 103 and 104), but the game data holds 20 gear records (field's
+  func_80088198) and func_800A9540 indexes the table by a combatant's gear id without
+  a range check. With 19 pairs, battle's 00 00 is GCC's zero fill before the
+  word-aligned D_800C3530, and ovl2143's 66 00 follow the unit's last .data object as
+  `ind` follows menu7's D_800925A4 (above): both are ASPSX 2.34 units, and both files
+  go on with zeros for the uninitialized variables after those bytes (ovl2143's .bss,
+  the menu's .sbss). Neither the readers nor the vendor tools, which write zeros at
+  every stray byte under DOSBox, tell 19 entries with fill from 20 entries. So the
+  copy whose last pair holds a non-zero byte is linked with INCLUDE_ORIGINAL and an
+  `included` line rather than spelled as a twentieth C element, and battle's, whose
+  last pair is zero either way, stays C with 20 pairs, until a reader decides.
 - splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
   entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
-  Define the real object and index it as the code does (`D_8009A68C[index - 4]`,
+  Declare the real object and index it as the code does (`D_8009A68C[index - 4]`,
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are

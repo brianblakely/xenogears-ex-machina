@@ -63,7 +63,11 @@ BattleWork *D_800C34B0 = &D_800CCCE8;
 u8 D_800C34B4[8][3] = {
     {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {4, 6, 7}, {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {1, 5, 7},
 };
-u8 D_800C34CC[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53};
+/* The combo flag of each combo step index, 0-14 (each flag is its index):
+ * func_80086B88, func_80086C88 and func_80086F98 read entries 0-14. Its
+ * alignment padding holds a stray byte (35, "5") that nothing reads, so it
+ * stays original data (battle.classification.txt). */
+INCLUDE_ORIGINAL(".data", D_800C34CC, 0x800C34CC, 16);
 /* The gear formula table, by CommandDescriptor.formula: func_8009C198 calls
  * D_800C34DC[formula]() once per target without a range check. */
 void (*D_800C34DC[])(void) = {

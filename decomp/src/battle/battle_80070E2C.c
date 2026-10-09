@@ -22,7 +22,7 @@
 
 /* The battle's shared tables and state, which open .data (800c2048-800c348c).
  * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488
- * have stray assembler bytes in their padding, so they stay original data. */
+ * are followed by stray bytes, so they stay original data. */
 s32 D_800C2048 = 0; /* unreferenced */
 INCLUDE_ORIGINAL(".data", D_800C204C, 0x800C204C, 4);
 INCLUDE_ORIGINAL(".data", D_800C2050, 0x800C2050, 4);
@@ -271,8 +271,8 @@ u16 D_800C3468[16] = {
 /* 00 04 77 68: no code in any image forms an address in this word
  * (tools/data_users.py --range), so its object and padding are inferred, by
  * analogy with ovl2596's D_801E44C0 (a byte 0 then a stray 04): a byte
- * object whose padding holds stray assembler bytes. Which unit it ends is
- * not known; the units up to 8008CCCC have no other data. */
+ * object followed by stray bytes. Which unit it ends is not known; the units
+ * up to 8008CCCC have no other data. */
 INCLUDE_ORIGINAL(".data", D_800C3488, 0x800C3488, 4);
 
 /* Start the 801e5000 module: reserve its heap span and load it. */

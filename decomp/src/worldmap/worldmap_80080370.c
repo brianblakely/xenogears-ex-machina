@@ -3,8 +3,8 @@
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 9 u16 states and 9 u16 waits (started by
  * func_8008032C; tools/analysis/overlay_scripts.py decodes it). The waits'
- * 0x14 bytes end with the stray halfword (0x7542) the original object
- * keeps in its alignment padding. */
+ * 0x14 bytes end with the stray halfword (0x7542) that follows the nine
+ * waits at the end of the unit's data. */
 INCLUDE_ASSET(".data", D_8009A698, 0x8009A698, 0x12);
 INCLUDE_ASSET(".data", D_8009A6AC, 0x8009A6AC, 0x14);
 

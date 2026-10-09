@@ -15,8 +15,12 @@ void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */
 u8 D_801E96A4 = 0; /* the file screen saves (nonzero) or loads */
-u8 D_801E96A5 = 0;
-u8 D_801E96A6 = 8; /* unreferenced */
+/* The flag D_801E96A5 (0), then 08 00 before the word-aligned masks, which
+ * nothing reads: taken as its padding, holding stray bytes, by analogy with
+ * battle's flag D_800C2050 (08 00 00) and ovl2596's D_801E44C0 (04 00 00);
+ * neither the bytes nor the vendor tools tell it from an unreferenced byte 8
+ * (docs/matching.md). It stays original data (slot39.classification.txt). */
+INCLUDE_ORIGINAL_UNALIGNED(".data", D_801E96A5, 0x801E96A5, 3);
 /* single-bit masks */
 u16 D_801E96A8[16] = {
     0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080,
@@ -42,23 +46,11 @@ u8 D_801E9785 = 0; /* the target panels are allocated */
 s32 D_801E9788[3] = { 0x11A, 0x11A, 0xA2 }; /* arts screen window sizes per kind */
 s32 D_801E9794[3] = { 0xDA, 0xDA, 0xC8 };
 s32 D_801E97A0[3] = { 0x52, 0x52, 0x64 };
-/* 801E1544 screen: five sheet images per row (ff none) for 13 rows; the last three bytes are never read */
-u8 D_801E97AC[68] = {
-    0xFA, 0xF9, 0xFF, 0xFF, 0xFF,
-    0xFA, 0xFA, 0xF9, 0xFF, 0xFF,
-    0xFB, 0xF9, 0xFF, 0xFF, 0xFF,
-    0xFA, 0xFA, 0xFA, 0xF9, 0xFF,
-    0xFA, 0xFB, 0xF9, 0xFF, 0xFF,
-    0xFB, 0xFA, 0xF9, 0xFF, 0xFF,
-    0xF9, 0xF9, 0xFF, 0xFF, 0xFF,
-    0xFA, 0xFA, 0xFA, 0xFA, 0xF9,
-    0xFA, 0xFA, 0xFB, 0xF9, 0xFF,
-    0xFA, 0xFB, 0xFA, 0xF9, 0xFF,
-    0xFB, 0xFA, 0xFA, 0xF9, 0xFF,
-    0xFB, 0xFB, 0xF9, 0xFF, 0xFF,
-    0xF9, 0xFA, 0xF9, 0xFF, 0xFF,
-    0x00, 0x07, 0x2E,
-};
+/* 801E1544 screen: five sheet images per row (ff none) for its 13 rows
+ * (func_801E1AC8). Its alignment padding holds stray assembler bytes
+ * (00 07 2e) that nothing reads, so it stays original data
+ * (slot39.classification.txt). */
+INCLUDE_ORIGINAL(".data", D_801E97AC, 0x801E97AC, 68);
 u16 D_801E97F0[12] = { 2, 0, 1, 0, 6, 0, 0, 1, 0, 1, 0, 0 };
 u8 D_801E9808[20] = { 0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 0xF, 0xF, 0xF }; /* pilot character of each gear */
 /* card slot (port * 16 + n) of each cursor position */
