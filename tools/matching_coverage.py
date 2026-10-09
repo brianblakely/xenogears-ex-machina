@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Report source coverage of one linked target, separately from binary matching.
 
-Every function symbol in a .text input section of the linked ELF counts in one
-class:
+Every byte of every .text input section of the linked ELF counts in one class.
+Each function symbol counts once, with its bytes and its static MIPS
+instructions (the four-byte words of its range, nops and branch delay slots
+included):
 
 * ``c``            cc1 emitted it (``.ent NAME``) in its decomp/src unit
 * ``nonmatching``  assembly a C unit includes, named as the INCLUDE_ASM fallback
@@ -12,6 +14,15 @@ class:
 * ``handwritten``  other assembly inside a range classified as original
                    hand-written asm, or in an authored .s unit under decomp/src
 * ``asm``          other assembly (remaining work)
+
+The .text bytes outside every function (alignment padding and data words of an
+included file, data a unit places in .text) count as bytes, not instructions,
+under their owner's class, attributed like data (below): an INCLUDE_ASM'd file's
+under its function's class, an INCLUDE_RODATA'd file's as ``included``, cc1's as
+``c``, a generated assembly unit's as ``asm``, an authored one's as
+``handwritten``; a classified range takes precedence. The report fails unless
+every function lies inside its input section and overlaps no other, so the
+classes add up to the .text input sections exactly (``text_bytes``).
 
 The classification file lists ``START END CLASS NOTE...`` lines (hex VRAM,
 END exclusive). This tool never reads or asserts binary agreement; run the
@@ -52,28 +63,32 @@ by its exact text in the cc1 output, which must be one of include_asm.h's:
 
 * INCLUDE_ASM: the ``.include`` inside ``__maspsx_include_asm_hack_NAME``; its
   functions are assembly, its other bytes take the class of the function NAME
-  (``nonmatching`` or ``asm`` where the file defines none, as for the
-  resident's SDK data tag in .text)
+  (``nonmatching`` or ``asm`` where the file defines none, like the resident's
+  SDK data tag in .text, which its range makes ``sdk``)
 * INCLUDE_RODATA: its functions are assembly, its other bytes ``included``
 * INCLUDE_ASSET/INCLUDE_ORIGINAL: ``included`` (or a range's class) outside
   .text
 * the macro.inc include, which emits nothing
 
-or any other asm statement written inside a compiled function, which may emit
-only code inside that function (the PsyQ GTE macros, ``break``) with no GAS
-macro and no ``.include``/``.incbin`` in its text; that code counts with the
-function, so only review keeps it to the original-style macros
-(docs/matching.md). The report fails on every other byte instead of counting
-it: a function in a C unit that cc1 did not emit and no INCLUDE_ASM/
-INCLUDE_RODATA file defines, a compiled function holding a statement's other
-bytes, inline asm data, original bytes in .text, an input section it does not
-track. The .text bytes outside every function (padding and data words of
-included files, data a unit places in .text) are attributed the same way but
-not counted. Bytes outside every input section (alignment gaps, a packer's
-zero tail) are not counted.
+or, written inside a compiled function, one of the original-style macros the
+recovered C uses (``ORIGINAL_ASM``: the PsyQ GTE macros of psyq/inline_c.h and
+the local sets, the debugger break and pollhost, the stack switches, GET_RA,
+addPrimLen9), whose text is exactly the macro's template with a register for
+each operand. Such a statement must expand no GAS macro and emit only .text, in
+that function, and its code counts with the function. Any other asm statement
+fails the report, as does every byte the report cannot count: a function in a
+C unit that cc1 did not emit and no INCLUDE_ASM/INCLUDE_RODATA file defines, a
+compiled function holding a statement's other bytes, original bytes in .text,
+an input section other than .text and the data sections. Bytes outside every
+input section (alignment gaps, a packer's zero tail) are not counted.
 
-Instruction counts are static MIPS words (four bytes each) in the same ELF
-function ranges as the byte totals, including nops and branch delay slots.
+``--mark-asm`` also fails the coverage build on each string cc1 would copy into
+its output as it is, unless the string is a plain name: a declaration's asm name
+(a register variable's register, as in ``register s32 v asm("$14")``, or a
+symbol's assembler name), a section or alias attribute, and a line marker's file
+name; any other preprocessor line fails it too. So the source cannot put an
+assembler line among cc1's own.
+
 Paths in the map are relative to the working directory, the repository root.
 """
 
@@ -142,7 +157,113 @@ TEMPLATES = {
     ),
     "macros": re.compile(r"\.include \"macro\.inc\"\n"),
 }
-FILE_DIRECTIVE = re.compile(r"\.(include|incbin)\b", re.I)
+# The other asm statements a compiled function may contain: the original-style
+# macros the recovered C uses (docs/matching.md, What counts as recovered
+# source), each by its template, the asm string as cc1 receives it. A statement's
+# text in the cc1 output must be one of them exactly (each line stripped), with
+# a register for each operand %N.
+ORIGINAL_ASM = (
+    # PsyQ GTE macros in the inline_c.h/gtemac.h form (psyq/inline_c.h and the
+    # local sets of battle, field, menu, ovl2143, resident and worldmap).
+    # Control registers: gte_SetRotMatrix, gte_SetLightMatrix,
+    # gte_SetColorMatrix, gte_SetTransMatrix, gte_SetBackColor, gte_ldopv1.
+    "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $0;ctc2 $13, $1;lw $12, 8(%0);lw $13, 12(%0);"
+    "lw $14, 16(%0);ctc2 $12, $2;ctc2 $13, $3;ctc2 $14, $4",
+    "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $8;ctc2 $13, $9;lw $12, 8(%0);lw $13, 12(%0);"
+    "lw $14, 16(%0);ctc2 $12, $10;ctc2 $13, $11;ctc2 $14, $12",
+    "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $16;ctc2 $13, $17;lw $12, 8(%0);lw $13, 12(%0);"
+    "lw $14, 16(%0);ctc2 $12, $18;ctc2 $13, $19;ctc2 $14, $20",
+    "lw $12, 20(%0);lw $13, 24(%0);ctc2 $12, $5;lw $14, 28(%0);ctc2 $13, $6;ctc2 $14, $7",
+    "sll $12, %0, 4;sll $13, %1, 4;sll $14, %2, 4;ctc2 $12, $13;ctc2 $13, $14;ctc2 $14, $15",
+    "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $0;lw $14, 8(%0);ctc2 $13, $2;ctc2 $14, $4",
+    # Data register loads: gte_ldv0, gte_ldv1, gte_ldv2, gte_ldv01, gte_ldv3,
+    # gte_ldv3c, gte_ldlv0, gte_ldlvl, gte_ldopv2, gte_ldclmv, gte_ldsv,
+    # gte_ldrgb, gte_lddp, gte_ldsxy3, gte_ldsz4.
+    "lwc2 $0, 0(%0);lwc2 $1, 4(%0)",
+    "lwc2 $2, 0(%0);lwc2 $3, 4(%0)",
+    "lwc2 $4, 0(%0);lwc2 $5, 4(%0)",
+    "lwc2 $0, 0(%0);lwc2 $1, 4(%0);lwc2 $2, 0(%1);lwc2 $3, 4(%1)",
+    "lwc2 $0, 0(%0);lwc2 $1, 4(%0);lwc2 $2, 0(%1);lwc2 $3, 4(%1);lwc2 $4, 0(%2);lwc2 $5, 4(%2)",
+    "lwc2 $0, 0(%0);lwc2 $1, 4(%0);lwc2 $2, 8(%0);lwc2 $3, 12(%0);lwc2 $4, 16(%0);"
+    "lwc2 $5, 20(%0)",
+    "lhu $13, 4(%0);lhu $12, 0(%0);sll $13, $13, 16;or $12, $12, $13;mtc2 $12, $0;"
+    "lwc2 $1, 8(%0)",
+    "lwc2 $9, 0(%0);lwc2 $10, 4(%0);lwc2 $11, 8(%0)",
+    "lwc2 $11, 8(%0);lwc2 $9, 0(%0);lwc2 $10, 4(%0)",
+    "lhu $12, 0(%0);lhu $13, 6(%0);lhu $14, 12(%0);mtc2 $12, $9;mtc2 $13, $10;mtc2 $14, $11",
+    "lhu $12, 0(%0);lhu $13, 2(%0);lhu $14, 4(%0);mtc2 $12, $9;mtc2 $13, $10;mtc2 $14, $11",
+    "lwc2 $6, 0(%0)",
+    "mtc2 %0, $8",
+    "mtc2 %0, $12;mtc2 %2, $14;mtc2 %1, $13",
+    "mtc2 %0, $16;mtc2 %1, $17;mtc2 %2, $18;mtc2 %3, $19",
+    # Stores and reads: gte_stsxy (gte_stsxy2), gte_stsxy0, gte_stsxy1,
+    # gte_stsxy01, gte_stsxy3, gte_stsxy3_ft4, gte_stsz1, gte_stsz2, gte_stsz
+    # (menu's gte_stsz3), gte_stsz3 (gte_stsz3v), gte_stsz4c, gte_stotz,
+    # gte_stdp, gte_strgb, gte_stopz, gte_stlvl, gte_stlvnl, gte_stclmv,
+    # gte_stsv, gte_stszotz, gte_stflg, gte_getsxy2, gte_getsxy3.
+    "swc2 $14, 0(%0)",
+    "swc2 $12, 0(%0)",
+    "swc2 $13, 0(%0)",
+    "swc2 $12, 0(%0);swc2 $13, 0(%1)",
+    "swc2 $12, 0(%0);swc2 $13, 0(%1);swc2 $14, 0(%2)",
+    "swc2 $12, 8(%0);swc2 $13, 16(%0);swc2 $14, 24(%0)",
+    "swc2 $17, 0(%0)",
+    "swc2 $18, 0(%0)",
+    "swc2 $19, 0(%0)",
+    "swc2 $17, 0(%0);swc2 $18, 0(%1);swc2 $19, 0(%2)",
+    "swc2 $16, 0(%0);swc2 $17, 4(%0);swc2 $18, 8(%0);swc2 $19, 12(%0)",
+    "swc2 $7, 0(%0)",
+    "swc2 $8, 0(%0)",
+    "swc2 $22, 0(%0)",
+    "swc2 $24, 0(%0)",
+    "swc2 $9, 0(%0);swc2 $10, 4(%0);swc2 $11, 8(%0)",
+    "swc2 $25, 0(%0);swc2 $26, 4(%0);swc2 $27, 8(%0)",
+    "mfc2 $12, $9;mfc2 $13, $10;mfc2 $14, $11;sh $12, 0(%0);sh $13, 6(%0);sh $14, 12(%0)",
+    "mfc2 $12, $9;mfc2 $13, $10;mfc2 $14, $11;sh $12, 0(%0);sh $13, 2(%0);sh $14, 4(%0)",
+    "mfc2 $12, $19;nop;sra $12, $12, 2;sw $12, 0(%0)",
+    "cfc2 $12, $31;nop;sw $12, 0(%0)",
+    "mfc2 %0, $14; nop",
+    "mfc2 %0, $12;mfc2 %1, $13;mfc2 %2, $14;nop",
+    # Commands, each after the two nops: gte_rtps, gte_rtpt, gte_rt (ovl2143's
+    # gte_rtv0tr), gte_rtv0, gte_rtir, gte_dpcs, gte_sqr0, gte_nccs, gte_nclip,
+    # gte_avsz3, gte_avsz4, gte_op0, gte_op12, gte_gpf0, gte_gpf12, and battle's
+    # gte_rtv0tr.
+    "nop;nop;.word 0x4A180001",
+    "nop;nop;.word 0x4A280030",
+    "nop;nop;.word 0x4A480012",
+    "nop;nop;.word 0x4A486012",
+    "nop;nop;.word 0x4A49E012",
+    "nop;nop;.word 0x4A780010",
+    "nop;nop;.word 0x4AA00428",
+    "nop;nop;.word 0x4B08041B",
+    "nop;nop;.word 0x4B400006",
+    "nop;nop;.word 0x4B58002D",
+    "nop;nop;.word 0x4B68002E",
+    "nop;nop;.word 0x4B70000C",
+    "nop;nop;.word 0x4B78000C",
+    "nop;nop;.word 0x4B90003D",
+    "nop;nop;.word 0x4B98003D",
+    "nop;nop;cop2 0x0480012",
+    # The debugger break (ASPSX `break 1`): libsn.h's pollhost and the debug
+    # stops (`break 1024`), slot39's (`break 0x400`), battle's word.
+    "break 1024",
+    "break 0x400",
+    ".word 0x0001000D",
+    # The stack switches (STACK_ENTER/SPAD_STACK_ENTER, STACK_LEAVE/
+    # SPAD_STACK_LEAVE), the heap's GET_RA and worldmap's addPrimLen9.
+    "move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8",
+    "addiu $29, $29, 4\n\tlw $29, 0($29)",
+    "move $15, %0\n\tsw $31, 0($15)",
+    "lw $12, 0(%0);lui $13, 0x0900;or $12, $12, $13;lui $13, 0x00FF;ori $13, $13, 0xFFFF;"
+    "and $13, %1, $13;sw $13, 0(%0);sw $12, 0(%1)",
+)
+# Strings cc1 copies into its output as they are: a declaration's asm name and
+# a section or alias attribute, which must be plain names, and a line marker's
+# file name (any other preprocessor line is refused).
+PLAIN_NAME = re.compile(r"[A-Za-z0-9_.$]+")
+VERBATIM_ATTRIBUTES = {"section", "__section__", "alias", "__alias__"}
+DIRECTIVE = re.compile(r"^[ \t]*#.*$", re.M)
+LINE_MARKER = re.compile(r'[ \t]*#[ \t]*\d+(?:[ \t]+"[^"\\\x00-\x1f]*"(?:[ \t]+\d+)*)?[ \t]*')
 
 SHT_PROGBITS, SHT_SYMTAB, SHT_NOBITS, SHT_REL = 1, 2, 8, 9
 SHF_ALLOC = 2
@@ -150,14 +271,32 @@ STT_FUNC, STT_SECTION = 2, 3
 
 
 def mark_asm(text: str) -> str:
-    """Preprocessed C with a label line at both ends of each asm statement's text."""
+    """Preprocessed C with a label line at both ends of each asm statement's
+    text. Fails on a preprocessor line other than a line marker with a plain
+    file name, and on a declaration's asm name or a section or alias attribute
+    that is not a plain name: cc1 copies them into its output as they are."""
+    for line in DIRECTIVE.findall(text):
+        if not LINE_MARKER.fullmatch(line):
+            raise SystemExit(f"{line.strip()!r}: not a line marker with a plain file name")
     tokens = [match for match in C_TOKEN.finditer(text) if match.lastgroup != "space"]
-    opener, stack = {}, []  # each `)` token's `(`
+    opener, closer, stack = {}, {}, []  # each `)` token's `(` and back
     for index, token in enumerate(tokens):
         if token.group() == "(":
             stack.append(index)
         elif token.group() == ")" and stack:
             opener[index] = stack.pop()
+            closer[opener[index]] = index
+
+    def plain(first: int, end: int, what: str) -> None:
+        for token in tokens[first:end]:
+            if token.lastgroup == "string" and not PLAIN_NAME.fullmatch(token.group()[1:-1]):
+                raise SystemExit(f"{what} {token.group()}: not a plain name")
+
+    for index, token in enumerate(tokens):
+        if token.group() in ("__attribute__", "__attribute") and index + 1 in closer:
+            for inner in range(index + 2, closer[index + 1]):
+                if tokens[inner].group() in VERBATIM_ATTRIBUTES and inner + 1 in closer:
+                    plain(inner + 2, closer[inner + 1], f"{tokens[inner].group()} attribute")
     out, last, number, i = [], 0, 0, 0
     while i < len(tokens):
         if tokens[i].lastgroup != "name" or tokens[i].group() not in ASM_KEYWORDS:
@@ -183,6 +322,8 @@ def mark_asm(text: str) -> str:
             out += [text[last:first.start()], f'"Lcovb_{number}:{keep}\\n\\t" ',
                     text[first.start():final.end()], f' "\\nLcove_{number}:{keep}"']
             last, number = final.end(), number + 1
+        else:
+            plain(j + 1, k, "asm name")
         i = k
     return "".join(out) + text[last:]
 
@@ -334,7 +475,7 @@ class Asm:
 
     lines: list[str]
     function: str | None  # the compiled function it is written in
-    kind: str = "other"  # or a TEMPLATES key
+    kind: str = "other"  # or a TEMPLATES key, or "original" (an ORIGINAL_ASM macro)
     name: str = ""  # INCLUDE_ASM's function
     macros: int = 0  # GAS macro expansions inside it
 
@@ -391,6 +532,24 @@ def asm_statements(path: str, text: str) -> tuple[list[Asm], set[str], list[tupl
     return statements, compiled, labels
 
 
+def original_pattern(template: str) -> re.Pattern[str]:
+    """An ORIGINAL_ASM template's text in the cc1 output, each line stripped:
+    a register for each operand %N, the same one at every use (cc1 names $29
+    and $30 `$sp` and `$fp`)."""
+    parts, seen = [], set()
+    for piece in re.split(r"(%\d)", "\n".join(line.strip() for line in template.split("\n"))):
+        if re.fullmatch(r"%\d", piece):
+            n = piece[1]
+            parts.append(f"(?P=o{n})" if piece in seen else rf"(?P<o{n}>\$(?:\d+|sp|fp))")
+            seen.add(piece)
+        else:
+            parts.append(re.escape(piece))
+    return re.compile("".join(parts))
+
+
+ORIGINAL_PATTERNS = [original_pattern(template) for template in ORIGINAL_ASM]
+
+
 def classify(statement: Asm) -> None:
     text = "\n".join(line.strip() for line in statement.lines)
     for kind, template in TEMPLATES.items():
@@ -404,6 +563,8 @@ def classify(statement: Asm) -> None:
                 statement.name = path.stem
             statement.kind = kind
             return
+    if statement.function and any(pattern.fullmatch(text) for pattern in ORIGINAL_PATTERNS):
+        statement.kind = "original"
 
 
 def coverage_build(obj: str) -> Unit:
@@ -489,13 +650,12 @@ def coverage_build(obj: str) -> Unit:
             raise SystemExit(
                 f"{where}: INCLUDE_ASSET/INCLUDE_ORIGINAL links original bytes into .text"
             )
-        if statement.kind == "other" and emitted:
-            if statement.function is None or emitted != {".text"}:
-                raise SystemExit(f"{where}: inline asm emits {', '.join(sorted(emitted))} bytes"
-                                 " outside a compiled function's code")
-            if statement.macros or any(FILE_DIRECTIVE.search(line) for line in statement.lines):
-                raise SystemExit(f"{where}: inline asm in a compiled function expands a GAS macro"
-                                 " or reads a file")
+        if statement.kind == "other":
+            raise SystemExit(f"{where}: neither one of include_asm.h's statements nor an"
+                             " original-style macro (ORIGINAL_ASM) in a compiled function")
+        if statement.kind == "original" and (statement.macros or emitted - {".text"}):
+            raise SystemExit(f"{where}: an original-style macro expands a GAS macro or emits"
+                             f" {', '.join(sorted(emitted))} bytes")
     return Unit(spans, compiled)
 
 
@@ -507,7 +667,9 @@ def main() -> None:
     parser.add_argument("--map", type=Path, help="GNU ld map of the same link")
     parser.add_argument("--src", type=Path, action="append", default=[])
     parser.add_argument("--classification", type=Path)
-    parser.add_argument("--list", choices=["c", "nonmatching", "sdk", "handwritten", "asm"])
+    parser.add_argument("--list", choices=[
+        "c", "nonmatching", "sdk", "handwritten", "asm", "included", "asset",
+    ], help="list the class's functions and its .text bytes outside every function")
     parser.add_argument("--mark-asm", action="store_true", help=(
         "coverage build: label each asm statement of preprocessed C (stdin to stdout)"))
     parser.add_argument("--mark-gas", action="store_true", help=(
@@ -543,47 +705,67 @@ def main() -> None:
             units[obj] = coverage_build(obj)
         return "c", units[obj]
 
+    def split(lo: int, hi: int, cls: str) -> list[tuple[int, int, str]]:
+        """[lo, hi) as (start, end, class) pieces: cls outside the classified
+        ranges, which take precedence."""
+        pieces = []
+        for s, e, kind, _note in sorted(ranges):
+            cut_lo, cut_hi = max(lo, s), min(hi, e)
+            if cut_lo < cut_hi:
+                pieces += [(lo, cut_lo, cls), (cut_lo, cut_hi, kind)]
+                lo = cut_hi
+        return [piece for piece in pieces + [(lo, hi, cls)] if piece[1] > piece[0]]
+
     texts = [(address, address + size, obj) for name, address, size, obj in inputs
              if name == ".text"]
-    totals: dict[str, list[int]] = {}
-    listing = []
-    functions: dict[str, list[tuple[int, int]]] = {}  # per C unit: its function ranges in .text
+    totals: dict[str, list[int]] = {}  # class: functions, bytes, bytes in functions
+    listing: list[tuple[int, int, str]] = []
+
+    def count(cls: str, address: int, size: int, function: str | None) -> None:
+        entry = totals.setdefault(cls, [0, 0, 0])
+        entry[1] += size
+        if function is not None:
+            entry[0] += 1
+            entry[2] += size
+        if cls == args.list:
+            listing.append((address, size, function or "(outside every function)"))
+
+    functions: dict[int, list[tuple[int, int, str]]] = {}  # per .text input section
     owned: dict[int, dict[str, str]] = {}  # INCLUDE_ASM statement: its functions' classes
     for symbol in sorted(elf_symbols, key=lambda s: (s.value, s.name)):
         if symbol.kind != STT_FUNC or symbol.section == 0:
             continue
-        text = next(((lo, obj) for lo, hi, obj in texts if lo <= symbol.value < hi), None)
+        text = next(((lo, hi, obj) for lo, hi, obj in texts if lo <= symbol.value < hi), None)
         if text is None:
             continue
         address, size, name = symbol.value, symbol.size, symbol.name
         if address % 4 or size % 4:
             raise SystemExit(f"unaligned MIPS function range: {name} at {address:08x}, size {size}")
-        kind, unit = unit_of(text[1])
+        if address + size > text[1]:
+            raise SystemExit(f"{name} ({address:08x}, size {size}) runs past its input section"
+                             f" .text of {text[2]}")
+        functions.setdefault(text[0], []).append((address, address + size, name))
+        kind, unit = unit_of(text[2])
         if unit is None:
             cls = ranged(address) or ("handwritten" if kind == "handwritten" else "asm")
         else:
             lo = address - text[0]
             hi = max(lo + size, lo + 1)
-            functions.setdefault(text[1], []).append((lo, lo + size))
             owners = [owner for start, end, owner in unit.spans[".text"] if start < hi and end > lo]
             if len(owners) == 1 and owners[0] is not None and owners[0].kind in ("asm", "rodata"):
                 cls = "nonmatching" if name in nonmatching else ranged(address) or "asm"
                 owned.setdefault(id(owners[0]), {})[name] = cls
             elif name in unit.compiled and all(
-                owner is None or owner.kind == "other" and owner.function == name
+                owner is None or owner.kind == "original" and owner.function == name
                 for owner in owners
             ):
                 cls = "c"
             else:
                 raise SystemExit(
-                    f"{name} ({address:08x}, {text[1]}): a function that cc1 did not emit and no"
+                    f"{name} ({address:08x}, {text[2]}): a function that cc1 did not emit and no"
                     " INCLUDE_ASM/INCLUDE_RODATA file defines, or one holding included bytes"
                 )
-        entry = totals.setdefault(cls, [0, 0])
-        entry[0] += 1
-        entry[1] += size
-        if cls == args.list:
-            listing.append(f"{address:08x} {size:6d} {name}")
+        count(cls, address, size, name)
 
     def statement_class(statement: Asm) -> str:
         if statement.kind != "asm":
@@ -591,84 +773,90 @@ def main() -> None:
         fallback = "nonmatching" if statement.name in nonmatching else "asm"
         return owned.get(id(statement), {}).get(statement.name, fallback)
 
-    # The .text bytes outside every function: cc1's (data placed in .text) and an
-    # INCLUDE_ASM/INCLUDE_RODATA file's (padding, data words) are not counted.
-    for name, address, size, obj in inputs:
-        kind, unit = unit_of(obj) if name == ".text" else ("", None)
+    # The .text bytes outside every function count as their owner's: cc1's
+    # (data a unit places in .text) as c, an INCLUDE_ASM/INCLUDE_RODATA file's
+    # (padding, data words) as its statement's, an assembly unit's as its own.
+    for lo, hi, obj in texts:
+        holes, cursor, before = [], lo, ""
+        for start, end, name in sorted(functions.get(lo, [])):
+            if end == start:
+                continue
+            if start < cursor:
+                raise SystemExit(f"{name} ({start:08x}) overlaps {before} ({obj})")
+            holes += [(cursor, start)] if start > cursor else []
+            cursor, before = end, name
+        holes += [(cursor, hi)] if hi > cursor else []
+        kind, unit = unit_of(obj)
         if unit is None:
-            continue
-        if size != sum(end - start for start, end, _owner in unit.spans[".text"]):
-            raise SystemExit(f"{obj}: input section .text is not the attributed one")
-        merged: list[list[int]] = []
-        for lo, hi in sorted(functions.get(obj, [])):
-            if merged and lo <= merged[-1][1]:
-                merged[-1][1] = max(merged[-1][1], hi)
-            else:
-                merged.append([lo, hi])
-        for start, end, owner in unit.spans[".text"]:
-            inside = sum(max(0, min(end, hi) - max(start, lo)) for lo, hi in merged)
-            if inside < end - start and owner is not None and owner.kind not in ("asm", "rodata"):
-                raise SystemExit(f"{obj}: .text bytes {address + start:08x}-{address + end:08x}"
-                                 " of an asm statement lie outside every function")
+            own = "handwritten" if kind == "handwritten" else "asm"
+            pieces = [(a, b, own) for a, b in holes]
+        else:
+            if hi - lo != sum(end - start for start, end, _owner in unit.spans[".text"]):
+                raise SystemExit(f"{obj}: input section .text is not the attributed one")
+            pieces = []
+            for start, end, owner in unit.spans[".text"]:
+                for a, b in holes:
+                    a, b = max(a, lo + start), min(b, lo + end)
+                    if a >= b:
+                        continue
+                    if owner is not None and owner.kind not in ("asm", "rodata"):
+                        raise SystemExit(f"{obj}: .text bytes {a:08x}-{b:08x} of an asm statement"
+                                         " lie outside every function")
+                    pieces.append((a, b, "c" if owner is None else statement_class(owner)))
+        for a, b, own in pieces:
+            for start, end, cls in split(a, b, own):
+                count(cls, start, end - start, None)
 
     data: dict[str, int] = {}
-
-    def add(cls: str, count: int) -> None:
-        if count:
-            data[cls] = data.get(cls, 0) + count
-
-    def split(lo: int, hi: int, cls: str) -> None:
-        """Count [lo, hi) as cls outside the classified ranges, which take precedence."""
-        for s, e, kind, _note in sorted(ranges):
-            cut_lo, cut_hi = max(lo, s), min(hi, e)
-            if cut_lo < cut_hi:
-                add(cls, cut_lo - lo)
-                add(kind, cut_hi - cut_lo)
-                lo = cut_hi
-        add(cls, max(0, hi - lo))
-
     loaded = [(s.address, s.address + s.size) for s in elf_sections
               if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC]
     for name, address, size, obj in inputs:
-        if name == ".text" or not DATA_SECTION.match(name):
-            if name != ".text" and unit_of(obj)[0] == "c":
-                raise SystemExit(f"{obj}: input section {name} is not attributed")
+        if name == ".text":
             continue
+        if not DATA_SECTION.match(name):
+            raise SystemExit(f"{obj}: input section {name} is not counted")
         if BSS_SECTION.match(name) and not any(lo <= address and address + size <= hi
                                                for lo, hi in loaded):
             continue
         kind, unit = unit_of(obj)
         if unit is None:
             own = "handwritten" if kind == "handwritten" else "placeholder"
-            split(address, address + size, own)
-            continue
-        rows = unit.spans.get(name)
-        if rows is None or size != sum(end - start for start, end, _owner in rows):
-            raise SystemExit(f"{obj}: input section {name} is not the attributed one")
-        for start, end, owner in rows:
-            if owner is None:
-                own = "bss" if BSS_SECTION.match(name) else "c"
-            else:
-                own = statement_class(owner)
-            split(address + start, address + end, own)
+            pieces = split(address, address + size, own)
+        else:
+            rows = unit.spans.get(name)
+            if rows is None or size != sum(end - start for start, end, _owner in rows):
+                raise SystemExit(f"{obj}: input section {name} is not the attributed one")
+            pieces = [
+                piece for start, end, owner in rows for piece in split(
+                    address + start, address + end,
+                    statement_class(owner) if owner is not None
+                    else "bss" if BSS_SECTION.match(name) else "c",
+                )
+            ]
+        for start, end, cls in pieces:
+            data[cls] = data.get(cls, 0) + end - start
 
     if args.list:
-        print("\n".join(listing))
+        print("\n".join(f"{address:08x} {size:6d} {name}" for address, size, name
+                        in sorted(listing)))
         return
     text_bytes = sum(v[1] for v in totals.values())
-    remaining = [sum(totals.get(cls, [0, 0])[i] for cls in ("asm", "nonmatching")) for i in (0, 1)]
+    if text_bytes != sum(hi - lo for lo, hi, _obj in texts):
+        raise SystemExit("the text classes do not add up to the .text input sections")
+    remaining = [sum(totals.get(cls, [0, 0, 0])[i] for cls in ("asm", "nonmatching"))
+                 for i in range(3)]
     report = {
         "claim": "source_coverage_only",
         "binary_agreement": "not_measured",
         "text_bytes": text_bytes,
-        "text_instructions": text_bytes // 4,
+        "text_instructions": sum(v[2] for v in totals.values()) // 4,
         "classes": {
-            k: {"functions": v[0], "bytes": v[1], "instructions": v[1] // 4}
+            k: {"functions": v[0], "bytes": v[1], "instructions": v[2] // 4}
             for k, v in sorted(totals.items())
         },
         "remaining_asm_functions": remaining[0],
         "remaining_asm_bytes": remaining[1],
-        "remaining_asm_instructions": remaining[1] // 4,
+        "remaining_asm_instructions": remaining[2] // 4,
         "data_bytes": sum(data.values()),
         "data_classes": dict(sorted(data.items())),
         "remaining_data_placeholder_bytes": data.get("placeholder", 0),

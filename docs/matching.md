@@ -223,8 +223,12 @@ the audit; they are never counted as matches. This diagnostic does not replace
   compiled-out debug macro at a plausible place.
 - Never-read locals, dead assignments or dead stores that exist only to steer CSE,
   scheduling or allocation are rejected even when they match (battle 80087EDC was
-  withdrawn for this). No new inline asm or `.word`; the existing GTE, `break` and
-  scratchpad-stack macros are original style.
+  withdrawn for this). No new inline asm or `.word`: the original-style macros the
+  recovered C uses (the PsyQ GTE macros, the debugger break and pollhost, the stack
+  switches, GET_RA, addPrimLen9) are listed by their exact templates in
+  tools/matching_coverage.py (`ORIGINAL_ASM`), and the coverage report fails on any
+  other asm statement in a compiled function. A form joins the list only on this
+  section's evidence.
 - A local register variable (`register s32 v asm("$14")`) is accepted only where the
   evidence says the original source bound it (project owner, 2026-10-08): a scratch
   pin of just those variables makes the function match exactly, no other compiler,
@@ -481,6 +485,15 @@ Measure source coverage and exact matching independently. Do not call a baseline
 made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
+Every byte of every .text input section counts once: each function in its class, and
+the bytes outside every function (padding and data words of an INCLUDE_ASM'd or
+INCLUDE_RODATA'd file, data a unit places in .text such as menu6's D_80088BFC) as bytes,
+not instructions, of their owner's class, attributed like data below: an INCLUDE_ASM'd
+file's under its function's class, an INCLUDE_RODATA'd file's `included`, cc1's `c`, a
+generated assembly unit's `asm`, an authored one's `handwritten`, a classified range
+first. The report fails unless every function lies inside its input section and
+overlaps no other, so `text_bytes` is exactly the sum of the .text input sections; it
+also fails on an input section other than .text and the data sections.
 From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
 input section and, where an image holds its uninitialized variables as zeros, each
 .bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
@@ -510,24 +523,29 @@ C. Every other byte came from cc1's own lines, which may expand no GAS macro. Ea
 statement must be one of include_asm.h's, read as cc1 emitted it (so token pasting,
 backslash-newlines, wrapper macros and other include files change nothing):
 INCLUDE_ASM, INCLUDE_RODATA, INCLUDE_ASSET/INCLUDE_ORIGINAL outside .text, or the
-macro.inc include, which emits nothing. Any other asm statement must sit in a compiled
-function and emit only its code, with no GAS macro and no `.include`/`.incbin`. The
-report fails on every other byte rather than count it: a function that cc1 did not emit
-and no included file defines, a compiled function holding included bytes, inline asm
-data, original bytes in .text. The .text bytes outside every function (padding and
-data words of included files, data a unit places in .text, menu6's D_80088BFC) are
-attributed the same way but not counted. One limit remains: code an asm statement
-emits inside a compiled function counts with the function, so only review keeps it to
-the original-style GTE, `break` and scratchpad-stack macros (What counts as recovered
-source).
+macro.inc include, which emits nothing. Any other asm statement must be written inside
+a compiled function and be one of the original-style macros the recovered C uses
+(`ORIGINAL_ASM`, What counts as recovered source): its text in the cc1 output is
+exactly the macro's template with a register for each operand, it expands no GAS
+macro, and its code, inside that function, counts with the function. Every other asm
+statement fails the report, as do a function that cc1 did not emit and no included
+file defines, a compiled function holding included bytes and original bytes in .text.
+The marking also fails the coverage build on each string cc1 copies into its output as
+it is unless it is a plain name (a declaration's asm name, such as a register
+variable's `"$14"` or a symbol's assembler name; a section or alias attribute; a line
+marker's file name), and on any other preprocessor line: an asm name
+`"D_1\n\t.word 0x24020001\n\t#"` would otherwise put the word into each function that
+reads the symbol, among cc1's own lines.
 
 GCC emits a static initializer's string literals last to first once the initializer
 ends, so a pointer table whose strings lie in reverse address order was written with
 its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
-go to `.sdata`. `remaining_asm_functions` and `remaining_asm_instructions` total the unrecovered
-assembly and reviewed nonmatching C candidates; SDK and handwritten assembly stay
-separate. Instructions are four-byte words within ELF function ranges, including
-nops and delay slots, excluding data sections and padding outside those ranges.
+go to `.sdata`. `remaining_asm_functions`, `remaining_asm_bytes` and
+`remaining_asm_instructions` total the unrecovered assembly and reviewed nonmatching C
+candidates (the bytes with their files' bytes outside every function); SDK and
+handwritten assembly stay separate. Instructions are four-byte words within ELF
+function ranges, including nops and delay slots, excluding data sections and the .text
+bytes outside every function, which count only as bytes.
 
 A normalized asm diff is a debugging aid, not final acceptance. Exact final image
 comparison includes linked addresses and data/layout. Decoded overlay matching

@@ -441,6 +441,45 @@ class MatchingTests(unittest.TestCase):
             "}\n"
         ))
 
+    def test_marking_refuses_text_cc1_copies_and_macros_take_registers(self):
+        from tools.matching_coverage import ORIGINAL_ASM, mark_asm, original_pattern
+
+        # cc1 copies a declaration's asm name, a section or alias attribute
+        # and a line marker's file name into its output as they are: the
+        # coverage build accepts only plain names, which carry no lines.
+        plain = (
+            '# 1 "decomp/src/t/unit.c"\n'
+            '# 1 "decomp/include/include_asm.h" 1\n'
+            'register int pinned asm("$14");\n'
+            'extern int word __asm__("D_800CCB34");\n'
+            'int table[] __attribute__((section(".text"))) = { 1 };\n'
+        )
+        self.assertEqual(mark_asm(plain), plain)
+        for text, message in (
+            ('extern int v asm("D_1\\n\\t.word 0x24020001\\n\\t#");\n', "asm name"),
+            ('extern int v asm("D_1;.word 0x24020001");\n', "asm name"),
+            ('int t[] __attribute__((section(".text\\n\\t.word 1\\n\\t#"))) = { 1 };\n',
+             "section attribute"),
+            ('void g(void) __attribute__((__alias__("f\\n\\t.word 1")));\n', "__alias__ attribute"),
+            ('# 1 "x\\n\\t.word 0x24020001\\n\\t#"\n', "not a line marker"),
+            ("#pragma weak f\n", "not a line marker"),
+        ):
+            with self.subTest(text), self.assertRaises(SystemExit) as caught:
+                mark_asm(text)
+            self.assertIn(message, str(caught.exception))
+        # An original-style macro's text in the cc1 output has a register for
+        # each operand, the same one at each use (cc1 names $29/$30 $sp/$fp).
+        ldv0 = original_pattern("lwc2 $0, 0(%0);lwc2 $1, 4(%0)")
+        self.assertIn("lwc2 $0, 0(%0);lwc2 $1, 4(%0)", ORIGINAL_ASM)
+        self.assertTrue(ldv0.fullmatch("lwc2 $0, 0($4);lwc2 $1, 4($4)"))
+        self.assertTrue(ldv0.fullmatch("lwc2 $0, 0($sp);lwc2 $1, 4($sp)"))
+        self.assertFalse(ldv0.fullmatch("lwc2 $0, 0($4);lwc2 $1, 4($5)"))
+        self.assertFalse(ldv0.fullmatch("lwc2 $0, 0($4);lwc2 $1, 4($4);.word 0"))
+        self.assertFalse(original_pattern("mtc2 %0, $8").fullmatch("mtc2 5, $8"))
+        enter = original_pattern("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8")
+        self.assertTrue(
+            enter.fullmatch("move $8, $9\nsw $29, 0($8)\naddiu $8, $8, -4\nmove $29, $8"))
+
     def write_fixture(self, source, root=None):
         """decomp/src/t/unit.c, the include files it may use and a target
         configuration for it at root (the test's own by default)."""
@@ -663,6 +702,74 @@ class MatchingTests(unittest.TestCase):
                          {"c": 2, "sdk": 2, "placeholder": 12, "asset": 4, "handwritten": 4})
         self.assertEqual(report["remaining_data_placeholder_bytes"], 12)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test the .text outside functions",
+    )
+    def test_text_outside_functions_counts_under_its_owner(self):
+        # The C unit's .text, from 80010000: an SDK data tag an INCLUDE_ASM'd
+        # file holds (no function of its name), a function its file follows
+        # with padding and a data word, an INCLUDE_RODATA'd word and a table
+        # cc1 places in .text before its function. Then a generated and an
+        # authored assembly unit (each GAS aligns to 16), each a function and
+        # a padding word.
+        asm = self.root / "asm"
+        asm.mkdir()
+        (asm / "D_tag.s").write_text(
+            "dlabel D_tag\n    .word 0x15007350, 0x0040809C\nenddlabel D_tag\n")
+        (asm / "func_pad.s").write_text("glabel func_pad\n    jr $ra\n    nop\nendlabel func_pad\n"
+                                        "    nop\n    .word 0x12345678\n")
+        (asm / "D_words.s").write_text("dlabel D_words\n    .word 1\nenddlabel D_words\n"
+                                       ".section .text\n    .word 0x22222222\n")
+        self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            'INCLUDE_ASM("asm", D_tag);\n'
+            'INCLUDE_ASM("asm", func_pad);\n'
+            'INCLUDE_RODATA("asm", D_words);\n'
+            'int table[] __attribute__((section(".text"))) = { 1 };\n'
+            "int f(void) { return table[0]; }\n"
+        )
+        unit = (".include \"macro.inc\"\n.set noreorder\n.section .text\n"
+                "glabel {0}\n    jr $ra\n    nop\nendlabel {0}\n    .word 0\n")
+        (asm / "gen.s").write_text(unit.format("func_gen"))
+        (self.root / "decomp/src/t/authored.s").write_text(unit.format("func_auth"))
+        (self.root / "classification.txt").write_text("80010000 80010008 sdk a library tag\n")
+        arguments = ["--classification", "classification.txt"]
+        result = self.cover_linked_fixture(
+            "image.bin", sections=(".text", ".rodata"), arguments=arguments,
+            extra=("build/asm/gen.o(.text)", "build/decomp/src/t/authored.o(.text)"),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        # Functions, bytes and instructions per class: the tag by its range,
+        # each other byte outside the functions under its owner's class.
+        self.assertEqual(
+            {cls: (v["functions"], v["bytes"], v["instructions"])
+             for cls, v in report["classes"].items()},
+            {"sdk": (0, 8, 0), "asm": (2, 28, 4), "included": (0, 4, 0), "c": (1, 20, 4),
+             "handwritten": (1, 12, 2)},
+        )
+        # The classes add up to the .text input sections (48 + 12 + 12; the
+        # unit's .rodata follows its .text, and the alignment gaps before the
+        # 16-aligned assembly units belong to no input section).
+        self.assertEqual((report["text_bytes"], report["text_instructions"]), (72, 10))
+        self.assertEqual((report["remaining_asm_functions"], report["remaining_asm_bytes"],
+                          report["remaining_asm_instructions"]), (2, 28, 4))
+        self.assertEqual(report["data_classes"], {"included": 4})
+        tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
+        listing = subprocess.run(
+            [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map", *arguments,
+             "--list", "asm"],
+            cwd=self.root, text=True, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(listing.splitlines(), [
+            "80010008      8 func_pad", "80010010      8 (outside every function)",
+            "80010040      8 func_gen", "80010048      4 (outside every function)",
+        ])
+
     def cover_probe(self, name, source, files, headers, original):
         """cover_linked_fixture on a unit of its own (.text, .rodata, .data)."""
         root = self.root / name
@@ -704,6 +811,10 @@ class MatchingTests(unittest.TestCase):
         c_func = "int c_func(int x) { return x + 1; }\n"
         in_data = ({}, {"c": 8, "included": 4})
         in_text = "original bytes into .text"
+        other = "neither one of include_asm.h's statements nor an original-style macro"
+        ldv0 = ("int f(int *p) {\n"  # psyq/inline_c.h's gte_ldv0
+                '    __asm__ volatile("lwc2 $0, 0(%0);" "lwc2 $1, 4(%0)" : : "r"(p) : "memory");\n'
+                "    return 0;\n}\n")
         cases = [
             # Whatever an INCLUDE_ASM'd file emits is its function's: a `;`
             # statement separator, a nested include, a redefined macro, a later
@@ -762,29 +873,42 @@ class MatchingTests(unittest.TestCase):
              {}, in_text),
             ("original_text_filescope", include + c_func
              + 'INCLUDE_ORIGINAL(".text", func_orig, 0x80010000, 24);\n', {}, in_text),
-            # Other inline asm may emit only code into the compiled function
-            # it is written in, with no GAS macro or file.
+            # Any other asm statement must be an original-style macro
+            # (ORIGINAL_ASM) written inside a compiled function, exactly its
+            # template with registers for the operands and no GAS macro.
             ("inline_data", include + "int before = 1;\n"
-             '__asm__(".section .data\\n\\t.word 0x12345678\\n.previous");\n',
-             {}, "inline asm emits .data bytes"),
+             '__asm__(".section .data\\n\\t.word 0x12345678\\n.previous");\n', {}, other),
             ("inline_text", include + '__asm__(".text\\n\\t.word 0x24020001");\n'
-             "int f(void) { return 0; }\n", {}, "inline asm emits .text bytes"),
+             "int f(void) { return 0; }\n", {}, other),
+            ("macro_at_file_scope", include + '__asm__("break 1024");\n'
+             "int f(void) { return 0; }\n", {}, other),
+            ("inline_word", include + "int f(void) {\n"
+             '    __asm__ volatile(".word 0x24020001");\n    return 0;\n}\n', {}, other),
             ("inline_incbin", include + "int f(void) {\n"
              '    __asm__ volatile(".incbin \\"original.bin\\", 0, 4");\n    return 0;\n}\n',
-             {}, "expands a GAS macro or reads a file"),
+             {}, other),
             ("inline_macro", include
-             + 'int f(void) {\n    __asm__ volatile("rtps");\n    return 0;\n}\n',
-             {}, "expands a GAS macro or reads a file"),
+             + 'int f(void) {\n    __asm__ volatile("rtps");\n    return 0;\n}\n', {}, other),
+            ("redefined_instruction", asm_unit("func_l") + ldv0,
+             {"asm/func_l.s": function("func_l") + ".macro lwc2 a, b\n.word 0x5A5A5A5A\n.endm\n"},
+             "an original-style macro expands a GAS macro"),
             ("instruction_macro", asm_unit("func_m") + "int g(int x) { return x + 1; }\n",
              {"asm/func_m.s": function("func_m") + ".macro j target\n.word 0x0000000D\n.endm\n"},
              "cc1's lines expanded a GAS macro"),
-            # GTE code in a compiled function counts with it; data a unit
-            # places in .text is attributed but not counted.
-            ("inline_code", include + "int f(int *p) {\n"
-             '    __asm__ volatile("lwc2 $0, 0(%0)" : : "r"(p));\n    return 0;\n}\n',
-             {}, ({"c": 12}, {})),
+            # An original-style macro's code counts with its compiled function;
+            # data a unit places in .text counts as C bytes outside every
+            # function.
+            ("inline_code", include + ldv0, {}, ({"c": 16}, {})),
             ("text_data", include + 'int table[] __attribute__((section(".text"))) = { 1 };\n'
-             "int f(void) { return table[0]; }\n", {}, ({"c": 16}, {})),
+             "int f(void) { return table[0]; }\n", {}, ({"c": 20}, {})),
+            # Every .text byte counts once: a function lies inside its input
+            # section and overlaps no other.
+            ("function_overlap", asm_unit("func_o"),
+             {"asm/func_o.s": "glabel func_o\n    nop\n" + function("func_i")
+                              + ".size func_o, 12\n"}, "overlaps func_o"),
+            ("function_past_section", asm_unit("func_p"),
+             {"asm/func_p.s": function("func_p") + ".size func_p, 64\n"},
+             "runs past its input section"),
         ]
         original = struct.pack("<8I", 0x24020011, 0x24030022, 0x24040033, 0x24050044,
                                0x03E00008, 0, 0, 0)
@@ -868,6 +992,23 @@ class MatchingTests(unittest.TestCase):
         _obj, result = self.make_fixture_unit('#include "missing.h"\n' + source)
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("missing.h", result.stderr)
+        # The coverage build's marking stage refuses an asm name that would
+        # carry lines into cc1's own, which the object itself assembles.
+        obj = self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            'extern int v asm("D_1\\n\\t.word 0x24020001\\n\\t#");\n'
+            "int f(void) { return v; }\n"
+        )
+        side = obj.with_name("unit.cov.o")
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-f",
+             str(Path(__file__).resolve().parents[1] / "decomp/Makefile"),
+             "ROOT=" + str(self.root), "CONFIG=fixture.mk", str(side)],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("asm name", result.stderr)
+        self.assertFalse(side.exists())
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
