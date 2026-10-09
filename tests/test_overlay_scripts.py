@@ -417,7 +417,7 @@ ACTIONS = (
     (r"func_80089160\((\w+), NULL, NULL\);", "emitters"),
     (r"func_80089160\((\w+), &scratch->position, NULL\);", "emitters_at_target"),
     (r"func_80089514\((\w+)\);", "stop_effects"),
-    (r"func_8003A89C\(D_80062528, (\w+), (\w+)\);", "music_fade"),
+    (r"func_8003A89C\(\(SoundSeq \*\)D_80062528, (\w+), (\w+)\);", "music_fade"),
     (r"D_8009CCA4 = (\w+);", "fade_rate"),
     (r"D_8009D3CC = (\w+);", "fade_step"),
     (r"D_8009D554 = 0;", "exit_worldmap"),

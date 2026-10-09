@@ -1142,7 +1142,7 @@ b8 set_battle_sounds func_80087DE0 4 next u8@1 iv@2
     scripted (800b2356) battles
 b9 store_vehicle_place func_80087B5C 9 next var@1 var@3 var@5 var@7
     store the world map vehicle's saved position (game +182c-+1830) and
-    heading (+1832) in variables (WorldmapReturn, worldmap.h)
+    heading (+1832) in variables (WorldmapReturn, resident/gamedata.h)
 ba set_vehicle_place func_80087C34 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
     set the world map vehicle's saved position and heading (+182c-+1832)
 bb store_vehicle_flags func_80087D30 3 next var@1

@@ -185,7 +185,8 @@ class MatchingTests(unittest.TestCase):
               "gte_ldv0(get_point())", 0x29, 0, (0x32,), 2)
         cases = (
             ("worldmap_80083A00", "worldmap",
-             '#include "' + str(worldmap / "worldmap.h") + '"\n' + ldv3c,
+             '#include "' + str(worldmap / "worldmap.h") + '"\n'
+             '#include "' + str(worldmap / "gte.h") + '"\n' + ldv3c,
              (
                  ("v0", v0),
                  ("v3", ("SVECTOR", "point[2].vz",
