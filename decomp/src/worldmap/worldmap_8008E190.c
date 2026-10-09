@@ -210,25 +210,25 @@ s32 func_8008E680(s32 index) {
  * them with the surrounding stores as the original does. */
 
 /* Turn the vehicle towards `goal` (heading units), by at most `step` per frame
- * from the heading it had last frame (D_8006EE66). */
-#define VEHICLE_TURN(goal, step)                                              \
-    {                                                                        \
-        delta = (goal) - D_8006EE66;                                          \
-        if (ABS(delta) > 0x800) {                                             \
-            if (delta < 0) {                                                  \
-                delta += 0x1000;                                              \
-            } else {                                                          \
-                delta -= 0x1000;                                              \
-            }                                                                 \
-        }                                                                     \
-        if (ABS(delta) > (step)) {                                            \
-            if (delta < 0) {                                                  \
-                actor->heading = D_8006EE66 - (step);                         \
-            } else {                                                          \
-                actor->heading = D_8006EE66 + (step);                         \
-            }                                                                 \
-        }                                                                     \
-        actor->heading &= 0xFFF;                                              \
+ * from the heading it had last frame (worldmap.vehicle_heading). */
+#define VEHICLE_TURN(goal, step)                                               \
+    {                                                                          \
+        delta = (goal) - D_8006D634.worldmap.vehicle_heading;                  \
+        if (ABS(delta) > 0x800) {                                              \
+            if (delta < 0) {                                                   \
+                delta += 0x1000;                                               \
+            } else {                                                           \
+                delta -= 0x1000;                                               \
+            }                                                                  \
+        }                                                                      \
+        if (ABS(delta) > (step)) {                                             \
+            if (delta < 0) {                                                   \
+                actor->heading = D_8006D634.worldmap.vehicle_heading - (step); \
+            } else {                                                           \
+                actor->heading = D_8006D634.worldmap.vehicle_heading + (step); \
+            }                                                                  \
+        }                                                                      \
+        actor->heading &= 0xFFF;                                               \
     }
 
 /* Tilt and heading of the vehicle model into scene objects 0 and 1. */

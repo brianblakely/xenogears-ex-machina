@@ -31,8 +31,9 @@ typedef struct {
 /* Game data words that some movers address by names of their own: as members
  * of D_8006D634 they compile differently there. The parked vehicles'
  * headings (worldmap.unk5A-unk5E; func_8008C75C, func_8008D590, func_8008DF0C)
- * and spots (func_8008C364), the flying vehicle's heading and the return
- * flags (worldmap.vehicle_heading and flags; worldmap_8008E190), and the spots
+ * and spots (func_8008C364), the flying vehicle's heading where it starts
+ * (worldmap.vehicle_heading; func_8008E190) and the return flags it masks
+ * on its two landings (worldmap.flags; func_8008E76C), and the spots
  * seen four bytes early, so that the followers' actor slots 1-3 index the x
  * and z of party slots 0-2 (func_8008B644). */
 extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;

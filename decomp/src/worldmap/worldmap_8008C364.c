@@ -722,13 +722,13 @@ s32 func_8008D678(s32 index) {
     if (actor->state != 2 && (D_8009BE10 == 2 || D_8006D634.party[index - 4] != 7)) {
         func_80074794(1, &actor->position);
     }
-    /* Save the spot (the vehicle spot's x and z) and the heading (worldmap.unk5A
-     * on) as offsets from the return state, the base the original addresses
-     * all three from (as members they compile differently). */
+    /* Save the spot (the vehicle spot's x and z) as offsets from the return
+     * state, the base the original addresses both from (as members they
+     * compile differently), and the heading (worldmap.unk5A on). */
     slot = index - 4;
     STATE_U16(0x13C + slot * 6) = actor->position.vx >> 12;
     STATE_U16(0x13E + slot * 6) = actor->position.vz >> 12;
-    STATE_U16(6 + (index - 4) * 2) = actor->heading;
+    (&D_8006D634.worldmap.unk5A)[index - 4] = actor->heading;
     return 1;
 }
 
