@@ -7419,27 +7419,23 @@ s32 func_80099A8C(s32 x) {
     return SquareRoot0(squares.vx);
 }
 
-#ifdef NON_MATCHING
+/* Compiled-out debug trace of the actor a move targets. */
+#define MOVE_TRACE_TARGET(actor) do { } while (0)
+
 /* Turn-move toward the slot's target (mode 1: operand position plus the
  * target offset, 2: another actor, 3: an angle from the target offset,
  * 0/4: operand position). Within reach (or when the slot's step count is
  * 0) set the final heading, clear the slot and return 0; otherwise count
  * down, face the target and return -1.
- * NON_MATCHING: only case 2's gravity sum differs (4 bytes short): the
- * original loads D_800AFB10 into a0 and D_800B0078 into a1 before the
- * descriptor add, leaving a load-delay nop after `lw s0,0x4c`, and adds
- * other + self. Here the D_800B0078 load is a single-set pseudo (a register
- * birth), which sched1 boosts next to its use. Holding it in a variable
- * assigned twice moves the load up (score 13) but needs a dead second
- * assignment; operand order, casts, index temporaries and an `extra`
- * temporary give 19-30. 900 s of permuter found nothing.
- * sched1 trace: the D_800AFB10 load (emitted before the index chain) wins
- * the load-hazard tie against the chain's subu and lands after it, so it
- * no longer overlaps the call result and local-alloc gives it $v0 (the
- * original's base is in $a0 and D_800B0078 in $a1, both live across the
- * chain). Pointer-sum forms of the descriptor index, the other actor
- * assigned inside the sum, and a split `extra` sum give the same 19-21;
- * another 700 s of permuter found nothing. */
+ * `value` is the function's scratch variable (the slot's step count, the
+ * facing, and in case 2 the current actor: all three are $a1 in the
+ * original), and case 2 keeps the descriptor table in `model` ($a0, as at
+ * the top). Both case-2 loads go to variables set elsewhere, so sched1 does
+ * not sink them next to their use as it does a once-set pseudo (a register
+ * birth): they stay live across the index multiply, where the call result
+ * and the multiply hold $v0/$v1, and sched2 then drops them just ahead of
+ * the descriptor add. The trace's loop note keeps both gravity loads after
+ * the other actor's load, with its load-delay nop. */
 s32 func_80099AC0(s32 speed) {
     VECTOR delta;
     FieldModel *model;
@@ -7452,8 +7448,8 @@ s32 func_80099AC0(s32 speed) {
     s32 angle;
     s32 distance;
     FieldActor *other;
-    u16 count;
-    s32 facing;
+    s32 index;
+    s32 value;
 
     extra = 0;
     z = 0;
@@ -7476,8 +7472,12 @@ s32 func_80099AC0(s32 speed) {
         if (func_8009CDB4(1) == 0xFF) {
             return 0;
         }
-        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
-        extra = func_80099A8C((u16)D_800B0078->gravity.s.whole + (u16)other->gravity.s.whole);
+        index = func_8009CDB4(1);
+        value = (s32)D_800B0078;
+        model = (FieldModel *)D_800AF880.components.descriptors;
+        other = ((FieldDescriptor *)model)[index].actor;
+        MOVE_TRACE_TARGET(other);
+        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)((FieldActor *)value)->gravity.s.whole);
         x = WHOLE(other->position[0]);
         z = WHOLE(other->position[2]);
         if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
@@ -7500,8 +7500,8 @@ s32 func_80099AC0(s32 speed) {
     delta.vz = z - from_z;
     distance = func_80099A4C(delta.vx, delta.vz);
     D_800B0078->flags |= 0x400000;
-    count = D_800B0078->slots[D_800B0078->slot].value;
-    if (count == 0 || reach + extra >= distance) {
+    value = D_800B0078->slots[D_800B0078->slot].value;
+    if (value == 0 || reach + extra >= distance) {
         if (speed != 0) {
             if (!(D_800B0078->flags & 0x8000)) {
                 D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
@@ -7516,15 +7516,12 @@ s32 func_80099AC0(s32 speed) {
         D_800B0078->flags &= 0xFDDFF7FF;
         return 0;
     }
-    D_800B0078->slots[D_800B0078->slot].value = count - 1;
-    facing = func_8007B694(&delta);
+    D_800B0078->slots[D_800B0078->slot].value = value - 1;
+    value = func_8007B694(&delta);
     D_800B00C0 = 1;
-    D_800B0078->heading_goal = D_800B0078->heading = facing;
+    D_800B0078->heading_goal = D_800B0078->heading = value;
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80099AC0);
-#endif
 
 /* Store the current actor's party character (+e4, set by 16) in variable
  * operand 1. */
