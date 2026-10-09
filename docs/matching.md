@@ -509,18 +509,23 @@ converted to C per unit. What converting the targets' `.data` established:
   loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
   documented unread tables and copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
-  list_cursor]`). slot39's unreferenced byte 08 at 801E96A6, then 00, is taken as
-  fill: GCC 2.6.3 aligns the u16 masks D_801E96A8 to a word, so after the flags
-  D_801E96A4 and D_801E96A5 alone these two bytes are the assembler's fill, no image's
-  code or data reaches them, and they look like the stray fill after other byte
-  flags: battle's D_800C2050 08 00 00 and D_800C204C 08 00 71, ovl2596's D_801E44C0
-  04 00 00. D_801E96A5 is linked with its padding as those flags are, with
-  INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). The vendor assembler,
-  Psy-Q ASPSX 2.34 of Psy-Q 3.5, writes alignment fill into its section's code record,
-  as zeros in every DOSBox run: the whole slot39 unit compiled by CC1PSX 2.6.3.SN.2,
-  with or without a byte 8 there, assembles to the original .data but for zeros at
-  the stray bytes (08 without the byte, 07 2e after D_801E97AC in both), so the
-  vendor tools cannot tell fill from a variable here.
+  list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
+  D_801E96A4 and D_801E96A5 and the u16 masks D_801E96A8 (GCC 2.6.3 emits consecutive
+  byte scalars back to back and aligns the arrays to a word), are taken as the flag's
+  padding by analogy with the flags closure D links with theirs, battle's D_800C2050
+  (08 00 00) and ovl2596's D_801E44C0 (04 00 00): D_801E96A5 is linked with them, with
+  INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). Neither the bytes nor
+  the vendor tools decide it, here or for those two, which could as well each be a
+  flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
+  801E96A6; battle's flag D_800C3444 before the same two mask tables (D_800C3448,
+  D_800C3468) is followed by zeros, as slot39's other byte groups are (801E977B,
+  801E9786-87); and Psy-Q 3.5's CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the
+  whole slot39 unit, with or without a byte 8 there, to the original .data but for
+  zeros at every stray byte (08 without the byte, 07 2e after D_801E97AC in both).
+  Battle's D_800C204C and D_800C37C8 (00 08 00 71, 00 74 72 73) are no such analogue:
+  GCC would put the byte flag that follows each (D_800C2050, D_800C37CC) directly
+  after it, so their three bytes need a unit boundary, unreferenced data or a
+  word-aligned next flag.
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
   so: the strings D_8006FB80 and D_8006FC74 (field), D_800706D4 (menu6), D_8028007C
