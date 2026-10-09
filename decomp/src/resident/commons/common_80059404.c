@@ -79,7 +79,7 @@ u16 D_800594F4; /* transfer ring write index */
 u8 D_800594F8;
 u32 D_800594FC; /* voices held */
 s16 D_80059500; /* last sound driver error */
-u32 D_80059504; /* effect start clock */
+u32 D_80059504; /* the sound driver's tick count */
 u8 D_80059508; /* battle, field, world map */
 void (*D_8005950C)(void);
 u16 D_80059510; /* transfer ring read index */
@@ -116,7 +116,7 @@ s32 D_80059588;
 struct Task *D_8005958C;
 struct Task *D_80059590;
 struct Task *D_80059594;
-CVECTOR D_80059598; /* model light colour */
+CVECTOR D_80059598; /* the model colour 8002c6e0 sets; the renderers load it into the GTE */
 u8 D_8005959C;
 s32 D_800595A0;
 s32 D_800595A4; /* the zeroed transfer buffer */
