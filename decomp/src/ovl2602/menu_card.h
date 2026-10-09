@@ -21,6 +21,7 @@
 #include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
+#include "menu/tables.h"
 
 extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
 
@@ -138,12 +139,6 @@ typedef struct ModelParts {
     u8 unk12;    /* 12 */
 } ModelParts;
 
-/* A party member's detail view; its nine stat words at +b8. */
-typedef struct {
-    u8 unk0[0xB8];
-    u16 stats[9]; /* b8 */
-} MemberView;
-
 
 /* Overlay data. */
 extern u16 D_801D6C68[]; /* party bit of each member id */
@@ -260,80 +255,6 @@ void func_801C5664(u8 allocate);
 u8 func_801CCA40(u8 wait, u8 movable);
 
 
-typedef struct {
-    u32 users; /* 00: party bits of the members who can use it */
-    u32 unk4;  /* 04 */
-    u16 unk8;  /* 08 */
-    u16 price; /* 0a */
-    u8 unkC[0x14 - 0xC];
-    u8 unk14, unk15, unk16, unk17; /* 14 */
-} GearRecord18;
-
-typedef struct {
-    u32 users; /* 00: party bits of the members who can use it */
-    u8 unk4[2];
-    u16 unk6;  /* 06 */
-    u8 unk8[2];
-    u16 price; /* 0a */
-    u8 unkC, unkD, unkE, unkF; /* 0c */
-} GearRecord10;
-
-typedef struct {
-    u32 users; /* 00: party bits of the members who can use it */
-    u16 price; /* 04 */
-    u8 unk6[2];
-    u16 unk8;  /* 08 */
-    u16 unkA;  /* 0a */
-    u8 unkC[0x14 - 0xC];
-} GearFrame;
-
-/* A part record (1ch bytes). */
-typedef struct {
-    u32 users;     /* 00: party bits of the members who can use it */
-    u16 price;     /* 04 */
-    u16 unk6;      /* 06 */
-    u16 unk8;      /* 08: part type (0 none) */
-    u8 unkA[3];
-    u8 unkD, unkE; /* 0d: unkD the part's rank */
-    u8 unkF;
-    u8 unk10[4];   /* 10 */
-    u8 unk14;      /* 14 */
-    u8 unk15;      /* 15: effect kind 1-11 */
-    u16 unk16;     /* 16: effect value */
-    u8 unk18;      /* 18 */
-    u8 unk19;
-    u8 unk1A;      /* 1a */
-    u8 unk1B;
-} GearPart;
-
-/* A weapon record (14h bytes). */
-typedef struct {
-    u8 unk0, unk1, unk2, unk3; /* 00 */
-    u32 users;     /* 04: party bits of the members who can use it */
-    u16 price;     /* 08 */
-    u8 unkA[0xE - 0xA];
-    u8 unkE;       /* 0e */
-    u8 unkF;
-    u8 unk10, unk11; /* 10 */
-    u16 unk12;     /* 12 */
-} GearWeapon;
-
-typedef struct MenuTables {
-    u8 unk0[8];
-    GearRecord18 *records18; /* 08 */
-    GearRecord10 *records10; /* 0c */
-    GearFrame *entries;      /* 10 */
-    GearPart *parts;         /* 14 */
-    GearWeapon *weapons;     /* 18 */
-    u8 unk1C[0x9C - 0x1C];
-    u32 unk9C;               /* 9c: the edited gear's summary */
-    u32 unkA0;               /* a0 */
-    u16 unkA4, unkA6, unkA8; /* a4 */
-    u16 unkAA, unkAC, unkAE; /* aa */
-    u16 unkB0;               /* b0 */
-    u8 unkB2, unkB3, unkB4, unkB5, unkB6; /* b2 */
-} GearTable;
-
 extern u32 D_801D6C88[];  /* party bit of each member id */
 extern u8 D_801D70F4[];   /* pilot of each gear */
 extern s32 D_801D6FD8;    /* available members 1-10 */
@@ -346,18 +267,18 @@ void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower);
 void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801CCEBC(u8 count, u8 *shown);
 void func_801D0EC8(u8 close);
-void func_801D61B8(GearTable *table, u8 id);
-void func_801D62A4(GearTable *table, u8 id);
-void func_801D6250(GearTable *table, u8 id);
-void func_801D6334(GearTable *table, u8 id);
-void func_801D6738(GearTable *table, u8 id);
+void func_801D61B8(MenuTables *table, u8 id);
+void func_801D62A4(MenuTables *table, u8 id);
+void func_801D6250(MenuTables *table, u8 id);
+void func_801D6334(MenuTables *table, u8 id);
+void func_801D6738(MenuTables *table, u8 id);
 extern u8 D_801D697C;
 u8 func_801D498C(u8 page, u8 fit);
 u32 func_801D2B74(s32 top, s32 gold, u8 *dims);
 u32 func_801D3C78(s32 row, s32 top, u8 *dims);
 void func_801D5398(void);
-void func_801D5F94(GearTable *table, u8 id);
-void func_801D6150(GearTable *table, u8 id);
+void func_801D5F94(MenuTables *table, u8 id);
+void func_801D6150(MenuTables *table, u8 id);
 u8 func_801D690C(u8 id);
 void func_801CBA2C(void);
 void func_801CEA68(void);

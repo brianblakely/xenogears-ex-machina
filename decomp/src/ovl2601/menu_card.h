@@ -21,6 +21,7 @@
 #include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
+#include "menu/tables.h"
 
 /*
  * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
@@ -107,45 +108,6 @@ typedef struct ModelParts {
     u8 unk12;    /* 12 */
 } ModelParts;
 
-
-/* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */
-typedef struct {
-    u16 users; /* 00: party bits of the members who can equip it */
-    u16 unk2;
-    u16 price; /* 04 */
-    u8 type;   /* 06 */
-    u8 unk7[5];
-    u8 power;  /* 0c: attack or defence */
-    u8 unkD[3];
-} EquipInfo;
-
-typedef struct {
-    u16 users; /* 00 */
-    u16 price; /* 02 */
-    u8 unk4[4];
-    u8 power;  /* 08 */
-    u8 unk9[5];
-    u16 group; /* 0e: accessories of one group do not add up */
-} AccessoryInfo;
-
-typedef struct {
-    u16 unk0;
-    u16 price; /* 02 */
-    u8 unk4[2];
-    u8 flags;  /* 06: 10h cannot be sold */
-    u8 unk7[9];
-} ItemInfo;
-
-/* The unpacked resources (menu state + 330, cch bytes). */
-typedef struct MenuTables {
-    EquipInfo *equipment;       /* 00 */
-    AccessoryInfo *accessories; /* 04 */
-    void *unk8[5];
-    ItemInfo *items;     /* 1c */
-    u8 unk20[0xB8 - 0x20];
-    u16 stats[9];        /* b8: a member's stats, filled by 801cce1c */
-    u8 unkCA[2];
-} ResourceSet;
 
 
 /* Overlay data. */

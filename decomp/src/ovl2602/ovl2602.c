@@ -590,11 +590,11 @@ void func_801C6A54(u8 mode) {
     }
     switch (mode) {
     case 0:
-        D_800625A0->tables->records18 = func_80032E88(list[0x11], 0);
-        D_800625A0->tables->records10 = func_80032E88(list[0x13], 0);
-        D_800625A0->tables->entries = func_80032E88(list[0x12], 0);
-        D_800625A0->tables->parts = func_80032E88(list[0x14], 0);
-        D_800625A0->tables->weapons = func_80032E88(list[0x2B], 0);
+        D_800625A0->tables->engines = func_80032E88(list[0x11], 0);
+        D_800625A0->tables->parts = func_80032E88(list[0x13], 0);
+        D_800625A0->tables->frames = func_80032E88(list[0x12], 0);
+        D_800625A0->tables->gear_accessories = func_80032E88(list[0x14], 0);
+        D_800625A0->tables->gear_weapons = func_80032E88(list[0x2B], 0);
         D_800625A0->details->resources[1] = func_80032E88(list[0x33], 0);
         D_800625A0->details->resources[2] = func_80032E88(list[0x34], 0);
         D_800625A0->details->resources[3] = func_80032E88(list[0x30], 0);
@@ -605,11 +605,11 @@ void func_801C6A54(u8 mode) {
         D_800625A0->details->resources[8] = func_80032E88(list[0x2F], 0);
         break;
     case 0x10:
-        func_800320E8(D_800625A0->tables->records18);
-        func_800320E8(D_800625A0->tables->records10);
-        func_800320E8(D_800625A0->tables->entries);
+        func_800320E8(D_800625A0->tables->engines);
         func_800320E8(D_800625A0->tables->parts);
-        func_800320E8(D_800625A0->tables->weapons);
+        func_800320E8(D_800625A0->tables->frames);
+        func_800320E8(D_800625A0->tables->gear_accessories);
+        func_800320E8(D_800625A0->tables->gear_weapons);
         func_800320E8(D_800625A0->details->resources[1]);
         func_800320E8(D_800625A0->details->resources[2]);
         func_800320E8(D_800625A0->details->resources[3]);

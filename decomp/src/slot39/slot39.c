@@ -1058,28 +1058,28 @@ void func_801C72BC(u8 code) {
         D_800625A0->tables->engines = func_80032E88(archive->engines, 0);
         D_800625A0->tables->frames = func_80032E88(archive->frames, 0);
         D_800625A0->tables->parts = func_80032E88(archive->parts, 0);
-        D_800625A0->tables->gearAccessories = func_80032E88(archive->unk50, 0);
+        D_800625A0->tables->gear_accessories = func_80032E88(archive->unk50, 0);
         break;
     case 2:
         for (i = 0; i < 3; i++) {
             id = D_800625A0->flags->party[i];
             if (id != 0xff) {
-                D_800625A0->tables->effects[D_800625A0->flags->party[i]] = func_80032E88(archive->effects[id], 0);
+                D_800625A0->tables->arts[D_800625A0->flags->party[i]] = func_80032E88(archive->effects[id], 0);
             }
         }
         D_800625A0->file_list->texts = func_80032E88(archive->unk40, 0);
         break;
     case 3:
-        D_800625A0->tables->weapons = func_80032E88(archive->weapons, 0);
+        D_800625A0->tables->equipment = func_80032E88(archive->weapons, 0);
         D_800625A0->tables->accessories = func_80032E88(archive->accessories, 0);
-        D_800625A0->tables->gearWeapons = func_80032E88(archive->unkAC, 0);
-        D_800625A0->tables->gearAccessories = func_80032E88(archive->unk50, 0);
+        D_800625A0->tables->gear_weapons = func_80032E88(archive->unkAC, 0);
+        D_800625A0->tables->gear_accessories = func_80032E88(archive->unk50, 0);
         break;
     case 4:
         for (i = 0; i < 3; i++) {
             id = D_800625A0->flags->party[i];
             if (id != 0xff) {
-                D_800625A0->tables->effects[D_800625A0->flags->party[i]] = func_80032E88(archive->effects[id], 0);
+                D_800625A0->tables->arts[D_800625A0->flags->party[i]] = func_80032E88(archive->effects[id], 0);
             }
         }
         D_800625A0->status_list->unk2578 = func_80032E88(archive->unkB0, 0);
@@ -1091,7 +1091,7 @@ void func_801C72BC(u8 code) {
             if (id != 0xff) {
                 gear = D_8006D634.characters[id].gearId;
                 if (gear != 0xff) {
-                    (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[i]].gearId] =
+                    (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[i]].gearId] =
                         func_80032E88(archive->gears[gear], 0);
                     func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[i]].gearId);
                 }
@@ -1117,28 +1117,28 @@ void func_801C72BC(u8 code) {
         func_800320E8(D_800625A0->tables->engines);
         func_800320E8(D_800625A0->tables->frames);
         func_800320E8(D_800625A0->tables->parts);
-        func_800320E8(D_800625A0->tables->gearAccessories);
+        func_800320E8(D_800625A0->tables->gear_accessories);
         break;
     case 0x12:
         for (i = 0; i < 3; i++) {
             id = D_800625A0->flags->party[i];
             if (id != 0xff) {
-                func_800320E8(D_800625A0->tables->effects[id]);
+                func_800320E8(D_800625A0->tables->arts[id]);
             }
         }
         func_800320E8(D_800625A0->file_list->texts);
         break;
     case 0x13:
-        func_800320E8(D_800625A0->tables->weapons);
+        func_800320E8(D_800625A0->tables->equipment);
         func_800320E8(D_800625A0->tables->accessories);
-        func_800320E8(D_800625A0->tables->gearWeapons);
-        func_800320E8(D_800625A0->tables->gearAccessories);
+        func_800320E8(D_800625A0->tables->gear_weapons);
+        func_800320E8(D_800625A0->tables->gear_accessories);
         break;
     case 0x14:
         for (i = 0; i < 3; i++) {
             id = D_800625A0->flags->party[i];
             if (id != 0xff) {
-                func_800320E8(D_800625A0->tables->effects[id]);
+                func_800320E8(D_800625A0->tables->arts[id]);
             }
         }
         func_800320E8(D_800625A0->status_list->unk2578);
@@ -1150,7 +1150,7 @@ void func_801C72BC(u8 code) {
             if (id != 0xff) {
                 gear = D_8006D634.characters[id].gearId;
                 if (gear != 0xff) {
-                    func_800320E8((D_800625A0->tables->effects + 11)[gear]);
+                    func_800320E8((D_800625A0->tables->arts + 11)[gear]);
                 }
             }
         }
@@ -6054,11 +6054,11 @@ void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
     s32 start;
 
     if (!compare) {
-        shown = D_800625A0->tables->shown;
+        shown = D_800625A0->tables->stats;
         before = shown;
     } else {
         before = D_800625A0->equip_labels->stats;
-        shown = D_800625A0->tables->shown;
+        shown = D_800625A0->tables->stats;
     }
     scale = func_801D85DC(0, before, shown);
     for (row = 0; row < 7 - first; row++) {
@@ -6745,7 +6745,7 @@ void func_801DA9A8(s32 entry, s32 row) {
     u8 all;
     u8 kind;
     u16 target;
-    MenuItem *item;
+    ItemInfo *item;
 
     ids = D_8006D634.itemIds;
     id = &ids[row * 2 + entry];
@@ -6986,7 +6986,7 @@ u8 func_801DB920(s32 row, s32 entry) {
     u8 used;
     s32 all;
     s32 i;
-    MenuItem *item;
+    ItemInfo *item;
     u8 *ids;
 
     marks = 0;

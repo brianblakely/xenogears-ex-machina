@@ -25,6 +25,7 @@
 #include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
+#include "menu/tables.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -44,38 +45,8 @@ typedef struct MenuSaveInfo {
     MenuSaveName names[4]; /* 24: names of the sheet entries */
 } MenuSaveInfo;
 
-/* A gear frame record of the data tables. */
-typedef struct GearFrame {
-    u8 pad0[0x8];
-    u16 unk8; /* 8 */
-    u16 unkA; /* A */
-    u8 padC[0x8];
-} GearFrame;
-
-/* A gear engine record of the data tables (+8). */
-typedef struct GearEngine {
-    u8 pad0[0x4];
-    u32 unk4; /* 4 */
-    u8 pad8[0xC];
-    u8 unk14; /* 14 */
-    u8 unk15; /* 15 */
-    u8 unk16; /* 16 */
-    u8 unk17; /* 17 */
-} GearEngine;
-
-/* A gear record of the data tables (+c). */
-typedef struct GearPart {
-    u8 pad0[0x6];
-    u16 unk6; /* 6 */
-    u8 pad8[0x4];
-    u8 unkC; /* C */
-    u8 unkD; /* D */
-    u8 unkE; /* E */
-    u8 padF[0x1];
-} GearPart;
-
 /* A per-character effect record of the data tables (+20). */
-typedef struct MenuEffect {
+typedef struct ArtInfo {
     u16 target; /* 0: 4000 all, 1000 none, else one; low bits: target kind */
     u8 pad2[0xF];
     u8 unk11; /* 11 */
@@ -86,106 +57,7 @@ typedef struct MenuEffect {
     u8 pad18[0xC];
     u16 gearCost; /* 24: gear fuel cost */
     u8 pad26[0x2];
-} MenuEffect;
-
-/* A gear weapon (or special part) record of the data tables (+18). */
-typedef struct GearWeapon {
-    u8 attrs[4]; /* 0 */
-    u32 users; /* 4: gears that can equip it */
-    u8 pad8[0x6];
-    u8 unkE; /* E */
-    u8 kind; /* F */
-    u8 unk10; /* 10 */
-    u8 unk11; /* 11 */
-    u16 unk12; /* 12 */
-} GearWeapon;
-
-/* An item record of the data tables (+1c). */
-typedef struct MenuItem {
-    u8 pad0[0x4];
-    u16 target; /* 4: 4000 all, 1000 none, else one; low bits: target kind */
-    u8 use; /* 6: 80 usable in the menu, 40 in battle, 20 field only */
-    u8 pad7[0x1];
-    u8 amount; /* 8 */
-    u8 pad9[0x1];
-    s16 flags; /* A: 8000 HP, 4000 EP, 4 stats, 2 +78, 1 debug */
-    s16 stats; /* C: stats raised (flag 4) or +78 change (flag 2) */
-    u8 padE[0x2];
-} MenuItem;
-
-/* A weapon (or special part) record of the data tables (+0). */
-typedef struct MenuWeapon {
-    u16 users; /* 0: characters that can equip it (bit per character) */
-    u8 pad2[0x4];
-    u8 kind; /* 6: weapon class; special parts share their weapon's */
-    u8 pad7[0x1];
-    u16 value; /* 8 */
-    u8 a; /* A */
-    u8 b; /* B */
-    u8 level; /* C */
-    u8 padD[0x3];
-} MenuWeapon;
-
-/* An accessory record of the data tables (+4). */
-typedef struct MenuAccessory {
-    u16 users; /* 0 */
-    u8 pad2[0x6];
-    u8 amount; /* 8: added to +2d */
-    u8 kind; /* 9 */
-    s16 value; /* A */
-    s16 stats; /* C: bonuses raised by the amount */
-    u16 groups; /* E: exclusive groups */
-} MenuAccessory;
-
-/* A gear accessory record of the data tables (+14). */
-typedef struct MenuGearAccessory {
-    u32 users; /* 0 */
-    u8 pad4[0x2];
-    u16 unk6; /* 6: added to the gear's +44 */
-    u16 groups; /* 8 */
-    u8 padA[0x3];
-    u8 unkD; /* D: added to the gear's +40 */
-    u8 unkE; /* E: added to the gear's +42 */
-    u8 padF[0x1];
-    u8 unk10[4]; /* 10: added to the gear's +50 */
-    u8 unk14; /* 14: added to the gear's +4d */
-    u8 kind; /* 15: effect kind (801e433c) */
-    u16 value; /* 16: effect bits or amount */
-    u8 unk18; /* 18: added to the gear's +4c */
-    u8 pad19[0x1];
-    u8 unk1A; /* 1A: added to the gear's +88 entries of kind 4 bits */
-    u8 unk1B; /* 1B: added to the gear's +54 */
-} MenuGearAccessory;
-
-/* The data table directory (*(state + 330)). */
-typedef struct MenuTables {
-    MenuWeapon *weapons; /* 0 */
-    MenuAccessory *accessories; /* 4 */
-    GearEngine *engines; /* 8 */
-    GearPart *parts; /* C */
-    GearFrame *frames; /* 10 */
-    MenuGearAccessory *gearAccessories; /* 14 */
-    GearWeapon *gearWeapons; /* 18 */
-    MenuItem *items; /* 1C */
-    MenuEffect *effects[31]; /* 20: per character, then per gear from 11 */
-    u32 unk9C; /* 9C: gear stats (801e3c2c) */
-    u32 unkA0; /* A0 */
-    u16 unkA4; /* A4 */
-    u16 unkA6; /* A6 */
-    u16 unkA8; /* A8 */
-    u16 unkAA; /* AA */
-    u16 unkAC; /* AC */
-    u16 unkAE; /* AE */
-    u16 unkB0; /* B0 */
-    u8 unkB2; /* B2 */
-    u8 unkB3; /* B3 */
-    u8 unkB4; /* B4 */
-    u8 unkB5; /* B5 */
-    u8 unkB6; /* B6 */
-    u8 padB7[0x1];
-    u16 shown[9]; /* B8: stats shown on the equipment screen */
-    u8 padCA[0x2];
-} MenuTables;
+} ArtInfo;
 
 /* The gear record's bytes 0x55-0x57 (pad55, equipAttackScale, chargeRate)
  * as the stat rebuild clears them: one array indexed from the record, which

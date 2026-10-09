@@ -29,7 +29,7 @@ u16 D_801D2260;
 void func_801C6E90();
 
 /* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
-void func_801CCE1C(ResourceSet *view, u8 id) {
+void func_801CCE1C(MenuTables *view, u8 id) {
     CharacterRecord *c;
 
     c = &D_8006D634.characters[id];
@@ -449,7 +449,7 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
             fitted = &D_800625A0->tables->equipment[id];
             for (k = 0; k < 4; k++) {
                 current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
-                if (current->type == fitted->type && current->type != 5) {
+                if (current->kind == fitted->kind && current->kind != 5) {
                     after[0] += fitted->power;
                 } else {
                     after[0] += current->power;
@@ -462,32 +462,32 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         before[1] = after[1] = D_8006D634.characters[member].defense;
         for (k = 0; k < 3; k++) {
             accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
-            before[1] += accessory->power;
+            before[1] += accessory->amount;
         }
         fitted_accessory = &D_800625A0->tables->accessories[id];
         for (k = 0; k < 3; k++) {
             accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
-            if (accessory->group != 0 && accessory->group == fitted_accessory->group) {
-                after[1] += fitted_accessory->power;
+            if (accessory->groups != 0 && accessory->groups == fitted_accessory->groups) {
+                after[1] += fitted_accessory->amount;
                 replace = 0;
             } else {
-                after[1] += accessory->power;
+                after[1] += accessory->amount;
             }
         }
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
                 accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
-                if (lowest >= accessory->power) {
-                    lowest = accessory->power;
+                if (lowest >= accessory->amount) {
+                    lowest = accessory->amount;
                     weakest = k;
                 }
             }
-            after[1] = D_8006D634.characters[member].defense + fitted_accessory->power;
+            after[1] = D_8006D634.characters[member].defense + fitted_accessory->amount;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
                     accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
-                    after[1] += accessory->power;
+                    after[1] += accessory->amount;
                 }
             }
         }
@@ -1301,7 +1301,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         if (ids[i] != 0 && counts[i] != 0) {
             ok = 1;
             if (sell_kinds[i] == 2) {
-                if (D_800625A0->tables->items[ids[i]].flags & 0x10) {
+                if (D_800625A0->tables->items[ids[i]].use & 0x10) {
                     ok = 0;
                 }
             }

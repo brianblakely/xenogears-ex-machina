@@ -296,18 +296,18 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 case 0:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
                         func_80033908(D_800625A0->flags->party[slot] * 16 + row), image, 0x24, 0);
-                    cost = D_800625A0->tables->effects[D_800625A0->flags->party[slot]][22 + row].cost;
+                    cost = D_800625A0->tables->arts[D_800625A0->flags->party[slot]][22 + row].cost;
                     break;
                 case 1:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
                         func_800339FC(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 16 + row), image, 0x24, 0);
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][21 + row].cost;
+                    cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][21 + row].cost;
                     break;
                 case 2:
                     D_800625A0->file_list->names[row].width = func_80034EAC(
                         func_80033A8C(D_8006D634.characters[D_800625A0->flags->party[slot]].gearId * 4 + row / 2), image, 0x24, 0);
                     ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId].fuel;
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][37 + row / 2].gearCost;
+                    cost = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId][37 + row / 2].gearCost;
                     digits = 4;
                     break;
                 }
@@ -395,7 +395,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
  * hides them. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
-    MenuEffect *effect;
+    ArtInfo *effect;
     u8 *image;
     u16 text;
     u16 target;
@@ -445,13 +445,13 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         func_801E8044(8, D_800625A0->flags->labels10e0_shown);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->flags->party[slot]] + row + 22;
+            effect = D_800625A0->tables->arts[D_800625A0->flags->party[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
+            effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + (row >> 1) + 37;
+            effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -506,7 +506,7 @@ void func_801DD5E8(u8 mode) {
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
-    MenuEffect *effect;
+    ArtInfo *effect;
     s32 x;
     s32 cursor;
     s32 all;
@@ -523,14 +523,14 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     cursor = D_800625A0->first_member;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->flags->party[slot]] + row + 22;
+        effect = D_800625A0->tables->arts[D_800625A0->flags->party[slot]] + row + 22;
         break;
     case 1:
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
+        effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 21;
         break;
     case 2:
         x = 0x18;
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 37;
+        effect = (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[slot]].gearId] + row + 37;
         cursor = slot;
         break;
     }
@@ -823,12 +823,12 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     s32 length;
     u8 kind;
     s32 count;
-    MenuWeapon *weapon;
-    MenuAccessory *accessory;
-    MenuWeapon *keptWeapon;
-    GearWeapon *gearWeapon;
-    GearWeapon *keptGearWeapon;
-    MenuGearAccessory *gearAccessory;
+    EquipInfo *weapon;
+    AccessoryInfo *accessory;
+    EquipInfo *keptWeapon;
+    GearWeaponInfo *gearWeapon;
+    GearWeaponInfo *keptGearWeapon;
+    GearAccessoryInfo *gearAccessory;
     u16 own;
     u16 used;
     s32 i;
@@ -842,11 +842,11 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (!gear) {
             kind = part + 1;
             count = 100;
-            keptWeapon = &D_800625A0->tables->weapons[D_800625A0->equip_labels->parts[0][part]];
+            keptWeapon = &D_800625A0->tables->equipment[D_800625A0->equip_labels->parts[0][part]];
         } else {
             kind = part + 1;
             count = 100;
-            keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->equip_labels->parts[0][part]];
+            keptGearWeapon = &D_800625A0->tables->gear_weapons[D_800625A0->equip_labels->parts[0][part]];
         }
     } else if (!gear) {
         if (part != 0) {
@@ -865,10 +865,10 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->equip_labels->parts[2][part - 1]];
+        gearAccessory = &D_800625A0->tables->gear_accessories[D_800625A0->equip_labels->parts[2][part - 1]];
         own = gearAccessory->groups;
         for (i = 0, used = 0; i < 3; i++) {
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->equip_labels->parts[2][i]];
+            gearAccessory = &D_800625A0->tables->gear_accessories[D_800625A0->equip_labels->parts[2][i]];
             used |= gearAccessory->groups;
         }
     } else {
@@ -883,10 +883,10 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     for (i = 0; i < count; i++) {
         if (!gear) {
             accessory = &D_800625A0->tables->accessories[D_8006D634.accessoryIds[i]];
-            weapon = &D_800625A0->tables->weapons[D_8006D634.weaponIds[i]];
+            weapon = &D_800625A0->tables->equipment[D_8006D634.weaponIds[i]];
         } else {
-            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006D634.gearPartIds[i]];
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006D634.gearAccessoryIds[i]];
+            gearWeapon = &D_800625A0->tables->gear_weapons[D_8006D634.gearPartIds[i]];
+            gearAccessory = &D_800625A0->tables->gear_accessories[D_8006D634.gearAccessoryIds[i]];
         }
         ok = 0;
         if (!gear) {
@@ -1149,7 +1149,7 @@ void func_801DF5D0(u8 slot, u8 gear) {
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        D_800625A0->equip_labels->stats[i] = D_800625A0->tables->shown[i];
+        D_800625A0->equip_labels->stats[i] = D_800625A0->tables->stats[i];
     }
     if (!gear) {
         for (i = 0; i < 5; i++) {
@@ -1231,12 +1231,12 @@ void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
 void func_801DFE2C(u8 slot) {
     func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
     func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[slot]].gearId);
-    D_800625A0->tables->shown[0] = D_800625A0->tables->unkB0;
-    D_800625A0->tables->shown[1] = D_800625A0->tables->unkA4;
-    D_800625A0->tables->shown[2] = D_800625A0->tables->unkA6;
-    D_800625A0->tables->shown[3] = D_800625A0->tables->unkB2;
-    D_800625A0->tables->shown[4] = D_800625A0->tables->unkB3;
-    D_800625A0->tables->shown[5] = D_800625A0->tables->unkB4;
+    D_800625A0->tables->stats[0] = D_800625A0->tables->gear.attack;
+    D_800625A0->tables->stats[1] = D_800625A0->tables->gear.defense;
+    D_800625A0->tables->stats[2] = D_800625A0->tables->gear.ether_defense;
+    D_800625A0->tables->stats[3] = D_800625A0->tables->gear.hit;
+    D_800625A0->tables->stats[4] = D_800625A0->tables->gear.speed;
+    D_800625A0->tables->stats[5] = D_800625A0->tables->gear.frame_factor;
 }
 
 /* Show the three-line description of equipment list entry `top` + `row` (or,
@@ -1873,7 +1873,7 @@ void func_801E1AC8(u8 slot) {
             D_800625A0->status_list->names[i].width =
                 func_80034EAC(func_80033784(D_800625A0->flags->party[slot], i), pixels, 0x24, 0);
             if (i < 7 && learned) {
-                text[0] = D_800625A0->tables->effects[D_800625A0->flags->party[slot]][i + 7].unk17 + 0x10;
+                text[0] = D_800625A0->tables->arts[D_800625A0->flags->party[slot]][i + 7].unk17 + 0x10;
             } else {
                 text[0] = 0xf;
             }
@@ -2328,7 +2328,7 @@ void func_801E3088(u8 offset) {
  * debug fill. Returns nonzero when the restoring item had no effect. */
 u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
     CharacterRecord *chara;
-    MenuItem *record;
+    ItemInfo *record;
     u8 hpFull;
     u8 epFull;
     s32 hpRate;
@@ -2449,13 +2449,13 @@ u8 gear;
     CharacterRecord *source;
     CharacterRecord *dest;
     GearRecord *machine;
-    MenuEffect *record;
+    ArtInfo *record;
 
     source = &D_8006D634.characters[user];
     dest = &D_8006D634.characters[target];
     machine = (GearRecord *)&D_8006D634.characters[D_8006D634.characters[user].gearId + 11];
     if (!gear) {
-        record = tables->effects[user];
+        record = tables->arts[user];
         record += effect;
         dest->hp += source->accuracy * record->unk11;
         if (dest->hp > dest->maxHp) {
@@ -2474,8 +2474,8 @@ u8 gear;
  * characters: both weapons). */
 void func_801E36D4(MenuTables *tables, u8 id) {
     CharacterRecord *chara;
-    MenuAccessory *accessory;
-    MenuWeapon *weapon;
+    AccessoryInfo *accessory;
+    EquipInfo *weapon;
     u8 i;
     u8 amount;
 
@@ -2554,22 +2554,22 @@ void func_801E36D4(MenuTables *tables, u8 id) {
             chara->bodyDefense += amount;
         }
     }
-    weapon = tables->weapons;
+    weapon = tables->equipment;
     weapon += chara->weapons[0];
-    chara->entries[0].value4 = weapon->level;
+    chara->entries[0].value4 = weapon->power;
     chara->entries[0].field0 = weapon->value;
     chara->entries[0].value2 = weapon->a;
     chara->entries[0].value3 = weapon->b;
     if (chara->characterId == 4) {
-        weapon = tables->weapons;
+        weapon = tables->equipment;
         weapon += chara->entryItems[0];
-        chara->entries[0].value4 = weapon->level;
+        chara->entries[0].value4 = weapon->power;
         chara->entries[0].field0 = weapon->value;
         chara->entries[0].value2 = weapon->a;
         chara->entries[0].value3 = weapon->b;
-        weapon = tables->weapons;
+        weapon = tables->equipment;
         weapon += chara->entryItems[3];
-        chara->entries[3].value4 = weapon->level;
+        chara->entries[3].value4 = weapon->power;
         chara->entries[3].field0 = weapon->value;
         chara->entries[3].value2 = weapon->a;
         chara->entries[3].value3 = weapon->b;
@@ -2587,36 +2587,36 @@ void func_801E3A80(MenuTables *tables, u8 id) {
 
     chara = &D_8006D634.characters[id];
     if (chara->characterId == 4) {
-        tables->shown[0] = (chara->entries[0].value4 + chara->entries[3].value4) * 6 / 10;
+        tables->stats[0] = (chara->entries[0].value4 + chara->entries[3].value4) * 6 / 10;
     } else {
-        tables->shown[0] = chara->entries[0].value4 + (chara->attack + chara->equipAttack);
+        tables->stats[0] = chara->entries[0].value4 + (chara->attack + chara->equipAttack);
     }
-    tables->shown[1] = chara->field5E + chara->equip5E;
-    tables->shown[2] = chara->bodyDefense + (chara->defense + chara->equipDefense);
-    tables->shown[3] = chara->field5F + chara->equip5F;
-    tables->shown[4] = chara->accuracy + chara->equipAccuracy;
-    tables->shown[5] = chara->etherDefense + chara->equipEtherDefense;
-    tables->shown[6] = chara->speed + chara->equipSpeed;
-    if (tables->shown[0] >= 251) {
-        tables->shown[0] = 250;
+    tables->stats[1] = chara->field5E + chara->equip5E;
+    tables->stats[2] = chara->bodyDefense + (chara->defense + chara->equipDefense);
+    tables->stats[3] = chara->field5F + chara->equip5F;
+    tables->stats[4] = chara->accuracy + chara->equipAccuracy;
+    tables->stats[5] = chara->etherDefense + chara->equipEtherDefense;
+    tables->stats[6] = chara->speed + chara->equipSpeed;
+    if (tables->stats[0] >= 251) {
+        tables->stats[0] = 250;
     }
-    if (tables->shown[1] >= 100) {
-        tables->shown[1] = 99;
+    if (tables->stats[1] >= 100) {
+        tables->stats[1] = 99;
     }
-    if (tables->shown[2] >= 251) {
-        tables->shown[2] = 250;
+    if (tables->stats[2] >= 251) {
+        tables->stats[2] = 250;
     }
-    if (tables->shown[3] >= 100) {
-        tables->shown[3] = 99;
+    if (tables->stats[3] >= 100) {
+        tables->stats[3] = 99;
     }
-    if (tables->shown[4] >= 251) {
-        tables->shown[4] = 250;
+    if (tables->stats[4] >= 251) {
+        tables->stats[4] = 250;
     }
-    if (tables->shown[5] >= 251) {
-        tables->shown[5] = 250;
+    if (tables->stats[5] >= 251) {
+        tables->stats[5] = 250;
     }
-    if (tables->shown[6] >= 21) {
-        tables->shown[6] = 16;
+    if (tables->stats[6] >= 21) {
+        tables->stats[6] = 16;
     }
 }
 
@@ -2641,25 +2641,25 @@ void func_801E3C2C(MenuTables *tables, u8 gear) {
     }
     record = &D_8006D634.gears[gear];
     pilot = &D_8006D634.characters[D_801E9808[gear]];
-    tables->unk9C = record->hp;
-    tables->unkA0 = record->maxHp;
-    tables->unkA4 = record->bodyDefense + record->equipBodyDefense;
-    tables->unkA6 = pilot->etherDefense + pilot->equipEtherDefense + record->equipArmor + record->armor;
-    tables->unkA8 = record->field68 + record->equip68a;
-    tables->unkAA = record->field6A;
-    tables->unkAC = record->fuel;
-    tables->unkAE = record->maxFuel;
+    tables->gear.hp = record->hp;
+    tables->gear.max_hp = record->maxHp;
+    tables->gear.defense = record->bodyDefense + record->equipBodyDefense;
+    tables->gear.ether_defense = pilot->etherDefense + pilot->equipEtherDefense + record->equipArmor + record->armor;
+    tables->gear.value68 = record->field68 + record->equip68a;
+    tables->gear.value6a = record->field6A;
+    tables->gear.fuel = record->fuel;
+    tables->gear.max_fuel = record->maxFuel;
     bonus = record->attack * (record->field74 + record->equipAttackScale);
     if (gear == 5 || gear == 13) {
-        tables->unkB0 = (record->entries[0].valueE + record->entries[2].valueE) * 6 / 10 + bonus;
+        tables->gear.attack = (record->entries[0].valueE + record->entries[2].valueE) * 6 / 10 + bonus;
     } else {
-        tables->unkB0 = record->entries[0].valueE + bonus;
+        tables->gear.attack = record->entries[0].valueE + bonus;
     }
-    tables->unkB2 = record->hitBonus + record->equipHitBonus;
-    tables->unkB3 = record->speed - record->speedPenalty;
-    tables->unkB4 = record->frameFactor + record->equipFrameFactor;
-    tables->unkB5 = record->field9D;
-    tables->unkB6 = record->guard;
+    tables->gear.hit = record->hitBonus + record->equipHitBonus;
+    tables->gear.speed = record->speed - record->speedPenalty;
+    tables->gear.frame_factor = record->frameFactor + record->equipFrameFactor;
+    tables->gear.value9d = record->field9D;
+    tables->gear.guard = record->guard;
 }
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
@@ -2733,7 +2733,7 @@ void func_801E4170(MenuTables *tables, u8 gear) {
 /* Take gear `gear`'s engine values from the tables, keeping +60 within +64. */
 void func_801E41C0(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearEngine *engine;
+    GearEngineInfo *engine;
 
     record = &D_8006D634.gears[gear];
     engine = tables->engines;
@@ -2753,7 +2753,7 @@ void func_801E41C0(MenuTables *tables, u8 gear) {
  * gear record (+70, +72). */
 void func_801E4258(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearFrame *frame;
+    GearFrameInfo *frame;
 
     record = &D_8006D634.gears[gear];
     frame = tables->frames;
@@ -2765,7 +2765,7 @@ void func_801E4258(MenuTables *tables, u8 gear) {
 /* Take gear `gear`'s part values from the tables, keeping +38 within +3a. */
 void func_801E42AC(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearPart *part;
+    GearPartInfo *part;
 
     record = &D_8006D634.gears[gear];
     part = tables->parts;
@@ -2786,7 +2786,7 @@ void func_801E42AC(MenuTables *tables, u8 gear) {
  * cleared when the pilot flies this gear). */
 void func_801E433C(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    MenuGearAccessory *part;
+    GearAccessoryInfo *part;
     u16 *bits;
     u16 *flags;
     u8 i;
@@ -2819,7 +2819,7 @@ void func_801E433C(MenuTables *tables, u8 gear) {
     record->status84.half.permanent &= 0xf000;
     *bits &= 0xfb6f;
     for (j = 0; j < 3; j++) {
-        part = tables->gearAccessories;
+        part = tables->gear_accessories;
         part += record->parts[j];
         record->equipBodyDefense += part->unkD;
         record->equipArmor += part->unkE;
@@ -2888,10 +2888,10 @@ void func_801E433C(MenuTables *tables, u8 gear) {
  * attributes; gears 5 and 13 instead take their three slot weapons. */
 void func_801E4754(MenuTables *tables, u8 gear) {
     GearRecord *record;
-    GearWeapon *weapon;
+    GearWeaponInfo *weapon;
 
     record = &D_8006D634.gears[gear];
-    weapon = tables->gearWeapons;
+    weapon = tables->gear_weapons;
     weapon += record->weapons[0];
     record->entries[0].valueE = weapon->unkE;
     record->entries[0].field0 = weapon->unk12;
@@ -2906,21 +2906,21 @@ void func_801E4754(MenuTables *tables, u8 gear) {
         record->status84.half.permanent |= record->entries[0].field0;
     }
     if (gear == 5 || gear == 13) {
-        weapon = tables->gearWeapons;
+        weapon = tables->gear_weapons;
         weapon += record->partItems[0];
         record->entries[0].valueE = weapon->unkE;
         record->entries[0].field0 = weapon->unk12;
         record->entries[0].value10 = weapon->unk10;
         record->entries[0].value11 = weapon->unk11;
         record->spriteVariants[0] = weapon->attrs[1];
-        weapon = tables->gearWeapons;
+        weapon = tables->gear_weapons;
         weapon += record->partItems[1];
         record->entries[1].valueE = weapon->unkE;
         record->entries[1].field0 = weapon->unk12;
         record->entries[1].value10 = weapon->unk10;
         record->entries[1].value11 = weapon->unk11;
         record->spriteVariants[1] = weapon->attrs[2];
-        weapon = tables->gearWeapons;
+        weapon = tables->gear_weapons;
         weapon += record->partItems[3];
         record->entries[2].valueE = weapon->unkE;
         record->entries[2].field0 = weapon->unk12;

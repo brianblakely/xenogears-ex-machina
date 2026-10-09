@@ -993,14 +993,14 @@ u32 func_801D1304(u8 id, u8 kind) {
     switch (kind) {
     case 4:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033A5C(id), pixels, 0x39, 0);
-        users = (D_800625A0->tables)->weapons[id].users;
-        price = (D_800625A0->tables)->weapons[id].price >> 1;
+        users = D_800625A0->tables->gear_weapons[id].users;
+        price = D_800625A0->tables->gear_weapons[id].price >> 1;
         value = price;
         break;
     case 3:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033A2C(id), pixels, 0x39, 0);
-        users = (D_800625A0->tables)->parts[id].users;
-        price = (D_800625A0->tables)->parts[id].price >> 1;
+        users = D_800625A0->tables->gear_accessories[id].users;
+        price = D_800625A0->tables->gear_accessories[id].price >> 1;
         value = price;
         break;
     }
@@ -1443,9 +1443,9 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
     u32 users;
     u32 trade;
     s32 price;
-    GearFrame *frame;
-    GearRecord18 *engine;
-    GearRecord10 *armour;
+    GearFrameInfo *frame;
+    GearEngineInfo *engine;
+    GearPartInfo *armour;
     s32 value;
     u8 *pixels;
     s32 digit;
@@ -1468,31 +1468,31 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
         if (D_800625A0->shop_items[top + row] != 0) {
             switch (D_800625A0->shop_kinds[top + row]) {
             case 0:
-                frame = &(D_800625A0->tables)->entries[D_8006D634.gears[D_801D9084].frame];
+                frame = &D_800625A0->tables->frames[D_8006D634.gears[D_801D9084].frame];
                 trade = frame->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[6], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                frame = &(D_800625A0->tables)->entries[D_800625A0->shop_items[top + row]];
+                frame = &D_800625A0->tables->frames[D_800625A0->shop_items[top + row]];
                 value = frame->price;
                 price = value;
                 users = frame->users;
                 break;
             case 1:
-                engine = &(D_800625A0->tables)->records18[D_8006D634.gears[D_801D9084].engine];
+                engine = &D_800625A0->tables->engines[D_8006D634.gears[D_801D9084].engine];
                 trade = engine->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[7], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                engine = &(D_800625A0->tables)->records18[D_800625A0->shop_items[top + row]];
+                engine = &D_800625A0->tables->engines[D_800625A0->shop_items[top + row]];
                 value = engine->price;
                 price = value;
                 users = engine->users;
                 break;
             case 2:
-                armour = &(D_800625A0->tables)->records10[D_8006D634.gears[D_801D9084].field3];
+                armour = &D_800625A0->tables->parts[D_8006D634.gears[D_801D9084].field3];
                 trade = armour->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[8], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                armour = &(D_800625A0->tables)->records10[D_800625A0->shop_items[top + row]];
+                armour = &D_800625A0->tables->parts[D_800625A0->shop_items[top + row]];
                 value = armour->price;
                 price = value;
                 users = armour->users;
@@ -1500,14 +1500,14 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
             case 4:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033A5C(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = (D_800625A0->tables)->weapons[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->gear_weapons[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 users = -1;
                 break;
             case 3:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033A2C(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = (D_800625A0->tables)->parts[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->gear_accessories[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 users = -1;
                 break;
@@ -1586,9 +1586,9 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
 void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     s16 values[2][4]; /* preview and saved stats, with an eight-byte row stride */
     u8 saved[8];
-    GearWeapon *weapon;
-    GearPart *fitted;
-    GearPart *current;
+    GearWeaponInfo *weapon;
+    GearAccessoryInfo *fitted;
+    GearAccessoryInfo *current;
     u8 gear;
     u8 replace;
     u8 lowest;
@@ -1609,9 +1609,9 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
         if (part < 0x32) {
             D_8006D634.gears[gear].weapons[0] = part;
         } else {
-            weapon = &(D_800625A0->tables)->weapons[part];
+            weapon = &D_800625A0->tables->gear_weapons[part];
             for (k = 0; k < 4; k++) {
-                if ((D_800625A0->tables)->weapons[D_8006D634.gears[gear].partItems[k]].unkF == weapon->unkF) {
+                if (D_800625A0->tables->gear_weapons[D_8006D634.gears[gear].partItems[k]].kind == weapon->kind) {
                     D_8006D634.gears[gear].partItems[k] = part;
                 }
             }
@@ -1619,10 +1619,10 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
         break;
     case 3:
         replace = 1;
-        fitted = &(D_800625A0->tables)->parts[part];
+        fitted = &D_800625A0->tables->gear_accessories[part];
         for (k = 0; k < 3; k++) {
-            current = &(D_800625A0->tables)->parts[saved[5 + k]];
-            if (current->unk8 != 0 && current->unk8 == fitted->unk8) {
+            current = &D_800625A0->tables->gear_accessories[saved[5 + k]];
+            if (current->groups != 0 && current->groups == fitted->groups) {
                 replace = 0;
                 D_8006D634.gears[gear].parts[k] = part;
             }
@@ -1630,7 +1630,7 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                current = &(D_800625A0->tables)->parts[saved[5 + k]];
+                current = &D_800625A0->tables->gear_accessories[saved[5 + k]];
                 if (lowest >= current->unkD) {
                     lowest = current->unkD;
                     slot = k;
@@ -1642,8 +1642,8 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     }
     func_801D6150(D_800625A0->tables, D_8006D634.characters[member].gearId);
     func_801D5F94(D_800625A0->tables, D_8006D634.characters[member].gearId);
-    values[0][0] = (D_800625A0->tables)->unkB0;
-    values[0][1] = (D_800625A0->tables)->unkA4;
+    values[0][0] = D_800625A0->tables->gear.attack;
+    values[0][1] = D_800625A0->tables->gear.defense;
     values[1][0] = D_800625A0->details->stat_b0[member];
     values[1][1] = D_800625A0->details->stat_a4[member];
     for (k = 0; k < 2; k++) {
@@ -1771,32 +1771,32 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     case 0:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[3], id), pixels, 0x39, 0);
-        price = (D_800625A0->tables)->entries[id].price;
-        users = (D_800625A0->tables)->entries[id].users;
+        price = D_800625A0->tables->frames[id].price;
+        users = D_800625A0->tables->frames[id].users;
         break;
     case 1:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[4], id), pixels, 0x39, 0);
-        price = (D_800625A0->tables)->records18[id].price;
-        users = (D_800625A0->tables)->records18[id].users;
+        price = D_800625A0->tables->engines[id].price;
+        users = D_800625A0->tables->engines[id].users;
         break;
     case 2:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[5], id), pixels, 0x39, 0);
-        price = (D_800625A0->tables)->records10[id].price;
-        users = (D_800625A0->tables)->records10[id].users;
+        price = D_800625A0->tables->parts[id].price;
+        users = D_800625A0->tables->parts[id].users;
         break;
     case 4:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
-        price = (D_800625A0->tables)->weapons[id].price;
-        users = (D_800625A0->tables)->weapons[id].users;
+        price = D_800625A0->tables->gear_weapons[id].price;
+        users = D_800625A0->tables->gear_weapons[id].users;
         break;
     case 3:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
-        price = (D_800625A0->tables)->parts[id].price;
-        users = (D_800625A0->tables)->parts[id].users;
+        price = D_800625A0->tables->gear_accessories[id].price;
+        users = D_800625A0->tables->gear_accessories[id].users;
         break;
     }
     holders = func_801D1078(id, kind);
@@ -2027,8 +2027,8 @@ u8 func_801D498C(u8 page, u8 fit) {
         if (D_8006D634.characters[i].gearId != 0xFF) {
             func_801D6150(D_800625A0->tables, D_8006D634.characters[i].gearId);
             func_801D5F94(D_800625A0->tables, D_8006D634.characters[i].gearId);
-            D_800625A0->details->stat_b0[i] = (D_800625A0->tables)->unkB0;
-            D_800625A0->details->stat_a4[i] = (D_800625A0->tables)->unkA4;
+            D_800625A0->details->stat_b0[i] = D_800625A0->tables->gear.attack;
+            D_800625A0->details->stat_a4[i] = D_800625A0->tables->gear.defense;
         }
     }
     bzero(D_800625A0->shop_items, 0x30);
@@ -2468,7 +2468,7 @@ void func_801D5EB8(void) {
  * Summarise gear `id` for the parts screen: its values plus its parts' and
  * its pilot's bonuses.
  */
-void func_801D5F94(GearTable *table, u8 id) {
+void func_801D5F94(MenuTables *table, u8 id) {
     GearRecord *gear;
     CharacterRecord *pilot;
     s32 bonus;
@@ -2478,29 +2478,29 @@ void func_801D5F94(GearTable *table, u8 id) {
     }
     gear = &D_8006D634.gears[id];
     pilot = &D_8006D634.characters[D_801D70F4[id]];
-    table->unk9C = gear->hp;
-    table->unkA0 = gear->maxHp;
-    table->unkA4 = gear->bodyDefense + gear->equipBodyDefense;
-    table->unkA6 = pilot->etherDefense + pilot->equipEtherDefense + gear->equipArmor + gear->armor;
-    table->unkA8 = gear->field68 + gear->equip68a;
-    table->unkAA = gear->field6A;
-    table->unkAC = gear->fuel;
-    table->unkAE = gear->maxFuel;
+    table->gear.hp = gear->hp;
+    table->gear.max_hp = gear->maxHp;
+    table->gear.defense = gear->bodyDefense + gear->equipBodyDefense;
+    table->gear.ether_defense = pilot->etherDefense + pilot->equipEtherDefense + gear->equipArmor + gear->armor;
+    table->gear.value68 = gear->field68 + gear->equip68a;
+    table->gear.value6a = gear->field6A;
+    table->gear.fuel = gear->fuel;
+    table->gear.max_fuel = gear->maxFuel;
     bonus = gear->attack * (gear->field74 + gear->equipAttackScale);
     if (id == 5 || id == 13) {
-        table->unkB0 = (gear->entries[0].valueE + gear->entries[2].valueE) * 6 / 10 + bonus;
+        table->gear.attack = (gear->entries[0].valueE + gear->entries[2].valueE) * 6 / 10 + bonus;
     } else {
-        table->unkB0 = gear->entries[0].valueE + bonus;
+        table->gear.attack = gear->entries[0].valueE + bonus;
     }
-    table->unkB2 = gear->hitBonus + gear->equipHitBonus;
-    table->unkB3 = gear->speed - gear->speedPenalty;
-    table->unkB4 = gear->frameFactor;
-    table->unkB5 = gear->field9D;
-    table->unkB6 = gear->guard;
+    table->gear.hit = gear->hitBonus + gear->equipHitBonus;
+    table->gear.speed = gear->speed - gear->speedPenalty;
+    table->gear.frame_factor = gear->frameFactor;
+    table->gear.value9d = gear->field9D;
+    table->gear.guard = gear->guard;
 }
 
 /* Rebuild gear `id`'s derived values. */
-void func_801D6150(GearTable *table, u8 id) {
+void func_801D6150(MenuTables *table, u8 id) {
     func_801D61B8(table, id);
     func_801D62A4(table, id);
     func_801D6250(table, id);
@@ -2509,12 +2509,12 @@ void func_801D6150(GearTable *table, u8 id) {
 }
 
 /* Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
-void func_801D61B8(GearTable *table, u8 id) {
+void func_801D61B8(MenuTables *table, u8 id) {
     GearRecord *gear;
-    GearRecord18 *record;
+    GearEngineInfo *record;
 
     gear = &D_8006D634.gears[id];
-    record = table->records18;
+    record = table->engines;
     record += gear->engine;
     gear->maxHp = record->unk4;
     gear->field68 = record->unk8;
@@ -2528,25 +2528,25 @@ void func_801D61B8(GearTable *table, u8 id) {
 }
 
 /* Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
-void func_801D6250(GearTable *table, u8 id) {
+void func_801D6250(MenuTables *table, u8 id) {
     GearRecord *gear;
-    GearFrame *entry;
+    GearFrameInfo *entry;
 
     gear = &D_8006D634.gears[id];
-    entry = table->entries;
+    entry = table->frames;
     entry += gear->frame;
     gear->bodyDefense = entry->unk8;
     gear->armor = entry->unkA;
 }
 
 /* Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
-void func_801D62A4(GearTable *table, u8 id) {
+void func_801D62A4(MenuTables *table, u8 id) {
     GearRecord *gear;
-    GearRecord10 *record;
+    GearPartInfo *record;
     u16 limit;
 
     gear = &D_8006D634.gears[id];
-    record = table->records10;
+    record = table->parts;
     limit = gear->fuel;
     record += gear->field3;
     gear->maxFuel = record->unk6;
@@ -2560,9 +2560,9 @@ void func_801D62A4(GearTable *table, u8 id) {
 }
 
 /* Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
-void func_801D6334(GearTable *table, u8 id) {
+void func_801D6334(MenuTables *table, u8 id) {
     GearRecord *gear;
-    GearPart *part;
+    GearAccessoryInfo *part;
     u16 *abilities;
     u16 *status;
     u8 i;
@@ -2595,7 +2595,7 @@ void func_801D6334(GearTable *table, u8 id) {
     gear->status84.half.permanent &= 0xF000;
     *abilities &= 0xDB7F;
     for (k = 0; k < 3; k++) {
-        part = table->parts;
+        part = table->gear_accessories;
         part += gear->parts[k];
         gear->equipBodyDefense += part->unkD;
         gear->equipArmor += part->unkE;
@@ -2605,26 +2605,26 @@ void func_801D6334(GearTable *table, u8 id) {
         for (i = 0; i < 4; i++) {
             gear->speedBonus[i] += part->unk10[i];
         }
-        switch (part->unk15) {
+        switch (part->kind) {
         case 1:
-            gear->field7E |= part->unk16;
+            gear->field7E |= part->value;
             break;
         case 2:
-            gear->status82 |= part->unk16;
+            gear->status82 |= part->value;
             break;
         case 3:
-            gear->status84.half.permanent |= part->unk16;
+            gear->status84.half.permanent |= part->value;
             break;
         case 4:
             for (i = 0; i < 16; i++) {
-                gear->field6E |= part->unk16;
-                if (part->unk16 & (0x8000 >> i)) {
+                gear->field6E |= part->value;
+                if (part->value & (0x8000 >> i)) {
                     gear->resistances[i] += part->unk1A;
                 }
             }
             break;
         case 5:
-            gear->field4F += part->unk16;
+            gear->field4F += part->value;
             break;
         case 6:
             if ((*abilities & 0x1000) && (*abilities & 0x800)) {
@@ -2642,13 +2642,13 @@ void func_801D6334(GearTable *table, u8 id) {
             }
             break;
         case 9:
-            gear->field48 |= part->unk16;
+            gear->field48 |= part->value;
             /* fallthrough */
         case 10:
-            gear->equipAttackScale += part->unk16;
+            gear->equipAttackScale += part->value;
             break;
         case 11:
-            gear->chargeRate += part->unk16;
+            gear->chargeRate += part->value;
             break;
         }
     }
@@ -2661,47 +2661,47 @@ void func_801D6334(GearTable *table, u8 id) {
 }
 
 /* Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
-void func_801D6738(GearTable *table, u8 id) {
+void func_801D6738(MenuTables *table, u8 id) {
     GearRecord *gear;
-    GearWeapon *weapon;
+    GearWeaponInfo *weapon;
 
     gear = &D_8006D634.gears[id];
-    weapon = table->weapons;
+    weapon = table->gear_weapons;
     weapon += gear->weapons[0];
     gear->entries[0].valueE = weapon->unkE;
     gear->entries[0].field0 = weapon->unk12;
     gear->entries[0].value10 = weapon->unk10;
     gear->entries[0].value11 = weapon->unk11;
-    gear->fileVariant = weapon->unk0;
-    gear->spriteVariants[0] = weapon->unk1;
-    gear->spriteVariants[1] = weapon->unk2;
-    gear->spriteVariants[2] = weapon->unk3;
+    gear->fileVariant = weapon->attrs[0];
+    gear->spriteVariants[0] = weapon->attrs[1];
+    gear->spriteVariants[1] = weapon->attrs[2];
+    gear->spriteVariants[2] = weapon->attrs[3];
     if (gear->entries[0].value11 == 100) {
         gear->status84.half.permanent &= 0xFFF;
         gear->status84.half.permanent |= gear->entries[0].field0;
     }
     if (id == 5 || id == 13) {
-        weapon = table->weapons;
+        weapon = table->gear_weapons;
         weapon += gear->partItems[0];
         gear->entries[0].valueE = weapon->unkE;
         gear->entries[0].field0 = weapon->unk12;
         gear->entries[0].value10 = weapon->unk10;
         gear->entries[0].value11 = weapon->unk11;
-        gear->spriteVariants[0] = weapon->unk1;
-        weapon = table->weapons;
+        gear->spriteVariants[0] = weapon->attrs[1];
+        weapon = table->gear_weapons;
         weapon += gear->partItems[1];
         gear->entries[1].valueE = weapon->unkE;
         gear->entries[1].field0 = weapon->unk12;
         gear->entries[1].value10 = weapon->unk10;
         gear->entries[1].value11 = weapon->unk11;
-        gear->spriteVariants[1] = weapon->unk2;
-        weapon = table->weapons;
+        gear->spriteVariants[1] = weapon->attrs[2];
+        weapon = table->gear_weapons;
         weapon += gear->partItems[3];
         gear->entries[2].valueE = weapon->unkE;
         gear->entries[2].field0 = weapon->unk12;
         gear->entries[2].value10 = weapon->unk10;
         gear->entries[2].value11 = weapon->unk11;
-        gear->spriteVariants[2] = weapon->unk3;
+        gear->spriteVariants[2] = weapon->attrs[3];
     }
 }
 
