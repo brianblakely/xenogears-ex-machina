@@ -168,7 +168,7 @@ LINKER_SCRIPTS = $(foreach script,$(LINKER_EXTRA),$(if $(filter %_auto.txt,$(scr
 # Each `NAME = VALUE;` line as PROVIDE(NAME = VALUE); any other line fails.
 PROVIDE_AWK := '/^[A-Za-z_.$$][A-Za-z0-9_.$$]* = [^;]+;$$/ { sub(/;$$/, ""); split($$0, f, " = "); print "PROVIDE(" f[1] " = " f[2] ");"; next } NF { print FILENAME ":" FNR ": not a symbol assignment" > "/dev/stderr"; exit 1 }'
 
-$(ROOT)/$(BUILD)/%_auto.ld: $(ROOT)/%_auto.txt
+$(ROOT)/$(BUILD)/%_auto.ld: $(ROOT)/%_auto.txt $(MAKEFILE_LIST)
 	@mkdir -p $(dir $@)
 	awk $(PROVIDE_AWK) $< > $@.tmp && mv $@.tmp $@
 
