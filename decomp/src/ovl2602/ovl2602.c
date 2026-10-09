@@ -1194,14 +1194,15 @@ void func_801C9264(void) {
 
 /* Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     s32 i;
 
     for (i = 0; i < count; i++) {
         RotTransPers4(&quads[i * 4], &quads[i * 4 + 1], &quads[i * 4 + 2], &quads[i * 4 + 3],
-                      &packets[first + i * 2].x0, &packets[first + i * 2].x1,
-                      &packets[first + i * 2].x2, &packets[first + i * 2].x3, &depth, &flag);
+                      (long *)&packets[first + i * 2].x0, (long *)&packets[first + i * 2].x1,
+                      (long *)&packets[first + i * 2].x2, (long *)&packets[first + i * 2].x3,
+                      &depth, &flag);
         AddPrim(&D_800625A0->current->ot[4], &packets[first + i * 2]);
     }
 }
@@ -1244,130 +1245,145 @@ void func_801C962C(void) {
 
 /* Project and link panel `index`'s top edge. */
 void func_801C9690(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->edge_at[0][0][0], &panel->edge_at[0][0][1], &panel->edge_at[0][0][2], &panel->edge_at[0][0][3],
-                  &panel->edge[0][panel->buffer].x0, &panel->edge[0][panel->buffer].x1,
-                  &panel->edge[0][panel->buffer].x2, &panel->edge[0][panel->buffer].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[0][0][0], &panel->edge_at[0][0][1], &panel->edge_at[0][0][2],
+                  &panel->edge_at[0][0][3], (long *)&panel->edge[0][panel->buffer].x0,
+                  (long *)&panel->edge[0][panel->buffer].x1,
+                  (long *)&panel->edge[0][panel->buffer].x2,
+                  (long *)&panel->edge[0][panel->buffer].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[0][panel->buffer]);
-    RotTransPers4(&panel->edge_at[0][1][0], &panel->edge_at[0][1][1], &panel->edge_at[0][1][2], &panel->edge_at[0][1][3],
-                  &panel->edge[0][panel->buffer + 2].x0, &panel->edge[0][panel->buffer + 2].x1,
-                  &panel->edge[0][panel->buffer + 2].x2, &panel->edge[0][panel->buffer + 2].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[0][1][0], &panel->edge_at[0][1][1], &panel->edge_at[0][1][2],
+                  &panel->edge_at[0][1][3], (long *)&panel->edge[0][panel->buffer + 2].x0,
+                  (long *)&panel->edge[0][panel->buffer + 2].x1,
+                  (long *)&panel->edge[0][panel->buffer + 2].x2,
+                  (long *)&panel->edge[0][panel->buffer + 2].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[0][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s bottom edge. */
 void func_801C9864(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->edge_at[1][0][0], &panel->edge_at[1][0][1], &panel->edge_at[1][0][2], &panel->edge_at[1][0][3],
-                  &panel->edge[1][panel->buffer].x0, &panel->edge[1][panel->buffer].x1,
-                  &panel->edge[1][panel->buffer].x2, &panel->edge[1][panel->buffer].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[1][0][0], &panel->edge_at[1][0][1], &panel->edge_at[1][0][2],
+                  &panel->edge_at[1][0][3], (long *)&panel->edge[1][panel->buffer].x0,
+                  (long *)&panel->edge[1][panel->buffer].x1,
+                  (long *)&panel->edge[1][panel->buffer].x2,
+                  (long *)&panel->edge[1][panel->buffer].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[1][panel->buffer]);
-    RotTransPers4(&panel->edge_at[1][1][0], &panel->edge_at[1][1][1], &panel->edge_at[1][1][2], &panel->edge_at[1][1][3],
-                  &panel->edge[1][panel->buffer + 2].x0, &panel->edge[1][panel->buffer + 2].x1,
-                  &panel->edge[1][panel->buffer + 2].x2, &panel->edge[1][panel->buffer + 2].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[1][1][0], &panel->edge_at[1][1][1], &panel->edge_at[1][1][2],
+                  &panel->edge_at[1][1][3], (long *)&panel->edge[1][panel->buffer + 2].x0,
+                  (long *)&panel->edge[1][panel->buffer + 2].x1,
+                  (long *)&panel->edge[1][panel->buffer + 2].x2,
+                  (long *)&panel->edge[1][panel->buffer + 2].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[1][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s left edge. */
 void func_801C9A38(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->edge_at[2][0][0], &panel->edge_at[2][0][1], &panel->edge_at[2][0][2], &panel->edge_at[2][0][3],
-                  &panel->edge[2][panel->buffer].x0, &panel->edge[2][panel->buffer].x1,
-                  &panel->edge[2][panel->buffer].x2, &panel->edge[2][panel->buffer].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[2][0][0], &panel->edge_at[2][0][1], &panel->edge_at[2][0][2],
+                  &panel->edge_at[2][0][3], (long *)&panel->edge[2][panel->buffer].x0,
+                  (long *)&panel->edge[2][panel->buffer].x1,
+                  (long *)&panel->edge[2][panel->buffer].x2,
+                  (long *)&panel->edge[2][panel->buffer].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[2][panel->buffer]);
-    RotTransPers4(&panel->edge_at[2][1][0], &panel->edge_at[2][1][1], &panel->edge_at[2][1][2], &panel->edge_at[2][1][3],
-                  &panel->edge[2][panel->buffer + 2].x0, &panel->edge[2][panel->buffer + 2].x1,
-                  &panel->edge[2][panel->buffer + 2].x2, &panel->edge[2][panel->buffer + 2].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[2][1][0], &panel->edge_at[2][1][1], &panel->edge_at[2][1][2],
+                  &panel->edge_at[2][1][3], (long *)&panel->edge[2][panel->buffer + 2].x0,
+                  (long *)&panel->edge[2][panel->buffer + 2].x1,
+                  (long *)&panel->edge[2][panel->buffer + 2].x2,
+                  (long *)&panel->edge[2][panel->buffer + 2].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[2][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s right edge. */
 void func_801C9C0C(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
-    RotTransPers4(&panel->edge_at[3][0][0], &panel->edge_at[3][0][1], &panel->edge_at[3][0][2], &panel->edge_at[3][0][3],
-                  &panel->edge[3][panel->buffer].x0, &panel->edge[3][panel->buffer].x1,
-                  &panel->edge[3][panel->buffer].x2, &panel->edge[3][panel->buffer].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[3][0][0], &panel->edge_at[3][0][1], &panel->edge_at[3][0][2],
+                  &panel->edge_at[3][0][3], (long *)&panel->edge[3][panel->buffer].x0,
+                  (long *)&panel->edge[3][panel->buffer].x1,
+                  (long *)&panel->edge[3][panel->buffer].x2,
+                  (long *)&panel->edge[3][panel->buffer].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[3][panel->buffer]);
-    RotTransPers4(&panel->edge_at[3][1][0], &panel->edge_at[3][1][1], &panel->edge_at[3][1][2], &panel->edge_at[3][1][3],
-                  &panel->edge[3][panel->buffer + 2].x0, &panel->edge[3][panel->buffer + 2].x1,
-                  &panel->edge[3][panel->buffer + 2].x2, &panel->edge[3][panel->buffer + 2].x3,
-                  &depth, &flag);
+    RotTransPers4(&panel->edge_at[3][1][0], &panel->edge_at[3][1][1], &panel->edge_at[3][1][2],
+                  &panel->edge_at[3][1][3], (long *)&panel->edge[3][panel->buffer + 2].x0,
+                  (long *)&panel->edge[3][panel->buffer + 2].x1,
+                  (long *)&panel->edge[3][panel->buffer + 2].x2,
+                  (long *)&panel->edge[3][panel->buffer + 2].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->edge[3][panel->buffer + 2]);
 }
 
 /* Project and link panel `index`'s background and its draw mode. */
 void func_801C9DE0(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
 
     panel = D_800625A0->panels[index];
     RotTransPers4(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
-                  &(panel->fill + panel->buffer)->x0, &(panel->fill + panel->buffer)->x1,
-                  &(panel->fill + panel->buffer)->x2, &(panel->fill + panel->buffer)->x3, &depth,
-                  &flag);
+                  (long *)&(panel->fill + panel->buffer)->x0,
+                  (long *)&(panel->fill + panel->buffer)->x1,
+                  (long *)&(panel->fill + panel->buffer)->x2,
+                  (long *)&(panel->fill + panel->buffer)->x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill[panel->buffer]);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
 
 /* Project and link panel `index`'s four corners. */
 void func_801C9F1C(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
     s32 i;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
-        RotTransPers4(&panel->corner_at[i * 4], &panel->corner_at[i * 4 + 1], &panel->corner_at[i * 4 + 2], &panel->corner_at[i * 4 + 3],
-                      &(panel->corner + (i * 2 + panel->buffer))->x0,
-                      &(panel->corner + (i * 2 + panel->buffer))->x1,
-                      &(panel->corner + (i * 2 + panel->buffer))->x2,
-                      &(panel->corner + (i * 2 + panel->buffer))->x3, &depth, &flag);
+        RotTransPers4(&panel->corner_at[i * 4], &panel->corner_at[i * 4 + 1],
+                      &panel->corner_at[i * 4 + 2], &panel->corner_at[i * 4 + 3],
+                      (long *)&(panel->corner + (i * 2 + panel->buffer))->x0,
+                      (long *)&(panel->corner + (i * 2 + panel->buffer))->x1,
+                      (long *)&(panel->corner + (i * 2 + panel->buffer))->x2,
+                      (long *)&(panel->corner + (i * 2 + panel->buffer))->x3, &depth, &flag);
         AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->corner[i * 2 + panel->buffer]);
     }
 }
 
 /* Project and link panel `index`'s scroll bar: both arrows, then the track. */
 void func_801CA068(s32 index) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuPanel *panel;
     s32 i;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 2; i++) {
-        RotTransPers4(&panel->ends_at[i * 4], &panel->ends_at[i * 4 + 1], &panel->ends_at[i * 4 + 2],
-                      &panel->ends_at[i * 4 + 3], &panel->bar_ends[i * 2 + panel->buffer].x0, &panel->bar_ends[i * 2 + panel->buffer].x1, &panel->bar_ends[i * 2 + panel->buffer].x2, &panel->bar_ends[i * 2 + panel->buffer].x3, &depth, &flag);
+        RotTransPers4(&panel->ends_at[i * 4], &panel->ends_at[i * 4 + 1],
+                      &panel->ends_at[i * 4 + 2], &panel->ends_at[i * 4 + 3],
+                      (long *)&panel->bar_ends[i * 2 + panel->buffer].x0,
+                      (long *)&panel->bar_ends[i * 2 + panel->buffer].x1,
+                      (long *)&panel->bar_ends[i * 2 + panel->buffer].x2,
+                      (long *)&panel->bar_ends[i * 2 + panel->buffer].x3, &depth, &flag);
         AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->bar_ends[i * 2 + panel->buffer]);
     }
     RotTransPers4(&panel->side_at[0], &panel->side_at[1], &panel->side_at[2], &panel->side_at[3],
-                  &panel->bar_side[panel->buffer].x0, &panel->bar_side[panel->buffer].x1,
-                  &panel->bar_side[panel->buffer].x2, &panel->bar_side[panel->buffer].x3,
-                  &depth, &flag);
+                  (long *)&panel->bar_side[panel->buffer].x0,
+                  (long *)&panel->bar_side[panel->buffer].x1,
+                  (long *)&panel->bar_side[panel->buffer].x2,
+                  (long *)&panel->bar_side[panel->buffer].x3, &depth, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->bar_side[panel->buffer]);
 }
 
@@ -1478,18 +1494,22 @@ void func_801CA7E4(void) {
 
 /* Link the shown info labels, projecting the 3D ones first. */
 void func_801CA874(void) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     s32 i;
 
     for (i = 0; i < 6; i++) {
         if (D_800625A0->flags->row_labels_shown[i] != 0) {
             if (D_800625A0->row_labels[i].projected) {
-                RotTransPers4(&D_800625A0->row_labels[i].verts[0], &D_800625A0->row_labels[i].verts[1], &D_800625A0->row_labels[i].verts[2], &D_800625A0->row_labels[i].verts[3],
-                              &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x0,
-                              &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x1,
-                              &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x2,
-                              &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x3, &depth, &flag);
+                RotTransPers4(&D_800625A0->row_labels[i].verts[0],
+                              &D_800625A0->row_labels[i].verts[1],
+                              &D_800625A0->row_labels[i].verts[2],
+                              &D_800625A0->row_labels[i].verts[3],
+                              (long *)&D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x0,
+                              (long *)&D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x1,
+                              (long *)&D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x2,
+                              (long *)&D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer].x3,
+                              &depth, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer]);
             } else {
                 AddPrim(&D_800625A0->current->ot[4], &D_800625A0->row_labels[i].polys[D_800625A0->row_labels[i].buffer]);
@@ -1512,8 +1532,8 @@ void func_801CA9EC(void) {
 
 /* Link the message labels while the message is shown, projecting the 3D ones first. */
 void func_801CAA7C(void) {
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
     MenuLabel *label;
     s32 i;
 
@@ -1521,10 +1541,11 @@ void func_801CAA7C(void) {
         for (i = 0; i < 3; i++) {
             label = D_800625A0->message_labels[i];
             if (label->projected) {
-                RotTransPers4(&label->verts[0], &label->verts[1], &label->verts[2], &label->verts[3],
-                              &label->polys[label->buffer].x0, &label->polys[label->buffer].x1,
-                              &label->polys[label->buffer].x2, &label->polys[label->buffer].x3, &depth,
-                              &flag);
+                RotTransPers4(&label->verts[0], &label->verts[1], &label->verts[2],
+                              &label->verts[3], (long *)&label->polys[label->buffer].x0,
+                              (long *)&label->polys[label->buffer].x1,
+                              (long *)&label->polys[label->buffer].x2,
+                              (long *)&label->polys[label->buffer].x3, &depth, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &label->polys[label->buffer]);
             } else {
                 AddPrim(&D_800625A0->current->ot[4], &label->polys[label->buffer]);

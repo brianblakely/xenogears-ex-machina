@@ -3569,14 +3569,15 @@ void func_801CE0CC(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor
 /* Project `count` quads: each takes the next four of `verts` into every
  * other quad of `polys` from `index` and is added to the frame. */
 void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first) {
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     s32 i;
 
     for (i = 0; i < count; i++) {
         RotTransPers4(&verts[i * 4], &verts[i * 4 + 1], &verts[i * 4 + 2], &verts[i * 4 + 3],
-                      (s32 *)&polys[first + i * 2].x0, (s32 *)&polys[first + i * 2].x1,
-                      (s32 *)&polys[first + i * 2].x2, (s32 *)&polys[first + i * 2].x3, &p, &flag);
+                      (long *)&polys[first + i * 2].x0, (long *)&polys[first + i * 2].x1,
+                      (long *)&polys[first + i * 2].x2, (long *)&polys[first + i * 2].x3, &p,
+                      &flag);
         AddPrim(&D_800625A0->current->ot[4], &polys[first + i * 2]);
     }
 }
@@ -3670,25 +3671,33 @@ void func_801CE660(void) {
  * highlight quad and second part list; then its bar and first part list. */
 void func_801CE860(void) {
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 
     for (i = 0; i < 7; i++) {
         if (D_800625A0->equip_panel->rowShown[i] != 0) {
             if (D_800625A0->equip_panel->highlighted != 0) {
-                RotTransPers4(&D_800625A0->equip_panel->highlightAt[i][0], &D_800625A0->equip_panel->highlightAt[i][1], &D_800625A0->equip_panel->highlightAt[i][2],
+                RotTransPers4(&D_800625A0->equip_panel->highlightAt[i][0],
+                              &D_800625A0->equip_panel->highlightAt[i][1],
+                              &D_800625A0->equip_panel->highlightAt[i][2],
                               &D_800625A0->equip_panel->highlightAt[i][3],
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x0,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x1,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x2,
-                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x3, &p, &flag);
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x0,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x1,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x2,
+                              (long *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x3,
+                              &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]]);
                 func_801CE198(D_800625A0->equip_panel->rowBCount[i], D_800625A0->equip_panel->rowBAt[i], D_800625A0->equip_panel->rowB[i], D_800625A0->equip_panel->rowBBuffer[i]);
             }
-            RotTransPers4(&D_800625A0->equip_panel->barAt[i][0], &D_800625A0->equip_panel->barAt[i][1], &D_800625A0->equip_panel->barAt[i][2], &D_800625A0->equip_panel->barAt[i][3],
-                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x0, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x1,
-                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x2, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x3, &p,
-                          &flag);
+            RotTransPers4(&D_800625A0->equip_panel->barAt[i][0],
+                          &D_800625A0->equip_panel->barAt[i][1],
+                          &D_800625A0->equip_panel->barAt[i][2],
+                          &D_800625A0->equip_panel->barAt[i][3],
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x0,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x1,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x2,
+                          (long *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x3,
+                          &p, &flag);
             AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]]);
             func_801CE198(D_800625A0->equip_panel->rowACount[i], D_800625A0->equip_panel->rowAAt[i], D_800625A0->equip_panel->rowA[i], D_800625A0->equip_panel->rowABuffer[i]);
         }
@@ -3784,8 +3793,8 @@ void func_801CF308(void) {
 void func_801CF37C(void) {
     MenuSlotImage *image;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     u8 file;
     u8 match;
 
@@ -3802,11 +3811,12 @@ void func_801CF37C(void) {
                     (image->box + D_800625A0->buffer_index)->r0 = D_800625A0->unknown4d4;
                     (image->box + D_800625A0->buffer_index)->g0 = D_800625A0->unknown4d4;
                     (image->box + D_800625A0->buffer_index)->b0 = D_800625A0->unknown4d4;
-                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2], &image->iconAt[3],
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x0,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x1,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x2,
-                                  (s32 *)&image->box[D_800625A0->buffer_index].x3, &p, &flag);
+                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2],
+                                  &image->iconAt[3],
+                                  (long *)&image->box[D_800625A0->buffer_index].x0,
+                                  (long *)&image->box[D_800625A0->buffer_index].x1,
+                                  (long *)&image->box[D_800625A0->buffer_index].x2,
+                                  (long *)&image->box[D_800625A0->buffer_index].x3, &p, &flag);
                     AddPrim(&D_800625A0->current->ot[4], &image->box[D_800625A0->buffer_index]);
                     AddPrim(&D_800625A0->current->ot[4], &image->boxMode[D_800625A0->buffer_index]);
                 }
@@ -4060,13 +4070,13 @@ void func_801D02D8(void) {
 /* Project the four vertices `v` into quad `index` of `polys` and add it at
  * depth `otz`. */
 void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     POLY_FT4 *poly;
 
     poly = &polys[index];
-    RotTransPers4(&v[0], &v[1], &v[2], &v[3], (s32 *)&poly->x0, (s32 *)&poly->x1, (s32 *)&poly->x2,
-                  (s32 *)&poly->x3, &p, &flag);
+    RotTransPers4(&v[0], &v[1], &v[2], &v[3], (long *)&poly->x0, (long *)&poly->x1,
+                  (long *)&poly->x2, (long *)&poly->x3, &p, &flag);
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
@@ -4075,8 +4085,8 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
 void func_801D09F0(s32 index, u8 has_bar) {
     MenuPanel *panel;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 
     panel = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
@@ -4097,9 +4107,9 @@ void func_801D09F0(s32 index, u8 has_bar) {
     func_801D0954(panel->edge_at[3][0], &panel->edge[3][0], panel->buffer, panel->ot_entry);
     func_801D0954(panel->edge_at[3][1], &panel->edge[3][2], panel->buffer, panel->ot_entry);
     RotTransPers4(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
-                  (s32 *)&panel->fill[panel->buffer].x0, (s32 *)&panel->fill[panel->buffer].x1,
-                  (s32 *)&panel->fill[panel->buffer].x2, (s32 *)&panel->fill[panel->buffer].x3, &p,
-                  &flag);
+                  (long *)&panel->fill[panel->buffer].x0, (long *)&panel->fill[panel->buffer].x1,
+                  (long *)&panel->fill[panel->buffer].x2, (long *)&panel->fill[panel->buffer].x3,
+                  &p, &flag);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill[panel->buffer]);
     AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
