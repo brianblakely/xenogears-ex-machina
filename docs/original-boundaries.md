@@ -247,9 +247,9 @@ spins above; the card TestEvent loop; and the endless error screens
 
 | Routine | Where and who | Keeps | Discards | Native replacement |
 | --- | --- | --- | --- | --- |
-| entry func_80019524 (handwritten) | PS-X EXE entry (header.c); soft reset jumps to it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
+| entry func_80019524 (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
 | stack reset func_80019548 (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
-| dispatcher func_80019ACC(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (func_80019560), decode its cached overlay to 0x8006FAF0 (func_80032EB4), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | mode number (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
+| dispatcher func_80019ACC(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (func_80019560), decode its cached overlay to 0x8006FAF0 (func_80032EB4), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
 | never-returning dispatch sites | boot func_80019578, kernel menu func_8001A4B4, field func_8007954C, battle func_8001B6C4, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu func_8001C1A8 (debug start), movie func_800737EC (2 sites), heap errors 0x82 (func_80031BDC) and 0x83 (func_800320E8, func_80032C18) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors and the disc error indicator (func_8002804C, endless after four retries) are fatal |
 | fatal error func_80019EF8 | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (D_80010000 = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset func_80019CA0 -> func_80019CD0 | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | stops the CD (func_800283D4), sound (func_80037DC0), SPU, callbacks and pads, then the entry clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
@@ -352,7 +352,8 @@ GTE with H 0x1000 (sprite_80025C04.c).
   stage backdrops (stage.c); DR_TWIN through SetTexWindow for the world-map
   horizon (worldmap_80072238.c func_800739B8).
 - Framebuffer feedback: DR_MOVE packets copy screen regions inside the list
-  (SetDrawMove: field, arena menu4.c, world-map heat haze); StoreImage (23
+  (SetDrawMove: the field distortion effect func_800A484C, the arena's
+  func_80080D20, the world-map heat haze func_80081D80); StoreImage (23
   functions), MoveImage (40), LoadImage (109) and ClearImage (17) read, copy and
   rewrite VRAM, including the saved-screen slot at (0x2C0, 0x100). The CPU sets
   bit 15 (STP) on captured pixels (battle_800B7870.c func_800B7870, field
