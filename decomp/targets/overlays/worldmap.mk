@@ -9,7 +9,7 @@ BSS_END := 0x8009D810
 BUILD := .local/decomp/build/worldmap
 IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
-LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt decomp/targets/overlays/worldmap.data.ld
 SOURCE_DIRS := decomp/src/worldmap
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:37 2:32

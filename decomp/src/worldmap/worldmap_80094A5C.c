@@ -1467,15 +1467,15 @@ void func_800978FC(void) {
     PolyFT3 *prim;
     s32 i;
 
-    D_8009BC38[1] = func_80031BDC(0x10000, 1);
-    D_8009BCB0[1] = func_80031BDC(0x10000, 1);
-    prim = D_8009BC38[1];
+    D_8009BBC8[0].packets = func_80031BDC(0x10000, 1);
+    D_8009BBC8[1].packets = func_80031BDC(0x10000, 1);
+    prim = D_8009BBC8[0].packets;
     for (i = 0; i < 0x800; i++, prim++) {
         setlen(prim, 7);
         setcode(prim, 0x24);
         setRGB0(prim, 0x80, 0x80, 0x80);
     }
-    *(TriangleBuffer *)D_8009BCB0[1] = *(TriangleBuffer *)D_8009BC38[1];
+    *(TriangleBuffer *)D_8009BBC8[1].packets = *(TriangleBuffer *)D_8009BBC8[0].packets;
 }
 
 /* Upload the terrain texture image (its buffer is then reused for the

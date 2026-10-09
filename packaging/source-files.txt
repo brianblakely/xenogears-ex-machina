@@ -396,6 +396,7 @@ decomp/src/worldmap/worldmap_8008C364.c
 decomp/src/worldmap/worldmap_8008E190.c
 decomp/src/worldmap/worldmap_80090A84.c
 decomp/src/worldmap/worldmap_80094A5C.c
+decomp/src/worldmap/worldmap_common.c
 decomp/targets/overlays/battle.classification.txt
 decomp/targets/overlays/battle.data.ld
 decomp/targets/overlays/battle.mk
@@ -480,6 +481,7 @@ decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml
 decomp/targets/overlays/worldmap.classification.txt
+decomp/targets/overlays/worldmap.data.ld
 decomp/targets/overlays/worldmap.mk
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
