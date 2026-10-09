@@ -5,6 +5,7 @@
  * 2.7.2-cdk does not (debug2611.mk). */
 #include "battle_debug.h"
 
+/* "\nChar#%d:", linked as original rodata below its user (INCLUDE_RODATA). */
 extern char D_8028007C[];
 
 /* Print the battle state page chosen by the resident debug page number:

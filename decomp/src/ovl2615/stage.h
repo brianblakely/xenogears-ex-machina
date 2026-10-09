@@ -90,8 +90,6 @@ extern u8 *D_800D2FD0;
 extern u16 D_800D2FC8;
 extern s16 *D_800D2FC0;         /* the stage colour matrix */
 extern u8 D_800D2D10[4];
-/* The slots' AI flags (battle_setup.h), passed to the stage model calls. */
-extern struct BattleAiFlags D_800C3D0C;
 void func_800AA898(StageModel *model, void *state, void *motion, s32 a3);
 void func_800AA934(StageModel *model, StageModel *model2, void *state, s32 a3);
 void func_8009EF3C(ModelPart *parts, s32 pose);

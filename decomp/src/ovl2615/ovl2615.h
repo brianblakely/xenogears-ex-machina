@@ -20,6 +20,23 @@ void func_801E5840(u8 phase);
  * battle_loader.c). */
 void func_8002DDE4(void *images, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6);
 
+/* Per-slot AI flags (0x800C3D0C, 4 bytes per slot; used by enemies): the
+ * setup arms each enemy's scripts in them, and the stage passes them to the
+ * stage model calls. */
+typedef struct {
+    u8 script_armed;
+    u8 reaction_armed;
+    u8 pad2;
+    u8 b3;
+} EnemyAiFlags;
+
+typedef struct {
+    EnemyAiFlags party[3];
+    EnemyAiFlags enemy[8];
+} BattleAiFlags;
+
+extern BattleAiFlags D_800C3D0C;
+
 /* The battle overlay's model setup (stage.c places the stage model with it,
  * battle_loader.c the enemy models). */
 void func_800A8BF0(s32 a0, s32 a1, void *a2, void *a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8);

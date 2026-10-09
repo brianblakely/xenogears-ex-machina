@@ -1887,6 +1887,8 @@ void func_800753B8(void) {
     func_800320E8(bank);
 }
 
+/* Two strings of this unit linked as original rodata below their users
+ * (INCLUDE_RODATA, each after its function). */
 extern char D_80070394[];
 extern char D_800704D4[];
 
@@ -1907,6 +1909,8 @@ void func_8007548C(void) {
  * stray byte (0x08) in its alignment padding; it is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070394);
 
+/* Play the battle music sequence (8007548c loads it) from its start at full
+ * volume. */
 void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
 }

@@ -364,6 +364,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     return count;
 }
 
+/* An empty function, kept in its place. */
 void func_801DCC34(void) {
 }
 

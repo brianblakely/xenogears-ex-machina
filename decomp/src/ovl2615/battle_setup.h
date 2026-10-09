@@ -195,21 +195,6 @@ extern BattleSlotStates D_800D32A1;
 void func_80097D5C(void); /* derive the party's battle stats */
 void func_8009B098(void); /* demo battle members */
 
-/* Per-slot AI flags (0x800C3D0C, 4 bytes per slot; used by enemies). */
-typedef struct {
-    u8 script_armed;
-    u8 reaction_armed;
-    u8 pad2;
-    u8 b3;
-} EnemyAiFlags;
-
-typedef struct BattleAiFlags {
-    EnemyAiFlags party[3];
-    EnemyAiFlags enemy[8];
-} BattleAiFlags;
-
-extern BattleAiFlags D_800C3D0C;
-
 /* Per-enemy AI state (0x800D3400, 0x40 bytes per enemy). */
 typedef struct {
     u8 *main;       /* script entry points in the enemy data file: the turn */
