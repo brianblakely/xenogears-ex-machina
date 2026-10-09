@@ -4,7 +4,9 @@
 /* Curves through control points (800C08CC, 800C0D18). */
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
 extern s32 D_800D2FCC; /* segments drawn of the current curve */
 

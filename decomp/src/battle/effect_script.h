@@ -12,7 +12,9 @@
  *                      GT3 0x10.., GT4 0x14.. colours 4 bytes apart. */
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "objects.h"
 #include "screen.h"
 

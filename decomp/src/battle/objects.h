@@ -2,7 +2,9 @@
 #define BATTLE_OBJECTS_H
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "scene.h"
 #include "battle_core.h"
 #include "effect.h"
@@ -11,7 +13,7 @@
 struct ObjectData {
     u8 pad0[4];
     void *image;        /* 0x04: image == sounds when there is none */
-    SoundSystem *sounds; /* 0x08: its sound bank */
+    SoundBank *sounds;  /* 0x08: its sound bank */
     void *soundsEnd;     /* 0x0C: the same as sounds when there are none */
     u8 pad10[4];
     void *images;       /* 0x14: additional image data */
@@ -69,12 +71,9 @@ typedef struct {
 } ObjectModelFile;
 
 /* Resident services. */
-void func_80030988(s32 a, s32 b, s32 c, s32 d);
-s32 func_8003864C(SoundSystem *bank, s32 mode); /* whether a sound bank is loaded */
-void func_80038428(SoundSystem *bank);          /* load a sound bank */
-void func_8002C644(u8 *group);
-void func_8002C4BC(u8 *group);
-s32 func_80031894(void *block); /* a block's size */
+/* Callers convert arguments/result differently from the resident definition:
+ * whether a sound bank is loaded. */
+s32 func_8003864C(SoundBank *bank, s32 mode);
 
 void func_800AA6E0(BattleObject *object);
 void func_800A8A88(Surface *surface);
@@ -87,8 +86,7 @@ extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
 extern u8 D_800C3DF8;      /* effects run */
 extern MATRIX *D_800D2FC0; /* the stage colour matrix */
-extern s32 D_80050104;     /* resident: drawing with lighting */
-extern SoundSystem *D_800C4924;
+extern SoundBank *D_800C4924;
 extern SVECTOR D_800D3354; /* camera position */
 extern SVECTOR D_800D335C; /* camera look-at point */
 extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
@@ -96,30 +94,22 @@ extern s16 D_800C3544;     /* its ground height */
 extern s16 D_800C3546;     /* key of the last update */
 
 /* Resident services. */
-s32 func_8003F8B0(s32 angle); /* rcos (4096 = 1.0) */
 
 void func_8009F844(BattleObject *object, MATRIX *m, MATRIX *light, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
 s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
 void func_800AAB34(BattleObject *object);
 u8 func_800AA514(s16 a, s16 b, s32 c);
 s32 func_800AA600(s32 index);
-void func_8009F794(ModelList *list, s32 release);
+void func_8009F794(ModelTable *list, s32 release);
 void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 kind);
 void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
 
-/* A resident sprite task (fields as far as the battle uses them): its
- * sprite's position from +0x38, and at +link its caller block. */
-typedef struct EffectSprite {
-    u8 pad0[0x38];
-    s32 x, y, z; /* 0x38: 16.16 */
-    u8 pad44[0xBE - 0x44];
-    s16 link; /* 0xBE */
-} EffectSprite;
-
-/* The battle's block of a sprite following an object part (0x18 bytes). */
+/* The battle's block of a sprite following an object part (0x18 bytes),
+ * after the sprite in its resident sprite task (the sprite's size bytes
+ * from the task, read signed). */
 typedef struct {
     u8 pad0[4];
-    void (*update)(EffectSprite *sprite); /* 0x04: the sprite's own update */
+    void (*update)(Task *task);           /* 0x04: the sprite's own update */
     BattleObject *object;                 /* 0x08 */
     s16 part;                             /* 0x0C: 0 the root */
     s16 onGround;                         /* 0x0E: keep the object's ground height */
@@ -231,11 +221,8 @@ typedef union {
     ImageEvent image;
 } AnimEvent;
 
-extern u8 D_8006BE10[]; /* resident sprite resources */
-extern u8 D_8005A474[];
 
 /* Resident sound. */
-void func_80039E60(s32 sound);             /* play */
 void func_8003A2E4(s32 sound, s32 volume); /* set its volume */
 
 void *func_800AA820(s32 mode);
@@ -288,13 +275,11 @@ typedef struct {
 } ScriptFile;
 
 /* Resident sprites. */
-EffectSprite *func_80023FD8(s32 kind, void *resource, SVECTOR *position, s32 size);
-void func_80021FE0(void *body, s32 direction);
-void func_800223B0(void *body, s32 direction);
-void func_80022000(s32 *body, s32 scale);
-void *func_8001CD7C(void *task); /* a task's update */
-void func_8001CD6C(void *task, void (*update)()); /* set it */
+/* Callers convert arguments/result differently from the resident definition:
+ * turn a sprite to a direction (s16 there). */
+void func_80021FE0(Sprite *sprite, s32 direction);
+void func_800223B0(Sprite *sprite, s32 direction);
 
-void func_800AFC68(EffectSprite *sprite);
+void func_800AFC68(Task *node);
 
 #endif

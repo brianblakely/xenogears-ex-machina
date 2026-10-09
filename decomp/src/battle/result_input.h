@@ -23,8 +23,5 @@ void func_801DF270(void);
 void func_801DF4C0(void);
 
 /* Resident services not yet in a resident header. */
-void func_80037EE4(void);           /* pause sound */
-void func_80037E8C(void);           /* resume sound */
-void func_8001FAB4(s32 a, s32 b);
 
 #endif

@@ -15,7 +15,7 @@ typedef struct {
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct BattleObject {
-    ModelList *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
+    ModelTable *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
     ModelPart *hierarchy; /* 0x04 */
     u8 **scripts;         /* 0x08: effect scripts 0-0x4F */
     ExtraFile *extra;     /* 0x0C: scripts from 0x50, NULL none */
@@ -138,19 +138,30 @@ typedef struct {
     SVECTOR centre; /* 0x4DC */
 } BattleSceneData;
 
-/* An effect sprite record (0x7C bytes) of a sprite pool. */
-typedef struct {
-    u8 pad0[0x16];
-    s16 id; /* 0x16: -1 free */
-    u8 pad18[0x1E - 0x18];
-    s16 field1E; /* 0x1E */
-    u8 pad20[0x2C - 0x20];
-    POLY_FT4 packets[2]; /* 0x2C: one per frame buffer */
-} SpriteRecord;
+/* The battle scene data (ovl2615 loads it), held in the resident pointer
+ * D_800658C8 (resident/sound.h: its music's instrument data in other
+ * modes). */
+#define SCENE_DATA ((BattleSceneData *)D_800658C8)
 
-/* A pool of sprite records; next is the first record that may be free. */
+/* An effect sprite, a record of a sprite pool (0x7C bytes): a
+ * quadrilateral of four vertices, a colour fading each tick, and its
+ * primitive for both frame buffers. */
+typedef struct {
+    s16 x0, y0, z0, pad06;
+    s16 x1, y1, z1;
+    s16 projected; /* 0x0E: the vertices are 3D, projected with the GTE */
+    s16 x2, y2, z2;
+    s16 age;       /* 0x16: -1 free */
+    s16 x3, y3, z3;
+    s16 lifetime;  /* 0x1E */
+    u16 color[3];  /* 0x20: 10.6 fixed point */
+    s16 fade[3];   /* 0x26: per tick */
+    POLY_FT4 packets[2]; /* 0x2C: one per frame buffer */
+} EffectSprite;
+
+/* A pool of effect sprites; next is the first record that may be free. */
 typedef struct SpritePool {
-    SpriteRecord *records;
+    EffectSprite *records;
     s16 count;
     s16 next;
 } SpritePool;
@@ -173,12 +184,6 @@ typedef struct {
     u8 field5;
 } LightSlot;
 
-/* An 8-byte entry of D_800C3ACC. */
-typedef struct {
-    s32 value;
-    s32 field4;
-} SceneEntry8;
-
 /* A position tracker (0x14 bytes, D_800D3304): an offset from a part of a
  * stage object. */
 typedef struct Tracker {
@@ -191,20 +196,7 @@ typedef struct Tracker {
     s16 part;       /* 0x12: its part less one */
 } Tracker;
 
-/* The battle's two loaded sound banks (0x18 bytes). */
-typedef struct {
-    s16 bank0;
-    void *data0;
-    s16 bank1;
-    void *data1;
-    s16 field10;
-    s32 field14;
-} SoundBanks;
 
-/* A 0x18-byte resident record of D_800C3DA0. */
-typedef struct ResidentRecord18 {
-    u8 pad[0x18];
-} ResidentRecord18;
 
 
 /* Battle scene and effect state. */
@@ -229,13 +221,10 @@ extern u16 D_800C3E30;             /* slot mask */
 extern u16 D_800C3D40;
 extern EffectPool D_800C3D0C;
 extern SpritePool D_800C3D04;
-extern BattleSceneData *D_800658C8;
 extern s32 D_800C3E38;
-extern void *D_800C3D50[2];
+extern Panorama *D_800C3D50[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
 extern void *D_800C3EA0;
-extern ResidentRecord18 D_800C3DA0[2];
-extern s32 D_80059464;
-extern u8 D_800591AC;
+extern TextureScroll D_800C3DA0[2]; /* the stage's texture scrolls */
 extern s32 D_800C360C;
 extern u8 D_800C4000[]; /* per slot */
 extern BattleSlot D_800C3EB4[11];
@@ -243,20 +232,10 @@ extern BattleSlot D_800C3EB4[11];
 void func_800BF85C(s32 index, s32 slot);
 void func_800BE790(void);
 s32 func_800BF6F8(void);
-void func_8002A498(s32 a);
-s32 func_800286CC(void);
 void func_800B0060(BattleObject *object);
 
 /* Resident services. */
-void func_80027D40(void *handle);
-void func_8002800C(ResidentRecord18 *record);
-void func_800284B4(s32 *a, s32 *b);
-void func_80028470(s32 a, s32 b);
-void func_80028998(s32 bank);
-s32 func_800288EC(s32 bank);
-void func_80029AFC(SoundBanks *banks, s32 a, s32 b);
 
-void func_8003852C(void *bank); /* free a sound bank */
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);

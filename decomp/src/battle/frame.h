@@ -6,44 +6,31 @@
  * aggregate, BattleArea (area.h). */
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "scene.h"
 #include "battle_core.h"
 #include "battle/area.h"
 #include "files.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "psyq/libetc.h"
 #include "psyq/libapi.h"
 
-/* The resident sprite resource block of D_8006BE10. */
-typedef struct {
-    u8 *frames;   /* 0x00: the frame table */
-    u8 pad4[0x10 - 0x4];
-    u16 *motions; /* 0x10: a count, then offsets from here */
-} SpriteResource;
-
-#define SPRITE_RESOURCE ((SpriteResource *)D_8006BE10)
-
-/* The battle slot of a slot's sprite. */
-#define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frameBits.bits.slotLow; (sprite)->motion.bits.slotHigh << 2 | low_; })
-
-#define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
+/* The battle's sprite source (resident D_8006BE10). */
+#define SPRITE_SOURCE ((SpriteSource *)D_8006BE10)
 
 extern s32 D_800C37D0;    /* frame loop nesting */
-extern s16 D_80059494;    /* extra vertical blanks of the last frame (0-4) */
-extern s32 D_80059198;    /* frame skip */
-extern u16 D_800591B4;    /* the requested single action (800B8054) */
 extern u8 D_800C3780;     /* a slot's sprite commands run */
-extern s32 D_80010000;    /* the debugger's word, -1 none */
 extern u8 D_800CCB94[];
 extern u16 D_800D30E4;    /* the frame time */
 
 /* The battle menu (D_800C3610, 0x50 bytes). */
 typedef struct BattleMenu {
     u8 pad0[4];
-    struct BattleSprite *sprite;              /* 0x04: the acting slot's */
+    struct Sprite *sprite;              /* 0x04: the acting slot's */
     void (*update)(struct BattleMenu *menu); /* 0x08 */
     u8 padC[0x1C - 0xC];
     s32 state;                              /* 0x1C */
@@ -60,30 +47,17 @@ typedef struct BattleMenu {
     u8 field49;                             /* 0x49 */
     u8 field4A;                             /* 0x4A */
     u8 pad4B;
-    struct BattleSprite *target;              /* 0x4C */
+    struct Sprite *target;              /* 0x4C */
 } BattleMenu;
 
 extern BattleMenu *D_800C3610;
 extern s32 D_800C3E20;
 extern s16 D_800D2E54;
-extern u8 D_800591B0;    /* the battle module is loaded */
-extern u8 D_800591B2;    /* the loaded battle module */
-extern u8 D_800591B3;    /* the requested battle module */
 
 /* SDK calls of the frame loop. */
 
 /* Resident services. */
-void func_80019CA0(void);
-void func_8001C964(void);
-void func_8001C9F8(void);
-void func_8001D468(void);
-void func_80024FE4(u32 *ot);
-void func_80024FF4(MATRIX *view);
-void func_80025044(void);
-void func_800250E0(s32 buffer);
-void func_80037324(u32 *ot);
 void func_80280A9C(void); /* the debugger's frame hook */
-s32 func_8003569C(s32 pad);
 void func_800B8354(void);
 u8 func_800B7E94(void); /* start the loaded single action file; 1 when the acting sprite runs it itself */
 void func_800B89F4(void);
@@ -94,18 +68,10 @@ void func_800BF9EC(void);
 void func_800BB7F8(void);
 void func_800BCD8C(void);
 void func_800B7C28(void);
-void func_8001C944(void);
-void func_80024F64(s32 a, s32 b);
-extern u8 D_800591B1;  /* the requested single action is done (800B8068) */
-extern u8 D_800591AD;
 extern u8 D_800D2FDC;
 extern u8 D_800D36B8;  /* the battle's start mode */
 extern u8 D_800C4A39;  /* BATTLE_AREA.buffers[0].drawEnv.r0, which 800B8098 addresses apart from the area */
 extern s32 D_800C3D58; /* gear enemies present */
-extern s32 D_80059520;
-extern s32 D_80059470;
-extern s32 D_800595AC; /* the battle's wave bank */
-void func_8001BBAC(void);
 void func_800A8B0C(void);
 void func_800B7870(void);
 void func_800B8284(void);
@@ -118,12 +84,10 @@ void func_801E8588(void);
 void func_801E893C(void);
 void func_801E91E8(void);
 void func_801E9594(void);
-void func_80024FB8(void);
-void func_8001C8DC(void);
 void func_800A9F94(void);
 void func_800A4820(void);
 void func_800BADD4(s32 slot);
-void func_800B9B54(BattleSprite *sprite, BattleSprite *other);
+void func_800B9B54(Sprite *sprite, Sprite *other);
 void func_800B9F78(BattleMenu *menu);
 void func_800BF0B4(s32 arg0);
 void func_800AA320(u16 index, u16 mask, s32 arg2);
@@ -134,7 +98,7 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer);
 void func_800B8068(s32 action);
 void func_800BB9D4(void);
 void func_800BBAB8(void);
-void func_800BD3AC(BattleSprite *sprite, s32 command, s32 kind);
+void func_800BD3AC(Sprite *sprite, s32 command, s32 kind);
 void func_800BE0DC(void);
 void func_800BEB04(void);
 void func_800BEBC4(void);
@@ -145,18 +109,18 @@ extern void *D_800C3618;             /* the loaded command file */
 extern s32 D_800C361C;               /* its slot */
 extern u8 D_800D3350;                /* the command file is started */
 extern u16 D_800D3634;               /* the current event's targets */
-extern BattleSprite *D_800D363C[];     /* their sprites, NULL ended */
+extern Sprite *D_800D363C[];     /* their sprites, NULL ended */
 extern s16 D_800D3678;               /* their count */
 
 void func_800B9C00(); /* unprototyped (sprite, other) */
-s32 func_800BEEB4(u32 mask, BattleSprite **list, BattleSprite *target);
-s16 func_800BEF24(BattleSprite *from, BattleSprite *to);
-s16 func_800BEF8C(BattleSprite *sprite);
-void func_800BF0C4(BattleSprite *sprite);
-void func_800BF1EC(BattleSprite *sprite, s32 mode);
-void func_800BF4F0(BattleSprite *sprite, BattleSprite *target);
+s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target);
+s16 func_800BEF24(Sprite *from, Sprite *to);
+s16 func_800BEF8C(Sprite *sprite);
+void func_800BF0C4(Sprite *sprite);
+void func_800BF1EC(Sprite *sprite, s32 mode);
+void func_800BF4F0(Sprite *sprite, Sprite *target);
 s32 func_800C07CC(GroundPoint from, GroundPoint to);
-SoundSystem *func_800C0FAC(s32 *file);
+SoundBank *func_800C0FAC(s32 *file);
 void func_800C1140(s32 *file);
 
 /* Command motions, value watches and targets (800BF5E8-800BF998). */
@@ -164,18 +128,17 @@ typedef struct SlotWatch {
     u8 pad0[0xC];
     void (*destroy)(struct SlotWatch *watch);  /* 0x0C */
     u8 pad10[0x1C - 0x10];
-    BattleSprite *sprite;                        /* 0x1C */
+    Sprite *sprite;                        /* 0x1C */
     s32 mode;                                  /* 0x20: the sprite's mode at the start */
     s32 value;                                 /* 0x24: its last value */
     s32 threshold;                             /* 0x28 */
-    void (*callback)(BattleSprite *sprite);      /* 0x2C */
+    void (*callback)(Sprite *sprite);      /* 0x2C */
 } SlotWatch;
 
 extern s32 D_800C3628;
 extern s16 D_800D2D4C;           /* effect hits */
 
-void func_80021BF8(BattleSprite *sprite, void (*callback)(void)); /* at the motion's end */
-s32 func_800B57E4(BattleSprite *sprite);
+s32 func_800B57E4(Sprite *sprite);
 void func_800B7C34(s32 command);
 void func_800BD2E4(void);
 s32 func_800BF720(void);
@@ -186,14 +149,11 @@ extern u8 D_800C3621;            /* upload the images of file 1 */
 extern u8 D_800C3622;            /* wave bank 7 is loaded (a gear frame's turn) */
 extern u8 D_800C362C;            /* restart the party's gears (2: all but the acting) */
 extern s32 D_800C3A6C;
-extern struct ActorTask *D_8005958C;   /* the main task list */
 
-BattleSprite *func_80023B84(BattleSprite *owner, void *motion, void *resource); /* create an effect sprite */
-s32 func_80037FD8(void *bank, s32 flags); /* transfer a sound bank */
 s32 func_800383EC(u16 id);
 s16 func_8003BDFC(s32 wait);             /* sound transfer busy */
 void func_800B8D04(void);
-BattleSprite *func_800BFC80(BattleSprite *sprite, s32 mode, s32 action);
+Sprite *func_800BFC80(Sprite *sprite, s32 mode, s32 action);
 
 /* Distances, blends and command file parts (800C06E4-800C1140). */
 typedef struct {
@@ -204,7 +164,5 @@ typedef struct {
 extern s32 (*D_800C3A68)[4]; /* four weights per cell, 8 cells a row */
 
 void func_80022224(void *resource, void *image, VramPoint at, VramPoint clut, s32 arg4); /* upload an image */
-void func_80031F70(void *block, s32 size); /* shrink a heap block */
-void func_80038310(s32 bank); /* release a wave bank */
 
 #endif

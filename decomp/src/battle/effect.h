@@ -46,22 +46,6 @@ typedef struct {
     s16 duration; /* +0x12 */
 } Tween;
 
-/* An effect sprite (the SpriteRecord of a sprite pool, 0x7C bytes): a
- * quadrilateral of four vertices, a colour fading each tick, and its
- * primitive for both frame buffers. */
-typedef struct {
-    s16 x0, y0, z0, pad06;
-    s16 x1, y1, z1;
-    s16 projected; /* 0x0E: the vertices are 3D, projected with the GTE */
-    s16 x2, y2, z2;
-    s16 age;       /* 0x16: -1 free */
-    s16 x3, y3, z3;
-    s16 lifetime;  /* 0x1E */
-    u16 color[3];  /* 0x20: 10.6 fixed point */
-    s16 fade[3];   /* 0x26: per tick */
-    POLY_FT4 packets[2]; /* 0x2C */
-} Sprite;
-
 /* An object's trail channel (0x70 bytes): a sprite following two points of a
  * model part, with fading colours. Screen-space trails retain eight projected
  * positions per endpoint; world-space trails retain two full vectors. */
@@ -70,7 +54,7 @@ typedef struct ColorFade {
     u8 field2;  /* 0 screen-space history, otherwise world-space */
     u8 field3;  /* sprite semi-transparency */
     SpritePool *pool; /* 0x04 */
-    Sprite *sprite;   /* 0x08: the currently extended quad */
+    EffectSprite *sprite; /* 0x08: the currently extended quad */
     s16 fieldC;
     s16 fieldE;
     s16 field10;
@@ -130,8 +114,6 @@ typedef struct ImageAnim {
 } ImageAnim;
 
 /* Resident image decoders. */
-void func_80026F44(s32 size, s32 frame, u16 *out, u16 *pixels);
-void func_80026FE8(s32 size, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
 
 /* Original calls promote the event halfwords before the callee narrows them. */
 ImageAnim *func_800A3640();
@@ -181,9 +163,7 @@ typedef struct Surface {
     SurfacePoly *polyList;  /* 0x20 */
 } Surface;
 
-extern s32 D_80050100;
 
-s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */ /* ordering-table depth shift */
 
 u16 func_800A1B50(ModelPart *root, s16 *data);
 void func_800A2ACC(EffectPool *pool, ModelPart *part);

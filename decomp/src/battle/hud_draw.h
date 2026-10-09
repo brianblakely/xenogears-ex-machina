@@ -10,8 +10,6 @@ void func_800898F0(u8 member);
 
 
 
-void func_80026338(void *sheet, s32 id, s32 *a, s32 *tpageMode, s32 *clutX, s32 *clutY,
-                   s32 *pageX, s32 *pageY);
 extern u8 D_800D3294;
 /* This unit passes the u16 coordinates, scale and angle as full words. */
 s32 func_80025FA8(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y,

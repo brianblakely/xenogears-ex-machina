@@ -182,13 +182,12 @@ decomp/src/battle/menu_pages.h
 decomp/src/battle/model.h
 decomp/src/battle/objects.h
 decomp/src/battle/popup.h
-decomp/src/battle/psyq.h
 decomp/src/battle/resolver.h
 decomp/src/battle/result_input.h
 decomp/src/battle/scene.h
 decomp/src/battle/screen.h
 decomp/src/battle/settle.h
-decomp/src/battle/sprite.h
+decomp/src/battle/sprite_effect.h
 decomp/src/battle/sprite_script.h
 decomp/src/battle/sprite_vm.h
 decomp/src/battle/stage.h

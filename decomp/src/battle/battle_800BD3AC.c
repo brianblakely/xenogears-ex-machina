@@ -13,7 +13,7 @@
 #include "effect.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "actor.h"
 #include "popup.h"
 #include "frame.h"
@@ -41,7 +41,7 @@ s32 D_800C37D0 = 0;
  * earlier ones): 1 a prefix glyph, 2 green, 3 magenta with a prefix, 4 a
  * single glyph that only fades, 5 red, 10 and 11 (blue) with a suffix
  * glyph; the digits follow. Only while the battle menu is open. */
-void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
+void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
     DamagePopup *popup;
     u8 text[0x38];
     s32 x;
@@ -61,10 +61,10 @@ void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
     popup->sprite = sprite;
     popup->timer = 8;
     popup->next = D_800C3750;
-    popup->x.fixed = sprite->x.fixed;
+    popup->x = sprite->x;
     D_800C3750 = popup;
-    popup->y.fixed = sprite->y.fixed;
-    popup->z.fixed = sprite->z.fixed;
+    popup->y = sprite->y;
+    popup->z = sprite->z;
     popup->scale.vx = 0x2000;
     popup->scale.vy = 0x2000;
     popup->scale.vz = 0x2000;
@@ -75,7 +75,7 @@ void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
     popup->colour.rgbc[0] = 0x80;
     popup->colour.rgbc[1] = 0x80;
     popup->colour.rgbc[2] = 0x80;
-    popup->right = sprite->motion.bits.flip;
+    popup->right = sprite->motion.bits.mirror;
     popup->glyphCount = 0;
     if (kind != 4) {
         func_800BE6E8(value, text, 5, 0, 0);
@@ -131,7 +131,7 @@ void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
 }
 
 /* Damage popup destroy: unlink it from D_800C3750 and end it. */
-void func_800BD7A0(BattleTask *task) {
+void func_800BD7A0(Task *task) {
     DamagePopup *popup = (DamagePopup *)task;
     DamagePopup *entry = D_800C3750;
     DamagePopup *previous = NULL;
@@ -153,7 +153,7 @@ void func_800BD7A0(BattleTask *task) {
 /* Draw a popup glyph as a textured quad in colour (its word also sets the
  * primitive code) through the current matrices, added to the ordering
  * table's first entry, while the primitive buffer has room. */
-void func_800BD810(PopupGlyph *glyph, s32 colour) {
+void func_800BD810(SpritePart *glyph, s32 colour) {
     POLY_FT4 *poly = (POLY_FT4 *)D_80059580;
     long p;
     long flag;
@@ -162,8 +162,8 @@ void func_800BD810(PopupGlyph *glyph, s32 colour) {
     u8 u, v;
     u8 uw, vh;
 
-    if (D_80059580 + sizeof(POLY_FT4) < D_80059534) {
-        D_80059580 += sizeof(POLY_FT4);
+    if ((u8 *)D_80059580 + sizeof(POLY_FT4) < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
         setlen(poly, 9);
         *(s32 *)&poly->r0 = colour;
         poly->tpage = glyph->tpage;
@@ -194,7 +194,7 @@ void func_800BD810(PopupGlyph *glyph, s32 colour) {
         poly->v2 = v + vh;
         poly->u3 = u + uw;
         poly->v3 = v + vh;
-        addPrim(D_8005956C, poly);
+        addPrim((u32 *)D_8005956C, poly);
     }
 }
 
@@ -219,18 +219,18 @@ void func_800BD974(SVECTOR *point, VECTOR *out) {
 
 /* Damage popup draw: its glyphs turned, scaled and placed over its
  * point. */
-void func_800BDA1C(BattleTask *draw) {
+void func_800BDA1C(Task *draw) {
     MATRIX m;
     SVECTOR point;
     VECTOR offset;
     DamagePopup *popup = draw->data;
     s32 i;
-    PopupGlyph *glyph;
+    SpritePart *glyph;
 
     D_800C3760.t[2] = ReadGeomScreen();
-    point.vx = popup->x.fixed >> 16;
-    point.vy = popup->y.fixed >> 16;
-    point.vz = popup->z.fixed >> 16;
+    point.vx = popup->x >> 16;
+    point.vy = popup->y >> 16;
+    point.vz = popup->z >> 16;
     func_800BD974(&point, &offset);
     func_8003F738(&popup->angles, &m);
     TransMatrix(&m, &offset);
@@ -256,7 +256,7 @@ void func_800BDB08(DamagePopup *popup) {
 
 /* Damage popup fade out: darken by 8 a frame (green and blue follow red)
  * until black or its time is up. */
-void func_800BDB74(BattleTask *task) {
+void func_800BDB74(Task *task) {
     DamagePopup *popup = (DamagePopup *)task;
 
     func_800BDF1C();
@@ -283,9 +283,9 @@ void func_800BDC14(DamagePopup *popup) {
 void func_800BDC78(DamagePopup *popup) {
     func_800BDF1C();
     if (popup->right) {
-        popup->x.fixed += 0xC0000;
+        popup->x += 0xC0000;
     } else {
-        popup->x.fixed -= 0xC0000;
+        popup->x -= 0xC0000;
     }
     if (--popup->timer < 0) {
         popup->timer = 16;
@@ -305,7 +305,7 @@ void func_800BDD34(void) {
 
 /* Running total draw: its label glyph, then its digits turned, scaled and
  * centred on the screen. */
-void func_800BDD3C(BattleTask *draw) {
+void func_800BDD3C(Task *draw) {
     TotalPopup *total = draw->data;
     MATRIX m;
     SVECTOR unused; /* allocated in the original frame */
@@ -313,10 +313,10 @@ void func_800BDD3C(BattleTask *draw) {
     long x;
     long y;
     s32 i;
-    PopupGlyph *glyph;
+    SpritePart *glyph;
 
     ReadGeomOffset(&x, &y);
-    func_80026BA4(D_800D2F5C, 0x81, total->x, total->y, D_8005956C);
+    func_80026BA4(D_800D2F5C, 0x81, total->x, total->y, (u_long *)D_8005956C);
     offset.vx = (0xA0 - x) * 2;
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
@@ -447,7 +447,7 @@ void func_800BE1C4(PopupTask *task) {
     NumberPopup *popup = task->popup;
     s32 i;
     s32 j;
-    PopupGlyph *glyph;
+    SpritePart *glyph;
 
     ReadGeomOffset(&x, &y);
     offset.vx = (0xA0 - x) * 2;
@@ -535,7 +535,7 @@ void func_800BE330(s32 value) {
 /* Run up to three commands (kinds 0, 1 and 10) on slot's sprite outside the
  * battle menu and wait frames until they are done. */
 void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
-    BattleSprite *sprite;
+    Sprite *sprite;
     s32 mode;
     BattleMenu *menu;
 
@@ -544,7 +544,7 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
     sprite = BATTLE_AREA.sprites[slot];
     D_800C3780 = 1;
     if (sprite != NULL) {
-        mode = sprite->motion.bytes[3];
+        mode = (s8)sprite->motion.bytes[3];
         func_800245D8(sprite, 10);
         menu = D_800C3610;
         D_800C3610 = (BattleMenu *)1;
@@ -561,7 +561,7 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
         while (func_800BF6F8()) {
             func_800BE790();
         }
-        while (sprite->motion.bytes[3] == 10) {
+        while ((s8)sprite->motion.bytes[3] == 10) {
             func_800BE790();
         }
         func_800245D8(sprite, mode);
@@ -653,7 +653,7 @@ void func_800BE790(void) {
     if (D_80010000 != -1) {
         func_80037324(frame->ot);
     }
-    func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, D_8005956C, frame->buffer);
+    func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, (u32 *)D_8005956C, frame->buffer);
     SPAD_STACK_ENTER();
     func_8001D468();
     func_8001C9F8();
@@ -814,10 +814,10 @@ void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
 
 /* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
  * setting their target; their count. */
-s32 func_800BEEB4(u32 mask, BattleSprite **list, BattleSprite *target) {
+s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target) {
     s32 i;
     s32 count;
-    BattleSprite *sprite;
+    Sprite *sprite;
 
     i = 0;
     count = i;
@@ -838,35 +838,35 @@ s32 func_800BEEB4(u32 mask, BattleSprite **list, BattleSprite *target) {
 
 
 /* The direction from sprite from to sprite to on the ground. */
-s16 func_800BEF24(BattleSprite *from, BattleSprite *to) {
+s16 func_800BEF24(Sprite *from, Sprite *to) {
     GroundPoint a;
     GroundPoint b;
 
-    a.x = from->x.fixed >> 16;
-    a.z = from->z.fixed >> 16;
-    b.x = to->x.fixed >> 16;
-    b.z = to->z.fixed >> 16;
+    a.x = from->x >> 16;
+    a.z = from->z >> 16;
+    b.x = to->x >> 16;
+    b.z = to->z >> 16;
     return func_80023124(b, a);
 }
 
 /* The direction from sprite to its target point on the ground. */
-s16 func_800BEF8C(BattleSprite *sprite) {
+s16 func_800BEF8C(Sprite *sprite) {
     GroundPoint a;
     GroundPoint b;
 
-    a.x = sprite->x.fixed >> 16;
-    a.z = sprite->z.fixed >> 16;
-    b.x = sprite->target[0];
-    b.z = sprite->target[2];
+    a.x = sprite->x >> 16;
+    a.z = sprite->z >> 16;
+    b.x = sprite->target_x;
+    b.z = sprite->target_z;
     return func_80023124(b, a);
 }
 
 /* Make slot the acting slot, returning the previous acting sprite to idle. */
 void func_800BEFF4(s32 slot) {
-    BattleSprite *sprite = D_800C3610->sprite;
+    Sprite *sprite = D_800C3610->sprite;
 
     if (sprite != NULL && D_800C3610->slot != slot && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
-        func_800245D8(sprite, sprite->idle.mode);
+        func_800245D8(sprite, (s8)sprite->b0.byteb0);
     }
     D_800C3610->slot = slot;
     D_800C3610->sprite = BATTLE_AREA.sprites[slot];
@@ -878,30 +878,30 @@ void func_800BF0B4(s32 state) {
 }
 
 /* Walk sprite to the next point of the path, or at its end, to its target. */
-void func_800BF0C4(BattleSprite *sprite) {
+void func_800BF0C4(Sprite *sprite) {
     if (BATTLE_AREA.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_AREA.path[D_800C3610->field2C].z == 0xFFFF) {
-        sprite->target[1] = 0;
-        sprite->target[0] = sprite->x.fixed >> 16;
-        sprite->target[2] = sprite->z.fixed >> 16;
+        sprite->target_y = 0;
+        sprite->target_x = sprite->x >> 16;
+        sprite->target_z = sprite->z >> 16;
         func_800BF4F0(sprite, sprite->partner);
         return;
     }
-    sprite->target[0] = BATTLE_AREA.path[D_800C3610->field2C].x;
-    sprite->target[2] = BATTLE_AREA.path[D_800C3610->field2C].z;
-    sprite->target[1] = 0;
+    sprite->target_x = BATTLE_AREA.path[D_800C3610->field2C].x;
+    sprite->target_z = BATTLE_AREA.path[D_800C3610->field2C].z;
+    sprite->target_y = 0;
     func_800BF1EC(sprite, BATTLE_AREA.path[D_800C3610->field2C].run ? 3 : 2);
     D_800C3610->field2C++;
 }
 
 /* Start sprite moving to its target point with motion mode. */
-void func_800BF1EC(BattleSprite *sprite, s32 mode) {
+void func_800BF1EC(Sprite *sprite, s32 mode) {
     GroundPoint from;
     GroundPoint to;
 
-    from.x = sprite->x.fixed >> 16;
-    from.z = sprite->z.fixed >> 16;
-    to.x = sprite->target[0];
-    to.z = sprite->target[2];
+    from.x = sprite->x >> 16;
+    from.z = sprite->z >> 16;
+    to.x = sprite->target_x;
+    to.z = sprite->target_z;
     D_800C3610->field44 = func_800C07CC(from, to);
     func_80021FE0((s32 *)sprite, func_800BEF8C(sprite));
     func_800223B0((s32 *)sprite, func_800BEF8C(sprite));
@@ -910,15 +910,15 @@ void func_800BF1EC(BattleSprite *sprite, s32 mode) {
 }
 
 /* Load the file of sprite's resource for its slot's command. */
-void func_800BF2B8(BattleSprite *sprite) {
+void func_800BF2B8(Sprite *sprite) {
     s32 file;
     void *block;
 
     func_800B8D7C();
     func_80028470(0x2C, 1);
-    file = sprite->resource->file;
+    file = ((SpriteSequencer *)sprite->sequencer)->word0;
     block = func_80031BDC(func_800288EC(file), 1);
-    func_800295D8(file, (s32)block, 0, 0x80);
+    func_800295D8(file, block, 0, 0x80);
     D_800C3618 = block;
     D_800C361C = SPRITE_SLOT(sprite);
 }
@@ -943,10 +943,10 @@ void func_800BF3A4(void) {
 }
 
 /* Face sprite and the first target of the current event at each other. */
-void func_800BF3E8(BattleSprite *sprite) {
-    BattleSprite *first;
+void func_800BF3E8(Sprite *sprite) {
+    Sprite *first;
     s32 slot;
-    BattleSprite *target;
+    Sprite *target;
 
     D_800D3634 = BATTLE_AREA.events[D_800C360C].targetMask;
     if ((D_800D3678 = func_800BEEB4(BATTLE_AREA.events[D_800C360C].targetMask, D_800D363C, sprite)) == 0) {
@@ -960,23 +960,23 @@ void func_800BF3E8(BattleSprite *sprite) {
     D_800C3610->target = first;
     D_800C3610->targetSlot = slot;
     func_800223B0((s32 *)sprite, func_800BEF24(sprite, sprite->partner));
-    if (target->motion.bytes[3] != 0x15) {
+    if ((s8)target->motion.bytes[3] != 0x15) {
         func_800223B0((s32 *)target, func_800BEF24(sprite->partner, sprite));
     }
 }
 
 /* At the path's end, step sprite beside target; else walk the path on. */
-void func_800BF4F0(BattleSprite *sprite, BattleSprite *target) {
+void func_800BF4F0(Sprite *sprite, Sprite *target) {
     s16 x;
 
     if (BATTLE_AREA.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_AREA.path[D_800C3610->field2C].z == 0xFFFF) {
-        sprite->x.fixed = sprite->target[0] << 16;
-        sprite->z.fixed = sprite->target[2] << 16;
-        x = target->x.fixed >> 16;
-        sprite->target[0] = (s16)(sprite->x.fixed >> 16) >= x ? x + 0x50 : x - 0x50;
-        sprite->target[2] = target->z.fixed >> 16;
-        sprite->target[1] = 0;
-        if (sprite->target[0] == (s16)(sprite->x.fixed >> 16) && sprite->target[2] == (s16)(sprite->z.fixed >> 16)) {
+        sprite->x = sprite->target_x << 16;
+        sprite->z = sprite->target_z << 16;
+        x = target->x >> 16;
+        sprite->target_x = (s16)(sprite->x >> 16) >= x ? x + 0x50 : x - 0x50;
+        sprite->target_z = target->z >> 16;
+        sprite->target_y = 0;
+        if (sprite->target_x == (s16)(sprite->x >> 16) && sprite->target_z == (s16)(sprite->z >> 16)) {
             func_800B9C00(sprite);
             return;
         }
@@ -993,18 +993,18 @@ void func_800BF5E8(void) {
 }
 
 /* Run command with sprite playing its motion, then wait for the motion's end. */
-void func_800BF600(s32 command, BattleSprite *sprite) {
-    if (sprite->field48 == 0) {
+void func_800BF600(s32 command, Sprite *sprite) {
+    if (sprite->animations == 0) {
         func_800B7C34(command);
         return;
     }
     D_800C3CE8 = 0;
-    if (sprite->motion.bytes[3] != 0) {
+    if ((s8)sprite->motion.bytes[3] != 0) {
         func_80021BF8(sprite, func_800BF5E8);
-        func_800245D8(sprite, sprite->motion.bytes[3]);
+        func_800245D8(sprite, (s8)sprite->motion.bytes[3]);
     }
     func_800B7C34(command);
-    if (sprite->motion.bytes[3] != 0) {
+    if ((s8)sprite->motion.bytes[3] != 0) {
         while (D_800C3CE8 == 0) {
             func_800BE790();
         }
@@ -1048,13 +1048,13 @@ void func_800BF73C(EffectSprite *task) {
 }
 
 /* Start watching sprite's value against threshold with callback. */
-void func_800BF7C8(BattleSprite *sprite, s32 threshold, void (*callback)(BattleSprite *sprite)) {
-    SlotWatch *watch = func_8001CD08(sprite->task, sizeof(SlotWatch) - 0x1C);
+void func_800BF7C8(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)) {
+    SlotWatch *watch = func_8001CD08(sprite->block, sizeof(SlotWatch) - 0x1C);
 
     func_8001CD6C((EffectSprite *)watch, func_800BF73C);
     watch->callback = callback;
     watch->sprite = sprite;
-    watch->mode = sprite->motion.bytes[3];
+    watch->mode = (s8)sprite->motion.bytes[3];
     watch->value = func_800B57E4(sprite);
     watch->threshold = threshold;
     sprite->motion.word |= 0x20;
@@ -1062,7 +1062,7 @@ void func_800BF7C8(BattleSprite *sprite, s32 threshold, void (*callback)(BattleS
 
 /* Make slot's sprite act on the sprite of slot target alone. */
 void func_800BF85C(s32 slot, s32 target) {
-    BattleSprite *sprite = BATTLE_AREA.sprites[slot];
+    Sprite *sprite = BATTLE_AREA.sprites[slot];
 
     if (sprite != NULL) {
         D_800C3E1C = sprite;
@@ -1074,7 +1074,7 @@ void func_800BF85C(s32 slot, s32 target) {
 }
 
 /* Move sprite's target to the next of the event's targets. */
-void func_800BF8CC(BattleSprite *sprite) {
+void func_800BF8CC(Sprite *sprite) {
     s32 i;
 
     for (i = 0; i != D_800D3678; i++) {
@@ -1090,7 +1090,7 @@ void func_800BF8CC(BattleSprite *sprite) {
 }
 
 /* The index of sprite among the event's targets. */
-s32 func_800BF954(BattleSprite *sprite) {
+s32 func_800BF954(Sprite *sprite) {
     s32 i;
 
     for (i = 0; i != D_800D3678; i++) {
@@ -1175,24 +1175,25 @@ void func_800BFBA0(void) {
 
 /* Find the resident effect sprites of sprite with motion mode (any with
  * action 2): action 0 returns the first, the others destroy them. */
-BattleSprite *func_800BFC80(BattleSprite *sprite, s32 mode, s32 action) {
-    ActorTask *owner = sprite->task;
-    ActorTask *task;
-    BattleSprite *child;
+Sprite *func_800BFC80(Sprite *sprite, s32 mode, s32 action) {
+    Task *owner = sprite->block;
+    Task *task;
+    Sprite *child;
 
     for (task = D_8005958C; task != NULL; task = task->next) {
-        if (task->owner == owner && (task->link & 0x1FFFFFFF) == (owner->id & 0x1FFFFFFF) && (task->link >> 29 & 1)) {
+        if (task->owner == owner && (task->link.word & 0x1FFFFFFF) == (owner->id.word & 0x1FFFFFFF)
+            && (task->link.word >> 29 & 1)) {
             child = task->data;
-            if (child->base == D_8006BE10) {
+            if (child->image == D_8006BE10) {
                 if (action != 2) {
-                    if (child->motion.bytes[3] != mode) {
+                    if ((s8)child->motion.bytes[3] != mode) {
                         continue;
                     }
                     if (action == 0) {
                         return child;
                     }
                 }
-                child->task->destroy(child->task);
+                ((Task *)child->block)->destroy(child->block);
             }
         }
     }
@@ -1200,23 +1201,23 @@ BattleSprite *func_800BFC80(BattleSprite *sprite, s32 mode, s32 action) {
 }
 
 /* Destroy the resident effect sprites of sprite with motion mode. */
-void func_800BFD88(BattleSprite *sprite, s32 mode) {
+void func_800BFD88(Sprite *sprite, s32 mode) {
     func_800BFC80(sprite, mode, 1);
 }
 
 /* Give sprite a resident effect sprite playing motion mode, unless it has. */
-void func_800BFDA8(BattleSprite *sprite, s32 mode) {
+void func_800BFDA8(Sprite *sprite, s32 mode) {
     u8 saved;
-    BattleSprite *child;
+    Sprite *child;
 
-    if (sprite->field48 != 0 && func_800BFC80(sprite, mode, 0) == NULL) {
-        void *motion = (void *)(SPRITE_RESOURCE->motions[mode + 1] + (s32)SPRITE_RESOURCE->motions);
+    if (sprite->animations != 0 && func_800BFC80(sprite, mode, 0) == NULL) {
+        void *motion = (void *)(SPRITE_SOURCE->animations[mode + 1] + (s32)SPRITE_SOURCE->animations);
         saved = D_800591AC;
         D_800591AC = 0;
         child = func_80023B84(sprite, motion, D_8006BE10);
         child->motion.bytes[3] = mode;
         child->partner = sprite;
         D_800591AC = saved;
-        child->idle.word |= 0x100;
+        child->b0.wordb0 |= 0x100;
     }
 }

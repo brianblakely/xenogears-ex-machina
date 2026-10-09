@@ -16,7 +16,7 @@
 #include "effect.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "actor.h"
 #include "popup.h"
 #include "frame.h"
@@ -28,15 +28,15 @@
 static u32 *D_800C3CB4; /* the ordering table the shatter draws into */
 
 /* Shatter draw: into the ordering table (800B7160). */
-void func_800B7134(BattleTask *draw) {
-    D_800C3CB4 = D_8005956C;
+void func_800B7134(Task *draw) {
+    D_800C3CB4 = (u32 *)D_8005956C;
     func_800B7160(draw);
 }
 
 /* Shatter draw: each shard that has fallen in front of the screen (z at
  * least 64), its layer's triangle turned and placed, projected at the
  * screen centre and distance 512. */
-void func_800B7160(BattleTask *draw) {
+void func_800B7160(Task *draw) {
     ScreenShatter *shatter = draw->data;
     s32 offsetX;
     s32 offsetY;
@@ -330,7 +330,7 @@ void func_800B7C34(s32 index) {
     s32 file;
     s32 stream;
     s32 restart;
-    BattleSprite *sprite;
+    Sprite *sprite;
 
     if (index == 0xE3) {
         rect.w = 0x40;
@@ -390,18 +390,18 @@ void func_800B7C34(s32 index) {
 u8 func_800B7E94(void) {
     VramPoint at;
     VramPoint clut;
-    BattleTask wait;
-    SpriteResource saved;
-    BattleSprite *actor;
-    BattleSprite *runner;
+    Task wait;
+    SpriteSource saved;
+    Sprite *actor;
+    Sprite *runner;
     s32 own;
-    SpriteResource *resource;
+    SpriteSource *resource;
 
     actor = D_800C3E1C;
     func_8001CC18(0, &wait);
     wait.update = NULL;
     func_800B8354();
-    resource = (SpriteResource *)D_8005A474;
+    resource = (SpriteSource *)D_8005A474;
     at.x = 0x380;
     at.y = 0x100;
     clut.x = 0;
@@ -410,16 +410,16 @@ u8 func_800B7E94(void) {
     func_80022224(resource, D_800594F0, at, clut, 0);
     own = 0;
     func_800BEB04();
-    if (func_8001EE68(resource->frames)) {
-        saved = *(SpriteResource *)D_800C3E1C->base;
-        runner = func_80023B84(D_800C3E1C, (void *)(resource->motions[D_800C3DF0 + 1] + (s32)resource->motions), resource);
+    if (func_8001EE68((u8 *)resource->frames)) {
+        saved = *(SpriteSource *)D_800C3E1C->image;
+        runner = func_80023B84(D_800C3E1C, (void *)(resource->animations[D_800C3DF0 + 1] + (s32)resource->animations), resource);
     } else {
         own = 1;
         runner = D_800C3E1C;
         func_80021BF0(runner, D_800594F0);
         func_800245D8(runner, -1);
     }
-    actor->sound = runner->sound = func_800C0FAC(D_800594F0);
+    actor->word50 = runner->word50 = (s32)func_800C0FAC(D_800594F0);
     D_800D3350 = 1;
     D_800C35D4 = 1;
     func_8003A89C(D_800C3E54, 0x60, 0x78);
@@ -428,7 +428,7 @@ u8 func_800B7E94(void) {
 }
 
 /* Set the acting sprite of a single action. */
-void func_800B8048(BattleSprite *sprite) {
+void func_800B8048(Sprite *sprite) {
     D_800C3E1C = sprite;
 }
 

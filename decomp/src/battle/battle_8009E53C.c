@@ -27,11 +27,11 @@
 static LightSlot D_800C3AAC[4];
 static StageColors *D_800C3AC4; /* the stage's colours as loaded */
 static StageColors *D_800C3AC8; /* their working copy */
-static SceneEntry8 D_800C3ACC[20];
+static ModelTable D_800C3ACC[20]; /* the scene objects' model tables */
 static s32 D_800C3B6C; /* the model list slot being filled */
 static u8 *D_800C3B70; /* the model group being loaded */
 static u8 D_800C3B74;
-static SoundBanks *D_800C3B78;
+static FileRequest *D_800C3B78; /* the file list being read */
 static s16 D_800C3B7C;
 static s16 D_800C3B80; /* pulse level of the highlight colour */
 /* The camera. */
@@ -235,17 +235,17 @@ void func_8009E868(u8 kind, u16 flag) {
 }
 
 /* Relocate a model group and list its models in a new table. */
-ModelList *func_8009EBA8(u8 *group, ModelList *list) {
+ModelTable *func_8009EBA8(u8 *group, ModelTable *list) {
     u32 count;
     u32 i;
 
     func_80032498(4, 0);
-    count = func_8002C3E8(group);
+    count = func_8002C3E8((ModelGroup *)group);
     list->models = func_80031BDC(count * 4, 0);
     list->count = count;
     if (list->models != NULL) {
         for (i = 0; i < count; i++) {
-            list->models[i] = (Model *)(group + 0x10 + i * 0x38);
+            list->models[i] = (SpriteModel *)(group + 0x10 + i * 0x38);
         }
     }
     return list;
@@ -255,7 +255,7 @@ ModelList *func_8009EBA8(u8 *group, ModelList *list) {
  * naming neither a listed model nor 0xFFFF: a root part, then one part per
  * pair with its packets for both buffers (built with mode; offset by (x0, y0)
  * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
-ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
                          s16 x1, s16 y1) {
     ModelPart *root;
     ModelPart *part;
@@ -334,7 +334,7 @@ ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, 
                 func_8002CC74(x1, y1);
             }
             func_8002C8CC(list->models[id], part->packets[0], mode);
-            memcpy(part->packets[1], part->packets[0], list->models[id]->packetSize);
+            memcpy(part->packets[1], part->packets[0], list->models[id]->packet_size);
             part->rotation.vx = 0;
         } else {
             part->packets[0] = NULL;
@@ -526,7 +526,7 @@ void func_8009F5B0(void) {
 /* Draw a posed hierarchy's parts into packet buffer `buffer`: each part's light
  * matrix from `light` and its world matrix, and its rotation and translation
  * composed with `view` and the root's transform, then its model (8002C700). */
-void func_8009F5B8(ModelList *list, ModelPart *part, MATRIX *view, MATRIX *light, s32 arg4, s32 arg5,
+void func_8009F5B8(ModelTable *list, ModelPart *part, MATRIX *view, MATRIX *light, s32 mode, u32 *ot,
                    s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
     MATRIX *lighting = (MATRIX *)0x1F800020;
@@ -545,7 +545,7 @@ void func_8009F5B8(ModelList *list, ModelPart *part, MATRIX *view, MATRIX *light
             CompMatrix(camera, &part->world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
-            func_8002C700(list->models[part->modelId], part->packets[buffer], arg5, arg4);
+            func_8002C700(list->models[part->modelId], part->packets[buffer], ot, mode);
         }
     }
 }
@@ -571,13 +571,13 @@ void func_8009F708(ModelPart *root) {
 
 /* Free a model list's table, releasing its models first when release is
  * set. */
-void func_8009F794(ModelList *list, s32 release) {
+void func_8009F794(ModelTable *list, s32 release) {
     u32 i;
 
     if (list != NULL) {
         for (i = 0; i < list->count; i++) {
             if (list->models != NULL && list->models[i] != NULL && release) {
-                func_8002CBBC(list->models[i]);
+                func_8002CBBC((ModelBuffer *)list->models[i]);
             }
         }
         if (list->models != NULL) {
@@ -588,7 +588,7 @@ void func_8009F794(ModelList *list, s32 release) {
 }
 
 /* The in-place matrix product used to scale the shadow's rotation. */
-SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
+EffectSprite *func_800A2E88(SpritePool *pool, s16 abe);
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 
 /* Draw an active object: attenuate its two tracked lights, draw its ground
@@ -600,7 +600,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
 void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
                    s32 buffer) {
     u32 count;
-    ModelList *models;
+    ModelTable *models;
     ModelPart *part;
     ModelPart *root;
     u16 scale;
@@ -757,7 +757,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 }
                 SetRotMatrix(scratch);
                 SetTransMatrix(scratch);
-                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)ot, mode);
+                func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
             }
         }
         surface = object->surfaces;
@@ -819,7 +819,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     }
                     if (channel->field5E > channel->field60 || channel->sprite == NULL) {
                         channel->field5E = 1;
-                        channel->sprite = (Sprite *)func_800A2E88(channel->pool, channel->field3);
+                        channel->sprite = func_800A2E88(channel->pool, channel->field3);
                         channel->sprite->projected = 0;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -858,7 +858,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     }
                     if (channel->field5E > channel->field60 || channel->sprite == NULL) {
                         channel->field5E = 1;
-                        channel->sprite = (Sprite *)func_800A2E88(channel->pool, channel->field3);
+                        channel->sprite = func_800A2E88(channel->pool, channel->field3);
                         channel->sprite->projected = 1;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -1875,7 +1875,7 @@ SpritePool *func_800A2CA4(SpritePool *pool, s32 count) {
     func_80032498(4, 0);
     pool->count = count;
     pool->next = 0;
-    pool->records = func_80031BDC((count + 1) * sizeof(SpriteRecord), 0);
+    pool->records = func_80031BDC((count + 1) * sizeof(EffectSprite), 0);
     if (pool->records != NULL) {
         func_800A2D5C(pool);
         return pool;
@@ -1896,13 +1896,13 @@ void func_800A2D1C(SpritePool *pool) {
 /* Mark every record of a sprite pool free and set up both of its
  * semi-transparent quadrilaterals. */
 void func_800A2D5C(SpritePool *pool) {
-    SpriteRecord *record = pool->records;
+    EffectSprite *record = pool->records;
     s32 i;
     s32 j;
 
     for (i = 0; i < pool->count + 1; i++) {
-        record->id = -1;
-        record->field1E = 0;
+        record->age = -1;
+        record->lifetime = 0;
         for (j = 0; j < 2; j++) {
             SetPolyFT4(&record->packets[j]);
             SetSemiTrans(&record->packets[j], 1);
@@ -1924,15 +1924,15 @@ void func_800A2D5C(SpritePool *pool) {
 /* Take the first free record of a sprite pool with its quadrilaterals'
  * semi-transparency set to abe, advancing the free index past the records in
  * use; the spare record when none is free. */
-SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe) {
-    SpriteRecord *record;
+EffectSprite *func_800A2E88(SpritePool *pool, s16 abe) {
+    EffectSprite *record;
     s16 next = pool->next;
 
     if (next < pool->count) {
         record = &pool->records[next];
-        if (record->id == -1) {
+        if (record->age == -1) {
             pool->next = next + 1;
-            while (pool->next < pool->count && pool->records[pool->next].id != -1) {
+            while (pool->next < pool->count && pool->records[pool->next].age != -1) {
                 pool->next++;
             }
             SetSemiTrans(&record->packets[0], abe);
@@ -1944,13 +1944,13 @@ SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe) {
 }
 
 /* Return a record to its sprite pool; its index. */
-s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
-    s32 index = ((u32)record - (u32)pool->records) / sizeof(SpriteRecord);
+s32 func_800A2F94(SpritePool *pool, EffectSprite *record) {
+    s32 index = ((u32)record - (u32)pool->records) / sizeof(EffectSprite);
 
     if (index <= pool->next) {
         pool->next = index;
     }
-    record->id = -1;
+    record->age = -1;
     return index;
 }
 
@@ -1958,19 +1958,19 @@ s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
  * with the GTE at their depth, 2D ones at the front), free the expired ones
  * and fade the rest by steps ticks. */
 void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
-    Sprite *sprite;
+    EffectSprite *sprite;
     s32 otz;
     s32 i;
 
     SetRotMatrix(m);
     SetTransMatrix(m);
-    sprite = (Sprite *)pool->records;
+    sprite = pool->records;
     for (i = 0; i < pool->count; i++, sprite++) {
         if (sprite->age == -1) {
             continue;
         }
         if (sprite->age >= sprite->lifetime) {
-            func_800A2F94(pool, (SpriteRecord *)sprite);
+            func_800A2F94(pool, sprite);
             continue;
         }
         sprite->packets[buffer].r0 = sprite->color[0] >> 6;
@@ -2470,7 +2470,7 @@ void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, S
         func_800A48EC(D_800C3E48, (ModelPart *)D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
     }
     for (i = 0; i < 2; i++) {
-        func_800273C4(D_800C3D50[i], eye, target, view, ot + depth - 1, buffer);
+        func_800273C4(D_800C3D50[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);
     }
     func_800A4DB8(D_800C3EA0, eye, target, view, ot + depth - 1, buffer);
 }
@@ -2506,7 +2506,7 @@ void func_800A4820(void) {
  * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
  * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
  * draw at ordering-table depth 16 into ot[depth - 1]. */
-void func_800A48EC(ModelList *models, ModelPart *part, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth) {
     MATRIX *m;
     s32 shift;
@@ -2558,10 +2558,10 @@ void func_800A48EC(ModelList *models, ModelPart *part, MATRIX *view, s32 arg3, s
             }
             if ((s16)part->field52 == 0) {
                 D_80050100 = 16;
-                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)(ot + depth - 1), mode);
+                func_8002C700(models->models[part->modelId], part->packets[buffer], ot + depth - 1, mode);
             } else {
                 D_80050100 = shift;
-                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)ot, mode);
+                func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
             }
         }
     }
@@ -3001,29 +3001,29 @@ void func_800A5EB4(void) {
             color += 5;
         }
         if (D_800C3D50[0] != NULL) {
-            color->r = ((StageBackdrop *)D_800C3D50[0])->flats[i].r0;
-            color->g = ((StageBackdrop *)D_800C3D50[0])->flats[i].g0;
-            color->b = ((StageBackdrop *)D_800C3D50[0])->flats[i].b0;
+            color->r = D_800C3D50[0]->fills[i].r0;
+            color->g = D_800C3D50[0]->fills[i].g0;
+            color->b = D_800C3D50[0]->fills[i].b0;
         }
         color++;
     }
     for (i = 0; i < 2; i++) {
         if (D_800C3D50[0] != NULL) {
-            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r0;
-            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g0;
-            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b0;
+            color->r = D_800C3D50[0]->fades[i].r0;
+            color->g = D_800C3D50[0]->fades[i].g0;
+            color->b = D_800C3D50[0]->fades[i].b0;
             color++;
-            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r1;
-            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g1;
-            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b1;
+            color->r = D_800C3D50[0]->fades[i].r1;
+            color->g = D_800C3D50[0]->fades[i].g1;
+            color->b = D_800C3D50[0]->fades[i].b1;
             color++;
-            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r2;
-            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g2;
-            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b2;
+            color->r = D_800C3D50[0]->fades[i].r2;
+            color->g = D_800C3D50[0]->fades[i].g2;
+            color->b = D_800C3D50[0]->fades[i].b2;
             color++;
-            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r3;
-            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g3;
-            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b3;
+            color->r = D_800C3D50[0]->fades[i].r3;
+            color->g = D_800C3D50[0]->fades[i].g3;
+            color->b = D_800C3D50[0]->fades[i].b3;
             color++;
         } else {
             color += 4;
@@ -3088,29 +3088,29 @@ void func_800A64E4(void) {
             color += 5;
         }
         if (D_800C3D50[0] != NULL) {
-            ((StageBackdrop *)D_800C3D50[0])->flats[i].r0 = color->r;
-            ((StageBackdrop *)D_800C3D50[0])->flats[i].g0 = color->g;
-            ((StageBackdrop *)D_800C3D50[0])->flats[i].b0 = color->b;
+            D_800C3D50[0]->fills[i].r0 = color->r;
+            D_800C3D50[0]->fills[i].g0 = color->g;
+            D_800C3D50[0]->fills[i].b0 = color->b;
         }
         color++;
     }
     for (i = 0; i < 2; i++) {
         if (D_800C3D50[0] != NULL) {
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].r0 = color->r;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].g0 = color->g;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].b0 = color->b;
+            D_800C3D50[0]->fades[i].r0 = color->r;
+            D_800C3D50[0]->fades[i].g0 = color->g;
+            D_800C3D50[0]->fades[i].b0 = color->b;
             color++;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].r1 = color->r;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].g1 = color->g;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].b1 = color->b;
+            D_800C3D50[0]->fades[i].r1 = color->r;
+            D_800C3D50[0]->fades[i].g1 = color->g;
+            D_800C3D50[0]->fades[i].b1 = color->b;
             color++;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].r2 = color->r;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].g2 = color->g;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].b2 = color->b;
+            D_800C3D50[0]->fades[i].r2 = color->r;
+            D_800C3D50[0]->fades[i].g2 = color->g;
+            D_800C3D50[0]->fades[i].b2 = color->b;
             color++;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].r3 = color->r;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].g3 = color->g;
-            ((StageBackdrop *)D_800C3D50[0])->quads[i].b3 = color->b;
+            D_800C3D50[0]->fades[i].r3 = color->r;
+            D_800C3D50[0]->fades[i].g3 = color->g;
+            D_800C3D50[0]->fades[i].b3 = color->b;
             color++;
         } else {
             color += 4;
@@ -3241,17 +3241,17 @@ void func_800A6AE8(void) {
                         color += 5;
                     }
                     if (D_800C3D50[0] != NULL) {
-                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->flats[j].r0, i, (u8 *)color++);
+                        func_800A6884(&D_800C3D50[0]->fills[j].r0, i, (u8 *)color++);
                     } else {
                         color++;
                     }
                 }
                 for (j = 0; j < 2; j++) {
                     if (D_800C3D50[0] != NULL) {
-                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r0, i, (u8 *)color++);
-                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r1, i, (u8 *)color++);
-                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r2, i, (u8 *)color++);
-                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r3, i, (u8 *)color++);
+                        func_800A6884(&D_800C3D50[0]->fades[j].r0, i, (u8 *)color++);
+                        func_800A6884(&D_800C3D50[0]->fades[j].r1, i, (u8 *)color++);
+                        func_800A6884(&D_800C3D50[0]->fades[j].r2, i, (u8 *)color++);
+                        func_800A6884(&D_800C3D50[0]->fades[j].r3, i, (u8 *)color++);
                     } else {
                         color += 4;
                     }
@@ -3695,14 +3695,14 @@ void func_800A8B0C(void) {
     D_800C3D68 = 0;
     D_800C3B7C = 0;
     D_800C3B74 = 1;
-    func_800A2234(&D_800C3D0C, D_800658C8->effectCount);
-    func_800A2CA4(&D_800C3D04, D_800658C8->spriteCount);
+    func_800A2234(&D_800C3D0C, SCENE_DATA->effectCount);
+    func_800A2CA4(&D_800C3D04, SCENE_DATA->spriteCount);
     func_800B00D0();
     for (i = 0; i < 32; i++) {
         D_800D3368[i] = NULL;
     }
     for (i = 0; i < 20; i++) {
-        D_800C3ACC[i].value = 0;
+        D_800C3ACC[i].models = NULL;
     }
     for (i = 0; i < 2; i++) {
         D_800D3304[i].active = 0;
@@ -3784,13 +3784,13 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             D_800C3B70 = func_80031BDC(size, 1);
             memcpy(D_800C3B70, models, size);
             for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
-                if (D_800C3ACC[D_800C3B6C].value == 0) {
+                if (D_800C3ACC[D_800C3B6C].models == NULL) {
                     break;
                 }
             }
-            func_8009EBA8(D_800C3B70, (ModelList *)&D_800C3ACC[D_800C3B6C]);
+            func_8009EBA8(D_800C3B70, &D_800C3ACC[D_800C3B6C]);
         }
-        object->field0 = (ModelList *)&D_800C3ACC[D_800C3B6C];
+        object->field0 = &D_800C3ACC[D_800C3B6C];
         if (!(flags & 0x40)) {
             if (object->flags4A & 4) {
                 object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
@@ -3821,9 +3821,9 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
         for (i = 0; i < 2; i++) {
             SetPolyFT4(&object->shadow[i]);
             SetSemiTrans(&object->shadow[i], 1);
-            object->shadow[i].r0 = D_800658C8->shadow[0];
-            object->shadow[i].g0 = D_800658C8->shadow[1];
-            object->shadow[i].b0 = D_800658C8->shadow[2];
+            object->shadow[i].r0 = SCENE_DATA->shadow[0];
+            object->shadow[i].g0 = SCENE_DATA->shadow[1];
+            object->shadow[i].b0 = SCENE_DATA->shadow[2];
             object->shadow[i].clut = GetClut(0x30, 0x1CC);
             object->shadow[i].tpage = GetTPage(0, 2, 0x380, 0);
             object->shadow[i].u0 = 0xC0;
@@ -3836,7 +3836,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             object->shadow[i].v3 = 0xFE;
         }
         if (!(flags & 0x40)) {
-            object->scale1C = OBJECT_DESC(stream)->scale * D_800658C8->objectScale >> 12;
+            object->scale1C = OBJECT_DESC(stream)->scale * SCENE_DATA->objectScale >> 12;
         } else {
             object->scale1C = OBJECT_DESC(stream)->scale;
         }
@@ -3888,8 +3888,8 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             func_800AFF9C(object);
         }
         if (!(flags & 2)) {
-            func_8002C644(D_800C3B70);
-            func_8002C4BC(D_800C3B70);
+            func_8002C644((ModelGroup *)D_800C3B70);
+            func_8002C4BC((ModelGroup *)D_800C3B70);
             copySize = func_80031894(D_800C3B70);
             copy = func_80031BDC(copySize, 0);
             memcpy(copy, D_800C3B70, copySize);
@@ -3911,8 +3911,8 @@ void func_800A9540(s32 slot) {
     s32 saved1;
     u8 gearId;
     s32 variant;
-    DiscFile *entry;
-    DiscFile *files;
+    FileRequest *entry;
+    FileRequest *files;
     s32 base;
     s32 file;
 
@@ -3924,26 +3924,26 @@ void func_800A9540(s32 slot) {
     if (D_800C3508[gearId * 2 + 1] < variant) {
         variant = 0;
     }
-    files = func_80031BDC(sizeof(DiscFile) * 4, 1);
-    D_800C3B78 = (SoundBanks *)files;
+    files = func_80031BDC(sizeof(FileRequest) * 4, 1);
+    D_800C3B78 = files;
     base = D_800C3508[gearId * 2];
     file = base + 1;
     entry = files;
     entry->file = file;
-    entry->data = func_80031BDC(func_800288EC(file), 1);
+    entry->destination = func_80031BDC(func_800288EC(file), 1);
     entry++;
     file = base + 2;
     entry->file = file;
-    entry->data = func_80031BDC(func_800288EC(file), 0);
+    entry->destination = func_80031BDC(func_800288EC(file), 0);
     entry++;
     if (variant != 0) {
         file += variant;
         entry->file = file;
-        entry->data = func_80031BDC(func_800288EC(file), 1);
+        entry->destination = func_80031BDC(func_800288EC(file), 1);
         entry++;
     }
     entry->file = 0;
-    entry->data = NULL;
+    entry->destination = NULL;
     func_80029AFC(D_800C3B78, 0, 0);
     func_80028470(saved0, saved1);
 }
@@ -3953,24 +3953,24 @@ void func_800A9540(s32 slot) {
 void func_800A96B4(s32 set) {
     s32 saved0;
     s32 saved1;
-    SoundBanks *banks;
+    FileRequest *banks;
     s32 bank;
 
     func_800284B4(&saved0, &saved1);
     func_80028470(0x28, 0);
     func_80032498(4, 0);
-    banks = func_80031BDC(sizeof(SoundBanks), 1);
+    banks = func_80031BDC(sizeof(FileRequest) * 3, 1);
     set *= 2;
     bank = set + 1;
     D_800C3B78 = banks;
     func_80028998(bank);
-    banks->bank0 = bank;
-    banks->data0 = func_80031BDC(func_800288EC(bank), 1);
+    banks[0].file = bank;
+    banks[0].destination = func_80031BDC(func_800288EC(bank), 1);
     bank = set + 2;
-    banks->bank1 = bank;
-    banks->data1 = func_80031BDC(func_800288EC(bank), 1);
-    banks->field10 = 0;
-    banks->field14 = 0;
+    banks[1].file = bank;
+    banks[1].destination = func_80031BDC(func_800288EC(bank), 1);
+    banks[2].file = 0;
+    banks[2].destination = NULL;
     func_80029AFC(D_800C3B78, 0, 0);
     func_80028470(saved0, saved1);
 }
@@ -3993,11 +3993,11 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
     s32 flags;
     s32 slot;
 
-    func_800A8BF0(index, 0, D_800C3B78->data1, D_800C3B78->data0,
+    func_800A8BF0(index, 0, D_800C3B78[1].destination, D_800C3B78[0].destination,
                   texture_x, texture_y, clut_x, clut_y, NULL);
     D_800D3368[index]->field38 = 1;
     D_800D3368[index]->field22 = 1;
-    parts = (GearPartFile *)D_800C3B78->field14;
+    parts = D_800C3B78[2].destination;
     if (parts != NULL) {
         func_8003342C(parts);
         entry = parts->table;
@@ -4033,7 +4033,7 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
     }
     func_800320E8(D_800C3B78);
     DrawSync(0);
-    func_800320E8(D_800C3B78->data0);
+    func_800320E8(D_800C3B78[0].destination);
 }
 
 /* Run the stage for the elapsed frames (two frames per step, at most three
@@ -4066,9 +4066,9 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
     D_800D39E8 = (func_8003F8CC(D_800C3CF0) + 0x1000) / 800 + 4;
     D_800C3B7C += 0x80;
     D_800C3B80 = (func_8003F8CC(D_800C3B7C) + 0x1000) / 32;
-    pulse[0] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[0]);
-    pulse[1] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[1]);
-    pulse[2] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[2]);
+    pulse[0] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[0]);
+    pulse[1] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[1]);
+    pulse[2] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[2]);
     if (D_800D3368[D_800C3D40] != NULL && !(D_800D3368[D_800C3D40]->flags4A & 0x20)) {
         for (index = 0, others = D_800D3368; index < 11; index++, others++) {
             if (*others != NULL && D_800C3D40 != index && (*others)->field5C == 0xFF &&
@@ -4112,7 +4112,7 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
                 if ((D_800C3D14 >> i) & 1) {
                     SetBackColor(pulse[0], pulse[1], pulse[2]);
                 } else {
-                    SetBackColor(D_800658C8->ambient[0], D_800658C8->ambient[1], D_800658C8->ambient[2]);
+                    SetBackColor(SCENE_DATA->ambient[0], SCENE_DATA->ambient[1], SCENE_DATA->ambient[2]);
                 }
                 if ((*objects)->flags4A & 0x40) {
                     D_80050104 = 0;
@@ -5593,15 +5593,15 @@ chosen:
             break;
         case 0x59:
             object->field58 = 0;
-            object->position[0] = D_800658C8->cameras[arg].eye[0];
-            object->position[1] = D_800658C8->cameras[arg].eye[1];
-            object->position[2] = D_800658C8->cameras[arg].eye[2];
+            object->position[0] = SCENE_DATA->cameras[arg].eye[0];
+            object->position[1] = SCENE_DATA->cameras[arg].eye[1];
+            object->position[2] = SCENE_DATA->cameras[arg].eye[2];
             break;
         case 0x5A:
             object->field58 = 0;
-            object->position[0] = D_800658C8->cameras[arg].lookAt[0];
-            object->position[1] = D_800658C8->cameras[arg].lookAt[1];
-            object->position[2] = D_800658C8->cameras[arg].lookAt[2];
+            object->position[0] = SCENE_DATA->cameras[arg].lookAt[0];
+            object->position[1] = SCENE_DATA->cameras[arg].lookAt[1];
+            object->position[2] = SCENE_DATA->cameras[arg].lookAt[2];
             break;
         case 0x5B: /* set the queue mode; 2 replays the queue */
             word = object->queueCount;
@@ -5645,9 +5645,9 @@ chosen:
             {
                 s32 group = D_800C3EB4[object->slot].group;
 
-                object->position[0] = (D_800658C8->areas[group].x0 + D_800658C8->areas[group].x1) >> 1;
+                object->position[0] = (SCENE_DATA->areas[group].x0 + SCENE_DATA->areas[group].x1) >> 1;
                 object->position[1] = 0;
-                object->position[2] = (D_800658C8->areas[group].z0 + D_800658C8->areas[group].z1) >> 1;
+                object->position[2] = (SCENE_DATA->areas[group].z0 + SCENE_DATA->areas[group].z1) >> 1;
             }
             break;
         case 0x61:
@@ -5701,13 +5701,13 @@ chosen:
                     y = object->position[2];
                     value += object->position[1];
                 } else if (m1 == 0xF5) {
-                    x = D_800658C8->cameras[b2].lookAt[0];
-                    y = D_800658C8->cameras[b2].lookAt[2];
-                    value += D_800658C8->cameras[b2].lookAt[1];
+                    x = SCENE_DATA->cameras[b2].lookAt[0];
+                    y = SCENE_DATA->cameras[b2].lookAt[2];
+                    value += SCENE_DATA->cameras[b2].lookAt[1];
                 } else if (m1 == 0xF4) {
-                    x = D_800658C8->cameras[b2].eye[0];
-                    y = D_800658C8->cameras[b2].eye[2];
-                    value += D_800658C8->cameras[b2].eye[1];
+                    x = SCENE_DATA->cameras[b2].eye[0];
+                    y = SCENE_DATA->cameras[b2].eye[2];
+                    value += SCENE_DATA->cameras[b2].eye[1];
                 } else if (D_800D3368[x] != NULL) {
                     value = func_800AA600(x) * (s16)value / 4096;
                     mode = 0;
@@ -5764,8 +5764,8 @@ chosen:
                     } else if (m1 == 6) {
                         from = D_800C3B9C;
                     }
-                    angle = (s16)angle * D_800658C8->objectScale >> 12;
-                    word = (s16)word * D_800658C8->objectScale >> 12;
+                    angle = (s16)angle * SCENE_DATA->objectScale >> 12;
+                    word = (s16)word * SCENE_DATA->objectScale >> 12;
                 }
                 if (b2 & 0x20) {
                     to = from;
@@ -6032,13 +6032,13 @@ s32 func_800AE220(BattleObject *object, s32 source) {
         return D_8005919C->bank << 16;
     }
     if (source == 1) {
-        return object->model->sounds->bank << 16;
+        return object->model->sounds->id << 16;
     }
     if (source == 2) {
-        return object->extraData->sounds->bank << 16;
+        return object->extraData->sounds->id << 16;
     }
     if (source == 3) {
-        return D_800C4924->bank << 16;
+        return D_800C4924->id << 16;
     }
 }
 
@@ -6138,9 +6138,9 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         if ((sprite->mode & 0x7F) == one) {
                             point.vy = object->groundY;
                         } else if ((sprite->mode & 0x7F) == 2) {
-                            point.vx = D_800658C8->centre.vx;
-                            point.vy = D_800658C8->centre.vy;
-                            point.vz = D_800658C8->centre.vz;
+                            point.vx = SCENE_DATA->centre.vx;
+                            point.vy = SCENE_DATA->centre.vy;
+                            point.vz = SCENE_DATA->centre.vz;
                             func_800A5870(&point, func_800A579C(&point), &ground);
                         } else {
                             point.vy = out.vy;
@@ -6211,11 +6211,11 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     sound = &event->sound;
                     if (func_800B12D0(func_800AF400(), sound->flags)) {
                         variant = 0;
-                        if (sound->kind == one && D_800658C8->soundMode != 0) {
-                            func_80039E60((object->model->sounds->bank << 16) | (D_800658C8->soundMode + 10));
+                        if (sound->kind == one && SCENE_DATA->soundMode != 0) {
+                            func_80039E60((object->model->sounds->id << 16) | (SCENE_DATA->soundMode + 10));
                         }
                         base = func_800AE220(object, sound->source);
-                        if (D_800658C8->soundMode == 3 && sound->kind == 2) {
+                        if (SCENE_DATA->soundMode == 3 && sound->kind == 2) {
                             variant = 8;
                         }
                         func_80039E60(base + sound->sound + variant);
@@ -6223,7 +6223,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             func_80039E60(base + sound->sound2 + variant);
                         }
                         volume = object->field39;
-                        if (D_800658C8->soundMode == 3 && sound->kind != 2) {
+                        if (SCENE_DATA->soundMode == 3 && sound->kind != 2) {
                             volume = volume * 60 / 107;
                         }
                         func_8003A2E4(base + sound->sound + variant, volume);
@@ -6682,19 +6682,19 @@ void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
  * scale; when the command says so, it follows a part of object (800AFC68). */
 void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
                    BattleObject *object) {
-    EffectSprite *sprite;
+    SpriteTask *task;
     SpriteFollow *follow;
 
-    sprite = func_80023FD8(kind, resource, position, sizeof(SpriteFollow));
-    func_80021FE0(&sprite->x, direction);
-    func_800223B0(&sprite->x, direction);
-    func_80022000(&sprite->x, scale);
-    follow = (SpriteFollow *)((u8 *)sprite + sprite->link);
+    task = func_80023FD8(kind, resource, position, sizeof(SpriteFollow));
+    func_80021FE0(&task->sprite, direction);
+    func_800223B0(&task->sprite, direction);
+    func_80022000(&task->sprite, scale);
+    follow = (SpriteFollow *)((u8 *)task + (s16)task->sprite.size);
     follow->object = object;
     follow->part = command->part;
     if (command->follow) {
-        follow->update = func_8001CD7C(sprite);
-        func_8001CD6C(sprite, func_800AFC68);
+        follow->update = func_8001CD7C(&task->task);
+        func_8001CD6C(&task->task, func_800AFC68);
         follow->offset.vx = command->offset[0];
         follow->offset.vy = command->offset[1];
         follow->offset.vz = command->offset[2];
@@ -6704,8 +6704,9 @@ void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s
 
 /* Update of a following sprite: place it at its offset from its object's
  * part (on the object's ground height when asked), then run its own update. */
-void func_800AFC68(EffectSprite *sprite) {
-    SpriteFollow *follow = (SpriteFollow *)((u8 *)sprite + sprite->link);
+void func_800AFC68(Task *node) {
+    SpriteTask *task = (SpriteTask *)node;
+    SpriteFollow *follow = (SpriteFollow *)((u8 *)task + (s16)task->sprite.size);
     MATRIX *m = (MATRIX *)0x1F800000;
     VECTOR out;
 
@@ -6722,10 +6723,10 @@ void func_800AFC68(EffectSprite *sprite) {
     if (follow->onGround) {
         out.vy = follow->object->groundY;
     }
-    sprite->x = out.vx << 16;
-    sprite->y = out.vy << 16;
-    sprite->z = out.vz << 16;
-    follow->update(sprite);
+    task->sprite.x = out.vx << 16;
+    task->sprite.y = out.vy << 16;
+    task->sprite.z = out.vz << 16;
+    follow->update(&task->task);
 }
 
 /* Set (or with mode bit 0x20 add to) a part's rotation (mode & 7 == 0),
@@ -7043,7 +7044,7 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
 /* Whether a point (x at [0], z at [2]) lies strictly inside the scene's
  * bounds. */
 s16 func_800B0AB4(s16 *point) {
-    BattleSceneData *scene = D_800658C8;
+    BattleSceneData *scene = SCENE_DATA;
     s16 x = point[0];
     s16 z;
 

@@ -6,16 +6,18 @@
  * ring above their sprite. */
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "frame.h"
 
 /* The acting slot's pulse (D_800C3748), a child task of its actor task. */
 typedef struct {
-    BattleTask task;
-    BattleSprite *sprite; /* 0x1C */
+    Task task;
+    Sprite *sprite; /* 0x1C */
     s32 tick;             /* 0x20 */
     s32 slot;             /* 0x24 */
 } SlotPulse;
@@ -26,8 +28,9 @@ extern SlotPulse *D_800C3748;
  * from object 0 of the resident TMD model D_8001C76C with double-buffered
  * packets. */
 typedef struct {
-    ActorTask actor;      /* 0x00: its draw task at 0x1C */
-    BattleSprite *sprite; /* 0x38 */
+    Task task;            /* 0x00 */
+    Task draw;            /* 0x1C */
+    Sprite *sprite;       /* 0x38 */
     VECTOR pos;           /* 0x3C: above the sprite */
     SVECTOR angle;        /* 0x4C: spins about y */
     s32 height;           /* 0x54: the sprite's size */
@@ -40,21 +43,19 @@ typedef struct {
  * area (the menu's path points overlap it). */
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
-extern MATRIX D_8004FBB8;   /* sprite camera */
 extern u8 D_8001C76C[];  /* resident TMD model (objects.h's effect script file format) */
 
-void *func_8001D0A4(void *owner, void (*update)()); /* the owner's child task running update */
 u8 *func_800B168C(u8 *table, s32 index);
 s32 func_800B16A4(ScriptEntry *entry);
 void func_800B1720();
 void func_800B1F6C();
 
-void func_800BCB54(BattleTask *task); /* also the pulse destroy; ends D_800C3748 */
-void func_800BCBB4(BattleTask *task);
+void func_800BCB54(Task *task); /* also the pulse destroy; ends D_800C3748 */
+void func_800BCBB4(Task *task);
 void func_800BCC60(void);
-void func_800BCEAC(BattleTask *draw);
-void func_800BCFAC(ActorTask *task);
-void func_800BD024(ActorTask *task);
-void func_800BD098(ActorTask *owner);
+void func_800BCEAC(Task *draw);
+void func_800BCFAC(Task *task);
+void func_800BD024(Task *task);
+void func_800BD098(SpriteTask *owner);
 
 #endif

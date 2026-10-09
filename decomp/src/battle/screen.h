@@ -5,23 +5,15 @@
  * and the stage light fade (800B3358-800B3E04). */
 
 #include "common.h"
-#include "psyq.h"
-
-/* A resident task node (0x1C bytes; resident/sprite.h's Task). */
-typedef struct BattleTask {
-    struct BattleTask *owner;
-    void *data;                             /* 0x04 */
-    void (*update)(struct BattleTask *task);  /* 0x08 */
-    void (*destroy)(struct BattleTask *task); /* 0x0C */
-    u32 id;                                 /* 0x10 */
-    u32 link;                               /* 0x14: bit 31 active */
-    struct BattleTask *next;                /* 0x18 */
-} BattleTask;
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/sprite.h"
 
 /* The camera quake task (D_800C3548): an amplitude easing from one to
  * another, applied with alternating signs to the view offset D_800C354C. */
 typedef struct {
-    BattleTask task;
+    Task task;
     SVECTOR amplitude; /* 0x1C */
     SVECTOR from;      /* 0x24 */
     SVECTOR to;        /* 0x2C */
@@ -33,8 +25,8 @@ typedef struct {
 /* The screen fade (D_800C3558): a full-screen blended rectangle whose
  * colour eases to a target, drawn by a second task. */
 typedef struct {
-    BattleTask task;
-    BattleTask draw;  /* 0x1C */
+    Task task;
+    Task draw;  /* 0x1C */
     s32 total;        /* 0x38 */
     s32 left;         /* 0x3C */
     u8 field40;
@@ -47,8 +39,8 @@ typedef struct {
 /* The stage light fade (D_800C3560): light slot 0 (800A6444) with its green
  * at 32 less a level easing to a target. */
 typedef struct {
-    BattleTask task;
-    BattleTask draw; /* 0x1C */
+    Task task;
+    Task draw; /* 0x1C */
     s32 total;       /* 0x38 */
     s32 left;        /* 0x3C */
     s16 from;        /* 0x40 */
@@ -92,8 +84,8 @@ typedef struct {
 /* The shattered screen (800B73A0, 0x10F7C bytes): two layers of 14 rows of
  * 20 shards cut from the screen copied to VRAM (0x2C0, 0x100). */
 typedef struct {
-    BattleTask task;
-    BattleTask draw;                 /* 0x1C */
+    Task task;
+    Task draw;                 /* 0x1C */
     s32 frame;                       /* 0x38 */
     ScreenShard shards[2][14][20];   /* 0x3C */
 } ScreenShatter;
@@ -105,44 +97,24 @@ extern ScreenFade *D_800C3558;
 extern u8 D_800C355C; /* fade on the second screen fade */
 extern LightFade *D_800C3560;
 extern u8 D_800D3638;
-extern u8 *D_80059580;  /* resident: the primitive buffer cursor */
-extern u8 *D_80059534;  /* its end */
-extern u32 *D_8005956C; /* resident: the ordering table */
 
 /* Resident tasks. */
-void *func_8001CD08(void *owner, s32 size);        /* create a task */
-void *func_8001D1D8(s32 size, void *owner, void (*update)(), void (*draw)(), void (*destroy)());
-void func_8001CC18(s32 owner, void *task);
-void func_8001CA58(void *owner, void *node);
-void func_8001CD64(void *task, void (*update)());
-void func_8001CD74(void *task, void (*destroy)());
-void func_8001CD94(void *task); /* end a task */
-void func_8001CB48(void *node);
-void func_80025180(void *owner); /* end the owner's sprites */
-
-/* Run the calls between the two on a stack ending at top. */
-#define STACK_ENTER(top)                                                                           \
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"            \
-                     :                                                                             \
-                     : "r"(top)                                                                    \
-                     : "$8", "memory")
-#define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
 
 void func_800B3358(Quake *quake);
 void func_800B3588(Quake *quake);
-void func_800B36BC(BattleTask *task);
-void func_800B3878(BattleTask *draw);
+void func_800B36BC(Task *task);
+void func_800B3878(Task *draw);
 void func_800B383C(ScreenFade *fade);
-void func_800B3B94(BattleTask *task);
-void func_800B3C74(BattleTask *draw);
+void func_800B3B94(Task *task);
+void func_800B3C74(Task *draw);
 void func_800B3C2C(LightFade *fade);
 
 extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
 extern SVECTOR D_800C35AC[3];
 u8 func_80021AD8(u8 value, s32 delta); /* add, clamped to 0-255 */
-void func_800B6F0C(BattleTask *task);
-void func_800B7134(BattleTask *draw);
-void func_800B7160(BattleTask *draw);
+void func_800B6F0C(Task *task);
+void func_800B7134(Task *draw);
+void func_800B7160(Task *draw);
 void func_800B7364(ScreenShatter *shatter);
 void func_800B73A0(void);
 ScreenShatter *func_800B7424(ScreenShatter *shatter);

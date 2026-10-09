@@ -237,7 +237,9 @@
  *         turns to */
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "model.h"
 #include "scene.h"
 #include "effect.h"
@@ -263,8 +265,6 @@
 
 extern u8 D_800C3530[]; /* extra file bases */
 extern u16 D_800D39E4;  /* the single action to request (71, 73) */
-extern u8 D_8005A474[];
-extern u8 D_800591B1; /* the requested single action is done (800b8068) */
 extern u8 D_800D36B8; /* the battle's start mode */
 
 void func_80022224(); /* upload an image (resource, image, at, clut, mode; the points by value) */
@@ -295,7 +295,6 @@ void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 
                    u16 p5, u16 field12);
 
 /* Services of other units. */
-void func_8003A3B8(s32 sound, s32 b, s32 c); /* slide its volume to b over c frames */
 void func_80080C6C(u8 index);
 u8 func_800885D0(u8 slot);
 void func_800B8054(s32 action); /* request single action `action` (800b8068 runs it) */

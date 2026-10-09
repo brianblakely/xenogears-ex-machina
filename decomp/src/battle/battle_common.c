@@ -11,7 +11,9 @@
  * battle.data.ld. Variables no battle code addresses are marked
  * unreferenced, or with the battle-time modules that use them. */
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
 u8 D_800C3CEC;    /* a command file is loaded */
 s16 D_800C3CF0;
@@ -27,7 +29,7 @@ u16 D_800C3D40;
 u8 D_800C3D44;
 u8 D_800C3D48;  /* the 801e5000 module is loaded */
 s16 D_800C3D4C; /* the trail's blend */
-void *D_800C3D50[2];
+struct Panorama *D_800C3D50[2]; /* the stage backdrops */
 s32 D_800C3D58; /* gear enemies present */
 u8 D_800C3D5C;
 u8 *D_800C3D60; /* the target's field 0x148 */
@@ -35,7 +37,7 @@ u16 D_800C3D64;
 u8 D_800C3D68;
 u8 D_800C3D6C;
 u8 D_800C3D70[0x30];
-struct ResidentRecord18 D_800C3DA0[2];
+struct TextureScroll D_800C3DA0[2]; /* the stage's texture scrolls */
 u8 *D_800C3DD0;    /* the enemy data file (ovl2615) */
 s32 D_800C3DD4[2]; /* unreferenced */
 void *D_800C3DDC;  /* enemy name table */
@@ -51,7 +53,7 @@ u8 D_800C3E04;                        /* attacker slot */
 u8 D_800C3E08[3];                     /* panel value digits */
 struct MemberMasks D_800C3E0C[3];
 u8 D_800C3E18;
-struct BattleSprite *D_800C3E1C;
+struct Sprite *D_800C3E1C;
 s32 D_800C3E20;
 struct DirectionArrows *D_800C3E24;
 u8 D_800C3E28[2]; /* direction input: [0] the previous, [1] the current */
@@ -61,7 +63,7 @@ struct Combatant *D_800C3E34; /* target record */
 s32 D_800C3E38;
 s32 D_800C3E3C;   /* unreferenced */
 u8 D_800C3E40[8]; /* enemy name per enemy slot (3-10) */
-struct ModelList *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
+struct ModelTable *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
 u8 D_800C3E4C;                /* battle end state */
 u8 D_800C3E50;                /* target slot */
 s32 D_800C3E54;
@@ -176,7 +178,7 @@ struct ImageAnim D_800D3600; /* the stage's image animation */
 s32 D_800D3630; /* the popup colour kind */
 u16 D_800D3634; /* the current event's targets */
 u8 D_800D3638;
-struct BattleSprite *D_800D363C[11]; /* the current event's target sprites, NULL ended */
+struct Sprite *D_800D363C[11]; /* the current event's target sprites, NULL ended */
 s32 D_800D3668; /* panel gear maximum HP */
 u8 D_800D366C;  /* menu effects enabled */
 u8 D_800D3670;  /* item list column of the chosen item */
@@ -200,7 +202,7 @@ u16 D_800D39DC;   /* alive mask */
 u16 D_800D39E0;   /* mask of slots that act together */
 u16 D_800D39E4;   /* the single action to request (71, 73) */
 s16 D_800D39E8;   /* a slow wave (4..9) */
-struct BattleSprite *D_800D39EC; /* the sprite the camera circles */
+struct Sprite *D_800D39EC; /* the sprite the camera circles */
 void *D_800D39F0; /* battle message table */
 
 #include "battle_core.h"

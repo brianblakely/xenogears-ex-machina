@@ -2,20 +2,16 @@
 #define BATTLE_MODEL_H
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libgte.h"
+#include "resident/model.h"
 
-/* A model's header (fields as far as the battle uses them). */
-typedef struct {
-    u8 pad0[0x34];
-    u32 packetSize; /* 0x34: bytes of one buffer's packets */
-} Model;
-
-/* A table of the models of a relocated model group (0x38 bytes each, from
- * group +0x10). */
-typedef struct ModelList {
-    Model **models;
+/* A table of the models of a relocated model group: the group's records
+ * (resident SpriteModels, 0x38 bytes each from group +0x10) and their
+ * count. */
+typedef struct ModelTable {
+    SpriteModel **models;
     u32 count;
-} ModelList;
+} ModelTable;
 
 /* An effect entry (0x14 bytes) of an effect pool. */
 typedef struct {
@@ -55,16 +51,12 @@ typedef struct ModelPart {
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
-/* Resident services. */
-void func_80032498(s32 tag, s32 quiet);  /* select the heap owner tag */
-void *func_80031BDC(u32 size, s32 mode); /* allocate */
-u32 func_8002C3E8(u8 *group);            /* relocate a model group; its count */
-void func_8002CB54(Model *model, void **packets0, void **packets1); /* allocate packets */
+/* Callers convert arguments/result differently from the resident definition:
+ * allocate a model's packets for both buffers; the image offsets of the
+ * packets built next (s16 coordinates). */
+void func_8002CB54(SpriteModel *model, void **packets0, void **packets1);
 void func_8002CC10(s16 x, s16 y);
 void func_8002CC74(s16 x, s16 y);
-void func_8002C8CC(Model *model, void *packets, s32 mode); /* build packets */
-void func_800320E8(void *block);                           /* free */
-void func_8002CBBC(Model *model);                          /* release a model */
 
 void func_8009F708(ModelPart *root);
 u16 func_8009EF3C(ModelPart *part, s32 scale);
@@ -72,8 +64,5 @@ u16 func_8009F1C4(ModelPart *part, s32 scale);
 void func_800A22E8(EffectPool *pool);
 s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
 EffectEntry *func_800A2330(EffectPool *pool);
-
-/* Resident model drawing. */
-void func_8002C700(Model *model, void *packets, s32 arg2, s32 arg3); /* draw a model */
 
 #endif

@@ -12,6 +12,15 @@
  * resident shifts the word instead). */
 #define FIXED_WHOLE(value) (((s16 *)&(value))[1])
 
+/* The battle slot a sprite stands for: the top two bits of its frame bits
+ * (frame_bits.unknown30) low, the two lowest of its motion word
+ * (motion.bits.unknown0) high, read in that order. */
+#define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frame_bits.unknown30; (sprite)->motion.bits.unknown0 << 2 | low_; })
+
+/* A sprite's frame bits (resident frame_bits) read as one word: the battle
+ * shifts the motion state (bits 28-29) out of it. */
+#define SPRITE_FRAME_WORD(sprite) (*(u32 *)&(sprite)->frame_bits)
+
 /* The bounds of a sprite frame's drawn parts (the modules ovl3385 and
  * ovl3386 measure them with the same code, 801fc000). */
 typedef struct {

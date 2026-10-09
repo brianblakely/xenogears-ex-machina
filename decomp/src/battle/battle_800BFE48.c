@@ -13,7 +13,7 @@
 #include "effect.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "actor.h"
 #include "popup.h"
 #include "frame.h"
@@ -51,7 +51,7 @@ s32 D_800C3A6C = 0;
  * takes its condition's idle motion and gains or loses the status effect
  * sprites of its changed status bits (bits 13-15). */
 void func_800BFE48(void) {
-    BattleSprite *sprite;
+    Sprite *sprite;
     s32 slot;
     s32 motion;
     s32 bit;
@@ -68,13 +68,13 @@ void func_800BFE48(void) {
         if (sprite == NULL || func_8009A0DC(slot) == 8) {
             continue;
         }
-        switch (sprite->motion.bytes[3]) {
+        switch ((s8)sprite->motion.bytes[3]) {
         case 5:
         case 7:
         case 14:
         case 15:
         case 21:
-            if (sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
+            if ((s8)sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
                 func_800245D8(sprite, 0x10);
                 D_800D2E54 &= ~(1 << SPRITE_SLOT(sprite));
             }
@@ -88,27 +88,27 @@ void func_800BFE48(void) {
             continue;
         }
         sprite = BATTLE_AREA.sprites[slot];
-        if (sprite == NULL || func_8009A0DC(slot) == 8 || sprite->motion.bytes[3] == 0x15) {
+        if (sprite == NULL || func_8009A0DC(slot) == 8 || (s8)sprite->motion.bytes[3] == 0x15) {
             continue;
         }
-        if (DISTANCE(sprite->x.part.whole, (u16)BATTLE_AREA.slots[slot].x) >= 9) {
+        if (DISTANCE(FIXED_WHOLE(sprite->x), (u16)BATTLE_AREA.slots[slot].x) >= 9) {
             goto walk;
         }
-        if (DISTANCE(sprite->z.part.whole, (u16)BATTLE_AREA.slots[slot].z) < 9) {
+        if (DISTANCE(FIXED_WHOLE(sprite->z), (u16)BATTLE_AREA.slots[slot].z) < 9) {
             continue;
         }
     walk:
-        sprite->motion.bits.doubleStep = 1;
-        sprite->target[0] = BATTLE_AREA.slots[slot].x;
-        sprite->target[2] = BATTLE_AREA.slots[slot].z;
-        sprite->target[1] = 0;
+        sprite->motion.bits.double_step = 1;
+        sprite->target_x = BATTLE_AREA.slots[slot].x;
+        sprite->target_z = BATTLE_AREA.slots[slot].z;
+        sprite->target_y = 0;
         func_800245D8(sprite, 3);
     }
     func_800C0564();
 
     for (slot = 0; slot != 11; slot++) {
         if (BATTLE_AREA.sprites[slot] != NULL) {
-            BATTLE_AREA.sprites[slot]->motion.bits.doubleStep = 0;
+            BATTLE_AREA.sprites[slot]->motion.bits.double_step = 0;
         }
     }
 
@@ -120,7 +120,7 @@ void func_800BFE48(void) {
         if (sprite == NULL) {
             continue;
         }
-        if (sprite->motion.bytes[3] != 0x15) {
+        if ((s8)sprite->motion.bytes[3] != 0x15) {
             func_800BAEB8(slot);
         }
         func_800C0314();
@@ -129,16 +129,16 @@ void func_800BFE48(void) {
             if (!BATTLE_AREA.slots[slot].gear
                 && (motion != 0x15 || (D_800C3608 >> SPRITE_SLOT(sprite)) & 1)) {
                 if (motion == 1) {
-                    motion = sprite->idle.mode;
+                    motion = (s8)sprite->b0.byteb0;
                 }
-                if (!BATTLE_AREA.slots[slot].hidden && sprite->motion.bytes[3] != motion) {
+                if (!BATTLE_AREA.slots[slot].hidden && (s8)sprite->motion.bytes[3] != motion) {
                     func_800245D8(sprite, motion);
                 }
             }
         }
         status = func_8009A1AC(slot);
-        old = (u16)sprite->resource->fieldC;
-        sprite->resource->fieldC = status;
+        old = (u16)((SpriteSequencer *)sprite->sequencer)->halfc;
+        ((SpriteSequencer *)sprite->sequencer)->halfc = status;
         removed = old & ~status;
         bits = status & ~old;
         for (bit = 0; bit != 16; bit++, bits = (bits & 0xFFFF) >> 1) {
@@ -199,8 +199,8 @@ void func_800BFE48(void) {
  * the number knocked down. */
 s32 func_800C0314(void) {
     BattleArea *area = &BATTLE_AREA;
-    BattleSprite *list[12];
-    BattleSprite *sprite;
+    Sprite *list[12];
+    Sprite *sprite;
     s32 i;
     s32 slot;
     s32 downed;
@@ -223,7 +223,7 @@ s32 func_800C0314(void) {
                 gear = 1;
                 D_800D3368[slot]->field38 = gear;
                 func_800BEE2C(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
-            } else if (sprite->motion.bytes[3] != 0x15) {
+            } else if ((s8)sprite->motion.bytes[3] != 0x15) {
                 func_800245D8(sprite, 0x15);
             }
             downed++;
@@ -233,7 +233,7 @@ s32 func_800C0314(void) {
     do {
         busy = 0;
         for (i = 0; i != downed; i++) {
-            if (list[i] != NULL && list[i]->field48 != 0 && list[i]->countdown != 0) {
+            if (list[i] != NULL && list[i]->animations != 0 && list[i]->countdown != 0) {
                 busy = 1;
             }
         }
@@ -254,7 +254,7 @@ s32 func_800C0314(void) {
  * sprite's frames run out, others (unless hidden or out of action) until
  * they are back in their condition's idle motion or their idle mode. */
 void func_800C0564(void) {
-    BattleSprite *sprite;
+    Sprite *sprite;
     s32 slot;
     s8 motion;
     u8 busy;
@@ -275,7 +275,7 @@ void func_800C0564(void) {
             if (func_8009A0DC(slot) == 8) {
                 continue;
             }
-            switch (sprite->motion.bytes[3]) {
+            switch ((s8)sprite->motion.bytes[3]) {
             case 0:
             case 1:
             case 5:
@@ -289,8 +289,8 @@ void func_800C0564(void) {
                 break;
             default:
                 if (!BATTLE_AREA.slots[slot].hidden) {
-                    motion = sprite->motion.bytes[3];
-                    if (motion != D_800C37D4[func_8009A0DC(slot)] && sprite->motion.bytes[3] != sprite->idle.mode) {
+                    motion = (s8)sprite->motion.bytes[3];
+                    if (motion != D_800C37D4[func_8009A0DC(slot)] && (s8)sprite->motion.bytes[3] != (s8)sprite->b0.byteb0) {
                         busy = 1;
                     }
                 }
@@ -507,8 +507,8 @@ void func_800C0F70(void) {
  * bank. The wave bank handle is stored through its address taken before
  * the transfer call, and the debugger word is read at its fixed address,
  * as in 800B3F04. */
-SoundSystem *func_800C0FAC(s32 *file) {
-    SoundSystem *bank = NULL;
+SoundBank *func_800C0FAC(s32 *file) {
+    SoundBank *bank = NULL;
     s32 *offsets = file;
     s32 *entry;
     s32 n;
@@ -519,7 +519,7 @@ SoundSystem *func_800C0FAC(s32 *file) {
         entry = (s32 *)(*offsets + (s32)file);
         switch (*entry) {
         case 0x73646573: /* "seds" */
-            bank = (SoundSystem *)entry;
+            bank = (SoundBank *)entry;
             func_80038428(bank);
             break;
         case 0x20736477: /* "wds " */

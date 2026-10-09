@@ -2,7 +2,22 @@
 #define BATTLE_CORE_H
 
 #include "common.h"
-#include "psyq.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "battle/sprite.h"
 #include "combatant.h"
 #include "scene.h"
 
@@ -429,12 +444,6 @@ extern void *D_800D367C;   /* menu module block */
 extern void *D_800C3DE8;   /* file 3 block */
 extern u8 D_800C3CF4[9];   /* decimal digits */
 
-typedef struct {
-    u8 unk0[0x14];
-    u16 bank;
-} SoundSystem;
-
-extern SoundSystem *D_8005919C;
 /* Window rectangle (*800d2d90[window]). */
 typedef struct WindowRect {
     u16 x;
@@ -459,7 +468,6 @@ typedef struct WindowBlock {
 } WindowBlock;
 
 extern WindowBlock *D_800D2E38[7];
-extern u8 D_800594D4[3]; /* window colour */
 extern WindowRect *D_800D2D90[7];
 
 
@@ -576,11 +584,6 @@ typedef struct TurnQueue {
 } TurnQueue;
 
 extern TurnQueue D_800D2DCC;
-extern s32 *D_8005917C;
-extern u8 D_8005959C;
-extern s32 D_800595A0;
-extern u16 D_80059414;
-extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
@@ -608,7 +611,6 @@ s32 func_8009A9D0(void); /* the escape succeeds */
 extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
-extern u8 D_80059179;
 /* Game data party state (8006f364): joined members, the three party
  * character ids and whether each party slot entered its gear. */
 typedef struct {
@@ -628,7 +630,6 @@ void func_800BAF48(s32 slot);
 extern u8 D_800C4922;      /* acting slot */
 extern void *D_800C3DDC;   /* enemy name table */
 extern u8 D_800C3E40[8];   /* enemy name per enemy slot (3-10) */
-extern u16 D_8005941C;     /* count of turns taken with 2ea set */
 extern u8 D_800D36C0;      /* the party member whose menu is open */
 void func_80079778(u8 actor);
 void func_800799C8(u8 slot, u16 attacking);
@@ -648,20 +649,7 @@ void func_800718BC(void);
 u16 func_80099890(u8 slot);
 
 /* Battle setup (80070f40). */
-extern u8 D_80059180;      /* battle music playing */
-extern u8 D_8005947C;      /* pending scene + 1 */
-extern void *D_80059480;
-extern Formation *D_8005949C; /* the formation data */
-extern void *D_800594AC;
-extern u8 D_800594D0;      /* battle result: 0 won, 1, 2, 3 */
-extern u8 D_800594F8;      /* the 801e0000 module runs first */
-extern u8 D_80059508;      /* scene index */
-extern u8 D_8005954C;      /* battle kind */
-extern u8 *D_800595D0;     /* scene texture block */
-extern s32 D_80062528;     /* battle music */
-extern u8 D_80062648[];
 extern u8 D_800658DC[][0x20]; /* scene settings */
-extern u8 D_8006F9DC[0x20];   /* the current scene settings */
 extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
 extern s32 D_800C3DEC;
@@ -698,19 +686,13 @@ void func_801E0A34(void);
 void func_801E252C(void);
 
 /* Resident services. */
-void func_8003700C(char *format, ...); /* debug print */
-void func_80028A60(s32 a);
 s32 func_800397FC(u8 *a, s32 b, s32 c);
-void func_8003A094(u8 *texture);
 void func_80039DB8(s32 effect);
 u8 func_8001BD40(u8 low, u8 high);
-void func_80034888(s32 arg0, u32 *ot, s32 buffer);
 s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 s32 func_800263E4(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 w, s32 scale, s32 a, s32 b);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
-void func_800295D8(s32, s32, s32, s32);
-void func_8003A89C(s32, s32, s32);
 
 /* Battle overlay. */
 void func_8008AB4C(void);

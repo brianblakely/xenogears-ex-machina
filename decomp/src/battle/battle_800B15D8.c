@@ -16,7 +16,7 @@
 #include "effect.h"
 #include "objects.h"
 #include "screen.h"
-#include "sprite.h"
+#include "sprite_effect.h"
 #include "actor.h"
 #include "popup.h"
 #include "frame.h"
@@ -320,8 +320,8 @@ void func_800B1EA0(VertexList *list, s32 shift) {
 void func_800B1F0C(u32 *ot) {
     DrawPrim8 *prim = (DrawPrim8 *)D_80059580;
 
-    if (D_80059580 + sizeof(DrawPrim8) < D_80059534) {
-        D_80059580 += sizeof(DrawPrim8);
+    if ((u8 *)D_80059580 + sizeof(DrawPrim8) < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DrawPrim8));
         *prim = D_800C3BF8;
         AddPrim(ot, prim);
     }
@@ -951,7 +951,7 @@ Quake *func_800B35C0(void) {
     Quake *quake;
 
     if (D_800C3548 == NULL) {
-        quake = func_8001CD08(0, sizeof(Quake) - sizeof(BattleTask));
+        quake = func_8001CD08(0, sizeof(Quake) - sizeof(Task));
         func_8001CD6C(quake, func_800B3358);
         func_8001CD74(quake, func_800B3588);
         quake->from.vx = 0;
@@ -981,7 +981,7 @@ void func_800B3658(SVECTOR *amplitude, s32 frames) {
 
 /* Screen fade update: ease the colour to the target over the frames left;
  * end once it is black. */
-void func_800B36BC(BattleTask *task) {
+void func_800B36BC(Task *task) {
     ScreenFade *fade = (ScreenFade *)task;
     VECTOR delta;
 
@@ -1018,13 +1018,13 @@ void func_800B383C(ScreenFade *fade) {
 }
 
 /* Draw the screen fade: a blended rectangle over the whole screen. */
-void func_800B3878(BattleTask *draw) {
+void func_800B3878(Task *draw) {
     POLY_F4 *poly = (POLY_F4 *)D_80059580;
     ScreenFade *fade = draw->data;
     DR_MODE *mode;
 
-    if (D_80059580 + 0x50 < D_80059534) {
-        D_80059580 += sizeof(POLY_F4) + sizeof(DR_MODE);
+    if ((u8 *)D_80059580 + 0x50 < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F4) + sizeof(DR_MODE));
         SetPolyF4(poly);
         SetSemiTrans(poly, 1);
         poly->r0 = fade->colour[0];
@@ -1040,8 +1040,8 @@ void func_800B3878(BattleTask *draw) {
         poly->y3 = 240;
         mode = (DR_MODE *)(poly + 1);
         SetDrawMode(mode, 0, 0, GetTPage(0, fade->blend, 0, 0), NULL);
-        AddPrim(D_8005956C + 2, poly);
-        AddPrim(D_8005956C + 2, mode);
+        AddPrim((u32 *)D_8005956C + 2, poly);
+        AddPrim((u32 *)D_8005956C + 2, mode);
     }
 }
 
@@ -1089,7 +1089,7 @@ void func_800B39C0(frames, blend, r, g, b)
     }
     func_8001CC18(0, fade);
     func_8001CA58(fade, &fade->draw);
-    fade->task.link &= 0x7FFFFFFF;
+    fade->task.link.word &= 0x7FFFFFFF;
     if (D_800591AC != 0) {
         D_80059464--;
     }
@@ -1127,7 +1127,7 @@ u8 func_800B3B6C(void) {
 
 /* Light fade update: ease the level from its start to its target over the
  * frames left; end once it is zero. */
-void func_800B3B94(BattleTask *task) {
+void func_800B3B94(Task *task) {
     LightFade *fade = (LightFade *)task;
     s32 left;
     s32 to;
@@ -1159,7 +1159,7 @@ void func_800B3C2C(LightFade *fade) {
 }
 
 /* Apply the light fade's level to light slot 0 when it changed. */
-void func_800B3C74(BattleTask *draw) {
+void func_800B3C74(Task *draw) {
     LightFade *fade = draw->data;
 
     if (fade->applied != fade->level) {

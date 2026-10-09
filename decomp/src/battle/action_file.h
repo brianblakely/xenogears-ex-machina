@@ -8,18 +8,12 @@
 #include "common.h"
 #include "frame.h"
 
-extern s32 *D_800594F0;  /* resident: the loaded command file */
-extern void *D_800594BC; /* resident: its stream ring */
 extern u8 D_800C3CEC;    /* a command file is loaded */
 extern u8 D_800C3624;
 extern u8 D_800C35D4;    /* the command file's sound bank is started */
 extern s16 D_800C3DF0;   /* the acting sprite's command motion */
 
 void func_800BB080(s32 keep);
-s32 func_8001EE68(u8 *frame); /* the frame takes its image from the sequencer (a byte) */
-void func_80021BF0(BattleSprite *sprite, void *resource);
-void *func_8002A260(s32 blocks, s32 mode);        /* allocate a stream ring */
-void func_8001BB0C(void);                        /* load the scene files */
 void func_801E5840(u8 phase);                    /* the battle module's set-up phase */
 ScreenShatter *func_800B73EC(void);
 void func_800B7330(void *block);
