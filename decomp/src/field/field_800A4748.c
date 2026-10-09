@@ -1643,38 +1643,49 @@ void func_800A84C0(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Build the status panel: load its image, allocate the quads of both
  * buffers and texture each piece from its frame (flip in flags bits 0-3,
  * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
  * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
- * The selected layout record is consumed after the primitive setup calls;
- * its page-mode flags are read separately before those calls.
- * NON_MATCHING (48 edits): the original keeps layout + 6 and layout bases
- * and a separate layout index. This still reduces the layout addresses
- * and keeps the buffer-pointer table's address across the loop. */
-/* The image frames are read one unsigned halfword field at a time. */
+ * Both tables are read one unsigned halfword field at a time, so each field
+ * has its own base constant (layout + 6, layout and frames + 4 stay in
+ * registers), and the buffer table through a pointer, reloaded at each use.
+ * The page flags, the position and the flip flags are read through three
+ * copies of the piece index made after the exit test: loop.c recognizes the
+ * copies as induction variables only there, so the scaled reads keep their
+ * shifts, and the three together (two are not worth it) get a counter of
+ * their own, the original's layout index beside the loop counter. */
 #define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
 enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
+#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
+    POLY_FT4 **prims;
     s32 mode;
     s32 i;
+    s32 page_piece;
+    s32 piece;
+    s32 flip_piece;
+    s32 x, y, frame, u, v, w, h;
 
     func_800A8314();
     mode = 0;
     D_800AEB64 = 0;
     func_80032498(8, 0);
-    D_800AFC60[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
-    D_800AFC60[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
-    for (i = 0; i < PANEL_PIECES; i++) {
-        quad = &D_800AFC60[0][i];
-        copy = &D_800AFC60[1][i];
+    prims = D_800AFC60;
+    prims[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    prims[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    page_piece = piece = flip_piece = 0;
+    i = 0;
+    for (;;) {
+        quad = &prims[0][i];
+        copy = &prims[1][i];
         SetPolyFT4(quad);
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad->clut = GetClut(0, 0xE8);
-        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        switch ((PIECE(page_piece, PIECE_FLAGS) >> 4) & 0xF) {
         case 0:
             mode = 1;
             break;
@@ -1684,48 +1695,43 @@ void func_800A8BA4(void) {
         }
         quad->tpage = GetTPage(0, mode, 0x380, 0);
         SetSemiTrans(quad, 1);
-        {
-            PanelPiece *piece = &D_800AEF10[i];
-            s32 x, y, frame, u, v, w, h;
-
-            frame = piece->frame;
-            x = piece->x;
-            y = piece->y;
-            w = FRAME(frame, FRAME_W);
-            h = FRAME(frame, FRAME_H);
-            u = FRAME(frame, FRAME_U);
-            v = FRAME(frame, FRAME_V);
-            quad->x0 = x;
-            quad->y0 = y;
-            quad->y1 = y;
-            quad->x2 = x;
-            quad->x1 = x + w;
-            quad->y2 = y + h;
-            quad->x3 = x + w;
-            quad->y3 = y + h;
-            switch (piece->flags & 0xF) {
-            case 0:
-                func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
-                break;
-            case 1:
-                func_8007A44C(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
-                break;
-            case 2:
-                func_8007A44C(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
-                break;
-            case 3:
-                func_8007A44C(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
-                break;
-            }
+        x = PIECE(piece, PIECE_X);
+        y = PIECE(piece, PIECE_Y);
+        frame = PIECE(piece, PIECE_FRAME);
+        w = FRAME(frame, FRAME_W);
+        h = FRAME(frame, FRAME_H);
+        u = FRAME(frame, FRAME_U);
+        v = FRAME(frame, FRAME_V);
+        quad->x0 = x;
+        quad->y0 = y;
+        quad->y1 = y;
+        quad->x2 = x;
+        quad->x1 = x + w;
+        quad->y2 = y + h;
+        quad->x3 = x + w;
+        quad->y3 = y + h;
+        switch (PIECE(flip_piece, PIECE_FLAGS) & 0xF) {
+        case 0:
+            func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
+            break;
+        case 1:
+            func_8007A44C(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
+            break;
+        case 2:
+            func_8007A44C(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+            break;
+        case 3:
+            func_8007A44C(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
+            break;
         }
         *copy = *quad;
+        if (++i >= PANEL_PIECES) {
+            break;
+        }
+        page_piece = piece = flip_piece = i;
     }
     D_800AF278 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A8BA4);
-#endif
-
 
 /* Set up a particle's quad in both buffers from sprite `sprite` with
  * semi-transparency rate `abr`.
