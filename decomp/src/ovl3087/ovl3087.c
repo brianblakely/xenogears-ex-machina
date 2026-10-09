@@ -832,8 +832,9 @@ s32 func_801E7684(s32 thread, u8 *insn) {
     return 3;
 }
 
-/* Opcode 24 (5 bytes; signed operands a, b): the pending scene (8005947c) =
- * a + 1 and the battle kind (8005954c) = b, for the next battle start. */
+/* Opcode 24 (5 bytes; signed operands a, b): the pending formation (8005947c)
+ * = a + 1 and the battle kind (8005954c) = b: the next battle (resident
+ * 8001b6c4) takes formation a of the same encounter set (80070f40). */
 s32 func_801E7700(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     D_8005947C = D_800D3278->operands[0] + 1;

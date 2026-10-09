@@ -59,9 +59,9 @@ and table, and how each table's index is chosen, is listed in
     record from +0x26c), field ext `a1` (`set_gear`; Bart is given gear 18 in maps
     198 and 728), ext `d0` (a character's record copied over another's), and
     character 10 put in gear 17 for party slots 1 and 2 when the formation has
-    flag 0x10 (ovl2615 `func_801E5384`). The world map's new-world setup gives
-    gears 2-9 and 15 only. Gear 17's pilot is character 10; gear 18's are
-    characters 3 and 10.
+    flag 0x10 (ovl2615 `func_801E5384`; [formations.md](formations.md)). The world
+    map's new-world setup gives gears 2-9 and 15 only. Gear 17's pilot is character
+    10; gear 18's are characters 3 and 10.
   - masks: the new-game state (+0x16c0 + 0x20 per character, +6), battle results'
     learning (ovl2596 `func_801E3F28`: slot k for each of the character's growth
     `unlocksB` entries, k < 13; the growth table is item 0 of directory (0x10, 2)

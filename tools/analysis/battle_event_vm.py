@@ -172,8 +172,9 @@ OPCODES = {
         "next_battle",
         "801e7700",
         5,
-        _signed("scene", "kind"),
-        effect="pending scene (8005947c) = scene + 1, battle kind (8005954c) = kind",
+        _signed("formation", "kind"),
+        effect="pending formation (8005947c) = formation + 1, battle kind (8005954c) = kind:"
+        " the next battle's formation of the same set (resident 8001b6c4, battle 80070f40)",
     ),
     0x25: _op("set_800c3d5c", "801e775c", 1, effect="800c3d5c = 1"),
     0x26: _op(

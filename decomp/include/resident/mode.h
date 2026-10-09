@@ -130,7 +130,7 @@ extern void *D_8005A450[4];
 extern s32 D_80065B08;
 extern u8 D_80062648[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
 extern s32 D_80065848[5];
-extern u8 D_8005947C; /* the pending scene + 1 */
+extern u8 D_8005947C; /* the next battle's formation + 1 (formation.h) */
 extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) */
 extern s16 D_8006BE2C[3]; /* per party slot (the field) */
 extern u8 D_80059180; /* battle music playing */
