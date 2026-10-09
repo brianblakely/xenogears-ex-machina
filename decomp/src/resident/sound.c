@@ -1,3 +1,14 @@
+/* The sound driver (80039e18-8003f738), GCC 2.6.3 at -G0: effect requests
+ * and the effect channels, sequence control (fades, tempo, pitch, pan,
+ * muting, snapshots), sequence start-up, the SPU transfer ring, the driver
+ * tick that advances the sequences and stages the voice registers, the
+ * sequence opcode handlers, the modulators, direct voice register writes and
+ * sound file checks; its .data (0x80050624) holds the opcode handler table,
+ * the note and reverb tables and the built-in error sound. The rest of the
+ * driver (its start-up, banks, SPU memory and volumes) is in the preceding
+ * unit, main2_800366E0.c: this unit starts in 80039e18-8003a094, since
+ * 80039db8 needs GCC 2.7.2, 8003a094 and later match only under 2.6.3 and
+ * the functions between compile identically. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libspu.h"
@@ -486,44 +497,52 @@ s16 D_80050BF0[3072] = {
     16340, 16343, 16347, 16351, 16354, 16358, 16362, 16366, 16369, 16373, 16377, 16380,
 };
 
-void func_80039E18(s32 channel) {
+/* Effect requests, while effects are on (driver flag 0x800): each plays
+ * `effect` (its bank id in the high half) on two effect channels
+ * (D_80059404) through 8003b644, at volume 0x6000 and centre pan 0x4000
+ * unless given (as 0-0x7f, shifted into the high byte). This one uses
+ * channels 12-13 with priority 0x60. */
+void func_80039E18(s32 effect) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(0x600C, channel, 0x6000, 0x4000);
+        func_8003B644(0x600C, effect, 0x6000, 0x4000);
     }
 }
 
-void func_80039E60(s32 channel) {
+/* On the two channels 8003a65c frees for it, with priority 0x20. */
+void func_80039E60(s32 effect) {
     if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(channel, 2);
+        s32 id = func_8003A65C(effect, 2);
 
         D_80059404 = 2;
-        func_8003B644(id | 0x2000, channel, 0x6000, 0x4000);
+        func_8003B644(id | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-void func_80039EC4(s32 channel, s32 sound) {
+/* On the channel pair of `channel` in the other half (its even index with
+ * bit 3 flipped), with priority 0x20. */
+void func_80039EC4(s32 effect, s32 channel) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, 0x6000, 0x4000);
+        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-/* Play the two-voice effect of `channel` on free effect voices, with a
- * volume and pan. */
-void func_80039F18(s32 channel, s32 volume, s32 pan) {
+/* As 80039e60, at `volume` and `pan`. */
+void func_80039F18(s32 effect, s32 volume, s32 pan) {
     if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(channel, 2);
+        s32 id = func_8003A65C(effect, 2);
 
         D_80059404 = 2;
-        func_8003B644(id | 0x2000, channel, volume << 8, pan << 8);
+        func_8003B644(id | 0x2000, effect, volume << 8, pan << 8);
     }
 }
 
-void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
+/* As 80039ec4, at `volume` and `pan`. */
+void func_80039F9C(s32 effect, s32 channel, s32 volume, s32 pan) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, volume << 8, pan << 8);
+        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, volume << 8, pan << 8);
     }
 }
 
@@ -603,6 +622,7 @@ void func_8003A20C(s32 sound) {
     } while (count != 0);
 }
 
+/* Two empty driver entries. */
 void func_8003A2D4(void) {
 }
 
@@ -961,6 +981,7 @@ void func_8003AAC4(SoundSeq *seq, u32 mask) {
     } while (count != 0);
 }
 
+/* Set a sequence's byte 0x1b. */
 void func_8003ABE8(SoundSeq *seq, u8 value) {
     seq->unk1B = value;
 }
@@ -1202,6 +1223,7 @@ SoundSeq *func_8003B148(s32 count) {
 }
 
 
+/* Unlink a sequence from the playing list (stopping it) and release it. */
 void func_8003B1FC(SoundSeq *seq) {
     func_8003BA38(seq);
     func_80039144(seq);
@@ -1628,6 +1650,7 @@ s32 func_8003BDBC(void) {
     return write - D_80059510 >= 6;
 }
 
+/* An empty driver entry. */
 void func_8003BDF4(void) {
 }
 
@@ -1683,7 +1706,8 @@ void func_8003BE68(void) {
     }
 }
 
-/* Driver tick: count it and run the tick callback, flagged busy. */
+/* SPU interrupt callback (80037b88 installs it): count the interrupt and run
+ * the hook, flagged busy. */
 void func_8003BFA0(void) {
     D_8005957C |= 4;
     D_80059514++;
@@ -1693,6 +1717,7 @@ void func_8003BFA0(void) {
     D_8005957C &= ~4;
 }
 
+/* Install the SPU interrupt hook 8003bfa0 runs. */
 void func_8003C010(void (*callback)(void)) {
     D_8005950C = callback;
 }
@@ -3830,6 +3855,7 @@ void func_8003F4A0(u32 voices) {
     D_800508E4->reverb[1] = voices >> 16;
 }
 
+/* An empty driver entry. */
 void func_8003F4BC(void) {
 }
 
@@ -3854,30 +3880,35 @@ void func_8003F518(s32 voice, u16 pitch) {
     (voice + D_800508E4->voice)->pitch = pitch;
 }
 
+/* Attack rate and mode (ADSR1 bits 8-15). */
 void func_8003F530(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF) + (rate << 8) + ((mode >> 2) << 15);
 }
 
+/* Decay rate (ADSR1 bits 4-7). */
 void func_8003F560(s32 voice, s32 rate) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF0F) + (rate << 4);
 }
 
+/* Sustain rate, direction and mode (ADSR2 bits 6-15). */
 void func_8003F588(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0x3F) + (rate << 6) + ((mode >> 1) << 14);
 }
 
+/* Release rate and mode (ADSR2 bits 0-5). */
 void func_8003F5BC(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0xFFC0) + (rate + ((mode >> 2) << 5));
 }
 
+/* Sustain level (ADSR1 bits 0-3). */
 void func_8003F5EC(s32 voice, s32 level) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 

@@ -1,3 +1,14 @@
+/* Resident startup, mode dispatcher and kernel menu (80019524-8001b6c4),
+ * GCC 2.7.2 at -G0 (8001a344 matches only under 2.7.2): the handwritten
+ * entry, stack set-up and BSS clear (func_80019524.s, func_80019548.s,
+ * func_80019560.s), the boot, the mode table and dispatcher, the core dump,
+ * reset and shutdown, the boot logo, the fatal error screen, the kernel menu
+ * (mode 0) with its Game of Life debug screen, the game-wide state reset, the
+ * party file and map loaders and the music release. Its rodata opens the
+ * program's after the disc data (0x80018080); its variables open the .sbss
+ * (800592bc) and the larger ones the .bss (800595e8). It ends at the
+ * battle-mode entry, a -G8 unit that addresses its own small common through
+ * $gp (battle_mode.c). */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -139,6 +150,7 @@ void func_80019578(void) {
     func_80019ACC(0);
 }
 
+/* An empty entry: a stripped debug output (the menu passes it strings). */
 void func_80019964(void) {
 }
 
@@ -968,5 +980,6 @@ void func_8001B66C(void) {
     D_8004F36C = 0;
 }
 
+/* An empty step of the boot (80019578). */
 void func_8001B6BC(void) {
 }

@@ -384,6 +384,8 @@ Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update
     return node;
 }
 
+/* Empty the pending sprite list (the sprite queues' set-up 80024f64 and
+ * release 80024fb8 call one each). */
 void func_8001D298(void) {
     D_80059190 = NULL;
 }
@@ -2593,6 +2595,7 @@ s32 func_80021AD8(s32 value, s32 delta) {
     return value;
 }
 
+/* Vector helpers: set a short or a long vector, copy one. */
 void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z) {
     vector->vx = x;
     vector->vy = y;
@@ -2637,6 +2640,7 @@ void func_80021BCC(Sprite *sprite, s32 divisor) {
     sprite->motion.bits.divisor = divisor;
 }
 
+/* Set a sprite's resource word (+0x4c). */
 void func_80021BF0(Sprite *sprite, s32 resource) {
     sprite->resource = resource;
 }
@@ -2752,6 +2756,7 @@ void func_80021EBC(Sprite *sprite, SpriteState *state) {
     state->scale = sprite->scale;
 }
 
+/* Set the low byte of a sprite's word +0xb0. */
 void func_80021FB8(Sprite *sprite, u8 value) {
     sprite->b0.byteb0 = value;
 }

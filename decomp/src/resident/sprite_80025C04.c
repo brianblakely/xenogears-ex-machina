@@ -497,6 +497,7 @@ s32 func_80026A0C(u16 *sheet, s32 id, SPRT *prims, s32 index, s16 x, s16 y) {
     return entry[0] + 1;
 }
 
+/* An empty entry. */
 void func_80026B9C(void) {
 }
 

@@ -1,3 +1,12 @@
+/* Battle-mode set-up and menu-mode support (8001b844-8001c76c), GCC 2.6.3
+ * at -G8 (8001bf38 and 8001c1a8 match only so; its rodata opens at
+ * 0x8001833c): the battle's display buffers and projection, its saved names,
+ * sound programs and files, a random byte, then the menu's display, input,
+ * frame and body and the menu mode's entry (mode 5). It addresses its own
+ * small commons through $gp, other units' small globals and every address
+ * absolutely (EXTERN_main_8001B6C4). The battle effect-script table that
+ * follows in .text (8001c76c-8001c8dc) stays original data, and the sprite
+ * unit, built by another compiler, starts after it. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"
@@ -143,7 +152,6 @@ u8 D_800594D4;
 extern u8 D_800594D5;
 extern u8 D_800594D6;
 s32 D_800595A0;
-void func_8001B970(void);
 
 /* Set the battle setup flags, initialize battle setup data, wait for disc I/O,
  * then install the three initial bytes and the phase selector. */

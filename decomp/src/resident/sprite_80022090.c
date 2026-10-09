@@ -278,6 +278,7 @@ void func_80022974(Sprite *sprite) {
     sprite->speed_z = -((func_8003F8B0(sprite->direction) >> 2) * speed) >> 6;
 }
 
+/* Read a word. */
 s32 func_80022A00(s32 *word) {
     return *word;
 }
@@ -745,6 +746,7 @@ void func_8002393C(SpriteRenderer *renderer) {
     renderer->parts[0] = NULL;
 }
 
+/* Detach a sprite's renderer. */
 void func_80023950(Sprite *sprite) {
     sprite->renderer = NULL;
 }

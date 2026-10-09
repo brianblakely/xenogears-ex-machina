@@ -309,6 +309,7 @@ void func_80024FB8(void) {
     func_8001D2A4();
 }
 
+/* Set the ordering table the sprites are linked into (D_8005956C). */
 void func_80024FE4(s32 value) {
     D_8005956C = value;
 }
@@ -529,6 +530,7 @@ void func_80025544(Task *task) {
     }
 }
 
+/* The empty update of a task kind (D_8004FD40). */
 void func_80025710(Task *task) {
 }
 

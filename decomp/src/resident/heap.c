@@ -70,6 +70,7 @@ s32 func_800318DC(u8 *data) {
     return HEAP_HEADER(data)->keep;
 }
 
+/* An empty heap entry. */
 void func_800318F0(void) {
 }
 
@@ -165,6 +166,7 @@ s32 func_80031B9C(void) {
     return D_8005931C;
 }
 
+/* Set it. */
 void func_80031BA8(s32 tag) {
     D_8005931C = tag;
 }
@@ -350,6 +352,7 @@ void func_800320B8(void *data) {
     HEAP_HEADER(data)->keep = 0;
 }
 
+/* The same (a second entry). */
 void func_800320D0(void *data) {
     HEAP_HEADER(data)->keep = 0;
 }

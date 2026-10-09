@@ -1,3 +1,13 @@
+/* Text, message windows and controllers (80032e7c-800366e0), GCC 2.7.2 at
+ * -G0 (80032f54 matches only under 2.7.2): the handwritten packed-data
+ * decoder (func_80032E88.s), the font and system data resources, character
+ * code decoding and encoding, the message windows and their glyph drawing,
+ * then the controllers (buttons, sticks, state queue, actuators), the play
+ * time, VRAM dumps to the PC file server and the vertical-blank callback. It
+ * starts after the heap report unit (heap_80032DCC.c) and ends where
+ * 80036718's jump table (0x80018b58, 0 mod 8) follows this unit's tables at
+ * 4 mod 8: the next unit starts between 800365fc and 80036718, at the
+ * console's output hook 800366e0 (main2_800366E0.c). */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -180,6 +190,7 @@ u32 func_8003342C(void *data) {
     return table[0];
 }
 
+/* As 8003342c, without returning the count. */
 void func_80033474(void *data) {
     u32 *table = data;
     u32 i;
@@ -189,6 +200,7 @@ void func_80033474(void *data) {
     }
 }
 
+/* The installed font block and system data block. */
 u16 *func_800334B8(void) {
     return D_8005936C;
 }
@@ -247,6 +259,7 @@ void func_800335F4(u8 *data) {
     D_80059360++;
 }
 
+/* Install a font block and a system data block. */
 void func_80033668(u16 *font, u8 *data) {
     func_80033558(font);
     func_800335F4(data);
@@ -270,7 +283,7 @@ u8 *func_80033728(u8 *resource, s32 index) {
     return resource + ((u16 *)resource)[index + 2];
 }
 
-/* First and second byte of entry `index` in a table after a header of
+/* First byte of entry `index` in a table of byte pairs after a header of
  * (count + 3) halfwords. */
 u8 func_8003373C(u16 *table, s32 index) {
     u8 *entries = (u8 *)table;
@@ -279,6 +292,7 @@ u8 func_8003373C(u16 *table, s32 index) {
     return entries[0];
 }
 
+/* Its second byte. */
 u8 func_80033760(u16 *table, s32 index) {
     u8 *entries = (u8 *)table;
     entries += *table * 2 + 6;
@@ -286,6 +300,8 @@ u8 func_80033760(u16 *table, s32 index) {
     return entries[1];
 }
 
+/* Entry `index` of a resource table of the system data (8003373c's
+ * form): of table `table`, or of the fixed table each of these names. */
 u8 *func_80033784(s32 table, s32 index) {
     return func_80033728(D_80059360[table], index);
 }
@@ -430,6 +446,7 @@ s32 func_80033C20(u8 *text, u16 *codes) {
     return 0;
 }
 
+/* A window's byte 0x6b while its flag 8 is set, else 0. */
 u8 func_80033CD0(u8 *window) {
     return (*(u16 *)(window + 0x10) & 8) ? window[0x6B] : 0;
 }
@@ -476,6 +493,8 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     func_80033ABC(p);
 }
 
+/* Insert `text` into a window's message: it continues there and returns
+ * to the current position afterwards (flag 0x80). */
 void func_80033DD4(Window *window, u8 *text) {
     u8 *previous = window->text;
 
@@ -874,6 +893,7 @@ s16 func_80034714(Window *window, s32 message) {
     return window->queued;
 }
 
+/* Screen x of the cursor. */
 s32 func_800347AC(Window *window) {
     return window->unk4 + window->x * 4;
 }
@@ -901,6 +921,7 @@ void func_80034800(Window *window, u8 r, u8 g, u8 b) {
     }
 }
 
+/* Highlight line `value` of a window (drawn unshaded); 8003487c clears it. */
 void func_80034874(Window *window, u8 value) {
     window->unk6E = value;
 }
@@ -1146,6 +1167,9 @@ s32 func_80034F98(u16 first, u16 second) {
     } while (row < 11); \
 } while (0)
 
+/* Draw the glyph of a character (a one-byte code when `first` is 0, the
+ * special glyph for 0xff 0xff) into glyph plane `plane` of the line image at
+ * `image`, `stride` halfwords per row, with its outline. */
 void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     u16 *glyph;
     u16 bits;
@@ -1246,6 +1270,7 @@ s16 func_8003582C(s32 buttons) {
     return result;
 }
 
+/* Stick positions (x, then y) of the directional buttons in `buttons`. */
 u8 func_80035884(s32 buttons) {
     return D_8005020C[(buttons >> 12) & 0xF];
 }
@@ -1514,6 +1539,7 @@ void func_80036188(Actuator *actuator) {
     }
 }
 
+/* Step both controllers' actuators. */
 void func_80036220(void) {
     func_80036188(&D_8005A1BC[0]);
     func_80036188(&D_8005A1BC[1]);
@@ -1524,6 +1550,7 @@ void func_80036258(s32 port, s16 frames) {
     D_8005A1BC[port].timer = frames;
 }
 
+/* Disable or enable the actuator of `port`. */
 void func_80036270(s32 port, u8 disabled) {
     D_8005A1BC[port].disabled = disabled;
 }
@@ -1550,6 +1577,8 @@ void func_80036288(void) {
     D_80050238[3] = 2;
 }
 
+/* Set a controller byte that 80036288 sets to 1 (the field clears it); no
+ * resident code reads it. */
 void func_8003633C(u8 value) {
     D_8005938C = value;
 }
@@ -1574,6 +1603,9 @@ void func_8003634C(void) {
     }
 }
 
+/* Set whether the vertical-blank callback polls the host and its hook, set
+ * the word 80035db0 resets to 1 (no resident code reads it), and read the
+ * queue overflow flag. */
 void func_800363E0(s32 value) {
     D_80059390 = value;
 }

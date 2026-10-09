@@ -1,5 +1,10 @@
-/* Resident battle-mode entry. This unit owns the entry flag; setup flags
- * belong to the following menu-support unit and are addressed absolutely. */
+/* Resident battle-mode entry (8001b6c4-8001b844, mode 2): runs the battle
+ * overlay and chooses the next mode from its outcome. This unit owns the
+ * entry flag D_8005959C, a small common it addresses through $gp, while the
+ * setup flags belong to the following menu-support unit and are addressed
+ * absolutely; that ownership makes it a unit of its own, whose end may lie
+ * later than 8001b844 (no own $gp reference or rodata follows; see the
+ * target yaml). GCC 2.6.3 and 2.7.2 build the same object. */
 #include "common.h"
 #include "battle/area.h"
 #include "resident/cd.h"

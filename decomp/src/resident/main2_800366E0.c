@@ -1,6 +1,11 @@
-/* Resident unit from the console character output (800366E0) to the sound
- * driver (80039E18). Its rodata opens at 0x80018B30 with the formatter's
- * digit strings; see the target yaml for the seam. */
+/* The debug console and its printf, music loading and the sound driver's
+ * start-up, banks, output modes, reverb, volumes and memory
+ * (800366e0-80039e18), GCC 2.7.2 at -G0; 800379b4 (the menu's task word) and
+ * the report printf 800379c8 are handwritten. Its rodata opens at 0x80018b30
+ * with the formatter's digit strings: 80036718's jump table (0x80018b58,
+ * 0 mod 8) follows main2.c's at 4 mod 8, so a unit starts between 800365fc
+ * and 80036718; the console output hook 800366e0 is chosen. The sound driver
+ * unit (sound.c) follows. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -257,6 +262,7 @@ s32 func_80036718(s32 target, const char *format, va_list args) {
     return count;
 }
 
+/* Set, clear and read the console's flags and its second flag word (+0x2e). */
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
 }
@@ -281,6 +287,7 @@ s16 func_80036D70(void) {
     return D_80059394->flags2E;
 }
 
+/* Set the console's character width and line height. */
 void func_80036D88(s16 value) {
     D_80059394->unk14 = value;
 }
@@ -289,7 +296,7 @@ void func_80036D98(s16 value) {
     D_80059394->unk16 = value;
 }
 
-/* Move the console cursor. */
+/* Move the console cursor: its column, then its row. */
 void func_80036DA8(s16 value) {
     D_80059394->x = value;
 }
@@ -344,6 +351,8 @@ void func_80036E4C(u16 foreground, u16 background) {
     LoadImage(&D_80059398, (u_long *)D_80050598);
 }
 
+/* The console's character width, line height, cursor column and row, and
+ * the sprites it drew this frame. */
 s16 func_80036F44(void) {
     return D_80059394->unk14;
 }
@@ -536,6 +545,7 @@ void func_80037324(u_long *ot) {
     }
 }
 
+/* Mark the console block as not owned (it is not released on closing). */
 void func_8003747C(s32 value) {
     D_800593A0 = value;
 }
@@ -681,6 +691,7 @@ INCLUDE_ASM("decomp/src/resident", func_800379B4);
 
 INCLUDE_ASM("decomp/src/resident", func_800379C8);
 
+/* The no-op entry that the stripped debug hooks share. */
 void func_800379D0(void) {
 }
 
@@ -861,6 +872,7 @@ void func_80037F44(void) {
     }
 }
 
+/* Disable the driver's tick event once. */
 void func_80037F88(void) {
     if (D_8005957C & 1) {
         DisableEvent(D_800595BC);
@@ -965,6 +977,7 @@ s32 func_800381F4(SoundSequence *bank, s32 mode) {
     func_800395B8(bank->size, bank->address, bank->volume);
 }
 
+/* Start a streamed wave bank's transfer: its SPU address and size. */
 void func_80038264(s32 a, s32 b) {
     D_80059584 = a;
     D_80059588 = b;
@@ -1016,7 +1029,7 @@ void func_80038310(SoundSequence *bank) {
     func_80039144(bank);
 }
 
-/* The playing sequence with `key`, or NULL. */
+/* The loaded wave bank with `key`, or NULL. */
 SoundSequence *func_800383EC(s32 key) {
     SoundSequence *sequence;
 
@@ -1096,6 +1109,7 @@ void func_8003852C(SoundBank *bank) {
     EnableEvent(D_800595BC);
 }
 
+/* Stop the effect channels and forget the loaded banks. */
 void func_80038624(void) {
     func_80039FF8();
     D_80059440 = NULL;
@@ -1116,6 +1130,7 @@ SoundBank *func_8003864C(SoundBank *bank, s16 id) {
     return entry;
 }
 
+/* Resume every paused track and stop the effect channels. */
 void func_8003869C(void) {
     func_80039CC4();
     func_80039FF8();
@@ -1211,6 +1226,7 @@ void func_8003885C(s32 volume) {
     CdMix((CdlATV *)&D_80059530);
 }
 
+/* Whether sequences set the reverb (driver flag 0x1000). */
 void func_800388D4(s32 enable) {
     if (enable != 0) {
         D_8005957C |= 0x1000;
@@ -1219,6 +1235,7 @@ void func_800388D4(s32 enable) {
     }
 }
 
+/* Enable or disable a bank (its flag 1). */
 void func_8003890C(SoundBank *bank, s32 enable) {
     if (enable != 0) {
         bank->flags &= ~1;
@@ -1778,6 +1795,7 @@ void func_80039748(u32 address, u8 value) {
     }
 }
 
+/* Always 0. */
 s32 func_8003977C(void) {
     return 0;
 }
@@ -1961,6 +1979,7 @@ void func_80039C4C(SoundTrack *track) {
     func_8003B060((SoundSeq *)track);
 }
 
+/* Fade a sequence out over `c` frames (error 5 without one). */
 void func_80039C8C(s32 a, s32 c) {
     if (a == 0) {
         func_8003F6B0(5);
@@ -1982,6 +2001,7 @@ void func_80039CC4(void) {
     }
 }
 
+/* An empty driver entry. */
 void func_80039D24(void) {
 }
 
@@ -2011,9 +2031,12 @@ s32 func_80039D78(s32 count) {
 }
 
 
-void func_80039DB8(s32 channel) {
+/* Play `effect` (its bank id in the high half) on the last two effect
+ * channels with priority 0x80, at volume 0x60 and centre pan, while
+ * effects are on (as 80039e18). */
+void func_80039DB8(s32 effect) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644((D_80059478 - 2) | 0x8000, channel, 0x6000, 0x4000);
+        func_8003B644((D_80059478 - 2) | 0x8000, effect, 0x6000, 0x4000);
     }
 }
