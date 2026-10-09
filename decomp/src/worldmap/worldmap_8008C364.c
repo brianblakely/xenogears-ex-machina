@@ -96,8 +96,8 @@ s32 func_8008C530(s32 index) {
         actor->unk24 = 1;
         break;
     }
-    D_8006EF8E[0].x = actor->position.vx >> 12;
-    D_8006EF8E[0].z = actor->position.vz >> 12;
+    VEHICLE_SPOTS[0].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[0].z = actor->position.vz >> 12;
     D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
@@ -133,8 +133,8 @@ s32 func_8008C75C(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EF8E[0].x << 12;
-    actor->position.vz = D_8006EF8E[0].z << 12;
+    actor->position.vx = VEHICLE_SPOTS[0].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[0].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -432,8 +432,8 @@ s32 func_8008C844(s32 index) {
     if (actor->state != 2 && (D_8009BE10 == 2 || D_8006D634.party[0] != 7)) {
         func_80074794(1, &actor->position);
     }
-    D_8006EF8E[0].x = actor->position.vx >> 12;
-    D_8006EF8E[0].z = actor->position.vz >> 12;
+    VEHICLE_SPOTS[0].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[0].z = actor->position.vz >> 12;
     D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
@@ -468,8 +468,8 @@ s32 func_8008D3F0(s32 index) {
             actor->unk24 = 1;
         }
     }
-    D_8006EF8E[1].x = actor->position.vx >> 12;
-    D_8006EF8E[1].z = actor->position.vz >> 12;
+    VEHICLE_SPOTS[1].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[1].z = actor->position.vz >> 12;
     D_8006D634.worldmap.unk5C = actor->heading;
     return result;
 }
@@ -505,8 +505,8 @@ s32 func_8008D590(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EF8E[1].x << 12;
-    actor->position.vz = D_8006EF8E[1].z << 12;
+    actor->position.vx = VEHICLE_SPOTS[1].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[1].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -704,8 +704,9 @@ s32 func_8008D678(s32 index) {
     if (actor->state != 2 && (D_8009BE10 == 2 || D_8006D634.party[index - 4] != 7)) {
         func_80074794(1, &actor->position);
     }
-    /* Save the spot (D_8006EF8E[slot].x/z) and heading (D_8006EE5A[slot])
-     * as offsets into the resident state. */
+    /* Save the spot (the vehicle spot's x and z) and the heading (worldmap.unk5A
+     * on) as offsets from the return state, the base the original addresses
+     * all three from (as members they compile differently). */
     slot = index - 4;
     STATE_U16(0x13C + slot * 6) = actor->position.vx >> 12;
     STATE_U16(0x13E + slot * 6) = actor->position.vz >> 12;
@@ -743,8 +744,8 @@ s32 func_8008DD6C(s32 index) {
             actor->unk24 = 1;
         }
     }
-    D_8006EF8E[2].x = actor->position.vx >> 12;
-    D_8006EF8E[2].z = actor->position.vz >> 12;
+    VEHICLE_SPOTS[2].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[2].z = actor->position.vz >> 12;
     D_8006D634.worldmap.unk5E = actor->heading;
     return result;
 }
@@ -780,8 +781,8 @@ s32 func_8008DF0C(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EF8E[2].x << 12;
-    actor->position.vz = D_8006EF8E[2].z << 12;
+    actor->position.vx = VEHICLE_SPOTS[2].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[2].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;

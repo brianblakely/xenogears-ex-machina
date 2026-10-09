@@ -49,8 +49,6 @@ extern FileRequest D_8009D3F8[]; /* shared read list, a zero file ends it */
 extern void *D_8009D3FC;
 #define WORLD_READ_LIST ((FileRequest *)((u8 *)&D_8009D3FC - 4))
 
-/* Party: three character ids (0xFF empty). */
-extern u8 D_8006F368[3];
 extern void *D_8009CD34[3]; /* character model buffers */
 extern void *D_8009BDF8[3]; /* gear model buffers */
 extern s32 D_8009C170;      /* loaded party members */
@@ -265,15 +263,6 @@ extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
 extern s32 D_8009BE0C;
 
-/* Resident scene hand-over words; mode is the first flag word (D_8006F954). */
-typedef struct {
-    s16 scene;   /* 8006f94e: next scene */
-    u16 heading; /* heading carried into the next scene */
-    u16 area;    /* area carried into the world map */
-    u16 mode;    /* 8006f954: world-map mode and flags */
-} SceneResume;
-
-extern SceneResume D_8006F94E;
 extern s32 D_8009BBC4;
 
 /* Scene object (0x54 bytes): a sprite model of the area file, transformed
@@ -313,7 +302,6 @@ extern u16 D_8009B674[];    /* per area: scene object */
 void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
-extern u16 D_8006EF64[]; /* scene id (first of the scene words) */
 extern void *D_8009BE1C[2]; /* effect quads, per display buffer */
 
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
@@ -334,8 +322,8 @@ extern s16 D_8009BD04;
 s32 func_8008C364(WorldmapActor *actor, s32 kind);
 
 /* A path region (16 bytes) of an area file's path tables or the fixed ones:
- * its bounds, the scene and entry a world-map exit from it stores (D_8006F94E
- * scene, D_8006F954[0]), its path link (-1 none) and its kind: 1 leaves
+ * its bounds, the scene and entry a world-map exit from it stores (game data
+ * map and entry[2]), its path link (-1 none) and its kind: 1 leaves
  * without the button (func_80090A84), 2 makes a flying vehicle descend first
  * (func_8008E190), 3 takes the exit from the camera target's region of path
  * table 3 (func_80070CFC), 4 only records a destination (func_80094238). A
@@ -749,6 +737,12 @@ typedef struct {
 } VehicleSpot;
 
 extern VehicleSpot D_8006EF8E[3];
+
+/* The world map's words among the event variables: the parked vehicles'
+ * spots (variables 21-29) and the map flags (variables 254-255, one bit per
+ * map dot; bits 24-26 the vehicles). */
+#define VEHICLE_SPOTS ((VehicleSpot *)&D_8006D634.vars[21])
+#define MAP_FLAGS (*(u32 *)&D_8006D634.vars[254])
 extern VECTOR D_8009C5AC;
 
 void func_8008C28C(WorldmapActor *actor, s32 member);
@@ -981,7 +975,6 @@ typedef struct {
     POLY_FT4 quads[0x120];
 } QuadBlock288;
 
-extern FlightSave D_8006EE80;
 s32 func_8008868C(void);
 
 extern u16 D_8009BCE0[16]; /* faded CLUT ids */
@@ -1062,9 +1055,8 @@ typedef struct {
     MeshFace faces[1];
 } Mesh;
 
-/* Saved ferry route state: x, z (world units), next waypoint; and the
- * number of runs started. */
-extern u16 D_8006EE78[3];
+/* The ferry's saved route state is D_8006D634.unk1844 (x, z in world
+ * units, next waypoint) and unk184A (runs started). */
 extern u16 D_8006EE7E;
 extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
 
@@ -1208,7 +1200,6 @@ typedef struct {
 } PartySpot;
 
 extern PartySpot D_8006EF8A[];
-extern u16 D_8006EE58[];  /* per party slot: saved heading */
 void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
 void func_80074794(s16 id, VECTOR *position);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
@@ -1224,8 +1215,8 @@ void func_800758C0(void);
 void func_80075B58(void);
 s32 func_80075E7C(VECTOR *position, s32 level);
 /* Resident return-state words read-modify-written as their own variables
- * (fields flags and unk76 of D_8006EE54). */
-extern u16 D_8006EE68, D_8006EE76;
+ * (field flags of the world map's return state). */
+extern u16 D_8006EE68;
 
 extern SVECTOR D_8009A490[]; /* rig flight path */
 /* Scratchpad work area of the rig path follower. */
@@ -1477,9 +1468,9 @@ extern u16 D_8009AFF0[]; /* four packed u,v pairs per kind */
 extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
 extern u16 D_8009B6F4[64];       /* 32 map dot positions: interleaved X/Z */
 
-/* Resident words of the world state relative to D_8006EE54. */
+/* A halfword of the game data at an offset from the world map's return
+ * state (D_8006D634.worldmap). */
 #define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006D634.worldmap + (offset)))
-#define STATE_U32(offset) (*(u32 *)((u8 *)&D_8006D634.worldmap + (offset)))
 
 /* Scratchpad work area of the map overlay. */
 typedef struct {
@@ -1519,8 +1510,6 @@ typedef struct {
 } WorldmapMode;
 
 extern WorldmapMode D_8009A058[]; /* per mode */
-extern u32 D_8006F160;            /* map flags */
-extern s16 D_8006EF68;
 extern s32 D_8009BD0C;
 extern u8 D_8003634C[];           /* resident VSync callback */
 

@@ -21,16 +21,16 @@ void func_80070CFC(void) {
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
-        D_8006F94E.scene = 0x400;
-        D_8006F94E.area = 0xFFF;
-        D_8006F94E.heading = 0xC00;
+        D_8006D634.map = 0x400;
+        D_8006D634.entry[1] = 0xFFF;
+        D_8006D634.entry[0] = 0xC00;
         D_8006F954[0] = 1;
         D_8006D634.worldmap.flags = 0x4003;
         D_8006D634.worldmap.unk6A = 1;
         D_8006D634.worldmap.unk60 = 0x6680;
         D_8006D634.worldmap.unk62 = 0xFF00;
         D_8006D634.worldmap.unk64 = 0x2A00;
-        D_8006EE66 = 0;
+        D_8006D634.worldmap.vehicle_heading = 0;
         D_8006D634.worldmap.x = 0x7580;
         D_8006D634.worldmap.z = 0x2C00;
         D_8006D634.worldmap.heading = 0;
@@ -51,19 +51,19 @@ void func_80070CFC(void) {
         D_8006D634.characters[8].gearId = 8;
         D_8006D634.characters[9].gearId = 3;
         D_8006D634.characters[10].gearId = 9;
-        D_8006EF8E[0].flags = 0x400;
-        D_8006EF8E[0].x = 0x7500;
-        D_8006EF8E[0].z = 0x2E58;
-        D_8006EF8E[1].flags = 0x400;
-        D_8006EF8E[1].x = 0x7580;
-        D_8006EF8E[1].z = 0x2E58;
-        D_8006EF8E[2].flags = 0x400;
-        D_8006EF8E[2].x = 0x7600;
-        D_8006EF8E[2].z = 0x2E58;
-        D_8006EE78[2] = 1;
-        D_8006EE78[0] = D_8009AF80[D_8006EE78[1]];
-        D_8006EE78[1] = D_8009AF90[D_8006EE78[1]];
-        D_8006F160 = 0x7FFFFFF;
+        VEHICLE_SPOTS[0].flags = 0x400;
+        VEHICLE_SPOTS[0].x = 0x7500;
+        VEHICLE_SPOTS[0].z = 0x2E58;
+        VEHICLE_SPOTS[1].flags = 0x400;
+        VEHICLE_SPOTS[1].x = 0x7580;
+        VEHICLE_SPOTS[1].z = 0x2E58;
+        VEHICLE_SPOTS[2].flags = 0x400;
+        VEHICLE_SPOTS[2].x = 0x7600;
+        VEHICLE_SPOTS[2].z = 0x2E58;
+        D_8006D634.unk1844[2] = 1;
+        D_8006D634.unk1844[0] = D_8009AF80[D_8006D634.unk1844[1]];
+        D_8006D634.unk1844[1] = D_8009AF90[D_8006D634.unk1844[1]];
+        MAP_FLAGS = 0x7FFFFFF;
     }
     func_80032498(3, 0);
     func_80028470(0x24, 0);
@@ -77,12 +77,12 @@ void func_80070CFC(void) {
     }
     D_8009BBC4 = 0;
     mode = D_8006F954[0] & 0x7FFF;
-    D_8009BD0C = (D_8006F94E.scene & 0x3FFF) - 0x400;
-    D_8009D3D4 = D_8006F94E.area;
-    D_8009C584 = D_8006F94E.heading;
+    D_8009BD0C = (D_8006D634.map & 0x3FFF) - 0x400;
+    D_8009D3D4 = D_8006D634.entry[1];
+    D_8009C584 = D_8006D634.entry[0];
     D_8009C5A8 = mode;
-    D_8006F94E.mode = mode;
-    func_80071B9C(mode, D_8006EF64[0]);
+    D_8006D634.entry[2] = mode;
+    func_80071B9C(mode, D_8006D634.vars[0]);
     step = D_8009A058[D_8009C5A8].enter;
     if (step != NULL) {
         step();
@@ -104,13 +104,13 @@ void func_80070CFC(void) {
         func_8001996C(1);
         if (D_8009BBC4 == 0) {
             if (D_8009D7D8->kind == 3) {
-                func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
+                func_80094364(&D_8009D55C.target, 3, D_8006D634.vars[0]);
             }
-            D_8006F94E.scene = D_8009D7D8->scene;
-            D_8006F94E.heading = D_8009BD38.vy;
+            D_8006D634.map = D_8009D7D8->scene;
+            D_8006D634.entry[0] = D_8009BD38.vy;
             D_8006F954[0] = D_8009D7D8->entry;
         }
-        D_8006EF68 = D_8009BD0C + 0x400;
+        D_8006D634.vars[2] = D_8009BD0C + 0x400;
         break;
     case 1:
         func_800199CC(2);
@@ -194,7 +194,7 @@ void func_800712D0(void) {
             D_8009BD34 = 0;
             if (func_80093F18(&D_8009D55C.target) != 4) {
                 for (i = 0; i < 3; i++) {
-                    (&D_8006EE70)[i] = D_8006D634.inGear[i];
+                    (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
                 }
                 if (gear_state[0] != 0) {
                     gear_state[2] = 0;
@@ -226,7 +226,7 @@ void func_800712D0(void) {
                 }
                 if (D_8009C178 == 0 && D_8009D804 == 0 && D_8009BD24 == -1 &&
                     D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C != 0) {
-                    found = func_80075E7C(&D_8009D55C.target, D_8006EF64[0]);
+                    found = func_80075E7C(&D_8009D55C.target, D_8006D634.vars[0]);
                     if (found == 1) {
                         D_8009D554 = 0;
                         D_8009D7CC = found;
@@ -240,7 +240,7 @@ void func_800712D0(void) {
         }
         D_8009D80C = 0;
         if (D_8009BD10 & 0x100) {
-            u16 *camera_mode = &D_8006EE76;
+            u16 *camera_mode = &D_8006D634.worldmap.unk76;
             *camera_mode ^= 1;
         }
         if (D_8009C178 == 0 && D_8009D804 != 0 && D_8009D554 != 0) {

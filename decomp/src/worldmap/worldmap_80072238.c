@@ -409,7 +409,7 @@ void func_8007299C(void) {
     }
     if (D_8009D7CC == 1) {
         func_80075460();
-        D_8006F954[0] |= 0x8000;
+        D_8006D634.entry[2] |= 0x8000;
     }
     func_80092DD0();
     func_800931B0();
@@ -879,7 +879,7 @@ void func_800740B8(void) {
     } while (i < 4);
     dot = &D_8009C898[D_8009D7F0 * 32];
     addPrim(D_8009BE3C->ot, &D_8009C5A0);
-    bits = STATE_U32(0x30C);
+    bits = MAP_FLAGS;
     /* Interleaved X/Z halfwords: index each coordinate with a stride of two. */
     position_x = D_8009B6F4;
     position_z = position_x + 1;
@@ -887,16 +887,16 @@ void func_800740B8(void) {
         if (bits & 1) {
             switch (i) {
             case 24:
-                dot->x0 = STATE_U16(0xC) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x10) / 341 + 0x77;
+                dot->x0 = D_8006D634.worldmap.unk60 / 315 + 0xCF;
+                dot->y0 = D_8006D634.worldmap.unk64 / 341 + 0x77;
                 break;
             case 25:
-                dot->x0 = STATE_U16(0x2E) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x32) / 341 + 0x77;
+                dot->x0 = (u16)D_8006D634.flight.x / 315 + 0xCF;
+                dot->y0 = (u16)D_8006D634.flight.z / 341 + 0x77;
                 break;
             case 26:
-                dot->x0 = STATE_U16(0x24) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x26) / 341 + 0x77;
+                dot->x0 = D_8006D634.unk1844[0] / 315 + 0xCF;
+                dot->y0 = D_8006D634.unk1844[1] / 341 + 0x77;
                 break;
             default:
                 dot->x0 = position_x[i * 2] + 0xD0;
@@ -1023,7 +1023,7 @@ void func_800747DC(void) {
                 break;
             case 2:
                 scratch->heading = D_8009A180;
-                func_8004AFEC(D_8006EE66, &scratch->heading);
+                func_8004AFEC(D_8006D634.worldmap.vehicle_heading, &scratch->heading);
                 func_80049ACC(&scratch->local, &scratch->heading);
                 scratch->scale.vx = 0x1800;
                 scratch->scale.vy = 0x1000;
@@ -1265,7 +1265,7 @@ void func_800758C0(void) {
     s32 i;
 
     D_8006D634.worldmap.unk6A = 1;
-    D_8006F94E.heading = (D_8009BD38.vy + 0x2000) & 0x3FFF;
+    D_8006D634.entry[0] = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
         (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
     }
@@ -1989,10 +1989,10 @@ void func_80077480(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x11;
-    D_8006F954[0] = 7;
+    D_8006D634.map = 0x11;
+    D_8006D634.entry[2] = 7;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking along the player's heading from above. */
@@ -2168,10 +2168,10 @@ void func_80077CC0(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x10E;
-    D_8006F954[0] = 0;
+    D_8006D634.map = 0x10E;
+    D_8006D634.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera: reset the actor and camera, play a sound. */

@@ -1593,7 +1593,7 @@ s32 func_80087C6C(s32 index) {
     actor->turn = 0x4000;
     actor->state = 0;
     object = &D_8009C620[id];
-    if (D_8006EF64[0] < 0xCD) {
+    if (D_8006D634.vars[0] < 0xCD) {
         actor->position.vx = 0xD80000;
         actor->position.vz = 0x7280000;
         object->matrix = *(MATRIX *)&D_8009A180;
@@ -1605,9 +1605,9 @@ s32 func_80087C6C(s32 index) {
             actor->position.vx = D_8009AF80[actor->u.step] << 12;
             z = D_8009AF90[actor->u.step];
         } else {
-            actor->u.step = D_8006EE78[2];
-            actor->position.vx = D_8006EE78[0] << 12;
-            z = D_8006EE78[1];
+            actor->u.step = D_8006D634.unk1844[2];
+            actor->position.vx = D_8006D634.unk1844[0] << 12;
+            z = D_8006D634.unk1844[1];
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -1665,7 +1665,7 @@ s32 func_80087FD0(s32 index) {
     scratch = FERRY_SCRATCH;
     actor = &D_8009BE24[index];
     object = &D_8009C620[D_8009B674[D_8009C610]];
-    if (D_8006EF64[0] < 0xCD) {
+    if (D_8006D634.vars[0] < 0xCD) {
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
@@ -1733,9 +1733,9 @@ s32 func_80087FD0(s32 index) {
             func_800894C8(0x13);
         }
     }
-    D_8006EE78[0] = actor->position.vx >> 12;
-    D_8006EE78[1] = actor->position.vz >> 12;
-    D_8006EE78[2] = actor->u.step;
+    D_8006D634.unk1844[0] = actor->position.vx >> 12;
+    D_8006D634.unk1844[1] = actor->position.vz >> 12;
+    D_8006D634.unk1844[2] = actor->u.step;
     scratch->work.vx = actor->position.vx;
     scratch->work.vy = actor->position.vy + 0x30000;
     scratch->work.vz = actor->position.vz;
@@ -1755,24 +1755,24 @@ s32 func_80088570(s32 index) {
     actor->u.step = 0;
     actor->unk58 = 0;
     actor->unk5C = 0xC;
-    if (D_8006EE80.count == 0) {
-        D_8006EE80.count++;
+    if (D_8006D634.flight.count == 0) {
+        D_8006D634.flight.count++;
         actor->position.vy = -0x280000;
         actor->position.vx = 0;
         actor->position.vz = 0x4800000;
     } else {
-        actor->position.vx = (D_8006EE80.x << 12) + D_8006EE80.x_frac;
+        actor->position.vx = (D_8006D634.flight.x << 12) + D_8006D634.flight.x_frac;
         actor->position.vy = -0x280000;
-        actor->position.vz = (D_8006EE80.z << 12) + D_8006EE80.z_frac;
+        actor->position.vz = (D_8006D634.flight.z << 12) + D_8006D634.flight.z_frac;
     }
     actor->motion.vz = 0xB50;
     actor->motion.vx = 0xB50;
     actor->motion.vy = 0;
     actor->turn = 1;
-    D_8006EE80.x_frac = actor->position.vx;
-    D_8006EE80.x = actor->position.vx >> 12;
-    D_8006EE80.z_frac = actor->position.vz;
-    D_8006EE80.z = actor->position.vz >> 12;
+    D_8006D634.flight.x_frac = actor->position.vx;
+    D_8006D634.flight.x = actor->position.vx >> 12;
+    D_8006D634.flight.z_frac = actor->position.vz;
+    D_8006D634.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1826,10 +1826,10 @@ s32 func_80088720(s32 index) {
     scratch->work.vz = actor->position.vz >> 12;
     D_8009C620[base + 12].position = scratch->work;
     func_8008BFD4(index, &actor->position, 0x180, 0xC0);
-    D_8006EE80.x_frac = actor->position.vx;
-    D_8006EE80.x = actor->position.vx >> 12;
-    D_8006EE80.z_frac = actor->position.vz;
-    D_8006EE80.z = actor->position.vz >> 12;
+    D_8006D634.flight.x_frac = actor->position.vx;
+    D_8006D634.flight.x = actor->position.vx >> 12;
+    D_8006D634.flight.z_frac = actor->position.vz;
+    D_8006D634.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1847,7 +1847,7 @@ s32 func_80088B40(s32 index) {
     actor = &D_8009BE24[index];
     object = D_8009C620;
     actor->state = 0;
-    if (D_8006EF64[0] == 0x99) {
+    if (D_8006D634.vars[0] == 0x99) {
         result = 1;
         actor->position.vx = 0x2000000;
         actor->position.vz = 0x4120000;
@@ -1887,7 +1887,7 @@ s32 func_80088D00(s32 index) {
     object = D_8009C620;
     actor = &D_8009BE24[index];
     object += 69;
-    if (D_8006EF64[0] == 0x99) {
+    if (D_8006D634.vars[0] == 0x99) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
@@ -2438,8 +2438,8 @@ s32 func_8008A2C8(s32 index) {
     func_80022000(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->unk24 = 0;
-    actor->position.vx = D_8006EF64[0] << 12;
-    actor->position.vz = D_8006EF64[1] << 12;
+    actor->position.vx = D_8006D634.vars[0] << 12;
+    actor->position.vz = D_8006D634.vars[1] << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -2758,8 +2758,8 @@ s32 func_8008A72C(s32 index) {
     case 0x12:
         point = D_8009CEC4;
         D_8009D154 = 0;
-        scratch->start.vx = D_8006EF8E[0].x << 12;
-        scratch->start.vz = D_8006EF8E[0].z << 12;
+        scratch->start.vx = VEHICLE_SPOTS[0].x << 12;
+        scratch->start.vz = VEHICLE_SPOTS[0].z << 12;
         scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
         scratch->heading = D_8006D634.worldmap.unk5A;
         value = 0x1F;
@@ -2771,8 +2771,8 @@ s32 func_8008A72C(s32 index) {
         actor->state = 0xD;
         break;
     case 0x28:
-        actor->position.vx = D_8006EF8E[0].x << 12;
-        actor->position.vz = D_8006EF8E[0].z << 12;
+        actor->position.vx = VEHICLE_SPOTS[0].x << 12;
+        actor->position.vz = VEHICLE_SPOTS[0].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
         heading = D_8006D634.worldmap.unk5A;
         actor->unk5C = heading;
@@ -3064,7 +3064,7 @@ s32 func_8008B644(s32 index) {
         actor->position.vx = D_8006EF8A[index].x << 12;
         actor->position.vz = D_8006EF8A[index].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = D_8006EE58[index];
+        heading = (&D_8006D634.worldmap.unk5A)[index - 1];
         actor->unk5C = heading;
         actor->heading = heading;
         work->vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
