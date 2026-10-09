@@ -100,7 +100,7 @@ s16 D_80059548; /* result of the last decoded-data read */
 u8 D_8005954C;
 u32 D_80059550; /* voices to key off */
 u32 D_80059554; /* voices whose registers changed */
-struct SoundSequence *D_80059558; /* playing sequences */
+struct SoundSequence *D_80059558; /* loaded wave banks */
 u16 D_8005955C; /* pending SPU IRQ re-enable */
 struct SoundSequence *D_80059560; /* resident wave banks */
 struct SoundSeq *D_80059564; /* playing sequences */
@@ -135,10 +135,14 @@ s32 D_800595DC;
 s32 D_800595E0;
 u32 D_800595E4; /* end of the sound driver's pool */
 
+#include "resident/heap.h"
 #include "resident/menu.h"
 #include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/pad.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
+#include "resident/task.h"
 #include "resident/text.h"
+#include "resident/window.h"
+#include "../sound_driver.h"

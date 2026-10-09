@@ -1,3 +1,12 @@
+/* The handwritten rotation object and the PsyQ libraries up to libgte's
+ * MSC00 data (8003f738-80048bbc). The rotation matrix and the table sine
+ * and cosine lookups (8003f738-8003f8e8; func_8003F738.s, func_8003F8B0.s,
+ * func_8003F8CC.s) are handwritten, and their table opens the .data after
+ * the game units' (800523f0), ahead of every library's. The library code
+ * that follows (libc, libapi, libds, libcd, libgpu, libgte) is the original
+ * assembly, classified sdk (decomp/targets/resident/classification.txt);
+ * psyq_tail_80048BC4.c continues it. The sound driver unit ends where this
+ * object starts. */
 #include "common.h"
 
 /* Sine and cosine of the 4096 angles of a turn (4.12 fixed point): the table

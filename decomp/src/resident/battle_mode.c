@@ -1,18 +1,18 @@
-/* Resident battle-mode entry. This unit owns the entry flag; setup flags
- * belong to the following menu-support unit and are addressed absolutely. */
+/* Resident battle-mode entry (8001b6c4-8001b844, mode 2): runs the battle
+ * overlay and chooses the next mode from its outcome. This unit owns the
+ * entry flag D_8005959C, a small common it addresses through $gp, while the
+ * setup flags belong to the following menu-support unit and are addressed
+ * absolutely; that ownership makes it a unit of its own, whose end may lie
+ * later than 8001b844 (no own $gp reference or rodata follows; see the
+ * target yaml). GCC 2.6.3 and 2.7.2 build the same object. */
 #include "common.h"
+#include "battle/area.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
 #include "resident/mode.h"
 
 u8 D_8005959C;
-extern u8 D_8005947C;
-extern u8 D_800594F8;
-extern u8 D_800C48EA;
-extern u8 D_800D3338;
-void func_8001B844(void);
-void func_80070F40(void);
-void func_8001AC94(void);
 
 /* Run the battle and choose the next mode from its outcome and pending
  * scene state. Outcome 0x81 installs scene 0x1EA before mode 1. */
@@ -30,7 +30,7 @@ void func_8001B6C4(void) {
     }
     func_8001B844();
     func_80070F40();
-    outcome = D_800C48EA;
+    outcome = D_800C3EB0.outcome;
     if (outcome == 1 || outcome == 0x40 || outcome == 0x21) {
         if (D_800D3338 != 0) {
             mode = 6;

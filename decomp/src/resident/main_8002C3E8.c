@@ -1,24 +1,22 @@
+/* Models (8002c3e8-80031894), GCC 2.7.2 at -G0: 8002c700 matches only so
+ * (mflo into $t0), as do 8002ccc8, 8002cd24 and 8002cd64, and 8002c3e8,
+ * 8002c4bc and 8002c59c add the relocation base second as only 2.7.2 does.
+ * Model and sprite model relocation, packet building and drawing through
+ * the primitive type table with the handwritten renderers (func_8002E010.s
+ * to func_80030988.s, sharing model_draw.s and model_depth.s), the texture
+ * page and CLUT overrides, image list uploads, morphing, lights, the bounding
+ * box test and the handwritten ordering table link helpers (func_800315A0.s
+ * to func_80031870.s, sharing ot_link.s). It starts at the
+ * jump table phase change after main_8002709C's tables (0x80018980, 0 mod 8)
+ * and ends at the heap unit, whose allocation-name strings open its rodata
+ * (0x80018998) and which addresses its small globals through $gp. */
 #include "common.h"
-#include "psyq/libapi.h"
-#include "psyq/libc.h"
-#include "psyq/libcd.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "psyq/inline_c.h"
-#include "psyq/libsn.h"
-#include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
-#include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
 #include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
-#include "resident/console.h"
-#include "resident/sound.h"
+#include "resident/mode.h"
+#include "resident/model.h"
 #include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
@@ -239,8 +237,11 @@ s32 func_8002C68C(ModelBuffer *buffer) {
     return 0;
 }
 
-extern CVECTOR D_80059598; /* the model colour; the renderers load it into the GTE */
+/* The model colour; the handwritten renderers load it into the GTE. The
+ * menu reads it as one word, so the shared headers leave it out. */
+extern CVECTOR D_80059598;
 
+/* Set the model colour. */
 void func_8002C6E0(u8 r, u8 g, u8 b) {
     D_80059598.r = r;
     D_80059598.g = g;
@@ -396,6 +397,7 @@ void func_8002CC10(u16 x, u16 y) {
     D_80050108 = 1;
 }
 
+/* Override model texture pages with the page value `tpage` itself. */
 void func_8002CC54(u16 tpage) {
     D_80059310 = tpage;
     D_80050108 = 2;
@@ -407,6 +409,7 @@ void func_8002CC74(u16 x, u16 y) {
     D_8005010C = 0;
 }
 
+/* End both overrides. */
 void func_8002CCAC(void) {
     D_80050108 = 0;
     D_8005010C = 1;
@@ -901,6 +904,8 @@ u8 *func_8002DFE0(void) {
     return D_8006FAF0;
 }
 
+/* Set the screen bounds the renderers test projected vertices against: x
+ * below `a`, y below `b` - 1. */
 void func_8002DFF0(s32 a, s32 b) {
     D_800500FC = (b - 1) << 16;
     D_800500F8 = a;

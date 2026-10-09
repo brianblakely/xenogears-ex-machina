@@ -1,8 +1,20 @@
+/* The sound driver (80039e18-8003f738), GCC 2.6.3 at -G0: effect requests
+ * and the effect channels, sequence control (fades, tempo, pitch, pan,
+ * muting, snapshots), sequence start-up, the SPU transfer ring, the driver
+ * tick that advances the sequences and stages the voice registers, the
+ * sequence opcode handlers, the modulators, direct voice register writes and
+ * sound file checks; its .data (0x80050624) holds the opcode handler table,
+ * the note and reverb tables and the built-in error sound. The rest of the
+ * driver (its start-up, banks, SPU memory and volumes) is in the preceding
+ * unit, main2_800366E0.c: this unit starts in 80039e18-8003a094, since
+ * 80039db8 needs GCC 2.7.2, 8003a094 and later match only under 2.6.3 and
+ * the functions between compile identically. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libspu.h"
 #include "resident/sound.h"
 #include "own_declarations.h"
+#include "sound_driver.h"
 
 /* The sequence opcode handlers (8003cd00-8003e54c): each takes the position
  * after the opcode and returns the position after its arguments. */
@@ -486,57 +498,54 @@ s16 D_80050BF0[3072] = {
     16340, 16343, 16347, 16351, 16354, 16358, 16362, 16366, 16369, 16373, 16377, 16380,
 };
 
-extern void func_80039FF8(void);
-extern s32 D_80059404;
-extern s32 D_80059478;           /* voice count of the effect channels */
-extern void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
-
-void func_80039E18(s32 channel) {
+/* Effect requests, while effects are on (driver flag 0x800): each plays
+ * `effect` (its bank id in the high half) on two effect channels
+ * (D_80059404) through 8003b644, at volume 0x6000 and centre pan 0x4000
+ * unless given (as 0-0x7f, shifted into the high byte). This one uses
+ * channels 12-13 with priority 0x60. */
+void func_80039E18(s32 effect) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(0x600C, channel, 0x6000, 0x4000);
+        func_8003B644(0x600C, effect, 0x6000, 0x4000);
     }
 }
 
-extern u32 func_8003A65C(s32 id, s32 width);
-
-void func_80039E60(s32 channel) {
+/* On the two channels 8003a65c frees for it, with priority 0x20. */
+void func_80039E60(s32 effect) {
     if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(channel, 2);
+        s32 id = func_8003A65C(effect, 2);
 
         D_80059404 = 2;
-        func_8003B644(id | 0x2000, channel, 0x6000, 0x4000);
+        func_8003B644(id | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-void func_80039EC4(s32 channel, s32 sound) {
+/* On the channel pair of `channel` in the other half (its even index with
+ * bit 3 flipped), with priority 0x20. */
+void func_80039EC4(s32 effect, s32 channel) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, 0x6000, 0x4000);
+        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-/* Play the two-voice effect of `channel` on free effect voices, with a
- * volume and pan. */
-void func_80039F18(s32 channel, s32 volume, s32 pan) {
+/* As 80039e60, at `volume` and `pan`. */
+void func_80039F18(s32 effect, s32 volume, s32 pan) {
     if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(channel, 2);
+        s32 id = func_8003A65C(effect, 2);
 
         D_80059404 = 2;
-        func_8003B644(id | 0x2000, channel, volume << 8, pan << 8);
+        func_8003B644(id | 0x2000, effect, volume << 8, pan << 8);
     }
 }
 
-void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
+/* As 80039ec4, at `volume` and `pan`. */
+void func_80039F9C(s32 effect, s32 channel, s32 volume, s32 pan) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, volume << 8, pan << 8);
+        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, volume << 8, pan << 8);
     }
 }
-
-extern s32 D_800595BC;           /* driver event */
-extern SoundSeq *D_800595D8;     /* sound effect channels */
-extern void func_8003E83C(SoundChannel *state, u32 voice);
 
 /* Stop every sound effect channel and release its voice. */
 void func_80039FF8(void) {
@@ -614,6 +623,7 @@ void func_8003A20C(s32 sound) {
     } while (count != 0);
 }
 
+/* Two empty driver entries. */
 void func_8003A2D4(void) {
 }
 
@@ -775,8 +785,6 @@ s32 func_8003A5D0(s32 id) {
     return mask;
 }
 
-extern s32 D_80059544;           /* voices kept for music */
-
 /* Stop the effect channels playing effect `id`, then choose `width`
  * adjacent effect channels for it: the highest free group below the
  * reserved top pair, else the oldest channel of low priority seen. */
@@ -857,8 +865,7 @@ void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
     }
 }
 
-extern void func_8003E680(s32 bits, SoundSeq *seq);
-extern void func_8003AA30(SoundSeq *seq);
+void func_8003AA30(SoundSeq *seq);
 
 /* Set a sequence's fade level, at once or over `frames`; raising the level
  * of a sequence a fade stopped resumes it. */
@@ -919,9 +926,8 @@ void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
     }
 }
 
-extern void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback);
-extern void func_8003E6C0(SoundSeq *seq, s32 voices);
-extern void func_8003AFA0(SoundSeq *seq);
+void func_8003E6C0(SoundSeq *seq, s32 voices);
+void func_8003AFA0(SoundSeq *seq);
 
 /* Resume a sequence: apply its reverb (when the driver owns the reverb),
  * refresh all its voices and mark it playing. */
@@ -937,8 +943,8 @@ void func_8003AA30(SoundSeq *seq) {
     EnableEvent(D_800595BC);
 }
 
-extern void func_8003EFA0(SoundChannel *state, u32 voice);
-extern void func_8003EF04(SoundChannel *state, u32 voice);
+void func_8003EFA0(SoundChannel *state, u32 voice);
+void func_8003EF04(SoundChannel *state, u32 voice);
 
 /* Mute the channels of a sequence whose bit is set in `mask` (keying their
  * voices off while it plays) and unmute the others (keying on the ones
@@ -976,6 +982,7 @@ void func_8003AAC4(SoundSeq *seq, u32 mask) {
     } while (count != 0);
 }
 
+/* Set a sequence's byte 0x1b. */
 void func_8003ABE8(SoundSeq *seq, u8 value) {
     seq->unk1B = value;
 }
@@ -1013,8 +1020,6 @@ u16 *func_8003AC58(SoundSeq *seq) {
     return out;
 }
 
-extern SoundSeq *D_80059564;     /* playing sequences */
-
 /* The block at header offset `unk1E` of a playing sequence (the first one when
  * `seq` is NULL); NULL when it is not playing. */
 u8 *func_8003ACC8(SoundSeq *seq) {
@@ -1034,9 +1039,9 @@ u8 *func_8003ACC8(SoundSeq *seq) {
     return (u8 *)it->header + it->header->unk1E;
 }
 
-extern void func_8003AD98(SoundSeq *seq);
-extern void func_8003ADCC(SoundSeq *seq);
-extern void func_8003AE84(SoundSeq *seq);
+void func_8003AD98(SoundSeq *seq);
+void func_8003ADCC(SoundSeq *seq);
+void func_8003AE84(SoundSeq *seq);
 
 /* Snapshot operations: 0 discards, 1 takes, 2 restores. */
 void func_8003AD20(SoundSeq *seq, s32 op) {
@@ -1087,7 +1092,7 @@ void func_8003ADCC(SoundSeq *seq) {
     EnableEvent(D_800595BC);
 }
 
-extern void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot);
+void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot);
 
 /* Restart a sequence from its snapshot. */
 void func_8003AE84(SoundSeq *seq) {
@@ -1135,7 +1140,7 @@ void func_8003AFA0(SoundSeq *seq) {
     } while (count != 0);
 }
 
-extern void func_8003E8A4(SoundChannel *state, u32 voice);
+void func_8003E8A4(SoundChannel *state, u32 voice);
 
 /* Apply 8003e8a4 to the voice of every active channel of a sequence. */
 void func_8003AFFC(SoundSeq *seq) {
@@ -1183,7 +1188,7 @@ void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header) {
     } while (count != 0);
 }
 
-extern void func_8003B32C(SoundSeq *seq);
+void func_8003B32C(SoundSeq *seq);
 
 /* Create the sound effect channel set with `count` (made even) channels on
  * the top hardware voices. */
@@ -1219,12 +1224,13 @@ SoundSeq *func_8003B148(s32 count) {
 }
 
 
+/* Unlink a sequence from the playing list (stopping it) and release it. */
 void func_8003B1FC(SoundSeq *seq) {
     func_8003BA38(seq);
     func_80039144(seq);
 }
 
-extern void func_8003B370(SoundSeq *seq);
+void func_8003B370(SoundSeq *seq);
 
 /* Read a sequence's header: channel count, reverb settings (applied when
  * the driver owns the reverb), then reset its playback state. */
@@ -1294,9 +1300,8 @@ void func_8003B370(SoundSeq *seq) {
     seq->unk50 = 0x10000;
 }
 
-extern SoundSequence *func_800383EC(s32 key);
-extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
-extern void func_8003E724(SoundChannel *state, u32 voice);
+void func_8003E5BC(s16 index, SoundSeqChannel *channel);
+void func_8003E724(SoundChannel *state, u32 voice);
 
 /* Start the channels of a sequence at the data offsets listed in its
  * header: default note, volume, pan and modulators, muted when the
@@ -1389,10 +1394,6 @@ void func_8003B424(SoundSeq *seq) {
     } while (count != 0);
     seq->voices = voices;
 }
-
-extern SoundSeq *D_800595D8;     /* sound effect channels */
-extern s32 D_80059404;           /* channels of the next effect */
-extern u32 D_80059504;           /* effect start clock */
 
 /* Start effect `id` (bank in the high half) on the effect channels from
  * index `code & 0xFF` with priority `code >> 8`, at `volume` (scaled by
@@ -1569,20 +1570,7 @@ s32 func_8003BB40(s32 index) {
     return index * sizeof(SoundSeqChannel) + 0x94;
 }
 
-/* One queued SPU transfer (the ring D_80059458 holds eight). */
-typedef struct SoundTransfer {
-    u16 type;          /* 1: write, 2: read, 3/4: read decoded CD data */
-    u16 unk2;
-    u8 *data;
-    u32 address;       /* SPU address */
-    s32 size;
-    void (*callback)(void);
-} SoundTransfer;
-
-extern SoundTransfer *D_80059458; /* transfer ring */
-extern u16 D_800594F4;            /* transfer ring write index */
-extern u16 D_80059510;            /* transfer ring read index */
-extern void func_8003BE68(void);
+void func_8003BE68(void);
 
 /* SPU transfer completion: run the finished transfer's callback (flagged
  * busy), then start the next queued transfer. */
@@ -1618,7 +1606,7 @@ void func_8003BC7C(u32 address, u8 *data, s32 size, void (*callback)(void)) {
     func_8003BCA0(address, data, size, callback, 4);
 }
 
-extern s32 func_8003BDBC(void);
+s32 func_8003BDBC(void);
 
 /* Queue an SPU transfer of `size` bytes between `data` and SPU address
  * `address` (8-byte aligned), starting it when the SPU is idle. Outside a
@@ -1653,9 +1641,6 @@ void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 
     }
 }
 
-extern u16 D_800594F4; /* command ring write index */
-extern u16 D_80059510; /* command ring read index */
-
 /* Whether the eight-entry command ring has at least six entries queued. */
 s32 func_8003BDBC(void) {
     u16 write = D_800594F4;
@@ -1666,6 +1651,7 @@ s32 func_8003BDBC(void) {
     return write - D_80059510 >= 6;
 }
 
+/* An empty driver entry. */
 void func_8003BDF4(void) {
 }
 
@@ -1683,10 +1669,6 @@ s32 func_8003BDFC(s32 wait) {
     }
     return 0;
 }
-
-extern s16 D_80059548;            /* result of the last decoded-data read */
-extern void func_8004D818(u8 *data, s32 size);
-extern void func_8004D878(u8 *data, s32 size);
 
 /* Start the next queued SPU transfer; its completion callback continues
  * the ring. */
@@ -1725,10 +1707,8 @@ void func_8003BE68(void) {
     }
 }
 
-extern void (*D_8005950C)(void);
-extern s32 D_80059514;
-
-/* Driver tick: count it and run the tick callback, flagged busy. */
+/* SPU interrupt callback (80037b88 installs it): count the interrupt and run
+ * the hook, flagged busy. */
 void func_8003BFA0(void) {
     D_8005957C |= 4;
     D_80059514++;
@@ -1738,22 +1718,18 @@ void func_8003BFA0(void) {
     D_8005957C &= ~4;
 }
 
+/* Install the SPU interrupt hook 8003bfa0 runs. */
 void func_8003C010(void (*callback)(void)) {
     D_8005950C = callback;
 }
 
-extern long GetRCnt(unsigned long spec);
-extern void func_8003C484(SoundSlide *slide);
-extern void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-extern void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-extern void func_8003E900(void);
-extern void func_8003EB5C(void);
-extern void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-extern void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-extern u32 D_80059504;           /* driver tick count */
-extern u16 D_8005955C;           /* pending SPU IRQ re-enable */
-extern s32 D_800595C4;           /* root counter time spent in ticks */
-extern s32 D_80059540;           /* timed ticks */
+void func_8003C484(SoundSlide *slide);
+void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void func_8003E900(void);
+void func_8003EB5C(void);
+void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
 
 /* The sound driver tick. Every other tick it steps the master and CD
  * volume fades; the master volume goes through 80038e6c, which gives it
@@ -1974,7 +1950,7 @@ void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     } while (--count != 0);
 }
 
-extern void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
+void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
 
 /* Decode channels whose note timer expired. Bytes below 0x80 give a volume
  * followed by an encoded note/duration; the other bytes dispatch sequence
@@ -2169,8 +2145,6 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     } while (--remaining_channels != 0);
 }
 
-extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
-
 /* Apply entry `index` of the sequence's table to a channel: instrument,
  * note offset and pan. */
 void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
@@ -2363,8 +2337,6 @@ u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     }
     return data;
 }
-
-extern void func_80039F18(s32 channel, s32 volume, s32 pan);
 
 /* 9C play_effect(u16 effect, unused byte): play effect `effect` of bank 0 at
  * volume 0x7F, pan 0x40 (80039f18). */
@@ -2803,9 +2775,8 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* Declared without a prototype: callers pass the rate as an int. */
-extern s32 func_8003E290();
-extern void func_8003E3E0(SoundModulator *modulator);
-extern s32 func_8003F2A0(SoundModulator *modulator);
+s32 func_8003E290();
+void func_8003E3E0(SoundModulator *modulator);
 
 /* D8 vibrato(u8 rate, s8 depth, u8 delay): pitch modulator on: signed
  * squared depth << 14, rate + rate*rate/64, delay * 4 frames, wave 3
@@ -2946,8 +2917,6 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     }
     return data + 3;
 }
-
-extern s32 func_8003F240(SoundModulator *modulator);
 
 /* E4 tremolo(u8 rate, s8 depth, u8 delay): volume modulator on: depth << 24,
  * rate + rate*rate/64, delay * 4 frames, wave 2 (8003f240), restarted by
@@ -3371,9 +3340,6 @@ void func_8003E700(void) {
     }
 }
 
-extern u32 D_80059554;           /* voices whose registers changed */
-extern u32 D_800594FC;           /* voices held (keyed on) */
-
 /* Claim hardware voice `voice` for a channel unless its holder has a
  * higher priority. */
 void func_8003E724(SoundChannel *state, u32 voice) {
@@ -3535,8 +3501,6 @@ void func_8003E900(void) {
     }
 }
 
-extern u32 D_80059550;           /* voices to key off */
-
 /* Key off the requested voices; voices whose registers changed are first
  * switched to a fast linear release (release rate 6). */
 void func_8003EB5C(void) {
@@ -3566,9 +3530,7 @@ void func_8003EB5C(void) {
     }
 }
 
-extern s16 func_8003EEA0(s16 note);
-extern void func_8003EF04(SoundChannel *state, u32 voice);
-extern void func_8003EFA0(SoundChannel *state, u32 voice);
+s16 func_8003EEA0(s16 note);
 
 /* Stage the voice registers of `count` channels from their pending
  * changes (flags2): volume/pan (0x100), pitch (0x200), key on (1) and key
@@ -3842,7 +3804,7 @@ s32 func_8003F308(SoundModulator *modulator) {
     return modulator->phase;
 }
 
-extern s32 func_8003F43C(void);
+s32 func_8003F43C(void);
 
 /* Random: a new random level (0..depth) every `rate` frames. */
 s32 func_8003F354(SoundModulator *modulator) {
@@ -3862,8 +3824,6 @@ s32 func_8003F3C0(SoundModulator *modulator) {
     }
     return modulator->phase;
 }
-
-extern s32 D_800594E4;           /* random state */
 
 /* Seed the driver's random generator. */
 void func_8003F42C(s32 seed) {
@@ -3896,6 +3856,7 @@ void func_8003F4A0(u32 voices) {
     D_800508E4->reverb[1] = voices >> 16;
 }
 
+/* An empty driver entry. */
 void func_8003F4BC(void) {
 }
 
@@ -3920,37 +3881,42 @@ void func_8003F518(s32 voice, u16 pitch) {
     (voice + D_800508E4->voice)->pitch = pitch;
 }
 
+/* Attack rate and mode (ADSR1 bits 8-15). */
 void func_8003F530(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF) + (rate << 8) + ((mode >> 2) << 15);
 }
 
+/* Decay rate (ADSR1 bits 4-7). */
 void func_8003F560(s32 voice, s32 rate) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF0F) + (rate << 4);
 }
 
+/* Sustain rate, direction and mode (ADSR2 bits 6-15). */
 void func_8003F588(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0x3F) + (rate << 6) + ((mode >> 1) << 14);
 }
 
+/* Release rate and mode (ADSR2 bits 0-5). */
 void func_8003F5BC(s32 voice, s32 rate, s32 mode) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0xFFC0) + (rate + ((mode >> 2) << 5));
 }
 
+/* Sustain level (ADSR1 bits 0-3). */
 void func_8003F5EC(s32 voice, s32 level) {
     SpuVoice *regs = &D_800508E4->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFFF0) + level;
 }
 
-extern s32 func_8003F684(u32 *data);
+s32 func_8003F684(u32 *data);
 
 /* Check a sound file: 1 wrong magic, 2 bad checksum, 4 wrong id, 0 good. */
 s32 func_8003F614(u32 *data, u32 magic, s32 id) {

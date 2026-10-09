@@ -54,4 +54,11 @@ extern u16 D_80059490;
 extern u16 D_800594A8;
 extern u16 D_80059574;
 
+/* Stick positions (analog bytes 0-1; mode.h has bytes 2-3, which a digital
+ * pad's directional buttons set) and controller states cleared with the
+ * queue (80035db0), in the commons. */
+extern u8 D_80059444, D_8005944C; /* first port */
+extern u8 D_80059448, D_80059450; /* second port */
+extern u16 D_800594DC, D_800594E0, D_800594E8, D_800594EC, D_800595C8, D_800595CC;
+
 #endif

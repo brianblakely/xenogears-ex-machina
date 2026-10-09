@@ -141,6 +141,16 @@
 /* The color RGB and the screen depths SZ0-SZ3. */
 #define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0) : "memory")
 
+/* IR0 (the interpolation factor) and IR1-IR3 from a long vector. */
+#define gte_lddp(r0) __asm__ volatile("mtc2 %0, $8" : : "r"(r0))
+
+#define gte_ldlvl(r0)                                                          \
+    __asm__ volatile("lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0);"                                        \
+                     "lwc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0) : "memory")
+
 #define gte_ldsz4(r0, r1, r2, r3)                                              \
     __asm__ volatile("mtc2 %0, $16;"                                           \
                      "mtc2 %1, $17;"                                           \
@@ -155,6 +165,7 @@
 #define gte_nclip() __asm__ volatile("nop;nop;.word 0x4B400006")
 #define gte_avsz4() __asm__ volatile("nop;nop;.word 0x4B68002E")
 #define gte_nccs() __asm__ volatile("nop;nop;.word 0x4B08041B")
+#define gte_gpf12() __asm__ volatile("nop;nop;.word 0x4B98003D") /* IR = IR0 * IR >> 12 */
 
 /* Results: the flag register, the outer product (MAC0), screen points,
  * depths, the average depth (OTZ) and the color. */
@@ -192,5 +203,14 @@
 
 #define gte_stotz(r0) __asm__ volatile("swc2 $7, 0(%0)" : : "r"(r0) : "memory")
 #define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
+
+/* IR1-IR3 to a long vector. */
+#define gte_stlvl(r0)                                                          \
+    __asm__ volatile("swc2 $9, 0(%0);"                                         \
+                     "swc2 $10, 4(%0);"                                        \
+                     "swc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "memory")
 
 #endif

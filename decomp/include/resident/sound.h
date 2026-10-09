@@ -381,7 +381,7 @@ extern s32 D_800595BC;                /* driver event */
 extern s16 D_80059500;                /* last driver error */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
 extern SoundBank *D_80059440;         /* loaded banks */
-extern SoundSequence *D_80059558;     /* playing sequences */
+extern SoundSequence *D_80059558;     /* loaded wave banks */
 
 /* Driver interface (0x80037e8c-0x8003f738). */
 SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode);

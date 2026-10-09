@@ -8,8 +8,8 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/inline_c.h"
 #include "resident/sprite.h"
-#include "gte.h"
 
 /* Corners of a sheet part being drawn (z 0x1000 until drawn). */
 SVECTOR D_8004FDC0[4] = {{0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}};
@@ -497,6 +497,7 @@ s32 func_80026A0C(u16 *sheet, s32 id, SPRT *prims, s32 index, s16 x, s16 y) {
     return entry[0] + 1;
 }
 
+/* An empty entry. */
 void func_80026B9C(void) {
 }
 
