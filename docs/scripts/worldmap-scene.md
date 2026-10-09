@@ -13,6 +13,12 @@
   | `func_80080370` | 13 (`func_8007FF70`) | `func_8008032C`, no step | `D_8009A698` / `D_8009A6AC`, 9 |
   | `func_800811C0` | 16 (`func_80080D00`) | `func_80081174` | `D_8009A6C0` / `D_8009A70C`, 37 |
 
+- **Tables:** each director's unit opens its data with its u16 state and wait
+  tables. They stay user-supplied: the units link them from the user's image
+  (`INCLUDE_ASSET`; `asset` lines in
+  `decomp/targets/overlays/worldmap.classification.txt`). The wait tables of
+  `func_80080370` and `func_800811C0` end with a stray halfword in their alignment
+  padding (0x7542, 0x2E07), which no entry reaches.
 - **Dispatch:** `switch (actor->state)`, 65 cases in all (12, 10, 20, 10, 13), each
   commented with its effect. Case 1 decrements the s16 wait and, once it drops below
   0, loads the state and wait of entry `u.step` from the two u16 tables and steps.
@@ -37,6 +43,14 @@
   cue, and the slot handler each request goes to). `tests/test_overlay_scripts.py`
   checks each cue table against the switch cases, the starters, the setups' slots and
   the table lengths.
-
-Open: a request's effect depends on the receiving slot's own handler (named in each
-director's comment and in the listing). The directors do not decode those handlers.
+- **Requests:** `func_80097770` sets the slot's command to 1, so the actor pass
+  (`func_80097800`) runs its update handler from then on, waking a slot whose start
+  handler returned 3 (idle), and, unless a request is pending, stores the argument
+  in `unk4`. A receiver that reads `unk4` (a `switch`, `== n` tests or `!= 0`)
+  clears it and acts on it, mostly by moving to the state it names; its comments
+  give each state's effect. Of the 98 request calls in the directors' cases, 96 name
+  an argument their receiver takes. `func_8007A9F8`'s case 9 wakes the rig's flight
+  (`func_8007BBEC`, idle since `func_8007BB60` returned 3), which never reads the
+  argument, and `func_800811C0`'s case 3 sends 0, the "none pending" value, so the
+  heat haze keeps its state. `tests/test_overlay_scripts.py` checks every request
+  against its receiver.

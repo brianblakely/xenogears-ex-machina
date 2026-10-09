@@ -301,8 +301,9 @@ def events(code: bytes, entries: list[list[int]]) -> bytes:
     return bytes(0x80) + struct.pack("<I", len(entries)) + rows + code
 
 
-def bundle(code: bytes, entries: list[list[int]]) -> bytes:
-    """A map bundle whose event component is stored as literal groups."""
+def bundle(code: bytes, entries: list[list[int]], *, short: int = 0) -> bytes:
+    """A map bundle whose event component is stored as literal groups; the
+    header gives the component `short` bytes fewer than the stream holds."""
     component = events(code, entries)
     padded = component + bytes(-len(component) % 8)
     packed = bytearray(struct.pack("<I", len(padded)))
@@ -310,7 +311,7 @@ def bundle(code: bytes, entries: list[list[int]]) -> bytes:
         packed += b"\x00" + padded[start : start + 8]
     packed += b"\x00"  # the decoder reads the next flag before it returns
     header = bytearray(ev.HEADER)
-    struct.pack_into("<I", header, 0x10C + 4 * ev.EVENTS, len(component))
+    struct.pack_into("<I", header, 0x10C + 4 * ev.EVENTS, len(component) - short)
     struct.pack_into("<I", header, 0x130 + 4 * ev.EVENTS, ev.HEADER)
     return bytes(header) + bytes(packed)
 
@@ -325,6 +326,37 @@ class SweepTests(unittest.TestCase):
             ev.map_events(bundle(b"\x26\x02\x80\x00", [[0]])).bytecode, b"\x26\x02\x80\x00"
         )
         self.assertIsNone(ev.map_events(bytes(24)))
+
+    def test_the_package_is_the_whole_decoded_stream(self):
+        # As map 489: ext a0 (fe + 12 bytes) ends 2 bytes past the header's
+        # size, in the stream's tail, and its successor lies past the stream.
+        code = bytes(7) + ext(0xA0) + bytes(10) + b"\x17"
+        self.assertEqual((len(code), len(events(code, [[7]])) % 8), (20, 0))
+        package = ev.map_events(bundle(code, [[7]], short=2))
+        self.assertEqual((package.bytecode, package.component_end), (code, 18))
+        self.assertEqual(package.declared, code[:18])
+        result = ev.walk(package.bytecode, [7])
+        self.assertEqual((sorted(result.instructions), result.undecodable), ([7], []))
+        self.assertEqual(result.outside, [(7, 20)])
+        with self.assertRaises(ev.EventError):
+            ev.disassemble_reachable(package.bytecode, 7)
+        totals = ev.Totals()
+        ev.add_map(totals, "map 0", 0, package)
+        self.assertEqual((totals.bytecode, totals.covered), (18, 12))  # with end_slot at 0
+        self.assertEqual(len(totals.beyond), 1)
+        self.assertIn("+0x0014, past the 20-byte stream", totals.outside[0])
+        # a stream longer than the allocation (size + 0x10) would overrun it
+        with self.assertRaises(ev.PackedError):
+            ev.map_events(bundle(code, [[7]], short=0x11))
+
+    def test_field_changes_count_immediate_fields_and_list_variables(self):
+        code = b"\x98\xe9\xc1\x00\x80" + b"\x98\x04\x00\x01\x80" + ext(0x84)
+        code += b"\x05\x80\x00\x00\xff\xff\x00\x80" + b"\x00"
+        totals = ev.Totals()
+        ev.add_map(totals, "map 3", 3, ev.event_package(events(code, [[0, 5, 10]])))
+        self.assertEqual(totals.field_changes, 3)
+        self.assertEqual(dict(totals.targets), {489: 1})  # 0x41e9: flags above bit 12
+        self.assertEqual(totals.variable_targets, ["map 3 +0x0005 change_map_entry v0004, #1"])
 
     def build(self, root: Path, maps: dict[int, bytes]) -> None:
         directory = 0xC0  # the disc index's entry before the first bundle

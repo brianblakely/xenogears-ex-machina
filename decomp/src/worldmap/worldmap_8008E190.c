@@ -319,7 +319,7 @@ s32 func_8008E76C(s32 index) {
                 D_8006F8E7 = 1;
             }
             func_80075228();
-            D_8009D7D8 = (PathTable *)-1;
+            D_8009D7D8 = (PathRegion *)-1;
             D_8009BD24 = -1;
             D_8009CE68 = -1;
         }
@@ -348,7 +348,7 @@ s32 func_8008E76C(s32 index) {
                     actor->unk7C = 1;
                     func_800894C8(0x3C);
                     func_800894C8(0x3F);
-                    D_8009D7D8 = (PathTable *)-1;
+                    D_8009D7D8 = (PathRegion *)-1;
                     D_8009BD24 = -1;
                     D_8009CE68 = -1;
                     D_8009BD60 = 0;
@@ -404,7 +404,7 @@ s32 func_8008E76C(s32 index) {
     case 3:
         switch (func_80090E14(actor)) {
         case 1:
-            if ((s16)D_8009D7D8->pad == 2) {
+            if (D_8009D7D8->kind == 2) {
                 actor->state = 0x20;
                 actor->unk68 = 0x30000;
                 VEHICLE_SPOT(scratch, actor->position.vy);
@@ -426,7 +426,7 @@ s32 func_8008E76C(s32 index) {
                 VEHICLE_SPOT(scratch, actor->position.vy);
                 func_80089160(2, &scratch->spot, &scratch->rotation);
                 func_800894C8(1);
-                D_8009D7D8 = (PathTable *)-1;
+                D_8009D7D8 = (PathRegion *)-1;
                 D_8009BD24 = -1;
                 D_8009CE68 = -1;
             }
@@ -475,7 +475,7 @@ s32 func_8008E76C(s32 index) {
         break;
     case 4:
         if (func_80090E14(actor) == 1) {
-            if ((s16)D_8009D7D8->pad == 2) {
+            if (D_8009D7D8->kind == 2) {
                 actor->state = 0x20;
                 actor->unk68 = 0x30000;
                 VEHICLE_SPOT(scratch, actor->position.vy);

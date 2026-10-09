@@ -10,7 +10,10 @@
 - **Scripts:** `func_80070F80` starts `D_8009105C[0..9]` by scene
   (`func_8007191C`), the opening `D_80090F38` (`func_800719F0`) and the setup script
   `D_800910C4` (`func_800720D4`). `D_80091050` has the same form, but nothing
-  starts it.
+  starts it. All of them lie in `menu2.c`'s data and stay user-supplied: the unit
+  links them from the user's image (`INCLUDE_ASSET`; `asset` lines in
+  `decomp/targets/overlays/menu.classification.txt`), and only the pointer table
+  `D_8009105C` is C.
 - **Coverage:** 35 cases defined (0-34), 31 used; 4, 9, 16 and 17 are unused. Each
   disc decodes 12 scripts, 217 instructions, none undecodable.
 - **Tool:** `python3 -m tools.analysis.overlay_scripts --sweep` decodes both discs'

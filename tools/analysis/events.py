@@ -14,7 +14,11 @@ runs as the primary opcode of the same value ("rerun").
 Scripts are the event component of each field map bundle (directory (4, 0)
 file 0xb8 + 2 * map, read ahead by 8001b53c): 128 bytes of variable type bits,
 the actor count, 32 u16 entry PCs per actor and the bytecode (80070cc8:
-D_800ADC00 = entries + count * 64). Events start only at their entry PC:
+D_800ADC00 = entries + count * 64). 80070cc8 decodes the component's whole
+packed stream, which ends 0-7 bytes past the size in the bundle header, into
+an allocation of that size + 0x10; the walk reads the stream and reports
+instructions past the size and successors past the stream, while byte counts
+cover the size. Events start only at their entry PC:
 event 0 of every actor at load (800a28d4), event 1 whenever no slot is active
 (800a2030), event 2 on talk and 3 on touch (8008399c), actor 0's events 2 and
 3 after a return and for the party rebuild (800a22ac), a joining member's
@@ -58,6 +62,16 @@ class UnknownInstruction(EventError):
     def __init__(self, pc: int, opcode: int, *, namespace: str = "primary"):
         self.pc, self.opcode, self.namespace = pc, opcode, namespace
         super().__init__(f"unknown {namespace} opcode 0x{opcode:02x} at bytecode PC +0x{pc:04x}")
+
+
+class SuccessorOutside(EventError):
+    """A whole instruction whose successors include PCs past the bytecode: the
+    interpreter would run whatever memory follows the loaded stream."""
+
+    def __init__(self, instruction: Instruction, targets: tuple[int, ...]):
+        self.instruction, self.targets = instruction, targets
+        where = ", ".join(f"+0x{target:04x}" for target in targets)
+        super().__init__(f"opcode at +0x{instruction.pc:04x} targets {where} outside bytecode")
 
 
 COMPARISONS = (
@@ -212,10 +226,10 @@ _PRIMARY = """
     clear the selected actor's hidden flag
 29 remove_actor func_8009DAC4 2 next actor@1
     hide the selected actor, stop its scripts and disable its descriptor
-2a set_flag_20000 func_8009DA1C 1 next
+2a block_talk_touch func_8009DA1C 1 next
     set the running actor's flag 0x20000 (talk and touch do not start its
     events 2 and 3)
-2b clear_flag_20000 func_8009DA44 1 next
+2b unblock_talk_touch func_8009DA44 1 next
     clear the running actor's flag 0x20000
 2c set_animation func_8009A130 2 next u8@1
     set the running actor's requested animation (+ea) to byte 1
@@ -576,9 +590,10 @@ cb branch_unless_in_zone_height func_800958C0 4 branch u8@1 addr@2
     as c9, also requiring the zone's height within the controlled actor
 cc call_in_zone_height func_80095520 4 call u8@1 addr@2
     as 0a, also requiring the zone's height within the controlled actor
-cd set_flag_800000 func_8009DA70 1 next
-    set the running actor's flag 0x800000
-ce clear_flag_800000 func_8009DA98 1 next
+cd block_touch func_8009DA70 1 next
+    set the running actor's flag 0x800000 (touch does not start its event 3;
+    8008399c)
+ce unblock_touch func_8009DA98 1 next
     clear the running actor's flag 0x800000
 cf set_window_layout func_8009CE48 5 next u8@1 u8@2 u8@3 u8@4
     set the running actor's window left, top, columns and rows from bytes 1-4
@@ -718,8 +733,9 @@ _EXTENDED = """
     set variable bit operand 1
 0b clear_variable_bit func_8008D700 3 next bit@1
     clear variable bit operand 1
-0c set_b21a0 func_8008CFEC 13 next u16@1 u16@3 u16@5 u16@7 u16@9 u16@11
-    set the six halfwords at 800b21a0
+0c set_unread_b21a0 func_8008CFEC 13 next u16@1 u16@3 u16@5 u16@7 u16@9 u16@11
+    set the six halfwords at 800b21a0, which no code reads (the field setup
+    stores 0x100 three times, then 0x200 three times)
 0d set_character func_8008CF9C 3 next iv@1
     set the running actor's character (+80) from operand 1
 0e music_fade func_8008C84C 5 wait iv@1 iv@3
@@ -916,8 +932,9 @@ _EXTENDED = """
     set the running actor's colour triples selected by byte 1 bits 0/1
 60 play_movie func_8008EC30 9 wait iv@1 iv@3 iv@5 iv@7
     once sound is available request movie operand 1 (layout and fade operand 7)
-61 wait_adb7c func_8008E9F8 1 wait
-    yield until 800adb7c is set, then clear it
+61 wait_movie_start func_8008E9F8 1 wait
+    yield until the field movie player (800a7c58) has started presenting
+    frames (800adb7c), then clear the flag
 62 set_voice_volume func_8008F444 5 next iv@1 iv@3
     set voice pair operand 3's volume to operand 1 (8003a344)
 63 set_voice_pan func_8008F4A0 5 next iv@1 iv@3
@@ -1002,7 +1019,7 @@ _EXTENDED = """
     setting map operand 5 at entry operand 7 unless it is 7fff
 85 store_movie_frame func_8008A2A0 3 next var@1
     store the current movie frame (800b06a0) in a variable
-86 set_afe84 func_80089F94 2 next u8@1
+86 set_no_panorama func_80089F94 2 next u8@1
     set 800afe84 to byte 1 (nonzero: no panorama after a movie or menu)
 87 wait_menus_done func_800936E4 1 wait
     yield until the requested menus have run (8004f350 zero)
@@ -1113,8 +1130,9 @@ b3 set_party_ep func_80096E20 4 next u8@1 iv@2 u8@3
     set party slot byte 1's EP to operand 2 (capped) when slot byte 3 is used
 b4 store_party_ep func_80096C40 4 next var@1 u8@3
     store the EP of party slot byte 3 in a variable
-b5 count_b2348 func_80087FA4 1 next
-    count 800b2348 up (party gathering then warps)
+b5 warp_gathering func_80087FA4 1 next
+    count 800b2348 up: while it is nonzero party gathering warps the members
+    to their spots (8009aee0), and gathering clears it
 b6 set_controlled func_80087E98 2 next actor@1
     make the selected actor the controlled one
 b7 set_battle_override func_80087E5C 3 next iv@1
@@ -1122,14 +1140,16 @@ b7 set_battle_override func_80087E5C 3 next iv@1
 b8 set_battle_sounds func_80087DE0 4 next u8@1 iv@2
     set the battle sound value of random (byte 1 zero, 800b2355) or
     scripted (800b2356) battles
-b9 store_182c func_80087B5C 9 next var@1 var@3 var@5 var@7
-    store the game's four halfwords at +182c in variables
-ba set_182c func_80087C34 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
-    set the game's four halfwords at +182c
-bb store_1834 func_80087D30 3 next var@1
-    store the game's +1834 in a variable
-bc set_1834 func_80087D80 4 next sel@1:3/80 flags@3
-    set the game's +1834
+b9 store_vehicle_place func_80087B5C 9 next var@1 var@3 var@5 var@7
+    store the world map vehicle's saved position (game +182c-+1830) and
+    heading (+1832) in variables (WorldmapReturn, worldmap.h)
+ba set_vehicle_place func_80087C34 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+    set the world map vehicle's saved position and heading (+182c-+1832)
+bb store_vehicle_flags func_80087D30 3 next var@1
+    store the world map vehicle's flags (+1834: 0x4000 a vehicle, 0x2000
+    restore its place, low bits its kind) in a variable
+bc set_vehicle_flags func_80087D80 4 next sel@1:3/80 flags@3
+    set the world map vehicle's flags (+1834)
 bd set_record_flag func_80088B68 7 next iv@1
     set flag 80 (operand 1 = 1) or 40 (2) of the current record
 be enable_movie_overlay func_80087C0C 1 next
@@ -1137,8 +1157,9 @@ be enable_movie_overlay func_80087C0C 1 next
 bf open_menu_task func_80087848 13 wait iv@1 iv@3 iv@5 iv@7 iv@9 iv@11
     once field control allows select menu task 0 with six parameter
     bytes and end the field (kind 2)
-c0 store_50622 func_80087800 3 next var@1
-    store 80050622 in a variable
+c0 store_bout_outcome func_80087800 3 next var@1
+    store the arena bout's outcome (80050622, menu3 func_80075060: 1-3 lost,
+    0x82-0x88 won within a limit) in a variable
 c1 store_member_animation func_80088508 7 next var@1 var@3 iv@5
     store party member operand 5's animation +0c and actor in variables
 c2 begin_effect func_80088674 9 next iv@1 iv@3 iv@5 iv@7
@@ -1195,12 +1216,15 @@ d4/1=03 color_overlay_sprite func_80086FD0 10 next u8@1 iv@2 iv@4 iv@6 iv@8
     set overlay sprite operand 2's colour to operands 4, 6, 8 (800aadc8)
 d4/1=* overlay_sprites_rerun func_80086FD0 0 rerun
     no case: the extended byte runs next as primary d4
-d5 store_1844 func_80087960 5 next var@1 var@3
-    store the game's +1844 and +1846 in variables
-d6 store_184e func_800879D0 5 next var@1 var@3
-    store the game's +184e and +1852 in variables
-d7 set_184e func_80087AB8 6 next sel@1:9/80 sel@3:9/40
-    set the game's +184e and +1852 (flags byte 9, past the instruction)
+d5 store_ferry_place func_80087960 5 next var@1 var@3
+    store the world map ferry's saved x and z (+1844, +1846; D_8006EE78)
+    in variables
+d6 store_flight_place func_800879D0 5 next var@1 var@3
+    store the circling flight's saved x and z (+184e, +1852; D_8006EE80)
+    in variables
+d7 set_flight_place func_80087AB8 6 next sel@1:9/80 sel@3:9/40
+    set the circling flight's saved x and z (+184e, +1852; flags byte 9,
+    past the instruction)
 d8 set_depth_cue_off func_80087A40 2 next u8@1
     nonzero byte 1 skips depth-cueing the actors' colour (800b2357)
 d9 set_dpad_table func_80087A7C 2 next u8@1
@@ -1413,13 +1437,14 @@ def decode_instruction(bytecode: bytes, pc: int) -> Instruction:
         if _possible(condition, spec, operands, immediate)
     )
     unique = tuple(dict.fromkeys(s & 0xFFFF for s in successors))
-    for successor in unique + skips:
-        if successor >= len(bytecode):
-            raise EventError(f"opcode at +0x{pc:04x} targets +0x{successor:04x} outside bytecode")
     inner = tuple((base + advance) & 0xFFFF for advance in spec.inner)
-    return Instruction(
+    instruction = Instruction(
         pc, opcode, spec.mnemonic, size, unique, operands, extended, spec, inner, immediate, skips
     )
+    outside = tuple(dict.fromkeys(s for s in unique + skips if s >= len(bytecode)))
+    if outside:
+        raise SuccessorOutside(instruction, outside)
+    return instruction
 
 
 def _possible(condition, spec: Opcode, operands, immediate) -> bool:
@@ -1562,17 +1587,23 @@ class Walk:
     unpaired: list[int] = field(default_factory=list)
     skips: int = 0  # alternative advances over the next instruction, followed
     into: list[tuple[int, int]] = field(default_factory=list)  # (pc, target) not followed
+    outside: list[tuple[int, int]] = field(default_factory=list)  # (pc, target past the bytecode)
 
 
 def walk(bytecode: bytes, entries) -> Walk:
-    """Follow every successor; failures keep their PC and nothing is guessed."""
+    """Follow every successor; failures keep their PC and nothing is guessed.
+    A successor past the bytecode is recorded in `outside`, not followed."""
     result, pending, failed = Walk(), list(entries), set()
     while pending:
         pc = pending.pop()
         if pc in result.instructions or pc in failed:
             continue
         try:
-            ins = decode_instruction(bytecode, pc)
+            try:
+                ins = decode_instruction(bytecode, pc)
+            except SuccessorOutside as error:
+                ins = error.instruction
+                result.outside += [(pc, target) for target in error.targets]
         except UnknownInstruction as error:
             failed.add(pc)
             result.unknown.append((error.pc, error.opcode))
@@ -1582,9 +1613,9 @@ def walk(bytecode: bytes, entries) -> Walk:
             result.undecodable.append((pc, str(error)))
             continue
         result.instructions[pc] = ins
-        pending.extend(ins.successors)
+        pending.extend(s for s in ins.successors if s < len(bytecode))
         result.inner += [(pc, target) for target in ins.inner]
-        for target in ins.skips:
+        for target in (s for s in ins.skips if s < len(bytecode)):
             # Followed only when it steps over the next instruction whole.
             try:
                 lands = (
@@ -1624,6 +1655,9 @@ def disassemble_reachable(bytecode: bytes, entry: int) -> tuple[Instruction, ...
         raise UnknownInstruction(pc, opcode, namespace="extended")
     if result.undecodable:
         raise EventError(result.undecodable[0][1])
+    if result.outside:
+        pc, target = result.outside[0]
+        raise EventError(f"opcode at +0x{pc:04x} targets +0x{target:04x} outside bytecode")
     if result.overlaps:
         pc, other = result.overlaps[0]
         raise EventError(f"overlapping instructions at +0x{pc:04x} and +0x{other:04x}")
@@ -1678,14 +1712,30 @@ def map_files(extract: Path, disc: Path) -> list[tuple[int, Path]]:
     ]
 
 
+ALLOCATION_SLACK = 0x10  # 80070cc8 allocates the component's size + 0x10
+# The field operand of each instruction that sets the next field (8004f34c):
+# 12/98 (800932d0), 47 (80092894), ext 84 (800933f8; 7fff sets none) and ext
+# cf (80093888). The bundle loaded is file 0xb8 + 2 * (field & 0xfff)
+# (8001b484); bits 14-15 are flags. 56 instead leaves for the world map.
+FIELD_OPERAND = {"12": 0, "47": 0, "98": 0, "fe 84": 1, "fe cf": 0}
+NO_FIELD = 0x7FFF
+
+
 def map_events(data: bytes) -> EventPackage | None:
-    """The event component of a map bundle (None for a file too short to be one)."""
+    """The event component of a map bundle as 80070cc8 leaves it in memory
+    (None for a file too short to be one). It allocates the header's size +
+    0x10 bytes, and func_8007008C ignores the size it is passed: 80032eb4
+    writes the whole packed stream, whose last group goes 0-7 bytes past the
+    size with the bytes that followed the component when it was packed. The
+    package's bytecode is that whole stream (component_end marks the size);
+    the rest of the allocation is undefined. A stream longer than the
+    allocation would overrun it and fails."""
     if len(data) < HEADER:
         return None
     size = struct.unpack_from("<I", data, 0x10C + 4 * EVENTS)[0]
     offset = struct.unpack_from("<I", data, 0x130 + 4 * EVENTS)[0]
-    block = decode_block(data[offset:], output_limit=size + 16)
-    return event_package(block.data[:size])
+    block = decode_block(data[offset:], output_limit=size + ALLOCATION_SLACK)
+    return event_package(block.data, size)
 
 
 @dataclass
@@ -1713,14 +1763,23 @@ class Totals:
     tables: Counter = field(default_factory=Counter)
     skips: int = 0
     into: list[str] = field(default_factory=list)
+    beyond: list[str] = field(default_factory=list)  # instructions past the component's size
+    outside: list[str] = field(default_factory=list)  # successors past the decoded stream
+    field_changes: int = 0
+    targets: Counter = field(default_factory=Counter)  # immediate fields named, & 0xfff
+    variable_targets: list[str] = field(default_factory=list)  # field operands from variables
+    bundled: set[int] = field(default_factory=set)
     packages: dict[int, bytes] = field(default_factory=dict)
 
 
 def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> None:
-    code = package.bytecode
+    """Walk the whole decoded stream as the interpreter reads it; byte counts
+    and gaps cover the bytecode inside the component's size."""
     starts, skipped = script_entries(package)
-    result = walk(code, [pc for _, _, pc in starts])
+    result = walk(package.bytecode, [pc for _, _, pc in starts])
+    code = package.declared
     totals.maps += 1
+    totals.bundled.add(map_id)
     rows = b"".join(struct.pack("<32H", *row) for row in package.entries)
     totals.packages[map_id] = bytes(package.variable_unsigned_bits) + rows + code
     totals.actors += len(package.entries)
@@ -1732,9 +1791,23 @@ def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> N
     covered = set()
     for pc, ins in result.instructions.items():
         totals.uses[(ins.key, ins.name)] += 1
-        covered.update(range(pc, pc + ins.size))
+        covered.update(range(pc, min(pc + ins.size, len(code))))
         if ins.opcode == 2:
             totals.conditions[ins.operands[2]] += 1
+        if ins.key in FIELD_OPERAND:
+            index = FIELD_OPERAND[ins.key]
+            value = ins.operands[index]
+            totals.field_changes += 1
+            if not ins.immediate[index]:
+                totals.variable_targets.append(f"{label} +0x{pc:04x} {ins.text()}")
+            elif not (ins.key == "fe 84" and value & 0x7FFF == NO_FIELD):
+                totals.targets[value & 0xFFF] += 1
+        if pc + ins.size > len(code):
+            tail = package.bytecode[len(code) : pc + ins.size].hex(" ")
+            totals.beyond.append(
+                f"{label} +0x{pc:04x} {ins.key} {ins.name}: reads the stream's tail ({tail})"
+                f" past the component's {len(code)} bytecode bytes"
+            )
     totals.covered += len(covered)
     totals.unknown += [f"{label} +0x{pc:04x}: extended {op:02x}" for pc, op in result.unknown]
     totals.undecodable += [f"{label} +0x{pc:04x}: {error}" for pc, error in result.undecodable]
@@ -1744,6 +1817,10 @@ def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> N
     totals.tables.update(slots for _, slots in result.tables)
     totals.skips += result.skips
     totals.into += [f"{label} +0x{pc:04x} -> +0x{target:04x}" for pc, target in result.into]
+    totals.outside += [
+        f"{label} +0x{pc:04x} -> +0x{target:04x}, past the {len(package.bytecode)}-byte stream"
+        for pc, target in result.outside
+    ]
     start = None
     for pc in range(len(code) + 1):
         if pc < len(code) and pc not in covered:
@@ -1835,8 +1912,17 @@ def report(results: list[tuple[int, Totals]]) -> list[str]:
             ("overlapping instructions", t.overlaps),
             ("step forms without their set-up", t.unpaired),
             ("alternative advances into an instruction (not followed)", t.into),
+            ("instructions past the component's size", t.beyond),
+            ("successors past the decoded stream (undefined memory, not followed)", t.outside),
         ):
             out += [f"  {name}: {len(items)}", *_listed(items, 6)]
+        unnamed = " ".join(str(m) for m in sorted(t.bundled - set(t.targets)))
+        out += [
+            f"  field changes (12 47 98, fe 84 fe cf): {t.field_changes}; immediate operands"
+            f" name {len(t.targets)} fields; bundles none names: {unnamed}",
+            f"  field operands read from variables: {len(t.variable_targets)}",
+            *_listed(t.variable_targets, 6),
+        ]
     first, second = results[0][1].packages, results[1][1].packages
     same = sum(1 for m in second if first.get(m) == second[m])
     out.append(f"maps on both discs: {len(second.keys() & first.keys())}, identical: {same}")
@@ -1874,6 +1960,16 @@ def listing(package: EventPackage) -> list[str]:
         lines.append(f"{pc:04x}  {raw:<30} {ins.text()}" + (f"  -> {after}" if after else ""))
     lines += [f"; unknown +0x{pc:04x}: extended {op:02x}" for pc, op in result.unknown]
     lines += [f"; undecodable +0x{pc:04x}: {error}" for pc, error in result.undecodable]
+    end = len(package.declared)
+    lines += [
+        f"; +0x{pc:04x} reads past the component's {end} bytecode bytes"
+        for pc, ins in sorted(result.instructions.items())
+        if pc + ins.size > end
+    ]
+    lines += [
+        f"; +0x{pc:04x} -> +0x{target:04x}: past the {len(code)}-byte decoded stream"
+        for pc, target in result.outside
+    ]
     return lines
 
 

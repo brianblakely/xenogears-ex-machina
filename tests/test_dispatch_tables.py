@@ -9,12 +9,19 @@ from tools.analysis import battle_ai
 from tools.analysis.dispatch_tables import (
     ACT,
     ENEMY_COMMANDS,
+    FORCED_GEAR,
     GEAR_COMMANDS,
+    GROWTH,
+    LEARNED_SLOTS,
     PARTY_COMMANDS,
+    POLY_SIZES,
     ROOT,
+    TECHNIQUE_BASE,
+    UNLOCKS_B,
     VARIABLE,
     CensusError,
     FormulaFamily,
+    TmdCensus,
     act_commands,
     archive_entries,
     area_files,
@@ -26,9 +33,17 @@ from tools.analysis.dispatch_tables import (
     gear_files,
     group_models,
     initializer,
+    kr_body,
     object_model_group,
     primitive_table,
+    sprite_callbacks,
+    sprite_kind,
+    techniques,
+    tmd_kind,
+    tmd_kinds,
     walk_model,
+    walk_tmd,
+    world_modes,
 )
 
 
@@ -111,6 +126,72 @@ class SourceTests(unittest.TestCase):
         commit = function_body(source("battle/battle.c"), "func_80085CCC")
         self.assertIn("D_800D2C94.action = action - 1;", commit)
 
+    def test_gear_techniques_follow_the_menu_learning_and_loader(self):
+        menu = function_body(source("battle/battle.c"), "func_8008B224")
+        self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
+        self.assertIn("func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)", menu)
+        battle = source("battle/battle.c")  # func_8008ADD0 is defined K&R
+        commit = battle[battle.index("void func_8008ADD0(member)") :]
+        commit = commit[: commit.index("\n}\n")]
+        self.assertIn(f"gearCommands[member][D_800C3EAC->unk2E6 + {TECHNIQUE_BASE}]", commit)
+        bits = initializer(source("battle/battle_80070E2C.c"), "D_800C3468")[1]
+        values = [int(v, 0) for v in bits.split(",") if v.strip()]
+        self.assertEqual(values, [0x8000 >> i for i in range(16)])
+        learn = function_body(source("ovl2596/ovl2596.c"), "func_801E3F28")
+        self.assertIn(f"for (k = 0; k < {LEARNED_SLOTS}; k++)", learn)
+        self.assertIn("skills[id].unlocksB |= 0x8000 >> k;", learn)
+        growth = source("ovl2596/battle_results.h")
+        self.assertIn(f"u8 unlocksB[16];          /* 0x{UNLOCKS_B:X}: 0 ends */", growth)
+        self.assertIn("Growth characters[11];", growth)
+        self.assertIn(f"(0x{GROWTH:x} each;", growth)
+        loader = function_body(source("ovl2615/ovl2615.c"), "func_801E5384")
+        gear, character = FORCED_GEAR
+        self.assertIn(f"D_800CCCE8.party_ids[1] = {character};", loader)
+        self.assertIn(f"D_800CCCE8.record[i].bA0 = 0x{gear:X};", loader)
+        results = function_body(source("ovl2596/ovl2596.c"), "func_801E211C")
+        self.assertIn("func_80028470(0x10, 2);", results)
+        self.assertIn("D_800D2C08[0] = func_80032E88(archive->items[0], 0);", results)
+
+    def test_world_modes_follow_the_entry_and_their_writers(self):
+        self.assertEqual(len(world_modes()), 19)
+        entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
+        self.assertIn("mode = D_8006F954[0] & 0x7FFF;", entry)
+        self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
+        leave = function_body(source("field/field_800854D0.c"), "func_80093014")
+        self.assertIn("D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
+        self.assertIn("D_8006F94E[3] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
+        results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
+        self.assertIn(
+            "} else if ((D_8006F94E & 0x7FF) >= 0x400) {\n            func_800199CC(3);", results
+        )
+
+    def test_sprite_kinds_follow_the_header_and_the_callback_table(self):
+        callbacks = sprite_callbacks()
+        self.assertEqual(len(callbacks), 16)
+        self.assertEqual(
+            [k for k, c in enumerate(callbacks) if c == "NULL"], [3, 4, 10, 11, 12, 13]
+        )
+        kind = function_body(source("resident/sprite_80022090.c"), "func_80023440")
+        self.assertIn("s32 index = (*entry >> 8) & 7;", kind)
+        self.assertIn("if ((*entry >> 14) & 1) {\n        index += 8;", kind)
+        self.assertEqual([sprite_kind(f) for f in (0x0700, 0x4100, 0x47FF)], [7, 9, 15])
+        dispatch = function_body(source("resident/sprite_800248D4.c"), "func_80025224")
+        self.assertIn("func_8001CD64(task, D_8004FD40[kind]);", dispatch)
+        loop = function_body(source("resident/sprite.c"), "func_8001C964")
+        self.assertIn("if (task->update != NULL) {", loop)
+
+    def test_tmd_kinds_follow_both_switches(self):
+        kinds = tmd_kinds()
+        self.assertEqual(sorted(kinds), [m | lit for lit in (0, 0x100) for m in range(0, 0x20, 4)])
+        self.assertEqual((kinds[0].packet, kinds[0].reads), ("POLY_F3", 14))  # cmd[4..6], v at 8-c
+        self.assertEqual((kinds[8].packet, kinds[0x108].packet), ("POLY_F4", "POLY_F4"))
+        self.assertEqual((kinds[0x1C].packet, kinds[0x1C].reads), ("POLY_GT4", 44))
+        self.assertEqual(tmd_kind(1, 0x21), 0x0)  # flag bit 0 set: no lighting
+        self.assertEqual(tmd_kind(0, 0x3C), 0x11C)
+        builder = kr_body(source("battle/battle_800B15D8.c"), "func_800B1720")
+        self.assertIn("prims += (cmd[0] + 1) * 4;", builder)
+        self.assertIn("cmd += (cmd[1] + 1) * 4;", builder)
+
     def test_primitive_table(self):
         table = primitive_table()
         self.assertEqual(len(table.types), 17)
@@ -141,6 +222,31 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(initializer(text, "D_2"), (None, "f, g"))
         with self.assertRaises(CensusError):
             initializer(text, "D_3")
+
+
+class InventoryTests(unittest.TestCase):
+    def test_every_function_pointer_table_is_in_the_inventory(self):
+        """docs/scripts/interpreters.md lists every file-scope initializer that
+        names functions (a table no code bounds)."""
+        inventory = (ROOT / "docs/scripts/interpreters.md").read_text()
+        definition = re.compile(
+            r"\b(D_[0-9A-F]{8}|[a-z]\w*)\s*(?:\[[^\]=]*\])*\s*(?:\)\s*\([^)]*\))?"
+            r"\s*(?:__attribute__\(\([^)]*\)\)\)\s*)?=\s*\{"
+        )
+        tables = set()
+        for path in sorted((ROOT / "decomp/src").rglob("*.c")):
+            text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+            for match in definition.finditer(text):
+                depth, end = 0, match.end() - 1
+                for end in range(match.end() - 1, len(text)):
+                    depth += {"{": 1, "}": -1}.get(text[end], 0)
+                    if depth == 0:
+                        break
+                if re.search(r"\bfunc_[0-9A-F]{8}\b", text[match.end() : end]):
+                    tables.add(match.group(1))
+        self.assertIn("D_80088BFC", tables)  # the .text table menu6 places by attribute
+        self.assertGreaterEqual(len(tables), 31)
+        self.assertEqual(sorted(name for name in tables if f"`{name}`" not in inventory), [])
 
 
 class FormulaTests(unittest.TestCase):
@@ -187,7 +293,81 @@ class FormulaTests(unittest.TestCase):
         ]
         data = b"".join(bytes(w) for w in words)
         script = battle_ai.analyse_script(data, 0, len(data))
-        self.assertEqual(list(act_commands(script, data)), [31, None, 9, VARIABLE])
+        self.assertEqual(list(act_commands(script, data)), [{31}, {None}, {9}, {VARIABLE}])
+
+    def test_act_commands_follow_the_runners_paths(self):
+        def commands(*words):
+            data = b"".join(bytes(w) for w in words)
+            return list(act_commands(battle_ai.analyse_script(data, 0, len(data)), data))
+
+        # A skipped rule's write never reaches the next rule (a true one ends at fd).
+        self.assertEqual(
+            commands(
+                (0x81, 0, 0, 0),
+                (0x01, 1, 40, 0),
+                (0xFD, 0, 0, 0),
+                (0x80, 0, 0, 0),
+                (0x01, 0, ACT, 0),
+                (0xFD, 0, 0, 0),
+            ),
+            [{None}],
+        )
+        # Without the fd the true path runs on into the next rule: both arrive.
+        self.assertEqual(
+            commands(
+                (0x81, 0, 0, 0),
+                (0x01, 1, 40, 0),
+                (0x80, 0, 0, 0),
+                (0x01, 0, ACT, 0),
+                (0xFD, 0, 0, 0),
+            ),
+            [{None, 40}],
+        )
+
+
+class TechniqueTests(unittest.TestCase):
+    def test_pilots_and_masks_decide_which_slots_are_offered(self):
+        gears, masks = {0: 18, 1: 2, 10: 18}, {0: 0x8000, 1: 0xFFF0, 10: 0}
+        learned = {0: 6, 1: 15, 10: 0}
+        outside = [(18, TECHNIQUE_BASE + 5, 90), (18, TECHNIQUE_BASE + 13, 91)]
+        outside += [(17, TECHNIQUE_BASE + 12, 92), (2, TECHNIQUE_BASE + 12, 93)]
+        result = techniques(gears, masks, learned, {(1, 3)}, {(1, 10)}, 0, outside)
+        # learning reaches slot 5 for character 0 and stops at 13 slots for 1
+        self.assertEqual(result.bits[0], 0xFC00)
+        self.assertEqual(result.bits[1], 0xFFF8)
+        # the copy gives character 10 character 1's masks and gears 2 and 3
+        self.assertEqual(result.bits[10], 0xFFF8)
+        self.assertEqual(result.pilots[2], {1, 10})
+        self.assertEqual(result.pilots[17], {10})  # the formation flag's forced gear
+        self.assertEqual(
+            [selectable for *_, selectable in result.records], [True, False, True, True]
+        )
+        # a variable operand could name any character or gear
+        self.assertTrue(
+            techniques(gears, masks, learned, set(), set(), 1, outside[1:2]).records[0][4]
+        )
+
+
+class TmdTests(unittest.TestCase):
+    def test_walk_checks_codes_packet_and_read_sizes(self):
+        kinds = tmd_kinds()
+
+        def model(*primitives: bytes) -> bytes:
+            entry = struct.pack("<7I", 0, 0, 0, 0, 0x1C, len(primitives), 0)
+            return struct.pack("<3I", 0x41, 0, 1) + entry + b"".join(primitives)
+
+        good = bytes((4, 3, 1, 0x21)) + bytes(12)  # flat triangle: a POLY_F3, 14 bytes read
+        short = bytes((4, 2, 1, 0x21)) + bytes(8)  # 12 data bytes
+        wrong = bytes((5, 3, 1, 0x21)) + bytes(12)  # a 24-byte packet
+        line = bytes((4, 3, 1, 0x41)) + bytes(12)  # a line code
+        census = TmdCensus()
+        walk_tmd(census, "m", model(good, short, wrong, line), 0, kinds)
+        self.assertEqual(POLY_SIZES["POLY_F3"], 0x14)
+        self.assertEqual(census.primitives[0], 4)
+        self.assertEqual(len(census.errors), 3)
+        self.assertIn("primitive 1 kind 0x0 has 12 bytes, 14 read", census.errors[0])
+        self.assertIn("primitive 2 kind 0x0 sizes 24 packet bytes for a POLY_F3", census.errors[1])
+        self.assertIn("primitive 3 mode 0x41 is not a polygon", census.errors[2])
 
 
 class PrimitiveTests(unittest.TestCase):

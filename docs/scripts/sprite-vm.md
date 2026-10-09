@@ -79,10 +79,11 @@ the `decomp/src` switch labels and the C length table.
   commands. Field data use three `bc` selectors and no `c8`, and no data use
   `40`-`7f`. `84` sits in walking loops; with no handler, it advances one byte and
   does nothing.
-- **Not started:** in 189 distinct battle blocks, 903 headers lie in section 1
-  that no directory lists and no command spawns, and nothing recovered starts them.
-  Their scripts add 9527 commands, none undecodable, though some show `40`-`7f`,
-  `b1` and `ff`. Data can take a header's shape, so the sweep reports these apart.
+- **Not started:** in 189 distinct battle blocks, 903 headers lie in section 1 that
+  no directory lists and no command spawns, and no starter the sweep follows (above)
+  reaches them. Their scripts add 9527 commands, none undecodable, though some show
+  `40`-`7f`, `b1` and `ff`. Data can take a header's shape, so the sweep reports
+  these apart.
 - **Tool:** `python3 -m tools.analysis.sprite_vm --sweep [--listing .local/sprite-vm]`
   reads `.local/extract` and `.local/discs` and prints aggregates only. It checks
   the length table against each disc's resident. `--listing` writes one listing per

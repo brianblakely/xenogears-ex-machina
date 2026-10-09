@@ -514,6 +514,7 @@ docs/scripts/battle-effect-vm.md
 docs/scripts/battle-event-vm.md
 docs/scripts/dispatch-tables.md
 docs/scripts/field-events.md
+docs/scripts/interpreters.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
 docs/scripts/text-control.md

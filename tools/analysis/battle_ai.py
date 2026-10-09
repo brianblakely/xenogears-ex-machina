@@ -87,7 +87,7 @@ _ACTIONS = """
 06 set_l16 8007a968 l@1 u16@23
     long b1 = (b2 | b3 << 8) * 16
 07 set_res 8007a9a8 res@1 u8@2
-    resident halfword 8005a3a0[b1] = b2
+    persistent battle halfword 8005a3a0[b1] = b2 (16, kept at game data +0x2324)
 08 add_b 8007a9d0 b@1 u8@2
     byte variable b1 += b2, saturating at 0xff
 09 sub_b 8007aa1c b@1 u8@2
@@ -173,9 +173,9 @@ _ACTIONS = """
     record +0x108 (b2 0) or +0x104 of the first slot in variable b3 = long b1; a
     party slot as in 2b
 30 get_res 8007b8d4 v@1 res@2
-    variable b1 = resident halfword 8005a3a0[b2]
+    variable b1 = persistent battle halfword 8005a3a0[b2]
 31 put_res 8007b914 v@1 res@2
-    resident halfword 8005a3a0[b2] = variable b1
+    persistent battle halfword 8005a3a0[b2] = variable b1
 32 copy_b 8007b958 b@1 b@2
     byte variable b2 = byte variable b1
 33 copy_v 8007b98c v@1 v@2
@@ -190,14 +190,15 @@ _ACTIONS = """
     clear the 16 byte variables
 38 clear_v 8007bab8
     clear the 8 variables
-39 set_own_14c 8007bae8 u16@12
-    the enemy's record +0x14c = b1 | b2 << 8
-3a set_own_156 8007bb2c u16@12
-    the enemy's record +0x156 = b1 | b2 << 8
+39 set_experience 8007bae8 u16@12
+    the enemy's experience (record +0x14c) = b1 | b2 << 8
+3a set_gold 8007bb2c u16@12
+    the enemy's gold (record +0x156) = b1 | b2 << 8
 3b set_own_155 8007bb70 u8@1 u8@2 u8@3
     the enemy's record bytes +0x155, +0x153, +0x151 = b1, b2, b3
-3c set_own_154 8007bbd8 u8@1 u8@2 u8@3
-    the enemy's record bytes +0x154, +0x152, +0x150 = b1, b2, b3
+3c set_drop 8007bbd8 u8@1 u8@2 u8@3
+    the enemy's first drop: category (record +0x154), item (+0x152) and
+    chance (+0x150) = b1, b2, b3
 3d list_set16 8007bc40 off@1 u16@23
     action-list entry bytes b1, b1 + 1 = b2, b3 (no advance)
 3e random_b 8007bc84 b@1 u8@2
@@ -205,13 +206,13 @@ _ACTIONS = """
 3f random_v 8007bce8 v@1 u16@23
     variable b1 = random 0..(b2 | b3 << 8) (80089b50)
 40 pick_party 8007bd5c v@1 any@2
-    variable b1 = the bit of a random party slot passing 8007a628(b2) with
-    800d32a1 clear; 0 if none
+    variable b1 = the bit of a random party slot passing 8007a628(b2) that is
+    on foot (800d32a1 clear); 0 if none
 41 pick_party_own_group 8007bea8 v@1 any@2
     as 40, in the enemy's formation group
 42 pick_enemy_own_group 8007c040 v@1 any@2
     variable b1 = the bit of a random enemy slot passing 8007a628(b2) in the
-    enemy's formation group with 800d32a1 clear; 0 if none
+    enemy's formation group that is on foot (800d32a1 clear); 0 if none
 43 pick_party_other_group 8007c1a4 v@1 any@2
     as 40, outside the enemy's formation group
 44 pick_enemy_other_group 8007c33c v@1 any@2
@@ -226,14 +227,14 @@ _ACTIONS = """
     lowest HP (slot 0 if none)
 48 enemy_lowest_hp 8007c75c v@1 any@2
     as 47 for the enemy slots
-49 pick_party_flagged_own_group 8007c840 v@1 any@2
-    variable b1 = the bit of a random party slot passing 8007a628(b2) with
-    800d32a1 set, in the enemy's formation group; 0 if none
-4a pick_party_flagged 8007c9d4 v@1 any@2
+49 pick_party_geared_own_group 8007c840 v@1 any@2
+    variable b1 = the bit of a random party slot passing 8007a628(b2) that is
+    in a gear (800d32a1), in the enemy's formation group; 0 if none
+4a pick_party_geared 8007c9d4 v@1 any@2
     as 49 in any group
-4b pick_enemy_flagged 8007cb20 v@1 any@2
-    variable b1 = the bit of a random enemy slot passing 8007a628(b2) with
-    800d32a1 set; 0 if none
+4b pick_enemy_geared 8007cb20 v@1 any@2
+    variable b1 = the bit of a random enemy slot passing 8007a628(b2) that is
+    in a gear (800d32a1); 0 if none
 4c count_party_in_group 8007cc50 b@1 group@2
     byte variable b1 = the party slots passing 8007a628(0) in formation group b2
 4d count_enemies_in_group 8007cd10 b@1 group@2
@@ -255,8 +256,8 @@ _ACTIONS = """
 54 pick_character 8007d1dc v@1 char@2
     variable b1 = the bit of a random slot passing 8007a744 whose record +0x56
     is b2; 0 if none
-55 get_2c8b 8007d30c l@1
-    long b1 = the enemy's byte at 800d2c8b
+55 get_result_code 8007d30c l@1
+    long b1 = the enemy's result code (800d2c8b, BattleWork.resultCode[3 + enemy])
 56 pick_enemy_80 8007d344 v@1 any@2
     variable b1 = the bit of a random enemy slot passing 8007a6c8(b2) with slot
     info +3 bit 0x80; 0 if none
@@ -267,24 +268,24 @@ _ACTIONS = """
     byte variable b1 = the party slots without record +0x7c bits 0xc000
 59 count_enemies_up 8007d610 b@1
     byte variable b1 = the present, visible enemy slots without +0x7c 0xc000
-5a party_flagged_lowest_104 8007d6a8 v@1 any@2
-    variable b1 = the bit of the party slot passing 8007a628(b2) with 800d32a1
-    set and the lowest record +0x104 (slot 0 if none)
-5b enemy_flagged_lowest_hp 8007d7b4 v@1 any@2
-    variable b1 = the bit of the enemy slot passing 8007a628(b2) with 800d32a1
-    set and the lowest HP (slot 0 if none)
+5a party_geared_lowest_104 8007d6a8 v@1 any@2
+    variable b1 = the bit of the party slot passing 8007a628(b2) in a gear
+    (800d32a1) with the lowest record +0x104 (slot 0 if none)
+5b enemy_geared_lowest_hp 8007d7b4 v@1 any@2
+    variable b1 = the bit of the enemy slot passing 8007a628(b2) in a gear
+    (800d32a1) with the lowest HP (slot 0 if none)
 5c pick_party_attr 8007d8c0 a16@1 v@2 v@3
     variable b2 = the bit of a random party slot passing 8007a628(0) whose
     halfword attribute b1 shares a bit with variable b3; 0 if none
 5d pick_enemy_attr 8007da1c a16@1 v@2 v@3
     as 5c for the enemy slots
-5e pick_party_flagged_attr 8007db78 a16@1 v@2 v@3
-    as 5c, limited to party slots with 800d32a1 set
-5f pick_enemy_flagged_attr 8007dcf8 a16@1 v@2 v@3
-    as 5d, limited to enemy slots with 800d32a1 set
+5e pick_party_geared_attr 8007db78 a16@1 v@2 v@3
+    as 5c, limited to party slots in a gear (800d32a1)
+5f pick_enemy_geared_attr 8007dcf8 a16@1 v@2 v@3
+    as 5d, limited to enemy slots in a gear (800d32a1)
 60 pick_party_attr_any 8007de78 a16@1 v@2 v@3
     as 5c with 8007a628(1)
-61 pick_party_flagged_attr_any 8007dfd4 a16@1 v@2 v@3
+61 pick_party_geared_attr_any 8007dfd4 a16@1 v@2 v@3
     as 5e with 8007a628(1)
 62 mark 8007ef6c/62
     nothing here; a reaction script (80079ab0) that runs it returns 1, which
@@ -295,8 +296,8 @@ _ACTIONS = """
 64 self_bit 8007e1d0 v@1
     variable b1 = the enemy's own slot bit
 65 party_mask 8007e234 v@1 sel@2
-    variable b1 = the party slots passing 8007a744 with 800d32a1 set (b2 1),
-    clear (b2 2) or either (other b2)
+    variable b1 = the party slots passing 8007a744 in a gear (800d32a1; b2 1),
+    on foot (b2 2) or either (other b2)
 66 enemy_mask 8007e334 v@1 sel@2
     as 65 for the enemy slots
 67 party_group_mask 8007e438 v@1 v@2
@@ -304,8 +305,9 @@ _ACTIONS = """
     slot in variable b2
 68 enemy_group_mask 8007e554 v@1 v@2
     as 67 for the enemy slots
-69 reset_2c60 8007e674
-    the enemy's 800d2c60 long = 0 and its 800d2c8b byte = 4
+69 clear_result 8007e674
+    the enemy's pending amount (800d2c60, BattleWork.damage[3 + enemy]) = 0 and
+    its result code = 4, which the results pass (func_80085618) applies as nothing
 6a add_ll 8007e6a0 l@1 l@2 l@3
     long b3 = long b1 + long b2
 6b sub_ll 8007e6f0 l@1 l@2 l@3
@@ -314,8 +316,9 @@ _ACTIONS = """
     long b1 *= b2
 6d divu_l 8007e780 l@1 u8@2
     long b1 /= b2 (unsigned)
-70 set_3278 8007e7c0 u8@1 u8@2
-    halfword b1 of the table at *800d3278 + 0x394 = b2
+70 set_event_variable 8007e7c0 u8@1 u8@2
+    the battle event script's variable b1 (*800d3278 + 0x394, ovl3087's
+    ScriptState.vars) = b2
 71 party_flag_7a 8007e7e4 bit@1 set@2
     set (b2 != 0) or clear flag b1 + 7 (80089bec) in every party record's +0x7a
 72 set_group_distance 8007e8ac group@1 group@2 u8@3

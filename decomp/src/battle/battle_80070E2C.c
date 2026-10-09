@@ -427,7 +427,7 @@ void func_80070F40(void) {
         mode = 0;
     case 3:
         if (D_800C3D48 != 0) {
-            D_800D3278->unk394[0] = 0xFF;
+            D_800D3278->vars[0] = 0xFF;
             if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
                 u8 *battleOutcome = &D_800C48EA;
 
@@ -435,8 +435,8 @@ void func_80070F40(void) {
                 outcome = *battleOutcome;
                 *battleOutcome = 0;
                 for (i = 0; i < 3; i++) {
-                    D_800D3278->unk394[0x10 + i] = D_800CCCE8.records[i].pilot.status7C & 0x8000;
-                    D_800D3278->unk394[0x10 + i] |= D_800CCCE8.records[i].gear.status7C & 0x8000;
+                    D_800D3278->vars[0x10 + i] = D_800CCCE8.records[i].pilot.status7C & 0x8000;
+                    D_800D3278->vars[0x10 + i] |= D_800CCCE8.records[i].gear.status7C & 0x8000;
                 }
                 func_800C0F70();
                 func_80070EB0(1);
@@ -1181,7 +1181,7 @@ void func_80073B64(void) {
                               D_800C3EA4->panels[i].buffer);
                 break;
             case 2:
-                func_800728B8(D_800C3EA4->panels[i].alone[0], D_800C3EA4->panels[i].parts[1],
+                func_800728B8(D_800C3EA4->panels[i].gear[0], D_800C3EA4->panels[i].parts[1],
                               D_800C3EA4->panels[i].buffer);
                 break;
             }

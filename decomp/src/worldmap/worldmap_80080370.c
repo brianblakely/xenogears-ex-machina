@@ -1,10 +1,12 @@
 #include "worldmap.h"
 
-/* The director's timed sequence: the state of each step and its duration
- * (started by func_8008032C). The original object keeps a stray halfword
- * (0x7542) in the durations' alignment padding. */
-u16 D_8009A698[9] = {1, 2, 8, 3, 4, 5, 6, 7, 64};
-u16 D_8009A6AC[10] = {135, 15, 135, 188, 2, 2, 120, 128, 0, 0x7542};
+/* The director's cue sequence, user-supplied script data (an asset in
+ * worldmap.classification.txt): 9 u16 states and 9 u16 waits (started by
+ * func_8008032C; tools/analysis/overlay_scripts.py decodes it). The waits'
+ * 0x14 bytes end with the stray halfword (0x7542) the original object
+ * keeps in its alignment padding. */
+INCLUDE_ASSET(".data", D_8009A698, 0x8009A698, 0x12);
+INCLUDE_ASSET(".data", D_8009A6AC, 0x8009A6AC, 0x14);
 
 /* Flight scene director (mode 13): func_8007A9F8's cue sequencer on
  * D_8009A698/D_8009A6AC; its starter does not step, so entry 0 runs twice.

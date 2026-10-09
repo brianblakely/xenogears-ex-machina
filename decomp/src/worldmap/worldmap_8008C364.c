@@ -806,17 +806,18 @@ void func_8008E034(VECTOR *position) {
     D_8006EE54.unk64 = position->vz >> 12;
 }
 
-/* Select the path table of scenes 15 and 16. */
+/* Select the path table of scenes 15 and 16. The link is read unsigned here
+ * (lhu at 8008e0b4), signed by func_80094238. */
 void func_8008E078(void) {
     if (D_8009D738 != 0) {
         switch (D_8009BD60) {
         case 15:
             D_8009D7D8 = &D_8009B6C4[0];
-            D_8009BD24 = D_8009B6C4[0].count;
+            D_8009BD24 = (u16)D_8009B6C4[0].link;
             break;
         case 16:
             D_8009D7D8 = &D_8009B6C4[1];
-            D_8009BD24 = D_8009B6C4[1].count;
+            D_8009BD24 = (u16)D_8009B6C4[1].link;
             break;
         }
     }

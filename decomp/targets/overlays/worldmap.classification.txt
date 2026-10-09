@@ -5,3 +5,12 @@
 # 800987ac (leaf, GTE macros) compiles from C under this unit's settings.
 8009980c 80099bfc handwritten terrain quarter-block triangle renderer (s5 saved beyond its 0x18-byte frame, ori for small constants, trapping addi)
 80099bfc 80099e8c handwritten terrain billboard quad renderer (addiu sp,-8 with sw s1,8(sp); ori for 0xfff)
+# asset: script data embedded in the units' .data, linked from the user's image
+# with INCLUDE_ASSET and decoded by tools/analysis/overlay_scripts.py.
+8009a450 8009a488 asset Cue sequence of the mode-14 scene director func_8007A9F8 (worldmap_8007A9F8.c), started by func_8007A9B4: 14 u16 states D_8009A450 and 14 u16 waits D_8009A46C; state 1 counts the wait down and fetches the next pair, every other state is a switch case that runs one cue (docs/scripts/worldmap-scene.md)
+8009a4d8 8009a4f8 asset Cue sequence of the mode-12 director func_8007C3B8 (worldmap_8007C3B8.c), started by func_8007C36C: 8 u16 states D_8009A4D8 and 8 u16 waits D_8009A4E8, the format above
+8009a5d4 8009a65a asset Cue sequences of the mode-15 director func_8007DE98 (worldmap_8007DE98.c), one per entry D_8009D3D4 picked by func_8007DE14 through D_8009A65C: s16 states and u16 waits D_8009A5D4/D_8009A5F0 (14), D_8009A60C/D_8009A620 (9) and D_8009A634/D_8009A648 (9), the format above
+8009a698 8009a6c0 asset Cue sequence of the mode-13 director func_80080370 (worldmap_80080370.c), started by func_8008032C: 9 u16 states D_8009A698 and 9 u16 waits D_8009A6AC, whose alignment padding holds a stray halfword (0x7542), the format above
+8009a6c0 8009a758 asset Cue sequence of the mode-16 director func_800811C0 (worldmap_800811C0.c), started by func_80081174: 37 u16 states D_8009A6C0 and 37 u16 waits D_8009A70C, whose alignment padding holds a stray halfword (0x2E07), the format above
+8009a758 8009aabc asset Actor script D_8009A758 (434 s16), given by func_800827C8 (mode 17) and run by func_80076B34 through D_8009A3C0: each command is the word at the script position (opcode in the low halfword, first argument in the high one) and the next two halfwords; a handler returns the halfwords to advance (docs/scripts/worldmap-actor.md)
+8009ac60 8009ad2c asset Actor script D_8009AC60 (102 s16), given by func_800838E8 (mode 18), the format above

@@ -23,7 +23,8 @@ typedef struct {
 extern SlotPulse *D_800C3748;
 
 /* A highlighted slot's ring (0x68 bytes): a task and a draw task, drawn
- * from resident effect script 0 of 8001C76C with double-buffered vertices. */
+ * from object 0 of the resident TMD model D_8001C76C with double-buffered
+ * packets. */
 typedef struct {
     ActorTask actor;      /* 0x00: its draw task at 0x1C */
     BattleSprite *sprite; /* 0x38 */
@@ -40,7 +41,7 @@ typedef struct {
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
 extern MATRIX D_8004FBB8;   /* sprite camera */
-extern u8 D_8001C76C[];  /* resident effect script table (a TMD model, objects.h) */
+extern u8 D_8001C76C[];  /* resident TMD model (objects.h's effect script file format) */
 
 void *func_8001D0A4(void *owner, void (*update)()); /* the owner's child task running update */
 u8 *func_800B168C(u8 *table, s32 index);

@@ -73,7 +73,7 @@ s32 func_80090A84(WorldmapActor *actor) {
         if (D_8009BD24 != -1) {
             return 1;
         }
-    } else if (D_8009BD24 != -1 && ((PathRegion *)D_8009D7D8)->kind == 1) {
+    } else if (D_8009BD24 != -1 && D_8009D7D8->kind == 1) {
         return 1;
     }
     if ((D_8009BD10 & 0x10) && D_8009CE68 == -1 && D_8009BD24 == D_8009CE68) {
@@ -1408,24 +1408,24 @@ s32 func_80094238(VECTOR *position, s32 table) {
     x = (u32)position->vx >> 12;
     region = ((PathRegion *)D_8009BD00[table]);
     z = (u32)position->vz >> 12;
-    if (region->id != -1) {
+    if (region->scene != -1) {
         do {
             if ((x >= region->x) & (region->x + region->w >= x) & (z >= region->z) & (region->z + region->h >= z)) {
                 if (region->kind == 4) {
-                    D_8009D7D8 = (PathTable *)-1;
+                    D_8009D7D8 = (PathRegion *)-1;
                     D_8009BD24 = -1;
                     D_8009CE68 = region->link;
                 } else {
-                    D_8009D7D8 = (PathTable *)region;
+                    D_8009D7D8 = region;
                     D_8009CE68 = -1;
                     D_8009BD24 = region->link;
                 }
                 return 1;
             }
             region++;
-        } while (region->id != -1);
+        } while (region->scene != -1);
     }
-    D_8009D7D8 = (PathTable *)-1;
+    D_8009D7D8 = (PathRegion *)-1;
     D_8009BD24 = -1;
     D_8009CE68 = -1;
     return 0;
@@ -1441,15 +1441,15 @@ s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
     x = (u32)position->vx >> 12;
     z = (u32)position->vz >> 12;
     region = ((PathRegion **)D_8009BD00)[table];
-    if (region->id != -1) {
+    if (region->scene != -1) {
         do {
             if (((x >= region->x) & (region->x + region->w >= x) & (z >= region->z) & (region->z + region->h >= z)) &&
                 region->kind == kind) {
-                D_8009D7D8 = (PathTable *)region;
+                D_8009D7D8 = region;
                 return 1;
             }
             region++;
-        } while (region->id != -1);
+        } while (region->scene != -1);
     }
     return 0;
 }

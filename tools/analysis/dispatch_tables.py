@@ -1,10 +1,13 @@
-"""Censuses of the data-indexed dispatch tables: battle formulas, model primitives.
+"""Censuses of the data-indexed dispatch tables: battle formulas (with the gear
+techniques that select them), model primitives, world map arrival modes, sprite
+kinds and TMD primitives.
 
-Neither table has a program counter: one selector field of a fixed-layout record
-picks the entry, and no code checks it against the table's length. The tables
-(their lengths, handlers and row values) are parsed from the recovered C at run
-time, and `--sweep` reads every record the game's loaders hand to them on both
-discs and prints aggregate counts only.
+None of these tables has a program counter: one selector field of a
+fixed-layout record picks the entry, and no code checks it against the table's
+length. The tables (their lengths, handlers and row values) are parsed from the
+recovered C at run time, and `--sweep` reads every record the game's loaders
+hand to them on both discs and prints aggregate counts only. The world map
+modes, sprite kinds and TMD primitives are described with their sections below.
 
 Battle formulas (decomp/src/battle/battle_8008CCCC.c). For each target in the
 mask, func_800941A4 calls D_800C348C[D_800C3DFC->formula](). An attacker whose
@@ -65,7 +68,7 @@ from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 
-from tools.analysis import battle_ai, sprite_vm
+from tools.analysis import battle_ai, battle_event_vm, events, sprite_vm
 from tools.analysis.disc_index import Disc, discs
 from tools.analysis.overlay_scripts import BASE, disc_image
 from tools.analysis.packed import PackedError, decode_block
@@ -75,6 +78,9 @@ FORMULA_UNIT = "battle/battle_8008CCCC.c"  # D_800C348C, D_800C34DC
 GEAR_FILE_UNIT = "battle/battle_8009E53C.c"  # D_800C3508
 MODEL_UNIT = "resident/main_8002C3E8.c"  # D_8004FE50 and its prepare routines
 AREA_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B584
+MODE_UNIT = "worldmap/worldmap_80072238.c"  # D_8009A058, the world map modes
+SPRITE_UNIT = "resident/sprite_800248D4.c"  # D_8004FD40, the sprite task callbacks
+TMD_UNIT = "battle/battle_800B15D8.c"  # func_800B1720 packets, func_800B1F6C draws
 FORMULA_TABLES = (("D_800C348C", "func_800941A4"), ("D_800C34DC", "func_8009C198"))
 
 
@@ -250,6 +256,7 @@ class FormulaFamily:
     formulas: Counter = field(default_factory=Counter)
     gear_descriptors: int = 0  # flagsA bit 0x10
     outside: list[str] = field(default_factory=list)
+    outside_records: list[tuple[int, int, int]] = field(default_factory=list)  # set, #, formula
 
 
 @dataclass
@@ -260,6 +267,7 @@ class EnemyCommands:
     acts: int = 0
     unwritten: int = 0  # act entries closed with no arg1 write before them
     dynamic: int = 0  # act entries whose arg1 comes from a variable
+    joins: int = 0  # act entries that paths reach with different commands
     on_foot: Counter = field(default_factory=Counter)
     in_gear: Counter = field(default_factory=Counter)
 
@@ -274,6 +282,7 @@ class FormulaCensus:
     enemy_descriptors: list[tuple[int, int]] = field(default_factory=list)  # by command
     commands: EnemyCommands = field(default_factory=EnemyCommands)
     selected_outside: list[str] = field(default_factory=list)
+    techniques: Techniques | None = None
 
 
 def family_census(
@@ -303,6 +312,7 @@ def family_census(
             family.formulas[formula] += 1
             if formula >= limit:
                 family.outside.append(f"{label} {index - first} #{number}: formula {formula}")
+                family.outside_records.append((index - first, number, formula))
 
 
 def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
@@ -314,24 +324,41 @@ def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
 VARIABLE = -1  # an arg1 taken from an AI variable
 
 
-def act_commands(script: battle_ai.Script, data: bytes) -> Iterator[int | None]:
-    """The arg1 byte of each act entry the script closes (None when nothing
-    wrote it, VARIABLE when a variable did), following the reachable words in
-    address order: a rule's writes are straight-line, and the census does not
-    model a skipped rule's writes reaching a later rule's entry."""
-    arg1: int | None = None
-    for pc in sorted(script.reachable):
+def act_commands(script: battle_ai.Script, data: bytes) -> Iterator[frozenset[int | None]]:
+    """The arg1 bytes each act entry the script closes can carry (None when
+    nothing wrote it, VARIABLE when a variable did), along the runner's paths:
+    an action steps to the next word; a condition (with its 99 chain) goes on
+    when it holds and, unless it always holds, skips its rule when it does
+    not (battle_ai.analyse_script's branches), so a skipped rule's writes
+    never reach a later entry. Every edge goes forward, so one pass in
+    address order meets each word after all of its predecessors."""
+    states: dict[int, set[int | None]] = {script.entry: {None}}
+
+    def reach(pc: int, state: set[int | None]) -> None:
+        if script.entry <= pc < script.end:
+            states.setdefault(pc, set()).update(state)
+
+    for pc in sorted(script.reachable - script.chained):
+        state = states.pop(pc, set())
         op, offset, low, high = data[pc : pc + 4]
+        if not state or op in battle_ai.ENDS:
+            continue
+        if op >= 0x80:
+            reach(battle_ai.condition_end(data, pc, script.end), state)
+            if script.branches.get(pc) is not None:
+                reach(script.branches[pc], state)
+            continue
         if op == 0x01 and offset == 0:  # 8007a828: the type byte closes the entry
             if low == ACT:
-                yield arg1
-            arg1 = None
+                yield frozenset(state)
+            state = {None}
         elif op == 0x01 and offset == 1:
-            arg1 = low
+            state = {low}
         elif op == 0x3D and offset in (0, 1):  # 8007bc40: bytes offset, offset + 1
-            arg1 = high if offset == 0 else low
+            state = {high if offset == 0 else low}
         elif (op == 0x02 and offset == 1) or (op == 0x52 and offset in (0, 1)):
-            arg1 = VARIABLE  # 8007a874 (a byte variable), 8007d148 (a halfword)
+            state = {VARIABLE}  # 8007a874 (a byte variable), 8007d148 (a halfword)
+        reach(pc + 4, state)
 
 
 def enemy_commands(census: FormulaCensus, root: Path, disc: int) -> None:
@@ -347,14 +374,123 @@ def enemy_commands(census: FormulaCensus, root: Path, disc: int) -> None:
             record = ENEMY_RECORDS + RECORD * block.enemy
             in_gear = data[record + GEAR_FLAG] & 0x80 if record + RECORD <= len(data) else 0
             for script in block.scripts:
-                for command in act_commands(script, data):
+                for possible in act_commands(script, data):
                     commands.acts += 1
-                    if command is None:
-                        commands.unwritten += 1
-                    elif command == VARIABLE:
-                        commands.dynamic += 1
-                    else:
+                    commands.joins += len(possible) > 1
+                    commands.unwritten += None in possible
+                    commands.dynamic += VARIABLE in possible
+                    for command in possible - {None, VARIABLE}:
                         (commands.in_gear if in_gear else commands.on_foot)[command] += 1
+
+
+# A gear's technique slot k is its descriptor 21 + k (battle.c func_8008B224
+# offers it, func_8008ADD0 commits it), offered only while bit 0x8000 >> k of
+# the pilot's CharacterBattleData.mask6 is set (func_80089C6C reads bits 0-15).
+TECHNIQUE_BASE = 21
+NEW_GAME = (0x10, 0, 3)  # func_8001B970: the game data a new game starts from
+CHARACTER, CHARACTERS, GEAR_ID = 0x26C, 11, 0xA0  # 0xa4-byte records, +0xa0 the gear
+SKILLS, MASK6 = 0x16C0, 6  # 0x20-byte CharacterBattleData per character
+RESULTS = (0x10, 2, 2)  # ovl2596 func_801E211C: item 0 is the growth table (+0x5f20)
+GROWTH, UNLOCKS_B, LEARNED_SLOTS = 0x110, 0xE0, 13  # func_801E3F28: k < 13, 0 ends
+FORCED_GEAR = (17, 10)  # func_801E5384: formation flag 0x10 puts character 10 in gear 17
+
+
+@dataclass
+class Techniques:
+    """Which characters can pilot each gear and which technique bits their
+    mask6 can hold: the new-game state, battle-results learning (ovl2596
+    func_801E3F28), field ext d0 (a character's records copied over another's,
+    gear and masks) and ext a1 (set_gear). Only the debug battle selector
+    (ovl2606 func_8009B1E4) writes the masks otherwise."""
+
+    pilots: dict[int, set[int]] = field(default_factory=dict)  # gear -> characters
+    bits: dict[int, int] = field(default_factory=dict)  # character -> possible mask6
+    set_gear: set[tuple[int, int]] = field(default_factory=set)
+    copies: set[tuple[int, int]] = field(default_factory=set)
+    variable_operands: int = 0  # ext a1/d0 operands read from variables
+    records: list[tuple[int, int, int, int, bool]] = field(default_factory=list)
+
+
+def field_character_changes(disc: Disc, root: Path = ROOT) -> tuple[set, set, int]:
+    """The (character, gear) pairs ext a1 sets and the (from, to) pairs ext d0
+    copies in every reachable field script, and how many operands are variables."""
+    extract = root / ".local/extract" / f"disc{disc.number}"
+    track = root / ".local/discs" / f"disc{disc.number}.bin"
+    pairs: dict[str, set] = {"fe a1": set(), "fe d0": set()}
+    variables = 0
+    for _, path in events.map_files(extract, track):
+        package = events.map_events(path.read_bytes())
+        if package is None:
+            continue
+        starts, _ = events.script_entries(package)
+        walk = events.walk(package.bytecode, [pc for _, _, pc in starts])
+        for ins in walk.instructions.values():
+            if ins.key in pairs:
+                if all(ins.immediate):
+                    pairs[ins.key].add(tuple(value & 0x7FFF for value in ins.operands))
+                else:
+                    variables += 1
+    return pairs["fe a1"], pairs["fe d0"], variables
+
+
+def technique_census(
+    disc: Disc, outside: list[tuple[int, int, int]], root: Path = ROOT
+) -> Techniques:
+    """The new-game state, the growth table and the field scripts of `disc`
+    against the gear descriptors past D_800C34DC."""
+    game = disc.data(disc.slot(*NEW_GAME))
+    results = disc.sectors(disc.slot(*RESULTS))
+    growth = decode_block(results[struct.unpack_from("<I", results, 4)[0] :]).data
+    gears, masks, learned = {}, {}, {}
+    for c in range(CHARACTERS):
+        gears[c] = game[CHARACTER + 0xA4 * c + GEAR_ID]
+        masks[c] = struct.unpack_from("<H", game, SKILLS + 0x20 * c + MASK6)[0]
+        entries = growth[GROWTH * c + UNLOCKS_B : GROWTH * c + UNLOCKS_B + 16]
+        learned[c] = next((k for k, entry in enumerate(entries) if entry == 0), len(entries))
+    return techniques(gears, masks, learned, *field_character_changes(disc, root), outside)
+
+
+def techniques(
+    gears: dict[int, int],
+    masks: dict[int, int],
+    learned: dict[int, int],
+    set_gear: set[tuple[int, int]],
+    copies: set[tuple[int, int]],
+    variables: int,
+    outside: list[tuple[int, int, int]],
+) -> Techniques:
+    """Each gear's possible pilots and each character's possible mask6 (its
+    new-game mask, the slots below min(unlocksB entries, 13) that battle
+    results can teach, and what ext d0 copies from another character), and
+    whether a pilot can be offered each (gear, descriptor, formula)."""
+    result = Techniques(set_gear=set(set_gear), copies=set(copies), variable_operands=variables)
+    for c, gear in gears.items():
+        result.bits[c] = masks[c]
+        for k in range(min(learned[c], LEARNED_SLOTS)):
+            result.bits[c] |= 0x8000 >> k
+        result.pilots.setdefault(gear, set()).add(c)
+    for character, gear in result.set_gear:
+        result.pilots.setdefault(gear, set()).add(character)
+    gear, character = FORCED_GEAR
+    result.pilots.setdefault(gear, set()).add(character)
+    changed = True
+    while changed:  # a copy takes the gear and the masks along
+        changed = False
+        for source, target in result.copies:
+            if result.bits[target] | result.bits[source] != result.bits[target]:
+                result.bits[target] |= result.bits[source]
+                changed = True
+            for pilots in result.pilots.values():
+                if source in pilots and target not in pilots:
+                    pilots.add(target)
+                    changed = True
+    for gear, number, formula in outside:
+        slot = number - TECHNIQUE_BASE
+        bit = 0x8000 >> slot if 0 <= slot < 16 else 0
+        pilots = result.pilots.get(gear, set())
+        selectable = result.variable_operands > 0 or any(result.bits[c] & bit for c in pilots)
+        result.records.append((gear, number, formula, slot, selectable))
+    return result
 
 
 def formula_census(disc: Disc, root: Path = ROOT) -> FormulaCensus:
@@ -383,6 +519,12 @@ def formula_census(disc: Disc, root: Path = ROOT) -> FormulaCensus:
             descriptor = census.enemy_descriptors[command]
             if descriptor[0] >= limits[enemy_table(descriptor, in_gear)]:
                 census.selected_outside.append(f"{kind}: command {command} formula {descriptor[0]}")
+    census.techniques = technique_census(disc, census.gear.outside_records, root)
+    for gear, number, formula, slot, selectable in census.techniques.records:
+        if selectable:
+            census.selected_outside.append(
+                f"gear {gear} #{number} (slot {slot}): formula {formula}"
+            )
     return census
 
 
@@ -665,6 +807,385 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 
 
 # ---------------------------------------------------------------------------
+# World map arrival modes
+# ---------------------------------------------------------------------------
+#
+# The world map overlay's entry (worldmap.c func_80070CFC) runs mode
+# D_8006F954[0] & 0x7fff of D_8009A058 (its enter, then start and leave each
+# frame) without a bound check. The word is the game data's +0x2320. The world
+# map sets it to 1 for a new world state and keeps it across its own battles
+# (bit 0x8000 marks the return); its exits store a field's entry there. Field
+# 56 (change_map, func_80093014: operand 7) sets it as the field leaves for
+# the world map (exit kind 1, mode 3). Battle event opcode 26 (ovl3087
+# func_801E7770) sets the scene (a) and the word (d); after the battle the
+# world map runs only when the scene & 0x7ff is 0x400 or more (ovl2596
+# func_801E252C), otherwise d is a field's entry.
+
+MODE_FIELD_OPERAND = 3  # 56's operands: scene 1, +231e 3, heading 5, arrival 7
+MODE_EVENT_OPERAND = 3  # 26's operands: scene a, heading b, area c, arrival d
+WORLD_SCENES = 0x400  # scene & 0x7ff from here on is the world map's
+EVENT_ARCHIVE = (0x20, 0, 2)  # ovl3087 801e5160: the battle event script archive
+
+
+@cache
+def world_modes(root: Path = ROOT) -> tuple[str, ...]:
+    """D_8009A058's rows (each enter, start, leave), by mode."""
+    length, body = initializer(unit(MODE_UNIT, root), "D_8009A058")
+    rows = tuple(re.findall(r"\{(\w+), (\w+), (\w+)\}", body))
+    if length != len(rows):
+        raise CensusError(f"D_8009A058[{length}] lists {len(rows)} modes")
+    return tuple(start for _, start, _ in rows)
+
+
+# The world map leaves for a field (exit 0, worldmap.c func_80070CFC) with the
+# scene and entry of the current path region (D_8009D7D8, a PathRegion) or,
+# from a scripted mode, constants its code stores in D_8006F94E.scene. func_80094238 makes a region current for a
+# path table (it tests every region with a link; kind 4 regions only record a
+# destination) and func_80094364 for table 3. The area files (0x24, 0) area + 1
+# of D_8009B584 hold the four path tables (func_80073530: AreaHeader.spots,
+# then SpotHeader.table, offsets from the spot block).
+PATH_TABLES = 4
+REGION = 16  # PathRegion: x, z, w, h, id, entry, link, kind
+DESTINATION = 4  # a kind-4 region records a destination, not a current path
+
+
+@cache
+def scripted_exits(root: Path = ROOT) -> tuple[int, ...]:
+    """The scenes the world map's scripted modes store before leaving."""
+    text = "".join(path.read_text() for path in sorted((root / "decomp/src/worldmap").glob("*.c")))
+    values = re.findall(r"D_8006F94E\.scene = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
+    return tuple(sorted({int(value, 0) for value in values}))
+
+
+def world_exits(disc: Disc, root: Path = ROOT) -> tuple[Counter, list[str]]:
+    """The field (scene & 0xfff) of every path region a world-map exit can use,
+    and the path tables that point outside their area file."""
+    fields, anomalies = Counter(), []
+    for area in sorted(set(area_files(root))):
+        data = decode_block(disc.sectors(disc.slot(0x24, 0, area + 1))).data
+        spots = struct.unpack_from("<i", data, 4)[0]
+        table = spots + struct.unpack_from("<i", data, spots + 4)[0]
+        for number in range(PATH_TABLES):
+            region = spots + struct.unpack_from("<i", data, table + 4 * number)[0]
+            if not 0 <= region <= len(data) - REGION:
+                anomalies.append(f"area file {area + 1} path table {number}: outside the file")
+                continue
+            while (scene := struct.unpack_from("<h", data, region + 8)[0]) != -1:
+                link, kind = struct.unpack_from("<hh", data, region + 12)
+                if link != -1 and kind != DESTINATION and scene & 0x7FF < WORLD_SCENES:
+                    fields[scene & 0xFFF] += 1
+                region += REGION
+                if region > len(data) - REGION:
+                    anomalies.append(f"area file {area + 1} path table {number}: runs off the file")
+                    break
+    for scene in scripted_exits(root):
+        if scene & 0x7FF < WORLD_SCENES:  # 0x400 is the new world state's place
+            fields[scene & 0xFFF] += 1
+    return fields, anomalies
+
+
+@dataclass
+class ModeCensus:
+    exits: Counter = field(default_factory=Counter)  # field -> world-map exits naming it
+    exit_anomalies: list[str] = field(default_factory=list)
+    field_uses: Counter = field(default_factory=Counter)  # mode -> field 56 instructions
+    event_uses: Counter = field(default_factory=Counter)  # mode -> battle event 26 instructions
+    field_entries: int = 0  # battle event 26 instructions naming a field scene
+    variables: list[str] = field(default_factory=list)  # operands read from variables
+    outside: list[str] = field(default_factory=list)
+
+
+def mode_census(disc: Disc, root: Path = ROOT) -> ModeCensus:
+    census = ModeCensus()
+    census.exits, census.exit_anomalies = world_exits(disc, root)
+    limit = len(world_modes(root))
+    extract = root / ".local/extract" / f"disc{disc.number}"
+    track = root / ".local/discs" / f"disc{disc.number}.bin"
+    for map_id, path in events.map_files(extract, track):
+        package = events.map_events(path.read_bytes())
+        if package is None:
+            continue
+        starts, _ = events.script_entries(package)
+        walk = events.walk(package.bytecode, [pc for _, _, pc in starts])
+        for pc, ins in sorted(walk.instructions.items()):
+            if ins.key != "56":
+                continue
+            where = f"map {map_id} +0x{pc:04x}"
+            if not ins.immediate[MODE_FIELD_OPERAND]:
+                census.variables.append(f"{where} {ins.text()}")
+                continue
+            mode = ins.operands[MODE_FIELD_OPERAND] & 0x7FFF
+            census.field_uses[mode] += 1
+            if mode >= limit:
+                census.outside.append(f"{where}: mode {mode}")
+    archive = disc.sectors(disc.slot(*EVENT_ARCHIVE))
+    for number, raw in battle_event_vm.archive_scripts(archive):
+        script = battle_event_vm.parse_script(raw)
+        listing = battle_event_vm.disassemble(script.code, battle_event_vm.entry_points(script))
+        for ins in listing.instructions.values():
+            if ins.opcode != 0x26:
+                continue
+            where = f"event set {number} +0x{ins.offset:04x}"
+            scene, text = ins.operands[0][1], ins.operands[MODE_EVENT_OPERAND][1]
+            if not scene.startswith("#") or not text.startswith("#"):
+                census.variables.append(f"{where} {ins.text()}")
+                continue
+            if int(scene[1:], 16) & 0x7FF < WORLD_SCENES:
+                census.field_entries += 1
+                continue
+            mode = int(text[1:], 16) & 0x7FFF
+            census.event_uses[mode] += 1
+            if mode >= limit:
+                census.outside.append(f"{where}: mode {mode}")
+    return census
+
+
+# ---------------------------------------------------------------------------
+# Sprite kinds
+# ---------------------------------------------------------------------------
+#
+# A new sprite's kind is bits 8-10 of its animation header's flags plus 8 for
+# bit 14 (func_80023440): effect sprites take it from a directory animation
+# (func_80023FD8), children from the header a command spawns (func_80023B84;
+# kind 3 takes the parent's). func_80024730 rewrites camera markers 12 and 13
+# to 10 and 11 and hands the auxiliary task D_8004FD40[kind] (func_80025224);
+# the task loop skips a NULL update (func_8001C964).
+
+
+@cache
+def sprite_callbacks(root: Path = ROOT) -> tuple[str, ...]:
+    length, body = initializer(unit(SPRITE_UNIT, root), "D_8004FD40")
+    entries = tuple(entry.strip() for entry in body.split(",") if entry.strip())
+    if length != len(entries):
+        raise CensusError(f"D_8004FD40[{length}] lists {len(entries)} callbacks")
+    return entries
+
+
+def sprite_kind(flags: int) -> int:
+    """func_80023440: header flags bits 8-10, plus 8 for bit 14."""
+    return ((flags >> 8) & 7) + (8 if flags >> 14 & 1 else 0)
+
+
+@dataclass
+class KindCensus:
+    blocks: int = 0  # distinct blocks
+    directory: Counter = field(default_factory=Counter)  # kind -> directory headers
+    spawned: Counter = field(default_factory=Counter)  # kind -> headers commands spawn
+
+
+def sprite_blocks(
+    disc: Disc, root: Path = ROOT
+) -> Iterator[tuple[bytes, sprite_vm.ResourceBlock, str]]:
+    """(view, block, dialect) of every distinct sprite resource block of the disc."""
+    extract = root / ".local/extract" / f"disc{disc.number}"
+    manifest = json.loads((extract / "manifest.json").read_text())
+    starts = sprite_vm.directory_starts(root / ".local/discs" / f"disc{disc.number}.bin")
+    firsts = [slot for slot, _ in starts]
+    seen = set()
+    for entry in manifest["files"]:
+        if entry["size"] <= 0:
+            continue
+        slot = entry["slot"]
+        directory = starts[bisect.bisect_right(firsts, slot) - 1][1]
+        dialect = sprite_vm.BATTLE if directory in sprite_vm.BATTLE_DIRECTORIES else sprite_vm.FIELD
+        data = file_bytes(disc, slot)
+        for view in sprite_vm.file_views(disc.number, slot, data, Counter()):
+            for block in sprite_vm.resource_blocks(view.data):
+                key = (
+                    dialect,
+                    hashlib.sha256(view.data[block.offset : block.offset + block.size]).digest(),
+                )
+                if block.headers and key not in seen:
+                    seen.add(key)
+                    yield view.data, block, dialect
+
+
+def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
+    census = KindCensus()
+    for data, block, dialect in sprite_blocks(disc, root):
+        census.blocks += 1
+        for header in block.headers:
+            census.directory[sprite_kind(sprite_vm.u16(data, header))] += 1
+        listing = sprite_vm.block_listing(data, block, dialect)
+        for ins in listing.instructions:
+            for header in ins.headers:
+                census.spawned[sprite_kind(sprite_vm.u16(data, header))] += 1
+    return census
+
+
+# ---------------------------------------------------------------------------
+# TMD primitives
+# ---------------------------------------------------------------------------
+#
+# Battle draws PlayStation TMD models (objects.h's "effect script file"): the
+# resident D_8001C76C (the slot-highlight ring, func_800BD098) and the model a
+# battle sprite command f3 binds as its parts (func_800C11CC), which ovl3384
+# func_801FC4C4 can also break into pieces. Both read object 0
+# (func_800B168C: 0x1c-byte entries after a 0xc-byte header); each primitive
+# is olen (packet words - 1), ilen (data words - 1), flag and mode bytes and
+# its data. func_800B1720 builds a packet and func_800B1F6C draws it by kind
+# (mode & 0x1c, plus 0x100 when flag bit 0, no lighting, is clear); ovl3384
+# switches on the same kinds. func_800B16A4 sizes the packets by olen.
+
+TMD_OBJECT = 0xC
+RESIDENT_TMD = 0x8001C76C
+POLYGON = 0x20  # GPU command codes 0x20-0x3f draw polygons
+# libgpu.h packet sizes of the types func_800B1720 writes
+POLY_SIZES = {
+    "POLY_F3": 0x14,
+    "POLY_G3": 0x1C,
+    "POLY_FT3": 0x20,
+    "POLY_GT3": 0x28,
+    "POLY_F4": 0x18,
+    "POLY_G4": 0x24,
+    "POLY_FT4": 0x28,
+    "POLY_GT4": 0x34,
+}
+
+
+def tmd_kind(flag: int, mode: int) -> int:
+    return (mode & 0x1C) | ((flag ^ 1) & 1) << 8
+
+
+def kr_body(text: str, name: str) -> str:
+    """The body of a function defined K&R (parameter declarations before the
+    brace), comments removed."""
+    text = _strip_comments(text)
+    match = re.search(rf"\n[^\n;]*\b{name}\([\w, ]*\)\n(?:[^{{}}]*;\n)*\{{(.*?)\n\}}", text, re.S)
+    if match is None:
+        raise CensusError(f"{name} has no K&R definition")
+    return match.group(1)
+
+
+def case_groups(body: str) -> list[tuple[tuple[int, ...], str]]:
+    """The labels and statements of each case group of the first switch in body."""
+    start = body.index("switch (kind) {")
+    depth, end = 0, start
+    for end in range(start, len(body)):
+        depth += {"{": 1, "}": -1}.get(body[end], 0)
+        if depth == 0 and body[end] == "}":
+            break
+    parts = re.split(r"\n\s*case (0x[0-9A-Fa-f]+):", body[start:end])
+    groups, labels = [], []
+    for label, text in zip(parts[1::2], parts[2::2], strict=True):
+        labels.append(int(label, 16))
+        if text.strip():
+            groups.append((tuple(labels), text))
+            labels = []
+    return groups
+
+
+@dataclass(frozen=True)
+class TmdKind:
+    packet: str  # the POLY type func_800B1F6C draws for the kind's mode bits
+    reads: int  # primitive bytes func_800B1720 and func_800B1F6C read
+
+
+@cache
+def tmd_kinds(root: Path = ROOT) -> dict[int, TmdKind]:
+    """Each kind func_800B1720 and func_800B1F6C handle: func_800B1F6C's
+    second switch (mode & 0x1c) gives the packet each mode draws (the builder
+    writes the colour bytes of the flat quads through POLY_F3), and the bytes
+    read are the furthest cmd[] byte (builder) and vertex or normal index
+    (both switches of the drawer) of the kind's cases."""
+    text = unit(TMD_UNIT, root)
+    reads: dict[int, int] = {}
+    for labels, statements in case_groups(kr_body(text, "func_800B1720")):
+        offsets = [int(o, 0) + 1 for o in re.findall(r"cmd\[(0x[0-9A-Fa-f]+|\d+)\]", statements)]
+        for label in labels:
+            reads[label] = max([reads.get(label, 0), *offsets])
+    draw = kr_body(text, "func_800B1F6C")
+    split = draw.index("kind = cmd[3] & 0x1C;\n        switch")
+    for labels, statements in case_groups(draw[:split]):
+        halves = re.findall(r"SET_VERTICES[34]\(([^)]*)\)|cmd, (0x[0-9A-Fa-f]+)\)", statements)
+        offsets = []
+        for group, single in halves:
+            offsets += [int(o, 16) + 2 for o in (group.split(",") if group else [single])]
+        for label in labels:
+            reads[label] = max([reads.get(label, 0), *offsets])
+    packets: dict[int, str] = {}
+    for labels, statements in case_groups(draw[split:]):
+        types = set(re.findall(r"\((POLY_\w+) \*\)prims", statements))
+        if len(types) != 1:
+            raise CensusError(f"func_800B1F6C mode cases {labels} draw {sorted(types)}")
+        packet = types.pop()
+        for label in labels:
+            packets[label] = packet
+    if any(kind & 0x1C not in packets for kind in reads):
+        raise CensusError("func_800B1F6C draws no packet for a kind func_800B1720 builds")
+    return {kind: TmdKind(packets[kind & 0x1C], reads[kind]) for kind in sorted(reads)}
+
+
+@dataclass
+class TmdCensus:
+    models: Counter = field(default_factory=Counter)  # source -> distinct TMDs
+    binds: int = 0  # f3 commands with a model in the distinct blocks
+    primitives: Counter = field(default_factory=Counter)  # kind -> primitives
+    modes: Counter = field(default_factory=Counter)  # mode byte -> primitives
+    headers: Counter = field(default_factory=Counter)  # (id, flags, objects)
+    errors: list[str] = field(default_factory=list)
+
+
+def walk_tmd(
+    census: TmdCensus, where: str, data: bytes, base: int, kinds: dict[int, TmdKind]
+) -> None:
+    if not 0 <= base <= len(data) - TMD_OBJECT - 0x1C:
+        census.errors.append(f"{where}: TMD header outside its data")
+        return
+    census.headers[struct.unpack_from("<3I", data, base)] += 1
+    entry = base + TMD_OBJECT
+    commands, count = struct.unpack_from("<Ii", data, entry + 0x10)
+    command = entry + commands
+    for number in range(count):
+        if not 0 <= command <= len(data) - 4:
+            census.errors.append(f"{where}: primitive {number} outside its data")
+            return
+        olen, ilen, flag, mode = data[command : command + 4]
+        kind = tmd_kind(flag, mode)
+        census.primitives[kind] += 1
+        census.modes[mode] += 1
+        spec = kinds.get(kind)
+        if mode & 0xE0 != POLYGON:  # func_800B1720 writes the mode as the packet's GPU code
+            census.errors.append(f"{where}: primitive {number} mode {mode:#x} is not a polygon")
+        if spec is None:
+            census.errors.append(f"{where}: primitive {number} kind {kind:#x} has no case")
+        else:
+            if 4 * (olen + 1) != POLY_SIZES[spec.packet]:
+                census.errors.append(
+                    f"{where}: primitive {number} kind {kind:#x} sizes {4 * (olen + 1)}"
+                    f" packet bytes for a {spec.packet}"
+                )
+            if 4 * (ilen + 1) < spec.reads:
+                census.errors.append(
+                    f"{where}: primitive {number} kind {kind:#x} has {4 * (ilen + 1)} bytes,"
+                    f" {spec.reads} read"
+                )
+        command += 4 * (ilen + 1)
+
+
+def tmd_census(disc: Disc, root: Path = ROOT) -> TmdCensus:
+    census = TmdCensus()
+    kinds = tmd_kinds(root)
+    boot = disc.boot
+    text = struct.unpack_from("<I", boot, 0x18)[0]  # PS-X EXE text address, after a 0x800 header
+    walk_tmd(census, "D_8001C76C", boot, RESIDENT_TMD - text + 0x800, kinds)
+    census.models["resident"] += 1
+    for data, block, dialect in sprite_blocks(disc, root):
+        if dialect != sprite_vm.BATTLE:
+            continue
+        targets = set()
+        for ins in sprite_vm.block_listing(data, block, dialect).instructions:
+            if ins.opcode == 0xF3 and ins.data:
+                census.binds += 1
+                if ins.data[0] not in targets:  # each model of a distinct block once
+                    targets.add(ins.data[0])
+                    census.models["sprite f3"] += 1
+                    where = f"f3 +0x{ins.pc:x} -> +0x{ins.data[0]:x}"
+                    walk_tmd(census, where, data, ins.data[0], kinds)
+    return census
+
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 
@@ -712,7 +1233,8 @@ def formula_report(results: list[FormulaCensus]) -> list[str]:
         commands = result.commands
         out.append(
             f"    enemy AI act entries ({commands.files} files): {commands.acts}, "
-            f"{commands.dynamic} with a variable command, {commands.unwritten} with none written"
+            f"{commands.dynamic} with a variable command, {commands.unwritten} with none written,"
+            f" {commands.joins} reached with different commands"
         )
         enemies = result.enemy_descriptors
         for kind, uses, table in (
@@ -736,6 +1258,26 @@ def formula_report(results: list[FormulaCensus]) -> list[str]:
             f"      descriptors no act entry selects: {len(unselected)}, of them with a "
             f"formula past {foot.name}: {' '.join(high) or 'none'}"
         )
+        techniques = result.techniques
+        if techniques is not None:
+            pilots = "; ".join(
+                f"gear {g} " + ",".join(map(str, sorted(techniques.pilots.get(g, ()))))
+                for g in sorted({record[0] for record in techniques.records})
+            )
+            out.append(
+                f"    gear techniques past {gear.name}: pilots {pilots or 'none'};"
+                f" ext a1 {len(techniques.set_gear)} pairs, ext d0 {len(techniques.copies)},"
+                f" {techniques.variable_operands} variable operands"
+            )
+            for g, number, formula, slot, selectable in techniques.records:
+                bits = " ".join(
+                    f"{c}:{techniques.bits[c]:04x}" for c in sorted(techniques.pilots.get(g, ()))
+                )
+                out.append(
+                    f"      gear {g} #{number} (formula {formula}) slot {slot}, mask6 bit"
+                    f" {0x8000 >> slot:#06x}: pilots' possible mask6 {bits};"
+                    f" {'selectable' if selectable else 'never offered'}"
+                )
         out.append(f"      selected outside their table: {len(result.selected_outside)}")
         out += [f"        {item}" for item in result.selected_outside]
     counts = [dispatched(result) for result in results]
@@ -792,10 +1334,87 @@ def primitive_report(results: list[PrimitiveCensus]) -> list[str]:
     return out
 
 
+def mode_report(results: list[ModeCensus]) -> list[str]:
+    modes = world_modes()
+    out = [
+        f"world map arrival modes: D_8009A058 {len(modes)} modes (worldmap.c func_80070CFC,"
+        " D_8006F954[0] & 0x7fff)"
+    ]
+    for n, result in enumerate(results, 1):
+        out.append(
+            f"  disc {n}: field 56 operand 7 {_uses(result.field_uses)}; battle event 26"
+            f" operand d {_uses(result.event_uses)} ({result.field_entries} name a field scene);"
+            f" from variables {len(result.variables)}"
+        )
+        out += [f"    {item}" for item in result.variables]
+        out.append(f"    past the table: {len(result.outside)}")
+        out += [f"      {item}" for item in result.outside]
+        out.append(
+            f"    world-map exits name {len(result.exits)} fields:"
+            f" {' '.join(map(str, sorted(result.exits)))}"
+        )
+        out += [f"      {item}" for item in result.exit_anomalies]
+    used = {m for r in results for m in (*r.field_uses, *r.event_uses)}
+    unused = " ".join(str(m) for m in range(len(modes)) if m not in used)
+    out.append(f"  modes the data select: {len(used)} of {len(modes)}; others: {unused or 'none'}")
+    return out
+
+
+def kind_report(results: list[KindCensus]) -> list[str]:
+    callbacks = sprite_callbacks()
+    empty = [k for k, name in enumerate(callbacks) if name == "NULL"]
+    out = [
+        f"sprite kinds: D_8004FD40 {len(callbacks)} callbacks (func_80025224), NULL for"
+        f" {' '.join(map(str, empty))}; header bits 8-10 and 14 (func_80023440)"
+    ]
+    for n, result in enumerate(results, 1):
+        out.append(
+            f"  disc {n}: {result.blocks} distinct blocks; directory headers"
+            f" {_uses(result.directory)}; spawned headers {_uses(result.spawned)}"
+        )
+    return out
+
+
+def tmd_report(results: list[TmdCensus]) -> list[str]:
+    kinds = tmd_kinds()
+    out = [
+        f"TMD primitives: {len(kinds)} kinds (func_800B1720 builds, func_800B1F6C draws;"
+        " mode & 0x1c, 0x100 lit)"
+    ]
+    for n, result in enumerate(results, 1):
+        sources = ", ".join(f"{name} {count}" for name, count in sorted(result.models.items()))
+        sources += f" (from {result.binds} f3 commands)"
+        headers = ", ".join(
+            f"id {i:#x} flags {f} objects {o}: {c}"
+            for (i, f, o), c in sorted(result.headers.items())
+        )
+        out.append(f"  disc {n} models: {sources}; headers {headers}")
+        out.append(
+            "    primitives by kind: "
+            + " ".join(f"{kind:#x}:{result.primitives[kind]}" for kind in sorted(result.primitives))
+        )
+        out.append(
+            "    mode bytes: " + " ".join(f"{m:02x}:{c}" for m, c in sorted(result.modes.items()))
+        )
+        out.append(
+            f"    errors (no case, not a polygon, packet or read size): {len(result.errors)}"
+        )
+        out += [f"      {error}" for error in result.errors[:20]]
+    out.append("  kind packet bytes-read: primitives disc 1, disc 2")
+    for kind, spec in kinds.items():
+        counts = "  ".join(f"{r.primitives[kind]:6d}" for r in results)
+        out.append(f"    {kind:#05x} {spec.packet:<8} {spec.reads:2d}  {counts}")
+    used = {kind for r in results for kind in r.primitives}
+    out.append(f"    used: {len(used & set(kinds))} of {len(kinds)} kinds")
+    return out
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sweep", action="store_true", help="census of both discs (aggregates)")
-    parser.add_argument("--only", choices=("formulas", "primitives"), help="one census")
+    parser.add_argument(
+        "--only", choices=("formulas", "primitives", "modes", "kinds", "tmd"), help="one census"
+    )
     args = parser.parse_args(argv)
     if not args.sweep:
         parser.error("choose --sweep")
@@ -810,6 +1429,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         primitives = [primitive_census(disc) for disc in both]
         lines += primitive_report(primitives)
         failures += sum(len(r.errors) for r in primitives)
+    if args.only in (None, "modes"):
+        modes = [mode_census(disc) for disc in both]
+        lines += mode_report(modes)
+        failures += sum(len(r.outside) for r in modes)
+    if args.only in (None, "kinds"):
+        lines += kind_report([kind_census(disc) for disc in both])
+    if args.only in (None, "tmd"):
+        tmds = [tmd_census(disc) for disc in both]
+        lines += tmd_report(tmds)
+        failures += sum(len(r.errors) for r in tmds)
     print("\n".join(lines))
     return 1 if failures else 0
 

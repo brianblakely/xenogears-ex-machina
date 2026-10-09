@@ -103,12 +103,12 @@ void func_80070CFC(void) {
         func_800199CC(1);
         func_8001996C(1);
         if (D_8009BBC4 == 0) {
-            if ((s16)D_8009D7D8->pad == 3) {
+            if (D_8009D7D8->kind == 3) {
                 func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
             }
-            D_8006F94E.scene = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F94E.scene = D_8009D7D8->scene;
             D_8006F94E.heading = D_8009BD38.vy;
-            D_8006F954[0] = ((s16 *)D_8009D7D8->data)[5];
+            D_8006F954[0] = D_8009D7D8->entry;
         }
         D_8006EF68 = D_8009BD0C + 0x400;
         break;

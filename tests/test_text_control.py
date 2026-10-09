@@ -15,6 +15,7 @@ from tools.analysis.text_control import (
     decode_token,
     initial_names,
     pair_kind,
+    table_listing,
     text_table,
     unpack_logical,
 )
@@ -129,6 +130,22 @@ class TableTests(unittest.TestCase):
         self.assertEqual((result.unreferenced, result.unreferenced_texts), (4, 1))
         self.assertEqual(len(result.unreferenced_errors), 1)
         self.assertEqual(result.unknown, [])
+
+    def test_listing_shows_entries_tokens_and_unreached_text(self):
+        data = table([b"\x41\xfe\x42\x0f\x00\x05\x01\x00\x42\x43\x00\x0f\x10\x00"])
+        self.assertEqual(
+            table_listing(data, THRESHOLD),
+            [
+                "     0 +0x000c 32x3: 41 fe42 [wait frames=5] [newline] [end]",
+                "  unreached +0x0014: 42 43 [end]",
+                "  unreached +0x0017: undecodable, +0x17: 0F sub-code 0x10 matches no case"
+                " (the window stalls)",
+            ],
+        )
+        self.assertEqual(
+            table_listing(struct.pack("<HHI", 0xFFFF, 0, 0), THRESHOLD),
+            ["  no messages (count 0xFFFF)"],
+        )
 
     def test_archive_entries(self):
         text = table([b"\x41\x42\x43\x00"])

@@ -161,11 +161,11 @@ typedef struct {
 /* A party member's status panel of the graphics state (0x1E4 bytes). */
 typedef struct {
     POLY_FT4 value[2][2];     /* +0x000 state 1: the value glyphs */
-    POLY_FT4 alone[2][2];     /* +0x0A0 state 2: the glyphs placed alone */
+    POLY_FT4 gear[2][2];      /* +0x0A0 state 2: the glyphs of a member in a gear */
     POLY_FT4 unk140[2][2];
     u8 buffer;                /* +0x1E0 */
-    u8 state;                 /* +0x1E1 0 absent, 1 shown (the 800d32a0 value), 2 placed alone */
-    u8 parts[2];              /* +0x1E2 glyph parts of value and alone */
+    u8 state;                 /* +0x1E1 0 absent, 1 on foot, 2 in a gear (ovl2615; not character 7) */
+    u8 parts[2];              /* +0x1E2 glyph parts of value and gear */
 } MemberPanel;
 
 /* The six outputs of func_80026338 for one sprite (0x18 bytes). */
@@ -318,19 +318,19 @@ typedef struct {
     u8 unk29[0x34 - 0x29];
     u8 active;         /* +0x34 */
     u8 unk35[3];
-} BattleUnk3278Entry;
+} BattleEventThread;
 
 typedef struct {
-    BattleUnk3278Entry entries[16];
+    BattleEventThread entries[16];
     u8 unk380[0x394 - 0x380];
-    s16 unk394[(0x7A4 - 0x394) / 2];
+    s16 vars[(0x7A4 - 0x394) / 2]; /* the event script's variables */
     POLY_FT4 unk7A4[2];
     u8 unk7F4;
     u8 unk7F5[0x800 - 0x7F5];
     u8 unk800;
-} BattleUnk3278;
+} BattleEventState; /* ovl3087's ScriptState */
 
-extern BattleUnk3278 *D_800D3278;
+extern BattleEventState *D_800D3278;
 
 /* The HUD primitive lists (*800d2db4, a 0x5da4-byte heap block) with their
  * counts and draw buffers. */

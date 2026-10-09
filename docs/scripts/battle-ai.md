@@ -72,11 +72,21 @@ whose enemy files are identical:
   runs it.
 - Corrected C comments: the handlers of 70-74 were labelled 6e-72, and 2b's
   attribute operand is b2.
+- Targets named from their readers: record +0x14c is the enemy's experience,
+  +0x156 its gold and +0x150/+0x152/+0x154 its first drop's chance, item and
+  category (ovl2596's `Combatant`; actions `39`, `3a`, `3c`); `800d2c60` and
+  `800d2c8b` are the enemy slot's pending amount and result code in the battle
+  work table (`damage[3 + enemy]`, `resultCode[3 + enemy]`; action `69` sets code
+  4, which no results pass applies); `*800d3278` + 0x394 is the battle event
+  script's variables (ovl3087 `ScriptState.vars`, action `70`); `8005a3a0` holds
+  16 persistent battle halfwords that the menu keeps in the game data at +0x2324
+  (slot39); the `800d32a1` slot flag is "in a gear" (ovl2615 copies the game
+  data's per-member gear flag `D_8006F8E5` and the formation id's bit 7; battle
+  reads it as `D_800D32A0[slot].unk1` to choose gear commands).
 
 **Open.**
 
 - Formations are not cross-checked: the encounter sets in field bundles and on
-  the world map decide which (battle, enemy id) pairs are placed.
-- These are still named only by address: record +0x14c and +0x150-+0x156,
-  `800d2c60`/`800d2c8b`, `*800d3278` +0x394, the resident halfwords `8005a3a0`
-  and the `800d32a1` slot flag.
+  the world map decide which (battle, enemy id) pairs are placed. The commands
+  every enemy's scripts select are counted against the formula tables in
+  [dispatch-tables.md](dispatch-tables.md) whatever places it.

@@ -13,7 +13,8 @@ typedef struct {
     u8 index;       /* index within the group */
     u8 id;          /* character/enemy id, 0x7F for none */
     u8 flag3;
-    u8 alone;       /* placed alone rather than with the group */
+    u8 in_gear;     /* fights in a gear: D_8006F8E5 per party member, the
+                     * formation id's bit 7 per enemy; its own group */
     u8 flag5;
     u8 flag6;
     u8 pad7[3];
@@ -305,7 +306,7 @@ void func_8003342C(s32 *table); /* relocate an offset table in place */
 
 /* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
 typedef struct {
-    u8 alone;   /* placed alone */
+    u8 in_gear; /* the slot fights in a gear (battle: D_800D32A0.unk1) */
     u8 pad1[2];
     u8 character_b; /* from the character table */
     u8 stat62;  /* copied from the record */
@@ -392,10 +393,11 @@ typedef struct {
     ScenePos enemy[4];  /* 0x10 */
 } SceneGroup;
 
+/* The standing places of the slots that fight in a gear, one per group. */
 typedef struct {
     ScenePos party;
     ScenePos enemy;
-} SceneAlone;
+} SceneGear;
 
 /* A stage object (0x28 bytes): lights (types 1, 2), the backdrop (3), fog
  * (5) and animated stage parts (7). */
@@ -428,7 +430,7 @@ typedef struct {
 
 typedef struct {
     SceneGroup group[8];  /* 0x000 */
-    SceneAlone alone[8];  /* 0x100 */
+    SceneGear gear[8];    /* 0x100 */
     u8 pad140[0x340 - 0x140];
     StageInfo info;       /* 0x340 */
     u8 pad45C[0x464 - 0x45C];
