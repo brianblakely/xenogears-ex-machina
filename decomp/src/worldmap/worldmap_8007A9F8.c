@@ -1,4 +1,29 @@
+/* World map unit 8007A9F8-8007C3B8 (rodata 8006FBC4-8006FC50, data
+ * 8009A450-8009A4D8): the director of scene mode 14 and its actors (camera
+ * shake, growing objects, exhaust trail, the rig's flight), the set-up and
+ * leave handlers of mode 12 and the sequence start of its director.
+ *
+ * func_80079778's five-entry table ends at 8006fbc4 and func_8007A9F8's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_80079778, at or before
+ * func_8007A9F8. Its data opens with the cue sequence that func_8007A9B4,
+ * left in the preceding unit by the split, starts. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 14 u16 states and 14 u16 waits (started by
@@ -184,7 +209,7 @@ s32 func_8007ADD4(s32 index) {
     }
     switch (actor->state) {
     case 0:
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 1:
         actor->u.step += 0x200;
@@ -192,7 +217,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x8000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 2:
         actor->u.step -= 0x200;
@@ -200,7 +225,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x8000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 3:
         actor->u.step -= 0x100;
@@ -208,7 +233,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x1000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 4:
         D_8009BE28.target.vz += 0x3A000;
@@ -221,7 +246,7 @@ s32 func_8007ADD4(s32 index) {
         VIEW.at.vy = D_8009BE28.target.vy >> 12;
         VIEW.eye.vy = (D_8009BE28.target.vy >> 12) - 0x40;
         VIEW.eye.vz = (D_8009BE28.target.vz - originZ) >> 12;
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     case 5:
@@ -229,12 +254,12 @@ s32 func_8007ADD4(s32 index) {
         if (D_8009BD38.vy > 0x600) {
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     }
     scratch->view.vx = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
     scratch->view.vy = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
-    ((s16 *)D_8009BD40)[0] += scratch->view.vx; /* VIEW.eye.vx */
+    VIEW.eye.vx += scratch->view.vx;
     VIEW.at.vx += scratch->view.vx;
     VIEW.eye.vy += scratch->view.vy;
     VIEW.at.vy += scratch->view.vy;
@@ -253,7 +278,7 @@ s32 func_8007B200(s32 index) {
     actor = &D_8009BE24[index];
     object = &D_8009C620[4];
     do {
-        func_8007A06C(object, object->prims, object->def->count);
+        func_8007A06C(object, object->prims, object->def->primitive_count);
         object++;
         i++;
     } while (i < 2);
@@ -320,7 +345,7 @@ s32 func_8007B604(s32 index) {
     actor = &D_8009BE24[index];
     object = &D_8009C620[6];
     do {
-        func_8007A06C(object, object->prims, object->def->count);
+        func_8007A06C(object, object->prims, object->def->primitive_count);
         object++;
         i++;
     } while (i < 2);
@@ -427,6 +452,16 @@ s32 func_8007BB60(s32 index) {
     func_8004A92C(&D_8009C620[0].angle, &D_8009C620[0].matrix);
     return 3;
 }
+
+/* Scratchpad work area of the rig path follower. */
+typedef struct {
+    VECTOR axis[4];   /* 0x00 */
+    u8 pad40[0x60];
+    SVECTOR angle;    /* 0xA0 */
+    SVECTOR heading;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX frame;     /* 0xF0 */
+} FollowScratch;
 
 /* Fly scene object 0 along the rig path (speeding up, braking, then rolling
  * out); orient it to the path and emit exhaust while low. Done (3) at the end
@@ -599,10 +634,10 @@ void func_8007C260(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x111;
-    D_8006F954[0] = 2;
+    D_8006D634.map = 0x111;
+    D_8006D634.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start an actor's timed sequence: first state and its duration. */

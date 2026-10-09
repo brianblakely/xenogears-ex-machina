@@ -1,8 +1,9 @@
 /* The setup module's task (801e62e0 creates it, 801e7098 runs it) and the
  * enemy set loader (801e6314: sprite rows and image lists of the enemy set
- * file). A separate unit built by the Cygnus CDK GCC 2.7.2
- * (see ovl2615.mk). */
-#include "battle_setup.h"
+ * file): text 801E62E0-801E70E8, data 801E95BC-801E963C, its pointer at
+ * 801E96B4. A separate unit built by the Cygnus CDK GCC 2.7.2 with a later
+ * ASPSX, between the GCC 2.6.3 units ovl2615.c and stage.c (ovl2615.mk). */
+#include "loader.h"
 
 /* The sprite file and sequencer word of each party member type. */
 MemberFile D_801E95BC[] = {
@@ -13,6 +14,7 @@ u8 D_801E962C[] = {16, 16, 16, 16, 16, 24, 16, 16, 16, 24, 16, 16};
 /* D_801E9638 (u16 0, the next member image column) ends the unit's data
  * before stray bytes (0x00 0xe0), so it stays original data. */
 INCLUDE_ORIGINAL(".data", D_801E9638, 0x801E9638, 4);
+extern u16 D_801E9638; /* the next member image column */
 /* Uninitialized: the overlay's file holds each unit's .bss after all .data. */
 void *D_801E96B4;
 
@@ -52,7 +54,7 @@ void func_801E6314(u8 *data) {
     slot = 3;
     /* The original counts this loop with the column variable. */
     for (column = 0; column != SLOT_COUNT; column++) {
-        types[column] = D_800C3EB0.slots[column].id;
+        types[column] = D_800C3EB0.slots[column].field2;
     }
     count = data[0];
     column = data[1] * 0x40 + 0x140;
@@ -70,7 +72,7 @@ void func_801E6314(u8 *data) {
                 continue;
             }
             type = slot - 3;
-            D_800C3EB0.rows[slot].data = NULL;
+            D_800C3EB0.sources[slot].data = NULL;
             column += 0x40;
             for (j = 3, same = 0; j != SLOT_COUNT; j++) {
                 if (type == types[j]) {
@@ -112,15 +114,15 @@ void func_801E6314(u8 *data) {
                 func_80022A70((u8 *)(entry->images + (s32)data), column, 0x100);
                 index = images;
                 columns[images++] = column;
-                column += func_80022A00((u8 *)(entry->images + (s32)data)) << 6;
+                column += func_80022A00((s32 *)(entry->images + (s32)data)) << 6;
                 if (column >= 0x2C1) {
                     column = 0;
                 }
             }
-            D_800C3EB0.rows[slot].data = (u8 *)(entry->offset + (s32)base);
-            D_800C3EB0.rows[slot].y = 0x100;
-            D_800C3EB0.rows[slot].x = columns[index];
-            D_800C3EB0.rows[slot].variant = entry->variant;
+            D_800C3EB0.sources[slot].data = (u8 *)(entry->offset + (s32)base);
+            D_800C3EB0.sources[slot].y = 0x100;
+            D_800C3EB0.sources[slot].x = columns[index];
+            D_800C3EB0.sources[slot].variant = entry->variant;
         }
         entry++;
         slot++;
@@ -134,8 +136,8 @@ void func_801E6710(u8 *data) {
     s32 type;
 
     for (slot = 3; slot != SLOT_COUNT; slot++) {
-        type = D_800C3EB0.slots[slot].id;
-        if (type < 8 && D_800C3EB0.rows[type + 3].data != NULL) {
+        type = D_800C3EB0.slots[slot].field2;
+        if (type < 8 && D_800C3EB0.sources[type + 3].data != NULL) {
             func_801E67A4(slot, type + 3, 1);
         }
     }
@@ -144,33 +146,33 @@ void func_801E6710(u8 *data) {
 /* Create `slot`'s sprite task from sprite row `row` showing `animation`,
  * placed and facing as its placement record says. */
 void func_801E67A4(s32 slot, s32 row, s32 animation) {
-    BattleSprite **task;
+    Task *task;
     BattleSprite *sprite;
     s32 angle;
 
-    task = func_800BA984(D_800C3EB0.rows[row].data, 0, slot + 0x1C0, D_800C3EB0.rows[row].x,
-                         D_800C3EB0.rows[row].y, 0x20, 0, 0, 0, animation, 0, 0, 0,
-                         D_800C3EB0.rows[row].variant);
-    sprite = task[1];
-    sprite->binding[3] = D_800C3EB0.rows[row].y;
-    sprite->binding[2] = D_800C3EB0.rows[row].x;
-    *(Point *)((u8 *)sprite->sequence + 0xE) = *(Point *)&sprite->binding[2];
-    D_800C3EB0.sprites[slot] = task[1];
-    D_800C3EB0.tasks[slot] = (TaskNode *)task;
+    task = func_800BA984(D_800C3EB0.sources[row].data, 0, slot + 0x1C0, D_800C3EB0.sources[row].x,
+                         D_800C3EB0.sources[row].y, 0x20, 0, 0, 0, animation, 0, 0, 0,
+                         D_800C3EB0.sources[row].variant);
+    sprite = task->data;
+    sprite->image[3] = D_800C3EB0.sources[row].y;
+    sprite->image[2] = D_800C3EB0.sources[row].x;
+    *(DVECTOR *)((u8 *)sprite->sequencer + 0xE) = *(DVECTOR *)&sprite->image[2];
+    D_800C3EB0.sprites[slot] = task->data;
+    D_800C3EB0.tasks[slot] = (struct ActorTask *)task;
     sprite->slotLow = slot;
     sprite->slotHigh = (u32)slot >> 2;
     func_80021D3C(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
-    angle = (D_800C3EB0.slots[slot].flag6 != 0) << 11;
+    angle = (D_800C3EB0.slots[slot].targetCode != 0) << 11;
     func_800223B0(sprite, angle);
     func_80021FE0(sprite, angle);
-    if (D_800C3EB0.slots[slot].flag3 != 0) {
-        sprite->v9E = 0;
+    if (D_800C3EB0.slots[slot].hidden != 0) {
+        sprite->countdown = 0;
     }
 }
 
 /* Read the party members' sprite files (directory 2c, file by type) into new
  * blocks, recording them in the members' rows, by the file list `list`. */
-void func_801E693C(FileEntry *list) {
+void func_801E693C(FileRequest *list) {
     s32 member, entries;
     s32 file;
     s32 type;
@@ -178,20 +180,20 @@ void func_801E693C(FileEntry *list) {
 
     func_80028470(0x2C, 1);
     for (entries = member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].in_gear == 0) {
+        type = D_800C3EB0.slots[member].field2;
+        if (type < 0x11 && D_800C3EB0.slots[member].gear == 0) {
             file = D_801E95BC[type].file;
             list[entries].file = file;
             block = func_80031BDC(func_800288EC(file), 0);
-            list[entries].dest = block;
+            list[entries].destination = block;
             entries++;
-            D_800C3EB0.rows[member].data = block;
-            D_800C3EB0.rows[member].variant = 0;
+            D_800C3EB0.sources[member].data = block;
+            D_800C3EB0.sources[member].variant = 0;
         }
     }
     list[entries].file = 0;
-    list[entries].dest = NULL;
-    func_80029AFC((u16 *)list, 0, 0);
+    list[entries].destination = NULL;
+    func_80029AFC(list, 0, 0);
 }
 
 /* Set up the members placed with a model (800bb760). */
@@ -201,8 +203,8 @@ void func_801E6A4C(void) {
     s32 type;
 
     for (member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].in_gear != 0) {
+        type = D_800C3EB0.slots[member].field2;
+        if (type < 0x11 && D_800C3EB0.slots[member].gear != 0) {
             func_800BB760(member);
         }
     }
@@ -218,30 +220,30 @@ void func_801E6AC4(void) {
     s32 type;
 
     for (member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].id;
-        if (type < 0x11 && D_800C3EB0.slots[member].in_gear == 0) {
-            D_800C3EB0.rows[member].y = 0x1C0;
-            D_800C3EB0.rows[member].x = D_801E9638 + 0x100;
+        type = D_800C3EB0.slots[member].field2;
+        if (type < 0x11 && D_800C3EB0.slots[member].gear == 0) {
+            D_800C3EB0.sources[member].y = 0x1C0;
+            D_800C3EB0.sources[member].x = D_801E9638 + 0x100;
             D_801E9638 += D_801E962C[type];
             func_801E67A4(member, member, 1);
             sprite = D_800C3EB0.sprites[member];
-            *sprite->sequence = D_801E95BC[type].sequence;
-            func_800320E8(sprite->renderer->parts);
-            sprite->renderer->parts = func_80031BDC(0x300, 0);
+            *sprite->sequencer = D_801E95BC[type].sequence;
+            func_800320E8(sprite->renderer->parts[0]);
+            sprite->renderer->parts[0] = func_80031BDC(0x300, 0);
         }
     }
     if (D_800D36B8 == 0) {
         for (member = 0; member != 3; member++) {
             sprite = D_800C3EB0.sprites[member];
             if (sprite != NULL) {
-                func_800BA8F4(sprite);
+                func_800BA8F4((Sprite *)sprite);
                 x = sprite->x;
                 y = sprite->y;
                 z = sprite->z;
-                sprite->home[0] = x;
-                sprite->home[1] = y;
-                sprite->home[2] = z;
-                func_800245D8(sprite, 0x17);
+                sprite->target[0] = x;
+                sprite->target[1] = y;
+                sprite->target[2] = z;
+                func_800245D8((Sprite *)sprite, 0x17);
             }
         }
     }
@@ -249,19 +251,19 @@ void func_801E6AC4(void) {
 
 /* Loading state: after the delay, wait until every member sprite has
  * reached the ground, then mark loading done and end the task. */
-void func_801E6C80(TaskNode *node) {
+void func_801E6C80(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     BattleSprite *sprite;
     s32 member;
 
     if (task->timer == 0) {
         for (member = 0; member != 3; member++) {
-            if (D_800C3EB0.slots[member].in_gear == 0 &&
+            if (D_800C3EB0.slots[member].gear == 0 &&
                 (sprite = D_800C3EB0.sprites[member]) != NULL && sprite->y != sprite->ground) {
                 return;
             }
         }
-        D_800C3EB0.loaded = 1;
+        D_800C3EB0.field8DA8 = 1;
         func_8001CE44(node);
     } else {
         task->timer--;
@@ -269,7 +271,7 @@ void func_801E6C80(TaskNode *node) {
 }
 
 /* Loading state: once the members stop moving, wait 16 frames and settle. */
-void func_801E6D34(TaskNode *node) {
+void func_801E6D34(Task *node) {
     if (D_800C35D8 == 0) {
         ((LoaderTask *)node)->timer = 0x10;
         func_8001CD6C(node, func_801E6C80);
@@ -278,7 +280,7 @@ void func_801E6D34(TaskNode *node) {
 
 /* Loading state: once the sound transfer is done, release the battle images
  * file and set up the members with models. */
-void func_801E6D6C(TaskNode *node) {
+void func_801E6D6C(Task *node) {
     if (func_8003BDFC(0) == 0) {
         func_800320E8(((LoaderTask *)node)->images);
         func_801E6A4C();
@@ -291,31 +293,28 @@ void func_801E6DC8(void) {
     u8 *stack = func_80031BDC(0x2000, 1);
 
     /* Push the caller's sp at the new stack top and switch to it. */
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(stack + 0x1F00)
-                     : "$8", "memory");
+    STACK_ENTER(stack + 0x1F00);
     func_8002DDE4(D_801E96B4, 0, 0, 0, 0, 0, 0);
     DrawSync(0);
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     func_800320E8(stack);
 }
 
 /* Loading state: once the disc is idle, upload the battle images, bind the
  * shared battle file (image 380,0, palette row 1d1) and link the effect
  * bank. */
-void func_801E6E48(TaskNode *node) {
+void func_801E6E48(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
-    Point image;
-    Point clut;
+    DVECTOR image;
+    DVECTOR clut;
 
     if (func_800286CC() == 0) {
         D_801E96B4 = task->images;
         func_801E6DC8();
-        image.x = 0x380;
-        image.y = 0;
-        clut.x = 0;
-        clut.y = 0x1D1;
+        image.vx = 0x380;
+        image.vy = 0;
+        clut.vx = 0;
+        clut.vy = 0x1D1;
         func_80022224(D_8006BE10, task->shared, image, clut, 0);
         func_80038428(task->effects);
         D_8005919C = task->effects;
@@ -326,9 +325,9 @@ void func_801E6E48(TaskNode *node) {
 
 /* Loading state: once the member files are read, create the member sprites
  * and read battle files 1-3 (images, shared data, effects). */
-void func_801E6F00(TaskNode *node) {
+void func_801E6F00(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
-    FileEntry *files;
+    FileRequest *files;
     s32 busy;
 
     busy = func_800286CC();
@@ -336,15 +335,15 @@ void func_801E6F00(TaskNode *node) {
     if (busy == 0) {
         func_801E6AC4();
         files = task->files;
-        task->images = files[0].dest = func_80031BDC(func_800288EC(1), 1);
+        task->images = files[0].destination = func_80031BDC(func_800288EC(1), 1);
         files[0].file = 1;
-        D_800D2D54 = task->shared = files[1].dest = func_80031BDC(func_800288EC(2), 0);
+        D_800D2D54 = task->shared = files[1].destination = func_80031BDC(func_800288EC(2), 0);
         files[1].file = 2;
-        task->effects = files[2].dest = func_80031BDC(func_800288EC(3), 0);
+        task->effects = files[2].destination = func_80031BDC(func_800288EC(3), 0);
         files[2].file = 3;
-        files[3].dest = NULL;
+        files[3].destination = NULL;
         files[3].file = 0;
-        func_80029AFC((u16 *)files, 0, 0);
+        func_80029AFC(files, 0, 0);
         func_8001CD6C(node, func_801E6E48);
     }
 }
@@ -352,19 +351,16 @@ void func_801E6F00(TaskNode *node) {
 /* Loading state: once the disc is idle, build the enemy rows and sprites on
  * a private 16 KB stack, release the enemy set file and read the member
  * sprite files. */
-void func_801E6FEC(TaskNode *node) {
+void func_801E6FEC(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     u8 *stack;
 
     if (func_800286CC() == 0) {
         stack = func_80031BDC(0x4000, 1);
-        __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                         :
-                         : "r"(stack + 0x3FFC)
-                         : "$8", "memory");
+        STACK_ENTER(stack + 0x3FFC);
         func_801E6314(task->data);
         func_801E6710(task->data);
-        __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+        STACK_LEAVE();
         func_800320E8(stack);
         DrawSync(0);
         func_800320E8(task->data);
@@ -375,7 +371,7 @@ void func_801E6FEC(TaskNode *node) {
 
 /* Create the loading task for the enemy set file `data`. */
 void func_801E7098(u8 *data) {
-    LoaderTask *task = func_8001CD08(0, 0x78);
+    LoaderTask *task = (LoaderTask *)func_8001CD08(0, 0x78);
 
     func_8001CD6C(&task->task, func_801E6FEC);
     task->data = data;

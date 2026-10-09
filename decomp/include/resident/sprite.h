@@ -2,47 +2,13 @@
 #define RESIDENT_SPRITE_H
 
 #include "gpu.h"
+#include "task.h"
 
-/* A task's link word: its owner's serial and its state flags. */
-typedef union {
-    u32 word;
-    struct {
-        unsigned owner_serial : 29;  /* the owner's creation number */
-        unsigned flag29 : 1;
-        unsigned flag30 : 1;
-        unsigned active : 1;
-    } bits;
-} TaskLink;
-
-/* A task node of the sprite engine's lists. */
-typedef struct Task {
-    struct Task *owner;
-    void *data;                          /* +0x4: the task's sprite */
-    void (*update)(struct Task *task);  /* +0x8 */
-    void (*destroy)(struct Task *task); /* +0xc */
-    union {
-        u32 word;
-        struct {
-            unsigned serial : 29;        /* creation number */
-            unsigned flags : 3;
-        } bits;
-    } id;                                /* +0x10 */
-    TaskLink link;                       /* +0x14: flag tests read the word */
-    struct Task *next;                   /* +0x18 */
-} Task;
-
-/* Task lists: the main list runs first each frame, then the second list. */
-extern Task *D_8005958C;   /* main task list */
-extern Task *D_80059594;   /* second task list */
-extern Task *D_80059590;   /* the next task of the running pass */
-extern Task *D_800594C0;   /* the running task */
-extern u32 D_80059184;     /* next task serial */
-extern s32 D_80059188;
-extern s32 D_8005918C;     /* live tasks */
+/* Resident sprite/actor engine (the four sprite units, 0x8001c8dc-0x8002709c;
+ * the task lists they run on are in task.h). Only the fields the recovered
+ * functions use are named. */
 extern struct Sprite *D_80059190; /* sprites awaiting a frame (through renderer->next_pending) */
 
-/* Resident sprite/actor engine (the unit around 0x8001c8dc-0x8002709c).
- * Only the fields the recovered functions use are named. */
 /* One drawn part of a sprite (0x18 bytes; the renderer's part list). */
 typedef struct {
     s16 x, y;              /* +0x0 */
@@ -119,8 +85,9 @@ typedef struct Sprite {
         unsigned dirty : 1;      /* orientation needs rebuilding */
         unsigned unknown29 : 3;
         } bits;
+        u8 bytes[4];         /* [1]: the field stores its draw mode as a byte */
     } render;                /* +0x3c: tests read the word, as the original does */
-    u32 flags;               /* +0x40: bits 8-12 facing group */
+    u32 flags;               /* +0x40: SpriteFlagBits (bits 8-12 the scale shift) */
     s32 *resource_block;     /* +0x44: the block the image's sections come from */
     s32 *animations;         /* +0x48: the animation block, NULL none */
     s32 resource;            /* +0x4c */
@@ -163,7 +130,8 @@ typedef struct Sprite {
         unsigned unknown0 : 2;
         unsigned mirror : 1;     /* mirror every frame */
         unsigned frame_flip : 1; /* the current frame is mirrored */
-        unsigned unknown4 : 2;
+        unsigned unknown4 : 1;
+        unsigned owns_children : 1; /* the tasks it created end with it (80022eb8) */
         unsigned double_step : 1;
         unsigned divisor : 12;   /* gravity divisor */
         unsigned unknown19 : 13;
@@ -194,7 +162,9 @@ typedef struct {
     s32 word8;
     s16 halfc;
     SpriteImageSize size;  /* +0xe: image size for sequencer frames */
-    u8 unknown12[6];
+    u8 unknown12[2];
+    s16 actor;             /* +0x14: the field's event actor (descriptor) it belongs to */
+    u8 unknown16[2];
     u16 *buffer;           /* +0x18: allocated by 8002303c */
 } SpriteSequencer;
 
@@ -276,11 +246,6 @@ typedef struct {
 
 /* Small globals of other units: this unit addresses them absolutely (its
  * assembler ignored the `.extern` sizes GCC gives them). */
-extern u8 D_800591AF;  /* allocation mode for sprite tasks */
-extern s32 D_80059428; /* frames the main task list stays paused */
-extern s16 D_80059494;
-extern u8 D_800591AC;  /* new main-list tasks count as active */
-extern s32 D_80059464; /* active main-list tasks */
 extern s32 D_800591A8;
 extern u8 D_800591AD;
 extern u8 D_800591AE;
@@ -324,20 +289,9 @@ extern s32 D_8005956C;
 extern MATRIX D_8004FBB8;
 extern u8 D_8004FBD8[]; /* packed image uploaded by 8001fab4 */
 extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
-void func_8001CD64(Task *task, void (*update)(Task *));
-void func_8001CA58(Task *owner, Task *node);
-void func_8001CB48(Task *task);
-void func_8001CBE8(Task *task);
-void func_8001CD94(Task *task);
-void func_8001CE44(Task *task);
-void func_8001CC18(Task *owner, Task *node);
-void func_8001CD6C(Task *task, void (*update)(Task *));
-void func_8001CD74(Task *task, void (*destroy)(Task *));
 void func_80022DF4(Task *task);
 void func_80022EB8(Task *task);
 void func_80025180(u32 value);
-void func_8001CE74(Task *owner);
-void func_8001D034(Task *owner);
 void func_8001D3F4(Sprite *sprite);
 s32 func_8001EE74(u16 *header); /* the part count of a frame header */
 void func_80022000(Sprite *sprite, s32 scale);
@@ -424,10 +378,11 @@ typedef struct {
 } TexturePosition;
 extern TexturePosition D_8004FAB8[8];
 /* Second sprite unit (80022090-8002709c). */
-/* The bits of a sprite's flags word (+0x40) that the original writes as fields. */
+/* The bits of a sprite's flags word (+0x40) that the original writes as fields
+ * (the battle modules read part_bytes and shift as fields too). */
 typedef struct {
-    unsigned unknown0 : 8;
-    unsigned group : 5;      /* facing group */
+    unsigned part_bytes : 8; /* four per drawn part: bits 2-7 the part count */
+    unsigned shift : 5;      /* scale shift of the parts' offsets and sizes (8001e148) */
     unsigned type : 4;       /* sprite kind (80023440) */
     unsigned unknown17 : 1;
     unsigned flag18 : 1;     /* inherited by child sprites (80023b84) */
@@ -456,17 +411,7 @@ extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
 
-/* More of the task and sprite services and their state. */
-void func_8001C8DC(void);
-void func_8001C944(void);
-void func_8001C964(void);
-void func_8001C9F8(void);
-Task *func_8001CD08(Task *owner, s32 size);
-void *func_8001CD7C(Task *task);
-Task *func_8001D0A4(Task *owner, void (*update)(Task *));
-Task *func_8001D164(void (*update)(Task *));
-void func_8001D19C(Task *task);
-Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *), void (*destroy)(Task *));
+/* More of the sprite services and their state. */
 void func_8001D468(void);
 void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height);
 void func_8001E368(Sprite *sprite, u_long *ot, s32 height);

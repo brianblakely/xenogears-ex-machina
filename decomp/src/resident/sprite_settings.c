@@ -12,9 +12,8 @@
  * no small data) would leave a code unit that fits as well. Whether
  * D_800591B4 ends it or opens sprite_80022090.o's .sdata is undetermined. */
 #include "common.h"
-#include "psyq/libgpu.h"
-#include "resident/mode.h"
 #include "resident/sprite.h"
+#include "resident/task.h"
 
 s32 D_80059198 = 0; /* extra frames per update */
 SpriteVoice *D_8005919C = NULL;

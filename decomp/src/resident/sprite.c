@@ -2,25 +2,18 @@
  * sprite motion and the animation script interpreter. Compiled by the CDK
  * GCC at -G8; positive `li` are assembled as `addiu` (ASPSX 2.50+). */
 #include "common.h"
-#include "psyq/libapi.h"
 #include "psyq/libc.h"
-#include "psyq/libcd.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "psyq/libsn.h"
-#include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
-#include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
+#include "battle/area.h"
+#include "resident/gpu.h"
 #include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
-#include "resident/console.h"
+#include "resident/model.h"
 #include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/task.h"
+#include "resident/text.h"
+#include "battle_overlay.h"
 #include "own_declarations.h"
 
 TexturePosition D_8004FAB8[8] = {
@@ -44,7 +37,6 @@ SVECTOR D_8004FB98[4] = {0};
 MATRIX D_8004FBB8 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
 /* The packed image 8001fab4 uploads: its unpacked size (664 bytes) and the
  * LZSS stream 80032e88 decodes. */
-extern u8 D_8004FBD8[];
 INCLUDE_ASSET(".data", D_8004FBD8, 0x8004FBD8, 0xE8);
 
 /* The unit's own small data, statics and small commons, all $gp-relative.
@@ -393,6 +385,8 @@ Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update
     return node;
 }
 
+/* Empty the pending sprite list (the sprite queues' set-up 80024f64 and
+ * release 80024fb8 call one each). */
 void func_8001D298(void) {
     D_80059190 = NULL;
 }
@@ -1847,16 +1841,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (arg & 0x80) {
             transform = sprite->render.bits.no_view;
             switch (index) {
-            /* 38: the formation place (800c3eb0) of its side and slot, y 0. */
+            /* 38: the formation place of its side and slot, y 0. */
             case 38: {
                 u32 slot, side;
 
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vx = D_800C3EB0[(side << 2) | slot].x;
+                vector.vx = D_800C3EB0.slots[(side << 2) | slot].x;
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vz = D_800C3EB0[(side << 2) | slot].z;
+                vector.vz = D_800C3EB0.slots[(side << 2) | slot].z;
                 vector.vy = 0;
                 break;
             }
@@ -2602,6 +2596,7 @@ s32 func_80021AD8(s32 value, s32 delta) {
     return value;
 }
 
+/* Vector helpers: set a short or a long vector, copy one. */
 void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z) {
     vector->vx = x;
     vector->vy = y;
@@ -2646,6 +2641,7 @@ void func_80021BCC(Sprite *sprite, s32 divisor) {
     sprite->motion.bits.divisor = divisor;
 }
 
+/* Set a sprite's resource word (+0x4c). */
 void func_80021BF0(Sprite *sprite, s32 resource) {
     sprite->resource = resource;
 }
@@ -2761,6 +2757,7 @@ void func_80021EBC(Sprite *sprite, SpriteState *state) {
     state->scale = sprite->scale;
 }
 
+/* Set the low byte of a sprite's word +0xb0. */
 void func_80021FB8(Sprite *sprite, u8 value) {
     sprite->b0.byteb0 = value;
 }

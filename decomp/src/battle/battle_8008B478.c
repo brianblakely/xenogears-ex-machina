@@ -1,25 +1,32 @@
-/* Battle unit from 8008B478: its rodata is the three jump tables at
- * 80070314-80070370 (8008B478, 8008BED8, 8008C81C), at 4 mod 8 between runs
- * at 0 mod 8 (docs/matching.md). The text boundaries are not fixed by the
- * tables: this unit starts after 800861D0 and ends before 80094EE4; these
- * files take the tables' owners. */
+/* Battle unit from 8008B478 to 8008CCCC: the technique, item and combo menus
+ * and the execution of the chosen technique, item or combo steps. Its rodata
+ * is the three jump tables at 80070314-80070370 (8008B478, 8008BED8,
+ * 8008C81C), at 4 mod 8 between runs at 0 mod 8 (docs/matching.md). The text
+ * boundaries are not fixed by the tables: this unit starts after 800861D0 and
+ * ends before 80094EE4; these files take the tables' owners. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "resident/gamedata.h"
+#include "resident/sprite.h"
+#include "battle/actions.h"
+#include "battle/command.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/menu_pages.h"
+#include "battle/scene.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/work.h"
+#include "own_declarations.h"
+
+/* Callers convert arguments differently from the definition (800BAF40, in
+ * 800B8098's unit, takes none): they pass a slot and a mode it ignores. */
+void func_800BAF40(u8 slot, s32 mode);
+
+/* This unit's functions, declared before their first use. */
+u8 func_8008C81C(u8 member);          /* run the combo menu */
 
 /* Run the member's technique menu: four windows, a two-column list of
  * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the
@@ -217,7 +224,7 @@ u8 member;
 /* Hide the command windows (two panels); without `keep` show the +0x641c
  * lists. */
 void func_8008BC40(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
@@ -228,7 +235,7 @@ void func_8008BC40(u8 keep) {
 /* Show the command windows (two panels, page 2) and frame the camera on the
  * member and its default target. */
 void func_8008BC98(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = 1;
     D_800D2D28->unkB7 = 2;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -426,7 +433,7 @@ u8 func_8008BED8(u8 member) {
 /* Hide the command windows; with `close` also close windows 0 and 1 and
  * release the graphics block. */
 void func_8008C360(u8 close) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
     D_800D2D28->unkB7 = 0;
     if (close != 0) {
         D_800D2D28->unkC6 = 0;
@@ -443,7 +450,7 @@ void func_8008C360(u8 close) {
 /* Show the command windows (two panels, page 3) and frame the camera on the
  * member and its default target. */
 void func_8008C3F0(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
     D_800D2D28->unkB7 = 3;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = 1;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -545,7 +552,7 @@ u8 func_8008C81C(u8 member) {
     }
     n = 0;
     for (i = 0; i < 7; i++) {
-        if (func_80089C6C(D_8006ECF4[D_80059468[member]].mask0, i)) {
+        if (func_80089C6C(D_8006D634.skills[D_80059468[member]].counterSkills, i)) {
             steps[n] = i;
             costs[n] = D_800CCCE8.partyCommands[member][i + 7].apCost;
             n++;
@@ -553,7 +560,7 @@ u8 func_8008C81C(u8 member) {
     }
     func_8008F8F4(0, 0x16, 0x5C, 0x122, 0x4C, 1, 1);
     func_8008F8F4(1, 0x10, 0x2C, 0xE8, 0x2C, 1, 1);
-    while (D_800D2D28->unkBF[0] == 0 || D_800D2D28->unkBF[1] == 0) {
+    while (D_800D2D28->windowOpen[0] == 0 || D_800D2D28->windowOpen[1] == 0) {
         func_800716D8();
     }
     func_80092784(member, steps, costs);

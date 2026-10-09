@@ -1,11 +1,23 @@
 /*
- * The item shop's own screens (801cce1c onwards): member stat views, the buy
- * and sell lists, prices and the sale. A separate translation unit from the
- * shared screen code before it: it calls the party-bit helpers 801c50b0 and
- * 801c50cc without a prototype in scope (arguments and results unmasked),
- * which the shared unit's own callers do not.
+ * The item shop's own screens: member stat views, the buy and sell lists,
+ * prices and the sale. Rodata 801c5010-801c5040, text 801cce1c-801d1f50,
+ * data 801d2210-801d2260 and the variable D_801D2260 that ends the file. A
+ * separate translation unit from the shared screen code before it: it calls
+ * the party-bit helpers 801c50b0 and 801c50cc without a prototype in scope
+ * (arguments and results unmasked), which the shared unit's own callers do
+ * not.
  */
-#include "menu_card.h"
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/text.h"
+#include "menu/screen.h"
+#include "menu/shop.h"
+#include "menu/tables.h"
+#include "item_shop.h"
 
 /* The four heading sprites and the two alternative ones: ids and positions. */
 u8 D_801D2210[4] = {0xF2, 0xDE, 0xE0, 0xE5};
@@ -29,24 +41,24 @@ u16 D_801D2260;
 void func_801C6E90();
 
 /* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
-void func_801CCE1C(ResourceSet *view, u8 id) {
-    Character *c;
+void func_801CCE1C(MenuTables *view, u8 id) {
+    CharacterRecord *c;
 
-    c = &D_8006D8A0[id];
-    if (c->unk56 == 4) {
-        view->stats[0] = c->unk4 + c->unk1C;
+    c = &D_8006D634.characters[id];
+    if (c->characterId == 4) {
+        view->stats[0] = c->entries[0].value4 + c->entries[3].value4;
     } else {
-        view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
+        view->stats[0] = c->entries[0].value4 + (c->attack + c->equipAttack);
     }
-    view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
-    view->stats[1] = c->bonus[6] + c->base[6];
-    view->stats[2] = c->base[5] + (c->bonus[1] + c->base[1]);
-    view->stats[3] = c->bonus[7] + c->base[7];
-    view->stats[4] = c->bonus[3] + c->base[3];
+    view->stats[0] = c->entries[0].value4 + (c->attack + c->equipAttack);
+    view->stats[1] = c->field5E + c->equip5E;
+    view->stats[2] = c->bodyDefense + (c->defense + c->equipDefense);
+    view->stats[3] = c->field5F + c->equip5F;
+    view->stats[4] = c->accuracy + c->equipAccuracy;
     view->stats[5] = 99;
-    view->stats[6] = c->bonus[4] + c->base[4];
+    view->stats[6] = c->etherDefense + c->equipEtherDefense;
     view->stats[7] = 10;
-    view->stats[8] = c->bonus[2] + c->base[2];
+    view->stats[8] = c->speed + c->equipSpeed;
     if (view->stats[0] >= 1000) {
         view->stats[0] = 999;
     }
@@ -80,13 +92,13 @@ void func_801CCE1C(ResourceSet *view, u8 id) {
 void func_801CCFF4(void) {
     s32 i;
 
-    if (D_800625A0->flags->unk5A != 0) {
+    if (D_800625A0->flags->unknown5a[0] != 0) {
         for (i = 0; i < 9; i++) {
             if (D_800625A0->details->bar_shown[i] != 0) {
-                AddPrim(&D_800625A0->draw_env->ot[4],
-                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer]);
-                AddPrim(&D_800625A0->draw_env->ot[4],
-                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer]);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer_index]);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer_index]);
             }
         }
         func_801C8D58(D_800625A0->details->heading_count, D_800625A0->details->heading,
@@ -97,26 +109,26 @@ void func_801CCFF4(void) {
                       D_800625A0->details->members_buffer);
         for (i = 0; i < 8; i++) {
             if (D_800625A0->details->name_shown[i] != 0) {
-                func_801C8C3C(1, D_800625A0->details->names_a[i].quad, D_800625A0->details->names_a[i].poly,
+                func_801C8C3C(1, D_800625A0->details->names_a[i].verts, D_800625A0->details->names_a[i].polys,
                               D_800625A0->details->names_a[i].buffer);
-                func_801C8C3C(1, D_800625A0->details->names_b[i].quad, D_800625A0->details->names_b[i].poly,
+                func_801C8C3C(1, D_800625A0->details->names_b[i].verts, D_800625A0->details->names_b[i].polys,
                               D_800625A0->details->names_b[i].buffer);
             }
         }
         if (D_800625A0->details->label4430_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label4430.quad, D_800625A0->details->label4430.poly,
+            func_801C8C3C(1, D_800625A0->details->label4430.verts, D_800625A0->details->label4430.polys,
                           D_800625A0->details->label4430.buffer);
         }
         if (D_800625A0->details->label44B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label44B0.quad, D_800625A0->details->label44B0.poly,
+            func_801C8C3C(1, D_800625A0->details->label44B0.verts, D_800625A0->details->label44B0.polys,
                           D_800625A0->details->label44B0.buffer);
         }
         if (D_800625A0->details->label45B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label45B0.quad, D_800625A0->details->label45B0.poly,
+            func_801C8C3C(1, D_800625A0->details->label45B0.verts, D_800625A0->details->label45B0.polys,
                           D_800625A0->details->label45B0.buffer);
         }
         if (D_800625A0->details->digits_shown != 0) {
-            AddPrim(&D_800625A0->draw_env->ot[4], &D_800625A0->details->frame[D_800625A0->buffer]);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->details->frame[D_800625A0->buffer_index]);
             func_801C8D58(D_800625A0->details->digits1_count, D_800625A0->details->digits1,
                           D_800625A0->details->digits1_buffer);
             func_801C8D58(D_800625A0->details->digits2_count, D_800625A0->details->digits2,
@@ -135,7 +147,7 @@ void func_801CCFF4(void) {
                           D_800625A0->details->cells_b_buffer[i]);
         }
     }
-    if (D_800625A0->flags->unk5B == 1) {
+    if (D_800625A0->flags->unknown5a[1] == 1) {
         func_801C8D58(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
                       D_800625A0->details->group1220_buffer);
     }
@@ -146,17 +158,17 @@ void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        SetShadeTex(&packets[i * 2 + D_800625A0->buffer], 0);
+        SetShadeTex(&packets[i * 2 + D_800625A0->buffer_index], 0);
         switch (color) {
         case 0:
-            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x80;
-            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x80;
+            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x40;
             break;
         case 1:
-            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x80;
+            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x80;
             break;
         }
     }
@@ -168,19 +180,19 @@ void func_801CD5D0(void) {
     s32 shown;
     s32 i;
 
-    D_800625A0->flags->unk5A = 1;
+    D_800625A0->flags->unknown5a[0] = 1;
     for (step = 1; step < 12; step++) {
         shown = 0;
         D_800625A0->details->members_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_800625A0->member_present[i] != 0) {
+            if (D_800625A0->present[i] != 0) {
                 D_800625A0->details->members_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
-                                  D_800625A0->buffer, D_801D21CC[shown], 0xA6, 0x1000);
+                    func_8002675C(D_800625A0->sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
+                                  D_800625A0->buffer_index, D_801D21CC[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
-        D_800625A0->details->members_buffer = D_800625A0->buffer;
+        D_800625A0->details->members_buffer = D_800625A0->buffer_index;
         func_801CB014();
     }
 }
@@ -192,11 +204,11 @@ void func_801CD6F8(void) {
     D_800625A0->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
         D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sprite_sheet, D_801D2210[i],
+            func_8002675C(D_800625A0->sheet, D_801D2210[i],
                           D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer, D_801D2218[i], D_801D2230[i], 0x1000);
+                          D_800625A0->buffer_index, D_801D2218[i], D_801D2230[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
 }
 
 /* Draw the two alternative heading sprites. */
@@ -206,11 +218,11 @@ void func_801CD7E4(void) {
     D_800625A0->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
         D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sprite_sheet, D_801D2214[i],
+            func_8002675C(D_800625A0->sheet, D_801D2214[i],
                           D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer, D_801D2228[i], D_801D2240[i], 0x1000);
+                          D_800625A0->buffer_index, D_801D2228[i], D_801D2240[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
 }
 
 /* Draw three nine-digit numbers (leading zeros blank) at their three positions. */
@@ -222,34 +234,34 @@ void func_801CD8D0(u32 first, u32 second, u32 third) {
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits1_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits1 + D_800625A0->details->digits1_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2248, D_801D224C, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2248, D_801D224C, 0x1000);
         }
     }
-    D_800625A0->details->digits1_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits1_buffer = D_800625A0->buffer_index;
     func_801C50E8(second);
     D_800625A0->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits2_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits2 + D_800625A0->details->digits2_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2250, D_801D2254, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2250, D_801D2254, 0x1000);
         }
     }
-    D_800625A0->details->digits2_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits2_buffer = D_800625A0->buffer_index;
     func_801C50E8(third);
     D_800625A0->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits3_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits3 + D_800625A0->details->digits3_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2258, D_801D225C, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2258, D_801D225C, 0x1000);
         }
     }
-    D_800625A0->details->digits3_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits3_buffer = D_800625A0->buffer_index;
     D_800625A0->details->digits_shown = 1;
 }
 
@@ -264,16 +276,16 @@ u16 func_801CDBA0(u8 item, u8 kind) {
     if (item != 0 && kind != 2) {
         for (i = 0; i < 16; i++) {
             found = 0;
-            if (D_800625A0->member_present[i] != 0) {
+            if (D_800625A0->present[i] != 0) {
                 switch (kind) {
                 case 0:
                     for (k = 0; k < 5; k++) {
                         if (item < 0x32) {
-                            if (D_8006D8A0[i].weapons[k] == item) {
+                            if (D_8006D634.characters[i].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006D8A0[i].armour[k] == item) {
+                        } else if (D_8006D634.characters[i].entryItems[k] == item) {
                             found = 1;
                             break;
                         }
@@ -281,7 +293,7 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                     break;
                 case 1:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006D8A0[i].accessories[k] == item) {
+                        if (D_8006D634.characters[i].accessories[k] == item) {
                             found = 1;
                             break;
                         }
@@ -332,19 +344,19 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             case 0:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033848(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->equipment[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->equipment[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 1:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_800337E8(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->accessories[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->accessories[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 2:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033818(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->items[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->items[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             }
@@ -373,7 +385,7 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.h = 13;
             LoadImage(&rect, pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C6E90(D_800625A0->details->names_a[row].quad, 0x24, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -382,27 +394,27 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             LoadImage(&rect, pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C6E90(D_800625A0->details->names_b[row].quad, 0x8C, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
             D_800625A0->details->name_shown[row] = 1;
             if (D_800625A0->details->amounts[top + row] != 0) {
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xF1, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer, 0xB4, row * 13 + 0x36, 0x1000);
+                    func_8002675C(D_800625A0->sheet, 0xF1, D_800625A0->details->rows[row],
+                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = D_800625A0->details->amounts[top + row] / 10;
                 if (tens != 0) {
                     D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sprite_sheet, tens,
+                        func_8002675C(D_800625A0->sheet, tens,
                                       &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer, 0xBC, row * 13 + 0x36, 0x1000);
+                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
+                    func_8002675C(D_800625A0->sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
                                   &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer;
+                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
             }
         } else {
             D_800625A0->details->name_shown[row] = 0;
@@ -437,19 +449,19 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     switch (kind) {
     case 0:
         if (member != 4) {
-            current = &D_800625A0->resources->equipment[D_8006D8A0[member].weapons[0]];
-            before[0] = current->power + D_8006D8A0[member].bonus[0];
-            current = &D_800625A0->resources->equipment[id];
-            after[0] = current->power + D_8006D8A0[member].bonus[0];
+            current = &D_800625A0->tables->equipment[D_8006D634.characters[member].weapons[0]];
+            before[0] = current->power + D_8006D634.characters[member].attack;
+            current = &D_800625A0->tables->equipment[id];
+            after[0] = current->power + D_8006D634.characters[member].attack;
         } else {
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
+                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
                 before[0] += current->power;
             }
-            fitted = &D_800625A0->resources->equipment[id];
+            fitted = &D_800625A0->tables->equipment[id];
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
-                if (current->type == fitted->type && current->type != 5) {
+                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
+                if (current->kind == fitted->kind && current->kind != 5) {
                     after[0] += fitted->power;
                 } else {
                     after[0] += current->power;
@@ -459,35 +471,35 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         break;
     case 1:
         replace = 1;
-        before[1] = after[1] = D_8006D8A0[member].bonus[1];
+        before[1] = after[1] = D_8006D634.characters[member].defense;
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
-            before[1] += accessory->power;
+            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+            before[1] += accessory->amount;
         }
-        fitted_accessory = &D_800625A0->resources->accessories[id];
+        fitted_accessory = &D_800625A0->tables->accessories[id];
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
-            if (accessory->group != 0 && accessory->group == fitted_accessory->group) {
-                after[1] += fitted_accessory->power;
+            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+            if (accessory->groups != 0 && accessory->groups == fitted_accessory->groups) {
+                after[1] += fitted_accessory->amount;
                 replace = 0;
             } else {
-                after[1] += accessory->power;
+                after[1] += accessory->amount;
             }
         }
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
-                if (lowest >= accessory->power) {
-                    lowest = accessory->power;
+                accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+                if (lowest >= accessory->amount) {
+                    lowest = accessory->amount;
                     weakest = k;
                 }
             }
-            after[1] = D_8006D8A0[member].bonus[1] + fitted_accessory->power;
+            after[1] = D_8006D634.characters[member].defense + fitted_accessory->amount;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
-                    accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
-                    after[1] += accessory->power;
+                    accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+                    after[1] += accessory->amount;
                 }
             }
         }
@@ -532,17 +544,17 @@ void func_801CE91C(u8 kind, u8 id) {
 
     switch (kind) {
     case 0:
-        ids = D_8006F3D0;
+        ids = D_8006D634.weaponIds;
         counts = ids - 100;
         n = 100;
         break;
     case 1:
-        ids = D_8006F4FC;
+        ids = D_8006D634.accessoryIds;
         counts = ids - 200;
         n = 200;
         break;
     case 2:
-        ids = D_8006F65A;
+        ids = D_8006D634.itemIds;
         counts = ids - 150;
         n = 150;
         break;
@@ -567,9 +579,9 @@ void func_801CE91C(u8 kind, u8 id) {
     LoadImage(&rect, pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
-    func_801C6E90(D_800625A0->details->label45B0.quad, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+    func_801C6E90(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
                   13);
-    D_800625A0->details->label45B0.buffer = D_800625A0->buffer;
+    D_800625A0->details->label45B0.buffer = D_800625A0->buffer_index;
     D_800625A0->details->label45B0_shown = 1;
     func_800320E8(pixels);
 }
@@ -605,19 +617,19 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     case 0:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->equipment[id].price;
-        users = D_800625A0->resources->equipment[id].users;
+        price = D_800625A0->tables->equipment[id].price;
+        users = D_800625A0->tables->equipment[id].users;
         break;
     case 1:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->accessories[id].price;
-        users = D_800625A0->resources->accessories[id].users;
+        price = D_800625A0->tables->accessories[id].price;
+        users = D_800625A0->tables->accessories[id].users;
         break;
     case 2:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[0], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->items[id].price;
+        price = D_800625A0->tables->items[id].price;
         break;
     }
     holders = func_801CDBA0(id, kind);
@@ -628,10 +640,10 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     LoadImage(&rect, pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C5040(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
+    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
     func_800320E8(pixels);
     if (id) {
         D_800625A0->details->label4430_shown = 1;
@@ -642,7 +654,7 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     shown = 0;
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->member_present[i] != 0) {
+        if (D_800625A0->present[i] != 0) {
             if (func_801C50B0(users, i)) {
                 D_800625A0->details->bar_shown[shown] = 1;
             } else {
@@ -650,9 +662,9 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
             }
             if (func_801C50B0(holders, i)) {
                 D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                    func_8002675C(D_800625A0->sheet, 0xE,
                                   &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
+                                  D_800625A0->buffer_index, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
             }
             D_800625A0->details->cells_a_count[shown] = 0;
             D_800625A0->details->cells_b_count[shown] = 0;
@@ -665,34 +677,34 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_a_count[shown] += func_8002675C(
-                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                D_800625A0->sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
-                                D_800625A0->buffer, xa + k * 8, 0xBE, 0x1000);
+                                D_800625A0->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
                                   worse[0]);
-                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer;
+                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer_index;
                 }
                 if (diffs[1] != 0) {
                     func_801C50E8(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_b_count[shown] += func_8002675C(
-                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                D_800625A0->sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
-                                D_800625A0->buffer, xb + k * 8, 0xC6, 0x1000);
+                                D_800625A0->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
                                   worse[1]);
-                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer;
+                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer_index;
                 }
             }
             shown++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
     func_801CE91C(kind, id);
     return price;
 }
@@ -720,18 +732,18 @@ void func_801CF2A0(u32 gold) {
             case 0:
                 new_item = 1;
                 for (j = 0; j < 100; j++) {
-                    if (D_8006F3D0[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.weaponIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F36C[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F36C[j] = 99;
+                        if ((D_8006D634.weaponCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.weaponCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 100; j++) {
-                        if (D_8006F3D0[j] == 0) {
-                            D_8006F3D0[j] = D_800625A0->shop_items[i];
-                            D_8006F36C[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.weaponIds[j] == 0) {
+                            D_8006D634.weaponIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.weaponCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -740,18 +752,18 @@ void func_801CF2A0(u32 gold) {
             case 1:
                 new_item = 1;
                 for (j = 0; j < 200; j++) {
-                    if (D_8006F4FC[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.accessoryIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F434[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F434[j] = 99;
+                        if ((D_8006D634.accessoryCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.accessoryCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 200; j++) {
-                        if (D_8006F4FC[j] == 0) {
-                            D_8006F4FC[j] = D_800625A0->shop_items[i];
-                            D_8006F434[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.accessoryIds[j] == 0) {
+                            D_8006D634.accessoryIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.accessoryCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -760,18 +772,18 @@ void func_801CF2A0(u32 gold) {
             case 2:
                 new_item = 1;
                 for (j = 0; j < 150; j++) {
-                    if (D_8006F65A[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.itemIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F5C4[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F5C4[j] = 99;
+                        if ((D_8006D634.itemCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.itemCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 150; j++) {
-                        if (D_8006F65A[j] == 0) {
-                            D_8006F65A[j] = D_800625A0->shop_items[i];
-                            D_8006F5C4[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.itemIds[j] == 0) {
+                            D_8006D634.itemIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.itemCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -794,13 +806,13 @@ void func_801CF678(u32 value) {
     for (; i < 9; i++, x += 8) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->group1220_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
-                              D_800625A0->buffer, x, 0x54, 0x1000);
+                              D_800625A0->buffer_index, x, 0x54, 0x1000);
         }
     }
-    D_800625A0->details->group1220_buffer = D_800625A0->buffer;
-    D_800625A0->flags->unk5B = 2;
+    D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
+    D_800625A0->flags->unknown5a[1] = 2;
 }
 
 /*
@@ -835,9 +847,9 @@ u8 func_801CF780(void) {
     total = 0;
     new_gold = gold;
     for (i = 0; i < 11; i++) {
-        func_801CCE1C(D_800625A0->resources, i);
-        D_800625A0->details->attack[i] = D_800625A0->resources->stats[0];
-        D_800625A0->details->defence[i] = D_800625A0->resources->stats[2];
+        func_801CCE1C(D_800625A0->tables, i);
+        D_800625A0->details->attack[i] = D_800625A0->tables->stats[0];
+        D_800625A0->details->defense[i] = D_800625A0->tables->stats[2];
     }
     bzero(D_800625A0->details->amounts, 0x30);
     D_800625A0->images->dim = 1;
@@ -852,14 +864,14 @@ u8 func_801CF780(void) {
             price = func_801CEB3C(row, top, dims);
             last_row = row;
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
-            func_801CBC88(1, 2, D_800625A0->list_labels, D_801D1FD4, D_800625A0->flags->list_label_shown);
-            func_801CBCF0(2, D_800625A0->list_labels, D_801D1FD4, D_801D1FE8, D_800625A0->flags->list_label_shown, 0,
+            func_801CBC88(1, 2, D_800625A0->list_labels, D_801D1FD4, D_800625A0->flags->list_labels_shown);
+            func_801CBCF0(2, D_800625A0->list_labels, D_801D1FD4, D_801D1FE8, D_800625A0->flags->list_labels_shown, 0,
                           0, 1);
-            D_800625A0->flags->list_label_shown[0] = 0;
+            D_800625A0->flags->list_labels_shown[0] = 0;
             func_801C896C(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
             func_801C896C(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
             func_801C896C(5, 0xE0, 0x7A, 0x40, 0x24, 0, 1, 4, 0);
@@ -870,7 +882,7 @@ u8 func_801CF780(void) {
             while (D_800625A0->view_motion != 0) {
                 func_801CB014();
             }
-            D_800625A0->flags->list_label_shown[0] = 1;
+            D_800625A0->flags->list_labels_shown[0] = 1;
         }
         if (redraw) {
             func_801CD8D0(gold, total, new_gold);
@@ -880,28 +892,28 @@ u8 func_801CF780(void) {
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
-                D_800625A0->flags->panel_shown[5] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
+                D_800625A0->flags->panels_shown[5] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 running = 0;
-                D_800625A0->flags->list_label_shown[0] = 0;
+                D_800625A0->flags->list_labels_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x8F, 0xFF, 1)) {
                     func_801CF2A0(new_gold);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
                     D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_label_shown[0] = 1;
+                    D_800625A0->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             } else {
@@ -910,25 +922,25 @@ u8 func_801CF780(void) {
             break;
         case 5:
             running = 0;
-            D_800625A0->flags->list_label_shown[0] = 0;
+            D_800625A0->flags->list_labels_shown[0] = 0;
             if (total != 0) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
-                D_800625A0->flags->panel_shown[5] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
+                D_800625A0->flags->panels_shown[5] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x8C, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
-                    D_800625A0->flags->panel_shown[5] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[5] = 1;
                     D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->marker_shown[0] = 1;
+                    D_800625A0->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_label_shown[0] = 1;
+                    D_800625A0->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             }
@@ -1009,19 +1021,19 @@ u32 func_801CFF58(u8 id, u8 kind) {
     switch (kind) {
     case 0:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033848(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->equipment[id].users;
-        price = D_800625A0->resources->equipment[id].price >> 1;
+        users = D_800625A0->tables->equipment[id].users;
+        price = D_800625A0->tables->equipment[id].price >> 1;
         value = price;
         break;
     case 1:
         D_800625A0->details->label4430.width = func_80034EAC(func_800337E8(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->accessories[id].users;
-        price = D_800625A0->resources->accessories[id].price >> 1;
+        users = D_800625A0->tables->accessories[id].users;
+        price = D_800625A0->tables->accessories[id].price >> 1;
         value = price;
         break;
     case 2:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033818(id), pixels, 0x39, 0);
-        price = D_800625A0->resources->items[id].price >> 1;
+        price = D_800625A0->tables->items[id].price >> 1;
         value = price;
         break;
     }
@@ -1048,15 +1060,15 @@ u32 func_801CFF58(u8 id, u8 kind) {
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C5A7C(&D_800625A0->details->label44B0, 0, 0, 0);
-    D_800625A0->details->label44B0.poly[D_800625A0->buffer].clut = D_80059414;
-    func_801C5040(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+    D_800625A0->details->label44B0.polys[D_800625A0->buffer_index].clut = D_80059414;
+    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   D_800625A0->details->label4430.width, 13);
-    func_801C5040(&D_800625A0->details->label44B0.poly[D_800625A0->buffer], 0x98, 0x12, 0, 0x4E,
+    func_801C5040(&D_800625A0->details->label44B0.polys[D_800625A0->buffer_index], 0x98, 0x12, 0, 0x4E,
                   D_800625A0->details->label44B0.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label44B0.quad, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
-    D_800625A0->details->label44B0.buffer = D_800625A0->buffer;
+    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    func_801C6E90(D_800625A0->details->label44B0.verts, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
+    D_800625A0->details->label44B0.buffer = D_800625A0->buffer_index;
     func_800320E8(pixels);
     if (id) {
         D_800625A0->details->label4430_shown = 1;
@@ -1069,7 +1081,7 @@ u32 func_801CFF58(u8 id, u8 kind) {
     j = 0;
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->member_present[i] != 0) {
+        if (D_800625A0->present[i] != 0) {
             if (func_801C50B0(users, i)) {
                 D_800625A0->details->bar_shown[j] = 1;
             } else {
@@ -1077,14 +1089,14 @@ u32 func_801CFF58(u8 id, u8 kind) {
             }
             if (func_801C50B0(holders, i)) {
                 D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                    func_8002675C(D_800625A0->sheet, 0xE,
                                   &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
+                                  D_800625A0->buffer_index, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
     return price;
 }
 
@@ -1151,7 +1163,7 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.h = 13;
             LoadImage(&rect, pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
-            func_801C6E90(D_800625A0->details->names_a[row].quad, 0x24, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -1160,27 +1172,27 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             LoadImage(&rect, pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
-            func_801C6E90(D_800625A0->details->names_b[row].quad, 0x8C, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
             D_800625A0->details->name_shown[row] = 1;
             if (chosen[top + row] != 0) {
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE5, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer, 0xB4, row * 13 + 0x36, 0x1000);
+                    func_8002675C(D_800625A0->sheet, 0xE5, D_800625A0->details->rows[row],
+                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = chosen[top + row] / 10;
                 if (tens != 0) {
                     D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sprite_sheet, tens,
+                        func_8002675C(D_800625A0->sheet, tens,
                                       &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer, 0xBC, row * 13 + 0x36, 0x1000);
+                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, (u8)(chosen[top + row] % 10),
+                    func_8002675C(D_800625A0->sheet, (u8)(chosen[top + row] % 10),
                                   &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer;
+                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
             }
         } else {
             D_800625A0->details->name_shown[row] = 0;
@@ -1228,8 +1240,8 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
                         D_8006D634.characters[member].weapons[0] = 0;
                     } else {
                         for (j = 0; j < 4; j++) {
-                            if (ids[i] == D_8006D634.characters[member].armour[j]) {
-                                D_8006D634.characters[member].armour[j] = 0;
+                            if (ids[i] == D_8006D634.characters[member].entryItems[j]) {
+                                D_8006D634.characters[member].entryItems[j] = 0;
                                 break;
                             }
                         }
@@ -1301,7 +1313,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         if (ids[i] != 0 && counts[i] != 0) {
             ok = 1;
             if (sell_kinds[i] == 2) {
-                if (D_800625A0->resources->items[ids[i]].flags & 0x10) {
+                if (D_800625A0->tables->items[ids[i]].use & 0x10) {
                     ok = 0;
                 }
             }
@@ -1324,7 +1336,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             last_row = row;
             price = func_801CFF58(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
-            D_800625A0->flags->unk5A = 1;
+            D_800625A0->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
@@ -1348,24 +1360,24 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
                 running = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x95, 0xFF, 1)) {
                     func_801D0C18(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind, member);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             } else {
@@ -1375,20 +1387,20 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 5:
             running = 0;
             if (total != 0) {
-                D_800625A0->flags->unk5A = 0;
-                D_800625A0->flags->panel_shown[2] = 0;
-                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->unknown5a[0] = 0;
+                D_800625A0->flags->panels_shown[2] = 0;
+                D_800625A0->flags->panels_shown[3] = 0;
                 D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->marker_shown[0] = 0;
+                D_800625A0->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x92, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panel_shown[2] = 1;
-                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->panels_shown[2] = 1;
+                    D_800625A0->flags->panels_shown[3] = 1;
                     D_800625A0->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->marker_shown[0] = running;
+                    D_800625A0->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             }
@@ -1490,7 +1502,7 @@ u8 func_801D1658(void) {
         member = 0;
         while (cursor != 0) {
             member++;
-            if (D_800625A0->member_present[member] != 0) {
+            if (D_800625A0->present[member] != 0) {
                 cursor--;
             }
         }
@@ -1500,8 +1512,8 @@ u8 func_801D1658(void) {
         }
         n = 0;
         for (i = 0; i < 3; i++) {
-            if (D_8006D8A0[member].accessories[i] != 0) {
-                ids[n] = D_8006D8A0[member].accessories[i];
+            if (D_8006D634.characters[member].accessories[i] != 0) {
+                ids[n] = D_8006D634.characters[member].accessories[i];
                 kinds[n] = 1;
                 n++;
             }
@@ -1513,24 +1525,24 @@ u8 func_801D1658(void) {
 
 /* Run the sell list for inventory 1 (200 entries). */
 void func_801D18A8(void) {
-    func_801D0E68(200, D_8006F4FC, D_8006F4FC - 200, 1, 1, D_8006F4FC - 200, 0);
+    func_801D0E68(200, D_8006D634.accessoryIds, D_8006D634.accessoryIds - 200, 1, 1, D_8006D634.accessoryIds - 200, 0);
 }
 
 /* Run the sell list for inventory 0 (100 entries). */
 void func_801D18E8(void) {
-    func_801D0E68(100, D_8006F3D0, D_8006F3D0 - 100, 0, 1, D_8006F3D0 - 100, 0);
+    func_801D0E68(100, D_8006D634.weaponIds, D_8006D634.weaponIds - 100, 0, 1, D_8006D634.weaponIds - 100, 0);
 }
 
 /* Run the sell list for inventory 2 (150 entries). */
 void func_801D1928(void) {
-    func_801D0E68(150, D_8006F65A, D_8006F65A - 150, 2, 1, D_8006F65A - 150, 0);
+    func_801D0E68(150, D_8006D634.itemIds, D_8006D634.itemIds - 150, 2, 1, D_8006D634.itemIds - 150, 0);
 }
 
 /* Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
 void func_801D1968(u8 close, u8 all) {
     s32 i;
 
-    D_800625A0->flags->unk5A = 0;
+    D_800625A0->flags->unknown5a[0] = 0;
     D_800625A0->details->label4430_shown = 0;
     D_800625A0->details->label44B0_shown = 0;
     D_800625A0->details->digits_shown = 0;
@@ -1561,12 +1573,12 @@ void func_801D1968(u8 close, u8 all) {
 void func_801D1B18(void) {
     u8 close;
 
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
     D_800625A0->flags->lists_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
     close = 1;
-    switch (D_800625A0->list_cursor) {
+    switch (D_800625A0->choice) {
     case 0:
         close = func_801D1658();
         break;
@@ -1582,9 +1594,9 @@ void func_801D1B18(void) {
     }
     func_801D1968(close, 0);
     D_800625A0->flags->lists_shown = 1;
-    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->sprite_shown = 1;
     D_800625A0->flags->cursor_shown = 1;
-    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
 }
 
 /* Command 1 (sell): choose one of the sell lists until cancelled. */
@@ -1594,54 +1606,54 @@ u8 func_801D1CA4(void) {
 
     running = 1;
     first = 1;
-    D_800625A0->list_cursor = 3;
-    D_800625A0->unk339 = 0xFF;
+    D_800625A0->choice = 3;
+    D_800625A0->choice_shown = 0xFF;
     do {
         func_801CB014();
         if (first) {
-            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
             first = 0;
             func_801CB340();
             func_801CC278(0);
         }
-        if (D_800625A0->list_cursor != D_800625A0->unk339) {
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801CBCF0(4, D_800625A0->list_labels, D_801D1FD0, D_801D1FE8,
-                          D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 3, 0);
+                          D_800625A0->flags->list_labels_shown, D_800625A0->choice, 3, 0);
             func_801CC720(0);
-            D_800625A0->unk339 = D_800625A0->list_cursor;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801CAC7C(2);
             func_801D1B18();
-            D_800625A0->unk339 = 0xFF;
+            D_800625A0->choice_shown = 0xFF;
             break;
         case 5:
             running = 0;
             break;
         case 1:
-            if (D_800625A0->list_cursor != 0) {
-                D_800625A0->list_cursor--;
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
             } else {
-                D_800625A0->list_cursor = D_800625A0->list_count - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
-                D_800625A0->list_cursor = 0;
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
+                D_800625A0->choice = 0;
             }
             break;
         }
     } while (running);
-    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->sprite_shown = 0;
     D_800625A0->flags->cursor_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
     return 1;
 }
 
 /* Follow-up after a command returns: command 2 redraws its screen. */
 void func_801D1F10(void) {
-    switch (D_800625A0->top_cursor) {
+    switch (D_800625A0->cursor) {
     case 1:
         break;
     case 2:

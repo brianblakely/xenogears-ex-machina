@@ -1,4 +1,22 @@
+/* World map unit 8008C364-8008E190 (rodata 800707AC-800709F8): the party's
+ * vehicles: placing them, the player's vehicle and the members' parked
+ * ones, the saved vehicle position, the path table choice and a probe for a
+ * clear heading.
+ *
+ * func_8008BB40's 13-entry table ends at 800707ac and func_8008C364's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008BB40, at or before
+ * func_8008C364. The unit has no data. */
+#include "common.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
@@ -8,11 +26,11 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
     u32 state;
 
     result = 1;
-    state = D_8006F368[member] != 0xFF;
+    state = D_8006D634.party[member] != 0xFF;
     if ((D_8006EF8E[member].flags & 0x3FFF) >= 0x400) {
         state |= 2;
     }
-    if ((&D_8006F8E5)[member] == 1) {
+    if (D_8006D634.inGear[member] == 1) {
         state |= 4;
     }
     switch (state) {
@@ -28,7 +46,7 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
         actor->position.vx = 0;
         break;
     case 1:
-        if (D_8006D940[D_8006F368[member]].gear == 0xFF) {
+        if (D_8006D634.characters[D_8006D634.party[member]].gearId == 0xFF) {
             goto hidden;
         }
         func_8008C28C(actor, member);
@@ -71,12 +89,12 @@ s32 func_8008C530(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5A;
+    actor->heading = D_8006D634.worldmap.unk5A;
     actor->turn = 0xC;
     actor->unk5C = actor->heading;
     switch (D_8009BE10) {
     case 1 ... 3:
-        if (D_8006F8E5 == 1) {
+        if (D_8006D634.inGear[0] == 1) {
             actor->state = 1;
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
@@ -96,9 +114,9 @@ s32 func_8008C530(s32 index) {
         actor->unk24 = 1;
         break;
     }
-    D_8006EF8E[0].x = actor->position.vx >> 12;
-    D_8006EF8E[0].z = actor->position.vz >> 12;
-    D_8006EE54.unk5A = actor->heading;
+    VEHICLE_SPOTS[0].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[0].z = actor->position.vz >> 12;
+    D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
 
@@ -132,9 +150,9 @@ s32 func_8008C75C(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[0], 0x100, 0x1FD, 0x140, 0x140, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF8E[0].x << 12;
-    actor->position.vz = D_8006EF8E[0].z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = VEHICLE_SPOTS[0].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[0].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -164,7 +182,7 @@ s32 func_8008C844(s32 index) {
         actor->state = 0x10;
         actor->unk4 = 0;
         actor->unk58 = result;
-        D_8006F8E5 = 1;
+        D_8006D634.inGear[0] = 1;
         break;
     case 7:
         actor->unk4 = 0;
@@ -186,7 +204,7 @@ s32 func_8008C844(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006F8E5 == 1) {
+        if (D_8006D634.inGear[0] == 1) {
             switch (func_80090C68(actor)) {
             case 1:
                 D_8009D554 = 0;
@@ -202,12 +220,12 @@ s32 func_8008C844(s32 index) {
                 break;
             default:
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
-                    if (((ModelInstance *)actor->handle)->animation != 0) {
+                    if (SPRITE_ANIMATION(actor->handle) != 0) {
                         func_800245D8(actor->handle, 0);
                         func_800894C8(0x2C);
                     }
                 } else {
-                    if (((ModelInstance *)actor->handle)->animation != 1) {
+                    if (SPRITE_ANIMATION(actor->handle) != 1) {
                         func_800245D8(actor->handle, 1);
                     }
                     func_8008C1DC(0x2C, actor, scratch);
@@ -252,7 +270,7 @@ s32 func_8008C844(s32 index) {
                 break;
             }
             D_8009BD04 = 0;
-        } else if (((ModelInstance *)actor->handle)->animation != 3) {
+        } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             func_800245D8(actor->handle, 3);
             func_800894C8(0x2C);
         }
@@ -263,8 +281,8 @@ s32 func_8008C844(s32 index) {
         actor->heading = D_8009BE24[7].heading;
         break;
     case 8:
-        if (D_8006F368[1] != 0xFF) {
-            if (D_8006F8E6 == 1) {
+        if (D_8006D634.party[1] != 0xFF) {
+            if (D_8006D634.inGear[1] == 1) {
                 if (func_80097770(5, 1) != 0) {
                     actor[1].unk6 = D_8009BD60;
                     actor->state++;
@@ -280,8 +298,8 @@ s32 func_8008C844(s32 index) {
         }
         break;
     case 9:
-        if (D_8006F368[2] != 0xFF) {
-            if (D_8006F8E7 == 1) {
+        if (D_8006D634.party[2] != 0xFF) {
+            if (D_8006D634.inGear[2] == 1) {
                 if (func_80097770(6, 1) != 0) {
                     actor[2].unk6 = D_8009BD60;
                     actor->state++;
@@ -323,29 +341,29 @@ s32 func_8008C844(s32 index) {
             actor->state = 1;
             break;
         case 2:
-            if (D_8006F8E6 != 0) {
+            if (D_8006D634.inGear[1] != 0) {
                 actor->state++;
             }
             break;
         case 3:
-            if (D_8006F8E6 & D_8006F8E7) {
+            if (D_8006D634.inGear[1] & D_8006D634.inGear[2]) {
                 actor->state++;
             }
             break;
         }
         break;
     case 0x11:
-        if (D_8006F368[1] == 0xFF || func_80097770(5, 5) != 0) {
+        if (D_8006D634.party[1] == 0xFF || func_80097770(5, 5) != 0) {
             actor->state++;
         }
         break;
     case 0x12:
-        if (D_8006F368[2] == 0xFF || func_80097770(6, 5) != 0) {
+        if (D_8006D634.party[2] == 0xFF || func_80097770(6, 5) != 0) {
             actor->state = 0x40;
         }
         break;
     case 0x18:
-        if (D_8006F364[index] == 7) {
+        if (D_8006D634.party[index - 4] == 7) {
             actor->wait = 1;
             actor->state = 0x1A;
         } else {
@@ -373,10 +391,10 @@ s32 func_8008C844(s32 index) {
         break;
     case 0x20:
         func_800245D8(actor->handle, 0);
-        if (D_8006F368[1] != 0xFF) {
+        if (D_8006D634.party[1] != 0xFF) {
             func_80097770(5, 2);
         }
-        if (D_8006F368[2] != 0xFF) {
+        if (D_8006D634.party[2] != 0xFF) {
             func_80097770(6, 2);
         }
         actor->motion.vz = 0;
@@ -429,12 +447,12 @@ s32 func_8008C844(s32 index) {
     case 0x40:
         break;
     }
-    if (actor->state != 2 && (D_8009BE10 == 2 || D_8006F368[0] != 7)) {
+    if (actor->state != 2 && (D_8009BE10 == 2 || D_8006D634.party[0] != 7)) {
         func_80074794(1, &actor->position);
     }
-    D_8006EF8E[0].x = actor->position.vx >> 12;
-    D_8006EF8E[0].z = actor->position.vz >> 12;
-    D_8006EE54.unk5A = actor->heading;
+    VEHICLE_SPOTS[0].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[0].z = actor->position.vz >> 12;
+    D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
 
@@ -450,13 +468,13 @@ s32 func_8008D3F0(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5C;
+    actor->heading = D_8006D634.worldmap.unk5C;
     actor->turn = 0xC;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
     if (D_8009BE10 > 0) {
         if (D_8009BE10 < 4) {
-            if (D_8006F8E6 == 1) {
+            if (D_8006D634.inGear[1] == 1) {
                 actor->state = 1;
                 actor->position.vx = D_8009C5AC.vx;
                 actor->position.vz = D_8009C5AC.vz;
@@ -468,9 +486,9 @@ s32 func_8008D3F0(s32 index) {
             actor->unk24 = 1;
         }
     }
-    D_8006EF8E[1].x = actor->position.vx >> 12;
-    D_8006EF8E[1].z = actor->position.vz >> 12;
-    D_8006EE54.unk5C = actor->heading;
+    VEHICLE_SPOTS[1].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[1].z = actor->position.vz >> 12;
+    D_8006D634.worldmap.unk5C = actor->heading;
     return result;
 }
 
@@ -504,9 +522,9 @@ s32 func_8008D590(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[1], 0x100, 0x1FC, 0x160, 0x140, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF8E[1].x << 12;
-    actor->position.vz = D_8006EF8E[1].z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = VEHICLE_SPOTS[1].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[1].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -539,7 +557,7 @@ s32 func_8008D678(s32 index) {
     case 4:
         actor->state = 0x40;
         actor->unk4 = 0;
-        D_8006F8E1[index] = 1;
+        D_8006D634.inGear[index - 4] = 1;
         break;
     case 5:
         actor->unk4 = 0;
@@ -561,17 +579,17 @@ s32 func_8008D678(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        flag = D_8006F8E1[index];
+        flag = D_8006D634.inGear[index - 4];
         if (flag == 1) {
             point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
-                if (((ModelInstance *)actor->handle)->animation != 0) {
+                if (SPRITE_ANIMATION(actor->handle) != 0) {
                     func_800245D8(actor->handle, 0);
                     func_800894C8(index + 0x28);
                 }
             } else {
-                if (((ModelInstance *)actor->handle)->animation != flag) {
+                if (SPRITE_ANIMATION(actor->handle) != flag) {
                     func_800245D8(actor->handle, 1);
                 }
                 func_8008C1DC(index + 0x28, actor, scratch);
@@ -580,7 +598,7 @@ s32 func_8008D678(s32 index) {
             actor->position.vy = point->position.vy;
             actor->position.vz = point->position.vz;
             actor->heading = point->heading;
-        } else if (((ModelInstance *)actor->handle)->animation != 3) {
+        } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             func_800245D8(actor->handle, 3);
             func_800894C8(index + 0x28);
         }
@@ -632,7 +650,7 @@ s32 func_8008D678(s32 index) {
         }
         break;
     case 0x18:
-        if (D_8006F364[index] == 7) {
+        if (D_8006D634.party[index - 4] == 7) {
             actor->wait = 1;
             actor->state = 0x1A;
         } else {
@@ -701,15 +719,16 @@ s32 func_8008D678(s32 index) {
     case 0x40:
         break;
     }
-    if (actor->state != 2 && (D_8009BE10 == 2 || D_8006F364[index] != 7)) {
+    if (actor->state != 2 && (D_8009BE10 == 2 || D_8006D634.party[index - 4] != 7)) {
         func_80074794(1, &actor->position);
     }
-    /* Save the spot (D_8006EF8E[slot].x/z) and heading (D_8006EE5A[slot])
-     * as offsets into the resident state. */
+    /* Save the spot (the vehicle spot's x and z) as offsets from the return
+     * state, the base the original addresses both from (as members they
+     * compile differently), and the heading (worldmap.unk5A on). */
     slot = index - 4;
     STATE_U16(0x13C + slot * 6) = actor->position.vx >> 12;
     STATE_U16(0x13E + slot * 6) = actor->position.vz >> 12;
-    STATE_U16(6 + (index - 4) * 2) = actor->heading;
+    (&D_8006D634.worldmap.unk5A)[index - 4] = actor->heading;
     return 1;
 }
 
@@ -725,13 +744,13 @@ s32 func_8008DD6C(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5E;
+    actor->heading = D_8006D634.worldmap.unk5E;
     actor->turn = 0xC;
     actor->unk58 = 0x1F;
     actor->unk5C = actor->heading;
     if (D_8009BE10 > 0) {
         if (D_8009BE10 < 4) {
-            if (D_8006F8E7 == 1) {
+            if (D_8006D634.inGear[2] == 1) {
                 actor->state = 1;
                 actor->position.vx = D_8009C5AC.vx;
                 actor->position.vz = D_8009C5AC.vz;
@@ -743,9 +762,9 @@ s32 func_8008DD6C(s32 index) {
             actor->unk24 = 1;
         }
     }
-    D_8006EF8E[2].x = actor->position.vx >> 12;
-    D_8006EF8E[2].z = actor->position.vz >> 12;
-    D_8006EE54.unk5E = actor->heading;
+    VEHICLE_SPOTS[2].x = actor->position.vx >> 12;
+    VEHICLE_SPOTS[2].z = actor->position.vz >> 12;
+    D_8006D634.worldmap.unk5E = actor->heading;
     return result;
 }
 
@@ -779,9 +798,9 @@ s32 func_8008DF0C(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[2], 0x100, 0x1FB, 0x280, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF8E[2].x << 12;
-    actor->position.vz = D_8006EF8E[2].z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = VEHICLE_SPOTS[2].x << 12;
+    actor->position.vz = VEHICLE_SPOTS[2].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -794,16 +813,16 @@ s32 func_8008DF0C(s32 index) {
 
 /* Restore the saved vehicle position (world units to 20.12). */
 void func_8008DFF4(VECTOR *position) {
-    position->vx = (s16)D_8006EE54.unk60 << 12;
-    position->vy = (s16)D_8006EE54.unk62 << 12;
-    position->vz = (s16)D_8006EE54.unk64 << 12;
+    position->vx = (s16)D_8006D634.worldmap.unk60 << 12;
+    position->vy = (s16)D_8006D634.worldmap.unk62 << 12;
+    position->vz = (s16)D_8006D634.worldmap.unk64 << 12;
 }
 
 /* Save the vehicle position in world units. */
 void func_8008E034(VECTOR *position) {
-    D_8006EE54.unk60 = position->vx >> 12;
-    D_8006EE54.unk62 = position->vy >> 12;
-    D_8006EE54.unk64 = position->vz >> 12;
+    D_8006D634.worldmap.unk60 = position->vx >> 12;
+    D_8006D634.worldmap.unk62 = position->vy >> 12;
+    D_8006D634.worldmap.unk64 = position->vz >> 12;
 }
 
 /* Select the path table of scenes 15 and 16. The link is read unsigned here

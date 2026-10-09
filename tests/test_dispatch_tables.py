@@ -102,11 +102,14 @@ class SourceTests(unittest.TestCase):
         self.assertIn("u16 flagsA;   /* 0x0A */", header)
         loader = " ".join(function_body(source("ovl2615/ovl2615.c"), "func_801E5384").split())
         for entry, member, size in (
-            ("5 + D_800CCCE8.party_ids[i]", "member_data[i]", 0x5F0),
-            ("0x11 + gear", "member_gear[i]", 0x690),
-            ("4", "data35D8", 0x1F40),
+            ("5 + D_800CCCE8_setup.partyIds[i]", "partyCommands[i]", 0x5F0),
+            ("0x11 + gear", "gearCommands[i]", 0x690),
+            ("4", "enemyCommands", 0x1F40),
         ):
-            copy = f"archive[{entry}], 1); memmove(D_800CCCE8.{member}, block, 0x{size:X});"
+            copy = (
+                f"archive[{entry}], 1); "
+                f"memmove(D_800CCCE8_setup.work.{member}, block, 0x{size:X});"
+            )
             self.assertIn(copy, loader)
         self.assertIn("archive[0x10]", loader)  # the runs end at entries loaded otherwise
         self.assertIn("archive[0x24]", loader)
@@ -129,7 +132,10 @@ class SourceTests(unittest.TestCase):
     def test_gear_techniques_follow_the_menu_learning_and_loader(self):
         menu = function_body(source("battle/battle.c"), "func_8008B224")
         self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
-        self.assertIn("func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)", menu)
+        self.assertIn(
+            "func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2)",
+            menu,
+        )
         battle = source("battle/battle.c")  # func_8008ADD0 is defined K&R
         commit = battle[battle.index("void func_8008ADD0(member)") :]
         commit = commit[: commit.index("\n}\n")]
@@ -146,8 +152,8 @@ class SourceTests(unittest.TestCase):
         self.assertIn(f"(0x{GROWTH:x} each;", growth)
         loader = function_body(source("ovl2615/ovl2615.c"), "func_801E5384")
         gear, character = FORCED_GEAR
-        self.assertIn(f"D_800CCCE8.party_ids[1] = {character};", loader)
-        self.assertIn(f"D_800CCCE8.record[i].bA0 = 0x{gear:X};", loader)
+        self.assertIn(f"D_800CCCE8_setup.partyIds[1] = {character};", loader)
+        self.assertIn(f"D_800CCCE8_setup.work.records[i].pilot.gearId = 0x{gear:X};", loader)
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E211C")
         self.assertIn("func_80028470(0x10, 2);", results)
         self.assertIn("D_800D2C08[0] = func_80032E88(archive->items[0], 0);", results)
@@ -158,11 +164,12 @@ class SourceTests(unittest.TestCase):
         self.assertIn("mode = D_8006F954[0] & 0x7FFF;", entry)
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_800854D0.c"), "func_80093014")
-        self.assertIn("D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("D_8006F94E[3] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
+        self.assertIn("D_8005A39C->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
+        self.assertIn("D_8006D634.entry[2] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
-            "} else if ((D_8006F94E & 0x7FF) >= 0x400) {\n            func_800199CC(3);", results
+            "} else if ((D_8006D634.map & 0x7FF) >= 0x400) {\n            func_800199CC(3);",
+            results,
         )
 
     def test_sprite_kinds_follow_the_header_and_the_callback_table(self):

@@ -73,8 +73,8 @@ The BIOS call stubs and GetGp are PsyQ objects of their own, named as the
 pinned signatures name them (among them LIBAPI A54 close, A65-A69 format,
 firstfile, nextfile, rename and delete, A91 ChangeClearPAD, A94 GetGp and
 LIBCARD C171 `_card_info`), and the resident's symbol list gives each its own
-extent; slot39 and the menu call them by these names (psyq/libapi.h; the
-menu declares its GetGp in menu/system.h). func_80040C3C (unattributed) is the
+extent; slot39 and the menu call them by these names (psyq/libapi.h).
+func_80040C3C (unattributed) is the
 pad send registration: it calls `_SendPAD` with its four arguments
 (Controllers).
 
@@ -457,8 +457,8 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   (battle_800BD3AC.c func_800BE790), whose measurement battle logic consumes
   (Pacing per mode).
 - VSync(1) feeds only profiling values (field D_800ADB9C/D_800ADBA0/D_800ADBA4
-  read by debug595, battle D_800D309C.drawn/synced, arena D_800927F0 and the
-  movie monitor's D_800773B8).
+  read by debug595, battle D_800D309C.cpu/gpu read by debug2611, arena
+  D_800927F0 and the movie monitor's D_800773B8).
 - GetRCnt: the sound tick times itself on root counter 2 (D_800595C4,
   D_80059540; profiling); the arena compacts its ordering table while root
   counter 1 (horizontal blanks) stays within a budget (menu7.c func_8008AC8C,

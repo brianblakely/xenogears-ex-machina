@@ -1,7 +1,34 @@
+/* World map unit 80083A00-8008C364 (rodata 80070490-800707AC, data
+ * 8009AD2C-8009B1AC): mode 18's actors, the scene objects (build, link,
+ * draw, collision probes), the actors' model sprites, the terrain
+ * billboards, the clouds, the areas' own actors (spinning objects, the
+ * ferry, the airship), the particle effects and the party on foot (leader
+ * and followers, placements).
+ *
+ * func_80083264's five-entry table ends at 80070490 and func_80083A00's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_80083264, at or before
+ * func_80083A00. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
+ * text and relocations as the build's cc1 (docs/matching.md). */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 #include "worldmap.h"
-
-/* Declared here only: other units call it without a prototype. */
-void func_80093354(VECTOR *position);
+#include "camera.h"
+#include "effect.h"
+#include "gte.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Scene object draw mode, by the object's flags (func_800848F4). */
 s16 D_8009AD2C[10] = {4, 4, 5, 5, 0, 0, 2, 2, 3, 3};
@@ -60,6 +87,11 @@ u16 D_8009AFF0[10 * 4] = {
     0x8000, 0x801F, 0xDF00, 0xDF1F,
     0xB020, 0xB05F, 0xEF20, 0xEF5F,
 };
+/* Particle shapes and texture coordinates, per kind. */
+typedef struct {
+    SVECTOR v[4];
+} ParticleShape;
+
 ParticleShape D_8009B040[10] = {
     {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
     {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
@@ -84,6 +116,7 @@ s16 D_8009B18C[3] = {0x100, 0x100, 0x100};
 s16 D_8009B194[3] = {0x1FD, 0x1FC, 0x1FB};
 s16 D_8009B19C[3] = {0x140, 0x160, 0x280};
 INCLUDE_ORIGINAL(".data", D_8009B1A4, 0x8009B1A4, 8);
+extern s16 D_8009B1A4[3];
 
 /* Scripted camera stages 1-6 around the player (commands set the angle, distance
  * and position of each stage), with easing and a random vertical shake. */
@@ -182,7 +215,7 @@ s32 func_80083A00(s32 index) {
         break;
     }
     if (D_8009D144 == 0) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 0:
@@ -204,7 +237,7 @@ s32 func_80083A00(s32 index) {
     func_80076F54(actor, scratch);
     func_80076FA8(actor, scratch);
     scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
-    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW.eye.vy += scratch->position.vy;
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
@@ -366,6 +399,21 @@ void func_8008440C(void) {
     func_800320E8(source);
 }
 
+/* Scene object placement (16 bytes; the list follows a count halfword). */
+typedef struct {
+    u16 def;
+    u16 flags;
+    s16 x, y, z;
+    s16 ax, ay, az;
+} ScenePlacement;
+
+/* The area file's sprite models (a resident ModelGroup, whose models it
+ * relocates): a 16-byte header, then the models. */
+typedef struct {
+    u8 header[0x10];
+    SpriteModel defs[1];
+} SpriteDefTable;
+
 /* Build the scene objects from the area's placement list: resolve the
  * animation offsets, then place, orient and build each object's
  * primitives (two buffers) from its sprite definition. */
@@ -402,7 +450,7 @@ void func_80084580(void) {
         D_8009C620[i].def = &((SpriteDefTable *)D_8009CD48)->defs[D_8009C620[i].unk2];
         func_8002CB54(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
         func_8002C8CC(D_8009C620[i].def, D_8009C620[i].prims, 1);
-        memcpy(D_8009C620[i].prims2, D_8009C620[i].prims, D_8009C620[i].def->size);
+        memcpy(D_8009C620[i].prims2, D_8009C620[i].prims, D_8009C620[i].def->packet_size);
         D_8009C620[i].unk44 = ((s32 *)D_8009D308)[D_8009C620[i].unk2];
         ((s32 *)D_8009C620[i].unk44)[1] = D_8009C620[i].unk44 + ((s32 *)D_8009C620[i].unk44)[1];
         D_8009C620[i].parent = NULL;
@@ -419,7 +467,7 @@ void func_80084818(void) {
 
     for (i = 0; i < D_8009D7E0; i++) {
         func_800320E8(D_8009C620[i].prims);
-        func_8002CBBC(D_8009C620[i].def);
+        func_8002CBBC((ModelBuffer *)D_8009C620[i].def);
     }
     func_800320E8(D_8009C620);
 }
@@ -428,6 +476,20 @@ void func_80084818(void) {
 void func_800848B4(s32 parent, s32 child) {
     D_8009C620[child].parent = &D_8009C620[parent];
 }
+
+/* Scratchpad work area of the scene object pass. */
+typedef struct {
+    VECTOR offset;  /* 0x00 */
+    VECTOR scale;   /* 0x10 */
+    s32 flag;       /* 0x20 */
+    s32 pad24;
+    s32 sz;         /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin; /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX m;       /* 0xF0 */
+    MATRIX out;     /* 0x110 */
+} SceneScratch;
 
 /* Draw the visible scene objects: build each one's matrix through its
  * parent chain, place it relative to the camera target, and add its sprite
@@ -480,13 +542,15 @@ void func_800848F4(void) {
             if (scratch->flag >= 0) {
                 gte_stsz(&scratch->sz);
                 if (scratch->sz < 0xD80) {
-                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0], D_8009BE3C->ot,
-                                  D_8009AD2C[(s16)D_8009C620[i].flags]);
+                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0],
+                                  (u32 *)D_8009BE3C->ot, D_8009AD2C[(s16)D_8009C620[i].flags]);
                 }
             }
         }
     }
 }
+
+s32 func_80084DB8(s32 probe, s32 index);
 
 /* Probe the solid scene objects; the first hit's result, with its index. */
 s16 func_80084D00(s32 probe, s16 *hit) {
@@ -509,6 +573,24 @@ s16 func_80084D00(s32 probe, s16 *hit) {
     }
     return 0;
 }
+
+/* Scratchpad work area of the face containment test. */
+typedef struct {
+    VECTOR p[3];    /* 0x00: transformed corners; p[0] first holds the scale */
+    union {
+        struct {
+            s32 edge[2];  /* 0x30: packed (x, z) corner pairs */
+            s32 point;    /* 0x38: packed (x, z) probe */
+            s32 pad3C;
+            VECTOR delta; /* 0x40: probe relative to the object */
+        } test;
+        VECTOR side[3];   /* 0x30: normalised edge directions */
+    } u;
+    u8 pad60[0x90];
+    MATRIX m;       /* 0xF0 */
+} FaceTestScratch;
+
+#define FACE_TEST_SCRATCH ((FaceTestScratch *)0x1F800000)
 
 /* Test the probe position against scene object `index`: transform its
  * collision faces flat (x, z) and record every face whose outline contains
@@ -581,11 +663,23 @@ s32 func_80084DB8(s32 probe, s32 index) {
     return hits;
 }
 
+/* Scratchpad work area of the face probe. */
+typedef struct {
+    VECTOR p[3];      /* face corners; p[1] first holds the scale */
+    VECTOR normal;    /* 0x30 */
+    VECTOR side;      /* 0x40: probe ends against the plane */
+    u8 pad50[0xA0];
+    MATRIX m;         /* 0xF0 */
+    MATRIX probe;     /* 0x110: rows are the probe segment ends */
+} FaceScratch;
+
+#define FACE_SCRATCH ((FaceScratch *)0x1F800000)
+
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
  * height of the face plane there. */
 void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face) {
-    s32 flag;
+    long flag;
     VECTOR *edge1;
     VECTOR *edge2;
     SceneObject *object;
@@ -632,7 +726,7 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
 /* Does the vertical segment from `position` down by `height` cross the plane
  * of face `face` of scene object `index`? Returns -1 if so, else 0. */
 s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
-    s32 flag;
+    long flag;
     SceneObject *object;
     MeshFace *corners;
     SVECTOR *vertices;
@@ -798,12 +892,21 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     return sides;
 }
 
+/* Scratchpad work area of the actor sprite pass. */
+typedef struct {
+    SVECTOR vertex;
+    VECTOR offset;
+    s32 depth[64];
+} DepthScratch;
+
+#define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
+
 /* Draw the actors' model sprites: place each visible model relative to the
  * camera target, project it for its depth, then add it to the ordering
  * table and turn its facing towards the actor heading, 0x100 per frame. */
 void func_80085CDC(void) {
     WorldmapActor *actor;
-    ModelObject *model;
+    Sprite *model;
     s32 i;
     s32 offset;
     s32 diff;
@@ -814,24 +917,24 @@ void func_80085CDC(void) {
     scratch = DEPTH_SCRATCH;
     actor = D_8009BE24;
     for (i = 0; i < 0x40; i++, actor++) {
-        if ((actor->unk24 == 0) & (actor->handle != 0)) {
+        if ((actor->unk24 == 0) & (actor->handle != NULL)) {
             scratch->offset.vx = actor->position.vx - D_8009BE28.target.vx;
             scratch->offset.vz = actor->position.vz - D_8009BE28.target.vz;
             func_80093484(&scratch->offset);
-            ((ModelObject *)actor->handle)->position.vx = scratch->offset.vx * 16;
-            ((ModelObject *)actor->handle)->position.vz = -scratch->offset.vz * 16;
-            ((ModelObject *)actor->handle)->position.vy = actor->position.vy * 16;
+            actor->handle->x = scratch->offset.vx * 16;
+            actor->handle->z = -scratch->offset.vz * 16;
+            actor->handle->y = actor->position.vy * 16;
         }
     }
     SetRotMatrix(&D_8009C808);
     SetTransMatrix(&D_8009C808);
     actor = D_8009BE24;
     for (i = 0; i < 0x40; i++, actor++) {
-        model = (ModelObject *)actor->handle;
+        model = actor->handle;
         if ((actor->unk24 == 0) & (model != NULL)) {
-            scratch->vertex.vx = model->position.vx >> 16;
-            scratch->vertex.vy = ((ModelObject *)actor->handle)->position.vy >> 16;
-            scratch->vertex.vz = ((ModelObject *)actor->handle)->position.vz >> 16;
+            scratch->vertex.vx = model->x >> 16;
+            scratch->vertex.vy = actor->handle->y >> 16;
+            scratch->vertex.vz = actor->handle->z >> 16;
             gte_ldv0(&scratch->vertex);
             gte_rtps();
             gte_stsz(&scratch->depth[i]);
@@ -840,7 +943,7 @@ void func_80085CDC(void) {
     func_80024FF4(&D_8009C808);
     actor = D_8009BE24;
     for (i = 0; i < 0x40; i++, actor++) {
-        if ((actor->unk24 == 0) & (actor->handle != 0) & (scratch->depth[i] < 0xB00)) {
+        if ((actor->unk24 == 0) & (actor->handle != NULL) & (scratch->depth[i] < 0xB00)) {
             func_8001E298(actor->handle, &D_8009BE3C->ot[scratch->depth[i] >> 4]);
             heading = actor->heading;
             facing = actor->unk5C;
@@ -870,9 +973,9 @@ void func_80085CDC(void) {
     }
 }
 
-/* Resolve the terrain texture offsets and create the terrain CLUTs. */
+/* Resolve the billboard lists' offsets and create the billboard CLUTs. */
 void func_80085F58(void) {
-    TerrainTexture *texture;
+    BillboardList *texture;
     s32 i;
 
     texture = D_8009C7EC;
@@ -886,10 +989,15 @@ void func_80085F58(void) {
     }
 }
 
+/* The billboard quads, copied between display buffers as a whole. */
+typedef struct {
+    POLY_FT4 quads[0x200];
+} QuadBlock512;
+
 /* Allocate the two buffers of 512 opaque textured 32x48 quads on the
  * 0x380,0x100 page, the second a copy of the first. */
 void func_80085FE0(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009D7E8[0] = func_80031BDC(sizeof(QuadBlock512), 1);
@@ -912,38 +1020,50 @@ void func_80085FE0(void) {
     *(QuadBlock512 *)D_8009D7E8[1] = *(QuadBlock512 *)D_8009D7E8[0];
 }
 
-/* Free two work buffers. */
+/* Free the two billboard quad buffers. */
 void func_80086124(void) {
     func_800320E8(D_8009D7E8[1]);
     func_800320E8(D_8009D7E8[0]);
 }
 
-/* Draw the 5x5 terrain blocks around the cursor: set up the scratchpad quad,
- * camera and roll matrices and CLUTs, then submit each present block's
- * texture list into the current quad buffer. */
+/* Scratchpad work area of the billboard pass. */
+typedef struct {
+    SVECTOR corner[4]; /* the billboard quad */
+    u8 pad20[8];
+    MATRIX view;       /* 0x28 */
+    MATRIX roll;       /* 0x48 */
+    u16 clut[16];      /* 0x68 */
+} BillboardScratch;
+
+#define BILLBOARD_SCRATCH ((BillboardScratch *)0x1F800000)
+
+/* Draw the billboards of the 5x5 visible terrain blocks: set up the
+ * scratchpad quad (upright, 48x72), the camera and roll matrices and the
+ * CLUTs, then submit each visible block's billboard list (func_80099BFC)
+ * into this display buffer's quads. */
 void func_8008615C(void) {
-    TerrainTexture *textures;
+    BillboardList *textures;
     s32 index;
     s32 i;
     s32 row;
 
-    TERRAIN_PASS_SCRATCH->corner[0].vx = -0x18;
-    TERRAIN_PASS_SCRATCH->corner[0].vy = -0x48;
-    TERRAIN_PASS_SCRATCH->corner[0].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[1].vx = 0x18;
-    TERRAIN_PASS_SCRATCH->corner[1].vy = -0x48;
-    TERRAIN_PASS_SCRATCH->corner[1].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[2].vx = -0x18;
-    TERRAIN_PASS_SCRATCH->corner[2].vy = 0;
-    TERRAIN_PASS_SCRATCH->corner[2].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[3].vx = 0x18;
-    TERRAIN_PASS_SCRATCH->corner[3].vy = 0;
-    TERRAIN_PASS_SCRATCH->corner[3].vz = 0;
-    TERRAIN_PASS_SCRATCH->view = D_8009C808;
-    TERRAIN_PASS_SCRATCH->roll = *(MATRIX *)&D_8009A180;
-    RotMatrixZ(-D_8009BD38.vz, &TERRAIN_PASS_SCRATCH->roll);
+    BILLBOARD_SCRATCH->corner[0].vx = -0x18;
+    BILLBOARD_SCRATCH->corner[0].vy = -0x48;
+    BILLBOARD_SCRATCH->corner[0].vz = 0;
+    BILLBOARD_SCRATCH->corner[1].vx = 0x18;
+    BILLBOARD_SCRATCH->corner[1].vy = -0x48;
+    BILLBOARD_SCRATCH->corner[1].vz = 0;
+    BILLBOARD_SCRATCH->corner[2].vx = -0x18;
+    BILLBOARD_SCRATCH->corner[2].vy = 0;
+    BILLBOARD_SCRATCH->corner[2].vz = 0;
+    BILLBOARD_SCRATCH->corner[3].vx = 0x18;
+    BILLBOARD_SCRATCH->corner[3].vy = 0;
+    BILLBOARD_SCRATCH->corner[3].vz = 0;
+    BILLBOARD_SCRATCH->view = D_8009C808;
+    BILLBOARD_SCRATCH->roll = D_8009A180;
+    RotMatrixZ(-D_8009BD38.vz, &BILLBOARD_SCRATCH->roll);
     for (i = 0; i < 0x10; i++) {
-        TERRAIN_PASS_SCRATCH->clut[i] = D_8009D478[i];
+        BILLBOARD_SCRATCH->clut[i] = D_8009D478[i];
     }
     textures = D_8009C7EC;
     D_8009BE04 = 0;
@@ -951,9 +1071,9 @@ void func_8008615C(void) {
         for (i = 0; i < 5; i++) {
             if (D_8009D618[row * 5 + i] != -1) {
                 index = D_8009D570.cells[(row + D_8009C838.vz) * 9 + i + D_8009C838.vx];
-                if (textures[index].unk4 != 0) {
-                    func_80099BFC(textures[index].data, textures[index].unk4, D_8009BE3C->ot,
-                                  (PolyFT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
+                if (textures[index].count != 0) {
+                    func_80099BFC(textures[index].data, textures[index].count, D_8009BE3C->ot,
+                                  (POLY_FT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
                 }
             }
         }
@@ -991,16 +1111,21 @@ void func_800863E0(void) {
     }
 }
 
-/* Free two work buffers. */
+/* Free the clouds' positions and velocities. */
 void func_80086568(void) {
     func_800320E8(D_8009CEB4);
     func_800320E8(D_8009D150);
 }
 
+/* The cloud quads, copied between display buffers as a whole. */
+typedef struct {
+    POLY_FT4 quads[0x120];
+} QuadBlock288;
+
 /* Allocate the two buffers of 0x120 semi-transparent grey textured quads
  * on the 0x3C0,0x100 page, the second a copy of the first. */
 void func_800865A0(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 code;
     s32 colour;
@@ -1024,7 +1149,7 @@ void func_800865A0(void) {
     *(QuadBlock288 *)D_8009D7F8[1] = *(QuadBlock288 *)D_8009D7F8[0];
 }
 
-/* Free two work buffers. */
+/* Free the two cloud quad buffers. */
 void func_800866C8(void) {
     func_800320E8(D_8009D7F8[1]);
     func_800320E8(D_8009D7F8[0]);
@@ -1086,38 +1211,6 @@ typedef struct {
 
 #define DRIFT_SCRATCH ((DriftScratch *)0x1F800000)
 
-#define gte_ldsxy3(r0, r1, r2) \
-    __asm__ volatile("mtc2 %0, $12;" \
-                     "mtc2 %2, $14;" \
-                     "mtc2 %1, $13" \
-                     : \
-                     : "r"(r0), "r"(r1), "r"(r2))
-/* Keep producer stores for the indirect vertex reads. */
-#define gte_ldv3c(r0) \
-    __asm__ volatile("lwc2 $0, 0(%0);" \
-                     "lwc2 $1, 4(%0);" \
-                     "lwc2 $2, 8(%0);" \
-                     "lwc2 $3, 12(%0);" \
-                     "lwc2 $4, 16(%0);" \
-                     "lwc2 $5, 20(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "memory")
-#define gte_stsz4c(r0) \
-    __asm__ volatile("swc2 $16, 0(%0);" \
-                     "swc2 $17, 4(%0);" \
-                     "swc2 $18, 8(%0);" \
-                     "swc2 $19, 12(%0)" \
-                     : \
-                     : "r"(r0) \
-                     : "memory")
-#define gte_getsxy3(r0, r1, r2) \
-    __asm__ volatile("mfc2 %0, $12;" \
-                     "mfc2 %1, $13;" \
-                     "mfc2 %2, $14;" \
-                     "nop" \
-                     : "=r"(r0), "=r"(r1), "=r"(r2))
-#define gte_getsxy2(r0) __asm__ volatile("mfc2 %0, $14; nop" : "=r"(r0))
 /* Link a 9-word primitive into an ordering-table entry. */
 #define addPrimLen9(ot, p) \
     __asm__ volatile("lw $12, 0(%0);" \
@@ -1158,7 +1251,7 @@ typedef struct {
  * declared them as register variables too. */
 void func_80086798(void) {
     DriftScratch *scratch;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 layer;
     s32 x;
@@ -1485,7 +1578,7 @@ s32 func_80087804(s32 index) {
 }
 
 /* Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
-void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -1493,10 +1586,8 @@ void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setSemiTrans(quads, 1);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
-
-s32 func_800879E0(s32 index);
 
 /* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
  * scene objects. */
@@ -1518,8 +1609,8 @@ s32 func_800879E0(s32 index) {
 
     first = &D_8009C620[D_8009B64C[D_8009C610][0]];
     second = &D_8009C620[D_8009B64C[D_8009C610][1]];
-    func_80087904(first, first->prims, first->def->count, 3);
-    func_80087904(second, second->prims, second->def->count, 3);
+    func_80087904(first, first->prims, first->def->primitive_count, 3);
+    func_80087904(second, second->prims, second->def->primitive_count, 3);
     return 1;
 }
 
@@ -1575,6 +1666,21 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
 /* Compiled-out debug trace of the ferry's resumed position. */
 #define FERRY_TRACE_POSITION(actor) do { } while (0)
 
+/* Scratchpad work area of the ferry update. */
+typedef struct {
+    VECTOR work;
+    VECTOR up;           /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR wake;        /* 0xA0 */
+    SVECTOR wake_angle;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX m;            /* 0xF0 */
+    u8 pad110[0x40];
+    MATRIX m2;           /* 0x150 */
+} FerryScratch;
+
+#define FERRY_SCRATCH ((FerryScratch *)0x1F800000)
+
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
  * when within 8 units of the waypoint, and heads for the next one. */
@@ -1594,21 +1700,21 @@ s32 func_80087C6C(s32 index) {
     actor->turn = 0x4000;
     actor->state = 0;
     object = &D_8009C620[id];
-    if (D_8006EF64[0] < 0xCD) {
+    if (D_8006D634.vars[0] < 0xCD) {
         actor->position.vx = 0xD80000;
         actor->position.vz = 0x7280000;
-        object->matrix = *(MATRIX *)&D_8009A180;
+        object->matrix = D_8009A180;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     } else {
-        if (D_8006EE7E == 0) {
-            D_8006EE7E++;
+        if (D_8006D634.unk184A == 0) {
+            D_8006D634.unk184A++;
             actor->u.step = 0;
             actor->position.vx = D_8009AF80[actor->u.step] << 12;
             z = D_8009AF90[actor->u.step];
         } else {
-            actor->u.step = D_8006EE78[2];
-            actor->position.vx = D_8006EE78[0] << 12;
-            z = D_8006EE78[1];
+            actor->u.step = D_8006D634.unk1844[2];
+            actor->position.vx = D_8006D634.unk1844[0] << 12;
+            z = D_8006D634.unk1844[1];
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -1666,7 +1772,7 @@ s32 func_80087FD0(s32 index) {
     scratch = FERRY_SCRATCH;
     actor = &D_8009BE24[index];
     object = &D_8009C620[D_8009B674[D_8009C610]];
-    if (D_8006EF64[0] < 0xCD) {
+    if (D_8006D634.vars[0] < 0xCD) {
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
@@ -1705,9 +1811,9 @@ s32 func_80087FD0(s32 index) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
-        scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
-        scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
-        scratch->work.vy = (s16)D_8006EE54.unk62;
+        scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
         func_80093534(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
@@ -1734,9 +1840,9 @@ s32 func_80087FD0(s32 index) {
             func_800894C8(0x13);
         }
     }
-    D_8006EE78[0] = actor->position.vx >> 12;
-    D_8006EE78[1] = actor->position.vz >> 12;
-    D_8006EE78[2] = actor->u.step;
+    D_8006D634.unk1844[0] = actor->position.vx >> 12;
+    D_8006D634.unk1844[1] = actor->position.vz >> 12;
+    D_8006D634.unk1844[2] = actor->u.step;
     scratch->work.vx = actor->position.vx;
     scratch->work.vy = actor->position.vy + 0x30000;
     scratch->work.vz = actor->position.vz;
@@ -1756,24 +1862,24 @@ s32 func_80088570(s32 index) {
     actor->u.step = 0;
     actor->unk58 = 0;
     actor->unk5C = 0xC;
-    if (D_8006EE80.count == 0) {
-        D_8006EE80.count++;
+    if (D_8006D634.flight.count == 0) {
+        D_8006D634.flight.count++;
         actor->position.vy = -0x280000;
         actor->position.vx = 0;
         actor->position.vz = 0x4800000;
     } else {
-        actor->position.vx = (D_8006EE80.x << 12) + D_8006EE80.x_frac;
+        actor->position.vx = (D_8006D634.flight.x << 12) + D_8006D634.flight.x_frac;
         actor->position.vy = -0x280000;
-        actor->position.vz = (D_8006EE80.z << 12) + D_8006EE80.z_frac;
+        actor->position.vz = (D_8006D634.flight.z << 12) + D_8006D634.flight.z_frac;
     }
     actor->motion.vz = 0xB50;
     actor->motion.vx = 0xB50;
     actor->motion.vy = 0;
     actor->turn = 1;
-    D_8006EE80.x_frac = actor->position.vx;
-    D_8006EE80.x = actor->position.vx >> 12;
-    D_8006EE80.z_frac = actor->position.vz;
-    D_8006EE80.z = actor->position.vz >> 12;
+    D_8006D634.flight.x_frac = actor->position.vx;
+    D_8006D634.flight.x = actor->position.vx >> 12;
+    D_8006D634.flight.z_frac = actor->position.vz;
+    D_8006D634.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1788,6 +1894,19 @@ s32 func_8008868C(void) {
     }
     return 1;
 }
+
+/* Scratchpad work area of the airship update. */
+typedef struct {
+    VECTOR work;
+    u8 pad10[0x90];
+    SVECTOR rotor;       /* 0xA0 */
+    SVECTOR tail;        /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX rotor_matrix; /* 0xF0 */
+    MATRIX tail_matrix;  /* 0x110 */
+} FlightScratch;
+
+#define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
 
 /* Fly the airship: spin its rotors, stop over the saved landing point when
  * low enough, move, place its shadow object and save the position. */
@@ -1810,9 +1929,9 @@ s32 func_80088720(s32 index) {
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
-    scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
-    scratch->work.vy = (s16)D_8006EE54.unk62;
+    scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
     func_80093534(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
@@ -1827,10 +1946,10 @@ s32 func_80088720(s32 index) {
     scratch->work.vz = actor->position.vz >> 12;
     D_8009C620[base + 12].position = scratch->work;
     func_8008BFD4(index, &actor->position, 0x180, 0xC0);
-    D_8006EE80.x_frac = actor->position.vx;
-    D_8006EE80.x = actor->position.vx >> 12;
-    D_8006EE80.z_frac = actor->position.vz;
-    D_8006EE80.z = actor->position.vz >> 12;
+    D_8006D634.flight.x_frac = actor->position.vx;
+    D_8006D634.flight.x = actor->position.vx >> 12;
+    D_8006D634.flight.z_frac = actor->position.vz;
+    D_8006D634.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1848,7 +1967,7 @@ s32 func_80088B40(s32 index) {
     actor = &D_8009BE24[index];
     object = D_8009C620;
     actor->state = 0;
-    if (D_8006EF64[0] == 0x99) {
+    if (D_8006D634.vars[0] == 0x99) {
         result = 1;
         actor->position.vx = 0x2000000;
         actor->position.vz = 0x4120000;
@@ -1888,7 +2007,7 @@ s32 func_80088D00(s32 index) {
     object = D_8009C620;
     actor = &D_8009BE24[index];
     object += 69;
-    if (D_8006EF64[0] == 0x99) {
+    if (D_8006D634.vars[0] == 0x99) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
@@ -1993,10 +2112,15 @@ void func_80088FF4(void) {
     func_800320E8(D_8009BDF4);
 }
 
+/* The particle quads, copied between display buffers as a whole. */
+typedef struct {
+    POLY_FT4 quads[256];
+} EffectQuads;
+
 /* Allocate the two effect quad buffers: semi-transparent textured quads
  * on the 0x340,0x100 page, the second a copy of the first. */
 void func_8008901C(void) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009BE1C[0] = func_80031BDC(sizeof(EffectQuads), 1);
@@ -2012,11 +2136,14 @@ void func_8008901C(void) {
     *(EffectQuads *)D_8009BE1C[1] = *(EffectQuads *)D_8009BE1C[0];
 }
 
-/* Free two effect buffers. */
+/* Free the two particle quad buffers. */
 void func_80089128(void) {
     func_800320E8(D_8009BE1C[0]);
     func_800320E8(D_8009BE1C[1]);
 }
+
+/* Short vectors handled as a word (vx, vy) plus vz. */
+#define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
 
 /* Place the eight emitters of group `group` at `position` facing `angle`
  * (either may be NULL for zero); start them unless one is already live. */
@@ -2221,6 +2348,17 @@ void func_80089580(void) {
     }
 }
 
+/* Scratchpad work area of the emitters. */
+typedef struct {
+    VECTOR normal;  /* 0x00 */
+    VECTOR random;  /* 0x10 */
+    VECTOR offset;  /* 0x20 */
+    u8 pad30[0xC0];
+    MATRIX m;       /* 0xF0 */
+} EmitScratch;
+
+#define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
+
 /* Run the emitters: count down their timers and every interval spawn one
  * particle into a free effect slot, starting at a random point around the
  * emitter and flying towards a random point around its target. */
@@ -2339,20 +2477,36 @@ void func_80089748(void) {
     func_80089580();
 }
 
+/* Scratchpad work area of the particle pass. */
+typedef struct {
+    SVECTOR v[4];       /* 0x00: quad corners */
+    SVECTOR centre;     /* 0x20 */
+    MATRIX view;        /* 0x28 */
+    MATRIX m;           /* 0x48 */
+    MATRIX identity;    /* 0x68 */
+    VECTOR offset;      /* 0x88 */
+    VECTOR scale;       /* 0x98 */
+    s32 padA8;
+    s32 flag;           /* 0xAC */
+    s32 sz;             /* 0xB0 */
+} ParticleScratch;
+
+#define PARTICLE_SCRATCH ((ParticleScratch *)0x1F800000)
+
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
  * project it and add the visible ones to the ordering table. */
 void func_80089C78(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 camera_x;
     s32 camera_z;
     s32 i;
 
     scratch = (ParticleScratch *)0x1F800000;
     PARTICLE_SCRATCH->view = D_8009C808;
-    PARTICLE_SCRATCH->identity = *(MATRIX *)&D_8009A180;
+    PARTICLE_SCRATCH->identity = D_8009A180;
     i = 0;
     camera_x = D_8009BE28.target.vx >> 12;
     camera_z = D_8009BE28.target.vz >> 12;
@@ -2437,10 +2591,10 @@ s32 func_8008A2C8(s32 index) {
     actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
-    ((s32 *)actor->handle)[15] &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->unk24 = 0;
-    actor->position.vx = D_8006EF64[0] << 12;
-    actor->position.vz = D_8006EF64[1] << 12;
+    actor->position.vx = D_8006D634.vars[0] << 12;
+    actor->position.vz = D_8006D634.vars[1] << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -2452,7 +2606,7 @@ s32 func_8008A2C8(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E5 == 0) {
+        if (D_8006D634.inGear[0] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -2469,15 +2623,15 @@ s32 func_8008A2C8(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[0] != 0xFF) {
-            D_8006F8E5 = 1;
+        if (D_8006D634.party[0] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[0] != 0xFF) {
-            D_8006F8E5 = 1;
+        if (D_8006D634.party[0] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
         }
         break;
     case 8:
@@ -2497,9 +2651,9 @@ s32 func_8008A2C8(s32 index) {
         point->heading = actor->heading;
         point++;
     } while (i < 0x20);
-    D_8006EE54.x = actor->position.vx >> 12;
-    D_8006EE54.z = actor->position.vz >> 12;
-    D_8006EE54.heading = actor->heading;
+    D_8006D634.worldmap.x = actor->position.vx >> 12;
+    D_8006D634.worldmap.z = actor->position.vz >> 12;
+    D_8006D634.worldmap.heading = actor->heading;
     return 1;
 }
 
@@ -2511,7 +2665,7 @@ s32 func_8008A52C(s32 index) {
     actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
-    ((s32 *)actor->handle)[15] &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
     return 1;
 }
 
@@ -2527,13 +2681,13 @@ s32 func_8008A5B8(s32 index) {
     actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
-    ((s32 *)actor->handle)[15] &= ~4;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     i = 0;
     point = D_8009CEC4;
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->motion.vz = 0;
@@ -2552,6 +2706,16 @@ s32 func_8008A5B8(s32 index) {
     D_8009D52C = actor->heading;
     return 1;
 }
+
+/* Scratchpad work area of the party leader. */
+typedef struct {
+    VECTOR target;  /* 0x00 */
+    u8 pad10[0x20];
+    VECTOR start;   /* 0x30 */
+    u8 pad40[0x50];
+    VECTOR probe;   /* 0x90: move probe result */
+    u16 heading;    /* 0xA0 */
+} LeaderScratch;
 
 /* Update the party leader on foot: walk by the pad and record the trail,
  * gather the others into a vehicle or let them out on command, walk out of
@@ -2589,7 +2753,7 @@ s32 func_8008A72C(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006F8E5 == 0) {
+        if (D_8006D634.inGear[0] == 0) {
             switch (func_80090A84(actor)) {
             case 2:
             case 4:
@@ -2610,12 +2774,12 @@ s32 func_8008A72C(s32 index) {
                 break;
             default:
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
-                    if (((ModelInstance *)actor->handle)->animation != 0) {
+                    if (SPRITE_ANIMATION(actor->handle) != 0) {
                         func_800245D8(actor->handle, 0);
                         func_800894C8(0x2F);
                     }
                 } else {
-                    if (((ModelInstance *)actor->handle)->animation != 1) {
+                    if (SPRITE_ANIMATION(actor->handle) != 1) {
                         func_800245D8(actor->handle, 1);
                     }
                     func_8008C1DC(0x2F, actor, (ActorScratch *)scratch);
@@ -2679,8 +2843,8 @@ s32 func_8008A72C(s32 index) {
         actor->heading = D_8009BE24[7].heading;
         break;
     case 8:
-        if (D_8006F368[1] != 0xFF) {
-            if (D_8006F8E6 == 0) {
+        if (D_8006D634.party[1] != 0xFF) {
+            if (D_8006D634.inGear[1] == 0) {
                 func_80097770(2, 1);
                 actor[1].unk6 = D_8009BD60;
                 func_80097770(5, 8);
@@ -2692,8 +2856,8 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 9:
-        if (D_8006F368[2] != 0xFF) {
-            if (D_8006F8E7 == 0) {
+        if (D_8006D634.party[2] != 0xFF) {
+            if (D_8006D634.inGear[2] == 0) {
                 func_80097770(3, 1);
                 actor[2].unk6 = D_8009BD60;
                 func_80097770(6, 8);
@@ -2705,7 +2869,7 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 10:
-        if (D_8006F368[0] != 0xFF) {
+        if (D_8006D634.party[0] != 0xFF) {
             if (func_80097770(4, 8) != 0) {
                 actor->state = 0xD;
             }
@@ -2737,7 +2901,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x10:
-        if (D_8006F368[1] != 0xFF) {
+        if (D_8006D634.party[1] != 0xFF) {
             if (func_80097770(2, 1) != 0) {
                 actor[1].unk6 = 5;
                 actor->state++;
@@ -2747,7 +2911,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x11:
-        if (D_8006F368[2] != 0xFF) {
+        if (D_8006D634.party[2] != 0xFF) {
             if (func_80097770(3, 1) != 0) {
                 actor[2].unk6 = 6;
                 actor->state++;
@@ -2759,10 +2923,10 @@ s32 func_8008A72C(s32 index) {
     case 0x12:
         point = D_8009CEC4;
         D_8009D154 = 0;
-        scratch->start.vx = D_8006EF8E[0].x << 12;
-        scratch->start.vz = D_8006EF8E[0].z << 12;
+        scratch->start.vx = VEHICLE_SPOTS[0].x << 12;
+        scratch->start.vz = VEHICLE_SPOTS[0].z << 12;
         scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
-        scratch->heading = D_8006EE54.unk5A;
+        scratch->heading = D_8006D634.worldmap.unk5A;
         value = 0x1F;
         do {
             point->position = scratch->start;
@@ -2772,10 +2936,10 @@ s32 func_8008A72C(s32 index) {
         actor->state = 0xD;
         break;
     case 0x28:
-        actor->position.vx = D_8006EF8E[0].x << 12;
-        actor->position.vz = D_8006EF8E[0].z << 12;
+        actor->position.vx = VEHICLE_SPOTS[0].x << 12;
+        actor->position.vz = VEHICLE_SPOTS[0].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = D_8006EE54.unk5A;
+        heading = D_8006D634.worldmap.unk5A;
         actor->unk5C = heading;
         actor->heading = heading;
         scratch->target.vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
@@ -2800,7 +2964,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0x2A:
         point = D_8009CEC4;
-        D_8006F8E5 = 0;
+        D_8006D634.inGear[0] = 0;
         actor->unk58 = 1;
         D_8009D154 = 0;
         scratch->target = actor->position;
@@ -2819,19 +2983,19 @@ s32 func_8008A72C(s32 index) {
             actor->state = 1;
             break;
         case 2:
-            if (D_8006F8E6 == 0) {
+            if (D_8006D634.inGear[1] == 0) {
                 actor->state++;
             }
             break;
         case 3:
-            if ((D_8006F8E6 | D_8006F8E7) == 0) {
+            if ((D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
                 actor->state++;
             }
             break;
         }
         break;
     case 0x2C:
-        if (D_8006F368[1] != 0xFF) {
+        if (D_8006D634.party[1] != 0xFF) {
             if (func_80097770(2, 5) != 0) {
                 actor->state++;
             }
@@ -2840,16 +3004,16 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x2D:
-        if (D_8006F368[2] == 0xFF || func_80097770(3, 5) != 0) {
+        if (D_8006D634.party[2] == 0xFF || func_80097770(3, 5) != 0) {
             actor->state = 0x40;
         }
         break;
     case 0x40:
         break;
     }
-    D_8006EE54.x = actor->position.vx >> 12;
-    D_8006EE54.z = actor->position.vz >> 12;
-    D_8006EE54.heading = actor->heading;
+    D_8006D634.worldmap.x = actor->position.vx >> 12;
+    D_8006D634.worldmap.z = actor->position.vz >> 12;
+    D_8006D634.worldmap.heading = actor->heading;
     if (actor->unk24 == 0) {
         func_80074794(0, &actor->position);
     }
@@ -2864,23 +3028,23 @@ s32 func_8008B2BC(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[1] != 0xFF) {
+    if (D_8006D634.party[1] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
-        ((s32 *)actor->handle)[15] &= ~4;
+        actor->handle->render.word &= ~SPRITE_HIDDEN;
         actor->unk24 = 0;
     } else {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.heading;
+    actor->heading = D_8006D634.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
@@ -2888,7 +3052,7 @@ s32 func_8008B2BC(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E6 == 0) {
+        if (D_8006D634.inGear[1] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -2903,15 +3067,15 @@ s32 func_8008B2BC(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[1] != 0xFF) {
-            D_8006F8E6 = 1;
+        if (D_8006D634.party[1] != 0xFF) {
+            D_8006D634.inGear[1] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[1] != 0xFF) {
-            D_8006F8E6 = 1;
+        if (D_8006D634.party[1] != 0xFF) {
+            D_8006D634.inGear[1] = 1;
         }
         break;
     case 8:
@@ -2932,11 +3096,11 @@ s32 func_8008B498(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[1] != 0xFF) {
+    if (D_8006D634.party[1] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
-        ((s32 *)actor->handle)[15] &= ~4;
+        actor->handle->render.word &= ~SPRITE_HIDDEN;
     } else {
         result = 3;
     }
@@ -2952,11 +3116,11 @@ s32 func_8008B54C(s32 index) {
     actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
-    ((s32 *)actor->handle)[15] &= ~4;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;
@@ -3006,7 +3170,7 @@ s32 func_8008B644(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006F8E4[index] == 0) {
+        if (D_8006D634.inGear[index - 1] == 0) {
             point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
@@ -3065,7 +3229,7 @@ s32 func_8008B644(s32 index) {
         actor->position.vx = D_8006EF8A[index].x << 12;
         actor->position.vz = D_8006EF8A[index].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = D_8006EE58[index];
+        heading = (&D_8006D634.worldmap.unk5A)[index - 1];
         actor->unk5C = heading;
         actor->heading = heading;
         work->vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
@@ -3078,7 +3242,7 @@ s32 func_8008B644(s32 index) {
         actor->state++;
         goto walk;
     case 0x2A:
-        D_8006F8E4[index] = 0;
+        D_8006D634.inGear[index - 1] = 0;
         actor->state = 0x40;
         break;
     case 0x30:
@@ -3117,23 +3281,23 @@ s32 func_8008BB40(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[2] != 0xFF) {
+    if (D_8006D634.party[2] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
-        ((s32 *)actor->handle)[15] &= ~4;
+        actor->handle->render.word &= ~SPRITE_HIDDEN;
         actor->unk24 = 0;
     } else {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.heading;
+    actor->heading = D_8006D634.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0x1E;
     actor->unk5C = actor->heading;
@@ -3141,7 +3305,7 @@ s32 func_8008BB40(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E7 == 0) {
+        if (D_8006D634.inGear[2] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -3156,15 +3320,15 @@ s32 func_8008BB40(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[2] != 0xFF) {
-            D_8006F8E7 = 1;
+        if (D_8006D634.party[2] != 0xFF) {
+            D_8006D634.inGear[2] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[2] != 0xFF) {
-            D_8006F8E7 = 1;
+        if (D_8006D634.party[2] != 0xFF) {
+            D_8006D634.inGear[2] = 1;
         }
         break;
     case 8:
@@ -3185,11 +3349,11 @@ s32 func_8008BD1C(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[2] != 0xFF) {
+    if (D_8006D634.party[2] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
-        ((s32 *)actor->handle)[15] &= ~4;
+        actor->handle->render.word &= ~SPRITE_HIDDEN;
     } else {
         result = 3;
     }
@@ -3205,11 +3369,11 @@ s32 func_8008BDD0(s32 index) {
     actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
-    ((s32 *)actor->handle)[15] &= ~4;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;
@@ -3331,11 +3495,11 @@ void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
 void func_8008C28C(WorldmapActor *actor, s32 member) {
     actor->handle = func_80024524(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
                                   D_8009B19C[member], D_8009B1A4[member], 0x40);
-    if ((&D_8006F8E5)[member] == 1) {
+    if (D_8006D634.inGear[member] == 1) {
         func_800245D8(actor->handle, 0);
     } else {
         func_800245D8(actor->handle, 3);
     }
     func_80022000(actor->handle, 0x2000);
-    ((s32 *)actor->handle)[15] &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
 }

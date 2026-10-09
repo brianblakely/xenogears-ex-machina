@@ -1,33 +1,31 @@
+/* Panoramic backdrops, texture scrolls, disc access and streams
+ * (8002709c-8002c3e8), GCC 2.6.3 with inline division checks (80027d64,
+ * 80027eac, 80028808 and 80029afc match only so, 8002bb50 only under
+ * 2.6.3): the backdrops and scrolls, the disc error indicator, disc start-up,
+ * directories and file sizes, the shared sector ring, file, list and stream
+ * reads with their CD command and data callbacks (and the PC file server's),
+ * and the image stream steps. Its code from 8002a260 on has no division, but
+ * it reads the same statics as the code before it, so the unit runs to the
+ * model unit (main_8002C3E8.c), whose jump table phase starts a unit after
+ * 8002c310. Its .data (0x8004fde0) is the disc and stream state. */
 #include "common.h"
 #include "psyq/libapi.h"
-#include "psyq/libc.h"
 #include "psyq/libcd.h"
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "psyq/inline_c.h"
 #include "psyq/libsn.h"
-#include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/gpu.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
 #include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
-#include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
 #include "resident/console.h"
-#include "resident/sound.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/stream.h"
 #include "own_declarations.h"
 
-/* The texture-scroll, disc, CD read callback, stream and model buffer unit
- * (8002709C-8002C3E8; GCC 2.6.3 with inline division checks, which its code
- * from 8002A260 on, having no division, does not show). Functions on both
- * sides of 8002A260 read the disc and stream state below, the unit's own
- * statics: its one .bss, in declaration order (800596f8-80059f64, among the
- * units' larger variables). */
+/* This unit's own statics, which functions on both sides of 8002a260 read:
+ * its one .bss, in declaration order (800596f8-80059f64, among the units'
+ * larger variables). */
 static u8 D_800596F8[0x800];  /* sector buffer; the PC file server's subheader opens it */
 static s32 D_80059EF8[3];     /* read status words */
 static s32 D_80059F04;        /* PC file server handle of the stream */
@@ -582,6 +580,7 @@ done:
     return block;
 }
 
+/* Bytes of the current read still to come. */
 s32 func_800286BC(void) {
     return D_8004FDF8;
 }
@@ -2059,6 +2058,8 @@ void func_8002B8B0(void) {
 }
 
 
+/* Set the pending read count (800286cc's state) to the current list's
+ * file count. */
 void func_8002BA40(void) {
     D_8004FDFC = D_8004FE00;
 }

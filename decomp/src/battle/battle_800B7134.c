@@ -1,42 +1,58 @@
-/* Battle unit from 800B7134 to 800B8098 (Cygnus CDK GCC 2.7.2).
- * 800B7870's jump table at 0x800709FC sits at 4 mod 8 directly after
- * 800B3F04's odd-length table at 0 mod 8, so a unit starts between the two
- * functions (that table is all of 800B3F04's unit's rodata). The screen
- * shatter's draw (800B7134, 800B7160) and the intro swirl 800B7870 share
- * the unit's own variable D_800C3CB4, which follows 800B3F04's .bss, so the
- * unit starts at 800B7134 at the latest; that is where it is placed.
- * Its own 5-entry table is followed directly by 800B8098's at 0x80070A10
- * (0 mod 8). */
+/* Battle unit from 800B7134 to 800B8098: the shattered screen's draw and
+ * set-up, the battle's intro swirl and the single actions' command files
+ * (800B7870-800B8068), built by the Cygnus CDK GCC 2.7.2. 800B7870's jump
+ * table at 0x800709FC sits at 4 mod 8 directly after 800B3F04's odd-length
+ * table at 0 mod 8, so a unit starts between the two functions (that table is
+ * all of 800B3F04's unit's rodata). The screen shatter's draw (800B7134,
+ * 800B7160) and the intro swirl 800B7870 share the unit's own variable
+ * D_800C3CB4, which follows 800B3F04's .bss, so the unit starts at 800B7134
+ * at the latest; that is where it is placed. Its own 5-entry table is
+ * followed directly by 800B8098's at 0x80070A10 (0 mod 8). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "action_file.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
+#include "overlays.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+#include "sprite_effect.h"
+
+/* This unit's functions, declared before their first use. */
+void func_800B7160(Task *draw);
+ScreenShatter *func_800B7424(ScreenShatter *shatter);
 
 /* The unit's own uninitialized variable (its .bss, after
  * battle_800B3F04.c's). */
 static u32 *D_800C3CB4; /* the ordering table the shatter draws into */
 
 /* Shatter draw: into the ordering table (800B7160). */
-void func_800B7134(BattleTask *draw) {
-    D_800C3CB4 = D_8005956C;
+void func_800B7134(Task *draw) {
+    D_800C3CB4 = (u32 *)D_8005956C;
     func_800B7160(draw);
 }
 
 /* Shatter draw: each shard that has fallen in front of the screen (z at
  * least 64), its layer's triangle turned and placed, projected at the
  * screen centre and distance 512. */
-void func_800B7160(BattleTask *draw) {
+void func_800B7160(Task *draw) {
     ScreenShatter *shatter = draw->data;
     s32 offsetX;
     s32 offsetY;
@@ -92,13 +108,14 @@ void func_800B7330(void *block) {
 /* Shatter destroy: end the draw task, the task and its sprites. */
 void func_800B7364(ScreenShatter *shatter) {
     func_8001CB48(&shatter->draw);
-    func_8001CD94(shatter);
-    func_80025180(shatter);
+    func_8001CD94(&shatter->task);
+    func_80025180((u32)shatter);
 }
 
 /* Shatter the screen copied to VRAM (0x2C0, 0x100). */
 void func_800B73A0(void) {
-    func_800B7424(func_8001D1D8(sizeof(ScreenShatter), 0, func_800B6F0C, func_800B7134, func_800B7364));
+    func_800B7424((ScreenShatter *)func_8001D1D8(sizeof(ScreenShatter), NULL, func_800B6F0C, func_800B7134,
+                                                 (void (*)(Task *))func_800B7364));
 }
 
 /* Set up a shattered screen in a heap block (not run as a task). */
@@ -330,7 +347,7 @@ void func_800B7C34(s32 index) {
     s32 file;
     s32 stream;
     s32 restart;
-    BattleSprite *sprite;
+    Sprite *sprite;
 
     if (index == 0xE3) {
         rect.w = 0x40;
@@ -357,7 +374,7 @@ void func_800B7C34(s32 index) {
     D_800C3CEC = 1;
     D_800D2FDC = 1;
     D_800594F0 = func_80031BDC(func_800288EC(file), 0);
-    func_800295D8(file, (s32)D_800594F0, 0, 0x80);
+    func_800295D8(file, D_800594F0, 0, 0x80);
     func_800B8354();
     restart = (*(u16 *)(D_800594F0[1] + (s32)D_800594F0) >> 12) & 3;
     if (restart != 0) {
@@ -390,18 +407,18 @@ void func_800B7C34(s32 index) {
 u8 func_800B7E94(void) {
     VramPoint at;
     VramPoint clut;
-    BattleTask wait;
-    SpriteResource saved;
-    BattleSprite *actor;
-    BattleSprite *runner;
+    Task wait;
+    SpriteSource saved;
+    Sprite *actor;
+    Sprite *runner;
     s32 own;
-    SpriteResource *resource;
+    SpriteSource *resource;
 
     actor = D_800C3E1C;
     func_8001CC18(0, &wait);
     wait.update = NULL;
     func_800B8354();
-    resource = (SpriteResource *)D_8005A474;
+    resource = (SpriteSource *)D_8005A474;
     at.x = 0x380;
     at.y = 0x100;
     clut.x = 0;
@@ -410,25 +427,25 @@ u8 func_800B7E94(void) {
     func_80022224(resource, D_800594F0, at, clut, 0);
     own = 0;
     func_800BEB04();
-    if (func_8001EE68(resource->frames)) {
-        saved = *(SpriteResource *)D_800C3E1C->base;
-        runner = func_80023B84(D_800C3E1C, (void *)(resource->motions[D_800C3DF0 + 1] + (s32)resource->motions), resource);
+    if (func_8001EE68((u8 *)resource->frames)) {
+        saved = *(SpriteSource *)D_800C3E1C->image;
+        runner = func_80023B84(D_800C3E1C, (void *)(resource->animations[D_800C3DF0 + 1] + (s32)resource->animations), resource);
     } else {
         own = 1;
         runner = D_800C3E1C;
-        func_80021BF0(runner, D_800594F0);
+        func_80021BF0(runner, (s32)D_800594F0);
         func_800245D8(runner, -1);
     }
-    actor->sound = runner->sound = func_800C0FAC(D_800594F0);
+    actor->word50 = runner->word50 = (s32)func_800C0FAC(D_800594F0);
     D_800D3350 = 1;
     D_800C35D4 = 1;
-    func_8003A89C(D_800C3E54, 0x60, 0x78);
+    func_8003A89C((SoundSeq *)D_800C3E54, 0x60, 0x78);
     func_8001CD94(&wait);
     return own;
 }
 
 /* Set the acting sprite of a single action. */
-void func_800B8048(BattleSprite *sprite) {
+void func_800B8048(Sprite *sprite) {
     D_800C3E1C = sprite;
 }
 

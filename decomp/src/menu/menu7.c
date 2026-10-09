@@ -1,11 +1,42 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+/* menu7: text 800891C0-80090F38, rodata 800706E8-800707A8, data
+ * 80091C0C-800925D4, variables 80092800-8009284C and 80096D88-80096FA8.
+ * The display and its layers, the 3D scene graph (nodes, models, model
+ * sets, lights, animation players, instances and meshes), the task switch
+ * (handwritten, 8008BB00-8008BCC8), the spark emitters, the glow field,
+ * positional sound and the computer opponent. Its jump tables lie at 0 mod
+ * 8 (800706E8-80070748) after menu6's strings. Its variables place its
+ * start after menu6's last reader of theirs (80088E90) and at or before
+ * 8008A040, the first reader of its own; it is kept where the file and
+ * display code starts (800891C0). Its .bss opens with the task switch's
+ * two words, and its data ends with the embedded sprite model D_80091FB0
+ * and the combo inputs D_800925A4. */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "display.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "sound.h"
+#include "spark.h"
+#include "stage.h"
+#include "task.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -15,12 +46,12 @@ static s16 D_80092808; /* model CLUT x (-1: none) */
 static s16 D_8009280C; /* model CLUT y */
 static s32 D_80092810;
 static s32 D_80092814; /* unreferenced */
-static CVector D_80092818[2]; /* current colour per display buffer */
+static CVECTOR D_80092818[2]; /* current colour per display buffer */
 static s32 D_80092820; /* root counter at the frame start */
 static s32 D_80092824; /* nodes instanced by the last copy */
 static Node *D_80092828; /* root being instanced */
-static SVector *D_8009282C; /* scratch vectors for GTE loads */
-static SVector *D_80092830; /* view origin subtracted before projection */
+static SVECTOR *D_8009282C; /* scratch vectors for GTE loads */
+static SVECTOR *D_80092830; /* view origin subtracted before projection */
 static Emitter *D_80092834; /* the menu's spark emitter */
 static s32 D_80092838; /* spark burst strength, fading by 4 per frame */
 static s16 *D_8009283C;
@@ -32,23 +63,23 @@ static u8 D_80092848; /* the command the brain last started */
  * after every unit's small ones (menu.mk), behind the task scheduler's
  * two words (func_8008BB00.s). Nothing addresses the words marked
  * unreferenced. */
-static PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
-static TileRgb D_80096DE0[2];  /* full-screen shade tile per draw buffer */
-static DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
+static POLY_FT4 D_80096D90[2];  /* glow field quad per draw buffer */
+static TILE D_80096DE0[2];  /* full-screen shade tile per draw buffer */
+static DR_MODE D_80096E00[2]; /* its blend mode per draw buffer */
 static s32 D_80096E18[34];     /* unreferenced */
 static SoundVoice D_80096EA0[4];
 static Brain D_80096F30; /* brain of the side-0 opponent */
 static Brain D_80096F64; /* brain of the side-1 opponent */
-static Vector D_80096F98; /* look-at work: side */
+static VECTOR D_80096F98; /* look-at work: side */
 
-Matrix D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
+MATRIX D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
 
 s32 D_80091C2C = 0;
 
 OtPair *D_80091C30 = NULL;
 
 /* Unused: the corners of a cube. */
-SVector D_80091C34[8] = {
+SVECTOR D_80091C34[8] = {
     { -0x1000, -0x1000, -0x1000, 0 }, { 0x1000, -0x1000, -0x1000, 0 },
     { 0x1000, 0x1000, -0x1000, 0 }, { -0x1000, 0x1000, -0x1000, 0 },
     { -0x1000, -0x1000, 0x1000, 0 }, { 0x1000, -0x1000, 0x1000, 0 },
@@ -80,13 +111,13 @@ SparkShape D_80091C74[] = {
 };
 
 /* Spark placement rules. */
-void func_8008CF9C(Emitter *source, SVector *pos);
-void func_8008CFC4(Emitter *source, SVector *pos);
-void func_8008D0A4(Emitter *source, SVector *pos);
-void func_8008D14C(Emitter *source, SVector *pos);
-void func_8008D208(Emitter *source, SVector *pos);
-void func_8008D304(Emitter *source, SVector *pos);
-void (*D_80091CC4[])(Emitter *emitter, SVector *pos) = {
+void func_8008CF9C(Emitter *source, SVECTOR *pos);
+void func_8008CFC4(Emitter *source, SVECTOR *pos);
+void func_8008D0A4(Emitter *source, SVECTOR *pos);
+void func_8008D14C(Emitter *source, SVECTOR *pos);
+void func_8008D208(Emitter *source, SVECTOR *pos);
+void func_8008D304(Emitter *source, SVECTOR *pos);
+void (*D_80091CC4[])(Emitter *emitter, SVECTOR *pos) = {
     func_8008CF9C, func_8008D14C, func_8008CFC4, func_8008D208, func_8008D304, func_8008D0A4,
 };
 
@@ -243,12 +274,12 @@ void func_80089534(s32 width, s32 height) {
     D_8009A0D8[0].draw.dtd = D_8009A0D8[1].draw.dtd = 1;
     D_8009A0D8[0].draw.isbg = D_8009A0D8[1].draw.isbg = 0;
     D_8009A0D8[0].draw.tpage = D_8009A0D8[1].draw.tpage = GetTPage(0, 2, 0x280, 0);
-    SetDrawEnv(D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
-    SetDrawEnv(D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
-    SetDrawArea(D_8009A0D8[0].modeD0, &D_8009A0D8[0].draw.clip);
-    SetDrawArea(D_8009A0D8[1].modeD0, &D_8009A0D8[1].draw.clip);
-    SetDrawOffset(D_8009A0D8[0].modeDC, D_8009A0D8[0].draw.ofs);
-    SetDrawOffset(D_8009A0D8[1].modeDC, D_8009A0D8[1].draw.ofs);
+    SetDrawEnv(&D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
+    SetDrawEnv(&D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
+    SetDrawArea(&D_8009A0D8[0].area, &D_8009A0D8[0].draw.clip);
+    SetDrawArea(&D_8009A0D8[1].area, &D_8009A0D8[1].draw.clip);
+    SetDrawOffset(&D_8009A0D8[0].offset, D_8009A0D8[0].draw.ofs);
+    SetDrawOffset(&D_8009A0D8[1].offset, D_8009A0D8[1].draw.ofs);
 }
 
 /* Set up geometry, screen and scale for a width x height display. */
@@ -273,23 +304,23 @@ void func_8008976C(s32 width, s32 height) {
 /* Set a layer's drawing areas and offsets for both buffers (the second
  * buffer lies `second` lines lower) and its black background tiles. */
 void func_800897AC(OtPair *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
-    Rect area;
+    RECT area;
     s16 offset[2];
 
     area.x = x;
     area.y = y;
     area.w = w;
     area.h = h;
-    SetDrawArea(layer->area[0], &area);
+    SetDrawArea(&layer->area[0], &area);
     area.y = y + second;
-    SetDrawArea(layer->area[1], &area);
+    SetDrawArea(&layer->area[1], &area);
     offset[0] = x;
     offset[1] = y;
-    SetDrawOffset(layer->offset[0], offset);
+    SetDrawOffset(&layer->offset[0], offset);
     offset[1] = y + second;
-    SetDrawOffset(layer->offset[1], offset);
+    SetDrawOffset(&layer->offset[1], offset);
     layer->tile[0].len = 3;
-    layer->tile[0].colour = 0x60000000;
+    layer->tile[0].rgbc = 0x60000000;
     layer->tile[0].x0 = 0;
     layer->tile[0].y0 = 0;
     layer->tile[0].w = w;
@@ -299,7 +330,7 @@ void func_800897AC(OtPair *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
 }
 
 /* Build a view matrix looking from eye to at with the given up vector. */
-void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
+void func_800898BC(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up) {
     D_8009A0C8.vx = at->vx - eye->vx;
     D_8009A0C8.vy = at->vy - eye->vy;
     D_8009A0C8.vz = at->vz - eye->vz;
@@ -329,10 +360,10 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(LightRig *view, Vector *target, Vector *eye) {
-    SVector up;
-    SVector from;
-    SVector origin;
+void func_80089A98(LightRig *view, VECTOR *target, VECTOR *eye) {
+    SVECTOR up;
+    SVECTOR from;
+    SVECTOR origin;
 
     up.vy = 0x1000;
     up.vz = 0;
@@ -359,12 +390,12 @@ Node *func_80089B44(Node *node) {
     node->position.vz = 0;
     node->position.vy = 0;
     node->position.vx = 0;
-    node->unk44.vz = 0;
-    node->unk44.vy = 0;
-    node->unk44.vx = 0;
-    node->rotation.vz = 0;
-    node->rotation.vy = 0;
-    node->rotation.vx = 0;
+    node->angles.vz = 0;
+    node->angles.vy = 0;
+    node->angles.vx = 0;
+    node->offset.vz = 0;
+    node->offset.vy = 0;
+    node->offset.vx = 0;
     node->unk6C = D_80091C0C;
     node->unk4C = node->unk6C;
     node->view = node->unk4C;
@@ -448,7 +479,7 @@ void func_80089D5C(Node *node) {
 }
 
 /* Make a node a model node. */
-void func_80089E2C(Node *node, Model *model) {
+void func_80089E2C(Node *node, NodeModel *model) {
     node->data = model;
     node->type = 1;
 }
@@ -511,12 +542,12 @@ void func_80089EB4(ModelSet *set) {
 }
 
 /* Reset a model payload: grey, nothing loaded. */
-Model *func_80089F8C(Model *model) {
+NodeModel *func_80089F8C(NodeModel *model) {
     model->unk4 = 1;
     model->flags = 0;
     model->packets[0] = NULL;
     model->packets[1] = NULL;
-    model->unk10 = 0;
+    model->morph = NULL;
     model->file = NULL;
     model->unk1C = 0;
     model->b = 0x40;
@@ -526,17 +557,17 @@ Model *func_80089F8C(Model *model) {
 }
 
 /* Allocate a reset model payload. */
-Model *func_80089FC4(void) {
+NodeModel *func_80089FC4(void) {
     func_800324B8(1);
-    return func_80089F8C(func_80031BDC(sizeof(Model), 0));
+    return func_80089F8C(func_80031BDC(sizeof(NodeModel), 0));
 }
 
 /* Release a model payload's resources. */
-void func_80089FF8(Model *model) {
+void func_80089FF8(NodeModel *model) {
     if (model->packets[0] != NULL) {
         func_80032C18(model->packets[0], 2);
     }
-    func_8002CBBC(model->file);
+    func_8002CBBC((ModelBuffer *)model->file);
 }
 
 /* Pass the model texture page and CLUT positions to target, or zeros when
@@ -551,15 +582,15 @@ void func_8008A040(void *target) {
 
 /* Set a model node's colour. */
 void func_8008A0B4(Node *node, u8 r, u8 g, u8 b) {
-    ((Model *)node->data)->r = r;
-    ((Model *)node->data)->g = g;
-    ((Model *)node->data)->b = b;
-    ((Model *)node->data)->flags |= 0x10;
+    ((NodeModel *)node->data)->r = r;
+    ((NodeModel *)node->data)->g = g;
+    ((NodeModel *)node->data)->b = b;
+    ((NodeModel *)node->data)->flags |= 0x10;
 }
 
 /* Clear a model node's colour override. */
 void func_8008A0F4(Node *node) {
-    ((Model *)node->data)->flags &= ~0x10;
+    ((NodeModel *)node->data)->flags &= ~0x10;
 }
 
 /* Set the texture page position used for loaded models (-1 = none). */
@@ -589,9 +620,9 @@ void func_8008A168(void) {
 
 /* Load a model file into a model payload, applying the texture page and
  * CLUT overrides. */
-void func_8008A184(Model *model, ModelFile *file) {
+void func_8008A184(NodeModel *model, SpriteModel *file) {
     model->file = file;
-    model->unk10 = func_800303C8(file, 1);
+    model->morph = func_800303C8(file, 1);
     func_8002CB54(model->file, &model->packets[0], &model->packets[1]);
     if (D_80092800 >= 0) {
         func_8002CC54(GetTPage(0, 1, D_80092800, D_80092804));
@@ -600,7 +631,7 @@ void func_8008A184(Model *model, ModelFile *file) {
         func_8002CC74(D_80092808, D_8009280C);
     }
     func_8002C8CC(model->file, model->packets[0], 2);
-    func_800732AC(model->packets[1], model->packets[0], model->file->unk34);
+    func_800732AC(model->packets[1], model->packets[0], model->file->packet_size);
     model->flags |= 2;
 }
 
@@ -650,6 +681,7 @@ OtPair *func_8008A2B8(u16 length) {
     return pair;
 }
 
+/* Unreferenced, and empty. */
 void func_8008A3A0(void) {
 }
 
@@ -718,7 +750,7 @@ void func_8008A62C(void) {
 
 /* Draw a model into the current ordering table, with its colour override
  * (or grey) as the GTE back colour when overrides are enabled. */
-void func_8008A63C(Model *model) {
+void func_8008A63C(NodeModel *model) {
     D_80050104 = 0;
     if (D_80092810) {
         if (model->flags & 0x10) {
@@ -731,8 +763,8 @@ void func_8008A63C(Model *model) {
 }
 
 /* Set the current buffer's colour, noting whether it changed. */
-void func_8008A6F8(CVector *colour) {
-    CVector *current = &D_80092818[D_800928A0];
+void func_8008A6F8(CVECTOR *colour) {
+    CVECTOR *current = &D_80092818[D_800928A0];
 
     if (colour->r == current->r && colour->g == current->g && colour->b == current->b) {
         D_80092914 = 0;
@@ -765,7 +797,7 @@ void func_8008A7E0(Node *node) {
     }
     switch (node->type) {
     case 2:
-        func_8003F738(&node->unk44, &node->view);
+        func_8003F738(&node->angles, &node->view);
         if (D_8009289C) {
             MulMatrix0(&node->parent->view, &node->view, &node->unk6C);
         } else {
@@ -782,16 +814,16 @@ void func_8008A7E0(Node *node) {
     case 0:
     case 1:
         if (node->parent != NULL) {
-            node->position.vx = node->rotation.vx;
-            node->position.vy = node->rotation.vy;
-            node->position.vz = node->rotation.vz;
-            func_8003F738(&node->unk44, &node->view);
+            node->position.vx = node->offset.vx;
+            node->position.vy = node->offset.vy;
+            node->position.vz = node->offset.vz;
+            func_8003F738(&node->angles, &node->view);
             TransMatrix(&node->view, &node->position);
             MulMatrix0(&node->parent->unk6C, &node->view, &node->unk6C);
             CompMatrix(&node->parent->unk4C, &node->view, &node->unk4C);
             CompMatrix(&node->parent->view, &node->view, &node->view);
         }
-        if (node->type == 1 && !(((Model *)node->data)->flags & 1)) {
+        if (node->type == 1 && !(((NodeModel *)node->data)->flags & 1)) {
             func_80030B14(&node->unk6C);
             gte_SetRotMatrix(&node->view);
             gte_SetTransMatrix(&node->view);
@@ -828,7 +860,7 @@ void func_8008ABAC(Node **lights) {
 /* Clear the current buffer's ordering table of a pair and make it the one
  * primitives are added to. */
 void func_8008AC0C(OtPair *pair) {
-    ClearOTagR(pair->ot[D_800928A0], pair->length);
+    ClearOTagR((u_long *)pair->ot[D_800928A0], pair->length);
     D_800928E4 = pair->ot[D_800928A0];
     D_80050100 = pair->shift;
 }
@@ -894,49 +926,49 @@ void func_8008AE1C(OtPair *layer) {
     func_8008AC7C(layer);
     AddPrims(D_80092938, layer->last[D_800928A0], layer->ot[D_800928A0]);
     if (!(layer->flags & 4)) {
-        SetDrawArea(layer->area[D_800928A0], &D_80092868->draw.clip);
+        SetDrawArea(&layer->area[D_800928A0], &D_80092868->draw.clip);
     }
     if (!(layer->flags & 8)) {
-        SetDrawOffset(layer->offset[D_800928A0], D_80092868->draw.ofs);
+        SetDrawOffset(&layer->offset[D_800928A0], D_80092868->draw.ofs);
     }
     if (layer->flags & 0x10) {
         AddPrim(D_80092938, &layer->tile[D_800928A0]);
     }
-    AddPrim(D_80092938, layer->offset[D_800928A0]);
-    AddPrim(D_80092938, layer->area[D_800928A0]);
+    AddPrim(D_80092938, &layer->offset[D_800928A0]);
+    AddPrim(D_80092938, &layer->area[D_800928A0]);
 }
 
-/* Relocate a scene file's pointers to where it was loaded. */
-SceneFile *func_8008AF6C(SceneFile *scene) {
-    s32 delta = (u8 *)scene - scene->base;
+/* Relocate a model file's pointers to where it was loaded. */
+ModelFile *func_8008AF6C(ModelFile *file) {
+    s32 delta = (u8 *)file - file->base;
     u32 i;
 
-    scene->base = (u8 *)scene;
-    scene->unk0 += delta;
-    scene->unk4 += delta;
-    scene->unk10 += delta;
-    scene->unk14 += delta;
-    scene->unk18 += delta;
-    scene->unk20 += delta;
-    scene->unk24 += delta;
-    if (scene->target != NULL) {
-        scene->target += delta;
-        func_8008A040(scene->target);
+    file->base = (u8 *)file;
+    file->hierarchy = (u32 *)((u8 *)file->hierarchy + delta);
+    file->models += delta;
+    file->header = (SceneHeader *)((u8 *)file->header + delta);
+    file->unk14 += delta;
+    file->slots = (MoveSlot *)((u8 *)file->slots + delta);
+    file->image += delta;
+    file->unk24 += delta;
+    if (file->target != NULL) {
+        file->target += delta;
+        func_8008A040(file->target);
     }
-    if (scene->table != NULL) {
-        scene->table = (u32 *)((u8 *)scene->table + delta);
-        for (i = 1; i < scene->table[0] + 1; i++) {
-            if (scene->table[i] != 0) {
-                scene->table[i] += delta;
+    if (file->animations != NULL) {
+        file->animations = (u32 *)((u8 *)file->animations + delta);
+        for (i = 1; i < file->animations[0] + 1; i++) {
+            if (file->animations[i] != 0) {
+                file->animations[i] += delta;
             }
         }
     }
-    return scene;
+    return file;
 }
 
-/* Load and relocate a scene file. */
-SceneFile *func_8008B070(s32 file) {
-    SceneFile *scene;
+/* Load and relocate a model file. */
+ModelFile *func_8008B070(s32 file) {
+    ModelFile *scene;
 
     func_800324B8(0xA);
     scene = func_80031BDC(func_80028738(file), 0);
@@ -990,27 +1022,27 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
         key->value = record->value;
         switch (record->kind & 0x7F) {
         case 3:
-            key->target = &node->unk44.vx;
+            key->target = &node->angles.vx;
             key->angular = 1;
             break;
         case 4:
-            key->target = &node->unk44.vy;
+            key->target = &node->angles.vy;
             key->angular = 1;
             break;
         case 5:
-            key->target = &node->unk44.vz;
+            key->target = &node->angles.vz;
             key->angular = 1;
             break;
         case 6:
-            key->target = &node->rotation.vx;
+            key->target = &node->offset.vx;
             key->angular = 0;
             break;
         case 7:
-            key->target = &node->rotation.vy;
+            key->target = &node->offset.vy;
             key->angular = 0;
             break;
         case 8:
-            key->target = &node->rotation.vz;
+            key->target = &node->offset.vz;
             key->angular = 0;
             break;
         }
@@ -1023,27 +1055,27 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
         channel->start = (u8 *)(record->value + base);
         switch (record->kind & 0x7F) {
         case 3:
-            channel->target = &node->unk44.vx;
+            channel->target = &node->angles.vx;
             channel->angular = 1;
             break;
         case 4:
-            channel->target = &node->unk44.vy;
+            channel->target = &node->angles.vy;
             channel->angular = 1;
             break;
         case 5:
-            channel->target = &node->unk44.vz;
+            channel->target = &node->angles.vz;
             channel->angular = 1;
             break;
         case 6:
-            channel->target = &node->rotation.vx;
+            channel->target = &node->offset.vx;
             channel->angular = 0;
             break;
         case 7:
-            channel->target = &node->rotation.vy;
+            channel->target = &node->offset.vy;
             channel->angular = 0;
             break;
         case 8:
-            channel->target = &node->rotation.vz;
+            channel->target = &node->offset.vz;
             channel->angular = 0;
             break;
         }
@@ -1058,7 +1090,7 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
  * animation. Returns the root node. One pointer serves first as the model
  * file and then as the animation table, as the original's register use
  * shows. */
-Node *func_8008B38C(ModelSetFile *file) {
+Node *func_8008B38C(ModelFile *file) {
     Node *root;
     u32 i;
     u32 *data = (u32 *)file->models;
@@ -1069,10 +1101,10 @@ Node *func_8008B38C(ModelSetFile *file) {
     Node **nodes;
     ModelSet *set;
     Node *node;
-    Model *model;
+    NodeModel *model;
     Player *player;
 
-    func_8002C3E8((u8 *)data);
+    func_8002C3E8((ModelGroup *)data);
     func_800324B8(0x12);
     nodes = func_80031BDC(count * 4, 0);
     set = func_80089E74();
@@ -1087,19 +1119,19 @@ Node *func_8008B38C(ModelSetFile *file) {
         if (records[i].model != -1) {
             model = func_80089FC4();
             func_80089E2C(node, model);
-            func_8008A184(model, (ModelFile *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
+            func_8008A184(model, (SpriteModel *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
         }
         if (records[i].parent == -1) {
             func_80089C88(root, node);
         } else {
             func_80089C88(nodes[records[i].parent], node);
         }
-        node->unk44.vx = records[i].angle.vx;
-        node->unk44.vy = records[i].angle.vy;
-        node->unk44.vz = records[i].angle.vz;
-        node->rotation.vx = records[i].offset[0];
-        node->rotation.vy = records[i].offset[1];
-        node->rotation.vz = records[i].offset[2];
+        node->angles.vx = records[i].angle.vx;
+        node->angles.vy = records[i].angle.vy;
+        node->angles.vz = records[i].angle.vz;
+        node->offset.vx = records[i].offset[0];
+        node->offset.vy = records[i].offset[1];
+        node->offset.vz = records[i].offset[2];
     }
     if (animations != NULL) {
         data = animations;
@@ -1253,12 +1285,12 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
-Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
-    Task *task;
+TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
+    TaskContext *task;
     s32 i;
 
     func_800324B8(3);
-    task = func_80031BDC(sizeof(Task), 2);
+    task = func_80031BDC(sizeof(TaskContext), 2);
     for (i = 0; i < 32; i++) {
         task->regs[i] = 0;
     }
@@ -1272,7 +1304,7 @@ Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
 }
 
 /* Free a task. */
-void func_8008BAE0(Task *task) {
+void func_8008BAE0(TaskContext *task) {
     func_800320E8(task);
 }
 
@@ -1286,9 +1318,9 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
-void func_8008BCC8(Mesh *mesh, u8 *work) {
-    Vector direction;
-    Vector unused; /* unused in the original; reserves 16 bytes */
+void func_8008BCC8(SpriteModel *mesh, u8 *work) {
+    VECTOR direction;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1297,50 +1329,50 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vx <<= 4;
     D_8009A2C8.vy <<= 4;
     D_8009A2C8.vz <<= 4;
-    func_8008C3A8(mesh->data, work, mesh->count);
+    func_8008C3A8(mesh->vertices, work, mesh->vertex_count);
 }
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
-void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
-    u8 *group;
-    s32 groups = mesh->groups;
+void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
+    PrimitiveGroup *group;
+    s32 groups = mesh->group_count;
 
-    D_80059528 = mesh->groupData;
-    D_80059424 = (s32)prims;
-    D_80059568 = (s32)ot;
-    D_8005953C = (s32)work;
-    D_800595C0 += mesh->prims;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
+    D_80059424 = (RenderPacket *)prims;
+    D_80059568 = ot;
+    D_8005953C = (SVECTOR *)work;
+    D_800595C0 += mesh->primitive_count;
     while (--groups != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            func_8008C620(D_80059528, ((s16 *)group)[1]);
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            func_8008C620((u8 *)D_80059528, group->count);
         } else {
-            func_8008C4B0(D_80059528, ((s16 *)group)[1]);
+            func_8008C4B0((u8 *)D_80059528, group->count);
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
 }
 
 /* Build a mesh's packet buffers: a vertex work area and, per display
  * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
  * for every primitive. */
-void func_8008BE4C(ModelPrims *mp, Mesh *mesh) {
+void func_8008BE4C(ModelPrims *mp, SpriteModel *mesh) {
     s32 n; /* vertex, then group counter, then packet bytes per buffer */
     s32 i;
     s32 j;
     s32 triangles;
     s32 quads;
-    u8 *group;
+    PrimitiveGroup *group;
     u8 *vertex;
     u8 *packet;
 
-    mp->vertices = mesh->count;
-    mp->count = mesh->prims;
-    mp->vertexData = mesh->data;
+    mp->vertices = mesh->vertex_count;
+    mp->count = mesh->primitive_count;
+    mp->vertexData = mesh->vertices;
     mp->mesh = mesh;
-    D_80059528 = mesh->groupData;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
     func_800324B8(0x13);
     vertex = mp->work = func_80031BDC(mp->vertices * 8, 2);
     n = mp->vertices;
@@ -1351,42 +1383,42 @@ void func_8008BE4C(ModelPrims *mp, Mesh *mesh) {
     func_800324B8(5);
     triangles = 0;
     quads = 0;
-    n = mesh->groups;
+    n = mesh->group_count;
     while (--n != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            quads += ((s16 *)group)[1];
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            quads += group->count;
         } else {
-            triangles += ((s16 *)group)[1];
+            triangles += group->count;
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
     n = triangles * 0x14 + quads * 0x18;
     packet = func_80031BDC(n * 2, 2);
     mp->prims[0] = (ModelPrim *)packet;
     mp->prims[1] = (ModelPrim *)(packet + n);
-    i = mesh->groups;
-    D_80059528 = mesh->groupData;
+    i = mesh->group_count;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
     while (--i != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            j = ((s16 *)group)[1];
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            j = group->count;
             while (--j != -1) {
                 TAG_LEN(packet) = 5;
                 ((u32 *)packet)[1] = 0x28403030;
                 packet += 0x18;
             }
         } else {
-            j = ((s16 *)group)[1];
+            j = group->count;
             while (--j != -1) {
                 TAG_LEN(packet) = 4;
                 ((u32 *)packet)[1] = 0x20403030;
                 packet += 0x14;
             }
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
     func_800732AC(mp->prims[1], mp->prims[0], n);
 }
@@ -1430,14 +1462,14 @@ void func_8008C120(Instance *instance) {
 Node *func_8008C188(Node *source, Node *parent) {
     Node *node;
     Instance *instance;
-    Mesh *mesh;
+    SpriteModel *mesh;
 
     func_800324B8(6);
     node = func_80089C54();
     instance = func_8008C0CC(source);
     func_8008C0BC(node, instance);
     if (instance->type == 1) {
-        mesh = (Mesh *)((Model *)source->data)->file;
+        mesh = ((NodeModel *)source->data)->file;
         func_800324B8(5);
         instance->prims = func_80031BDC(sizeof(ModelPrims), 2);
         func_8008BE4C(instance->prims, mesh);
@@ -1469,7 +1501,7 @@ void func_8008C2E8(Node *node) {
     Instance *instance = node->data;
     ModelPrims *prims;
 
-    if (instance->type == 1 && !(((Model *)instance->source->data)->flags & 1)) {
+    if (instance->type == 1 && !(((NodeModel *)instance->source->data)->flags & 1)) {
         prims = instance->prims;
         func_8008BD70(prims->mesh, prims->prims[D_800928A0], D_800928E4 + 1, prims->work);
     }
@@ -1488,7 +1520,7 @@ INCLUDE_ASM("decomp/src/menu", func_8008C4B0);
 INCLUDE_ASM("decomp/src/menu", func_8008C620);
 
 /* Shift a vector history: entries 4, 3 and 2 all take entry 0. */
-void func_8008C7C0(SVector *history) {
+void func_8008C7C0(SVECTOR *history) {
     history[4] = history[0];
     history[3] = history[4];
     history[2] = history[3];
@@ -1497,7 +1529,7 @@ void func_8008C7C0(SVector *history) {
 /* Set up a four-point spark line: semi-transparent, in the source colour,
  * the same in both draw buffers. */
 void func_8008C828(SparkLine4 *spark, Emitter *source) {
-    LineF4 *line = &spark->line[0];
+    LINE_F4 *line = &spark->line[0];
 
     setlen(line, 6), setcode(line, 0x4C), line->pad = 0x55555555;
     setSemiTrans(line, 1);
@@ -1508,12 +1540,12 @@ void func_8008C828(SparkLine4 *spark, Emitter *source) {
 /* Project a four-point spark line through its trail, age the trail and add
  * the line to the ordering table. */
 void func_8008C8B4(SparkLine4 *spark, u32 *ot) {
-    LineF4 *line = &spark->line[D_800928A0];
-    s32 depth;
+    LINE_F4 *line = &spark->line[D_800928A0];
+    long depth;
     s32 otz;
 
     otz = RotTransPers4(&spark->pos, &spark->trail[0], &spark->trail[1], &spark->trail[2],
-                        (s32 *)&line->x0, (s32 *)&line->x1, (s32 *)&line->x2, (s32 *)&line->x3,
+                        (long *)&line->x0, (long *)&line->x1, (long *)&line->x2, (long *)&line->x3,
                         &depth, &depth);
     spark->trail[2] = spark->trail[1];
     spark->trail[1] = spark->trail[0];
@@ -1529,7 +1561,7 @@ void func_8008C9B8(SparkLine3 *spark) {
 
 /* Set up a three-point spark line. */
 void func_8008CA00(SparkLine3 *spark, Emitter *source) {
-    LineF3 *line = &spark->line[0];
+    LINE_F3 *line = &spark->line[0];
 
     setlen(line, 5), setcode(line, 0x48), line->pad = 0x55555555;
     setSemiTrans(line, 1);
@@ -1540,9 +1572,9 @@ void func_8008CA00(SparkLine3 *spark, Emitter *source) {
 /* Project a three-point spark line relative to the view origin with the
  * GTE, age its trail and add it. */
 void func_8008CA84(SparkLine3 *spark, u32 *ot) {
-    SVector *origin = D_80092830;
-    SVector *work = D_8009282C;
-    LineF3 *line;
+    SVECTOR *origin = D_80092830;
+    SVECTOR *work = D_8009282C;
+    LINE_F3 *line;
     s32 otz;
 
     work[0].vx = spark->pos.vx - origin->vx;
@@ -1571,7 +1603,7 @@ void func_8008CC2C(SparkLine2 *spark) {
 
 /* Set up a two-point spark line. */
 void func_8008CC54(SparkLine2 *spark, Emitter *source) {
-    LineF2Tag *line = &spark->line[0];
+    LINE_F2 *line = &spark->line[0];
 
     setlen(line, 3), setcode(line, 0x40);
     setSemiTrans(line, 1);
@@ -1581,22 +1613,25 @@ void func_8008CC54(SparkLine2 *spark, Emitter *source) {
 
 /* Project a two-point spark line, age its trail and add it. */
 void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
-    LineF2Tag *line = &spark->line[D_800928A0];
-    s32 depth;
+    LINE_F2 *line = &spark->line[D_800928A0];
+    long depth;
     s32 otz;
 
-    otz = RotTransPers3(&spark->pos, &spark->trail[0], &depth, (s32 *)&line->x0,
-                        (s32 *)&line->x1, &depth, &depth, &depth);
+    /* A LINE_F2 keeps two points: the third vertex and its results are the
+     * depth word. */
+    otz = RotTransPers3(&spark->pos, &spark->trail[0], (SVECTOR *)&depth, (long *)&line->x0,
+                        (long *)&line->x1, &depth, &depth, &depth);
     spark->trail[0] = spark->pos;
     func_800316C0(ot + (otz >> 2), line);
 }
 
+/* Reset a tile spark: it keeps no trail. */
 void func_8008CD54(void) {
 }
 
 /* Set up a spark drawn as a small semi-transparent tile of random size. */
 void func_8008CD5C(SparkTile *spark, Emitter *source) {
-    TileRgb *tile = &spark->tile[0];
+    TILE *tile = &spark->tile[0];
 
     setlen(tile, 3), setcode(tile, 0x62);
     tile->h = rand() % 2 + 2;
@@ -1607,9 +1642,9 @@ void func_8008CD5C(SparkTile *spark, Emitter *source) {
 
 /* Project a tile spark relative to the view origin and add it. */
 void func_8008CE0C(SparkTile *spark, u32 *ot) {
-    SVector *origin = D_80092830;
-    SVector v;
-    TileRgb *tile;
+    SVECTOR *origin = D_80092830;
+    SVECTOR v;
+    TILE *tile;
     s32 otz;
 
     v.vx = spark->pos.vx - origin->vx;
@@ -1623,12 +1658,13 @@ void func_8008CE0C(SparkTile *spark, u32 *ot) {
     func_80031804(ot + (otz >> 2), tile);
 }
 
+/* Reset a dot spark: it keeps no trail. */
 void func_8008CED4(void) {
 }
 
 /* Set up a spark drawn as a single semi-transparent dot. */
 void func_8008CEDC(SparkDot *spark, Emitter *source) {
-    Tile1Tag *dot = &spark->dot[0];
+    TILE_1 *dot = &spark->dot[0];
 
     setlen(dot, 2), setcode(dot, 0x6A);
     setRGB0(dot, source->r, source->g, source->b);
@@ -1637,22 +1673,22 @@ void func_8008CEDC(SparkDot *spark, Emitter *source) {
 
 /* Project a dot spark and add it. */
 void func_8008CF30(SparkDot *spark, u32 *ot) {
-    Tile1Tag *dot = &spark->dot[D_800928A0];
-    s32 depth;
+    TILE_1 *dot = &spark->dot[D_800928A0];
+    long depth;
 
-    func_80031870(ot + (RotTransPers(&spark->pos, (s32 *)&dot->x0, &depth, &depth) >> 2), dot);
+    func_80031870(ot + (RotTransPers(&spark->pos, (long *)&dot->x0, &depth, &depth) >> 2), dot);
 }
 
 /* Place a spark at its source's origin. */
-void func_8008CF9C(Emitter *source, SVector *pos) {
+void func_8008CF9C(Emitter *source, SVECTOR *pos) {
     *pos = source->origin;
 }
 
 /* Place a spark at a random point of its source's box, rotated with the
  * source. */
-void func_8008CFC4(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008CFC4(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
 
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = rand() % source->range.vy - source->offset.vy;
@@ -1664,7 +1700,7 @@ void func_8008CFC4(Emitter *source, SVector *pos) {
 }
 
 /* Place a spark at a random point of its source's box. */
-void func_8008D0A4(Emitter *source, SVector *pos) {
+void func_8008D0A4(Emitter *source, SVECTOR *pos) {
     pos->vx = source->origin.vx + rand() % source->range.vx - source->offset.vx;
     pos->vy = source->origin.vy + rand() % source->range.vy - source->offset.vy;
     pos->vz = source->origin.vz + rand() % source->range.vz - source->offset.vz;
@@ -1672,9 +1708,9 @@ void func_8008D0A4(Emitter *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal rectangle,
  * rotated with the source. */
-void func_8008D14C(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D14C(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
 
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = 0;
@@ -1687,9 +1723,9 @@ void func_8008D14C(Emitter *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal ellipse,
  * rotated with the source. */
-void func_8008D208(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D208(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
     s32 angle = rand();
     s32 radius = rand();
 
@@ -1704,9 +1740,9 @@ void func_8008D208(Emitter *source, SVector *pos) {
 
 /* Place a spark on its source's ring at a random height, rotated with the
  * source. The ring angle is never initialised in the original. */
-void func_8008D304(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D304(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
     s32 angle;
 
     v.vx = (func_8003F8B0(angle) * source->range.vx) >> 12;
@@ -1774,7 +1810,7 @@ void func_8008D580(Emitter *emitter) {
     s32 i;
 
     for (i = 0; i < emitter->count; i++) {
-        ((SVector *)spark)->pad = 0;
+        ((SVECTOR *)spark)->pad = 0;
         spark += emitter->size;
     }
 }
@@ -1795,7 +1831,7 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
     setup = emitter->setup;
     for (i = 0; i < emitter->count; i++) {
         setup(spark, emitter);
-        ((SVector *)spark)->pad = 0;
+        ((SVECTOR *)spark)->pad = 0;
         spark += emitter->size;
     }
 }
@@ -1803,14 +1839,14 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
 /* Launch up to count idle sparks: each gets a random direction inside the
  * emitter's spread cone and a random speed, both rotated into place, then a
  * position from the placement rule, the emitter's life and a fresh shape. */
-void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
-    SVector dir;
-    SVector unit;
-    Matrix local;
-    Matrix world;
-    Matrix turned;
+void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count) {
+    SVECTOR dir;
+    SVECTOR unit;
+    MATRIX local;
+    MATRIX world;
+    MATRIX turned;
     u8 *spark;
-    void (*place)(Emitter *, SVector *);
+    void (*place)(Emitter *, SVECTOR *);
     void (*reset)(void *);
     s32 left;
     s32 i;
@@ -1860,7 +1896,7 @@ void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
             if (--left == -1) {
                 break;
             }
-            place(emitter, (SVector *)spark);
+            place(emitter, (SVECTOR *)spark);
             ((Spark *)spark)->pos.pad = emitter->life;
             reset(spark);
         }
@@ -1871,7 +1907,7 @@ void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
 /* Bounce a falling spark off the floor under it, losing half its speed.
  * The floor query reads the spark position as a 32-bit vector. */
 void func_8008D980(Spark *spark) {
-    if (spark->vel.vy > 0 && spark->pos.vy > func_80082488((Vector *)spark, 0)) {
+    if (spark->vel.vy > 0 && spark->pos.vy > func_80082488((VECTOR *)spark, 0)) {
         spark->vel.vy = -spark->vel.vy / 2;
     }
 }
@@ -1889,17 +1925,17 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
-void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
-    SVector unused[5]; /* unused in the original; reserves 40 bytes */
+void func_8008DA48(Emitter *emitter, u32 *ot, MATRIX *view) {
+    SVECTOR unused[5]; /* unused in the original; reserves 40 bytes */
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
 
-    D_8009282C = (SVector *)0x1F800000;
-    D_80092830 = (SVector *)0x1F800030;
-    ((SVector *)0x1F800030)->vx = D_80096FA8.vx;
-    ((SVector *)0x1F800030)->vy = D_80096FA8.vy;
-    ((SVector *)0x1F800030)->vz = D_80096FA8.vz;
+    D_8009282C = (SVECTOR *)0x1F800000;
+    D_80092830 = (SVECTOR *)0x1F800030;
+    ((SVECTOR *)0x1F800030)->vx = D_80096FA8.vx;
+    ((SVECTOR *)0x1F800030)->vy = D_80096FA8.vy;
+    ((SVECTOR *)0x1F800030)->vz = D_80096FA8.vz;
     spark = (Spark *)emitter->sparks;
     draw = emitter->draw;
     for (i = 0; i < emitter->count; i++) {
@@ -1922,10 +1958,10 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
 }
 
 /* Copy one model part's local transform. */
-void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
-    Matrix unused; /* unused in the original; reserves 32 bytes */
+void func_8008DBC0(Node *model, s16 part, MATRIX *out) {
+    MATRIX unused; /* unused in the original; reserves 32 bytes */
 
-    *out = model->list->parts[part]->matrix;
+    *out = ((ModelSet *)model->data)->nodes[part]->unk4C;
 }
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
@@ -1952,10 +1988,10 @@ void func_8008DCA8(s32 strength) {
 
 /* Emit a burst from a model part while the burst lasts, then move and draw
  * the menu's sparks under the given view. */
-void func_8008DCB8(u32 *ot, SparkModel *model, Matrix *view, Vector *pos) {
+void func_8008DCB8(u32 *ot, Node *model, MATRIX *view, VECTOR *pos) {
     Emitter *emitter = D_80092834;
-    Matrix rotation;
-    Matrix part;
+    MATRIX rotation;
+    MATRIX part;
 
     if (D_80092838 >= 0x10) {
         func_8008DBC0(model, 0x27, &part);
@@ -1992,7 +2028,7 @@ void func_8008DF30(void) {
 /* Allocate the glow buffers once, clear them, and upload the glow palette
  * with every entry marked semi-transparent. */
 void func_8008DF50(void) {
-    Rect rect;
+    RECT rect;
     s32 i;
 
     if (D_80092844 == NULL) {
@@ -2014,7 +2050,7 @@ void func_8008DF50(void) {
     rect.w = 0xFF;
     rect.x = 0;
     rect.h = 1;
-    LoadImage(&rect, (u32 *)D_80091CE0);
+    LoadImage(&rect, (u_long *)D_80091CE0);
 }
 
 /* Release the glow buffers. */
@@ -2106,7 +2142,7 @@ void func_8008E120(void) {
 /* Draw a full-screen grey tile of the given level, additive or subtractive,
  * with the draw mode that selects the blend. */
 void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
-    TileRgb *tile = &D_80096DE0[D_800928A0];
+    TILE *tile = &D_80096DE0[D_800928A0];
 
     *(u32 *)&tile->r0 = level | (level << 8) | (level << 16) | 0x60000000;
     setlen(tile, 3);
@@ -2126,9 +2162,9 @@ void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
  * screen as a semi-transparent textured quad at two thirds of the level
  * (plain texture at full level); optionally add a brightening tile. */
 void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
-    PolyFT4 *quad = &D_80096D90[D_800928A0];
-    TileRgb *tile;
-    Rect rect;
+    POLY_FT4 *quad = &D_80096D90[D_800928A0];
+    TILE *tile;
+    RECT rect;
     s32 shade;
 
     setlen(quad, 9);
@@ -2151,7 +2187,7 @@ void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
     rect.y = 0x100;
     rect.w = 0x38;
     rect.h = 0x2B;
-    LoadImage(&rect, (u32 *)D_80092844);
+    LoadImage(&rect, (u_long *)D_80092844);
     if (brighten) {
         tile = &D_80096DE0[D_800928A0];
         if (level > 0x80) {
@@ -2224,7 +2260,7 @@ void func_8008E6F8(Actor *owner) {
 
 /* Start a sound on a free positional voice (or a matching unpositioned
  * one, else the oldest); positioned sounds follow pos or its snapshot. */
-void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
+void func_8008E78C(s32 sound, s32 mode, VECTOR *pos, s32 arg3) {
     s32 oldest = 0;
     SoundVoice *chosen = &D_80096EA0[3];
     SoundVoice *voice;
@@ -2264,8 +2300,8 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
 /* Pan and attenuate every positioned voice from its screen position and
  * depth; a voice just started is keyed on with those values. */
 void func_8008E8B0(void) {
-    SVector v;
-    SVector screen;
+    SVECTOR v;
+    SVECTOR screen;
     s32 sz;
     SoundVoice *voice;
     s32 volume;
@@ -2340,7 +2376,7 @@ void func_8008EB4C(s32 id) {
 }
 
 /* Play a character's sound effect, tagged with its id and side. */
-void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
+void func_8008EB88(Actor *owner, s32 id, VECTOR *pos, s32 mode) {
     if (id != 0) {
         func_8008E78C(id + 0x60000, mode, pos, (id & 0x7F) | ((owner->flags >> 20) & 0x80));
     }
@@ -2348,7 +2384,7 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
 
 /* Play one of a character's command sounds (random 1-6 when index is 0):
  * up to two effects from the shared pair table. */
-void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
+void func_8008EBD0(Actor *owner, s32 index, VECTOR *pos, s32 mode) {
     s32 entry;
 
     if (index == 0) {
@@ -2700,20 +2736,20 @@ void func_8008F900(Actor *actor) {
 /* Whether an actor stands in the far quadrant of the scene or on a floor
  * of kind 1. */
 s32 func_8008F9B0(Actor *actor) {
-    Vector pos = actor->pos;
+    VECTOR pos = actor->pos;
 
     pos.vx -= 0x3F80;
     pos.vz -= 0x3F80;
     if (pos.vx > 0 && pos.vz > 0) {
         return 1;
     }
-    return (func_800828C4(actor) & 0x3000000) == 0x1000000;
+    return (func_800828C4(&actor->pos) & 0x3000000) == 0x1000000;
 }
 
 /* Steer the opponent toward one of two headings depending on which side
  * of the scene centre it stands, at full speed. */
 s32 func_8008FA2C(Actor *actor, Brain *brain) {
-    Vector pos = actor->pos;
+    VECTOR pos = actor->pos;
 
     pos.vx -= 0x3F80;
     pos.vz -= 0x3F80;

@@ -1,30 +1,78 @@
-/* Battle code from 8008CCCC to 8009E53C: its rodata starts at 80070370
+/* Battle code from 8008CCCC to 8009E53C: the gear command menu and the
+ * command panel's pages, the windows (opened, closed, grown), the item list
+ * page, the cursor glyph, character 4's command window, the action resolver
+ * with its rolls, formulas, elements and statuses, the turn timers and
+ * regeneration, the gear HUD, the escape and defense commands and the party's
+ * adjustments at the battle's start and end. Its rodata starts at 80070370
  * (80094EE4's jump table), back at 0 mod 8 after the previous unit's tables
  * at 4 mod 8 (docs/matching.md); the text boundary lies after 8008C81C. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/text.h"
+#include "battle/actions.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/resolver.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
 #include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
 #include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
-#include "battle/area.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+
+/* This unit's functions, declared before their first use (the formula
+ * functions its tables name are declared with the tables below). */
+void func_800930AC(u8 member, u8 *ids, u16 *costs); /* build the gear command menu's list */
+void func_800939CC(u8 member, u8 kind);
+void func_800946F4(void);
+void func_80094C78(void);
+void func_800958D8(void);
+void func_80095B44(void);
+void func_80096494(u16 *attack, u16 *defense, s8 *hit);
+void func_80096824(void);
+void func_800968C0(void);
+s32 func_80096AB8(void);
+s16 func_80096FBC(void);
+s16 func_80097610(void);
+s8 func_80097964(u8 a, u8 b, u16 c);
+void func_80097D08(void);
+void func_80098D2C(u8 slot, u8 param);
+s32 func_80099498(void);
+void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount);
+void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
+void func_80099FB0(void);
+u8 func_8009A258(u8 member, u8 command);
+void func_8009AB38(u8 member); /* enable the member's deathblow commands */
+void func_8009AC48(u8 member, u8 checked);
+void func_8009AFD8(void);
+void func_8009B104(u8 slot, Combatant *chuchu);
+void func_8009B46C(u16 *damage);
+void func_8009B684(u8 kind, u16 flag);
+void func_8009BE0C(void);
+void func_8009C198(void);
+void func_8009C4B4(void);
+void func_8009C9C4(void);
+void func_8009CA90(void);
+void func_8009CB68(u8 slot);
+s8 func_8009D3A0(void);
+u16 func_8009D948(void);
+u16 func_8009DA04(void);
+s32 func_8009DB54(s32 damage);
+s8 func_8009DBFC(u8 fromGear);
 
 /* The unit's own uninitialized variable (its .bss, after battle.c's). */
 static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
-
-/* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
-extern s32 D_800CCB34_word __asm__("D_800CCB34");
 
 /* This unit's data, 800c348c-800c3508: the formula tables of its formula
  * functions, the formation mode and battle.c's combo steps. */
@@ -79,7 +127,7 @@ void (*D_800C34DC[])(void) = {
 /* Hide the command windows (three panels); without `keep` show the +0x641c
  * lists. */
 void func_8008CCCC(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
@@ -90,7 +138,7 @@ void func_8008CCCC(u8 keep) {
 /* Show the command windows (three panels, page 4) and frame the camera on
  * the member and its default target. */
 void func_8008CD28(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 1;
     D_800D2D28->unkB7 = 4;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -119,7 +167,7 @@ u8 func_8008CDE4(u8 member, u8 index) {
     refused = 1;
 
     if (D_800CCCE8.records[member].gear.fuel >= cost &&
-        func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, index) != 0 &&
+        func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, index) != 0 &&
         !(D_800CCCE8.records[member].pilot.status7A & sealed[index])) {
         func_8008CCCC(1);
         D_800D2D28->unkC6 = 1;
@@ -169,7 +217,7 @@ u8 member;
         costs[i] = 0;
     }
     for (i = 0; i < 4; i++) {
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, i) != 0 &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, i) != 0 &&
             !(D_800CCCE8.records[member].pilot.status7A & seals[i])) {
             ids[i] = D_800CCCE8.records[member].pilot.gearId * 4 + i;
             costs[i] = D_800CCCE8.gearCommands[member][i + 37].hudState;
@@ -285,8 +333,8 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
         j = 0;
         while ((id = ((u16 *)D_800C2F4C[sets[i]])[j]) != 0xFFFF) {
             if (id >= 0x4000) {
-                D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].unk0[id & 0xFF];
-                id = D_800C3EAC->slots[member].unk0[id & 0xFF];
+                D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].layout[id & 0xFF];
+                id = D_800C3EAC->slots[member].layout[id & 0xFF];
                 if (id == 0xFF) {
                     j += 4;
                     continue;
@@ -308,22 +356,22 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                 for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
                     SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = value;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = value;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->r0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->g0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->b0 = value;
                     D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
                 }
             } else {
                 for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = 0x80;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = 0x80;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->r0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->g0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->b0 = 0x80;
                 }
             }
             j += 4;
         }
     }
-    return D_800CCB34_word;
+    return D_800CCB04.buffer;
 }
 
 /* Place a window's four corner glyphs (the alternate set while the battle
@@ -471,8 +519,8 @@ void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
         rect->h = h;
         rect->curW = 0;
         rect->curH = 0;
-        D_800D2D28->unkBF[window] = 0;
-        D_800D2D28->unkB8[window] = 1;
+        D_800D2D28->windowOpen[window] = 0;
+        D_800D2D28->windowOpening[window] = 1;
     } else {
         func_8008F6E4(window, x, y, w, h);
         if (wait != 0) {
@@ -484,7 +532,7 @@ void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
 /* Close window `window` and release its two blocks after a frame. */
 void func_8008FA60(u8 window) {
     D_800D2D28->windows[window] = 0;
-    D_800D2D28->unkB8[window] = 0;
+    D_800D2D28->windowOpening[window] = 0;
     func_800716D8();
     func_800320E8(D_800D2E38[window]);
     func_800320E8(D_800D2D90[window]);
@@ -499,7 +547,7 @@ void func_8008FAD8(void) {
 
     for (i = 0; i < 7; i++) {
         rect = D_800D2D90[i];
-        if (D_800D2D28->unkB8[i] != 0 && D_800D2D28->unkBF[i] == 0) {
+        if (D_800D2D28->windowOpening[i] != 0 && D_800D2D28->windowOpen[i] == 0) {
             done = 0;
             if (rect->curW + 32 >= rect->w) {
                 rect->curW = rect->w;
@@ -514,7 +562,7 @@ void func_8008FAD8(void) {
                 rect->curH += 32;
             }
             if (done == 2) {
-                D_800D2D28->unkBF[i] = 1;
+                D_800D2D28->windowOpen[i] = 1;
             }
             func_8008F6E4(rect->style, rect->x + (rect->w >> 1) - (rect->curW >> 1),
                           rect->y + (rect->h >> 1) - (rect->curH >> 1), rect->curW, rect->curH);
@@ -789,9 +837,9 @@ void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks) {
         }
         *ticks = 0;
     }
-    D_800D2D28->unk100 = func_80076A10(*frame + 0xE0, D_800C3EA4->unk27C8, x, y);
-    D_800D2D28->unkA7 = D_800CCB04.buffer;
-    D_800D2D28->unk9E = 1;
+    D_800D2D28->cursorParts = func_80076A10(*frame + 0xE0, D_800C3EA4->cursor, x, y);
+    D_800D2D28->cursorBuffer = D_800CCB04.buffer;
+    D_800D2D28->cursorShown = 1;
 }
 
 /* Show the member's EP and maximum EP as two digit glyphs each (no leading
@@ -856,7 +904,7 @@ void func_80091064(u8 member) {
     func_800769E8(&rect, D_800D2DB0);
     if (D_800D32A0[member].unk1 == 0) {
         for (i = 0; i < 16; i++) {
-            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, i)) {
+            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, i)) {
                 known[i] = 1;
                 costs[i] = D_800CCCE8.partyCommands[member][i + 22].cost;
             } else {
@@ -866,7 +914,7 @@ void func_80091064(u8 member) {
         }
     } else {
         for (i = 0; i < 16; i++) {
-            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, i)) {
+            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, i)) {
                 known[i] = 1;
                 costs[i] = D_800CCCE8.gearCommands[member][i + 21].cost;
             } else {
@@ -1041,7 +1089,7 @@ void func_80091B38(u8 member, u8 column, u8 row) {
     if (D_800D32A0[member].unk1 == 0) {
         text = D_800D2D24[member] * 32 + (row * 2 + column) * 2;
     } else {
-        text = D_8006D8A0.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
+        text = D_8006D634.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
     }
     pixels = (u32 *)func_8008AC00(0x39);
     bzero(pixels, 0x618);
@@ -1068,8 +1116,8 @@ u8 row;
     u8 known = 0;
 
     if (D_800D32A0[member].unk1 == 0) {
-        known = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
-    } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)) {
+        known = func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
+    } else if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2)) {
         known = 1;
     }
     if (known) {
@@ -1468,7 +1516,7 @@ void func_800939CC(u8 member, u8 kind) {
     seals[1] = D_800C3234[14];
     seals[2] = D_800C3234[15];
     seals[3] = D_800C3234[3];
-    if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, kind) &&
+    if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, kind) &&
         !(D_800CCCE8.records[member].pilot.status7A & seals[kind])) {
         func_80093578(member, kind);
         func_8009382C(member, kind);
@@ -1503,13 +1551,13 @@ void func_80093B08(u8 member) {
         divisors[0] = 100;
         divisors[1] = 10;
         if (D_800D32A0[member].unk1 == 0) {
-            slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
-            slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
+            slots[0] = D_8006D634.characters[D_800D2D24[member]].entryItems[0];
+            slots[1] = D_8006D634.characters[D_800D2D24[member]].entryItems[3];
             values[0] = D_8006D634.ammo[slots[0] - 50];
             values[1] = D_8006D634.ammo[slots[1] - 50];
         } else {
-            slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
-            slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
+            slots[0] = D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[0];
+            slots[1] = D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3];
             values[0] = D_8006D634.gearAmmo[slots[0] - 50];
             values[1] = D_8006D634.gearAmmo[slots[1] - 50];
         }
@@ -2221,14 +2269,6 @@ void func_80096018(void) {
     }
 }
 
-/* Element adjustment of an attack/defense pair: the command's element (or
- * the attacker's own element status) against the target's weakness, its
- * resistance statuses (which may also force hit result 4) and its single
- * element guards, then a 20% boost for either side's +0x32 bit 0x10.
- * Both target branches test the resist bit with the same statement macro;
- * jump.c turns the first into a bit extract (resist is still 0 there) and
- * keeps the branch in the second. */
-
 /* Mark the target resistant when its status word has bit 0x2. */
 #define STATUS_RESIST(word, resist) \
     do {                            \
@@ -2237,6 +2277,13 @@ void func_80096018(void) {
         }                           \
     } while (0)
 
+/* Element adjustment of an attack/defense pair: the command's element (or
+ * the attacker's own element status) against the target's weakness, its
+ * resistance statuses (which may also force hit result 4) and its single
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10.
+ * Both target branches test the resist bit with the same statement macro;
+ * jump.c turns the first into a bit extract (resist is still 0 there) and
+ * keeps the branch in the second. */
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
     s8 ether = 0;
     u8 flag = 0;
@@ -2699,6 +2746,7 @@ s16 func_80097610(void) {
     return value;
 }
 
+/* Empty; nothing in the overlay calls it. */
 void func_8009795C(void) {
 }
 
@@ -2841,11 +2889,11 @@ void func_80097D5C(void) {
         D_800D2D6C = &D_800C34B0->records[member].gear;
         level = &D_800C34B0->records[member].field148;
         if (D_800D2D24[member] == 9) {
-            D_8006D8A0.characters[9].characterId = 9;
+            D_8006D634.characters[9].characterId = 9;
             D_800C3E00->pilot.characterId = 9;
         }
         if (D_800D2D24[member] == 10) {
-            D_8006D8A0.characters[10].characterId = 10;
+            D_8006D634.characters[10].characterId = 10;
             D_800C3E00->pilot.characterId = 10;
         }
         if (D_800C3E00->pilot.characterId == 4) {
@@ -2914,13 +2962,13 @@ void func_80097D5C(void) {
             D_800C34B0->gearCommands[member][37].hudState *= 10;
         }
         level[1] = 0;
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x1C00) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x1C00) {
             level[1] = 1;
         }
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x380) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x380) {
             level[1] = 2;
         }
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x70) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x70) {
             level[1] = 3;
         }
         D_800D2D6C->attackScale = D_800D2D6C->field74;
@@ -2944,7 +2992,7 @@ void func_80097D5C(void) {
             }
         }
         if (D_800C3E00->pilot.level >= 50) {
-            D_8006ECF4[D_800C3E00->pilot.characterId].mask4 |= 8;
+            D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA |= 8;
         }
         if (D_800C3E00->pilot.characterId == 7) {
             D_800D2D6C->hp = D_800C3E00->pilot.hp * 50;
@@ -2960,14 +3008,14 @@ void func_80097D5C(void) {
             }
         }
         if (D_800C3E00->pilot.gearId == 0xF) {
-            D_8006ECF4[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
+            D_8006D634.skills[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
         }
         if (D_800C3E00->pilot.gearId == 0x12) {
             D_800C3E00->pilot.status7A = 0x238;
             D_800D2D6C->fuel = 0x26AC;
             D_800D2D6C->maxFuel = 0x26AC;
             level[1] = 0;
-            D_8006ECF4[3].flags1A = 0x8000;
+            D_8006D634.skills[3].flags1A = 0x8000;
         }
         if (D_8006D634.vars[0] >= 231 && !(D_8006D634.flags2355 & 0x80)) {
             D_8006D634.characters[9].weapons[0] = 0x27;
@@ -3014,21 +3062,21 @@ void func_8009892C(void) {
             D_800D2D6C->speed = 16;
         }
     }
-    D_8006D8A0.characters[8].speed = 7;
-    if (D_8006ECF4[8].flags1A & 0x2000) {
-        D_8006ECF4[8].mask2 |= 0x800;
+    D_8006D634.characters[8].speed = 7;
+    if (D_8006D634.skills[8].flags1A & 0x2000) {
+        D_8006D634.skills[8].levelSkills |= 0x800;
     }
     if (D_8006D634.vars[0] < 0xBB) {
-        D_8006D8A0.gears[0].field74 = 10;
-        D_8006D8A0.gears[1].field74 = 10;
-        D_8006D8A0.gears[11].field74 = 9;
-        D_8006D8A0.gears[12].field74 = 9;
-        D_8006D8A0.gears[13].field74 = 8;
-        D_8006D8A0.gears[14].field74 = 12;
-        D_8006D8A0.gears[15].field74 = 12;
-        D_8006D8A0.gears[13].engine = 0x58;
-        D_8006D8A0.gears[7].field3 = 0;
-        D_8006D8A0.gears[15].frame = 0x28;
+        D_8006D634.gears[0].field74 = 10;
+        D_8006D634.gears[1].field74 = 10;
+        D_8006D634.gears[11].field74 = 9;
+        D_8006D634.gears[12].field74 = 9;
+        D_8006D634.gears[13].field74 = 8;
+        D_8006D634.gears[14].field74 = 12;
+        D_8006D634.gears[15].field74 = 12;
+        D_8006D634.gears[13].engine = 0x58;
+        D_8006D634.gears[7].field3 = 0;
+        D_8006D634.gears[15].frame = 0x28;
     }
 }
 
@@ -3247,8 +3295,8 @@ void func_80098D2C(u8 slot, u8 param) {
             D_800C34B0->message = 0x28;
             break;
         case 14:
-            D_8006D8A0.characters[record->pilot.characterId].expNextA = 1;
-            D_8006D8A0.characters[record->pilot.characterId].expNextB = 1;
+            D_8006D634.characters[record->pilot.characterId].expNextA = 1;
+            D_8006D634.characters[record->pilot.characterId].expNextB = 1;
             break;
         case 15:
             for (i = 0; i < 7; i++) {
@@ -3785,19 +3833,19 @@ void func_8009A2D4(u8 member) {
 
 /* Byte 5 of game-data unit record id. */
 u8 func_8009A7B8(u8 id) {
-    return D_8006D8A0.characters[id].entries[0].pad5;
+    return D_8006D634.characters[id].entries[0].pad5;
 }
 
 /* Whether gear item index is one of character 4's four entries. */
 s32 func_8009A7E4(u8 index) {
     BattleItem *item = &D_800C34B0->lists.items.members[index];
 
-    if (D_8006D8A0.characters[4].entries[0].id == item->id
-        || D_8006D8A0.characters[4].entries[1].id == item->id
-        || D_8006D8A0.characters[4].entries[2].id == item->id) {
+    if (D_8006D634.characters[4].entries[0].id == item->id
+        || D_8006D634.characters[4].entries[1].id == item->id
+        || D_8006D634.characters[4].entries[2].id == item->id) {
         return 1;
     }
-    return D_8006D8A0.characters[4].entries[3].id == item->id;
+    return D_8006D634.characters[4].entries[3].id == item->id;
 }
 
 /* Put battle item index into character 4's entry holding its id (entry k when
@@ -3807,25 +3855,25 @@ void func_8009A854(u8 index, u8 k) {
     BattleItem *item = &D_800C34B0->lists.items.list[index];
     u8 i;
 
-    if (D_8006D8A0.characters[4].entries[0].id == item->id) {
+    if (D_8006D634.characters[4].entries[0].id == item->id) {
         k = 0;
     }
-    if (D_8006D8A0.characters[4].entries[1].id == item->id) {
+    if (D_8006D634.characters[4].entries[1].id == item->id) {
         k = 1;
     }
-    if (D_8006D8A0.characters[4].entries[2].id == item->id) {
+    if (D_8006D634.characters[4].entries[2].id == item->id) {
         k = 2;
     }
-    if (D_8006D8A0.characters[4].entries[3].id == item->id) {
+    if (D_8006D634.characters[4].entries[3].id == item->id) {
         k = 3;
     }
-    D_8006D8A0.characters[4].entries[k].value4 = item->valueC;
-    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
-    D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
-    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
-    D_8006D8A0.characters[4].entryItems[k] = index;
+    D_8006D634.characters[4].entries[k].value4 = item->valueC;
+    D_8006D634.characters[4].entries[k].value3 = item->valueB;
+    D_8006D634.characters[4].entries[k].value2 = item->valueA;
+    D_8006D634.characters[4].entries[k].value3 = item->valueB;
+    D_8006D634.characters[4].entryItems[k] = index;
     D_8006D634.ammo[index - 50] = item->durability;
-    D_8006D8A0.characters[4].entryItems[k] = index;
+    D_8006D634.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
 
@@ -4086,75 +4134,75 @@ void func_8009B1E4(void) {
     u8 i;
 
     for (i = 1; i < 48; i++) {
-        D_8006F65A[i] = i;
-        D_8006F5C4[i] = 99;
+        D_8006D634.itemIds[i] = i;
+        D_8006D634.itemCounts[i] = 99;
     }
-    D_8006ECF4[0].mask0 = 0xFFF8;
-    D_8006ECF4[0].mask2 = 0xFF00;
-    D_8006ECF4[0].mask4 = 0xFFFF;
-    D_8006ECF4[0].mask6 = 0xFE00;
-    D_8006ECF4[0].flags1A = 0xF000;
-    D_8006ECF4[0].field17 = 7;
-    D_8006ECF4[1].mask0 = 0xFFE0;
-    D_8006ECF4[1].mask2 = 0xFFF0;
-    D_8006ECF4[1].mask4 = 0xFFFF;
-    D_8006ECF4[1].mask6 = 0xFFF0;
-    D_8006ECF4[1].flags1A = 0xC000;
-    D_8006ECF4[1].field17 = 7;
-    D_8006ECF4[2].mask0 = 0xFFE0;
-    D_8006ECF4[2].mask2 = 0xFFE0;
-    D_8006ECF4[2].mask4 = 0xFFFF;
-    D_8006ECF4[2].mask6 = 0xFF00;
-    D_8006ECF4[2].flags1A = 0x8000;
-    D_8006ECF4[2].field17 = 7;
-    D_8006ECF4[3].mask0 = 0xFFE0;
-    D_8006ECF4[3].mask2 = 0xFFC0;
-    D_8006ECF4[3].mask4 = 0xFFFF;
-    D_8006ECF4[3].mask6 = 0xFF00;
-    D_8006ECF4[3].flags1A = 0xF000;
-    D_8006ECF4[3].field17 = 7;
-    D_8006ECF4[4].mask0 = 0xFFC0;
-    D_8006ECF4[4].mask2 = 0xFFC0;
-    D_8006ECF4[4].mask4 = 0xFFFF;
-    D_8006ECF4[4].mask6 = 0xFC00;
-    D_8006ECF4[4].flags1A = 0xE000;
-    D_8006ECF4[4].field17 = 7;
-    D_8006ECF4[5].mask0 = 0xFFC0;
-    D_8006ECF4[5].mask2 = 0xF000;
-    D_8006ECF4[5].mask4 = 0xFFFF;
-    D_8006ECF4[5].mask6 = 0xF000;
-    D_8006ECF4[5].flags1A = 0x8000;
-    D_8006ECF4[5].field17 = 7;
-    D_8006ECF4[6].mask0 = 0xFFC0;
-    D_8006ECF4[6].mask2 = 0xFF00;
-    D_8006ECF4[6].mask4 = 0xFFFF;
-    D_8006ECF4[6].mask6 = 0xFF00;
-    D_8006ECF4[6].flags1A = 0x8000;
-    D_8006ECF4[6].field17 = 7;
-    D_8006ECF4[7].mask0 = 0;
-    D_8006ECF4[7].mask2 = 0xFF00;
-    D_8006ECF4[7].mask4 = 0;
-    D_8006ECF4[7].mask6 = 0xFF00;
-    D_8006ECF4[7].flags1A = 0;
-    D_8006ECF4[7].field17 = 7;
-    D_8006ECF4[8].mask0 = 0;
-    D_8006ECF4[8].mask2 = 0xF800;
-    D_8006ECF4[8].mask4 = 0xFFFF;
-    D_8006ECF4[8].mask6 = 0;
-    D_8006ECF4[8].flags1A = 0xE000;
-    D_8006ECF4[8].field17 = 7;
-    D_8006ECF4[9].mask0 = 0xFFE0;
-    D_8006ECF4[9].mask2 = 0xFFE0;
-    D_8006ECF4[9].mask4 = 0xFFFF;
-    D_8006ECF4[9].mask6 = 0xFFE0;
-    D_8006ECF4[9].flags1A = 0x8000;
-    D_8006ECF4[9].field17 = 7;
-    D_8006ECF4[10].mask0 = 0xFFC0;
-    D_8006ECF4[10].mask2 = 0xFF00;
-    D_8006ECF4[10].mask4 = 0xFFFF;
-    D_8006ECF4[10].mask6 = 0xFF00;
-    D_8006ECF4[10].flags1A = 0xC000;
-    D_8006ECF4[10].field17 = 7;
+    D_8006D634.skills[0].counterSkills = 0xFFF8;
+    D_8006D634.skills[0].levelSkills = 0xFF00;
+    D_8006D634.skills[0].unlocksA = 0xFFFF;
+    D_8006D634.skills[0].unlocksB = 0xFE00;
+    D_8006D634.skills[0].flags1A = 0xF000;
+    D_8006D634.skills[0].tier = 7;
+    D_8006D634.skills[1].counterSkills = 0xFFE0;
+    D_8006D634.skills[1].levelSkills = 0xFFF0;
+    D_8006D634.skills[1].unlocksA = 0xFFFF;
+    D_8006D634.skills[1].unlocksB = 0xFFF0;
+    D_8006D634.skills[1].flags1A = 0xC000;
+    D_8006D634.skills[1].tier = 7;
+    D_8006D634.skills[2].counterSkills = 0xFFE0;
+    D_8006D634.skills[2].levelSkills = 0xFFE0;
+    D_8006D634.skills[2].unlocksA = 0xFFFF;
+    D_8006D634.skills[2].unlocksB = 0xFF00;
+    D_8006D634.skills[2].flags1A = 0x8000;
+    D_8006D634.skills[2].tier = 7;
+    D_8006D634.skills[3].counterSkills = 0xFFE0;
+    D_8006D634.skills[3].levelSkills = 0xFFC0;
+    D_8006D634.skills[3].unlocksA = 0xFFFF;
+    D_8006D634.skills[3].unlocksB = 0xFF00;
+    D_8006D634.skills[3].flags1A = 0xF000;
+    D_8006D634.skills[3].tier = 7;
+    D_8006D634.skills[4].counterSkills = 0xFFC0;
+    D_8006D634.skills[4].levelSkills = 0xFFC0;
+    D_8006D634.skills[4].unlocksA = 0xFFFF;
+    D_8006D634.skills[4].unlocksB = 0xFC00;
+    D_8006D634.skills[4].flags1A = 0xE000;
+    D_8006D634.skills[4].tier = 7;
+    D_8006D634.skills[5].counterSkills = 0xFFC0;
+    D_8006D634.skills[5].levelSkills = 0xF000;
+    D_8006D634.skills[5].unlocksA = 0xFFFF;
+    D_8006D634.skills[5].unlocksB = 0xF000;
+    D_8006D634.skills[5].flags1A = 0x8000;
+    D_8006D634.skills[5].tier = 7;
+    D_8006D634.skills[6].counterSkills = 0xFFC0;
+    D_8006D634.skills[6].levelSkills = 0xFF00;
+    D_8006D634.skills[6].unlocksA = 0xFFFF;
+    D_8006D634.skills[6].unlocksB = 0xFF00;
+    D_8006D634.skills[6].flags1A = 0x8000;
+    D_8006D634.skills[6].tier = 7;
+    D_8006D634.skills[7].counterSkills = 0;
+    D_8006D634.skills[7].levelSkills = 0xFF00;
+    D_8006D634.skills[7].unlocksA = 0;
+    D_8006D634.skills[7].unlocksB = 0xFF00;
+    D_8006D634.skills[7].flags1A = 0;
+    D_8006D634.skills[7].tier = 7;
+    D_8006D634.skills[8].counterSkills = 0;
+    D_8006D634.skills[8].levelSkills = 0xF800;
+    D_8006D634.skills[8].unlocksA = 0xFFFF;
+    D_8006D634.skills[8].unlocksB = 0;
+    D_8006D634.skills[8].flags1A = 0xE000;
+    D_8006D634.skills[8].tier = 7;
+    D_8006D634.skills[9].counterSkills = 0xFFE0;
+    D_8006D634.skills[9].levelSkills = 0xFFE0;
+    D_8006D634.skills[9].unlocksA = 0xFFFF;
+    D_8006D634.skills[9].unlocksB = 0xFFE0;
+    D_8006D634.skills[9].flags1A = 0x8000;
+    D_8006D634.skills[9].tier = 7;
+    D_8006D634.skills[10].counterSkills = 0xFFC0;
+    D_8006D634.skills[10].levelSkills = 0xFF00;
+    D_8006D634.skills[10].unlocksA = 0xFFFF;
+    D_8006D634.skills[10].unlocksB = 0xFF00;
+    D_8006D634.skills[10].flags1A = 0xC000;
+    D_8006D634.skills[10].tier = 7;
 }
 
 /* Raise an attack's damage: by half for each of characters 0 and 3 in the
@@ -4398,7 +4446,7 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
         if (rand() % 100 < 25 && !(record->pilot.status7A & 0x20)) {
             choice[0] = 2;
             skill = rand() % count;
-            if (D_8006ECF4[record->pilot.characterId].mask2 & ((0x8000 >> skill) & skills)) {
+            if (D_8006D634.skills[record->pilot.characterId].levelSkills & ((0x8000 >> skill) & skills)) {
                 choice[1] = skill;
                 return;
             }
@@ -4447,9 +4495,9 @@ void func_8009BE0C(void) {
             continue;
         }
         record = &D_800CCCE8.records[i];
-        character = &D_8006D8A0.characters[record->pilot.characterId];
+        character = &D_8006D634.characters[record->pilot.characterId];
         gear = &D_800CCCE8.records[i].gear;
-        gearRecord = &D_8006D8A0.gears[record->pilot.gearId];
+        gearRecord = &D_8006D634.gears[record->pilot.gearId];
         if (record->pilot.characterId == 7 && (D_800CCCE8.records[i].flags15A & 0x80)) {
             record->pilot.hp = (gear->hp + 1) / 50;
             if (record->pilot.hp == 0) {
@@ -4530,7 +4578,7 @@ s32 func_8009C050(u8 slot) {
 void func_8009C0E0(u8 slot) {
     D_800CCCE8.records[slot].field148 = 4;
     D_800CCCE8.records[slot].statusTimers[6] = 3;
-    D_8006ECF4[0].flags1A |= 0x4000;
+    D_8006D634.skills[0].flags1A |= 0x4000;
 }
 
 /* Target the party member that is character 3. */

@@ -1,13 +1,15 @@
 #ifndef BATTLE_EFFECT_H
 #define BATTLE_EFFECT_H
 
-/* Keyframe tracks, sprite drawing, colour fades and image animations of the
- * battle effect library (8009F1C4-800A44C0; the same code is linked into
- * overlay 2143 at +0x13D3C0/+0x13D684). */
+/* Keyframe tracks, sprite drawing, colour fades, image animations and
+ * surfaces of the battle effect library (8009E53C's unit, 800A3490-800A4654
+ * and 800A7064-800A8A88; the same code is linked into overlay 2143 at
+ * +0x13D3C0/+0x13D684). */
 
 #include "common.h"
-#include "model.h"
-#include "scene.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "battle/scene.h"
 
 /* An animation frame header (0x18 bytes; read as halfwords by 800A1B50). */
 typedef struct {
@@ -46,22 +48,6 @@ typedef struct {
     s16 duration; /* +0x12 */
 } Tween;
 
-/* An effect sprite (the SpriteRecord of a sprite pool, 0x7C bytes): a
- * quadrilateral of four vertices, a colour fading each tick, and its
- * primitive for both frame buffers. */
-typedef struct {
-    s16 x0, y0, z0, pad06;
-    s16 x1, y1, z1;
-    s16 projected; /* 0x0E: the vertices are 3D, projected with the GTE */
-    s16 x2, y2, z2;
-    s16 age;       /* 0x16: -1 free */
-    s16 x3, y3, z3;
-    s16 lifetime;  /* 0x1E */
-    u16 color[3];  /* 0x20: 10.6 fixed point */
-    s16 fade[3];   /* 0x26: per tick */
-    POLY_FT4 packets[2]; /* 0x2C */
-} Sprite;
-
 /* An object's trail channel (0x70 bytes): a sprite following two points of a
  * model part, with fading colours. Screen-space trails retain eight projected
  * positions per endpoint; world-space trails retain two full vectors. */
@@ -70,7 +56,7 @@ typedef struct ColorFade {
     u8 field2;  /* 0 screen-space history, otherwise world-space */
     u8 field3;  /* sprite semi-transparency */
     SpritePool *pool; /* 0x04 */
-    Sprite *sprite;   /* 0x08: the currently extended quad */
+    EffectSprite *sprite; /* 0x08: the currently extended quad */
     s16 fieldC;
     s16 fieldE;
     s16 field10;
@@ -129,17 +115,6 @@ typedef struct ImageAnim {
     RECT rect;                /* 0x28 */
 } ImageAnim;
 
-/* Resident image decoders. */
-void func_80026F44(s32 size, s32 frame, u16 *out, u16 *pixels);
-void func_80026FE8(s32 size, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
-
-/* Original calls promote the event halfwords before the callee narrows them. */
-ImageAnim *func_800A3640();
-s16 func_800A3E98(ImageAnim *anim, s32 ticks);
-void func_800A429C(ImageAnim *anim);
-void func_800A4348(ImageAnim *anim, s16 level);
-void func_800A43F8(ImageAnim *anim, s16 level);
-
 /* A collision sphere of a surface (0x10 bytes). */
 typedef struct {
     s16 h0, h2, h4, h6, h8, hA, hC, hE;
@@ -181,16 +156,6 @@ typedef struct Surface {
     SurfacePoly *polyList;  /* 0x20 */
 } Surface;
 
-extern s32 D_80050100;
-
-s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */ /* ordering-table depth shift */
-
-u16 func_800A1B50(ModelPart *root, s16 *data);
-void func_800A2ACC(EffectPool *pool, ModelPart *part);
-
-/* Build a surface from its point/primitive description (800A7064). */
-void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
-                   s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
-                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
+extern ImageAnim D_800D3600;  /* the stage's image animation */
 
 #endif

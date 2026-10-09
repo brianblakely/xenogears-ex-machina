@@ -55,6 +55,7 @@ extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
 extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
+extern FileRequest D_8006F9BC[4]; /* the battle mode's sound files (8001bbac) */
 extern void *D_80065AFC[3];       /* party character file blocks */
 extern void *D_8005A4A0;          /* file 0xa7 block */
 extern void *D_8005A4BC;          /* file 0xa8 block */
@@ -65,7 +66,6 @@ extern s32 D_80062528;            /* the active sequence */
 extern struct SoundSequence *D_8006258C; /* the transferred wave bank */
 
 extern u8 *const D_80018084; /* overlay decode destination */
-extern u8 D_8006FAF0[];
 extern u8 D_8006FAEC[];      /* the last word below the overlay area */
 extern s32 D_80018088;       /* next mode */
 extern ModeEntry D_8001808C[];
@@ -86,6 +86,7 @@ void func_80019560(u8 *start, u8 *end); /* zero the words after start through en
 
 void func_8001A4B4(void); /* mode 0, the kernel menu */
 void func_8001B6C4(void); /* mode 2 */
+void func_8001B844(void); /* the battle's display buffers and projection */
 void func_8001C634(void); /* mode 5 */
 void func_8001996C(s32 mode);
 void *func_800199CC(s32 mode);
@@ -108,7 +109,8 @@ void func_8001BB50(void);
 void func_80024F20(void);
 
 /* More of the mode dispatcher's calls and state. */
-void func_80019964(void);
+/* An empty debug print: the menu passes it a message. */
+void func_80019964();
 void func_80019CA0(void);
 void func_8001AC94(void);
 void func_8001ACA4(void);

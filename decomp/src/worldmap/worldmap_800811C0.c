@@ -1,4 +1,33 @@
+/* World map unit 800811C0-80083A00 (rodata 800702E4-80070490, data
+ * 8009A6C0-8009AD2C): the director of scene mode 16 and its actors (the
+ * zooming camera, the fading objects and the heat haze), and modes 17 and 18:
+ * their set-up and leave handlers, mode 17's camera and pulsing effects, the
+ * actor scripts of both and the start of mode 18's camera.
+ *
+ * func_80080370's 65-entry table ends at 800702e4 and func_800811C0's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_80080370, at or before
+ * func_800811C0. Its data opens with mode 16's cue sequence, which
+ * func_80081174, left in the preceding unit by the split, starts. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 37 u16 states and 37 u16 waits (started by
@@ -113,7 +142,7 @@ s32 func_800811C0(s32 index) {
     /* 0x3F: fade the music out over 0xF0 frames; fade out at rate 2, 4 per
      * frame. */
     case 0x3F:
-        func_8003A89C(D_80062528, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
@@ -171,7 +200,7 @@ s32 func_80081470(s32 index) {
         break;
     }
     if (D_8009D144 == 0) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     if (actor->state == 1) {
         if ((actor->u.step -= 0x10000) < 0x630000) {
@@ -199,13 +228,13 @@ s32 func_80081470(s32 index) {
         }
     }
     scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
-    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW.eye.vy += scratch->position.vy;
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
 
 /* Build `count` semi-transparent textured quads on page 0x180,0. */
-void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_800816DC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -214,7 +243,7 @@ void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setSemiTrans(quads, 1);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Start the actor above the player and build scene object 2 there. */
@@ -231,7 +260,7 @@ s32 func_800817A0(s32 index) {
     actor->u.step = 0;
     actor->unk54 = 0;
     actor->unk58 = 0;
-    func_800816DC(&objects[2], objects[2].prims, objects[2].def->count, 1);
+    func_800816DC(&objects[2], objects[2].prims, objects[2].def->primitive_count, 1);
     objects[2].position.vx = actor->position.vx >> 12;
     objects[2].position.vy = actor->position.vy >> 12;
     objects[2].position.vz = actor->position.vz >> 12;
@@ -242,7 +271,7 @@ s32 func_800817A0(s32 index) {
 s32 func_80081868(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     actor = &D_8009BE24[index];
@@ -256,7 +285,7 @@ s32 func_80081868(s32 index) {
         actor->unk4 = 0;
         actor->state = 0;
         quad = (&object->prims)[D_8009D7F0];
-        for (i = 0; i < object->def->count; i++) {
+        for (i = 0; i < object->def->primitive_count; i++) {
             setSemiTrans(quad, 0);
             setRGB0(quad, 0x80, 0x80, 0x80);
             quad++;
@@ -278,7 +307,7 @@ s32 func_80081868(s32 index) {
         }
         break;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 
@@ -301,9 +330,9 @@ s32 func_800819C8(s32 index) {
     SCALE_SCRATCH->scale[0].vy = 0x7000;
     ScaleMatrix(&objects[0].matrix, &SCALE_SCRATCH->scale[0]);
     objects[1].matrix = objects[0].matrix;
-    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    func_800816DC(objects, objects->prims, objects->def->primitive_count, 3);
     objects++;
-    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    func_800816DC(objects, objects->prims, objects->def->primitive_count, 3);
     return 1;
 }
 
@@ -331,15 +360,15 @@ s32 func_80081B24(s32 index) {
         }
         break;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 
 /* Allocate the shared quad pool (two display copies) and mark every quad free. */
 s32 func_80081C3C(void) {
-    PolyFT4 *quads;
+    POLY_FT4 *quads;
     s32 i;
     s16 *flags;
 
@@ -365,7 +394,7 @@ s32 func_80081C3C(void) {
 /* Heat haze: offset each of 192 one-pixel rows by a random amount and copy the result back to the frame. */
 s32 func_80081D80(void) {
     RECT rect;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     u16 *spread;
     s32 row;
     s32 next;
@@ -514,7 +543,7 @@ s32 func_80081FD8(s32 index) {
 /* Set up the pulsing-effect scene: fixed start position, music, its camera and five effect slots. */
 void func_80082324(void) {
     RECT rect;
-    void *sequence;
+    SoundSeq *sequence;
     void *data;
     u16 debug;
 
@@ -570,8 +599,8 @@ void func_80082324(void) {
     func_80038428(D_8006259C);
     data = D_8009C884;
     memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850(D_80062648);
-    D_80062528 = sequence;
+    sequence = func_80039850((SoundSeqHeader *)D_80062648);
+    D_80062528 = (s32)sequence;
     func_80039A80(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_800827C8, (s32)func_80076B34);
@@ -610,10 +639,10 @@ void func_800826B4(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x269;
-    D_8006F954[0] = 2;
+    D_8006D634.map = 0x269;
+    D_8006D634.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Give an actor its script. */
@@ -763,7 +792,7 @@ s32 func_800828DC(s32 index) {
         break;
     }
     if (D_8009D144 == 0) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 0:
@@ -810,7 +839,7 @@ s32 func_800828DC(s32 index) {
     func_80076F54(actor, scratch);
     func_80076FA8(actor, scratch);
     scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
-    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW.eye.vy += scratch->position.vy;
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
@@ -853,7 +882,7 @@ void func_80082F64(WorldmapActor *actor, SceneObject *object, ScaleScratch *scra
 }
 
 /* Build `count` semi-transparent black textured triangles on page 0x2C0,0x100. */
-void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {
+void func_80083108(SceneObject *object, POLY_FT3 *prims, s32 count, s32 abr) {
     s32 i;
 
     for (i = count - 1; i != -1; i--) {
@@ -866,11 +895,11 @@ void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {
         prims->code |= 2;
         prims++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT3));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT3));
 }
 
 /* Set the colour of `count` textured triangles. */
-void func_800831D8(PolyFT3 *prims, s32 count, s32 r, s32 g, s32 b) {
+void func_800831D8(POLY_FT3 *prims, s32 count, s32 r, s32 g, s32 b) {
     for (count--; count != -1; count--) {
         setRGB0(prims, r, g, b);
         prims++;
@@ -882,7 +911,7 @@ s32 func_80083214(s32 index) {
     SceneObject *object;
 
     object = &D_8009C620[78 + index];
-    func_80083108(object, object->prims, object->def->count, 3);
+    func_80083108(object, object->prims, object->def->primitive_count, 3);
     return 1;
 }
 
@@ -939,7 +968,7 @@ s32 func_80083264(s32 index) {
         break;
     }
     func_80082F64(actor, object, (ScaleScratch *)0x1F800000);
-    func_800831D8((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800831D8((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 
@@ -1042,10 +1071,10 @@ void func_800837DC(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x269;
-    D_8006F954[0] = 4;
+    D_8006D634.map = 0x269;
+    D_8006D634.entry[2] = 4;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Give an actor its script. */

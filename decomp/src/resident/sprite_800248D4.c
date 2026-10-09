@@ -5,25 +5,16 @@
  * GCC's `.align 3` would give within one unit, and the small globals below
  * are addressed through $gp only from here, the second unit's only there. */
 #include "common.h"
-#include "psyq/libapi.h"
 #include "psyq/libc.h"
-#include "psyq/libcd.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "psyq/libsn.h"
-#include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
-#include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
+#include "resident/gpu.h"
 #include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
-#include "resident/console.h"
-#include "resident/sound.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "resident/task.h"
+#include "battle_overlay.h"
 #include "own_declarations.h"
 
 void func_80025258(Task *task);
@@ -319,6 +310,7 @@ void func_80024FB8(void) {
     func_8001D2A4();
 }
 
+/* Set the ordering table the sprites are linked into (D_8005956C). */
 void func_80024FE4(s32 value) {
     D_8005956C = value;
 }
@@ -539,6 +531,7 @@ void func_80025544(Task *task) {
     }
 }
 
+/* The empty update of a task kind (D_8004FD40). */
 void func_80025710(Task *task) {
 }
 

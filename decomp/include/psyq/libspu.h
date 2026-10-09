@@ -52,5 +52,9 @@ void SpuSetReverbModeDepth(short depth_left, short depth_right);
 void SpuSetReverbModeDelayTime(long delay);
 void SpuSetReverbModeFeedback(long feedback);
 void SpuGetReverbModeType(long *type);
+/* SpuRead and SpuWrite by inspection (no library signature names them; the
+ * sound driver's transfer start 8003be68 calls them). */
+unsigned long func_8004D818(unsigned char *addr, unsigned long size); /* SpuRead */
+unsigned long func_8004D878(unsigned char *addr, unsigned long size); /* SpuWrite */
 
 #endif

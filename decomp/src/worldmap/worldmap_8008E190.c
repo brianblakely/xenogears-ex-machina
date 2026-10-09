@@ -1,4 +1,25 @@
+/* World map unit 8008E190-80090A84 (rodata 800709F8-80070B54, data
+ * 8009B1AC-8009B214): the flying vehicle (start, boarding, flight, landing
+ * and the scripted take-offs), its rotors and the two-button combination
+ * latch.
+ *
+ * func_8008D678's 65-entry table ends at 800709f8 and func_8008E190's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008D678, at or before
+ * func_8008E190. */
+#include "common.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Scripted flight waypoints (x, z; -1 ends) of func_8008E76C. */
 SVECTOR D_8009B1AC[5] = {
@@ -36,7 +57,7 @@ s32 func_8008E190(s32 index) {
     actor->unk6C = 0;
     actor->heading = D_8006EE66;
     scratch = (ActorScratch *)0x1F800000;
-    switch (D_8006EE54.flags & 0x1FFF) {
+    switch (D_8006D634.worldmap.flags & 0x1FFF) {
     case 0:
         result = 3;
         break;
@@ -91,7 +112,7 @@ s32 func_8008E190(s32 index) {
     func_8004A92C(&scratch->position, &D_8009C620[0].matrix);
     func_8004A92C(&scratch->position, &D_8009C620[1].matrix);
     func_8008E034(&actor->position);
-    D_8006EE54.vehicle_heading = actor->heading;
+    D_8006D634.worldmap.vehicle_heading = actor->heading;
     switch (D_8009C5A8) {
     case 2:
         actor->state = 0x24;
@@ -125,7 +146,7 @@ s32 func_8008E4F4(s32 index) {
     D_8009C620[0].position = actor->position;
     result = 1;
     D_8009C620[0].visible = actor->unk24;
-    if (!(D_8006EE54.flags & 0x1FFF)) {
+    if (!(D_8006D634.worldmap.flags & 0x1FFF)) {
         result = 3;
     }
     switch (D_8009BE10) {
@@ -166,7 +187,7 @@ s32 func_8008E680(s32 index) {
     actor = &D_8009BE24[index];
     func_8008DFF4(&actor->position);
     actor->position.vy = 0x80000;
-    actor->heading = D_8006EE54.vehicle_heading;
+    actor->heading = D_8006D634.worldmap.vehicle_heading;
     actor->turn = 0x20;
     actor->unk74 = 3;
     actor->unk68 = -0x280000;
@@ -189,25 +210,25 @@ s32 func_8008E680(s32 index) {
  * them with the surrounding stores as the original does. */
 
 /* Turn the vehicle towards `goal` (heading units), by at most `step` per frame
- * from the heading it had last frame (D_8006EE66). */
-#define VEHICLE_TURN(goal, step)                                              \
-    {                                                                        \
-        delta = (goal) - D_8006EE66;                                          \
-        if (ABS(delta) > 0x800) {                                             \
-            if (delta < 0) {                                                  \
-                delta += 0x1000;                                              \
-            } else {                                                          \
-                delta -= 0x1000;                                              \
-            }                                                                 \
-        }                                                                     \
-        if (ABS(delta) > (step)) {                                            \
-            if (delta < 0) {                                                  \
-                actor->heading = D_8006EE66 - (step);                         \
-            } else {                                                          \
-                actor->heading = D_8006EE66 + (step);                         \
-            }                                                                 \
-        }                                                                     \
-        actor->heading &= 0xFFF;                                              \
+ * from the heading it had last frame (worldmap.vehicle_heading). */
+#define VEHICLE_TURN(goal, step)                                               \
+    {                                                                          \
+        delta = (goal) - D_8006D634.worldmap.vehicle_heading;                  \
+        if (ABS(delta) > 0x800) {                                              \
+            if (delta < 0) {                                                   \
+                delta += 0x1000;                                               \
+            } else {                                                           \
+                delta -= 0x1000;                                               \
+            }                                                                  \
+        }                                                                      \
+        if (ABS(delta) > (step)) {                                             \
+            if (delta < 0) {                                                   \
+                actor->heading = D_8006D634.worldmap.vehicle_heading - (step); \
+            } else {                                                           \
+                actor->heading = D_8006D634.worldmap.vehicle_heading + (step); \
+            }                                                                  \
+        }                                                                      \
+        actor->heading &= 0xFFF;                                               \
     }
 
 /* Tilt and heading of the vehicle model into scene objects 0 and 1. */
@@ -245,6 +266,17 @@ s32 func_8008E680(s32 index) {
         scratch->spot.vz = actor->position.vz >> 12;                         \
     }
 
+/* Scratchpad work area of the flying vehicle. */
+typedef struct {
+    VECTOR target;     /* 0x00: waypoint */
+    u8 pad10[0x80];
+    VECTOR hit;        /* 0x90: move probe (SCRATCH_HIT) */
+    SVECTOR rotation;  /* 0xA0: model tilt/heading, or an effect spot */
+    SVECTOR spot;      /* 0xA8: effect spot */
+} VehicleScratch;
+
+#define VEHICLE_SCRATCH ((VehicleScratch *)0x1F800000)
+
 /* The flying vehicle (Gear transport): boarding, flight with terrain and
  * landing checks, the scripted take-offs and landings, and the scene exits.
  * Returns 2 when the party leaves on foot. */
@@ -269,8 +301,8 @@ s32 func_8008E76C(s32 index) {
         if (D_8009C170 == ++actor->unk74) {
             func_80097770(8, 9);
             VEHICLE_CAMERA();
-            D_8006EE54.flags |= 0x4000;
-            kind = D_8006EE54.flags & 0x1FFF;
+            D_8006D634.worldmap.flags |= 0x4000;
+            kind = D_8006D634.worldmap.flags & 0x1FFF;
             switch (kind) {
             case 1:
                 actor->state = 0xC;
@@ -295,7 +327,7 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             case 3:
-                func_8003A89C(D_80062528, 0, 0xF0);
+                func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
                 VEHICLE_SCRATCH->rotation.vx = actor->position.vx >> 12;
                 VEHICLE_SCRATCH->rotation.vy = actor->position.vy >> 12;
                 VEHICLE_SCRATCH->rotation.vz = actor->position.vz >> 12;
@@ -311,12 +343,12 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             }
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
-                D_8006F8E6 = 1;
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
-                D_8006F8E7 = 1;
+            if (D_8006D634.party[2] != 0xFF) {
+                D_8006D634.inGear[2] = 1;
             }
             func_80075228();
             D_8009D7D8 = (PathRegion *)-1;
@@ -344,7 +376,7 @@ s32 func_8008E76C(s32 index) {
                     actor->unk78 = hit;
                     actor->unk68 = func_80093978(actor->position.vx, actor->position.vz);
                     func_80097770(0xB, 0xA);
-                    func_8003A89C(D_80062528, 0, 0xF0);
+                    func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
                     actor->unk7C = 1;
                     func_800894C8(0x3C);
                     func_800894C8(0x3F);
@@ -575,16 +607,16 @@ s32 func_8008E76C(s32 index) {
             func_80097770(0xA, 0xA);
             func_80097770(4, 3);
             func_80097770(1, 3);
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
                 func_80097770(5, 3);
                 func_80097770(2, 3);
-                D_8006F8E6 = 1;
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
+            if (D_8006D634.party[2] != 0xFF) {
                 func_80097770(6, 3);
                 func_80097770(3, 3);
-                D_8006F8E7 = 1;
+                D_8006D634.inGear[2] = 1;
             }
             VEHICLE_STOP();
             D_8006EE68 &= 0x3FFF;
@@ -609,16 +641,16 @@ s32 func_8008E76C(s32 index) {
             func_80097770(8, 0xA);
             func_80097770(1, 3);
             func_80097770(4, 3);
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
                 func_80097770(2, 3);
                 func_80097770(5, 3);
-                D_8006F8E6 = 1;
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
+            if (D_8006D634.party[2] != 0xFF) {
                 func_80097770(3, 3);
                 func_80097770(6, 3);
-                D_8006F8E7 = 1;
+                D_8006D634.inGear[2] = 1;
             }
             VEHICLE_STOP();
             D_8006EE68 &= 0x3FFF;
@@ -736,12 +768,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x2A:
         if (--actor->wait < 0) {
-            D_8006F94E.scene = 0x50;
-            D_8006F954[0] = 1;
+            D_8006D634.map = 0x50;
+            D_8006D634.entry[2] = 1;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006F94E.heading = D_8009BD38.vy;
+            D_8006D634.entry[0] = D_8009BD38.vy;
         }
         goto circle;
     case 0x30:
@@ -780,12 +812,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x32:
         if (--actor->wait < 0) {
-            D_8006F94E.scene = 0x120;
-            D_8006F954[0] = 6;
+            D_8006D634.map = 0x120;
+            D_8006D634.entry[2] = 6;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006F94E.heading = D_8009BD38.vy;
+            D_8006D634.entry[0] = D_8009BD38.vy;
         }
         goto walk;
     case 0x34:
@@ -859,12 +891,12 @@ s32 func_8008E76C(s32 index) {
         goto glide;
     case 0x39:
         if (--actor->wait < 0) {
-            D_8006F94E.scene = 0x1F0;
+            D_8006D634.map = 0x1F0;
             D_8009D554 = 0;
             D_8009D7CC = 0;
-            D_8006F954[0] = 0;
+            D_8006D634.entry[2] = 0;
             D_8009BBC4 = 1;
-            D_8006F94E.heading = D_8009BD38.vy;
+            D_8006D634.entry[0] = D_8009BD38.vy;
         }
     glide:
         actor->position.vx += actor->motion.vx * 8;
@@ -878,7 +910,7 @@ s32 func_8008E76C(s32 index) {
     D_8009C620[0].position.vy = D_8009C620[1].position.vy = actor->position.vy >> 12;
     D_8009C620[0].position.vz = D_8009C620[1].position.vz = actor->position.vz >> 12;
     func_8008E034(&actor->position);
-    D_8006EE54.vehicle_heading = actor->heading;
+    D_8006D634.worldmap.vehicle_heading = actor->heading;
     switch (actor->state) {
     case 2:
     case 8:

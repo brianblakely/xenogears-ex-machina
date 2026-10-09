@@ -1,4 +1,38 @@
+/* World map unit 80070CFC-80072238 (rodata 8006FAF0-8006FAF4): the overlay
+ * entry, the frame loop with its pause, menu, encounter and gear-boarding
+ * checks, the open map's frame step, the area file sets and their loaders.
+ *
+ * The overlay's number opens the image as this unit's rodata, the first
+ * word of each mode overlay (docs/matching.md). None of these functions
+ * owns rodata, so where the next unit's text starts is not measured; the
+ * split starts it at that unit's first rodata owner, func_80072238. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
+
+/* The frame loop and the area's file set choice, which the overlay entry
+ * calls ahead of their definitions. */
+void func_800712D0(void);
+void func_80071B9C(s32 index, s32 position);
 
 /* The overlay's number, the first word of each mode overlay (field 4, world
  * map 5, battle 6, menu 7, movie 8). */
@@ -17,53 +51,53 @@ void func_80070CFC(void) {
     func_800762FC();
     DrawSync(0);
     VSync(0);
-    VSyncCallback(D_8003634C);
+    VSyncCallback(func_8003634C);
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
-        D_8006F94E.scene = 0x400;
-        D_8006F94E.area = 0xFFF;
-        D_8006F94E.heading = 0xC00;
+        D_8006D634.map = 0x400;
+        D_8006D634.entry[1] = 0xFFF;
+        D_8006D634.entry[0] = 0xC00;
         D_8006F954[0] = 1;
-        D_8006EE54.flags = 0x4003;
-        D_8006EE54.unk6A = 1;
-        D_8006EE54.unk60 = 0x6680;
-        D_8006EE54.unk62 = 0xFF00;
-        D_8006EE54.unk64 = 0x2A00;
-        D_8006EE66 = 0;
-        D_8006EE54.x = 0x7580;
-        D_8006EE54.z = 0x2C00;
-        D_8006EE54.heading = 0;
-        D_8006F368[1] = 0xA;
-        D_8006F368[2] = 5;
-        D_8006F368[0] = 0;
-        D_8006F8E5 = 0;
-        D_8006F8E6 = 0;
-        D_8006F8E7 = 0;
-        D_8006D940[0].gear = 0xF;
-        D_8006D940[1].gear = 2;
-        D_8006D940[2].gear = 3;
-        D_8006D940[3].gear = 4;
-        D_8006D940[4].gear = 5;
-        D_8006D940[5].gear = 6;
-        D_8006D940[6].gear = 9;
-        D_8006D940[7].gear = 7;
-        D_8006D940[8].gear = 8;
-        D_8006D940[9].gear = 3;
-        D_8006D940[10].gear = 9;
-        D_8006EF8E[0].flags = 0x400;
-        D_8006EF8E[0].x = 0x7500;
-        D_8006EF8E[0].z = 0x2E58;
-        D_8006EF8E[1].flags = 0x400;
-        D_8006EF8E[1].x = 0x7580;
-        D_8006EF8E[1].z = 0x2E58;
-        D_8006EF8E[2].flags = 0x400;
-        D_8006EF8E[2].x = 0x7600;
-        D_8006EF8E[2].z = 0x2E58;
-        D_8006EE78[2] = 1;
-        D_8006EE78[0] = D_8009AF80[D_8006EE78[1]];
-        D_8006EE78[1] = D_8009AF90[D_8006EE78[1]];
-        D_8006F160 = 0x7FFFFFF;
+        D_8006D634.worldmap.flags = 0x4003;
+        D_8006D634.worldmap.unk6A = 1;
+        D_8006D634.worldmap.unk60 = 0x6680;
+        D_8006D634.worldmap.unk62 = 0xFF00;
+        D_8006D634.worldmap.unk64 = 0x2A00;
+        D_8006D634.worldmap.vehicle_heading = 0;
+        D_8006D634.worldmap.x = 0x7580;
+        D_8006D634.worldmap.z = 0x2C00;
+        D_8006D634.worldmap.heading = 0;
+        D_8006D634.party[1] = 0xA;
+        D_8006D634.party[2] = 5;
+        D_8006D634.party[0] = 0;
+        D_8006D634.inGear[0] = 0;
+        D_8006D634.inGear[1] = 0;
+        D_8006D634.inGear[2] = 0;
+        D_8006D634.characters[0].gearId = 0xF;
+        D_8006D634.characters[1].gearId = 2;
+        D_8006D634.characters[2].gearId = 3;
+        D_8006D634.characters[3].gearId = 4;
+        D_8006D634.characters[4].gearId = 5;
+        D_8006D634.characters[5].gearId = 6;
+        D_8006D634.characters[6].gearId = 9;
+        D_8006D634.characters[7].gearId = 7;
+        D_8006D634.characters[8].gearId = 8;
+        D_8006D634.characters[9].gearId = 3;
+        D_8006D634.characters[10].gearId = 9;
+        VEHICLE_SPOTS[0].flags = 0x400;
+        VEHICLE_SPOTS[0].x = 0x7500;
+        VEHICLE_SPOTS[0].z = 0x2E58;
+        VEHICLE_SPOTS[1].flags = 0x400;
+        VEHICLE_SPOTS[1].x = 0x7580;
+        VEHICLE_SPOTS[1].z = 0x2E58;
+        VEHICLE_SPOTS[2].flags = 0x400;
+        VEHICLE_SPOTS[2].x = 0x7600;
+        VEHICLE_SPOTS[2].z = 0x2E58;
+        D_8006D634.unk1844[2] = 1;
+        D_8006D634.unk1844[0] = D_8009AF80[D_8006D634.unk1844[1]];
+        D_8006D634.unk1844[1] = D_8009AF90[D_8006D634.unk1844[1]];
+        MAP_FLAGS = 0x7FFFFFF;
     }
     func_80032498(3, 0);
     func_80028470(0x24, 0);
@@ -77,12 +111,12 @@ void func_80070CFC(void) {
     }
     D_8009BBC4 = 0;
     mode = D_8006F954[0] & 0x7FFF;
-    D_8009BD0C = (D_8006F94E.scene & 0x3FFF) - 0x400;
-    D_8009D3D4 = D_8006F94E.area;
-    D_8009C584 = D_8006F94E.heading;
+    D_8009BD0C = (D_8006D634.map & 0x3FFF) - 0x400;
+    D_8009D3D4 = D_8006D634.entry[1];
+    D_8009C584 = D_8006D634.entry[0];
     D_8009C5A8 = mode;
-    D_8006F94E.mode = mode;
-    func_80071B9C(mode, D_8006EF64[0]);
+    D_8006D634.entry[2] = mode;
+    func_80071B9C(mode, D_8006D634.vars[0]);
     step = D_8009A058[D_8009C5A8].enter;
     if (step != NULL) {
         step();
@@ -104,27 +138,27 @@ void func_80070CFC(void) {
         func_8001996C(1);
         if (D_8009BBC4 == 0) {
             if (D_8009D7D8->kind == 3) {
-                func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
+                func_80094364(&D_8009D55C.target, 3, D_8006D634.vars[0]);
             }
-            D_8006F94E.scene = D_8009D7D8->scene;
-            D_8006F94E.heading = D_8009BD38.vy;
-            D_8006F954[0] = D_8009D7D8->entry;
+            D_8006D634.map = D_8009D7D8->scene;
+            D_8006D634.entry[0] = D_8009BD38.vy;
+            D_8006D634.entry[2] = D_8009D7D8->entry;
         }
-        D_8006EF68 = D_8009BD0C + 0x400;
+        D_8006D634.vars[2] = D_8009BD0C + 0x400;
         break;
     case 1:
         func_800199CC(2);
         func_8001996C(2);
         D_800594F8 = 0;
         for (i = 0; i < 3; i++) {
-            (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+            (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
         }
         func_80039CC4();
         data = D_8009C614;
         memcpy(D_80062648, data, func_800288EC(D_8009BCC8));
         D_8004F2FC = D_80062528;
-        D_80062528 = func_80039850(D_80062648);
-        func_80039A80(D_80062528, 0x7F, 0);
+        D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
+        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
         break;
     default:
         func_8001996C(0);
@@ -145,14 +179,14 @@ void func_80070CFC(void) {
  * frame, and handle pause, encounters and leaving for another scene until
  * D_8009D554 clears. */
 void func_800712D0(void) {
-    WorldmapView *view;
+    DisplayBuffer *view;
     /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
-    u8 *gear_state = &D_8006F8E5;
+    u8 *gear_state = D_8006D634.inGear;
     RECT rect;
     s32 i;
     s32 found;
 
-    D_8009BE3C = (WorldmapView *)&D_8009BBC8[1];
+    D_8009BE3C = &D_8009BBC8[1];
     D_8009D7F0 = 1;
     D_8009D554 = 1;
     do {
@@ -174,9 +208,9 @@ void func_800712D0(void) {
             VSync(0);
         }
         CdSync(1, D_8009C588);
-        view = (WorldmapView *)D_8009BBC8;
+        view = D_8009BBC8;
         if (D_8009BE3C == view) {
-            view = (WorldmapView *)&D_8009BBC8[1];
+            view = &D_8009BBC8[1];
         }
         D_8009BE3C = view;
         D_8009D7F0 = D_8009D7F0 == 0;
@@ -187,27 +221,27 @@ void func_800712D0(void) {
         DrawSync(0);
         VSync(2);
         func_80019CA0();
-        PutDispEnv(&((DisplayBuffer *)D_8009BE3C)->disp);
-        PutDrawEnv(&((DisplayBuffer *)D_8009BE3C)->draw);
+        PutDispEnv(&D_8009BE3C->disp);
+        PutDrawEnv(&D_8009BE3C->draw);
         if (D_80059179 == 0 && D_8009BD34 != 0 && D_8009C178 == 0 && D_8009D804 == 0 &&
             D_8009BD24 == -1 && D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C == 0) {
             D_8009BD34 = 0;
             if (func_80093F18(&D_8009D55C.target) != 4) {
                 for (i = 0; i < 3; i++) {
-                    (&D_8006EE70)[i] = (&D_8006F8E5)[i];
+                    (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
                 }
                 if (gear_state[0] != 0) {
                     gear_state[2] = 0;
                     gear_state[1] = 0;
                     gear_state[0] = 0;
                 } else {
-                    if (D_8006D940[(gear_state - 0x57D)[0]].gear != 0xFF) {
+                    if (D_8006D634.characters[(gear_state - 0x57D)[0]].gearId != 0xFF) {
                         gear_state[0] = 1;
                     }
-                    if (D_8006D940[(gear_state - 0x57D)[1]].gear != 0xFF) {
+                    if (D_8006D634.characters[(gear_state - 0x57D)[1]].gearId != 0xFF) {
                         gear_state[1] = 1;
                     }
-                    if (D_8006D940[(gear_state - 0x57D)[2]].gear != 0xFF) {
+                    if (D_8006D634.characters[(gear_state - 0x57D)[2]].gearId != 0xFF) {
                         gear_state[2] = 1;
                     }
                 }
@@ -226,21 +260,21 @@ void func_800712D0(void) {
                 }
                 if (D_8009C178 == 0 && D_8009D804 == 0 && D_8009BD24 == -1 &&
                     D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C != 0) {
-                    found = func_80075E7C(&D_8009D55C.target, D_8006EF64[0]);
+                    found = func_80075E7C(&D_8009D55C.target, D_8006D634.vars[0]);
                     if (found == 1) {
                         D_8009D554 = 0;
                         D_8009D7CC = found;
                         D_8005954C = 0;
-                        D_8006EE70 = D_8006F8E5;
-                        D_8006EE72 = D_8006F8E6;
-                        D_8006EE74 = D_8006F8E7;
+                        D_8006D634.worldmap.unk70 = D_8006D634.inGear[0];
+                        D_8006D634.worldmap.unk72 = D_8006D634.inGear[1];
+                        D_8006D634.worldmap.unk74 = D_8006D634.inGear[2];
                     }
                 }
             }
         }
         D_8009D80C = 0;
         if (D_8009BD10 & 0x100) {
-            u16 *camera_mode = &D_8006EE76;
+            u16 *camera_mode = &D_8006D634.worldmap.unk76;
             *camera_mode ^= 1;
         }
         if (D_8009C178 == 0 && D_8009D804 != 0 && D_8009D554 != 0) {
@@ -258,7 +292,7 @@ void func_800712D0(void) {
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    D_8006EE54.flags |= 0x2000;
+                    D_8006D634.worldmap.flags |= 0x2000;
                 }
             }
         } else {
@@ -311,12 +345,12 @@ s32 func_80071A58(void) {
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, (s32)D_8009BE3C->packets, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();
     func_80086798();
-    if (D_8006EE54.unk76 == 0) {
+    if (D_8006D634.worldmap.unk76 == 0) {
         func_800740B8();
     }
     return 1;
@@ -360,10 +394,10 @@ void func_80071CDC(void) {
     u8 gear;
 
     for (i = 0; i < 3; i++) {
-        member = D_8006F368[i];
+        member = D_8006D634.party[i];
         if (member != 0xFF) {
             D_8009CD34[i] = func_80031BDC(func_800288EC(member + 2), 0);
-            j = D_8006D940[member].gear;
+            j = D_8006D634.characters[member].gearId;
             if (j != 0xFF) {
                 D_8009BDF8[i] = func_80031BDC(func_800288EC(j + 0x13), 0);
             } else {
@@ -377,22 +411,22 @@ void func_80071CDC(void) {
     i = 0;
     D_8009C170 = 0;
     for (j = 0; j < 3; j++) {
-        member = D_8006F368[j];
+        member = D_8006D634.party[j];
         if (member != 0xFF) {
             D_8009D3F8[i].file = member + 2;
-            D_8009D3F8[i].dest = D_8009CD34[j];
+            D_8009D3F8[i].destination = D_8009CD34[j];
             i++;
             D_8009C170++;
-            gear = D_8006D940[member].gear;
+            gear = D_8006D634.characters[member].gearId;
             if (gear != 0xFF) {
                 D_8009D3F8[i].file = gear + 0x13;
-                D_8009D3F8[i].dest = D_8009BDF8[j];
+                D_8009D3F8[i].destination = D_8009BDF8[j];
                 i++;
             }
         }
     }
     D_8009D3F8[i].file = 0;
-    D_8009D3F8[i].dest = NULL;
+    D_8009D3F8[i].destination = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
 
@@ -405,10 +439,10 @@ void func_80071EF0(void) {
     D_8009D3F8[1].file = D_8009C17C;
     D_8009D3F8[2].file = D_8009C174;
     D_8009D3F8[3].file = 0;
-    D_8009D3F8[0].dest = D_8009C180;
-    D_8009D3F8[1].dest = D_8009C59C;
-    D_8009D3F8[2].dest = D_8009BD20;
-    D_8009D3F8[3].dest = NULL;
+    D_8009D3F8[0].destination = D_8009C180;
+    D_8009D3F8[1].destination = D_8009C59C;
+    D_8009D3F8[2].destination = D_8009BD20;
+    D_8009D3F8[3].destination = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
 
@@ -417,11 +451,11 @@ void func_80071FEC(void) {
     D_8005945C = func_80031BDC(func_800288EC(0x26), 1);
     D_8009D528 = func_80031BDC(func_800288EC(0x25), 1);
     D_8009D3F8[0].file = 0x25;
-    D_8009D3F8[0].dest = D_8009D528;
+    D_8009D3F8[0].destination = D_8009D528;
     D_8009D3F8[1].file = 0x26;
-    D_8009D3F8[1].dest = D_8005945C;
+    D_8009D3F8[1].destination = D_8005945C;
     D_8009D3F8[2].file = 0;
-    D_8009D3F8[2].dest = NULL;
+    D_8009D3F8[2].destination = NULL;
     func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
 
@@ -429,17 +463,17 @@ void func_80071FEC(void) {
 void func_80072090(void) {
     D_8004F304++;
     D_8009D3F8[0].file = D_8009CC98;
-    D_8009D3F8[0].dest = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
+    D_8009D3F8[0].destination = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
     D_8009D3F8[1].file = D_8009D3D0;
-    D_8009D3F8[1].dest = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
+    D_8009D3F8[1].destination = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
     D_8009D3F8[2].file = D_8009D3C8;
-    D_8009D3F8[2].dest = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
+    D_8009D3F8[2].destination = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
     D_8009D3F8[3].file = D_8009D800;
-    D_8009D3F8[3].dest = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
+    D_8009D3F8[3].destination = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
     D_8009D3F8[4].file = D_8009BCC8;
-    D_8009D3F8[4].dest = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
+    D_8009D3F8[4].destination = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
     D_8009D3F8[5].file = 0;
-    D_8009D3F8[5].dest = NULL;
+    D_8009D3F8[5].destination = NULL;
     func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
 

@@ -4,8 +4,9 @@
  * s_addr and jumps to pc0. */
 #include "common.h"
 #include "psyq/kernel.h"
+#include "resident/mode.h"
 
-void func_80019524();         /* entry point: the handwritten startup in main.c */
+/* Names the link defines (the target's linker scripts). */
 extern char main_VRAM[];      /* load address: the start of the program image */
 extern char __exe_text_size[]; /* loaded size, a whole number of sectors (link.ld) */
 

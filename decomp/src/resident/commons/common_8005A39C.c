@@ -10,7 +10,6 @@
  * objects are in link.ld. Variables only overlays address are marked with
  * them; those nothing addresses are marked unreferenced. */
 #include "common.h"
-#include "psyq/libspu.h"
 
 struct GameData *D_8005A39C; /* the game data in use */
 u16 D_8005A3A0[16]; /* battle script variables, also read by the menu */
@@ -41,6 +40,7 @@ s32 D_8005A4C0; /* map read-ahead size */
 s32 D_8005A4C4; /* unreferenced */
 
 #include "resident/cd.h"
+#include "resident/gamedata.h"
 #include "resident/menu.h"
 #include "resident/mode.h"
 #include "resident/sound.h"

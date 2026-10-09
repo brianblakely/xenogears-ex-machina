@@ -1,7 +1,13 @@
 #ifndef MENU_BRAIN_H
 #define MENU_BRAIN_H
 
-#include "menu.h"
+#include "common.h"
+#include "actor.h"
+
+/* The computer opponent (menu7 8008EE1C-80090F38): a brain per side that
+ * picks commands by mode (idle, attack, distance, approach) from its
+ * tendencies and the actors' distance, charge and hp, and enters them as
+ * the actor's pad inputs. */
 
 /* The computer opponent's decision state, handed to its command handlers. */
 typedef struct Brain {
@@ -35,48 +41,26 @@ typedef struct Brain {
     s16 unk30;
 } Brain;
 
-/* Which special moves an actor has learned and may use. */
-/* Per model id (D_80092874, 0x20 bytes each). */
-typedef struct MoveList {
-    s16 base;       /* 0x00: scales the combo damage (percent per level) */
-    u8 unk2[0x2];
-    s16 level;      /* 0x04: level required to pick the model */
-    u8 tendency[4]; /* 0x06: eagerness values for the brain */
-    u8 learned[14]; /* 0x0A: per combo number from 1 (parts present) */
-    u8 unk18;       /* 0x18: power of the charged shot */
-    u8 unk19[0x7];
-} MoveList;
-
-typedef struct MoveSlot {
-    u8 unk0[0x3];
-    u8 usable;
-} MoveSlot;
-
-extern u8 D_800925A4[15][3]; /* each combo's command inputs (1 A, 2 B), by special move */
-
-extern s32 D_8009284C;
-extern s32 D_80092850;
 extern u8 D_800928C4; /* enables the retreat rule */
 
-s32 func_8008B650(s32 from, s32 to, s32 step); /* turn angle toward target */
-s32 func_800767C8(Actor *actor);
-void func_8008FE80(Actor *actor);
-void func_8007639C(Actor *actor, u8 input); /* queue a command input */
-void func_80090E10(Actor *actor);
-s32 func_80073DE4(Actor *actor, s32 amount);
-void func_80076424(Actor *actor);
-void func_8008F7B8(struct Brain *brain);
-void func_80090174(Actor *actor);
-void func_80090894(Actor *actor, s32 kind);
-void func_80090504(Actor *actor, s32 kind);
-s32 func_8008FACC(Actor *actor, struct Brain *brain);
-void func_8008FBD8(Actor *actor, struct Brain *brain);
-void func_8008FC7C(Actor *actor);
-void func_8008FF24(Actor *actor, struct Brain *brain);
-s32 func_8008FFEC(Actor *actor, struct Brain *brain);
-s32 func_80090258(Actor *actor, struct Brain *brain);
+void func_8008F280(Actor *actor);
+s32 func_8008F4F4(Actor *actor, s32 fraction);
+s32 func_8008F530(Actor *actor, s32 check);
+s32 func_8008F570(Actor *actor, Brain *brain);
 s32 func_8008F720(Actor *actor, s32 eager);
-
-s32 func_8008F570(Actor *actor, struct Brain *brain);
+void func_8008F7B8(Brain *brain);
+s32 func_8008F9B0(Actor *actor);
+s32 func_8008FACC(Actor *actor, Brain *brain);
+void func_8008FBD8(Actor *actor, Brain *brain);
+void func_8008FC7C(Actor *actor);
+void func_8008FE80(Actor *actor);
+void func_8008FF24(Actor *actor, Brain *brain);
+s32 func_8008FFEC(Actor *actor, Brain *brain);
+void func_80090174(Actor *actor);
+s32 func_80090258(Actor *actor, Brain *brain);
+void func_80090504(Actor *actor, s32 kind);
+void func_80090894(Actor *actor, s32 kind);
+void func_80090CC0(Actor *actor);
+void func_80090E10(Actor *actor);
 
 #endif

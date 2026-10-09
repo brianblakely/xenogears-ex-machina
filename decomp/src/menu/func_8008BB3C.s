@@ -1,4 +1,4 @@
-# Resume Task *a0 until it yields through func_8008BC04. The caller's
+# Resume TaskContext *a0 until it yields through func_8008BC04. The caller's
 # preserved registers live below its unchanged sp while the task runs on
 # its own stack. The save layout skips sp-12 and does not save t8/t9.
 # k0/k1 are preserved too, as required by this original context interface.
@@ -21,7 +21,7 @@ glabel func_8008BB3C
     sw      $a0, %lo(D_80096D8C)($at)
     addu    $at, $a0, $zero
 
-    # Task.regs is indexed by hardware register number. Keep at pointing
+    # TaskContext.regs is indexed by hardware register number. Keep at pointing
     # at the task while loading v0..gp, including the argument registers.
     .irp reg,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
         lw  $\reg, 4*\reg($at)

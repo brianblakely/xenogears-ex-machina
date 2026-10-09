@@ -1,3 +1,14 @@
+/* Resident startup, mode dispatcher and kernel menu (80019524-8001b6c4),
+ * GCC 2.7.2 at -G0 (8001a344 matches only under 2.7.2): the handwritten
+ * entry, stack set-up and BSS clear (func_80019524.s, func_80019548.s,
+ * func_80019560.s), the boot, the mode table and dispatcher, the core dump,
+ * reset and shutdown, the boot logo, the fatal error screen, the kernel menu
+ * (mode 0) with its Game of Life debug screen, the game-wide state reset, the
+ * party file and map loaders and the music release. Its rodata opens the
+ * program's after the disc data (0x80018080); its variables open the .sbss
+ * (800592bc) and the larger ones the .bss (800595e8). It ends at the
+ * battle-mode entry, a -G8 unit that addresses its own small common through
+ * $gp (battle_mode.c). */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -7,17 +18,15 @@
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
 #include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
-#include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
 #include "resident/sound.h"
+#include "resident/text.h"
 #include "own_declarations.h"
 
 /* This unit's own variables. GCC emits them after the code, and the
@@ -40,7 +49,6 @@ s32 D_8004EAA0[] = {0, 0xE, 0x10, 0xF, 0xD, 0x11, 0x12};
 
 /* The packed boot logo (80019d48): its unpacked size, a 6209-byte 16-colour
  * TIM, and the LZSS stream 80032e88 decodes. */
-extern u8 D_8004EABC[];
 INCLUDE_ASSET(".data", D_8004EABC, 0x8004EABC, 0x800);
 
 INCLUDE_ASM("decomp/src/resident", func_80019524);
@@ -142,6 +150,7 @@ void func_80019578(void) {
     func_80019ACC(0);
 }
 
+/* An empty entry: a stripped debug output (the menu passes it strings). */
 void func_80019964(void) {
 }
 
@@ -971,5 +980,6 @@ void func_8001B66C(void) {
     D_8004F36C = 0;
 }
 
+/* An empty step of the boot (80019578). */
 void func_8001B6BC(void) {
 }

@@ -1,24 +1,26 @@
-/* Battle unit from 800792F8: 800793F0's jump table (8006FB38) is at 0 mod 8
- * after the previous unit's at 4 mod 8 (docs/matching.md). Its rodata starts
- * at 8006FB08 with 800792F8's strings, or at 8006FB38 if those belong to the
- * previous unit; both fit, as does any text boundary after 800745EC. */
+/* Battle unit from 800792F8 to 80079ED8: the script error screen, the actor's
+ * action list execution, the enemies' AI scripts (turn, reaction and
+ * after-turn scripts) and the battle message windows. 800793F0's jump table
+ * (8006FB38) is at 0 mod 8 after the previous unit's at 4 mod 8
+ * (docs/matching.md). Its rodata starts at 8006FB08 with 800792F8's strings,
+ * or at 8006FB38 if those belong to the previous unit; both fit, as does any
+ * text boundary after 800745EC. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "resident/console.h"
+#include "resident/mode.h"
+#include "battle/actions.h"
+#include "battle/area.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/item_command.h"
+#include "battle/scene.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
+#include "own_declarations.h"
 
 /* Script error screen: clear the event types and, on a debug build (the
  * 8005917c flag), print "Language Error" with the actor and script number

@@ -37,7 +37,14 @@ void func_80040C3C(unsigned char *data0, long size0, unsigned char *data1, long 
 /* BIOS file calls (the memory card's file system), GetGp and the start of a
  * card check: stubs the resident folded into neighbouring objects, each its
  * own object by the pinned signatures and named in the symbol file. */
-struct DIRENTRY;
+struct DIRENTRY { /* a directory entry (LIBAPI.H) */
+    char name[20];
+    long attr;
+    long size;
+    struct DIRENTRY *next;
+    long head;
+    char system[4];
+};
 long format(char *device);                                    /* B(41h) */
 struct DIRENTRY *firstfile(char *name, struct DIRENTRY *dir); /* B(42h) */
 struct DIRENTRY *nextfile(struct DIRENTRY *dir);              /* B(43h) */

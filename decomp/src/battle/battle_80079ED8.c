@@ -1,24 +1,39 @@
-/* Battle unit from 80079ED8: its rodata starts at 8006FB7C, 4 mod 8, right
+/* Battle unit from 80079ED8 to 8008115C: the combatants' byte and halfword
+ * attributes, the AI script actions (01-74) and conditions (81-9b) with their
+ * interpreters (8007EF6C, 8007F8C0), and a party member's turn in the command
+ * menu (8007FB70-80080C94: the menu blocks, the number strings, the menu
+ * itself and automatic turns). Its rodata starts at 8006FB7C, 4 mod 8, right
  * after 800793F0's odd-length table at 0 mod 8 (docs/matching.md); the text
  * boundary lies after 800793F0. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "battle/actions.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/work.h"
 #include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
-#include "battle/area.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+
+/* Callers convert arguments differently from the definition (800BAF40, in
+ * 800B8098's unit, takes none): they pass a slot and a mode it ignores. */
+void func_800BAF40(u8 slot, s32 mode);
 
 /* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
  * `read` is 0, else return it. */
@@ -638,7 +653,7 @@ void func_8007B6C0(u8 **pc, u8 enemy) {
             D_800CCCE8.records[func_80079E7C(D_800D3400[enemy].vars[op[3]])].gear.hp;
         break;
     case 2:
-        D_800D3400[enemy].longs[op[1]] = D_8006EF58;
+        D_800D3400[enemy].longs[op[1]] = D_8006D634.gold;
         break;
     }
 }
@@ -1106,7 +1121,7 @@ void func_8007D148(u8 **pc, u8 *list, u8 enemy, u8 count) {
 
 /* AI action 53: long b1 = the party's gold. */
 void func_8007D1A8(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].longs[(*pc)[1]] = D_8006EF58;
+    D_800D3400[enemy].longs[(*pc)[1]] = D_8006D634.gold;
 }
 
 /* AI action 54: variable b1 = the bit of a random slot passing 8007a744
@@ -2246,7 +2261,7 @@ void func_8007FD38(u8 member) {
         }
         func_8008AB94();
         D_800D367C = (void *)func_8008ABB8(func_800288EC(file), 0);
-        func_800295D8(file, (s32)D_800D367C, 0, 0x80);
+        func_800295D8(file, D_800D367C, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unkAE = 1;
     }
@@ -2266,7 +2281,7 @@ void func_8007FE3C(void) {
         func_8008AC50();
         func_8008AB94();
         D_800C3DE8 = (void *)func_8008ABB8(func_800288EC(3), 0);
-        func_800295D8(3, (s32)D_800C3DE8, 0, 0x80);
+        func_800295D8(3, D_800C3DE8, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unk96 = 1;
     }
@@ -2573,7 +2588,7 @@ void func_80080BD0(void) {
 
 /* Set the 0x38-byte entry `index` of *800d3278 active (+0x34). */
 void func_80080C6C(u8 index) {
-    D_800D3278->entries[index].active = 1;
+    D_800D3278->threads[index].memberState = 1;
 }
 
 /* Take an automatic turn for party member `member` (8009bac4 chooses):

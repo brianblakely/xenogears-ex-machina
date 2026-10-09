@@ -3,12 +3,49 @@
  * Its rodata runs 0x0-0x9c (the overlay number first); where its text ends
  * is chosen with the next unit (see field_8007A44C.c). */
 #include "common.h"
-#include "field.h"
-#include "field_anim.h"
-#include "field_gte.h"
-#include "field_motion.h"
-#include "field_music.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/libsn.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
 #include "resident/formation.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "field.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
+#include "field_gte.h"
+#include "field_layer.h"
+#include "field_load.h"
+#include "field_mode.h"
+#include "field_motion.h"
+#include "field_movie.h"
+#include "field_music.h"
+#include "field_pad.h"
+#include "field_panel.h"
+#include "field_party.h"
+#include "field_picture.h"
+#include "field_resident.h"
+#include "field_screen.h"
+#include "field_sound.h"
 
 /* The overlay's number, ahead of this unit's other rodata (the field is
  * mode overlay 4). */
@@ -130,33 +167,33 @@ void func_8006FDEC(s16 *record) {
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
 
-    D_800AF880.lights[0].direction[0] = *record++;
-    D_800AF880.lights[0].direction[1] = *record++;
-    D_800AF880.lights[0].direction[2] = *record;
+    D_800AF880.lights[0].vx = *record++;
+    D_800AF880.lights[0].vy = *record++;
+    D_800AF880.lights[0].vz = *record;
     record += 2;
-    D_800AF880.lights[0].color[0] = *record++ << 3;
-    D_800AF880.lights[0].color[1] = *record++ << 3;
-    D_800AF880.lights[0].color[2] = *record << 3;
+    D_800AF880.lights[0].r = *record++ << 3;
+    D_800AF880.lights[0].g = *record++ << 3;
+    D_800AF880.lights[0].b = *record << 3;
     record += 2;
     func_80030A30(0, &D_800AF880.lights[0]);
 
-    D_800AF880.lights[1].direction[0] = *record++;
-    D_800AF880.lights[1].direction[1] = *record++;
-    D_800AF880.lights[1].direction[2] = *record;
+    D_800AF880.lights[1].vx = *record++;
+    D_800AF880.lights[1].vy = *record++;
+    D_800AF880.lights[1].vz = *record;
     record += 2;
-    D_800AF880.lights[1].color[0] = *record++ << 3;
-    D_800AF880.lights[1].color[1] = *record++ << 3;
-    D_800AF880.lights[1].color[2] = *record << 3;
+    D_800AF880.lights[1].r = *record++ << 3;
+    D_800AF880.lights[1].g = *record++ << 3;
+    D_800AF880.lights[1].b = *record << 3;
     record += 2;
     func_80030A30(1, &D_800AF880.lights[1]);
 
-    D_800AF880.lights[2].direction[0] = *record++;
-    D_800AF880.lights[2].direction[1] = *record++;
-    D_800AF880.lights[2].direction[2] = *record;
+    D_800AF880.lights[2].vx = *record++;
+    D_800AF880.lights[2].vy = *record++;
+    D_800AF880.lights[2].vz = *record;
     record += 2;
-    D_800AF880.lights[2].color[0] = *record++ << 3;
-    D_800AF880.lights[2].color[1] = *record++ << 3;
-    D_800AF880.lights[2].color[2] = *record << 3;
+    D_800AF880.lights[2].r = *record++ << 3;
+    D_800AF880.lights[2].g = *record++ << 3;
+    D_800AF880.lights[2].b = *record << 3;
     D_800AF880.lights[1] = D_800AF880.lights[0];
     D_800AF880.lights[2] = D_800AF880.lights[0];
     record += 2;
@@ -207,7 +244,7 @@ void func_800700B0(void) {
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
                 func_800306D0(instance->anims);
             }
-            func_8002CBBC(instance->mesh);
+            func_8002CBBC((ModelBuffer *)instance->mesh);
             func_800320E8(instance->packets[0]);
             func_800320E8(D_800AF880.components.descriptors[i].instance);
         }
@@ -224,9 +261,9 @@ void func_800700B0(void) {
         func_80027D40(D_800B007C);
     }
     for (i = 0; i < D_800AFEA8.count; i++) {
-        func_8002800C(D_800AFEA8.handles[i]);
+        func_8002800C(D_800AFEA8.scrolls[i]);
         func_800320E8(D_800AFEA8.buffers[i]);
-        func_800320E8((void *)D_800AFEA8.handles[i]);
+        func_800320E8(D_800AFEA8.scrolls[i]);
     }
     func_8003748C();
     module_loaded = &D_800B2078.unk2264;
@@ -545,7 +582,7 @@ void func_80070CC8(void) {
     FieldInstance *instance;
 
     func_800705DC();
-    D_800B1F78 = D_8005A4E0->slots;
+    D_800B1F78 = FIELD_BUNDLE->slots;
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
             func_8007A7F4(&D_800B06BC[i * 4 + j], j, i, 0);
@@ -608,9 +645,9 @@ void func_80070CC8(void) {
     D_800ADBF4 = func_80031BDC(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_ZONES), D_800ADBF4);
 
-    size = BUNDLE_SIZE(BUNDLE_8) + 0x10;
+    size = BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10;
     D_800ADBF0 = func_80031BDC(size, 0);
-    func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_8), D_800ADBF0);
+    func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_MESSAGES), D_800ADBF0);
 
     size = BUNDLE_SIZE(BUNDLE_COLLISION) + 0x10;
     D_800AF880.components.collision = func_80031BDC(size, 0);
@@ -637,10 +674,10 @@ void func_80070CC8(void) {
     D_800AF880.bounds[1] = 1;
     D_800AF880.bounds[2] = 1;
     D_800AF880.bounds[3] = 1;
-    func_8006FDEC(D_8005A4E0->view);
+    func_8006FDEC(FIELD_BUNDLE->view);
 
-    count = D_8005A4E0->descriptor_count;
-    record = D_8005A4E0->descriptors;
+    count = FIELD_BUNDLE->descriptor_count;
+    record = FIELD_BUNDLE->descriptors;
     D_800AF880.components.descriptor_count = count;
     table = func_80031BDC(count * sizeof(FieldDescriptor), 0);
     D_800AF880.components.descriptors = (FieldDescriptor *)table;
@@ -664,16 +701,16 @@ void func_80070CC8(void) {
             offset = *record;
             entry = (s32 *)(offset * 4 + (s32)D_800AF880.components.geometry);
             offset = entry[1] + (s32)D_800AF880.components.geometry;
-            instance->mesh = (FieldMesh *)(offset + 0x10);
+            instance->mesh = (SpriteModel *)(offset + 0x10);
             func_8002CB54(instance->mesh, &instance->packets[0], &instance->packets[1]);
             func_8002C8CC(instance->mesh, instance->packets[0], (D_800AF880.components.descriptors[i].flags & 0xC) >> 2);
-            memcpy(instance->packets[1], instance->packets[0], instance->mesh->size);
+            memcpy(instance->packets[1], instance->packets[0], instance->mesh->packet_size);
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
                 func_80032498(3, 0);
                 instance->anims = func_800303C8(instance->mesh, 0);
                 func_80032498(8, 0);
             }
-            func_8002C644(instance->mesh);
+            func_8002C644((ModelGroup *)instance->mesh);
             func_80080F44(i);
         } else {
             D_800AF880.components.descriptors[i].flags |= 0x20;
@@ -870,7 +907,7 @@ void func_80071E58(s32 steps) {
 
 /* Pointer setup: pad buffers, divisors 3 and 4, bounds, both ports' starts. */
 void func_80071EE8(void) {
-    func_8007AD8C(D_800625FC[0], D_800625FC[1]);
+    func_8007AD8C(&D_800625FC[0], &D_800625FC[1]);
     func_8007AE14(3, 4);
     func_8007ADA4(0, 0x140, 0, 0xE0);
     func_8007AE2C(0, 0x50, 0x64);
@@ -1535,12 +1572,9 @@ void func_800739C0(void) {
     D_800B00B4 = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
                                       (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
                         (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16);
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_80073230();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     eye.vx = D_800AF880.eye.vx;
     eye.vy = D_800AF880.eye.vy;
     eye.vz = D_800AF880.eye.vz;
@@ -1560,12 +1594,9 @@ void func_800739C0(void) {
         D_800AF880.previous_view = D_800AF85C;
         func_80073750(&D_800AF85C, &eye, &target, &D_800AF880.up);
     }
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_800722F4();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     for (i = 0; i < D_800ADBFC; i++) {
         if ((D_800AF880.components.descriptors[i].flags & 0xF40) && !(D_800AF880.components.descriptors[i].flags & 0x20)) {
             actor = D_800AF880.components.descriptors[i].actor;
@@ -1634,12 +1665,12 @@ void func_80073E38(void) {
     }
 }
 
-/* Switch to the other draw block and clear its overlay ordering table.
- * Breaks (code 1 in the high field; maspsx places `break N` in the low
- * field, so it is written as 1024) when 800c268c is clear. */
+/* Switch to the other draw block and clear its overlay ordering table,
+ * polling the debugger host (pollhost, `break 1024`) when 800c268c is
+ * clear. */
 void func_80073F50(void) {
     if (D_800C268C == 0) {
-        __asm__ volatile("break 1024");
+        pollhost();
     }
     D_800ADB08 = (D_800ADB08 + 1) % 2;
     D_800C426C = &D_800B249C[D_800ADB08];
@@ -1978,9 +2009,9 @@ void func_800748E8(void) {
                 gte_SetRotMatrix(&placed);
                 gte_SetTransMatrix(&placed);
                 if (!(descriptor->flags & 0x8000)) {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot, instance->mode);
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot, instance->mode);
                 } else {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot2, instance->mode);
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot2, instance->mode);
                 }
             }
         }
@@ -2005,14 +2036,8 @@ void func_8007520C(void) {
     }
 }
 
-void func_80024FE4(u32 *ot);
-void func_80024FF4(void *p);
-void func_8001D468(void);
-void func_8001C9F8(void);
-void func_8001C964(void);
-void func_80023210(FieldModel *model);
-void func_80075B44(u32 *ot, s32 buffer);
-void func_800764B4(u32 *ot, s32 buffer);
+void func_80075B44(u_long *ot, s32 buffer);
+void func_800764B4(u_long *ot, s32 buffer);
 
 /* Draw the field characters: set up the model renderer for this buffer, then
  * draw each actor's model (shown ones unless their layer is hidden or they
@@ -2025,7 +2050,7 @@ void func_800752C8(void) {
         return;
     }
     func_800250E0(D_800ADB08);
-    func_80024FE4(D_800C426C->ot);
+    func_80024FE4((s32)D_800C426C->ot);
     func_80024FF4(&D_800AF880.scaled_world);
     func_8001D468();
     func_8001C9F8();
@@ -2049,7 +2074,7 @@ void func_800752C8(void) {
 }
 
 /* Link a table's primitives into `ot` (AddPrims). */
-void func_80075458(void *ot, u32 *table, s32 depth) {
+void func_80075458(void *ot, u_long *table, s32 depth) {
     AddPrims(ot, table + depth, table);
 }
 
@@ -2093,10 +2118,7 @@ void func_8007554C(void) {
         func_80281B00("MESSAGE   ");
     }
     func_80074108();
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_800748E8();
     func_800752C8();
     func_800A9688();
@@ -2104,7 +2126,7 @@ void func_8007554C(void) {
         func_80281450();
     }
     func_800A4DAC();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     func_800A84C0();
     func_80075484();
     func_8007520C();
@@ -2182,7 +2204,6 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-
 /* The rotation matrix whose second row is `axis`: the first row is the unit
  * vector perpendicular to world up and `axis`, the third completes the basis. */
 void func_800759E4(MATRIX *m, VECTOR *axis) {
@@ -2216,7 +2237,7 @@ void func_80075B08(void *target, u8 *color) {
  * set its off-screen flag, then scale, fog and draw its sprite at its depth
  * in `ot` (layered sprites twice, split sprites in two parts); party actors
  * drawn by the 801e module get their layer object's state instead. */
-void func_80075B44(u32 *ot, s32 buffer) {
+void func_80075B44(u_long *ot, s32 buffer) {
     SVECTOR v;
     SVECTOR raised;
     VECTOR scale;
@@ -2238,7 +2259,7 @@ void func_80075B44(u32 *ot, s32 buffer) {
     s32 y;
     u32 layer_flags;
     FieldActor *actor;
-    FieldModel *sprite;
+    Sprite *sprite;
     u32 side;
 
     elevation = (s16)D_800AF880.elevation;
@@ -2313,18 +2334,18 @@ void func_80075B44(u32 *ot, s32 buffer) {
             if ((u16)(actor->unkE8 + 0x22) < 2) {
                 if (!(actor->layer_flags & 0x02000000)) {
                     func_80021B98(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
-                    sprite->unk3D = 0xEF;
+                    sprite->render.bytes[1] = 0xEF;
                     func_8001E298(sprite, ot + depth - 0x10);
                     v.vx = 0;
                     v.vy = 300;
                     v.vz = 0;
                     upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
                     func_80021B98(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
-                    sprite->unk3D = 0xF7;
+                    sprite->render.bytes[1] = 0xF7;
                     func_8001E298(sprite, ot + upper);
                 }
             } else {
-                sprite->unk3D = 0;
+                sprite->render.bytes[1] = 0;
                 if (!(actor->layer_flags & 0x02000000)) {
                     if (!(actor->unk134 & 0x60)) {
                         func_80075B08(sprite, actor->color0);
@@ -2378,7 +2399,7 @@ void func_80075B44(u32 *ot, s32 buffer) {
  * lays the shadow quad on the floor under it (its axes from the floor
  * normal), scale it by the actor's size, and link the projected quad into
  * `ot`. */
-void func_800764B4(u32 *ot, s32 buffer) {
+void func_800764B4(u_long *ot, s32 buffer) {
     VECTOR up;
     VECTOR side;
     VECTOR cross;
@@ -2435,7 +2456,7 @@ void func_800764B4(u32 *ot, s32 buffer) {
         floor.m[2][1] = up.vy;
         floor.m[2][2] = up.vz;
         floor.t[0] = descriptor->matrix.t[0];
-        floor.t[1] = (s16)descriptor->model->unk84;
+        floor.t[1] = descriptor->model->ground;
         floor.t[2] = descriptor->matrix.t[2];
         gte_CompMatrix(&D_800AF880.scaled_world, &floor, &placed);
         sx = descriptor->actor->scale[0] * 0xC00;
@@ -2463,8 +2484,8 @@ void func_800764B4(u32 *ot, s32 buffer) {
 }
 
 /* Sprite completion callback: flag the sprite's actor (layer bit 16). */
-void func_80076A74(FieldSprite *sprite) {
-    D_800AF880.components.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
+void func_80076A74(Sprite *sprite) {
+    D_800AF880.components.descriptors[SPRITE_SEQUENCER(sprite)->actor].actor->layer_flags |= 0x10000;
 }
 
 /* Create an event actor's sprite: record its slot and arguments on the
@@ -2476,7 +2497,7 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     s32 width;
     s32 height;
     s32 depth;
-    FieldModel *sprite;
+    Sprite *sprite;
     s32 y;
     s32 x;
 
@@ -2523,18 +2544,18 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     D_800AF880.components.descriptors[index].unk5A |= 1;
     func_8001F5BC(sprite, 0, &width, &height, &depth);
     func_80021C00(sprite, 3);
-    sprite->unk2C = 0xC00;
-    sprite->unk82 = 0x2000;
+    sprite->scale = 0xC00;
+    sprite->word82 = 0x2000;
     if (D_8004F30C == 0) {
-        sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-        sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-        sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
-        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
-        sprite->velocity[1] = 0;
-        sprite->velocity[0] = 0;
-        sprite->velocity[1] = 0;
-        sprite->velocity[2] = 0;
-        sprite->gravity.value = 0x10000;
+        sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+        sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+        sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
+        sprite->ground = D_800AF880.components.descriptors[index].matrix.t[1];
+        sprite->speed_y = 0;
+        sprite->speed_x = 0;
+        sprite->speed_y = 0;
+        sprite->speed_z = 0;
+        sprite->gravity = 0x10000;
         if (kind == 0) {
             D_800AF880.components.descriptors[index].actor->height = height * 2;
         } else {
@@ -2542,22 +2563,22 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         }
     }
     if (D_800B2078.sprite_gate != 0) {
-        sprite->unk40 |= 0x40000;
+        sprite->flags |= 0x40000;
     }
     func_800245D8(sprite, 0);
     func_80021FE0(sprite, 0);
     func_80032498(8, 0);
-    sprite->animation->actor = index;
+    SPRITE_SEQUENCER(sprite)->actor = index;
     func_80021BF8(sprite, func_80076A74);
     if (flag == 0) {
         func_80023210(sprite);
         func_8001C964();
-        if (sprite->animation->unk0C == 0xFF) {
+        if ((u16)SPRITE_SEQUENCER(sprite)->halfc == 0xFF) {
             D_800AF880.components.descriptors[index].actor->unk0EA = 0xFF;
             D_800AF880.components.descriptors[index].actor->layer_flags |= 0x01000000;
-            sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-            sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-            sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+            sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+            sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+            sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
         }
     }
     D_800AF880.components.descriptors[index].transform.t[0] = D_800AF880.components.descriptors[index].matrix.t[0] =
@@ -2566,10 +2587,10 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         WHOLE(D_800AF880.components.descriptors[index].actor->position[1]);
     D_800AF880.components.descriptors[index].transform.t[2] = D_800AF880.components.descriptors[index].matrix.t[2] =
         WHOLE(D_800AF880.components.descriptors[index].actor->position[2]);
-    sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
-    sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-    sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-    sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+    sprite->ground = D_800AF880.components.descriptors[index].matrix.t[1];
+    sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+    sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+    sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
     D_800AFC74++;
 }
 
@@ -2609,7 +2630,7 @@ s32 func_80084A40();
 void func_80077268(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
-    FieldModel *model;
+    Sprite *model;
     s32 slot;
     s32 i;
 
@@ -2627,9 +2648,9 @@ void func_80077268(void) {
                 if (slot != 0) {
                     func_80084A40(i, WHOLE(D_800AF880.components.descriptors[i].actor->position[1]),
                                   descriptor, actor);
-                    model->position[0] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[0];
-                    model->position[1] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[1];
-                    model->position[2] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[2];
+                    model->x = D_800AF880.components.descriptors[D_800B2078.controlled].model->x;
+                    model->y = D_800AF880.components.descriptors[D_800B2078.controlled].model->y;
+                    model->z = D_800AF880.components.descriptors[D_800B2078.controlled].model->z;
                     descriptor->matrix.t[0] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[0];
                     descriptor->matrix.t[1] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[1];
                     descriptor->matrix.t[2] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[2];
@@ -2666,15 +2687,6 @@ void func_800775F8(void) {
     DrawSync(0);
     VSync(0);
 }
-
-extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
-extern s32 *D_8005A4A0;      /* the text-image file (a7) */
-extern RECT D_800B004C;      /* compass colour strip */
-extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
-extern s16 D_800C2690[2];
-extern s16 D_800C38FC[2];
-void func_8003342C(void *table);
-void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
  * relocate its offset table, load its eight TIMs where 800adc44 places them
@@ -2738,7 +2750,6 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
     m->m[2][2] = m22;
 }
 
-
 /* Load the 801e module and its per-layer resources when the layer is
  * enabled: allocate the module (file 6b9), two blocks per layer (files
  * 6bb and 6ba plus the layer's id), then read them all as one list. */
@@ -2775,7 +2786,6 @@ void func_80077884(void) {
         func_80029AFC(D_800B2394, 0, 0);
     }
 }
-
 
 /* Start the 801e module's layers when enabled: sync and flush the cache,
  * initialise the module, set the back colour, then create each layer from
@@ -2861,50 +2871,7 @@ s32 func_80077E10(void) {
     return 0;
 }
 
-extern s32 D_8004F310;
-extern s32 D_8004F2F8;
-extern u8 D_800594D0;
-extern s32 D_80010000;      /* -1 in the debug environment */
-extern s32 D_80059560;
-extern s32 D_800595AC;
-extern s32 D_8006251C;
-extern s32 D_80062524;
-extern GameState D_8006D634; /* the game state */
-extern s32 D_8004F354;
-extern s32 D_8004F358;
-extern s32 D_800AFC78;
-extern s32 D_8004F31C;
-extern s32 D_8004F320;
-extern s32 D_80059488;
-extern u16 D_800C3900;      /* pad buttons held */
-extern u16 D_800C3908;      /* pad buttons pressed */
-extern u16 D_800AFE9C;
-extern s32 D_8004F334;
-extern u8 D_8005954C;
-extern s32 D_8004F378;
-extern s32 D_8004F37C;
-extern u8 D_80059171;
 void func_8007781C(void);
-void func_80085890(); /* called with an argument it ignores */
-void func_802811EC(void);
-void func_800A94A4(s32 actor);
-s32 func_80035734(s32 a0);
-void func_80037EE4(void);
-void func_80037E8C(void);
-void func_8001FAB4(s32 a0, s32 a1);
-void func_80019CA0(void);
-void func_800A5924(void);
-void func_8007FFE8(void);
-void func_800A3F4C(void);
-void func_8003A89C(s32 sequence, s32 volume, s32 a2);
-void func_800A5C40(void);
-void func_800ACE90(void);
-void func_800ABA98(void);
-void func_800A7C58(void);
-void func_800A9460(void);
-void func_800864F0(void);
-void func_800700B0(void);
-void func_80085988(void);
 
 /* The field mode entry: set up the heap and the debug hooks, take the map
  * and music from the game state, run the field entry (80078d44), then the
@@ -2932,8 +2899,8 @@ void func_80077E88(void) {
     if (D_800C268C == 0) {
         DrawSyncCallback(func_8007781C);
     }
-    D_8006251C = D_80059560;
-    D_80062524 = D_800595AC;
+    D_80062518[1] = (s32)D_80059560;
+    D_80062518[3] = (s32)D_800595AC;
     func_80032498(8, 0);
     if (D_800C268C == 0 && D_8004F370 == 0) {
         func_80028470(4, 0);
@@ -2966,14 +2933,14 @@ void func_80077E88(void) {
     }
     func_800775C0();
     D_8005A39C = &D_8006D634;
-    D_8004F34C = D_8006D634.unk231A;
-    D_8006D634.vars[1] = D_8006D634.unk2320;
-    D_8006D634.vars[4] = D_8006D634.unk231C >> 9;
+    D_8004F34C = D_8006D634.map;
+    D_8006D634.vars[1] = D_8006D634.entry[2];
+    D_8006D634.vars[4] = D_8006D634.entry[0] >> 9;
     if (D_8004F2F8 == 0) {
         D_800594D0 = 0;
         D_8004F324 = 0xFF;
     } else {
-        D_8004F324 = D_8006D634.unk2322;
+        D_8004F324 = D_8006D634.flagWords[0];
     }
     if (D_800C268C == 1) {
         D_8005A39C->vars[0x28] = 1;
@@ -2985,7 +2952,7 @@ void func_80077E88(void) {
     func_8001B3A8();
     D_800ADB30 = (u32)func_80031BDC(4, 1);
     if (D_800C268C == 0) {
-        __asm__ volatile("break 1024");
+        pollhost();
         func_800A94A4(D_800B2078.controlled);
         D_800B02CC[0].unk00 = 1;
         D_800B02CC[0].count = 0x10;
@@ -3058,7 +3025,7 @@ void func_80077E88(void) {
                 }
                 exit = 0;
                 if (D_800ADBD4 == 1) {
-                    func_8003A89C(D_80062528, 0x7F, 0);
+                    func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0);
                 }
                 D_800ADBD4 = 0;
                 break;
@@ -3232,18 +3199,7 @@ void func_80078C5C(void) {
     }
 }
 
-extern s32 D_8004F310;
-extern s32 D_8004F2F8;  /* 1 once the field screen has been set up */
-extern s32 D_8004F304;  /* music sequence to release on entry */
-extern u8 D_8005942C;   /* 1 when entering from battle */
-extern u8 D_800594D0;   /* 1 when entering from a movie */
-void func_80031FF8(void);
-void func_80070CC8(void);
-void func_800A24C4(void);
-void func_801E7378(s32 on);
 /* Declared without prototypes: this caller passes arguments they ignore. */
-void func_800A5884();
-void func_800A77C4();
 
 /* The field entry: load the text palette and screen, set up both draw
  * buffers, load the map (80070cc8, 80070488), finish the stream read ahead
@@ -3339,8 +3295,8 @@ void func_80078D44(void) {
         MoveImage(&rect, 0x200, 0);
     }
     if (D_8004F304 != 0) {
-        func_80039C4C(D_80062528);
-        func_800399D4(D_80062528);
+        func_80039C4C((SoundTrack *)D_80062528);
+        func_800399D4((SoundSeq *)D_80062528);
         func_80038310(D_8006258C);
         D_8004F304 = 0;
     }
@@ -3405,10 +3361,6 @@ void func_80078D44(void) {
     func_80077544();
     D_800AFD04 = 0;
 }
-
-extern u8 D_800594F8;
-void func_800199CC(s32 mode);
-void func_80281204(s32 formation);
 
 /* Count down the random-encounter steps while encounters are possible; on a
  * step whose drawn number (800b22a0) reaches zero, pick a formation of the
@@ -3477,18 +3429,6 @@ draw:
     }
 }
 
-extern s32 D_8004F30C;
-extern s32 D_8004F310;
-extern s32 D_8004F324;
-extern s32 D_800AFC78;
-extern s32 D_800B0064;
-void func_8001996C(s32 mode);
-void func_80019ACC(s32 a0);
-void func_8001BB50(void);
-void func_800A30FC(void);
-s32 func_80085F30(void);
-void func_80085FB8(void);
-
 /* Leave the field for another game mode, then run the mode dispatcher:
  * kind 0 selects battle (2) after saving the map and event variable 1 in
  * the game state, kind 1 mode 3 (first stopping the field sound and
@@ -3500,8 +3440,8 @@ void func_8007954C(s32 kind) {
     case 0:
         func_800A30FC();
         D_8004F324 = D_800AFC78;
-        D_8005A39C->unk2322 = D_800AFC78;
-        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        D_8005A39C->flagWords[0] = D_800AFC78;
+        D_8005A39C->entry[2] = D_8005A39C->vars[1];
         if (D_8004F370 != 0) {
             return;
         }
@@ -3521,8 +3461,8 @@ void func_8007954C(s32 kind) {
         func_8001996C(3);
         break;
     case 2:
-        D_8005A39C->unk2322 = D_8004F324;
-        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        D_8005A39C->flagWords[0] = D_8004F324;
+        D_8005A39C->entry[2] = D_8005A39C->vars[1];
         if (D_8004F370 != 0) {
             return;
         }
@@ -3544,6 +3484,7 @@ void func_8007954C(s32 kind) {
     func_80019ACC(0);
 }
 
+/* Empty; nothing calls it. */
 void func_800796F4(void) {
 }
 
@@ -3554,10 +3495,6 @@ void func_800796FC(void) {
     PutDispEnv(&D_800C426C->disp);
     PutDrawEnv(&D_800C426C->draw);
 }
-
-extern DR_MODE D_800AFE24[2]; /* fade draw mode per buffer */
-extern RECT D_800AFE4C;       /* fade copy source */
-extern TILE D_800AFE54[2];    /* fade tile per buffer */
 
 /* Present the current buffer under a full-screen tile of brightness
  * `level * 4`: link the tile and its draw mode, copy the display area, then
@@ -3607,16 +3544,6 @@ void func_8007999C(void) {
     ExitCriticalSection();
 }
 
-extern s32 D_8004F350;
-extern s16 D_8006BE2C[3];
-extern void *D_8005945C;    /* the menu's shared file (1) */
-extern u8 D_80059178;
-extern u8 D_80059460;       /* menu kind */
-extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
-extern s32 D_8004F31C;
-extern s32 D_8004F320;
-void func_8001C634(void);
-
 /* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
  * the field: fade out, save the 801e module and the VRAM the menu uses,
  * load the menu (file kind + 5, and the shared file 1), run it (8001c634),
@@ -3624,7 +3551,7 @@ void func_8001C634(void);
  * back in and reload the module and the party sprites. */
 void func_800799D4(void) {
     RECT rect;
-    FieldFileRequest files[4];
+    FileRequest files[4];
     RECT unused; /* unused in the original; reserves 8 bytes */
     u32 end;
     void *module;
@@ -3714,11 +3641,11 @@ void func_800799D4(void) {
     D_80059178 = 0;
     D_80059460 = D_800ADB64 & 0x7F;
     for (i = 0; i < 3; i++) {
-        D_8006BE2C[i] = D_8005A39C->unk22B1[i];
+        D_8006BE2C[i] = D_8005A39C->inGear[i];
     }
     func_800798BC();
-    D_8005A4AC[0] = D_800B249C[0].ot;
-    D_8005A4AC[1] = D_800B249C[1].ot;
+    D_8005A4AC[0] = (u32 *)D_800B249C[0].ot;
+    D_8005A4AC[1] = (u32 *)D_800B249C[1].ot;
     func_8007999C();
     func_8001C634();
     func_8007999C();
@@ -3728,16 +3655,16 @@ void func_800799D4(void) {
         func_800A3074(0x46, 0);
         func_800A3074(4, 4);
         D_8004F34C = 4;
-        D_8005A39C->unk2320 = 0;
+        D_8005A39C->entry[2] = 0;
         D_8005A39C->vars[1] = 0;
-        D_8005A39C->unk231A = 4;
+        D_8005A39C->map = 4;
     }
     if (D_800594D0 == 2) {
         D_800B02C8 = 1;
         func_800A3074(0x46, 2);
-        func_800A3074(4, D_8005A39C->unk231A & 0x3FFF);
-        if ((D_8005A39C->unk231A & 0x3FFF) < 0x400) {
-            D_8005A39C->unk2320 = D_8005A39C->vars[0x2A];
+        func_800A3074(4, D_8005A39C->map & 0x3FFF);
+        if ((D_8005A39C->map & 0x3FFF) < 0x400) {
+            D_8005A39C->entry[2] = D_8005A39C->vars[0x2A];
         }
     }
     func_800775F8();

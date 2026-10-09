@@ -1,6 +1,9 @@
-/* Stage setup: the stage image list bounds, its images and actors, and
- * the stage lights. */
-#include "battle_setup.h"
+/* Stage setup (rodata 801E4000-801E4020, text 801E70E8-801E7F4C): the stage
+ * image list bounds, its images and model, its objects (panoramas, the
+ * backdrop, fog, texture scrolls) and the scene's points and triangles. A
+ * GCC 2.6.3 unit between the CDK units battle_loader.c and load_modes.c
+ * (ovl2615.mk); its rodata opens the image. */
+#include "stage.h"
 
 /* Relocate the stage image list and take the bounds of its pixel sections
  * (kind 0x1101: position, offset, size); returns the bounds' area. */
@@ -58,9 +61,9 @@ s32 func_801E70E8(s32 *images) {
 
 /* Set up the battle stage: register the stage model and place its parts,
  * move the scene data into its own block, start the stage motion, take the
- * origin and colour matrix, build the stage objects (lights, backdrop, fog,
- * animations) and publish the actors and lights. Returns whether the stage
- * has fog (its colour goes to tint); 0 without a stage or scene. */
+ * origin and colour matrix, build the stage objects (panoramas, backdrop,
+ * fog, texture scrolls) and publish the scene's points and triangles. Returns whether
+ * the stage has fog (its colour goes to tint); 0 without a stage or scene. */
 /* The relocated section pointers stay NULL for a zero offset (the original
  * converts these tests to masks), and a failed allocation returns without a
  * value: the original leaves the allocator's NULL in v0. */
@@ -75,10 +78,10 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     u8 *motions[4];
     u8 *first_motion;
     u16 motion_count;
-    s32 *lights;
-    void *actors;
+    s32 *triangle_count;
+    SVECTOR *points;
     u8 *pointer;
-    StageLight *entries;
+    SceneTriangle *triangles;
     s32 size;
     s32 i;
     s32 j;
@@ -100,7 +103,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         D_800C3D50[i] = NULL;
     }
     for (j = 0; j < 2; j++) {
-        D_800C3DA0[j].motion = NULL;
+        D_800C3DA0[j].phases = NULL;
     }
     D_800D361A = 0;
     if (stage != NULL) {
@@ -108,20 +111,20 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         func_800A8BF0(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
         func_801E70E8(stage->images);
         position = stage->positions;
-        part = D_800D3368[STAGE_MODEL]->parts;
+        part = D_800D3368[STAGE_MODEL]->hierarchy;
         D_800C3E38 = part;
-        D_800C3E48 = D_800D3368[STAGE_MODEL]->model;
-        for (i = 1; i < part->count; i++, position++) {
-            part[i].x = position->x;
-            part[i].y = position->y;
-            part[i].z = position->z;
-            part[i].rotation = position->rotation;
+        D_800C3E48 = D_800D3368[STAGE_MODEL]->field0;
+        for (i = 1; i < part->index; i++, position++) {
+            part[i].translation[0] = position->x;
+            part[i].translation[1] = position->y;
+            part[i].translation[2] = position->z;
+            part[i].field52 = position->rotation;
         }
     }
     table = (s32 *)data;
     size = table[-1];
     data = func_80031BDC(size, 0);
-    D_800658C8 = data;
+    D_800658C8 = (u8 *)data;
     if (data == NULL) {
         return; /* no value: v0 still holds the NULL block */
     }
@@ -130,18 +133,18 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     func_800320E8(table - 1);
     made = 0;
     placed = 0;
-    size = data->actors;
+    size = data->points;
     pointer = (u8 *)data + size;
-    actors = NULL;
+    points = NULL;
     if (size != 0) {
-        actors = pointer;
+        points = (SVECTOR *)pointer;
     }
-    size = data->lights;
-    pointer = (u8 *)data + size + 4; /* the entries follow the count */
-    lights = (s32 *)((u8 *)data + size);
-    entries = NULL;
+    size = data->triangles;
+    pointer = (u8 *)data + size + 4; /* the triangles follow the count */
+    triangle_count = (s32 *)((u8 *)data + size);
+    triangles = NULL;
     if (size != 0) {
-        entries = (StageLight *)pointer;
+        triangles = (SceneTriangle *)pointer;
     }
     /* Reset from the list payload, then use its first relocated entry. */
     size = data->motion;
@@ -152,7 +155,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     if (stage != NULL) {
         func_800AA898(D_800D3368[STAGE_MODEL], &D_800C3D0C, (s32 *)pointer + 2, 0);
         func_800AA934(D_800D3368[STAGE_MODEL], D_800D3368[STAGE_MODEL], &D_800C3D0C, 0);
-        func_8009EF3C(D_800C3E38, D_800D3368[STAGE_MODEL]->pose);
+        func_8009EF3C(D_800C3E38, D_800D3368[STAGE_MODEL]->scale1C);
     }
     for (i = 0; i < 4; i++) {
         size = *table;
@@ -180,10 +183,10 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     colours[6] = data->colours[2];
     colours[7] = 0;
     colours[8] = 0;
-    D_800D2FD0 = first_motion + 2;
+    D_800D2FD0 = (u16 *)(first_motion + 2);
     D_800D2FC8 = motion_count;
-    D_800D2FC0 = colours;
-    SetColorMatrix(colours);
+    D_800D2FC0 = (MATRIX *)colours;
+    SetColorMatrix((MATRIX *)colours);
     SetBackColor(data->back[0], data->back[1], data->back[2]);
     for (i = 0; i < 6; i++) {
         object = &info->objects[i];
@@ -218,7 +221,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             info->fog = 1;
             break;
         case 7:
-            if (D_800C3DA0[placed].motion == NULL && placed < 2 && i + 1 < 4) {
+            if (D_800C3DA0[placed].phases == NULL && placed < 2 && i + 1 < 4) {
                 func_80027D64(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
                     object->v16, object->v20, object->v1A, object->v1C, motions[i + 1]);
             }
@@ -232,11 +235,11 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         tint[1] = info->fogColour[1];
         tint[2] = info->fogColour[2];
     }
-    if (actors != NULL && entries != NULL) {
-        func_801E7EC4(actors, entries, *lights);
+    if (points != NULL && triangles != NULL) {
+        func_801E7EC4(points, triangles, *triangle_count);
     }
     for (i = 0; i < 4; i++) {
-        D_800D2D10[i] = D_800658C8->info.flags[i];
+        D_800D2D10[i] = ((BattleScene *)D_800658C8)->info.flags[i];
     }
     DrawSync(0);
     func_800320E8(stage);
@@ -375,18 +378,19 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
     return backdrop;
 }
 
-/* Register the stage actors and light entries; clear each light's active
- * flag. Without lights both pointers are cleared. */
-void func_801E7EC4(void *actors, StageLight *lights, s32 count) {
+/* Register the scene's points and triangles (the battle's ground geometry,
+ * battle/scene.h); clear each triangle's visit stamp. Without triangles both
+ * pointers are cleared. */
+void func_801E7EC4(SVECTOR *points, SceneTriangle *triangles, s32 count) {
     s32 i;
 
-    D_800D3344 = actors;
-    D_800D39CC = lights;
+    D_800D3344 = points;
+    D_800D39CC = triangles;
     D_800D3348 = count;
     D_800D2F64 = 1;
-    if (lights != NULL) {
+    if (triangles != NULL) {
         for (i = 0; i < D_800D3348; i++) {
-            D_800D39CC[i].active = 0;
+            D_800D39CC[i].visited = 0;
         }
     }
     if (count == 0) {

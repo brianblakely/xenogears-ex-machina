@@ -5,6 +5,8 @@
  * drops, and writes the party back to the game data. The battle overlay calls
  * 801de594 (queue the screens' primitives) and 801e252c.
  *
+ * The whole image is this one unit: rodata 801DE000-801DE048, text
+ * 801DE048-801E44C0, data 801E44C0-801E44CC and its commons to 801E4500.
  * Compiled with GCC 2.6.3: only it reproduces the (index + base) operand
  * order of this unit's address arithmetic (e.g. 801de5c4, 801de1c4). */
 #include "battle_results.h"
@@ -13,24 +15,25 @@
  * padding after it holds a byte (0x04) that nothing reads, which a C
  * definition cannot leave, so it stays original data. */
 INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
+extern u8 D_801E44C0; /* the result fanfare has started */
 GameData *D_801E44C4 = &D_8006D634;
-BattleWork *D_801E44C8 = (BattleWork *)D_800CCCE8;
+BattleWork *D_801E44C8 = &D_800CCCE8;
 /* The module's uninitialized variables (the level gauge animation, the
  * growth data and the record being processed, the experience pools), zero
  * in the file: commons, which the original linker allocated each in a slot
  * of whole words (decomp/Makefile). */
-s32 D_801E44CC;
-s32 D_801E44D0;
-s32 D_801E44D4;
-s32 D_801E44D8;
-s32 D_801E44DC;
-u8 D_801E44E0;
-u8 D_801E44E4;
-GrowthFile *D_801E44E8;
-Combatant *D_801E44EC;
-u32 D_801E44F0;
-u32 D_801E44F4;
-u8 D_801E44F8[3][2];
+s32 D_801E44CC;               /* gauge: start value */
+s32 D_801E44D0;               /* end value */
+s32 D_801E44D4;               /* distance */
+s32 D_801E44D8;               /* start length */
+s32 D_801E44DC;               /* distance length */
+u8 D_801E44E0;                /* bar colour */
+u8 D_801E44E4;                /* arrow glyph */
+GrowthFile *D_801E44E8;       /* the growth data file */
+CharacterRecord *D_801E44EC;  /* the record being processed: a combatant's or the game data's */
+u32 D_801E44F0;               /* experience pool for level A */
+u32 D_801E44F4;               /* and level B */
+u8 D_801E44F8[3][2];          /* each slot's levels A and B before the experience */
 
 /* Queue every member card's glyph runs while the cards are shown. */
 void func_801DE048(void) {
@@ -66,17 +69,17 @@ void func_801DE1C4(void) {
         func_800728B8(D_800D334C->glyphs17C0, D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
         func_800728B8(D_800D334C->glyphs1900, D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
         for (i = 0; i < 7; i++) {
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
             func_800728B8(D_800D334C->rowA[i], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
             func_800728B8(D_800D334C->rowB[i], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
         }
     }
     i = 0;
-    if (D_800D2D28->show8F != 0) {
+    if (D_800D2D28->showSkill != 0) {
         func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
         for (; i < 2; i++) {
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
         }
     }
 }
@@ -90,11 +93,11 @@ void func_801DE408(void) {
         func_800728B8(D_800D334C->glyphs2F60[0], D_800D334C->run2F60.count, D_800D334C->run2F60.buffer);
         func_800728B8(D_800D334C->glyphs3140[0], D_800D334C->run3140.count, D_800D334C->run3140.buffer);
         for (i = 0; i < D_800D334C->listCount; i++) {
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
         }
         for (i = 0; i < 2; i++) {
-            AddPrim(D_800CCB00.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
+            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
         }
     }
 }
@@ -112,10 +115,10 @@ void func_801DE5C4(void) {
 
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[0].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
             D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, &D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count * 2], 0x20, i * 0x20 + 0x24);
         }
-        D_800D32F8[i]->runs[0].buffer = D_800CCB00.buffer;
+        D_800D32F8[i]->runs[0].buffer = D_800C3EB0.buffer;
     }
 }
 
@@ -127,20 +130,20 @@ void func_801DE69C(void) {
 
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[1].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
             for (j = 0; j < 18; j++) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(D_800C3268[j], &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], D_800C327C[j], D_800C32A0[j] + i * 0x20);
             }
             if (D_800D32F8[0]->flag15F8 != 0) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
-                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34.index] - 4, 0x80, 0x40, 0x40);
-                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34.index] - 2, 0x40, 0x80, 0x40);
+                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800C3EB0.buffer], 0);
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800C3EB0.buffer] - 4, 0x80, 0x40, 0x40);
+                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800C3EB0.buffer], 0);
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800C3EB0.buffer] - 2, 0x40, 0x80, 0x40);
             }
         }
-        D_800D32F8[i]->runs[1].buffer = D_800CCB00.buffer;
+        D_800D32F8[i]->runs[1].buffer = D_800C3EB0.buffer;
     }
 }
 
@@ -157,8 +160,8 @@ void func_801DEA18(void) {
         D_800D32F8[i]->runs[6].count = 0;
         D_800D32F8[i]->runs[5].count = 0;
         D_800D32F8[i]->runs[7].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
-            func_8008AAA0(D_800CCD34[i].value4C);
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+            func_8008AAA0(D_800CCCE8.records[i].pilot.hp);
             for (j = 0; j < 3; j++) {
                 n = j + 9;
                 digit = D_800C3CF1[n];
@@ -166,8 +169,8 @@ void func_801DEA18(void) {
                     D_800D32F8[i]->runs[4].count += func_80076A10(digit, &D_800D32F8[i]->field960[D_800D32F8[i]->runs[4].count * 2], j * 8 + 0x48, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[4].buffer = D_800CCB00.buffer;
-            func_8008AAA0(D_800CCD34[i].value50);
+            D_800D32F8[i]->runs[4].buffer = D_800C3EB0.buffer;
+            func_8008AAA0(D_800CCCE8.records[i].pilot.ep);
             for (j = 0; j < 2; j++) {
                 n = j + 10;
                 digit = D_800C3CF1[n];
@@ -175,8 +178,8 @@ void func_801DEA18(void) {
                     D_800D32F8[i]->runs[6].count += func_80076A10(digit, &D_800D32F8[i]->fieldB40[D_800D32F8[i]->runs[6].count * 2], j * 8 + 0x50, i * 0x20 + 0x28);
                 }
             }
-            D_800D32F8[i]->runs[6].buffer = D_800CCB00.buffer;
-            func_8008AAA0(D_800CDCE8[i].valueA);
+            D_800D32F8[i]->runs[6].buffer = D_800C3EB0.buffer;
+            func_8008AAA0(D_800CCCE8.savedMax[i][0]);
             for (j = 0; j < 3; j++) {
                 n = j + 13;
                 digit = D_800C3CED[n];
@@ -184,8 +187,8 @@ void func_801DEA18(void) {
                     D_800D32F8[i]->runs[5].count += func_80076A10(digit, &D_800D32F8[i]->fieldA50[D_800D32F8[i]->runs[5].count * 2], j * 8 + 0x68, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[5].buffer = D_800CCB00.buffer;
-            func_8008AAA0(D_800CDCE8[i].valueB);
+            D_800D32F8[i]->runs[5].buffer = D_800C3EB0.buffer;
+            func_8008AAA0(D_800CCCE8.savedMax[i][1]);
             for (j = 0; j < 2; j++) {
                 n = j + 14;
                 digit = D_800C3CED[n];
@@ -193,7 +196,7 @@ void func_801DEA18(void) {
                     D_800D32F8[i]->runs[7].count += func_80076A10(digit, &D_800D32F8[i]->fieldBE0[D_800D32F8[i]->runs[7].count * 2], j * 8 + 0x70, i * 0x20 + 0x28);
                 }
             }
-            D_800D32F8[i]->runs[7].buffer = D_800CCB00.buffer;
+            D_800D32F8[i]->runs[7].buffer = D_800C3EB0.buffer;
         }
     }
 }
@@ -210,11 +213,11 @@ void func_801DEDC0(u8 fromGameData) {
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[2].count = 0;
         D_800D32F8[i]->runs[3].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
             if (fromGameData == 0) {
                 func_8008AAA0(D_800D32A5[i].level);
             } else {
-                func_8008AAA0(D_8006D8A0[D_800D2D24[i]].level);
+                func_8008AAA0(D_8006D634.characters[D_800D2D24[i]].level);
             }
             for (j = 0; j < 3; j++) {
                 n = j + 18;
@@ -223,12 +226,12 @@ void func_801DEDC0(u8 fromGameData) {
                     D_800D32F8[i]->runs[2].count += func_80076A10(digit, &D_800D32F8[i]->field780[D_800D32F8[i]->runs[2].count * 2], j * 8 + 0x90, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[2].buffer = D_800CCB34.index;
+            D_800D32F8[i]->runs[2].buffer = D_800C3EB0.buffer;
             if (D_800D32F8[0]->flag15F8 != 0) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
                 } else {
-                    func_8008AAA0(D_8006D8A0[D_800D2D24[i]].level2);
+                    func_8008AAA0(D_8006D634.characters[D_800D2D24[i]].level2);
                 }
                 for (j = 0; j < 3; j++) {
                     n = j + 18;
@@ -237,14 +240,14 @@ void func_801DEDC0(u8 fromGameData) {
                         D_800D32F8[i]->runs[3].count += func_80076A10(digit, &D_800D32F8[i]->field870[D_800D32F8[i]->runs[3].count * 2], j * 8 + 0x90, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[3].buffer = D_800CCB34.index;
+                D_800D32F8[i]->runs[3].buffer = D_800C3EB0.buffer;
                 for (j = 0; j < D_800D32F8[i]->runs[2].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800CCB34.index], 0);
-                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
+                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800C3EB0.buffer], 0);
+                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
                 }
                 for (j = 0; j < D_800D32F8[i]->runs[3].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800CCB34.index], 0);
-                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800CCB34.index], 0x40, 0x80, 0x40);
+                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800C3EB0.buffer], 0);
+                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800C3EB0.buffer], 0x40, 0x80, 0x40);
                 }
             }
         }
@@ -262,8 +265,8 @@ void func_801DF270(void) {
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[8].count = 0;
         D_800D32F8[i]->runs[9].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
-            func_8008AAA0(D_800CDCB8[i].value);
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+            func_8008AAA0(D_800CCCE8.expTotals[i][0]);
             for (j = 0; j < 8; j++) {
                 n = j + 22;
                 digit = D_800C3CDF[n];
@@ -271,9 +274,9 @@ void func_801DF270(void) {
                     D_800D32F8[i]->runs[8].count += func_80076A10(digit, &D_800D32F8[i]->fieldC80[D_800D32F8[i]->runs[8].count * 2], j * 8 + 0xB0, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[8].buffer = D_800CCB34.index;
+            D_800D32F8[i]->runs[8].buffer = D_800C3EB0.buffer;
             if (D_800D32F8[0]->flag15F8 != 0) {
-                func_8008AAA0(D_800CDCB8[i].value2);
+                func_8008AAA0(D_800CCCE8.expTotals[i][1]);
                 for (j = 0; j < 8; j++) {
                     n = j + 22;
                     digit = D_800C3CDF[n];
@@ -281,7 +284,7 @@ void func_801DF270(void) {
                         D_800D32F8[i]->runs[9].count += func_80076A10(digit, &D_800D32F8[i]->fieldF00[D_800D32F8[i]->runs[9].count * 2], j * 8 + 0xB0, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[9].buffer = D_800CCB34.index;
+                D_800D32F8[i]->runs[9].buffer = D_800C3EB0.buffer;
             }
         }
     }
@@ -297,8 +300,8 @@ void func_801DF4C0(void) {
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[10].count = 0;
         D_800D32F8[i]->runs[11].count = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
-            func_8008AAA0(D_800CDCD0[i].value);
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+            func_8008AAA0(D_800CCCE8.toCount[i][0]);
             for (j = 0; j < 7; j++) {
                 n = j + 31;
                 digit = D_800C3CD7[n];
@@ -306,9 +309,9 @@ void func_801DF4C0(void) {
                     D_800D32F8[i]->runs[10].count += func_80076A10(digit, &D_800D32F8[i]->field1180[D_800D32F8[i]->runs[10].count * 2], j * 8 + 0xF8, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[10].buffer = D_800CCB34.index;
+            D_800D32F8[i]->runs[10].buffer = D_800C3EB0.buffer;
             if (D_800D32F8[0]->flag15F8 != 0) {
-                func_8008AAA0(D_800CDCD0[i].value2);
+                func_8008AAA0(D_800CCCE8.toCount[i][1]);
                 for (j = 0; j < 7; j++) {
                     n = j + 31;
                     digit = D_800C3CD7[n];
@@ -316,7 +319,7 @@ void func_801DF4C0(void) {
                         D_800D32F8[i]->runs[11].count += func_80076A10(digit, &D_800D32F8[i]->field13B0[D_800D32F8[i]->runs[11].count * 2], j * 8 + 0xF8, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[11].buffer = D_800CCB34.index;
+                D_800D32F8[i]->runs[11].buffer = D_800C3EB0.buffer;
             }
         }
     }
@@ -410,11 +413,11 @@ s32 func_801DFA38(u8 slot) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        if (D_800CDD10[slot][i] >= best) {
-            best = D_800CDD10[slot][i];
+        if (D_800CCCE8.savedStats[slot][i] >= best) {
+            best = D_800CCCE8.savedStats[slot][i];
         }
-        if (D_800CDD10[slot + 3][i] >= best) {
-            best = D_800CDD10[slot + 3][i];
+        if (D_800CCCE8.resultStats[slot][i] >= best) {
+            best = D_800CCCE8.resultStats[slot][i];
         }
     }
     return best;
@@ -435,7 +438,7 @@ void func_801DFAA8(u8 member) {
     colours[4] = 0x40;
     colours[5] = 0x40;
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x3E, 0xA4);
-    D_800D334C->runs[0].buffer = D_800CCB34.index;
+    D_800D334C->runs[0].buffer = D_800C3EB0.buffer;
     D_800D334C->runs[1].count = 0;
     for (i = 0; i < 27; i++) {
         start = D_800D334C->runs[1].count;
@@ -443,14 +446,14 @@ void func_801DFAA8(u8 member) {
             D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i * 3], &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
             if (D_800C32C4[i * 3 + 1] != 0) {
                 for (k = start; k < D_800D334C->runs[1].count; k++) {
-                    SetShadeTex(&D_800D334C->text[k * 2 + D_800CCB34.index], 0);
-                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34.index], colours[D_800C32C4[i * 3 + 2] * 3],
+                    SetShadeTex(&D_800D334C->text[k * 2 + D_800C3EB0.buffer], 0);
+                    setRGB0(&D_800D334C->text[k * 2 + D_800C3EB0.buffer], colours[D_800C32C4[i * 3 + 2] * 3],
                             colours[D_800C32C4[i * 3 + 2] * 3 + 1], colours[D_800C32C4[i * 3 + 2] * 3 + 2]);
                 }
             }
         }
     }
-    D_800D334C->runs[1].buffer = D_800CCB34.index;
+    D_800D334C->runs[1].buffer = D_800C3EB0.buffer;
 }
 
 /* Build the summary's first member value (three digits); clear the other
@@ -464,7 +467,7 @@ void func_801DFD58(u8 member) {
     D_800D334C->runs[4].count = 0;
     D_800D334C->runs[3].count = 0;
     D_800D334C->runs[5].count = 0;
-    func_8008AAA0(D_800CDCE8[member].valueA);
+    func_8008AAA0(D_800CCCE8.savedMax[member][0]);
     for (j = 0; j < 3; j++) {
         n = j + 23;
         digit = D_800C3CE3[n];
@@ -472,7 +475,7 @@ void func_801DFD58(u8 member) {
             D_800D334C->runs[2].count += func_80076A10(digit, &D_800D334C->glyphs1630[D_800D334C->runs[2].count * 2], j * 8 + 0xB8, 0x80);
         }
     }
-    D_800D334C->runs[2].buffer = D_800CCB34.index;
+    D_800D334C->runs[2].buffer = D_800C3EB0.buffer;
 }
 
 /* Build the summary's second member value (two digits). */
@@ -481,7 +484,7 @@ void func_801DFE6C(u8 member) {
     s32 n;
     s32 digit;
 
-    func_8008AAA0(D_800CDCE8[member].valueB);
+    func_8008AAA0(D_800CCCE8.savedMax[member][1]);
     for (j = 0; j < 2; j++) {
         n = j + 24;
         digit = D_800C3CE3[n];
@@ -489,7 +492,7 @@ void func_801DFE6C(u8 member) {
             D_800D334C->runs[4].count += func_80076A10(digit, &D_800D334C->glyphs1720[D_800D334C->runs[4].count * 2], j * 8 + 0xC0, 0x88);
         }
     }
-    D_800D334C->runs[4].buffer = D_800CCB34.index;
+    D_800D334C->runs[4].buffer = D_800C3EB0.buffer;
 }
 
 /* Build the summary's change of the member's first stat since the battle
@@ -503,8 +506,8 @@ void func_801DFF50(u8 member) {
     s32 n;
     s32 digit;
 
-    before = D_800CDCE8[member].valueA;
-    after = D_8006D8A0[D_800D2D24[member]].maxHp;
+    before = D_800CCCE8.savedMax[member][0];
+    after = D_8006D634.characters[D_800D2D24[member]].maxHp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -523,10 +526,10 @@ void func_801DFF50(u8 member) {
             }
         }
         for (j = 0; j < D_800D334C->runs[3].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34.index], 0);
-            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
+            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800C3EB0.buffer], 0);
+            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[3].buffer = D_800CCB34.index;
+        D_800D334C->runs[3].buffer = D_800C3EB0.buffer;
     }
 }
 
@@ -540,8 +543,8 @@ void func_801E0184(u8 member) {
     s32 n;
     s32 digit;
 
-    before = D_800CDCE8[member].valueB;
-    after = D_8006D8A0[D_800D2D24[member]].maxEp;
+    before = D_800CCCE8.savedMax[member][1];
+    after = D_8006D634.characters[D_800D2D24[member]].maxEp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -560,10 +563,10 @@ void func_801E0184(u8 member) {
             }
         }
         for (j = 0; j < D_800D334C->runs[5].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800CCB34.index], 0);
-            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
+            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800C3EB0.buffer], 0);
+            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[5].buffer = D_800CCB34.index;
+        D_800D334C->runs[5].buffer = D_800C3EB0.buffer;
     }
 }
 
@@ -594,33 +597,33 @@ void func_801E03FC(u8 member) {
     for (i = 0; i < 7; i++) {
         D_800D334C->rowACount[i] = 0;
         D_800D334C->rowBCount[i] = 0;
-        func_801DF910(D_800CDD10[member][i], D_800CDD10[member + 3][i], max);
+        func_801DF910(D_800CCCE8.savedStats[member][i], D_800CCCE8.resultStats[member][i], max);
         func_801DF710(D_800D334C->barA[i], 0);
         func_801DF710(D_800D334C->barB[i], D_801E44E0);
         top = i * 8 + 0x92;
         bottom = i * 8 + 0x98;
-        (D_800D334C->barA[i] + D_800CCB34.index)->x0 = 0x78;
-        (D_800D334C->barA[i] + D_800CCB34.index)->y0 = top;
-        (D_800D334C->barA[i] + D_800CCB34.index)->x1 = D_801E44D8 + 0x78;
-        (D_800D334C->barA[i] + D_800CCB34.index)->y1 = top;
-        (D_800D334C->barA[i] + D_800CCB34.index)->x2 = 0x78;
-        (D_800D334C->barA[i] + D_800CCB34.index)->y2 = bottom;
-        (D_800D334C->barA[i] + D_800CCB34.index)->x3 = D_801E44D8 + 0x78;
-        (D_800D334C->barA[i] + D_800CCB34.index)->y3 = bottom;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x0 = 0x78;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y0 = top;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x1 = D_801E44D8 + 0x78;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y1 = top;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x2 = 0x78;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y2 = bottom;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x3 = D_801E44D8 + 0x78;
+        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y3 = bottom;
         if (D_801E44E0 == 2) {
             left = D_801E44D8 + 0x78;
         } else {
             left = D_801E44D8 + 0x78 - D_801E44DC;
         }
-        (D_800D334C->barB[i] + D_800CCB34.index)->x0 = left;
-        (D_800D334C->barB[i] + D_800CCB34.index)->y0 = top;
-        (D_800D334C->barB[i] + D_800CCB34.index)->x1 = left + D_801E44DC;
-        (D_800D334C->barB[i] + D_800CCB34.index)->y1 = top;
-        (D_800D334C->barB[i] + D_800CCB34.index)->x2 = left;
-        (D_800D334C->barB[i] + D_800CCB34.index)->y2 = bottom;
-        (D_800D334C->barB[i] + D_800CCB34.index)->x3 = left + D_801E44DC;
-        (D_800D334C->barB[i] + D_800CCB34.index)->y3 = bottom;
-        D_800D334C->barBuffer[i] = D_800CCB34.index;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x0 = left;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y0 = top;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x1 = left + D_801E44DC;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y1 = top;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x2 = left;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y2 = bottom;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x3 = left + D_801E44DC;
+        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y3 = bottom;
+        D_800D334C->barBuffer[i] = D_800C3EB0.buffer;
         func_8008AAA0(D_801E44CC);
         for (j = 0; j < 3; j++) {
             k = j + 23;
@@ -629,7 +632,7 @@ void func_801E03FC(u8 member) {
                 D_800D334C->rowACount[i] += func_80076A10(digit, &D_800D334C->rowA[i][D_800D334C->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
             }
         }
-        D_800D334C->rowABuffer[i] = D_800CCB34.index;
+        D_800D334C->rowABuffer[i] = D_800C3EB0.buffer;
         if (D_801E44D4 != 0) {
             D_800D334C->rowBCount[i] = func_80076A10(D_801E44E4, D_800D334C->rowB[i], 0xD8, i * 8 + 0x90);
             func_8008AAA0(D_801E44D4);
@@ -641,15 +644,15 @@ void func_801E03FC(u8 member) {
                     n++;
                 }
             }
-            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800CCB34.index);
-            D_800D334C->rowBBuffer[i] = D_800CCB34.index;
+            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800C3EB0.buffer);
+            D_800D334C->rowBBuffer[i] = D_800C3EB0.buffer;
         }
     }
 }
 
 /* Play effect id of the system effect bank. */
 void func_801E09C0(u8 id) {
-    func_80039E60((D_8005919C->id << 16) | id);
+    func_80039E60((D_8005919C->bank << 16) | id);
 }
 
 /* Start the result fanfare's three effects once. */
@@ -690,18 +693,18 @@ void func_801E0ACC(u8 member) {
     if (newCounter == 0 && newLevel == 0) {
         return;
     }
-    if (D_800D2D28->unkB1 == 0) {
+    if (D_800D2D28->windows[1] == 0) {
         func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
     }
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
-    D_800D334C->runs[0].buffer = D_800CCB34.index;
+    D_800D334C->runs[0].buffer = D_800C3EB0.buffer;
     D_800D2D28->waitingCross = 0;
     image = func_8008AC00(0x1B);
     func_80076D58(D_800D334C->glyphs34B0[0], 1, 2);
     func_80076D58(D_800D334C->glyphs34B0[1], 0, 3);
     for (i = 0; i < 16; i++) {
         if (func_80089C6C(newCounter, i) != 0) {
-            s32 *buffer = &D_800CCB34.index;
+            s32 *buffer = &D_800C3EB0.buffer;
 
             width = func_80034EAC(func_80033784(D_800D2D24[member], i), image, 0x1B, 0);
             rect.x = 0x3C0;
@@ -711,17 +714,17 @@ void func_801E0ACC(u8 member) {
             func_800769E8(&rect, image);
             func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
             SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34.index], 0, 0x80, 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800C3EB0.buffer], 0, 0x80, 0);
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->show8F = 1;
+            D_800D2D28->showSkill = 1;
             func_801E0A4C();
         }
     }
     for (i = 0; i < 16; i++) {
         if (func_80089C6C(newLevel, i) != 0) {
-            s32 *buffer = &D_800CCB34.index;
+            s32 *buffer = &D_800C3EB0.buffer;
 
             width = func_80034EAC(func_80033908(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
             rect.x = 0x3C0;
@@ -731,15 +734,15 @@ void func_801E0ACC(u8 member) {
             func_800769E8(&rect, image);
             func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
             SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34.index], 0x80, 0x80, 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800C3EB0.buffer], 0x80, 0x80, 0);
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->show8F = 1;
+            D_800D2D28->showSkill = 1;
             func_801E0A4C();
         }
     }
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
 }
 
 
@@ -750,7 +753,7 @@ void func_801E1044(void) {
     for (i = 0; i < 7; i++) {
         D_800D334C->count2D30 += func_80076A10(D_800C3388[i], D_800D334C->glyphs2D30[D_800D334C->count2D30], D_800C3390[i], D_800C33A0[i]);
     }
-    D_800D334C->buffer2D30 = D_800CCB34.index;
+    D_800D334C->buffer2D30 = D_800C3EB0.buffer;
 }
 
 /* Build the spoils window's numbers: the experience (six digits) and the
@@ -768,8 +771,8 @@ void func_801E10F8(u32 experience) {
             D_800D334C->run2F60.count += func_80076A10(digit, D_800D334C->glyphs2F60[D_800D334C->run2F60.count], i * 8 + 0xD8, 0x50);
         }
     }
-    D_800D334C->run2F60.buffer = D_800CCB34.index;
-    func_8008AAA0(D_8006EF58);
+    D_800D334C->run2F60.buffer = D_800C3EB0.buffer;
+    func_8008AAA0(D_8006D634.gold);
     for (i = 0; i < 9; i++) {
         n = i + 24;
         digit = D_800C3CDC[n];
@@ -777,7 +780,7 @@ void func_801E10F8(u32 experience) {
             D_800D334C->run3140.count += func_80076A10(digit, D_800D334C->glyphs3140[D_800D334C->run3140.count], i * 8 + 0xC0, 0x60);
         }
     }
-    D_800D334C->run3140.buffer = D_800CCB34.index;
+    D_800D334C->run3140.buffer = D_800C3EB0.buffer;
 }
 
 /* Build the spoils window's two icons. */
@@ -786,7 +789,7 @@ void func_801E126C(void) {
 
     func_80076D58(D_800D334C->glyphs3410[0], 0, 2);
     func_80076D58(D_800D334C->glyphs3410[1], 1, 2);
-    buffer = &D_800CCB34.index;
+    buffer = &D_800C3EB0.buffer;
     func_80076C78(&D_800D334C->glyphs3410[0][*buffer], 0x20, 0x20, D_800D2F90[2], D_800D2F90[3], D_800D2F90[0]);
     func_80076C78(&D_800D334C->glyphs3410[1][*buffer], 0xB8, 0x40, D_800D2F90[6], D_800D2F90[7], D_800D2F90[4]);
     D_800D334C->buffer3410 = *buffer;
@@ -828,19 +831,19 @@ void func_801E1444(u8 *ids, u8 *counts, u8 *categories) {
         if (ids[i] != 0) {
             switch (categories[i]) {
             case 0:
-                func_801E1370(ids[i], counts[i], D_8006F36C.ids0, D_8006F36C.counts0, 100);
+                func_801E1370(ids[i], counts[i], D_8006D634.weaponIds, D_8006D634.weaponCounts, 100);
                 break;
             case 1:
-                func_801E1370(ids[i], counts[i], D_8006F36C.ids1, D_8006F36C.counts1, 200);
+                func_801E1370(ids[i], counts[i], D_8006D634.accessoryIds, D_8006D634.accessoryCounts, 200);
                 break;
             case 2:
-                func_801E1370(ids[i], counts[i], D_8006F36C.ids2, D_8006F36C.counts2, 150);
+                func_801E1370(ids[i], counts[i], D_8006D634.itemIds, D_8006D634.itemCounts, 150);
                 break;
             case 3:
-                func_801E1370(ids[i], counts[i], D_8006F36C.ids3, D_8006F36C.counts3, 100);
+                func_801E1370(ids[i], counts[i], D_8006D634.gearPartIds, D_8006D634.gearPartCounts, 100);
                 break;
             case 4:
-                func_801E1370(ids[i], counts[i], D_8006F36C.ids4, D_8006F36C.counts4, 150);
+                func_801E1370(ids[i], counts[i], D_8006D634.gearAccessoryIds, D_8006D634.gearAccessoryCounts, 150);
                 break;
             }
         }
@@ -860,16 +863,16 @@ void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
     }
     k = 0;
     for (i = 0; i < 8; i++) {
-        if (D_800CDCF4.ids[i] != 0) {
+        if (D_800CCCE8.dropIds[i] != 0) {
             for (j = 0; j < 8; j++) {
-                if (D_800CDCF4.categories[i] == categories[j] && D_800CDCF4.ids[i] == ids[j]) {
+                if (D_800CCCE8.dropCategories[i] == categories[j] && D_800CCCE8.dropIds[i] == ids[j]) {
                     counts[j]++;
                     break;
                 }
             }
             if (j == 8) {
-                categories[k] = D_800CDCF4.categories[i];
-                ids[k] = D_800CDCF4.ids[i];
+                categories[k] = D_800CCCE8.dropCategories[i];
+                ids[k] = D_800CCCE8.dropIds[i];
                 counts[k]++;
                 k++;
             }
@@ -920,8 +923,8 @@ void func_801E1690(void) {
             rect.w = 0x1E;
             rect.h = 0xD;
             func_800769E8(&rect, names[count]);
-            func_80076C78(&D_800D334C->listA[count][D_800CCB34.index], 0x2C, count * 16 + 0x30, 0, count * 13, width);
-            func_80076C78(&D_800D334C->listB[count][D_800CCB34.index], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
+            func_80076C78(&D_800D334C->listA[count][D_800C3EB0.buffer], 0x2C, count * 16 + 0x30, 0, count * 13, width);
+            func_80076C78(&D_800D334C->listB[count][D_800C3EB0.buffer], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
             count++;
         }
     }
@@ -930,7 +933,7 @@ void func_801E1690(void) {
         func_800320E8(text[i]);
     }
     D_800D334C->listCount = count;
-    D_800D334C->listBuffer = D_800CCB34.index;
+    D_800D334C->listBuffer = D_800C3EB0.buffer;
 }
 
 /* Show the member cards over six frames, then wait for Cross. */
@@ -946,7 +949,7 @@ void func_801E196C(void) {
         case 0:
             func_801DE5C4();
             D_800D2D28->showCards = 1;
-            D_800C3EAC->unk2DB = 0;
+            D_800C3EAC->eventsDone = 0;
             break;
         case 1:
             func_801DE69C();
@@ -993,10 +996,10 @@ void func_801E1AA4(void) {
     D_800D2D28->waitingCross = 0;
     D_800D32F8[0]->flag15F9 = 0;
     for (i = 0; i < 3; i++) {
-        D_800CDCB8[i].value = D_8006D8A0[D_800D2D24[i]].value3C;
-        D_800CDCB8[i].value2 = D_8006D8A0[D_800D2D24[i]].value40;
-        D_800CDCD0[i].value = 0;
-        D_800CDCD0[i].value2 = 0;
+        D_800CCCE8.expTotals[i][0] = D_8006D634.characters[D_800D2D24[i]].expTotalA;
+        D_800CCCE8.expTotals[i][1] = D_8006D634.characters[D_800D2D24[i]].expTotalB;
+        D_800CCCE8.toCount[i][0] = 0;
+        D_800CCCE8.toCount[i][1] = 0;
     }
     func_801DF270();
     func_801DF4C0();
@@ -1018,13 +1021,13 @@ void func_801E1C10(void) {
     D_800D2D28->waitingCross = 0;
     func_800716D8();
     func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 0);
-    D_800D2D28->unkB1 = 0;
+    D_800D2D28->windows[1] = 0;
     for (i = 0; i < 3; i++) {
         shown = 0;
-        if (D_800C3EB6[i].id != 0x7F) {
-            if (D_800CDD0A[i][0] != 0) {
+        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+            if (D_800CCCE8.levelGains[i][0] != 0) {
                 member = i;
-                D_800D2D28->unkB1 = 1;
+                D_800D2D28->windows[1] = 1;
                 func_801DFAA8(member);
                 func_801E03B8(member);
                 func_801E03FC(member);
@@ -1042,7 +1045,7 @@ void func_801E1C10(void) {
             func_800716D8();
             func_801E0ACC(i);
             D_800D2D28->waitingCross = 0;
-            D_800D2D28->unkB1 = 0;
+            D_800D2D28->windows[1] = 0;
         }
     }
 }
@@ -1051,7 +1054,7 @@ void func_801E1C10(void) {
 void func_801E1E10(u32 experience) {
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     func_800716D8();
     func_8008F8F4(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
     func_8008F8F4(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
@@ -1061,16 +1064,16 @@ void func_801E1E10(u32 experience) {
     func_801E126C();
     func_801E1690();
     D_800D2D28->showSpoils = 1;
-    func_80039DB8((D_8005919C->id << 16) | 0x5B);
+    func_80039DB8((D_8005919C->bank << 16) | 0x5B);
     D_800D2D28->waitingCross = 1;
     while (D_800D3014 != 4) {
         func_800716D8();
     }
     D_800D2D28->waitingCross = 0;
     D_800D2D28->showSpoils = 0;
-    D_800D2D28->unkB0 = 0;
-    D_800D2D28->unkB1 = 0;
-    D_800D2D28->unkB2 = 0;
+    D_800D2D28->windows[0] = 0;
+    D_800D2D28->windows[1] = 0;
+    D_800D2D28->windows[2] = 0;
     func_800716D8();
     func_8008FA60(0);
     func_8008FA60(1);
@@ -1083,30 +1086,30 @@ void func_801E1FB8(u32 experience) {
     u8 saved;
     s32 i;
 
-    saved = D_800C48EA;
+    saved = D_800C3EB0.outcome;
     D_800D2D28->waitingCross = 0;
     for (i = 0; i < 3; i++) {
         D_800D32F8[i] = func_8008ABB8(sizeof(MemberCard), 0);
-        bzero(D_800D32F8[i], sizeof(MemberCard));
+        bzero((u8 *)D_800D32F8[i], sizeof(MemberCard));
     }
     D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
-    bzero(D_800D334C, sizeof(ResultSummary));
-    D_800D32F8[0]->flag15F8 = (D_8006F8EA >> 15) ^ 1;
+    bzero((u8 *)D_800D334C, sizeof(ResultSummary));
+    D_800D32F8[0]->flag15F8 = (D_8006D634.flags >> 15) ^ 1;
     func_800716D8();
-    D_800C48EA = 0;
+    D_800C3EB0.outcome = 0;
     func_801E196C();
     func_801E1AA4();
     func_801E1C10();
     func_801E1E10(experience);
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     func_800716D8();
     for (i = 0; i < 3; i++) {
         func_800320E8(D_800D32F8[i]);
     }
     func_800320E8(D_800D334C);
-    D_800C48EA = saved;
+    D_800C3EB0.outcome = saved;
     func_80039FF8();
 }
 
@@ -1121,9 +1124,9 @@ void func_801E211C(void) {
     D_800C3E4C = 0;
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     D_800D2D28->showSpoils = 0;
-    D_800D2D28->unk7F = D_800D2D28->unk80 = D_800D2D28->unk81 = 0;
+    D_800D2D28->barShown[0] = D_800D2D28->barShown[1] = D_800D2D28->barShown[2] = 0;
     func_800716D8();
     func_800716D8();
     func_800320E8(D_800D2F5C);
@@ -1153,18 +1156,18 @@ void func_801E2280(void) {
     u32 *partyGold;
 
     gold = 0;
-    D_800D2C84.experience = 0;
-    D_800D2C84.defeated = 0;
+    D_800CCCE8.experience = 0;
+    D_800CCCE8.defeated = 0;
     if (D_800D2FC4 == 0) {
         for (i = 0; i < 8; i++) {
-            if (D_800D2DCC[i + 3] != 0 && D_800C3EB6[i + 3].flag01 == 0
-                && (D_800CCCE8[i + 3].flags7C & 0x8000) && D_800C3D1B[i][0] == 0) {
-                D_800D2C84.experience += D_800CCCE8[i + 3].experience;
-                gold += D_800CCCE8[i + 3].gold;
-                D_800D2C84.defeated |= func_80089C08(i);
+            if (D_800D2DCC.present[i + 3] != 0 && D_800C3EB0.slots[i + 3].hidden == 0
+                && (D_800CCCE8.records[i + 3].pilot.status7C & 0x8000) && D_800C3D1B[i][0] == 0) {
+                D_800CCCE8.experience += D_800CCCE8.records[i + 3].field14C;
+                gold += D_800CCCE8.records[i + 3].field156;
+                D_800CCCE8.defeated |= func_80089C08(i);
             }
         }
-        partyGold = &D_8006EF58;
+        partyGold = &D_8006D634.gold;
         *partyGold += gold;
         if (*partyGold > 9999999) {
             *partyGold = 9999999;
@@ -1178,7 +1181,7 @@ void func_801E2280(void) {
     }
     if (D_800D3294 != 0) {
         D_800D2D24[1] = D_800D2D24[2] = 0xFF;
-        D_800C3EB6[1].id = D_800C3EB6[2].id = 0x7F;
+        D_800C3EB0.slots[1].field2 = D_800C3EB0.slots[2].field2 = 0x7F;
     }
     func_801E2794();
     if (D_800D2D50 == 0 && !(D_8006F9DC.flags & 8)) {
@@ -1196,8 +1199,8 @@ void func_801E24B0(void) {
         item = &D_800D2FE4[i];
         if (*item != 0) {
             for (j = 0; j < 150; j++) {
-                if (*item == D_8006F65A[j]) {
-                    D_8006F5C4[j] = D_800D2CB0[i];
+                if (*item == D_8006D634.itemIds[j]) {
+                    D_8006D634.itemCounts[j] = D_800D2CB0[i];
                 }
             }
         }
@@ -1213,15 +1216,15 @@ void func_801E252C(void) {
 
     func_801E211C();
     if (D_800C3D48 != 0) {
-        func_800320E8(D_800D3284);
-        func_800320E8(D_800D328C);
+        func_800320E8((void *)D_800D3284);
+        func_800320E8((void *)D_800D328C);
     }
     if (D_800594F8 == 0) {
         if (D_800D3338 != 0) {
             func_800199CC(6);
         } else if (D_8005947C != 0) {
             func_800199CC(2);
-        } else if ((D_8006F94E & 0x7FF) >= 0x400) {
+        } else if ((D_8006D634.map & 0x7FF) >= 0x400) {
             func_800199CC(3);
         } else {
             func_8001ACA4();
@@ -1231,7 +1234,7 @@ void func_801E252C(void) {
     }
     func_8008AC50();
     func_801E24B0();
-    outcome = &D_800C48EA;
+    outcome = &D_800C3EB0.outcome;
     if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && D_800594D0 != 3) {
         func_800BFBA0();
         func_801E2280();
@@ -1240,7 +1243,7 @@ void func_801E252C(void) {
         func_800320E8(D_800D3720[i].data);
     }
     for (i = 0; i < 10; i++) {
-        func_800320E8(D_800C3E5C[i].data);
+        func_800320E8(D_800C3E5C[i].pixels);
     }
     func_800320E8(D_800D329C);
     func_800320E8(D_800C3E24);
@@ -1254,13 +1257,15 @@ void func_801E252C(void) {
     func_800320E8(D_800D2F5C);
     func_8003218C(2);
     if (D_800594F8 != 0) {
-        func_80039C4C(D_800C3E54);
-        func_800399D4(D_800C3E54);
+        func_80039C4C((SoundTrack *)D_800C3E54);
+        func_800399D4((SoundSeq *)D_800C3E54);
     }
     func_800B8774();
 }
 
-/* Grant the battle rewards unless the whole party is knocked out. */
+/* Grant the battle rewards unless the whole party is knocked out; then, when
+ * character 3 pilots gear 0x12, set his skill flags 1A to 0x4000, with 0x8000
+ * too when gear 12 has a part kind 5 amount. */
 void func_801E2794(void) {
     u8 slot;
     u8 knockedOut;
@@ -1268,7 +1273,7 @@ void func_801E2794(void) {
 
     knockedOut = 0;
     for (slot = 0; slot < 3; slot++) {
-        if (D_800CCCE8[slot].flags7C & 0x8000) {
+        if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
             knockedOut++;
         }
     }
@@ -1280,11 +1285,11 @@ void func_801E2794(void) {
         func_801E41B4();
         func_801E2888();
         func_801E42C4();
-        if (D_8006DB2C == 0x12) {
-            extra = D_8006E7AB;
-            D_8006ED6E = 0x4000;
+        if (D_8006D634.characters[3].gearId == 0x12) {
+            extra = D_8006D634.gears[12].field4F;
+            D_8006D634.skills[3].flags1A = 0x4000;
             if (extra != 0) {
-                D_8006ED6E = 0xC000;
+                D_8006D634.skills[3].flags1A = 0xC000;
             }
         }
     }
@@ -1298,26 +1303,26 @@ void func_801E2888(void) {
     u8 slot;
     u8 k;
     Combatant *record;
-    Character *character;
-    Gear *gear;
-    Gear *block;
+    CharacterRecord *character;
+    GearRecord *gear;
+    GearRecord *block;
 
     for (slot = 0; slot < 3; slot++) {
         if (D_800D2D24[slot] == 0xFF) {
             continue;
         }
         record = &D_801E44C8->records[slot];
-        character = &D_801E44C4->characters[record->id];
-        gear = &D_801E44C4->u978.gears[record->gearId];
+        character = &D_801E44C4->characters[record->pilot.characterId];
+        gear = &D_801E44C4->gears[record->pilot.gearId];
         block = &record->gear;
-        if (record->id == 7 && (D_800CCCE8[slot].flags15A & 0x80)) {
-            record->hp = (block->hp + 1) / 50;
-            if (record->hp == 0) {
-                record->hp = 1;
+        if (record->pilot.characterId == 7 && (D_800CCCE8.records[slot].flags15A & 0x80)) {
+            record->pilot.hp = (block->hp + 1) / 50;
+            if (record->pilot.hp == 0) {
+                record->pilot.hp = 1;
             }
         }
-        character->hp = record->hp;
-        character->ep = record->ep;
+        character->hp = record->pilot.hp;
+        character->ep = record->pilot.ep;
         if (character->hp > character->maxHp) {
             character->hp = character->maxHp;
         }
@@ -1325,13 +1330,13 @@ void func_801E2888(void) {
             character->ep = character->maxEp;
         }
         for (k = 0; k < 7; k++) {
-            character->counters[k] = record->counters[k];
+            character->useCounts[k] = record->pilot.useCounts[k];
         }
-        character->value_3A = record->value_3A;
-        if (record->flags7C & 0xC000) {
+        character->field3A = record->pilot.field3A;
+        if (record->pilot.status7C & 0xC000) {
             character->hp = 1;
         }
-        switch (record->gearId) {
+        switch (record->pilot.gearId) {
         case 0 ... 6:
         case 8 ... 16:
             gear->hp = block->hp;
@@ -1342,7 +1347,7 @@ void func_801E2888(void) {
             if (gear->fuel > gear->maxFuel) {
                 gear->fuel = gear->maxFuel;
             }
-            if (block->flags & 0x8000) {
+            if (block->status7C & 0x8000) {
                 gear->hp = gear->maxHp / 10;
             }
             break;
@@ -1368,12 +1373,12 @@ void func_801E2ACC(void) {
             absent++;
             continue;
         }
-        D_801E44EC = &D_801E44C8->records[i];
-        if (D_801E44EC->flags7C & 0xC000) {
+        D_801E44EC = &D_801E44C8->records[i].pilot;
+        if (D_801E44EC->status7C & 0xC000) {
             absent++;
-            slots[D_801E44EC->id] = 0xFF;
+            slots[D_801E44EC->characterId] = 0xFF;
         } else {
-            slots[D_801E44EC->id] = i;
+            slots[D_801E44EC->characterId] = i;
         }
         D_801E44F8[i][0] = D_801E44EC->level;
         D_801E44F8[i][1] = D_801E44EC->level2;
@@ -1386,7 +1391,7 @@ void func_801E2ACC(void) {
         if (slots[i] == 0xFF) {
             continue;
         }
-        D_801E44EC = (Combatant *)&D_801E44C4->characters[i];
+        D_801E44EC = &D_801E44C4->characters[i];
         if (slots[i] < 3) {
             func_801E2EB0(experience / (3 - absent), slots[i], 0);
         } else {
@@ -1398,20 +1403,20 @@ void func_801E2ACC(void) {
         if (D_800D2D24[i] == 0xFF) {
             continue;
         }
-        D_801E44EC = (Combatant *)&D_801E44C4->characters[D_800D2D24[i]];
+        D_801E44EC = &D_801E44C4->characters[D_800D2D24[i]];
         D_801E44C8->levelGains[i][0] = D_801E44EC->level - D_801E44F8[i][0];
         D_801E44C8->levelGains[i][1] = D_801E44EC->level2 - D_801E44F8[i][1];
-        if (D_801E44EC->id == 4) {
-            D_801E44C8->stats[i][0] = D_801E44EC->value04 + D_801E44EC->value1C;
+        if (D_801E44EC->characterId == 4) {
+            D_801E44C8->resultStats[i][0] = D_801E44EC->entries[0].value4 + D_801E44EC->entries[3].value4;
         } else {
-            D_801E44C8->stats[i][0] = D_801E44EC->attack + D_801E44EC->value04;
+            D_801E44C8->resultStats[i][0] = D_801E44EC->attack + D_801E44EC->entries[0].value4;
         }
-        D_801E44C8->stats[i][1] = D_801E44EC->stat5E;
-        D_801E44C8->stats[i][2] = D_801E44EC->stat59 + D_801E44EC->value2D;
-        D_801E44C8->stats[i][3] = D_801E44EC->stat5F;
-        D_801E44C8->stats[i][4] = D_801E44EC->stat5B;
-        D_801E44C8->stats[i][5] = D_801E44EC->stat5C;
-        D_801E44C8->stats[i][6] = D_801E44EC->stat5A;
+        D_801E44C8->resultStats[i][1] = D_801E44EC->field5E;
+        D_801E44C8->resultStats[i][2] = D_801E44EC->defense + D_801E44EC->bodyDefense;
+        D_801E44C8->resultStats[i][3] = D_801E44EC->field5F;
+        D_801E44C8->resultStats[i][4] = D_801E44EC->accuracy;
+        D_801E44C8->resultStats[i][5] = D_801E44EC->etherDefense;
+        D_801E44C8->resultStats[i][6] = D_801E44EC->speed;
     }
 }
 
@@ -1428,8 +1433,8 @@ void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
         D_801E44F4 = experience;
         return;
     }
-    weightA = D_801E44C8->records[slot].weightA;
-    weightB = D_801E44C8->records[slot].weightB;
+    weightA = D_801E44C8->records[slot].expWeightA;
+    weightB = D_801E44C8->records[slot].expWeightB;
     if (weightA < 2) {
         weightA = 1;
     }
@@ -1438,7 +1443,7 @@ void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
     }
     D_801E44F0 = experience * weightA / (weightA + weightB);
     D_801E44F4 = experience * weightB / (weightA + weightB);
-    if (D_801E44C4->options & 0x8000) {
+    if (D_801E44C4->flags & 0x8000) {
         D_801E44F0 = experience;
         D_801E44F4 = experience;
     }
@@ -1455,8 +1460,8 @@ void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
     if (D_801E44EC->flags32 & 0x1000) {
         D_801E44F4 += D_801E44F4 >> 1;
     }
-    D_801E44C8->gained[slot].value = D_801E44F0;
-    D_801E44C8->gained[slot].value2 = D_801E44F4;
+    D_801E44C8->toCount[slot][0] = D_801E44F0;
+    D_801E44C8->toCount[slot][1] = D_801E44F4;
 }
 
 /* Add the experience pools to the current record's totals and gain levels
@@ -1465,12 +1470,12 @@ void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
 void func_801E308C(void) {
     s32 rest;
 
-    D_801E44EC->totalA += D_801E44F0;
-    D_801E44EC->totalB += D_801E44F4;
-    if (D_801E44EC->level == 99 && (D_801E44C4->options & 0x8000)) {
+    D_801E44EC->expTotalA += D_801E44F0;
+    D_801E44EC->expTotalB += D_801E44F4;
+    if (D_801E44EC->level == 99 && (D_801E44C4->flags & 0x8000)) {
         D_801E44F0 = 0;
     }
-    if (D_801E44EC->level2 == 99 && (D_801E44C4->options & 0x8000)) {
+    if (D_801E44EC->level2 == 99 && (D_801E44C4->flags & 0x8000)) {
         D_801E44F4 = 0;
     }
     if (D_801E44EC->level == 99) {
@@ -1479,34 +1484,34 @@ void func_801E308C(void) {
     if (D_801E44EC->level2 == 99) {
         D_801E44F4 = 0;
     }
-    rest = D_801E44EC->nextA - D_801E44F0;
+    rest = D_801E44EC->expNextA - D_801E44F0;
     if (rest > 0) {
-        D_801E44EC->nextA = rest;
+        D_801E44EC->expNextA = rest;
     } else {
         do {
-            if (++D_801E44EC->level >= 100 && (D_801E44C4->options & 0x8000)) {
+            if (++D_801E44EC->level >= 100 && (D_801E44C4->flags & 0x8000)) {
                 D_801E44EC->level--;
             }
-            D_801E44EC->nextA = D_801E44E8->experience[D_801E44EC->level - 1];
+            D_801E44EC->expNextA = D_801E44E8->experience[D_801E44EC->level - 1];
             func_801E335C();
-            rest += D_801E44EC->nextA;
+            rest += D_801E44EC->expNextA;
         } while (rest <= 0);
     }
-    D_801E44EC->nextA = rest;
-    rest = D_801E44EC->nextB - D_801E44F4;
+    D_801E44EC->expNextA = rest;
+    rest = D_801E44EC->expNextB - D_801E44F4;
     if (rest > 0) {
-        D_801E44EC->nextB = rest;
+        D_801E44EC->expNextB = rest;
     } else {
         do {
-            if (++D_801E44EC->level2 >= 100 && (D_801E44C4->options & 0x8000)) {
+            if (++D_801E44EC->level2 >= 100 && (D_801E44C4->flags & 0x8000)) {
                 D_801E44EC->level2--;
             }
-            D_801E44EC->nextB = D_801E44E8->experience[D_801E44EC->level2 - 1];
+            D_801E44EC->expNextB = D_801E44E8->experience[D_801E44EC->level2 - 1];
             func_801E3500();
-            rest += D_801E44EC->nextB;
+            rest += D_801E44EC->expNextB;
         } while (rest <= 0);
     }
-    D_801E44EC->nextB = rest;
+    D_801E44EC->expNextB = rest;
 }
 
 /* Level A growth of the current record: max HP, then stats 58, 59, 5e
@@ -1525,13 +1530,13 @@ void func_801E335C(void) {
     level = D_801E44EC->level;
     D_801E44EC->maxHp = func_801E3700(D_801E44EC->maxHp, D_801E44EC->level);
     D_801E44EC->attack = func_801E3610(D_801E44EC->attack,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[0][high], cap, level);
-    D_801E44EC->stat59 = func_801E3610(D_801E44EC->stat59,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[1][high], cap, level);
-    D_801E44EC->stat5E = func_801E3610(D_801E44EC->stat5E,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[2][high], cap, level);
-    D_801E44EC->stat5F = func_801E3610(D_801E44EC->stat5F,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[3][high], cap, level);
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[0][high], cap, level);
+    D_801E44EC->defense = func_801E3610(D_801E44EC->defense,
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[1][high], cap, level);
+    D_801E44EC->field5E = func_801E3610(D_801E44EC->field5E,
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[2][high], cap, level);
+    D_801E44EC->field5F = func_801E3610(D_801E44EC->field5F,
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[3][high], cap, level);
 }
 
 /* Level B growth of the current record: max EP, then stats 5b and 5c
@@ -1549,10 +1554,10 @@ void func_801E3500(void) {
     }
     level = D_801E44EC->level2;
     D_801E44EC->maxEp = func_801E38CC(D_801E44EC->maxEp, D_801E44EC->level2);
-    D_801E44EC->stat5B = func_801E3610(D_801E44EC->stat5B,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[4][high], cap, level);
-    D_801E44EC->stat5C = func_801E3610(D_801E44EC->stat5C,
-        D_801E44E8->characters[D_801E44EC->id].statTargets[5][high], cap, level);
+    D_801E44EC->accuracy = func_801E3610(D_801E44EC->accuracy,
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[4][high], cap, level);
+    D_801E44EC->etherDefense = func_801E3610(D_801E44EC->etherDefense,
+        D_801E44E8->characters[D_801E44EC->characterId].statTargets[5][high], cap, level);
 }
 
 /* Grow a stat by 0 or 1: the chance is the share of the distance to the
@@ -1584,7 +1589,7 @@ u16 func_801E3700(u16 maxHp, u8 level) {
 
     hp = maxHp;
     if (level < 100) {
-        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - (level - top) - hp)
+        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->characterId].maxHpTargets[0] - (level - top) - hp)
             / ((100 - level) * 100) + 2;
         if (gain < 0) {
             result = hp;
@@ -1592,7 +1597,7 @@ u16 func_801E3700(u16 maxHp, u8 level) {
             result = gain + maxHp;
         }
     } else {
-        gain = rand() % 100 * ((D_801E44E8->characters[D_801E44EC->id].maxHpTargets[1] - hp)
+        gain = rand() % 100 * ((D_801E44E8->characters[D_801E44EC->characterId].maxHpTargets[1] - hp)
             / ((201 - level) * 100)) * 2 + 2;
         if (gain < 0) {
             result = hp;
@@ -1616,10 +1621,10 @@ u8 func_801E38CC(u8 maxEp, u8 level) {
     u8 grow;
 
     if (level < 100) {
-        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[0];
+        target = D_801E44E8->characters[D_801E44EC->characterId].maxEpTargets[0];
         cap = 99;
     } else {
-        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[1];
+        target = D_801E44E8->characters[D_801E44EC->characterId].maxEpTargets[1];
         cap = 200;
     }
     random = rand();
@@ -1640,49 +1645,49 @@ void func_801E3A18(void) {
     u8 learnt;
 
     for (slot = 0; slot < 3; slot++) {
-        D_801E44EC = &D_801E44C8->records[slot];
-        if (D_801E44EC->flags7C & 0x8000) {
+        D_801E44EC = &D_801E44C8->records[slot].pilot;
+        if (D_801E44EC->status7C & 0x8000) {
             continue;
         }
-        switch (D_801E44EC->id) {
+        switch (D_801E44EC->characterId) {
         case 7:
         case 8:
             break;
         default:
-            learnt = func_801E3BE0(D_801E44EC->id);
+            learnt = func_801E3BE0(D_801E44EC->characterId);
             if (learnt != 0) {
                 D_801E44C8->learntCounter[slot] = learnt;
             }
             break;
         }
-        if (D_801E44EC->id != 10) {
-            learnt = func_801E3D54(D_801E44EC->id);
+        if (D_801E44EC->characterId != 10) {
+            learnt = func_801E3D54(D_801E44EC->characterId);
             if (learnt != 0) {
                 D_801E44C8->learntLevel[slot] = learnt;
             }
         }
-        switch (D_801E44EC->id) {
+        switch (D_801E44EC->characterId) {
         case 7:
         case 8:
         case 10:
             break;
         default:
-            func_801E3E14(D_801E44EC->id);
+            func_801E3E14(D_801E44EC->characterId);
             break;
         }
-        switch (D_801E44EC->id) {
+        switch (D_801E44EC->characterId) {
         case 8:
         case 9:
         case 10:
             break;
         default:
-            func_801E3F28(D_801E44EC->id);
+            func_801E3F28(D_801E44EC->characterId);
             break;
         }
-        if (D_801E44EC->id == 8) {
+        if (D_801E44EC->characterId == 8) {
             func_801E3EA4();
         }
-        if (D_801E44EC->id == 7) {
+        if (D_801E44EC->characterId == 7) {
             func_801E3FB0();
         }
     }
@@ -1700,7 +1705,7 @@ u8 func_801E3BE0(u8 id) {
     s32 bit;
 
     count = 7;
-    if (D_8006F8EA & 0x4000) {
+    if (D_8006D634.flags & 0x4000) {
         count = 13;
     }
     learnt = 0xFF;
@@ -1709,11 +1714,11 @@ u8 func_801E3BE0(u8 id) {
         if (D_8006D634.skills[id].counterSkills & (bit >> j)) {
             continue;
         }
-        if (D_801E44E8->characters[id].counterLevels[j] > D_8006D8A0[id].level) {
+        if (D_801E44E8->characters[id].counterLevels[j] > D_8006D634.characters[id].level) {
             break;
         }
         for (k = 0; k < 7; k++) {
-            if (D_801E44E8->characters[id].requirements[j][k] > D_801E44EC->counters[k]) {
+            if (D_801E44E8->characters[id].requirements[j][k] > D_801E44EC->useCounts[k]) {
                 break;
             }
         }
@@ -1743,7 +1748,7 @@ u8 func_801E3D54(u8 id) {
         if (level == 0xFF) {
             return 0;
         }
-        if (D_8006D8A0[id].level >= level) {
+        if (D_8006D634.characters[id].level >= level) {
             known = D_801E44C4->skills[id].levelSkills;
             if (!(bit & known)) {
                 D_801E44C4->skills[id].levelSkills = bit | known;
@@ -1783,7 +1788,7 @@ void func_801E3EA4(void) {
         if (level == 0xFF) {
             return;
         }
-        if (D_8006D8A0[8].level >= level) {
+        if (D_8006D634.characters[8].level >= level) {
             known = D_801E44C4->skills[8].unlocksA;
             bit = 0x1000 >> k;
             if (!(known & bit)) {
@@ -1815,17 +1820,17 @@ void func_801E3F28(u8 id) {
 void func_801E3FB0(void) {
     GameData *game = D_801E44C4;
 
-    game->u978.id7.value_E58 = D_801E44EC->maxHp * 200;
-    game->u978.id7.value_E30 = D_801E44EC->attack / 5 + 1;
-    game->u978.id7.value_E64 = D_801E44EC->maxHp * 10;
-    game->u978.id7.value_E66 = D_801E44EC->maxHp * 10;
+    game->gears[7].maxHp = D_801E44EC->maxHp * 200;
+    game->gears[7].attack = D_801E44EC->attack / 5 + 1;
+    game->gears[7].bodyDefense = D_801E44EC->maxHp * 10;
+    game->gears[7].armor = D_801E44EC->maxHp * 10;
 }
 
 /* Advance each character's tier: 3, 4 and 5 at the growth data's tier
  * levels, 6 to 7 at level 50 with option 0x4000. */
 void func_801E403C(void) {
     u8 id;
-    Character *character;
+    CharacterRecord *character;
     CharacterSkills *skills;
 
     for (id = 0; id < 11; id++) {
@@ -1851,7 +1856,7 @@ void func_801E403C(void) {
             }
             break;
         case 6:
-            if (character->level >= 50 && (D_8006F8EA & 0x4000)) {
+            if (character->level >= 50 && (D_8006D634.flags & 0x4000)) {
                 skills->tier = 7;
             }
             break;
@@ -1865,14 +1870,14 @@ void func_801E41B4(void) {
     u8 id;
 
     for (slot = 0; slot < 3; slot++) {
-        id = D_800CCCE8[slot].id;
-        if (D_8006D8A0[id].level >= 50) {
+        id = D_800CCCE8.records[slot].pilot.characterId;
+        if (D_8006D634.characters[id].level >= 50) {
             D_8006D634.skills[id].unlocksA |= 8;
         }
-        if (D_8006D8A0[id].level >= 60) {
+        if (D_8006D634.characters[id].level >= 60) {
             D_8006D634.skills[id].unlocksA |= 4;
         }
-        if (D_8006D8A0[id].level >= 70) {
+        if (D_8006D634.characters[id].level >= 70) {
             D_8006D634.skills[id].unlocksA |= 2;
         }
     }
@@ -1889,25 +1894,26 @@ void func_801E42C4(void) {
 
     forced = 0;
     for (i = 0; i < 3; i++) {
-        D_801E44EC = &D_801E44C8->records[i];
+        D_801E44EC = &D_801E44C8->records[i].pilot;
         if (D_801E44EC->flags32 & 0x800) {
             forced = 1;
         }
     }
     low_bit = 1;
     for (i = 0; i < 8; i++) {
-        D_801E44C8->drops.ids[i] = 0;
+        D_801E44C8->dropIds[i] = 0;
         bit = low_bit << i;
         if (!(D_801E44C8->defeated & bit)) {
             continue;
         }
-        D_801E44EC = enemy = &D_801E44C8->records[i + 3];
-        if (rand() % 100 < enemy->dropChances[0] || forced == 1) {
-            D_801E44C8->drops.categories[i] = enemy->dropCategories[0];
-            D_801E44C8->drops.ids[i] = enemy->dropIds[0];
-        } else if (rand() % 100 < enemy->dropChances[1]) {
-            D_801E44C8->drops.categories[i] = enemy->dropCategories[1];
-            D_801E44C8->drops.ids[i] = enemy->dropIds[1];
+        enemy = &D_801E44C8->records[i + 3];
+        D_801E44EC = &enemy->pilot;
+        if (rand() % 100 < enemy->field150[0] || forced == 1) {
+            D_801E44C8->dropCategories[i] = enemy->field150[4];
+            D_801E44C8->dropIds[i] = enemy->field150[2];
+        } else if (rand() % 100 < enemy->field150[1]) {
+            D_801E44C8->dropCategories[i] = enemy->field150[5];
+            D_801E44C8->dropIds[i] = enemy->field150[3];
         }
     }
 }

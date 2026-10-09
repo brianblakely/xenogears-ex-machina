@@ -1,25 +1,38 @@
-/* Battle unit from 800BFE48 to 800C11CC (Cygnus CDK GCC 2.7.2).
- * 800BFE48's tables start at 0x80070B08 (0 mod 8) directly after
- * 800BD3AC's odd-length one at 4 mod 8; the functions from 800BD7A0 to
- * 800BFDA8 have no rodata, and the boundary is placed at the first function
- * that has. 800C0564's 25-entry table at 0x80070BB0 is followed directly by
- * 800C11CC's at 0x80070C14 (4 mod 8), so the unit ends before 800C11CC. */
+/* Battle unit from 800BFE48 to 800C11CC: returning the slots' sprites to
+ * their places, knocking down slots and waiting for the sprites to settle,
+ * distances and directions on the ground, the curves the sprite trails draw,
+ * and the command files' parts (Cygnus CDK GCC 2.7.2). 800BFE48's tables
+ * start at 0x80070B08 (0 mod 8) directly after 800BD3AC's odd-length one at
+ * 4 mod 8; the functions from 800BD7A0 to 800BFDA8 have no rodata, and the
+ * boundary is placed at the first function that has. 800C0564's 25-entry
+ * table at 0x80070BB0 is followed directly by 800C11CC's at 0x80070C14
+ * (4 mod 8), so the unit ends before 800C11CC. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "settle.h"
+#include "psyq/libgte.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/frame.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/sprite.h"
+#include "battle/turn.h"
 #include "curve.h"
+#include "gte.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+#include "settle.h"
+#include "sprite_effect.h"
+
+/* 8008CCCC's unit's functions as this unit calls them: unprototyped (their
+ * slot argument is a u8 there). */
+s32 func_8009A0DC(); /* the condition shown for a slot */
+s32 func_8009A1AC(); /* the status bits shown for a slot (a u16, taken as int) */
+
+/* This unit's functions, declared before their first use. */
+void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out);
 
 /* The idle motion of each shown condition, opening the unit's data: its
  * padding holds stray assembler bytes, so it stays original data. */
@@ -44,14 +57,14 @@ s32 D_800C37E8[40][4] = {
     {0x5, 0x162, 0x13B8, 0x2AE0},
 };
 s32 (*D_800C3A68)[4] = D_800C37E8;
-s32 D_800C3A6C = 0;
+SoundSequence *D_800C3A6C = NULL;
 
 /* Return the slots' sprites to their places after an action: sprites in a
  * hit motion leave it, sprites away from their slot walk back, then each
  * takes its condition's idle motion and gains or loses the status effect
  * sprites of its changed status bits (bits 13-15). */
 void func_800BFE48(void) {
-    BattleSprite *sprite;
+    Sprite *sprite;
     s32 slot;
     s32 motion;
     s32 bit;
@@ -68,13 +81,13 @@ void func_800BFE48(void) {
         if (sprite == NULL || func_8009A0DC(slot) == 8) {
             continue;
         }
-        switch (sprite->motion.bytes[3]) {
+        switch ((s8)sprite->motion.bytes[3]) {
         case 5:
         case 7:
         case 14:
         case 15:
         case 21:
-            if (sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
+            if ((s8)sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
                 func_800245D8(sprite, 0x10);
                 D_800D2E54 &= ~(1 << SPRITE_SLOT(sprite));
             }
@@ -88,27 +101,27 @@ void func_800BFE48(void) {
             continue;
         }
         sprite = BATTLE_AREA.sprites[slot];
-        if (sprite == NULL || func_8009A0DC(slot) == 8 || sprite->motion.bytes[3] == 0x15) {
+        if (sprite == NULL || func_8009A0DC(slot) == 8 || (s8)sprite->motion.bytes[3] == 0x15) {
             continue;
         }
-        if (DISTANCE(sprite->x.part.whole, (u16)BATTLE_AREA.slots[slot].x) >= 9) {
+        if (DISTANCE(FIXED_WHOLE(sprite->x), (u16)BATTLE_AREA.slots[slot].x) >= 9) {
             goto walk;
         }
-        if (DISTANCE(sprite->z.part.whole, (u16)BATTLE_AREA.slots[slot].z) < 9) {
+        if (DISTANCE(FIXED_WHOLE(sprite->z), (u16)BATTLE_AREA.slots[slot].z) < 9) {
             continue;
         }
     walk:
-        sprite->motion.bits.doubleStep = 1;
-        sprite->target[0] = BATTLE_AREA.slots[slot].x;
-        sprite->target[2] = BATTLE_AREA.slots[slot].z;
-        sprite->target[1] = 0;
+        sprite->motion.bits.double_step = 1;
+        sprite->target_x = BATTLE_AREA.slots[slot].x;
+        sprite->target_z = BATTLE_AREA.slots[slot].z;
+        sprite->target_y = 0;
         func_800245D8(sprite, 3);
     }
     func_800C0564();
 
     for (slot = 0; slot != 11; slot++) {
         if (BATTLE_AREA.sprites[slot] != NULL) {
-            BATTLE_AREA.sprites[slot]->motion.bits.doubleStep = 0;
+            BATTLE_AREA.sprites[slot]->motion.bits.double_step = 0;
         }
     }
 
@@ -120,7 +133,7 @@ void func_800BFE48(void) {
         if (sprite == NULL) {
             continue;
         }
-        if (sprite->motion.bytes[3] != 0x15) {
+        if ((s8)sprite->motion.bytes[3] != 0x15) {
             func_800BAEB8(slot);
         }
         func_800C0314();
@@ -129,16 +142,16 @@ void func_800BFE48(void) {
             if (!BATTLE_AREA.slots[slot].gear
                 && (motion != 0x15 || (D_800C3608 >> SPRITE_SLOT(sprite)) & 1)) {
                 if (motion == 1) {
-                    motion = sprite->idle.mode;
+                    motion = (s8)sprite->b0.byteb0;
                 }
-                if (!BATTLE_AREA.slots[slot].hidden && sprite->motion.bytes[3] != motion) {
+                if (!BATTLE_AREA.slots[slot].hidden && (s8)sprite->motion.bytes[3] != motion) {
                     func_800245D8(sprite, motion);
                 }
             }
         }
         status = func_8009A1AC(slot);
-        old = (u16)sprite->resource->fieldC;
-        sprite->resource->fieldC = status;
+        old = (u16)((SpriteSequencer *)sprite->sequencer)->halfc;
+        ((SpriteSequencer *)sprite->sequencer)->halfc = status;
         removed = old & ~status;
         bits = status & ~old;
         for (bit = 0; bit != 16; bit++, bits = (bits & 0xFFFF) >> 1) {
@@ -199,8 +212,8 @@ void func_800BFE48(void) {
  * the number knocked down. */
 s32 func_800C0314(void) {
     BattleArea *area = &BATTLE_AREA;
-    BattleSprite *list[12];
-    BattleSprite *sprite;
+    Sprite *list[12];
+    Sprite *sprite;
     s32 i;
     s32 slot;
     s32 downed;
@@ -223,7 +236,7 @@ s32 func_800C0314(void) {
                 gear = 1;
                 D_800D3368[slot]->field38 = gear;
                 func_800BEE2C(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
-            } else if (sprite->motion.bytes[3] != 0x15) {
+            } else if ((s8)sprite->motion.bytes[3] != 0x15) {
                 func_800245D8(sprite, 0x15);
             }
             downed++;
@@ -233,7 +246,7 @@ s32 func_800C0314(void) {
     do {
         busy = 0;
         for (i = 0; i != downed; i++) {
-            if (list[i] != NULL && list[i]->field48 != 0 && list[i]->countdown != 0) {
+            if (list[i] != NULL && list[i]->animations != 0 && list[i]->countdown != 0) {
                 busy = 1;
             }
         }
@@ -254,7 +267,7 @@ s32 func_800C0314(void) {
  * sprite's frames run out, others (unless hidden or out of action) until
  * they are back in their condition's idle motion or their idle mode. */
 void func_800C0564(void) {
-    BattleSprite *sprite;
+    Sprite *sprite;
     s32 slot;
     s8 motion;
     u8 busy;
@@ -275,7 +288,7 @@ void func_800C0564(void) {
             if (func_8009A0DC(slot) == 8) {
                 continue;
             }
-            switch (sprite->motion.bytes[3]) {
+            switch ((s8)sprite->motion.bytes[3]) {
             case 0:
             case 1:
             case 5:
@@ -289,8 +302,8 @@ void func_800C0564(void) {
                 break;
             default:
                 if (!BATTLE_AREA.slots[slot].hidden) {
-                    motion = sprite->motion.bytes[3];
-                    if (motion != D_800C37D4[func_8009A0DC(slot)] && sprite->motion.bytes[3] != sprite->idle.mode) {
+                    motion = (s8)sprite->motion.bytes[3];
+                    if (motion != D_800C37D4[func_8009A0DC(slot)] && (s8)sprite->motion.bytes[3] != (s8)sprite->b0.byteb0) {
                         busy = 1;
                     }
                 }
@@ -496,10 +509,10 @@ void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out) {
 
 /* Release the transferred sound bank. */
 void func_800C0F70(void) {
-    if (D_800C3A6C != 0) {
+    if (D_800C3A6C != NULL) {
         func_80038310(D_800C3A6C);
     }
-    D_800C3A6C = 0;
+    D_800C3A6C = NULL;
 }
 
 /* Set up a command file's parts: transfer its wave bank (freeing the file
@@ -507,8 +520,8 @@ void func_800C0F70(void) {
  * bank. The wave bank handle is stored through its address taken before
  * the transfer call, and the debugger word is read at its fixed address,
  * as in 800B3F04. */
-SoundSystem *func_800C0FAC(s32 *file) {
-    SoundSystem *bank = NULL;
+SoundBank *func_800C0FAC(s32 *file) {
+    SoundBank *bank = NULL;
     s32 *offsets = file;
     s32 *entry;
     s32 n;
@@ -519,7 +532,7 @@ SoundSystem *func_800C0FAC(s32 *file) {
         entry = (s32 *)(*offsets + (s32)file);
         switch (*entry) {
         case 0x73646573: /* "seds" */
-            bank = (SoundSystem *)entry;
+            bank = (SoundBank *)entry;
             func_80038428(bank);
             break;
         case 0x20736477: /* "wds " */
@@ -527,9 +540,9 @@ SoundSystem *func_800C0FAC(s32 *file) {
             D_800C3620 = 0;
             D_800C3622 = 0;
             {
-                s32 *waves = &D_800C3A6C;
+                SoundSequence **waves = &D_800C3A6C;
 
-                *waves = func_80037FD8(entry, 0);
+                *waves = func_80037FD8((SoundSequence *)entry, 0);
             }
             while (func_8003BDFC(0) != 0) {
                 if (*(s32 *)0x80010000 != -1) {
@@ -537,7 +550,7 @@ SoundSystem *func_800C0FAC(s32 *file) {
                 }
             }
             if (n == 1) {
-                func_80031F70(file, *offsets);
+                func_80031F70((u8 *)file, *offsets);
             }
             break;
         default:
@@ -561,7 +574,7 @@ void func_800C1140(s32 *file) {
     for (n = *offsets - 3, offsets += 4; n > 0; n--, offsets++) {
         entry = (s32 *)(*offsets + (s32)file);
         if (*entry == 0x73646573) { /* "seds" */
-            func_8003852C(entry);
+            func_8003852C((SoundBank *)entry);
         }
     }
 }

@@ -1,15 +1,41 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
+/* menu4: text 8007E528-80081ECC, rodata 8006FE1C-800701B0, data
+ * 80091230-8009178C, variables 800926D4-80092768 and 80095498-80095580.
+ * The menu's text (the banner, font, cursor and colours), the selection
+ * screen (the entry list, portraits and the two sides' wheels), the
+ * settings, vibration and options pages, the choice menus and captions,
+ * and the screen fades. Its jump tables lie at 4 mod 8 (8006FE1C-
+ * 8007019C); its first function reads its variables and 80081D2C is the
+ * last that does, so its end lies at 80081E00, 80081E6C or 80081ECC (the
+ * two fades between touch only commons); the latest is kept. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/text.h"
+#include "actor.h"
+#include "bout.h"
+#include "camera.h"
+#include "display.h"
+#include "effects.h"
+#include "helpers.h"
+#include "menus.h"
+#include "mode.h"
+#include "packets.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
 #include "sound.h"
-#include "brain.h"
-#include "window.h"
-#include "gte.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
-static PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
+static POLY_FT4 *D_800926D4[2]; /* text quads, per draw buffer */
 static s32 D_800926DC;
 static u16 D_800926E0; /* text texture page */
 static u16 D_800926E4; /* text CLUT */
@@ -48,13 +74,13 @@ static u8 D_80092764; /* stick is deflected */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static DrMove D_80095498[2];
-static DrTpage D_800954C8[2];
+static DR_MOVE D_80095498[2];
+static DR_TPAGE D_800954C8[2];
 static SceneSprite D_800954D8[2];
 /* The upper and lower captions, which share one pixel buffer
  * (func_80080F04). */
 static Caption D_80095510[2];
-static DrTpage D_80095570[2];
+static DR_TPAGE D_80095570[2];
 
 /* Menu font glyphs (func_8007E8AC maps characters to these). */
 Glyph D_80091230[] = {
@@ -123,14 +149,15 @@ void func_8007E574(void *ot) {
     }
 }
 
+/* The text quads used this frame. */
 s32 func_8007E624(void) {
     return D_800926DC;
 }
 
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
  * and 3 replaced) and the banner image, and build the banner sprite. */
-void func_8007E634(MenuFiles *files) {
-    TimImage image;
+void func_8007E634(MenuImages *files) {
+    TIM_IMAGE image;
     SceneSprite *banner;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *palette;
@@ -144,7 +171,7 @@ void func_8007E634(MenuFiles *files) {
     }
     OpenTIM(files->font);
     ReadTIM(&image);
-    palette = image.caddr;
+    palette = (s16 *)image.caddr;
     palette[2] = -0x6F9D;
     palette[0] = 0;
     palette[3] = -1;
@@ -155,7 +182,7 @@ void func_8007E634(MenuFiles *files) {
     D_800926DC = 0;
     OpenTIM(files->banner);
     ReadTIM(&image);
-    palette = image.caddr;
+    palette = (s16 *)image.caddr;
     palette[0] = 0;
     LoadImage(image.crect, image.caddr);
     LoadImage(image.prect, image.paddr);
@@ -173,6 +200,7 @@ void func_8007E634(MenuFiles *files) {
     D_800954D8[1] = *banner;
 }
 
+/* Move the text cursor. */
 void func_8007E894(s32 x, s32 y) {
     D_800926E8 = x;
     D_800926EC = y;
@@ -215,6 +243,7 @@ Glyph *func_8007E8AC(s32 ch) {
     return &D_80091230[ch];
 }
 
+/* Set the text width scale (0x100 = 1). */
 void func_8007E954(s32 value) {
     D_800912DC = value;
 }
@@ -226,7 +255,7 @@ void func_8007E954(s32 value) {
  * fields (not struct member stores), so no global load moves above them;
  * the texture page/CLUT and the length are member stores. */
 s32 func_8007E964(s32 ch) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     Glyph *glyph;
     s32 right;
 
@@ -348,7 +377,7 @@ void func_8007EE68(s32 highlight) {
 /* Build the list of the 49 entries (or, when filtering, of those whose
  * required level the current level reaches) and order it when filtering. */
 void func_8007EEE8(s32 filter) {
-    s32 level = D_8006EF64;
+    s32 level = D_8006D634.vars[0];
     ListEntry **list = func_80031BDC(0xC4, 1);
     MoveList *source;
     s32 i;
@@ -383,14 +412,14 @@ void func_8007EFB4(void) {
         for (col = 0; col < 7; col++) {
             s16 left = col << 6;
 
-            cell->clut_x = 0x200;
-            cell->clut_y = id--;
-            cell->clut_w = 0x80;
-            cell->clut_h = 1;
-            cell->image_x = top;
-            cell->image_y = left;
-            cell->image_w = 0x1E;
-            cell->image_h = 0x40;
+            cell->clut.x = 0x200;
+            cell->clut.y = id--;
+            cell->clut.w = 0x80;
+            cell->clut.h = 1;
+            cell->image.x = top;
+            cell->image.y = left;
+            cell->image.w = 0x1E;
+            cell->image.h = 0x40;
             cell++;
         }
     }
@@ -447,13 +476,13 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
         quad->xy2 = left | (bottom << 16);
         quad->xy3 = (left + width + fade * 2) | (bottom << 16);
     }
-    u = cell->image_x * 2;
-    quad->uv0 = u | (cell->image_y << 8);
-    quad->uv1 = (u + 0x3B) | (cell->image_y << 8);
-    quad->uv2 = u | ((cell->image_y + 0x3F) << 8);
-    quad->uv3 = (u + 0x3B) | ((cell->image_y + 0x3F) << 8);
-    quad->clut = GetClut(cell->clut_x, cell->clut_y);
-    quad->tpage = GetTPage(1, 0, cell->image_x & 0xFF80, cell->image_y);
+    u = cell->image.x * 2;
+    quad->uv0 = u | (cell->image.y << 8);
+    quad->uv1 = (u + 0x3B) | (cell->image.y << 8);
+    quad->uv2 = u | ((cell->image.y + 0x3F) << 8);
+    quad->uv3 = (u + 0x3B) | ((cell->image.y + 0x3F) << 8);
+    quad->clut = GetClut(cell->clut.x, cell->clut.y);
+    quad->tpage = GetTPage(1, 0, cell->image.x & 0xFF80, cell->image.y);
     AddPrim(D_80092938, quad);
 }
 
@@ -461,7 +490,7 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
  * previous one (the long way round wraps), with its neighbours when the
  * side is available, then "VS" and both names. The arguments are unused. */
 void func_8007F258(void *packets, s32 arg) {
-    Vector unused[2]; /* the original frame has 32 unused bytes */
+    VECTOR unused[2]; /* the original frame has 32 unused bytes */
     PolyFT4Words *quad = D_80099DA8[D_800928A0];
     s32 step;
     s32 row;
@@ -549,6 +578,7 @@ char *D_8009132C[] = {
 
 s32 D_80091364 = 0;
 
+/* Hide both captions and forget the selected line's caption. */
 void func_8007F834(void) {
     D_80092740 = 0;
     D_8009273C = 0;
@@ -562,20 +592,24 @@ void func_8007F854(void) {
 
     D_800912F0 = 1;
     func_80083C0C(1);
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_8007F834();
     ACTOR_STANCE_BITS(&D_8009872C)->prev_stance = 3;
     ACTOR_STANCE_BITS(&D_80097010)->prev_stance = 3;
 }
 
+/* Leave the menus: camera mode 1, no menu shown, the captions hidden. */
 void func_8007F8B4(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_80083C0C(1);
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_8007F834();
 }
 
+/* Close the system menu and go on: scene mode 3 when option 6 is set or
+ * the first round was played, else mode 6 with the round count stepped
+ * back (the round is played again). */
 void func_8007F8E4(void) {
     func_80080C48(0);
     if (D_80099D98.option6 != 0 || D_80092950 == 1) {
@@ -587,7 +621,7 @@ void func_8007F8E4(void) {
 }
 
 /* Highlight the text of a page's entry when it is under the cursor. */
-void func_8007F948(MenuPage *page, s32 entry) {
+void func_8007F948(Menu *page, s32 entry) {
     if (page->cursor == entry) {
         func_8007EE08(1);
     } else {
@@ -602,10 +636,10 @@ char *func_8007F97C(void) {
 
 /* Draw the values column of the settings page, right-aligned, applying the
  * chosen speed as it is shown. */
-void func_8007F9A0(MenuPage *page) {
+void func_8007F9A0(Menu *page) {
     char text[8];
 
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007F948(page, 0);
     func_8007ECF0(func_8007F97C());
@@ -625,10 +659,10 @@ void func_8007F9A0(MenuPage *page) {
 
 /* Draw the values column of the second settings page; the chosen entry of
  * setting 10 is also passed to 80081100 as 0x15 + entry. */
-void func_8007FB0C(MenuPage *page) {
+void func_8007FB0C(Menu *page) {
     char text[8];
 
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007ECF0("");
     func_8007F948(page, 1);
@@ -644,15 +678,15 @@ void func_8007FB0C(MenuPage *page) {
  * a type-4 controller without the "COM" setting is connected (the entry is
  * hidden otherwise). */
 void func_8007FBEC(void) {
-    MenuPage *page;
+    Menu *page;
     s32 active;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_8007E894(0xA0, 0x8C);
     active = D_80092710 ^ 1;
     active &= 1;
-    page = &((MenuPage *)D_800915AC)[5];
-    if (active && ((MenuPage *)D_800915AC)[5].cursor == 0) {
+    page = &D_800915AC[5];
+    if (active && D_800915AC[5].cursor == 0) {
         D_8009272C = 1;
     } else {
         D_8009272C = 0;
@@ -663,9 +697,9 @@ void func_8007FBEC(void) {
             func_8007F948(page, 1);
         }
         func_8007EC54((D_80099D98.option4 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
-        ((MenuPage *)D_800915AC)[5].item->flags &= ~4;
+        D_800915AC[5].items[1].flags &= ~4;
     } else {
-        ((MenuPage *)D_800915AC)[5].item->flags |= 4;
+        D_800915AC[5].items[1].flags |= 4;
     }
     func_8007EE08(0);
 
@@ -675,8 +709,8 @@ void func_8007FBEC(void) {
     if (active && D_80092754 == 0) {
         active = 0;
     }
-    page = &((MenuPage *)D_800915AC)[6];
-    if (active && ((MenuPage *)D_800915AC)[6].cursor == 0) {
+    page = &D_800915AC[6];
+    if (active && D_800915AC[6].cursor == 0) {
         D_80092730 = 1;
     } else {
         D_80092730 = 0;
@@ -687,21 +721,21 @@ void func_8007FBEC(void) {
             func_8007F948(page, 1);
         }
         func_8007EC54((D_80099D98.option5 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
-        ((MenuPage *)D_800915AC)[6].item->flags &= ~4;
+        D_800915AC[6].items[1].flags &= ~4;
     } else {
-        ((MenuPage *)D_800915AC)[6].item->flags |= 4;
+        D_800915AC[6].items[1].flags |= 4;
     }
     func_8007EE08(0);
     func_8007F258(D_80092938, 1);
 }
 
 /* Draw the values column of the options page. */
-void func_8007FE48(MenuPage *page) {
+void func_8007FE48(Menu *page) {
     char text[16];
     char *value;
 
     func_8007EE08(0);
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007ECF0("");
     func_8007ECF0("");
     func_8007ECF0("");
@@ -770,6 +804,10 @@ s32 func_8007FF70(s32 value, s32 max, s32 flags) {
     return value;
 }
 
+/* Menu line handlers: step one setting with left/right (func_8007FF70):
+ * the level, the speed, the frame rate, each port's vibration, each side's
+ * computer control, option 6, rubber band battle and the opponent's
+ * command. */
 void func_80080054(void) {
     D_80099D98.level = func_8007FF70(D_80099D98.level, 2, 0);
 }
@@ -904,11 +942,11 @@ void func_80080644(s32 first, s32 second) {
     D_80092710 = 3;
     func_80028A60(0);
     cell = &D_8009270C[first];
-    LoadImage(&cell->clut_x, data);
-    LoadImage(&cell->image_x, data + 0x100);
+    LoadImage(&cell->clut, (u_long *)data);
+    LoadImage(&cell->image, (u_long *)(data + 0x100));
     cell = &D_8009270C[second];
-    LoadImage(&cell->clut_x, other);
-    LoadImage(&cell->image_x, data + 0x1100);
+    LoadImage(&cell->clut, (u_long *)other);
+    LoadImage(&cell->image, (u_long *)(data + 0x1100));
     func_80032C18(data, 2);
 }
 
@@ -922,19 +960,19 @@ void func_80080780(s32 mode) {
         func_80028A60(0);
         cell = D_8009270C;
         for (i = 0; i < 49; i++, cell++) {
-            LoadImage(&cell->clut_x, D_800928D8 + (i << 12));
-            LoadImage(&cell->image_x, D_800928D8 + (i << 12) + 0x100);
+            LoadImage(&cell->clut, (u_long *)(D_800928D8 + (i << 12)));
+            LoadImage(&cell->image, (u_long *)(D_800928D8 + (i << 12) + 0x100));
         }
         func_800320E8(D_800928D8);
         D_80092940 = 1;
     }
     D_800928C8 = mode;
     if (mode == 4) {
-        ((MenuPage *)D_800915AC)[5].count = 3;
+        D_800915AC[5].parent = 3;
     } else {
-        ((MenuPage *)D_800915AC)[5].count = 4;
+        D_800915AC[5].parent = 4;
     }
-    ((MenuPage *)D_800915AC)[6].count = 5;
+    D_800915AC[6].parent = 5;
     if (mode == 3) {
         D_80091368[0].caption = 0x27;
         D_80091390[0].caption = 0x28;
@@ -953,11 +991,14 @@ void func_80080780(s32 mode) {
     func_80080964(5);
 }
 
+/* Menu line handler: hide the captions and end the menu screen (D_80092924). */
 void func_800808F4(void) {
     D_80092924 = 1;
     func_8007F834();
 }
 
+/* Menu line handler: end the menu screen, restart the opening and give
+ * both actor slots their first models again. */
 void func_80080920(void) {
     D_80092924 = 1;
     func_800719F0();
@@ -967,29 +1008,29 @@ void func_80080920(void) {
 
 /* Show a page, remembering the current one; 0xff returns to it. */
 void func_80080964(s32 page) {
-    MenuPage *previous;
+    Menu *previous;
 
     if (page == 0xFF) {
-        D_80092734 = (Menu *)((MenuPage *)D_80092738);
+        D_80092734 = D_80092738;
         return;
     }
-    previous = ((MenuPage *)D_80092734);
-    D_80092734 = (Menu *)&((MenuPage *)D_800915AC)[page];
-    D_80092738 = (Menu *)previous;
+    previous = D_80092734;
+    D_80092734 = &D_800915AC[page];
+    D_80092738 = previous;
 }
 
 /* Whether page 3 is shown. */
 s32 func_800809BC(void) {
-    return ((MenuPage *)D_80092734) == &((MenuPage *)D_800915AC)[3];
+    return D_80092734 == &D_800915AC[3];
 }
 
 /* Enter the settings/system menu at page 3 with every state reset. */
 void func_800809D8(void) {
     func_80039FF8();
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_80080964(3);
-    ((MenuPage *)D_800915AC)[3].cursor = 0;
-    ((MenuPage *)D_800915AC)[4].cursor = 0;
+    D_800915AC[3].cursor = 0;
+    D_800915AC[4].cursor = 0;
     D_800928C8 = 0;
     D_80092758 = 0;
     func_8007F834();
@@ -999,6 +1040,7 @@ void func_800809D8(void) {
     D_800928D8 = func_800891C0(6);
 }
 
+/* Release the loaded portraits unless they were uploaded (once). */
 void func_80080A58(void) {
     if (D_80092940 == 0) {
         func_80028A60(0);
@@ -1029,14 +1071,14 @@ void func_80080AE8(void) {
         rect[2] = 0x140;
         rect[3] = 0xDA;
         func_8007313C(D_80092760, (u8 *)D_80092760 + 0x21E80);
-        LoadImage(rect, D_80092760);
+        LoadImage((RECT *)rect, D_80092760);
     }
 }
 
 /* Keep a copy of the shown screen: allocate the image buffer once, copy
  * the displayed buffer's area to (320,256) and read it back. */
 void func_80080B58(void) {
-    Rect area;
+    RECT area;
 
     if (D_80092760 == NULL) {
         func_80031BB4(1);
@@ -1057,14 +1099,14 @@ void func_80080C48(s32 mode) {
     func_80039FF8();
     func_8008EB4C(0x1F);
     if (mode == 1) {
-        D_80092734 = (Menu *)NULL;
+        D_80092734 = NULL;
         func_80080964(0);
-        ((MenuPage *)D_800915AC)[0].cursor = 0;
-        ((MenuPage *)D_800915AC)[2].cursor = 1;
+        D_800915AC[0].cursor = 0;
+        D_800915AC[2].cursor = 1;
     } else if (mode == 2) {
-        D_80092734 = (Menu *)NULL;
+        D_80092734 = NULL;
         func_80080964(7);
-        ((MenuPage *)D_800915AC)[7].cursor = 1;
+        D_800915AC[7].cursor = 1;
     } else {
         goto close;
     }
@@ -1078,6 +1120,7 @@ close:
     func_8007F8B4();
 }
 
+/* Drop this frame's text quads. */
 void func_80080D10(void) {
     D_800926DC = 0;
 }
@@ -1086,8 +1129,8 @@ void func_80080D10(void) {
  * with its texture page and, while a page or the copy request is active, a
  * move of the kept screen copy into the draw buffer. */
 void func_80080D20(void *ot) {
-    PolyFT4 *quad = D_800926D4[D_800928A0];
-    Rect area;
+    POLY_FT4 *quad = D_800926D4[D_800928A0];
+    RECT area;
     s32 i;
 
     for (i = 0; i < D_800926DC; i++, quad++) {
@@ -1095,9 +1138,9 @@ void func_80080D20(void *ot) {
     }
     D_800926DC = 0;
     func_800811AC(ot);
-    if ((((MenuPage *)D_80092734) != NULL && D_80092758 != 0) || D_800912F0 != 0) {
-        if (((MenuPage *)D_80092734) != NULL) {
-            AddPrim(ot, &((MenuPage *)D_80092734)->frame[D_800928A0]);
+    if ((D_80092734 != NULL && D_80092758 != 0) || D_800912F0 != 0) {
+        if (D_80092734 != NULL) {
+            AddPrim(ot, &D_80092734->panel[D_800928A0]);
             SetDrawTPage(&D_800954C8[D_800928A0], 0, 0, GetTPage(0, 2, 0, 0));
             AddPrim(ot, &D_800954C8[D_800928A0]);
         }
@@ -1148,7 +1191,7 @@ void func_80081094(Caption *caption, s32 text, s32 arg) {
 /* Show a text in the upper (0) or lower (1) caption; re-render only when
  * the text changes. */
 void func_80081100(s32 text, s32 lower) {
-    Rect rect;
+    RECT rect;
 
     if (lower == 0) {
         if (text == D_8009273C) {
@@ -1194,7 +1237,7 @@ void func_800811AC(void *ot) {
 /* Measure a menu's lines and size its panel around the widest one. */
 void func_800812BC(Menu *menu) {
     MenuItem *item;
-    TileRgb *panel;
+    TILE *panel;
     s32 i;
     s32 widest;
 
@@ -1205,7 +1248,7 @@ void func_800812BC(Menu *menu) {
         widest = (widest < item->half_width) ? item->half_width : widest;
     }
     panel = &menu->panel[0];
-    ((PacketTag *)panel)->len = 3;
+    setlen(panel, 3);
     panel->w = widest * 2 + 0x14;
     panel->x0 = 0x96 - widest;
     menu->cursor = 0;
@@ -1276,7 +1319,7 @@ void func_8008151C(Menu *menu) {
  * with a value it never returns, as the unfilled final delay slot shows. */
 s32 func_8008162C(Menu *menu, s32 port) {
     MenuItem *item;
-    void (*handler)(s32);
+    void (*handler)();
     s32 type;
     s32 x;
     s32 y;

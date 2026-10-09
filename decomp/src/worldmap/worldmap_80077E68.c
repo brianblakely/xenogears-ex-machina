@@ -1,34 +1,29 @@
+/* World map unit 80077E68-8007A9F8 (rodata 8006FB40-8006FBC4, data
+ * 8009A3F0-8009A450): the actors of scene modes 9 (the camera flight and the
+ * rig) and 10 (its script, the landing rig and the growing sprites), the
+ * frame step of most scene modes, the set-up and leave handlers of modes 10
+ * and 14 and the sequence start of mode 14's director.
+ *
+ * func_80073398's seven-entry table ends at 8006fb40 and func_80077E68's
+ * follows at once, 0 mod 8: within one unit an odd-length table followed by
+ * another keeps its phase with a pad word, so this unit's rodata starts at
+ * 8006fb40 and its text after func_80073398, at or before func_80077E68. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
 #include "worldmap.h"
-
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_800923A8();
-s32 func_800925A0();
-s32 func_80078948();
-s32 func_80078950();
-s32 func_80078E2C();
-s32 func_80078EA4();
-s32 func_800794D8();
-s32 func_80079538();
-s32 func_800795E4();
-s32 func_80079778();
-s32 func_8007A144();
-s32 func_8007A1B4();
-s32 func_8007A410();
-s32 func_8007A430();
-s32 func_8007A568();
-s32 func_8007A570();
-s32 func_8007A9B4();
-s32 func_8007A9F8();
-s32 func_8007AD34();
-s32 func_8007ADD4();
-s32 func_8007B200();
-s32 func_8007B394();
-s32 func_8007B604();
-s32 func_8007B798();
-s32 func_8007BA08();
-s32 func_8007BA10();
-s32 func_8007BB60();
-s32 func_8007BBEC();
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The scene camera's flight path: control points, the last marked by pad -1. */
 SVECTOR D_8009A3F0[12] = {
@@ -36,6 +31,17 @@ SVECTOR D_8009A3F0[12] = {
     {-400, -625, 400}, {-577, -675, -577}, {0, -904, -946}, {96, -608, 0}, {0, -1157, 1106},
     {-793, -899, -771}, {0, 0, 0, -1},
 };
+
+/* Scratchpad work area of the camera path. */
+typedef struct {
+    VECTOR at;        /* 0x00: path point, then look-at */
+    VECTOR eye;       /* 0x10 */
+    s32 distance;     /* 0x20 */
+    u8 pad24[0x7C];
+    SVECTOR points[3]; /* 0xA0 */
+} PathScratch;
+
+#define PATH_SCRATCH ((PathScratch *)0x1F800000)
 
 /* Scene camera flight along the path: follow the path points, speed up and
  * slow down by state, fade out at the end, and set the engine volume from the
@@ -75,7 +81,7 @@ s32 func_80077E68(s32 index) {
         VIEW.eye.vy = scratch->at.vy >> 16;
         VIEW.at.vy = D_8009BE28.target.vy >> 12;
     }
-    func_80097244(D_8009BD40);
+    func_80097244(&D_8009BD40);
     func_80097070(&D_8009C808, &D_8009BD38);
     switch (actor->state) {
     case 0:
@@ -176,6 +182,17 @@ s32 func_8007828C(s32 index) {
     return 1;
 }
 
+/* Scratchpad work area of the scene rigs. */
+typedef struct {
+    VECTOR position;   /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR angle[4];  /* 0xA0 */
+    u8 padC0[0x30];
+    MATRIX matrix[4];  /* 0xF0 */
+} RigScratch;
+
+#define RIG_SCRATCH ((RigScratch *)0x1F800000)
+
 /* Fly the scene rig forward: move the actor and the ground scroll, place scene
  * object 0 and the camera on it, spin the three rotors and share their
  * matrices across the rig's objects. */
@@ -222,21 +239,21 @@ s32 func_80078948(void) {
 /* Per-frame update and draw of the scene mode. */
 s32 func_80078950(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_80089748();
     func_80089C78();
     func_800848F4();
-    func_800980D4(D_8009BBB4);
+    func_800980D4(&D_8009BBB4);
     if (D_8009D558 != 0) {
         func_800981C8(&D_8009BE28);
         func_80096130();
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, (s32)D_8009BE3C->packets, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();
@@ -323,10 +340,10 @@ void func_80078D24(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x110;
-    D_8006F954[0] = 0;
+    D_8006D634.map = 0x110;
+    D_8006D634.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking down from yaw 0x680. */
@@ -392,7 +409,7 @@ s32 func_80078EA4(s32 index) {
         break;
     case 4:
         actor->wait--;
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         scratch->view.vx = rand() % 12 - 6;
         scratch->view.vy = rand() % 12 - 6;
         VIEW_VECTORS[0].vx += scratch->view.vx;
@@ -409,7 +426,7 @@ s32 func_80078EA4(s32 index) {
         break;
     case 5:
         actor->wait--;
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         scratch->view.vx = rand() % 4 - 2;
         scratch->view.vy = rand() % 4 - 2;
         VIEW_VECTORS[0].vx += scratch->view.vx;
@@ -471,7 +488,7 @@ s32 func_80078EA4(s32 index) {
         break;
     }
     if (actor->state != 4 && actor->state != 5) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     return 1;
 }
@@ -663,8 +680,8 @@ s32 func_80079778(s32 index) {
 }
 
 /* Build `count` semi-transparent textured quads for a scene sprite. */
-void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
-    PolyFT4 *quad;
+void func_8007A06C(SceneObject *object, POLY_FT4 *quads, s32 count) {
+    POLY_FT4 *quad;
     s32 i;
 
     quad = quads;
@@ -676,7 +693,7 @@ void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Rebuild both scene sprites' quads. */
@@ -687,8 +704,8 @@ s32 func_8007A144(s32 index) {
     actor->state = 0;
     actor->unk70 = 0;
     actor->unk6C = 0;
-    func_8007A06C(&D_8009C620[14], D_8009C620[14].prims, D_8009C620[14].def->count);
-    func_8007A06C(&D_8009C620[15], D_8009C620[15].prims, D_8009C620[15].def->count);
+    func_8007A06C(&D_8009C620[14], D_8009C620[14].prims, D_8009C620[14].def->primitive_count);
+    func_8007A06C(&D_8009C620[15], D_8009C620[15].prims, D_8009C620[15].def->primitive_count);
     return 3;
 }
 
@@ -714,7 +731,7 @@ s32 func_8007A1B4(s32 index) {
         actor->unk70 = 0;
         actor->unk6C = 0;
     }
-    SCALE_SCRATCH->matrix[0] = *(MATRIX *)&D_8009A180;
+    SCALE_SCRATCH->matrix[0] = D_8009A180;
     SCALE_SCRATCH->matrix[1] = SCALE_SCRATCH->matrix[0];
     SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->unk6C;
     SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk70;
@@ -860,10 +877,10 @@ void func_8007A8AC(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x11A;
-    D_8006F954[0] = 0;
+    D_8006D634.map = 0x11A;
+    D_8006D634.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

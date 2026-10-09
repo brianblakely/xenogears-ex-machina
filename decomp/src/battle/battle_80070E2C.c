@@ -1,24 +1,60 @@
-/* Battle unit from 80070E2C: its rodata starts at 8006FAF4, after the
- * overlay's number, with 800745EC's jump table at 4 mod 8 (docs/matching.md). */
+/* Battle unit from 80070E2C to 800792F8: the event script module's start, the
+ * battle's main loop (80070F40: set-up, turns until the end), the ATB tick
+ * and the turn's start, the party panel and the HUD's drawing, the glyph and
+ * quad builders, the command names' text images, the windows' primitives and
+ * the battle messages, the CLUT cycle, the portraits, and the action list's
+ * event queueing and entry handlers (80078508-80079270). Its rodata starts at
+ * 8006FAF4, after the overlay's number, with 800745EC's jump table at 4 mod 8
+ * (docs/matching.md). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/area.h"
-#include "resident/formation.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/resolver.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
+#include "gear_menu.h"
+#include "overlays.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+#include "settle.h"
+
+/* This unit's functions, declared before their first use. */
+void func_80072270(void);
+void func_800723E0(void);
+void func_8007252C(void);
+void func_800765C4(s32 member);
+void func_80076710(s32 member);
+void func_80077990(void);
+void func_8007819C(void);
 
 /* The battle's shared tables and state, which open .data (800c2048-800c348c).
  * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488
@@ -284,7 +320,7 @@ void func_80070E2C(void) {
         block = func_8008ABB8(4, 1);
         D_800D3284 = block;
         D_800D328C = func_8008ABB8(block - 0x801E5000, 1);
-        func_800295D8(1, 0x801E5000, 0, 0x80);
+        func_800295D8(1, (void *)0x801E5000, 0, 0x80);
         func_8008AC50();
         func_801E5160();
     }
@@ -306,7 +342,7 @@ void func_80070EDC(void) {
         handled = func_801E563C();
     }
     if ((handled & 0xFF) == 0 && D_800C48EA == 0x81) {
-        func_8003A89C(D_800C3E54, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_800C3E54, 0, 0xF0);
     }
 }
 
@@ -337,7 +373,7 @@ void func_80070F40(void) {
         D_80059508 = D_8005947C - 1;
         if (D_80059180 != 0) {
             D_80059180 = 0;
-            func_8003A89C(D_80062528, 0x7F, 0x3C);
+            func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0x3C);
         }
         if (D_800594F8 == 0) {
             D_8005947C = 0;
@@ -347,7 +383,7 @@ void func_80070F40(void) {
         func_80028470(0x10, 2);
         block = func_8008ABB8(4, 1);
         span = func_8008ABB8(block - 0x801E0000, 1);
-        func_800295D8(1, 0x801E0000, 0, 0x80);
+        func_800295D8(1, (void *)0x801E0000, 0, 0x80);
         func_80028A60(0);
         func_800320E8((void *)block);
         func_800320E8((void *)span);
@@ -360,7 +396,7 @@ void func_80070F40(void) {
     }
     if (*D_8005917C != -1) {
         func_80028470(0x10, 2);
-        func_800295D8(6, 0x80280000, 0, 0x80);
+        func_800295D8(6, (void *)0x80280000, 0, 0x80);
         func_80028A60(0);
     }
     memmove(&D_8006F9DC, &D_800658DC.formations[D_80059508], sizeof(BattleFormation));
@@ -375,8 +411,8 @@ void func_80070F40(void) {
     if (D_800594F8 != 0) {
         D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
     }
-    D_800D3364 = D_8005949C;
-    D_800C3EB0.formation = D_8005949C;
+    D_800D3364 = (Formation *)D_8005949C;
+    D_800C3EB0.formation = (Formation *)D_8005949C;
     func_80077990();
     D_800D3298 = 1;
     func_800BC404(D_800D39DC);
@@ -400,8 +436,8 @@ void func_80070F40(void) {
     func_8009892C();
     for (i = 0; i < 3; i++) {
         if (D_800D2D24[i] != 0x7F) {
-            D_800C3E0C[i].mask0 = D_8006ECF4[D_800D2D24[i]].mask0;
-            D_800C3E0C[i].mask2 = D_8006ECF4[D_800D2D24[i]].mask2;
+            D_800C3E0C[i].counterSkills = D_8006D634.skills[D_800D2D24[i]].counterSkills;
+            D_800C3E0C[i].levelSkills = D_8006D634.skills[D_800D2D24[i]].levelSkills;
         }
     }
     while (D_800C48EA == 0 && D_800D2FC4 == 0) {
@@ -432,7 +468,7 @@ void func_80070F40(void) {
             if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
                 u8 *battleOutcome = &D_800C48EA;
 
-                D_800D3278->unk800 = 0;
+                D_800D3278->halted = 0;
                 outcome = *battleOutcome;
                 *battleOutcome = 0;
                 for (i = 0; i < 3; i++) {
@@ -461,7 +497,7 @@ void func_80070F40(void) {
     func_80028470(0x10, 0);
     D_800D2D3C = func_8008ABB8(4, 1);
     D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
-    func_800295D8(4, 0x801DE000, 0, 0x80);
+    func_800295D8(4, (void *)0x801DE000, 0, 0x80);
     func_800B853C(mode);
     while (D_800CCC58 != 0) {
         func_800716D8();
@@ -672,7 +708,7 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        setXYWH(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+        setXYWH(&D_800C3EA4->panel[D_800CCB04.buffer],
                 D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8, 0x18, 0x18);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
@@ -1155,10 +1191,10 @@ void func_80073538(void) {
  * +0x6410 and add it with its draw mode to the ordering table. */
 void func_80073A58(void) {
     if (D_800C3EA4->unk6415 != 0) {
-        setRGB0(&D_800C3EA4->unk63C8[D_800C3EA4->unk6414], D_800C3EA4->unk6410, D_800C3EA4->unk6410,
-                D_800C3EA4->unk6410);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
+        setRGB0(&D_800C3EA4->panel[D_800C3EA4->unk6414], D_800C3EA4->panelAlpha, D_800C3EA4->panelAlpha,
+                D_800C3EA4->panelAlpha);
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->panel[D_800C3EA4->unk6414]);
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->panelMode[D_800C3EA4->unk6414]);
     }
 }
 
@@ -1222,8 +1258,8 @@ void func_80073F08(void) {
     if (D_800D2D28->unk9C != 0) {
         func_800728B8(D_800C3EA4->unkBA8, D_800D2D28->unkF8, D_800D2D28->unkA5);
     }
-    if (D_800D2D28->unk9E != 0) {
-        func_800728B8(D_800C3EA4->unk27C8, D_800D2D28->unk100, D_800D2D28->unkA7);
+    if (D_800D2D28->cursorShown != 0) {
+        func_800728B8(D_800C3EA4->cursor, D_800D2D28->cursorParts, D_800D2D28->cursorBuffer);
     }
     if (D_800D2D28->unk9D != 0) {
         func_800728B8(D_800C3EA4->unk1E68, D_800D2D28->unkFC, D_800D2D28->unkA6);
@@ -1443,14 +1479,14 @@ void func_80074EEC(void) {
     }
 }
 
-/* Add the current *800d3278 quad (UI +0xc8) and draw the 800d2dac object
- * (UI +0xc9). */
+/* Add the event script's current portrait quad (UI +0xc8) and draw the
+ * message text window 800d2dac (UI +0xc9). */
 void func_80074F70(void) {
-    if (D_800D2D28->unkC8 != 0) {
-        AddPrim(D_800CCB04.ot + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
+    if (D_800D2D28->scriptPortraitShown != 0) {
+        AddPrim(D_800CCB04.ot + 1, &D_800D3278->quads[D_800D3278->portraitBuffer]);
     }
-    if (D_800D2D28->unkC9 != 0) {
-        func_80034888(D_800D2DAC, D_800CCB04.ot + 1, D_800CCB04.buffer);
+    if (D_800D2D28->messageShown != 0) {
+        func_80034888(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);
     }
 }
 

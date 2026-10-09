@@ -1,12 +1,50 @@
-#include "worldmap.h"
+/* World map unit 80094A5C-80099E8C (rodata 80070C50-80070CFC, data
+ * 8009B564-8009BBB4): movement over the terrain and the solid scene objects,
+ * the stream reader, the camera matrices, the actor slots, the terrain
+ * loader, its visibility and drawing (two routines handwritten), and the
+ * world tables of the whole overlay in its data.
+ *
+ * func_800914D0's 17-entry table ends at 80070c50 and func_80094A5C's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_800914D0, at or before
+ * func_80094A5C. Its text and data end the program. */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "psyq/libsn.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "worldmap.h"
+#include "camera.h"
+#include "gte.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
-/* Declared here only: other units call it without a prototype. */
-void func_80093354(VECTOR *position);
 /* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
 s32 func_80084D00(s32 probe, s16 *hit);
 
-void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin);
+/* This unit's functions it calls or passes ahead of their definitions. */
+void func_800963E4(DiscReadRequest *list);
+void func_800964B0(HostReadRequest *list);
+void func_800966CC(HostReadRequest *request);
+s32 func_800968E0(void);
+void func_8009699C(DiscReadRequest *request);
+void func_80096A6C(s32 status, u8 *result);
+void func_80096C0C(s32 status, u8 *result);
+void func_80097DC0(void);
+s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
+void func_80099708(u32 *heights, u_long *ot, s32 packets, SVECTOR *origin);
+void func_8009980C(u32 *cells, u_long *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
 /* World tables of the whole overlay (this unit's .data): area selection,
  * per area scene objects, path regions, the map dots, terrain visibility
@@ -124,6 +162,24 @@ VECTOR D_8009BB9C = {0, 2170, 0};
 
 /* Grid corner cells. */
 s16 D_8009BBAC[4] = {0, 8, 72, 80};
+
+/* Scratchpad work area of the cell-crossing probe: step[0] result,
+ * step[1] target, step[2..4] corner test; cells crossed from and to. */
+typedef struct {
+    VECTOR step[5];
+    u8 pad50[0x50];
+    SVECTOR cell[2]; /* 0xA0 */
+} CellProbe;
+
+#define CELL_PROBE ((CellProbe *)0x1F800000)
+
+/* Scratchpad matrices of the angle and camera helpers. */
+#define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
+#define SCRATCH_MATRIX_B ((MATRIX *)0x1F800110)
+#define SCRATCH_MATRIX_C ((MATRIX *)0x1F800130)
+#define SCRATCH_MATRIX_D ((MATRIX *)0x1F800150)
+#define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
+#define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -392,9 +448,6 @@ typedef struct {
 } WalkScratch;
 
 #define WALK_SCRATCH ((WalkScratch *)0x1F800000)
-
-void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
-s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
 
 /* Move a walking position over the solid scene objects. Off a structure, look
  * for a face under the probe at about the current height and step onto it;
@@ -823,7 +876,7 @@ void func_80095F78(void) {
     }
 }
 
-/* Free the effect command buffers. */
+/* Free the stream queue's request buffers. */
 void func_800960BC(void) {
     s32 first;
     s32 second;
@@ -1102,7 +1155,7 @@ void func_8009699C(DiscReadRequest *request) {
     D_8009CEB8 = request->bytes;
     D_8009C590 = request->destination;
     CdIntToPos(sector, &D_8009CEBC);
-    CdSyncCallback(func_80096A6C);
+    CdSyncCallback((CdlCB)func_80096A6C);
     CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
 }
 
@@ -1116,7 +1169,7 @@ void func_80096A6C(s32 status, u8 *result) {
             D_8009BCCC[2] = 0;
             D_8009BCCC[1] = 0;
             D_8009BCCC[0] = 0;
-            CdReadyCallback(func_80096C0C);
+            CdReadyCallback((CdlCB)func_80096C0C);
             CdControlF(0x1B, NULL);
             break;
         case 3:
@@ -1240,13 +1293,12 @@ typedef struct {
 
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
-void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
-    LookAt *view = (LookAt *)buffer;
+void func_80096F18(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle) {
     SVECTOR *rotation;
 
-    view->target.vx = 0;
-    view->target.vy = camera->target.vy >> 12;
-    view->target.vz = 0;
+    view->at.vx = 0;
+    view->at.vy = camera->target.vy >> 12;
+    view->at.vz = 0;
     ORBIT_SCRATCH->angle.vx = angle->vx;
     rotation = &ORBIT_SCRATCH->angle;
     ORBIT_SCRATCH->angle.vy = angle->vy;
@@ -1257,7 +1309,7 @@ void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
     ORBIT_SCRATCH->offset.vz = -(distance >> 12);
     ApplyMatrixLV(&ORBIT_SCRATCH->rotation, &ORBIT_SCRATCH->offset, &ORBIT_SCRATCH->eye);
     view->eye.vx = ORBIT_SCRATCH->eye.vx;
-    view->eye.vy = view->target.vy + ORBIT_SCRATCH->eye.vy;
+    view->eye.vy = view->at.vy + ORBIT_SCRATCH->eye.vy;
     view->eye.vz = ORBIT_SCRATCH->eye.vz;
     rotation->vx = 0;
     rotation->vy = angle->vy;
@@ -1274,25 +1326,37 @@ void func_80097070(MATRIX *m, SVECTOR *angle) {
     if (m->m[2][0] | m->m[2][2]) {
         angle->vy = ratan2(m->m[2][0], m->m[2][2]) & 0xFFF;
         *SCRATCH_MATRIX_A = *m;
-        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        *SCRATCH_MATRIX_B = D_8009A180;
         func_8004AFEC(angle->vy, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_A, SCRATCH_MATRIX_B, SCRATCH_MATRIX_C);
         angle->vx = ratan2(SCRATCH_MATRIX_C->m[1][2], SCRATCH_MATRIX_C->m[1][1]);
-        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        *SCRATCH_MATRIX_B = D_8009A180;
         func_8004AE4C(angle->vx, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_C, SCRATCH_MATRIX_B, SCRATCH_MATRIX_A);
         angle->vz = -ratan2(SCRATCH_MATRIX_A->m[1][0], SCRATCH_MATRIX_A->m[1][1]);
     }
 }
 
+/* Scratchpad work area of the look-at camera. */
+typedef struct {
+    VECTOR work;
+    VECTOR right;
+    VECTOR up;
+    VECTOR forward;
+    SVECTOR eye;
+    MATRIX view;
+} LookAtScratch;
+
+#define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
+
 /* Build the camera matrix looking from the eye to the target. */
 void func_80097244(void *arg) {
-    LookAt *view;
+    ViewSetup *view;
 
     view = arg;
-    LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->target.vx;
-    LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->target.vy;
-    LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->target.vz;
+    LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->at.vx;
+    LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->at.vy;
+    LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->at.vz;
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
     func_8004A480(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);
@@ -1320,7 +1384,7 @@ void func_80097440(void *arg) {
     SVECTOR *eye;
 
     eye = arg;
-    *SCRATCH_MATRIX_A = *(MATRIX *)&D_8009A180;
+    *SCRATCH_MATRIX_A = D_8009A180;
     *SCRATCH_MATRIX_B = *SCRATCH_MATRIX_A;
     *SCRATCH_MATRIX_C = *SCRATCH_MATRIX_A;
     func_8004AE4C(-D_8009BD38.vx, SCRATCH_MATRIX_A);
@@ -1354,7 +1418,7 @@ void func_800976C8(void) {
 
     for (i = 0; i < 0x40; i++) {
         actor = &D_8009BE24[i];
-        actor->handle = 0;
+        actor->handle = NULL;
         actor->kind = 0;
         actor->update = 0;
     }
@@ -1448,7 +1512,7 @@ void func_80097800(void) {
                 }
                 break;
             case 4:
-                if (actor->handle != 0) {
+                if (actor->handle != NULL) {
                     func_800230A8(actor->handle);
                 }
                 break;
@@ -1459,12 +1523,12 @@ void func_80097800(void) {
 
 /* The 2048-triangle terrain packet buffer, copied as a whole. */
 typedef struct {
-    PolyFT3 prims[0x800];
+    POLY_FT3 prims[0x800];
 } TriangleBuffer;
 
 /* Allocate both 2048-triangle terrain packet buffers and initialise them. */
 void func_800978FC(void) {
-    PolyFT3 *prim;
+    POLY_FT3 *prim;
     s32 i;
 
     D_8009BBC8[0].packets = func_80031BDC(0x10000, 1);
@@ -1490,7 +1554,7 @@ void func_800979C8(void) {
     s32 y;
 
     cluts = func_80032E88(D_8009C59C, 1);
-    func_8002DD20(cluts);
+    func_8002DD20((u32 *)cluts);
     DrawSync(0);
     func_800320E8(cluts);
     func_800320E8(D_8009C59C);
@@ -1500,7 +1564,7 @@ void func_800979C8(void) {
     rect.y = 0x1E0;
     rect.w = 0x100;
     rect.h = 2;
-    StoreImage(&rect, cluts);
+    StoreImage(&rect, (u_long *)cluts);
     DrawSync(0);
     func_800931D8(cluts, faded, 0x20, D_8009BB48);
     func_800931D8(cluts + 0x100, faded + 0x2000, 0x20, D_8009BB48);
@@ -1508,7 +1572,7 @@ void func_800979C8(void) {
     rect.y = 0x1B0;
     rect.w = 0x100;
     rect.h = 0x40;
-    LoadImage(&rect, faded);
+    LoadImage(&rect, (u_long *)faded);
     DrawSync(0);
     for (i = 0; i < 0x40; i++) {
         D_8009CCB4[i] = GetClut(rect.x, rect.y);
@@ -1713,6 +1777,21 @@ void func_800981C8(Camera *camera) {
         z++;
     }
 }
+
+/* Scratchpad work area of the terrain visibility test. */
+typedef struct {
+    VECTOR view[4];  /* 0x00: the tested quad's corners after RT */
+    s32 x0;          /* 0x40: grid corner x */
+    s32 pad44;
+    s32 z0;          /* 0x48: grid corner z */
+    u8 pad4C[0x54];
+    SVECTOR v[9];    /* 0xA0: cell corners and midpoints */
+    u8 padE8[8];
+    MATRIX local;    /* 0xF0 */
+    MATRIX world;    /* 0x110 */
+} GridScratch;
+
+#define GRID_SCRATCH ((GridScratch *)0x1F800000)
 
 /* Classify the 5x5 terrain blocks around the camera: test each block's
  * quad for visibility, and its four quarters when partly visible; blocks
@@ -2066,10 +2145,25 @@ void func_80098CC0(void) {
     }
 }
 
+/* Scratchpad work area of the terrain draw. */
+typedef struct {
+    u8 pad0[0x288];
+    u16 clut[0x40];  /* 0x288 */
+    u16 tpage[8];    /* 0x308 */
+    s32 x0;          /* 0x318 */
+    s32 pad31C;
+    s32 z0;          /* 0x320 */
+    s32 pad324;
+    SVECTOR corner[4]; /* 0x328: quarter origins */
+    u8 pad348[8];
+    MATRIX local;    /* 0x350 */
+    MATRIX world;    /* 0x370 */
+} TerrainDrawScratch;
+
 /* Draw the visible 5x5 terrain blocks around the camera: all four quarters
  * of a block, or only the quarters whose flag differs when the combined
  * flags are all set. */
-void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
+void func_8009932C(u_long *ot, s32 packets, Camera *camera) {
     TerrainDrawScratch *scratch;
     u8 *data;
     s32 row;
@@ -2132,7 +2226,7 @@ void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
-void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin) {
+void func_80099708(u32 *heights, u_long *ot, s32 packets, SVECTOR *origin) {
     SVECTOR *vertex;
     u32 *cell;
     s32 j;

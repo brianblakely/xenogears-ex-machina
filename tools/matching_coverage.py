@@ -233,7 +233,7 @@ TEMPLATES = {
 # a register for each operand %N.
 ORIGINAL_ASM = (
     # PsyQ GTE macros in the inline_c.h/gtemac.h form (psyq/inline_c.h and the
-    # local sets of battle, field, menu, ovl2143, resident and worldmap).
+    # local sets of battle, field, menu, ovl2143 and worldmap).
     # Control registers: gte_SetRotMatrix, gte_SetLightMatrix,
     # gte_SetColorMatrix, gte_SetTransMatrix, gte_SetBackColor, gte_ldopv1.
     "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $0;ctc2 $13, $1;lw $12, 8(%0);lw $13, 12(%0);"

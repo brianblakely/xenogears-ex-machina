@@ -1,16 +1,31 @@
+/* World map unit 8007DE98-80080370 (rodata 8006FD8C-800701E0, data
+ * 8009A5A0-8009A698): the director of scene mode 15 and its actors (the
+ * camera director, the flying vehicle, the falling objects, the exhaust
+ * flames and the growing objects), the set-up and leave handlers of mode 13
+ * and the sequence start of its director.
+ *
+ * func_8007C7D8's seven-entry table ends at 8006fd8c and func_8007DE98's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8007C7D8, at or before
+ * func_8007DE98. Its data opens with the tables of mode 15's set-up and leave
+ * handlers and sequence start (func_8007D918, func_8007DCE0, func_8007DE14),
+ * which the text split leaves in the preceding unit. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
 #include "worldmap.h"
-
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_8008032C();
-s32 func_80080370();
-s32 func_80080578();
-s32 func_80080600();
-s32 func_80080900();
-s32 func_80080944();
-s32 func_80080A28();
-s32 func_80080AC4();
-s32 func_80076A14();
-s32 func_80076A1C();
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* Data of the scene this director runs; its mode handlers func_8007D918 and
  * func_8007DCE0 and sequence start func_8007DE14 precede this unit. Per
@@ -43,6 +58,7 @@ SVECTOR D_8009A674[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}
  * at the end of the unit's data, so the table stays original data
  * (worldmap.classification.txt). */
 INCLUDE_ORIGINAL(".data", D_8009A68C, 0x8009A68C, 12);
+extern u16 D_8009A68C[5];
 
 /* Scene director (mode 15): func_8007A9F8's cue sequencer on the sequence
  * func_8007DE14 picks from D_8009A65C by D_8009D3D4 (states at unk54,
@@ -320,7 +336,7 @@ s32 func_8007E4E4(s32 index) {
     }
     if (D_8009D144 == 0) {
         func_80093354(&actor->position);
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 0:
@@ -443,13 +459,13 @@ s32 func_8007E4E4(s32 index) {
     }
     shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
     scratch->view.vy = shake;
-    ((s16 *)D_8009BD40)[1] += shake; /* VIEW_VECTORS[0].vy */
+    VIEW.eye.vy += shake;
     VIEW_VECTORS[1].vy += scratch->view.vy;
     return 1;
 }
 
 /* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
-void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+void func_8007EBBC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -460,7 +476,7 @@ void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setRGB0(quads, 0x3C, 0x3C, 0xC0);
         quads++;
     }
-    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+    memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
 /* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
@@ -472,9 +488,9 @@ s32 func_8007ECA4(s32 index) {
     func_800848B4(1, 3);
     objects = D_8009C620;
     actor = &D_8009BE24[index];
-    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->count, 3);
-    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->count, 3);
-    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->count, 1);
+    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->primitive_count, 3);
+    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->primitive_count, 3);
+    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->primitive_count, 1);
     D_8009C620[1].visible = 0;
     D_8009C620[1].angle.vz = 0;
     D_8009C620[1].angle.vy = 0;
@@ -491,6 +507,19 @@ s32 func_8007ECA4(s32 index) {
     actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
     return 1;
 }
+
+/* Scratchpad work area of the flight-track actor. */
+typedef struct {
+    VECTOR axis[3];    /* 0x00: forward (or scale), up, side */
+    u8 pad30[0x70];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+    u8 pad130[0x20];
+    MATRIX frame;      /* 0x150 */
+} TrackScratch;
 
 /* Flying vehicle (scene object 1): commands place it on its approach track;
  * it flies along its motion vector, stops at the landing point, trails
@@ -735,7 +764,7 @@ s32 func_8007F8AC(s32 index) {
     if (slot == 4) {
         abr = 1;
     }
-    func_8007EBBC(object, object->prims, object->def->count, abr);
+    func_8007EBBC(object, object->prims, object->def->primitive_count, abr);
     actor->motion.vx = -0x85A;
     actor->motion.vz = 0xDA6;
     actor->state = 0;
@@ -744,6 +773,17 @@ s32 func_8007F8AC(s32 index) {
     actor->wait = 0x3C;
     return 1;
 }
+
+/* Scratchpad work area of the exhaust-flame actors. */
+typedef struct {
+    VECTOR scale;      /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+} FlameScratch;
 
 /* Exhaust flame on scene object `index`: commands 1-5 stop, start or restart
  * it; it follows actor 3, emits effects 0x23/0x24 and shrinks away; done (3)
@@ -851,8 +891,8 @@ s32 func_8007FC8C(s32 index) {
 
     objects = D_8009C620;
     actor = &D_8009BE24[index];
-    func_8007A06C(&objects[9], objects[9].prims, objects[9].def->count);
-    func_8007A06C(&objects[10], objects[10].prims, objects[10].def->count);
+    func_8007A06C(&objects[9], objects[9].prims, objects[9].def->primitive_count);
+    func_8007A06C(&objects[10], objects[10].prims, objects[10].def->primitive_count);
     actor->state = 0;
     actor->position.vx = 0x1498000;
     actor->position.vy = -0x80000;
@@ -889,9 +929,9 @@ s32 func_8007FD30(s32 index) {
     if ((actor->unk54 += 0x180) > 0x7FFF) {
         actor->unk54 = 0x7FFF;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     if ((actor->unk58 -= 3) < 0) {
         actor->unk58 = 0;
         return 3;
@@ -979,10 +1019,10 @@ void func_80080218(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x84;
-    D_8006F954[0] = 2;
+    D_8006D634.map = 0x84;
+    D_8006D634.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

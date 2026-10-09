@@ -1,22 +1,25 @@
-/* Resident unit from the console character output (800366E0) to the sound
- * driver (80039E18). Its rodata opens at 0x80018B30 with the formatter's
- * digit strings; see the target yaml for the seam. */
+/* The debug console and its printf, music loading and the sound driver's
+ * start-up, banks, output modes, reverb, volumes and memory
+ * (800366e0-80039e18), GCC 2.7.2 at -G0; 800379b4 (the menu's task word) and
+ * the report printf 800379c8 are handwritten. Its rodata opens at 0x80018b30
+ * with the formatter's digit strings: 80036718's jump table (0x80018b58,
+ * 0 mod 8) follows main2.c's at 4 mod 8, so a unit starts between 800365fc
+ * and 80036718; the console output hook 800366e0 is chosen. The sound driver
+ * unit (sound.c) follows. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
 #include "psyq/libcd.h"
 #include "psyq/libgpu.h"
-#include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "resident/text.h"
-#include "resident/window.h"
-#include "resident/pad.h"
-#include "resident/console.h"
-#include "resident/sound.h"
+#include "psyq/stdarg.h"
 #include "resident/cd.h"
+#include "resident/console.h"
 #include "resident/heap.h"
-#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/text.h"
 #include "own_declarations.h"
+#include "sound_driver.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (80059394), the larger format defaults and stage file list in its .bss
@@ -266,6 +269,7 @@ s32 func_80036718(s32 target, const char *format, va_list args) {
     return count;
 }
 
+/* Set, clear and read the console's flags and its second flag word (+0x2e). */
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
 }
@@ -290,6 +294,7 @@ s16 func_80036D70(void) {
     return D_80059394->flags2E;
 }
 
+/* Set the console's character width and line height. */
 void func_80036D88(s16 value) {
     D_80059394->unk14 = value;
 }
@@ -298,7 +303,7 @@ void func_80036D98(s16 value) {
     D_80059394->unk16 = value;
 }
 
-/* Move the console cursor. */
+/* Move the console cursor: its column, then its row. */
 void func_80036DA8(s16 value) {
     D_80059394->x = value;
 }
@@ -353,6 +358,8 @@ void func_80036E4C(u16 foreground, u16 background) {
     LoadImage(&D_80059398, (u_long *)D_80050598);
 }
 
+/* The console's character width, line height, cursor column and row, and
+ * the sprites it drew this frame. */
 s16 func_80036F44(void) {
     return D_80059394->unk14;
 }
@@ -545,6 +552,7 @@ void func_80037324(u_long *ot) {
     }
 }
 
+/* Mark the console block as not owned (it is not released on closing). */
 void func_8003747C(s32 value) {
     D_800593A0 = value;
 }
@@ -690,6 +698,7 @@ INCLUDE_ASM("decomp/src/resident", func_800379B4);
 
 INCLUDE_ASM("decomp/src/resident", func_800379C8);
 
+/* The no-op entry that the stripped debug hooks share. */
 void func_800379D0(void) {
 }
 
@@ -740,53 +749,12 @@ s32 func_800379D8(s32 stage, s32 variant, u8 **stage_file, s32 *unused, u8 **sce
     return result;
 }
 
-/* A voice whose volume pair follows the output mode (D_80059518). */
-typedef struct SoundModeVoice {
-    u16 flags;         /* bit 0: in use */
-    u8 unk2[0x10];
-    u16 volume;
-    u8 unk14[0x22];
-    s16 unk36;
-    s16 left;
-    s16 right;
-    u8 unk3C[0x26];
-    s16 unk62;
-    s16 unk64;
-    s16 unk66;
-} SoundModeVoice;
-
-extern SoundModeVoice *D_80059518;
-extern SpuVolume D_8005940C;                   /* reverb depth */
-extern SoundTrack *D_80059564;
-s32 func_80038824(void);
 void func_8003885C(s32 volume);
 void func_80038DF4(void);
-
-extern void *D_80059458;     /* the SPU transfer ring */
-extern s32 D_800594E4;       /* random state */
-extern SoundSeq *D_800595D8; /* the sound effect channels */
-extern u32 D_800594FC;       /* voices held */
-extern u32 D_80059550;       /* voices to key off */
-extern u32 D_80059554;       /* voices whose registers changed */
-extern u32 D_80059504;       /* effect start clock */
-extern s32 D_80059514;
-extern u8 D_80065B0C[0x6300]; /* the driver memory pool */
-extern u8 D_8006FAC8[];      /* the SPU memory management table */
-extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
-extern s32 D_800595A4;       /* the zeroed transfer buffer */
-s32 func_8003C020(void);    /* the driver tick */
-void func_8003BB64(void);    /* SPU transfer callback */
-void func_8003BFA0(void);    /* SPU interrupt callback */
-void func_8003E700(void);
-SoundSeq *func_8003B148(s32 count);
 void func_80038EC0(u32 start, s32 size);
 void func_80039360(void);
-void func_800386C4(s32 mode);
 void func_80038DB4(s32 reverb, s32 mix);
 void func_80038C68(s32 volume, s32 frames);
-void func_80038D18(s32 volume, s32 frames);
-void func_8003885C(s32 volume);
-void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback);
 
 /* Start the sound driver (error 0x28 when it runs): memory pools, the SPU
  * memory map and transfer ring, the tick event on root counter 2 and the
@@ -913,6 +881,7 @@ void func_80037F44(void) {
     }
 }
 
+/* Disable the driver's tick event once. */
 void func_80037F88(void) {
     if (D_8005957C & 1) {
         DisableEvent(D_800595BC);
@@ -920,9 +889,7 @@ void func_80037F88(void) {
     }
 }
 
-SoundSequence *func_800383EC(s32 key);
 void func_80038264(s32 address, s32 size);
-s32 func_8003827C(u8 *data, s32 size);
 
 /* Load a wave bank: allocate SPU memory for its samples (800381F4),
  * transfer them and add a copy of its header to the loaded banks. Returns
@@ -1019,9 +986,7 @@ s32 func_800381F4(SoundSequence *bank, s32 mode) {
     func_800395B8(bank->size, bank->address, bank->volume);
 }
 
-extern s32 D_80059584;
-extern s32 D_80059588;
-
+/* Start a streamed wave bank's transfer: its SPU address and size. */
 void func_80038264(s32 a, s32 b) {
     D_80059584 = a;
     D_80059588 = b;
@@ -1073,7 +1038,7 @@ void func_80038310(SoundSequence *bank) {
     func_80039144(bank);
 }
 
-/* The playing sequence with `key`, or NULL. */
+/* The loaded wave bank with `key`, or NULL. */
 SoundSequence *func_800383EC(s32 key) {
     SoundSequence *sequence;
 
@@ -1153,6 +1118,7 @@ void func_8003852C(SoundBank *bank) {
     EnableEvent(D_800595BC);
 }
 
+/* Stop the effect channels and forget the loaded banks. */
 void func_80038624(void) {
     func_80039FF8();
     D_80059440 = NULL;
@@ -1173,6 +1139,7 @@ SoundBank *func_8003864C(SoundBank *bank, s16 id) {
     return entry;
 }
 
+/* Resume every paused track and stop the effect channels. */
 void func_8003869C(void) {
     func_80039CC4();
     func_80039FF8();
@@ -1183,7 +1150,7 @@ void func_8003869C(void) {
  * the volumes: master and CD, reverb depth, every sequence, the CD mix and
  * the mode voice. */
 void func_800386C4(s32 mode) {
-    SoundTrack *track;
+    SoundSeq *seq;
     SoundModeVoice *voice;
     s16 volume;
 
@@ -1203,8 +1170,8 @@ void func_800386C4(s32 mode) {
     }
     func_80038DF4();
     SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
-    for (track = D_80059564; track != NULL; track = track->next) {
-        func_8003E680(0x100, (SoundSeq *)track);
+    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+        func_8003E680(0x100, seq);
     }
     if (D_8005957C & 0x4000) {
         func_8003885C(D_8005A3C0.cd_request);
@@ -1268,6 +1235,7 @@ void func_8003885C(s32 volume) {
     CdMix((CdlATV *)&D_80059530);
 }
 
+/* Whether sequences set the reverb (driver flag 0x1000). */
 void func_800388D4(s32 enable) {
     if (enable != 0) {
         D_8005957C |= 0x1000;
@@ -1276,6 +1244,7 @@ void func_800388D4(s32 enable) {
     }
 }
 
+/* Enable or disable a bank (its flag 1). */
 void func_8003890C(SoundBank *bank, s32 enable) {
     if (enable != 0) {
         bank->flags &= ~1;
@@ -1284,7 +1253,6 @@ void func_8003890C(SoundBank *bank, s32 enable) {
     }
 }
 
-extern s32 D_800508E8[10]; /* reverb work area size of each reverb type (sound.c) */
 void func_80038AD4(s32 address, s32 size);
 
 /* Compiled-out debug trace of the reverb work area allocation. */
@@ -1344,9 +1312,6 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         SpuSetReverbModeFeedback(feedback);
     }
 }
-
-extern s32 D_800595DC; /* next SPU address to clear */
-extern s32 D_800595E0; /* bytes left to clear */
 
 /* Clear `size` bytes of SPU memory at `address` (the reverb work area)
  * from a zeroed buffer, allocated on first use, in chained transfers. */
@@ -1471,8 +1436,6 @@ void func_80038E6C(s32 volume, SpuVolume *out, s32 channel) {
         }
     }
 }
-
-extern s32 D_8005951C;
 
 /* Make [start, start + size) the driver memory pool, aligned to 16 bytes. */
 void func_80038EC0(u32 start, s32 size) {
@@ -1841,6 +1804,7 @@ void func_80039748(u32 address, u8 value) {
     }
 }
 
+/* Always 0. */
 s32 func_8003977C(void) {
     return 0;
 }
@@ -2024,6 +1988,7 @@ void func_80039C4C(SoundTrack *track) {
     func_8003B060((SoundSeq *)track);
 }
 
+/* Fade a sequence out over `c` frames (error 5 without one). */
 void func_80039C8C(s32 a, s32 c) {
     if (a == 0) {
         func_8003F6B0(5);
@@ -2035,16 +2000,17 @@ void func_80039C8C(s32 a, s32 c) {
 
 /* Resume every paused track (flag 1). */
 void func_80039CC4(void) {
-    SoundTrack *track;
+    SoundSeq *seq;
 
-    for (track = D_80059564; track != NULL; track = track->next) {
-        if (track->flags & 1) {
-            track->flags &= 0x7FFF;
-            func_8003B060((SoundSeq *)track);
+    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+        if (seq->flags & 1) {
+            seq->flags &= 0x7FFF;
+            func_8003B060(seq);
         }
     }
 }
 
+/* An empty driver entry. */
 void func_80039D24(void) {
 }
 
@@ -2074,9 +2040,12 @@ s32 func_80039D78(s32 count) {
 }
 
 
-void func_80039DB8(s32 channel) {
+/* Play `effect` (its bank id in the high half) on the last two effect
+ * channels with priority 0x80, at volume 0x60 and centre pan, while
+ * effects are on (as 80039e18). */
+void func_80039DB8(s32 effect) {
     if (D_8005957C & 0x800) {
         D_80059404 = 2;
-        func_8003B644((D_80059478 - 2) | 0x8000, channel, 0x6000, 0x4000);
+        func_8003B644((D_80059478 - 2) | 0x8000, effect, 0x6000, 0x4000);
     }
 }

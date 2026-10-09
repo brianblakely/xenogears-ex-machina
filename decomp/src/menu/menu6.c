@@ -1,11 +1,28 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
+/* menu6: text 80088BFC-800891C0, rodata 80070284-800706E8 (strings only),
+ * data 80091964-80091C0C, variables 800927F0-80092800. The menu mode's
+ * entry and frame loop: the mode-task table, the start-up, the debug
+ * meters, and the list of the 49 gears. Its .text opens with the task
+ * table D_80088BFC, a data word between menu5's last return and
+ * func_80088C00 that no other unit keeps in .text (menu.classification.txt),
+ * and the gear list's strings open its rodata. */
+#include "common.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "display.h"
+#include "effects.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "select.h"
 #include "sound.h"
-#include "brain.h"
-#include "window.h"
-#include "gte.h"
+#include "task.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -109,7 +126,7 @@ void func_80088C28(void) {
 
 /* Set up the given window record's defaults. */
 void func_80088CBC(s32 index) {
-    Window *window = &D_8009A0D8[index];
+    DisplayBuffer *window = &D_8009A0D8[index];
 
     setlen(&window->sprite, 3);
     setcode(&window->sprite, 0x7D);
@@ -162,8 +179,8 @@ extern char D_800706D4[]; /* "RATE   : %3dfps\n" */
  * shown, debug meters). The original reads the tick counter at entry but
  * leaves `last` uninitialized until the first frame's rate calculation. */
 void func_80088E90(void) {
-    DispEnv disp;
-    Task *task;
+    DISPENV disp;
+    TaskContext *task;
     s32 last;
     s32 fps;
     s32 load;
@@ -215,7 +232,7 @@ frame:
     func_8008AC8C();
     DrawSync(0);
     PutDispEnv(&disp);
-    DrawOTagEnv(D_80092938, D_80092868);
+    DrawOTagEnv((u_long *)D_80092938, &D_80092868->draw);
     goto frame;
 }
 

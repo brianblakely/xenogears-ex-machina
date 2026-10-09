@@ -796,7 +796,7 @@ def scene_listing(disc: int) -> None:
 
 # Arena move frame events -----------------------------------------------------
 #
-# Layouts from decomp/src/menu/menu.h, as (offset, size, signed).
+# Layouts from decomp/src/menu/actor.h, as (offset, size, signed).
 FRAME_EVENT = {"first": (0, 1, False), "last": (1, 1, False), "spec": (2, 2, True)}
 HIT_SPEC = {
     "unk0": (0, 1, False),  # the kind

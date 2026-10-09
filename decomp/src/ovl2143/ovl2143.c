@@ -14,8 +14,31 @@
  * runner 800799d4 loads directory 0x10 file 0xc, a byte-identical copy, at
  * 0x1dc000, and the resident's debug menu start 8001c1a8 loads file 0x6b9 at
  * 0x801dc000. Built with GCC 2.6.3 (see func_801DF7A8) and ASPSX-style
- * checked divisions. */
-#include "ovl2143.h"
+ * checked divisions.
+ *
+ * The whole image is this one unit: rodata 801DC000-801DC22C, text
+ * 801DC22C-801E8590, data 801E8590-801E85CC and the module state to
+ * 801E86B4; its rodata's jump tables keep one phase (padded twice). Its
+ * declarations are split by subsystem: model hierarchies and tweens
+ * (hierarchy.h), particles and channels (particles.h), image animations
+ * (image_anim.h), records24 surfaces (surface.h) and actors (actor.h). */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "gte.h"
+#include "hierarchy.h"
+#include "particles.h"
+#include "image_anim.h"
+#include "surface.h"
+#include "actor.h"
 
 /* Copies of the battle overlay's extra file bases (800c3530) and gear file
  * table (800c3508, base and variant count per gear); this module never reads
@@ -30,7 +53,7 @@ INCLUDE_ORIGINAL(".data", D_801E85A4, 0x801E85A4, 40);
  * after D_801E8698, and the file ends with the rest of D_801E86B0's. */
 s32 D_801E85CC;
 u8 D_801E85D0[36]; /* never read */
-ModelList D_801E85F4[8];
+GroupModels D_801E85F4[8];
 s32 D_801E8634;
 u8 *D_801E8638;
 u16 D_801E863C;
@@ -46,17 +69,17 @@ u16 D_801E86B0;
 
 /* Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */
-ModelList *func_801DC22C(u8 *group, ModelList *list) {
+GroupModels *func_801DC22C(u8 *group, GroupModels *list) {
     u32 count;
     u32 i;
 
     func_80032498(4, 0);
-    count = func_8002C3E8(group);
+    count = func_8002C3E8((ModelGroup *)group);
     list->models = func_80031BDC(count * 4, 0);
     list->count = count;
     if (list->models != NULL) {
         for (i = 0; i < count; i++) {
-            list->models[i] = (ModelRecord *)(group + 0x10 + i * 0x38);
+            list->models[i] = (SpriteModel *)(group + 0x10 + i * 0x38);
         }
     }
     return list;
@@ -66,7 +89,7 @@ ModelList *func_801DC22C(u8 *group, ModelList *list) {
  * model index past the group; each model node gets its packets for both
  * buffers (optionally after setting 8002cc10/8002cc74 parameters). Returns the
  * nodes, or NULL when there are none or an allocation fails. */
-ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
+ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3) {
     HierarchyLink *link;
     ModelPart *parts;
@@ -144,7 +167,7 @@ ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 c
                 func_8002CC74(param2, param3);
             }
             func_8002C8CC(group->models[model], part->packets[0], mode);
-            memcpy(part->packets[1], part->packets[0], group->models[model]->packet_bytes);
+            memcpy(part->packets[1], part->packets[0], group->models[model]->packet_size);
             part->rot.vx = 0;
         } else {
             part->packets[0] = NULL;
@@ -340,6 +363,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     return count;
 }
 
+/* An empty function, kept in its place. */
 void func_801DCC34(void) {
 }
 
@@ -347,8 +371,8 @@ void func_801DCC34(void) {
  * root's light and view transforms (MulMatrix0 into the light matrix,
  * CompMatrix into the rotation/translation) before its buffer's packets are
  * drawn (8002c700). */
-void func_801DCC3C(ModelList *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 arg4,
-                   s32 arg5, s32 buffer) {
+void func_801DCC3C(GroupModels *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 mode,
+                   u32 *ot, s32 buffer) {
     MATRIX *light_root = (MATRIX *)0x1F800020;
     MATRIX *view_root = (MATRIX *)0x1F800040;
     MATRIX *m = (MATRIX *)0x1F800000;
@@ -367,7 +391,7 @@ void func_801DCC3C(ModelList *group, ModelPart *parts, MATRIX *view, MATRIX *lig
             CompMatrix(view_root, &parts->world, m);
             SetRotMatrix(m);
             SetTransMatrix(m);
-            func_8002C700(group->models[parts->model], parts->packets[buffer], arg5, arg4);
+            func_8002C700(group->models[parts->model], parts->packets[buffer], ot, mode);
         }
     }
 }
@@ -394,13 +418,13 @@ void func_801DCD8C(ModelPart *parts) {
 
 /* Release a model list; with `release_models` each model's own packets too
  * (8002cbbc). */
-void func_801DCE18(ModelList *list, s32 release_models) {
+void func_801DCE18(GroupModels *list, s32 release_models) {
     u32 i;
 
     if (list != NULL) {
         for (i = 0; i < list->count; i++) {
             if (list->models != NULL && list->models[i] != NULL && release_models) {
-                func_8002CBBC(list->models[i]);
+                func_8002CBBC((ModelBuffer *)list->models[i]);
             }
         }
         if (list->models != NULL) {
@@ -430,7 +454,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     SVECTOR v;
     VECTOR front, back;
     s32 depth, depth2;
-    ModelList *models;
+    GroupModels *models;
     ModelPart *part;
     ModelPart *parts;
     u16 scale;
@@ -558,7 +582,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         }
         SetRotMatrix(scratch);
         SetTransMatrix(scratch);
-        func_8002C700(models->models[part->model], part->packets[buffer], (s32)ot, mode);
+        func_8002C700(models->models[part->model], part->packets[buffer], ot, mode);
     }
     record = actor->records24;
     for (i = 0; i < actor->count10D; record++, i++) {
@@ -1927,7 +1951,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
             rect.y = y;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, anim->pixels);
+            StoreImage(&rect, (u_long *)anim->pixels);
             DrawSync(0);
             break;
         case 2:
@@ -1943,7 +1967,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
             rect.y = y2;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, anim->pixels2);
+            StoreImage(&rect, (u_long *)anim->pixels2);
             DrawSync(0);
             break;
         case 2:
@@ -2059,13 +2083,13 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
         case 0:
             func_80026F44(anim->h12, frame, anim->work, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 1:
             func_80026FE8(anim->h12, frame, anim->work, anim->pixels2, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 4:
@@ -2126,7 +2150,7 @@ void func_801E165C(ImageAnim *anim) {
     if (anim->active) {
         if (anim->pixels != NULL) {
             if (anim->mode < 4) {
-                LoadImage(&anim->rect, anim->pixels);
+                LoadImage(&anim->rect, (u_long *)anim->pixels);
             }
             func_800320E8(anim->pixels);
             anim->pixels = NULL;
@@ -3766,13 +3790,13 @@ void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
  * 16.16. */
 s32 func_801E5CD8(Actor *actor, s32 which) {
     if (which == 0) {
-        return D_8005919C->h14 << 16;
+        return D_8005919C->bank << 16;
     } else if (which != 1) {
         if (which == 2) {
-            return actor->ownerB4->view->h14 << 16;
+            return actor->ownerB4->bank->id << 16;
         }
     } else {
-        return actor->ownerB0->view->h14 << 16;
+        return actor->ownerB0->bank->id << 16;
     }
 }
 
@@ -4250,20 +4274,21 @@ void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
 }
 
 /* Create a resident sprite linked to an actor node. */
-void func_801E6E48(s32 a, s32 b, s32 c, s16 value, s16 scale, SpriteSpec *spec, Actor *actor) {
-    Sprite *sprite;
+void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value, s16 scale,
+                   SpriteSpec *spec, Actor *actor) {
+    SpriteTask *sprite;
     SpriteLink *link;
 
-    sprite = func_80023FD8(b, a, c, 0x18);
-    func_80021FE0(&sprite->body, value);
-    func_800223B0(&sprite->body, value);
-    func_80022000(&sprite->body, scale);
-    link = (SpriteLink *)((u8 *)sprite + sprite->link);
+    sprite = func_80023FD8(index, source, position, sizeof(SpriteLink));
+    func_80021FE0(&sprite->sprite, value);
+    func_800223B0(&sprite->sprite, value);
+    func_80022000(&sprite->sprite, scale);
+    link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
     link->actor = actor;
     link->node = spec->node;
     if (spec->linked) {
-        link->update = func_8001CD7C(sprite);
-        func_8001CD6C(sprite, func_801E6F64);
+        link->update = func_8001CD7C(&sprite->task);
+        func_8001CD6C(&sprite->task, (void (*)(Task *))func_801E6F64);
         link->offset.vx = spec->offset[0];
         link->offset.vy = spec->offset[1];
         link->offset.vz = spec->offset[2];
@@ -4273,12 +4298,12 @@ void func_801E6E48(s32 a, s32 b, s32 c, s16 value, s16 scale, SpriteSpec *spec, 
 
 /* Sprite update: place the sprite at its offset through its actor node,
  * then run its own update. */
-void func_801E6F64(Sprite *sprite) {
+void func_801E6F64(SpriteTask *sprite) {
     VECTOR world;
     SpriteLink *link;
     MATRIX *m;
 
-    link = (SpriteLink *)((u8 *)sprite + sprite->link);
+    link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
     m = SCRATCH_MATRIX;
     if (link->node != 0) {
         CompMatrix(&link->actor->parts->local, &link->actor->parts[link->node].world, SCRATCH_MATRIX);
@@ -4293,10 +4318,10 @@ void func_801E6F64(Sprite *sprite) {
     if (link->follow) {
         world.vy = link->actor->h60;
     }
-    sprite->body.x = world.vx << 16;
-    sprite->body.y = world.vy << 16;
-    sprite->body.z = world.vz << 16;
-    link->update(sprite);
+    sprite->sprite.x = world.vx << 16;
+    sprite->sprite.y = world.vy << 16;
+    sprite->sprite.z = world.vz << 16;
+    link->update(&sprite->task);
 }
 
 /* Set or (flag bit 5) add to a node's rotation (mode 0), position (1) or
@@ -4420,7 +4445,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         ActorDesc *header;
         s16 *p;
     } desc;
-    SoundBlock *bank;
+    SoundOwner *sounds;
     ScriptBlock *block;
     void *images;
     u8 *group;
@@ -4449,9 +4474,9 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         block = script->script;
         func_8003342C(block);
         func_8003342C(block->locals);
-        bank = (SoundBlock *)script->owner;
-        if (bank->end != bank->bank && func_8003864C(bank->bank, 0) == 0) {
-            func_80038428(bank->bank);
+        sounds = script->owner;
+        if (sounds->end != sounds->bank && func_8003864C(sounds->bank, 0) == 0) {
+            func_80038428(sounds->bank);
             actor->b62 = 1;
         }
     }
@@ -4578,8 +4603,8 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         func_801E35D0(actor, actor, &D_801E86A8, 0);
     }
     if (!(flags & 2)) {
-        func_8002C644(D_801E8638);
-        func_8002C4BC(D_801E8638);
+        func_8002C644((ModelGroup *)D_801E8638);
+        func_8002C4BC((ModelGroup *)D_801E8638);
         size = func_80031894(D_801E8638);
         compact = func_80031BDC(size, 0);
         memcpy(compact, D_801E8638, size);
@@ -4660,7 +4685,7 @@ void func_801E8030(s32 index) {
             func_801DCE18(D_801E8670[index]->models, 1);
         }
         if (D_801E8670[index]->b62) {
-            func_8003852C(D_801E8670[index]->ownerB0->view);
+            func_8003852C(D_801E8670[index]->ownerB0->bank);
         }
         if (D_801E8670[index]->blockAC != NULL) {
             func_800320E8(D_801E8670[index]->blockAC);

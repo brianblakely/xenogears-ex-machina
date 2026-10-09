@@ -77,7 +77,7 @@ class LayoutTests(unittest.TestCase):
         self.assertIn("archive[0x25]", loader)
         self.assertIn(f"(u8 *)block + 0x{record * FIRST:x}, 0x{record * COUNT:x})", loader)
         lists = function("decomp/src/ovl2615/ovl2615.c", "void func_801E4CD0(void) {")
-        self.assertIn(f"D_8006F3D0[i] >= {FIRST} && D_8006F3D0[i] < {BATTLE_END}", lists)
+        self.assertIn(f"D_8006D634.weaponIds[i] >= {FIRST} && D_8006D634.weaponIds[i] < {BATTLE_END}", lists)
         offered = function("decomp/src/slot39/slot39_801DBE54.c", "s32 func_801DE5CC(")
         self.assertIn(f"D_8006D634.gearPartIds[i] >= {FIRST}", offered)
         self.assertIn(f"D_8006D634.weaponIds[i] >= {FIRST}", offered)

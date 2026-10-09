@@ -1,11 +1,22 @@
 #ifndef DEBUG595_DEBUG595_H
 #define DEBUG595_DEBUG595_H
 
+/* The field debug monitor: its debug lines, CPU-time marks and the field
+ * overlay's objects it reads and edits, by its own views of them (the
+ * field's own headers are not shared). */
+
 #include "common.h"
 
 #include "psyq/libgte.h"
 #include "psyq/libgpu.h"
 #include "psyq/libetc.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/sound.h"
 
 /* One debug line: a segment in its own frame, drawn in both buffers. */
 typedef struct {
@@ -72,15 +83,9 @@ typedef struct {
     s16 rot_angle;            /* 0x76 ROTANGLE */
 } ParticleEmitter;            /* 0x78 */
 
-/* Resident helpers. */
-void func_800379C8(const char *format, ...); /* debug text print */
-void func_80036DC8(s32 r, s32 g, s32 b);     /* debug text colour */
-MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m); /* RotMatrix */
-void func_80037324(u32 *ot);
-
 /* Field state. */
 extern s32 D_800C268C;
-extern u32 *D_800C426C;  /* field ordering tables */
+extern u_long *D_800C426C; /* the field's current draw block, read as its ordering table words */
 extern s32 D_800ADB08;   /* current draw buffer */
 extern MATRIX D_800AFA64;
 extern u16 D_800AFEA0;   /* buttons held (shoulder bits) */
@@ -88,9 +93,6 @@ extern u16 D_800C3908;   /* buttons pressed or repeating */
 extern u16 D_800AFE9C;   /* buttons held */
 extern s32 D_800B0044;   /* particle emitter being edited */
 extern ParticleEmitter D_800B02CC[8];
-extern s32 D_80065850;   /* camera control mode */
-extern s32 D_80065854;   /* analog steps */
-extern s32 D_80065858;
 extern s32 D_800ADB94;   /* camera distance */
 extern s32 D_800ADB98;
 extern s32 D_800AF984;
@@ -102,8 +104,8 @@ extern u16 D_800AF9FE;
 
 extern s32 D_800ADB9C;   /* scanline count at the last mark */
 
-s32 func_80281B90(u32 *ot);
-void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer);
+s32 func_80281B90(u_long *ot);
+void func_802814D4(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer);
 
 /* Particle emitter editor. */
 void func_80284354(s32 row, s32 cursor, s32 blink);
@@ -164,40 +166,6 @@ typedef struct {
     u8 unkD;
 } MonitorTriangle;
 
-/* One 0xa4-byte character slot of the game state. */
-typedef struct {
-    u8 unk0[0x4C];
-    u16 hp;            /* 4c */
-    u8 unk4E[2];
-    u16 mp;            /* 50 */
-    u8 unk52[0x4E];
-    u8 gear;           /* a0 */
-    u8 unkA1[3];
-} MonitorSlot;
-
-/* Resident persistent game state (*8005a39c); the members printed. */
-typedef struct {
-    u8 unk0[0x26C];
-    MonitorSlot slots[11];   /* 026c */
-    u8 unk978[0x1924 - 0x978];
-    s32 gold;                /* 1924 */
-    u8 unk1928[0x1D30 - 0x1928];
-    u16 members;             /* 1d30 */
-    u16 unmasked;            /* 1d32 */
-    u8 unk1D34[0x1E00 - 0x1D34];
-    u8 acc_count[0xC8];      /* 1e00 */
-    u8 acc_id[0xC8];         /* 1ec8 */
-    u8 item_count[0x96];     /* 1f90 */
-    u8 item_id[0x96];        /* 2026 */
-    u8 unk20BC[0x22B1 - 0x20BC];
-    u8 ride[3];              /* 22b1 */
-    u8 unk22B4[0x2318 - 0x22B4];
-    u16 locked;              /* 2318 */
-} MonitorState;
-
-extern MonitorState *D_8005A39C;
-extern s32 D_80062590[3];      /* party slots (0xff empty) */
-extern s32 D_8005A444[3];      /* party members' actors */
 /* The field's object tables: descriptor count and list, and the walkmesh
  * triangles of each layer. */
 typedef struct {
@@ -215,13 +183,6 @@ extern s16 D_800ADB02;
 extern s32 D_800ADAFC;
 extern s32 D_800ADBA0;         /* CPU time */
 extern s32 D_800ADBA4;         /* GPU time */
-extern s32 D_80059578;         /* polygons */
-extern s32 D_800595C0;         /* polygon limit */
-extern void *D_80059558;       /* playing sequences */
-extern void *D_80059440;
-extern s32 D_8004F338;         /* music */
-extern s32 D_8004F33C;         /* wave bank */
-extern s32 D_8004F34C;         /* map number */
 extern u16 D_800C3900;         /* buttons pressed */
 extern u16 D_800C3A68;         /* scenario flag */
 extern Fixed D_800AF880[3];    /* camera eye */
@@ -237,9 +198,6 @@ extern s16 D_800B2198[2];      /* fog near, far */
 extern s16 D_800B218E;
 extern s32 D_800B2298;         /* encounter timer */
 extern s32 D_800B229C;         /* encounter number */
-extern u8 D_80065ADC[16];
-s32 func_80032340(void);       /* free heap size */
-void func_8003278C(s32 mode, s32 top, s32 step, s32 flags); /* heap monitor */
 void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 void func_80073E38(void);
 void func_8008E718(void);
