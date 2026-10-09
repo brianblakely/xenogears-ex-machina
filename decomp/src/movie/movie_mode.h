@@ -129,40 +129,13 @@ typedef struct MovieBuffer {
     u8 frame[0x24];
 } MovieBuffer;
 
-extern MovieBuffer *D_80077120; /* buffer being drawn */
-extern MovieBuffer D_80077124[2];
+/* The unit's own variables (its .data and .bss) are defined in movie.c. */
 
-/* Debug statistics (the unit's .data is defined in movie.c). The .bss starts
- * at 80076f3c with these counters; the decoded image ends 7 bytes into them. */
-extern s32 D_80076F3C[16];      /* reads per result class */
-extern u8 D_80076F84[8];        /* CD command result */
-extern s32 D_8007700C;
 extern u8 *D_8004FDF0;          /* disc directory records, 7 bytes each */
 
-/* Menu backdrop: each corner's color fades from one random color to the
- * next over a random number of frames. */
-extern CVECTOR D_80076F8C[4];   /* from */
-extern CVECTOR D_80076F9C[4];   /* to */
-extern s32 D_80076FAC[4];       /* frames into the fade */
-extern s32 D_80076FBC[4];       /* frames of the fade */
-extern CVECTOR D_80076FCC[4];   /* menu frame: from */
-extern CVECTOR D_80076FDC[4];   /* to */
-extern s32 D_80076FEC[4];
-extern s32 D_80076FFC[4];
+/* Menu backdrop and frame quads. */
 void SetPolyG4(POLY_G4 *p);
 void SetSemiTrans(void *p, s32 abe);
-
-/* The playback camera (unused by the movie path). */
-extern VECTOR D_8007702C;                      /* eye */
-extern VECTOR D_8007703C;                      /* target */
-extern s32 D_8007704C;                         /* roll */
-extern MATRIX D_80077050;                      /* world to screen */
-extern MATRIX D_80077070;                      /* light colors */
-extern MATRIX D_80077090;                      /* light directions */
-extern SVECTOR D_800770B0;                     /* camera rotation */
-extern MATRIX D_800770B8;                      /* camera translation */
-extern MATRIX D_800770D8;                      /* camera rotation */
-extern MATRIX D_800770F8;
 
 /* The header that starts each movie (STR) sector. */
 typedef struct MovieSector {
@@ -178,36 +151,13 @@ char *func_80028998(s32 file); /* a file's host name */
 s32 func_800289D0(s32 file);   /* a file's first sector */
 
 /* Menu. */
-extern s32 D_80077118;          /* cursor */
-extern s32 D_800773B0;          /* monitor shown */
-extern s32 D_80077394;          /* statistics shown */
 void *func_80028570(char *name, s32 mode);  /* load a host file */
 void func_800320E8(void *block);            /* release a heap block */
 void func_80037FD8(void *bank, s32 arg1);   /* transfer a sound bank */
 s16 func_8003BDFC(s32 arg0);                /* sound transfer busy */
 
 /* Movie playback. */
-extern s32 D_80077010;          /* last frame the library loaded */
-extern s32 D_80077014;          /* 1: stop; 2..5: frames until then */
-extern s32 D_80077018;          /* buffer the frame went to */
-extern s32 D_8007701C;          /* buffer on display */
-extern s32 D_80077020;          /* decoding paused */
-extern s32 D_80077024;          /* the first buffer's y */
-extern s32 D_80077028;          /* buttons do not end the movie */
-extern s32 D_8007711C;          /* movie index */
-extern s32 D_80077398;          /* XA channel */
-extern s32 D_8007739C;          /* last frame */
-extern s32 D_800773A0;          /* rows */
-extern s32 D_800773A4;          /* first frame */
-extern s32 D_800773A8;          /* start sector */
-extern s32 D_800773AC;          /* buttons */
-extern s32 D_800773B4;          /* previous buttons */
-extern s32 D_80077438;          /* split display */
-extern s32 D_80077448;          /* movie kind */
 extern s32 D_801D68B4;          /* movie library: split display */
-
-extern s32 D_800773B8[32];      /* VSync(1) before and after each decode step */
-extern s32 D_80077454;          /* library output mode (bit 0: 24-bit) */
 extern const RECT D_800704E0;   /* the screen area */
 
 /* Movie library (disc file 19 at 0x801d3000, see decomp/src/mdec). */
@@ -233,8 +183,6 @@ typedef struct StreamEntry {
     s32 *dest;
 } StreamEntry;
 
-extern s32 D_80076F7C;
-extern s32 D_80076F80;
 s32 *func_80028B14(void);             /* next arrived stream chunk */
 void func_8002945C(void *chunk);      /* release a stream chunk */
 s32 func_80028F30(s32 *arg0, s32 *arg1);
@@ -245,7 +193,6 @@ void func_80071C34(s32 command);
 s32 func_80074AF0(void);
 
 /* FAT check. */
-extern s32 D_8007744C;                           /* buffer index */
 void func_800284B4(s32 *directory, s32 *offset); /* current directory */
 void func_8003700C(const char *format, ...);     /* debug font print */
 void func_8003278C(s32 a, s32 value, s32 c, s32 d);
@@ -287,10 +234,6 @@ extern u8 D_8004FE44[4];
 extern u16 D_80062514;          /* the requested movie's last frame */
 extern s16 D_8005A4B8;
 extern s32 D_801E89D4;          /* movie library: frames skipped */
-extern s32 D_80077440;          /* menu shown */
-extern s32 D_80077444;          /* start frame: 1 changed, 2 sought */
-extern s32 D_8007743C;          /* end frame: 0 changed, 1 found, 2 not found */
-extern s32 D_80077450;          /* disc mode: 0, -1 or host */
 void func_80032498(s32 arg0, s32 arg1);
 void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9,
                    s32 a10); /* debug font setup */
