@@ -2,14 +2,19 @@
  * A 3D scene module: up to ten actors (D_801E8670), each a model hierarchy
  * (0x7c-byte nodes built from a relocated model group, 8002c3e8/8002cb54/
  * 8002c8cc) with rotation/movement tweens from a 0x14-byte slot pool, a
- * 16-particle pool of textured quads, and actor scripts. It drives the GTE
- * directly (RotMatrix/CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and
- * 801e0398) and uses the resident heap (80031bdc/800320e8, tag 4), libgpu
- * and sound effect banks (8003852c). It has no strings. The coverage census
- * runs it only on the title -> New Game routes (sound-mode scenarios), so it
- * is presumably part of the opening scene; no resident or overlay code in
- * the split images names 0x801dc000 directly (loaded as a file). Built with
- * GCC 2.6.3 (see func_801DF7A8) and ASPSX-style checked divisions. */
+ * 16-particle pool of textured quads, and actor effect scripts (801e39f0,
+ * docs/scripts/battle-effect-vm.md). It drives the GTE directly (RotMatrix/
+ * CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and 801e0398) and uses the
+ * resident heap (80031bdc/800320e8, tag 4), libgpu and sound effect banks
+ * (8003852c). It has no strings. It is directory (4, 0) file 0x6b9, the
+ * field's 801e module: field 80077884 loads it with the model file pair
+ * 0x6ba/0x6bb + id of each layer that field actors take. The Gear parts shop
+ * (menu screen 5, ovl2602) draws its gear models through it (801cf9bc loads
+ * the pair, 801cfab8 makes the layer); for that screen the field's menu
+ * runner 800799d4 loads directory 0x10 file 0xc, a byte-identical copy, at
+ * 0x1dc000, and the resident's debug menu start 8001c1a8 loads file 0x6b9 at
+ * 0x801dc000. Built with GCC 2.6.3 (see func_801DF7A8) and ASPSX-style
+ * checked divisions. */
 #include "ovl2143.h"
 
 /* Copies of the battle overlay's extra file bases (800c3530) and gear file
