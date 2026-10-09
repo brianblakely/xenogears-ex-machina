@@ -166,3 +166,9 @@ maps are identical to Disc 1's.
   its button test live (`v0050` 0), so it depends on actor 56 running event 1
   and the field's input mask there; a capture in map 488 would settle it.
 - The bounds of variable `a6` indexes: the sweep follows consecutive jumps.
+- Whether the gear part durability bytes reach the words of ext `d1` and `9f`.
+  The battle (`func_80080160`, `func_80093B08`, `func_8009D3A0`,
+  `func_8009E788`) and the field menu (slot39 `func_801DF0D4`) index them by a
+  part slot from the address of `+22b6` (`D_8006F8EA[slot]`), so slots 0 and 1
+  would be that flag word and slots 0x62 and 0x63 `+2318`. The slots' range is
+  not traced here.
