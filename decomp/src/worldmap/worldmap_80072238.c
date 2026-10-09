@@ -217,7 +217,7 @@ ScriptOp D_8009A3C0[12] = {
 void func_80072238(void) {
     RECT rect;
     ActorSpawn *spawn;
-    void *seq;
+    SoundSeq *seq;
     void *data;
     s32 file;
     s32 i;
@@ -252,10 +252,10 @@ void func_80072238(void) {
         func_8001B66C();
     } else {
         func_80039CC4();
-        func_800399D4(D_80062528);
-        seq = D_8004F2FC;
-        D_8004F2FC = NULL;
-        D_80062528 = seq;
+        func_800399D4((SoundSeq *)D_80062528);
+        seq = (SoundSeq *)D_8004F2FC;
+        D_8004F2FC = 0;
+        D_80062528 = (s32)seq;
     }
     if ((u16)D_8006EE54.unk6A != 0) {
         func_80073398();
@@ -310,8 +310,8 @@ void func_80072238(void) {
         }
         memcpy(D_80062648, data, func_800288EC(file));
         seq = func_80039850(&D_80062648_sequence);
-        D_80062528 = seq;
-        func_80039A80(D_80062528, 0x7F, 0);
+        D_80062528 = (s32)seq;
+        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
     } else {
         func_800320E8(D_8009C88C);
         func_80038428(D_8006259C);
@@ -323,7 +323,7 @@ void func_80072238(void) {
             data = D_8009C884;
         }
         memcpy(D_80062648, data, func_800288EC(file));
-        func_80039B68(D_80062528, 0x7F, 0xF0);
+        func_80039B68((SoundSeq *)D_80062528, 0x7F, 0xF0);
     }
     switch (D_8009C894) {
     case 0:
@@ -396,15 +396,15 @@ void func_8007299C(void) {
     s32 i;
 
     if (D_8009D7CC == 0) {
-        func_8003A89C(D_80062528, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
     }
     func_80039FF8();
     func_8003852C(D_8006259C);
     func_800320E8(D_8006259C);
     for (i = 0; i < 0x40; i++) {
-        if (D_8009BE24[i].handle != 0) {
+        if (D_8009BE24[i].handle != NULL) {
             func_800230A8(D_8009BE24[i].handle);
-            D_8009BE24[i].handle = 0;
+            D_8009BE24[i].handle = NULL;
         }
     }
     if (D_8009D7CC == 1) {
@@ -1621,10 +1621,10 @@ void func_80076594(void) {
  * contents of disc file `file`). */
 void func_800767D4(void *data, s32 file) {
     func_80039CC4();
-    func_800399D4(D_80062528);
+    func_800399D4((SoundSeq *)D_80062528);
     memcpy(D_80062648, data, func_800288EC(file));
-    D_80062528 = func_80039850(D_80062648);
-    func_80039A80(D_80062528, 0x7F, 0);
+    D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
+    func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
 }
 
 /* Quadratic Bezier point at t (0..0x1000) through three control points. */
@@ -1787,7 +1787,7 @@ s32 func_80076CD4(WorldmapActor *actor, s32 a) {
  * sequence D_80062528 to level a over b frames, at once when b is 0
  * (func_8003A89C). */
 s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b) {
-    func_8003A89C(D_80062528, a, b);
+    func_8003A89C((SoundSeq *)D_80062528, a, b);
     return 4;
 }
 

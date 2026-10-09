@@ -17,6 +17,8 @@
 #include "psyq/libcd.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/window.h"
 
 u8 D_8009BBB4[0x10]; /* terrain origin, a VECTOR (TERRAIN_ORIGIN, GROUND_SCROLL) */
 s32 D_8009BBC4;
@@ -47,7 +49,7 @@ s32 D_8009BD34;
 SVECTOR D_8009BD38; /* camera angle */
 u8 D_8009BD40[0x20]; /* view setup: eye, look-at point and up vector (VIEW) */
 u8 D_8009BD60;
-struct TextWindow D_8009BD64; /* destination name window */
+Window D_8009BD64; /* destination name window */
 struct EffectSlot *D_8009BDF4;
 void *D_8009BDF8[3]; /* gear model buffers */
 s16 D_8009BE04; /* quads used this frame; a word in 80099BFC */
@@ -159,9 +161,9 @@ s32 D_8009D3D4;
 DR_TWIN D_8009D3D8[2];
 s32 D_8009D3F0; /* camera distance */
 struct WorldmapSpot *D_8009D3F4;
-struct FileLoad D_8009D3F8[16]; /* shared read list */
+FileRequest D_8009D3F8[16]; /* shared read list */
 u16 D_8009D478[16]; /* terrain CLUTs */
-struct TextWindow D_8009D498;
+Window D_8009D498; /* path name window */
 void *D_8009D528;
 u16 D_8009D52C;
 s32 D_8009D530; /* unreferenced */

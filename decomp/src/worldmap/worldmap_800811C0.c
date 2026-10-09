@@ -113,7 +113,7 @@ s32 func_800811C0(s32 index) {
     /* 0x3F: fade the music out over 0xF0 frames; fade out at rate 2, 4 per
      * frame. */
     case 0x3F:
-        func_8003A89C(D_80062528, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
@@ -231,7 +231,7 @@ s32 func_800817A0(s32 index) {
     actor->u.step = 0;
     actor->unk54 = 0;
     actor->unk58 = 0;
-    func_800816DC(&objects[2], objects[2].prims, objects[2].def->count, 1);
+    func_800816DC(&objects[2], objects[2].prims, objects[2].def->primitive_count, 1);
     objects[2].position.vx = actor->position.vx >> 12;
     objects[2].position.vy = actor->position.vy >> 12;
     objects[2].position.vz = actor->position.vz >> 12;
@@ -256,7 +256,7 @@ s32 func_80081868(s32 index) {
         actor->unk4 = 0;
         actor->state = 0;
         quad = (&object->prims)[D_8009D7F0];
-        for (i = 0; i < object->def->count; i++) {
+        for (i = 0; i < object->def->primitive_count; i++) {
             setSemiTrans(quad, 0);
             setRGB0(quad, 0x80, 0x80, 0x80);
             quad++;
@@ -278,7 +278,7 @@ s32 func_80081868(s32 index) {
         }
         break;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 
@@ -301,9 +301,9 @@ s32 func_800819C8(s32 index) {
     SCALE_SCRATCH->scale[0].vy = 0x7000;
     ScaleMatrix(&objects[0].matrix, &SCALE_SCRATCH->scale[0]);
     objects[1].matrix = objects[0].matrix;
-    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    func_800816DC(objects, objects->prims, objects->def->primitive_count, 3);
     objects++;
-    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    func_800816DC(objects, objects->prims, objects->def->primitive_count, 3);
     return 1;
 }
 
@@ -331,9 +331,9 @@ s32 func_80081B24(s32 index) {
         }
         break;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 
@@ -514,7 +514,7 @@ s32 func_80081FD8(s32 index) {
 /* Set up the pulsing-effect scene: fixed start position, music, its camera and five effect slots. */
 void func_80082324(void) {
     RECT rect;
-    void *sequence;
+    SoundSeq *sequence;
     void *data;
     u16 debug;
 
@@ -570,8 +570,8 @@ void func_80082324(void) {
     func_80038428(D_8006259C);
     data = D_8009C884;
     memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850(D_80062648);
-    D_80062528 = sequence;
+    sequence = func_80039850((SoundSeqHeader *)D_80062648);
+    D_80062528 = (s32)sequence;
     func_80039A80(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_800827C8, (s32)func_80076B34);
@@ -882,7 +882,7 @@ s32 func_80083214(s32 index) {
     SceneObject *object;
 
     object = &D_8009C620[78 + index];
-    func_80083108(object, object->prims, object->def->count, 3);
+    func_80083108(object, object->prims, object->def->primitive_count, 3);
     return 1;
 }
 
@@ -939,7 +939,7 @@ s32 func_80083264(s32 index) {
         break;
     }
     func_80082F64(actor, object, (ScaleScratch *)0x1F800000);
-    func_800831D8((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    func_800831D8((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
 

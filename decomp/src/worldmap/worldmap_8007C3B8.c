@@ -636,7 +636,7 @@ s32 func_8007D7FC(s32 index) {
 /* Set up the vehicle scene: load its area, place the player at the entry, start music and its scripted actors. */
 void func_8007D918(void) {
     RECT rect;
-    void *sequence;
+    SoundSeq *sequence;
     void *data;
     u16 debug;
 
@@ -691,8 +691,8 @@ void func_8007D918(void) {
     func_80038428(D_8006259C);
     data = D_8009C884;
     memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850(D_80062648);
-    D_80062528 = sequence;
+    sequence = func_80039850((SoundSeqHeader *)D_80062648);
+    D_80062528 = (s32)sequence;
     func_80039A80(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_8007DE14, (s32)func_8007DE98);
@@ -713,7 +713,7 @@ void func_8007D918(void) {
 
 /* Leave the world map: release its sound, subsystems and buffers, and request scene 0x1A1 with the exit's flag word. */
 void func_8007DCE0(void) {
-    func_8003A89C(D_80062528, 0, 0xF0);
+    func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
     func_80039FF8();
     func_8003852C(D_8006259C);
     func_800320E8(D_8006259C);

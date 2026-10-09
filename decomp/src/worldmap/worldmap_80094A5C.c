@@ -1354,7 +1354,7 @@ void func_800976C8(void) {
 
     for (i = 0; i < 0x40; i++) {
         actor = &D_8009BE24[i];
-        actor->handle = 0;
+        actor->handle = NULL;
         actor->kind = 0;
         actor->update = 0;
     }
@@ -1448,7 +1448,7 @@ void func_80097800(void) {
                 }
                 break;
             case 4:
-                if (actor->handle != 0) {
+                if (actor->handle != NULL) {
                     func_800230A8(actor->handle);
                 }
                 break;

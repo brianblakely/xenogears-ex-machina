@@ -123,8 +123,8 @@ void func_80070CFC(void) {
         data = D_8009C614;
         memcpy(D_80062648, data, func_800288EC(D_8009BCC8));
         D_8004F2FC = D_80062528;
-        D_80062528 = func_80039850(D_80062648);
-        func_80039A80(D_80062528, 0x7F, 0);
+        D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
+        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
         break;
     default:
         func_8001996C(0);
@@ -380,19 +380,19 @@ void func_80071CDC(void) {
         member = D_8006F368[j];
         if (member != 0xFF) {
             D_8009D3F8[i].file = member + 2;
-            D_8009D3F8[i].dest = D_8009CD34[j];
+            D_8009D3F8[i].destination = D_8009CD34[j];
             i++;
             D_8009C170++;
             gear = D_8006D940[member].gear;
             if (gear != 0xFF) {
                 D_8009D3F8[i].file = gear + 0x13;
-                D_8009D3F8[i].dest = D_8009BDF8[j];
+                D_8009D3F8[i].destination = D_8009BDF8[j];
                 i++;
             }
         }
     }
     D_8009D3F8[i].file = 0;
-    D_8009D3F8[i].dest = NULL;
+    D_8009D3F8[i].destination = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
 
@@ -405,10 +405,10 @@ void func_80071EF0(void) {
     D_8009D3F8[1].file = D_8009C17C;
     D_8009D3F8[2].file = D_8009C174;
     D_8009D3F8[3].file = 0;
-    D_8009D3F8[0].dest = D_8009C180;
-    D_8009D3F8[1].dest = D_8009C59C;
-    D_8009D3F8[2].dest = D_8009BD20;
-    D_8009D3F8[3].dest = NULL;
+    D_8009D3F8[0].destination = D_8009C180;
+    D_8009D3F8[1].destination = D_8009C59C;
+    D_8009D3F8[2].destination = D_8009BD20;
+    D_8009D3F8[3].destination = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
 
@@ -417,11 +417,11 @@ void func_80071FEC(void) {
     D_8005945C = func_80031BDC(func_800288EC(0x26), 1);
     D_8009D528 = func_80031BDC(func_800288EC(0x25), 1);
     D_8009D3F8[0].file = 0x25;
-    D_8009D3F8[0].dest = D_8009D528;
+    D_8009D3F8[0].destination = D_8009D528;
     D_8009D3F8[1].file = 0x26;
-    D_8009D3F8[1].dest = D_8005945C;
+    D_8009D3F8[1].destination = D_8005945C;
     D_8009D3F8[2].file = 0;
-    D_8009D3F8[2].dest = NULL;
+    D_8009D3F8[2].destination = NULL;
     func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
 
@@ -429,17 +429,17 @@ void func_80071FEC(void) {
 void func_80072090(void) {
     D_8004F304++;
     D_8009D3F8[0].file = D_8009CC98;
-    D_8009D3F8[0].dest = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
+    D_8009D3F8[0].destination = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
     D_8009D3F8[1].file = D_8009D3D0;
-    D_8009D3F8[1].dest = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
+    D_8009D3F8[1].destination = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
     D_8009D3F8[2].file = D_8009D3C8;
-    D_8009D3F8[2].dest = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
+    D_8009D3F8[2].destination = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
     D_8009D3F8[3].file = D_8009D800;
-    D_8009D3F8[3].dest = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
+    D_8009D3F8[3].destination = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
     D_8009D3F8[4].file = D_8009BCC8;
-    D_8009D3F8[4].dest = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
+    D_8009D3F8[4].destination = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
     D_8009D3F8[5].file = 0;
-    D_8009D3F8[5].dest = NULL;
+    D_8009D3F8[5].destination = NULL;
     func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
 

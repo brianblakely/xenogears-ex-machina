@@ -26,13 +26,6 @@
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
-/* Eight-byte disc-read entry: file at 0, destination at 4. A zero file
- * ends the list; the two bytes between its members are left untouched. */
-typedef struct FileLoad {
-    s16 file;
-    void *dest;
-} FileLoad;
-
 /* Per-area file set: the base disc file number and three area parameters. */
 typedef struct {
     s16 file;
@@ -49,12 +42,12 @@ extern s32 D_8009D3C4, D_8009C174, D_8009C17C, D_8009D3D0, D_8009CC98;
 extern s32 D_8009D800, D_8009D3C8, D_8009BCD8, D_8009BCC8, D_8009BD08;
 extern s32 D_8009D2B4, D_8009D160, D_8009D7CC, D_8009C610;
 extern void *D_8009C59C, *D_8009BD20, *D_8009C180, *D_8009D528;
-extern FileLoad D_8009D3F8[]; /* shared read list */
+extern FileRequest D_8009D3F8[]; /* shared read list, a zero file ends it */
 /* The list's first destination member by a name of its own (worldmap.data.ld):
  * two loaders pass the list from it. Formed from D_8009D3F8 itself, the
  * constant lets cse store the first entry through the argument register. */
 extern void *D_8009D3FC;
-#define WORLD_READ_LIST ((FileLoad *)((u8 *)&D_8009D3FC - 4))
+#define WORLD_READ_LIST ((FileRequest *)((u8 *)&D_8009D3FC - 4))
 
 /* Party: three character ids (0xFF empty) and per-character records. */
 typedef struct {
@@ -148,7 +141,7 @@ typedef struct WorldmapActor {
     VECTOR motion;   /* 0x38 */
     s16 heading;  /* 0x48 */
     s16 turn;     /* 0x4A: turn step */
-    s32 handle;   /* 0x4C */
+    Sprite *handle; /* 0x4C: its model sprite (func_80024524), NULL none */
     union {
         s16 *script; /* script position */
         u16 value;   /* low half of step */
@@ -166,6 +159,12 @@ typedef struct WorldmapActor {
     s32 unk78;
     s32 unk7C;
 } WorldmapActor;
+
+/* An actor's model sprite: render bit 2 hides it (a new model starts hidden),
+ * and the last byte of its motion word, read signed, is the animation
+ * func_800245D8 set. */
+#define SPRITE_HIDDEN 4
+#define SPRITE_ANIMATION(sprite) ((s8)(sprite)->motion.bytes[3])
 
 /* Script opcode handler: returns the halfwords to advance, 0 to yield. */
 typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
@@ -285,15 +284,8 @@ typedef struct {
 extern SceneResume D_8006F94E;
 extern s32 D_8009BBC4;
 
-/* Scene object (0x54 bytes): a transformed sprite set linked to a parent. */
-typedef struct {
-    u8 pad0[4];
-    u16 count;
-    u16 pad6;
-    u8 pad8[0x2C];
-    s32 size; /* 0x34: primitive bytes */
-} SpriteDef;
-
+/* Scene object (0x54 bytes): a sprite model of the area file, transformed
+ * and linked to a parent. */
 typedef struct SceneObject {
     s16 visible;
     s16 unk2;
@@ -302,7 +294,7 @@ typedef struct SceneObject {
     VECTOR position;            /* 0x08 */
     SVECTOR angle;              /* 0x18 */
     MATRIX matrix;              /* 0x20 */
-    SpriteDef *def;             /* 0x40 */
+    SpriteModel *def;           /* 0x40 */
     s32 unk44;
     void *prims;                /* 0x48 */
     void *prims2;               /* 0x4C: second buffer's copy */
@@ -429,20 +421,11 @@ typedef struct TerrainTexture {
 extern u16 D_8009D478[16]; /* terrain CLUTs */
 extern TerrainTexture *D_8009C7EC;
 
-/* Resident text window (resident/window.h, 0x90 bytes). */
-typedef struct TextWindow {
-    u8 pad0[0x10];
-    u16 flags;      /* 0x10 */
-    u8 pad12[0x56];
-    s8 unk68;       /* 0x68 */
-    u8 pad69[0x27];
-} TextWindow;
+extern Window D_8009D498; /* path name window */
+extern Window D_8009BD64; /* destination name window */
 
-extern TextWindow D_8009D498;
-extern TextWindow D_8009BD64; /* destination name window */
-
-s32 func_80024524(void *model, s32 a, s32 b, s32 c, s32 d, s32 e);
-void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
+Sprite *func_80024524(s32 *data, s32 x, s32 y, s32 width, s32 height, s32 unused);
+void func_80032F54(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 
 /* Area object (0x54 bytes, 512 of them, eight per group): a particle
  * emitter. */
@@ -766,14 +749,6 @@ s32 func_800965A4(void);
 extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
 void func_8009980C(u32 *cells, u32 *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
-/* Model instance returned by func_80024524 (actor handle). */
-typedef struct {
-    u8 pad0[0x3C];
-    s32 flags; /* 0x3C: 4 hidden */
-    u8 pad40[0x6F];
-    s8 animation; /* 0xAF */
-} ModelInstance;
-
 /* Parked vehicle state (world units), per party slot. */
 typedef struct {
     u16 flags; /* 0x3FFF part >= 0x400: parked on the map */
@@ -1023,11 +998,6 @@ extern Drift D_8009AF30[5]; /* drift template points */
 
 void func_80093534(VECTOR *delta); /* wrap a world-unit offset */
 
-/* Model sprite object behind an actor's handle. */
-typedef struct {
-    VECTOR position; /* world units << 4 */
-} ModelObject;
-
 /* Scratchpad work area of the actor sprite pass. */
 typedef struct {
     SVECTOR vertex;
@@ -1038,7 +1008,7 @@ typedef struct {
 #define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
 
 void func_80093484(VECTOR *offset);
-void func_800223B0(s32 model, s32 angle);
+void func_800223B0(Sprite *sprite, s32 angle);
 
 /* Scratchpad work area of the terrain pass. */
 typedef struct {
@@ -1063,16 +1033,17 @@ typedef struct {
     s16 ax, ay, az;
 } ScenePlacement;
 
-/* Sprite definitions after a 16-byte header. */
+/* The area file's sprite models (a resident ModelGroup, whose models it
+ * relocates): a 16-byte header, then the models. */
 typedef struct {
     u8 header[0x10];
-    SpriteDef defs[1];
+    SpriteModel defs[1];
 } SpriteDefTable;
 
 extern s16 D_8009BD28; /* animation count */
 extern s32 D_8009C16C, D_8009C840;
 extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
-void func_8002CB54(SpriteDef *def, void **prims, void **prims2, SceneObject *object);
+void func_8002CB54(SpriteModel *def, void **prims, void **prims2, SceneObject *object);
 
 /* Scratchpad work area of the face probe. */
 typedef struct {

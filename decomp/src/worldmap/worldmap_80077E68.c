@@ -687,8 +687,8 @@ s32 func_8007A144(s32 index) {
     actor->state = 0;
     actor->unk70 = 0;
     actor->unk6C = 0;
-    func_8007A06C(&D_8009C620[14], D_8009C620[14].prims, D_8009C620[14].def->count);
-    func_8007A06C(&D_8009C620[15], D_8009C620[15].prims, D_8009C620[15].def->count);
+    func_8007A06C(&D_8009C620[14], D_8009C620[14].prims, D_8009C620[14].def->primitive_count);
+    func_8007A06C(&D_8009C620[15], D_8009C620[15].prims, D_8009C620[15].def->primitive_count);
     return 3;
 }
 

@@ -470,9 +470,9 @@ s32 func_8007ECA4(s32 index) {
     func_800848B4(1, 3);
     objects = D_8009C620;
     actor = &D_8009BE24[index];
-    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->count, 3);
-    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->count, 3);
-    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->count, 1);
+    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->primitive_count, 3);
+    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->primitive_count, 3);
+    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->primitive_count, 1);
     D_8009C620[1].visible = 0;
     D_8009C620[1].angle.vz = 0;
     D_8009C620[1].angle.vy = 0;
@@ -733,7 +733,7 @@ s32 func_8007F8AC(s32 index) {
     if (slot == 4) {
         abr = 1;
     }
-    func_8007EBBC(object, object->prims, object->def->count, abr);
+    func_8007EBBC(object, object->prims, object->def->primitive_count, abr);
     actor->motion.vx = -0x85A;
     actor->motion.vz = 0xDA6;
     actor->state = 0;
@@ -849,8 +849,8 @@ s32 func_8007FC8C(s32 index) {
 
     objects = D_8009C620;
     actor = &D_8009BE24[index];
-    func_8007A06C(&objects[9], objects[9].prims, objects[9].def->count);
-    func_8007A06C(&objects[10], objects[10].prims, objects[10].def->count);
+    func_8007A06C(&objects[9], objects[9].prims, objects[9].def->primitive_count);
+    func_8007A06C(&objects[10], objects[10].prims, objects[10].def->primitive_count);
     actor->state = 0;
     actor->position.vx = 0x1498000;
     actor->position.vy = -0x80000;
@@ -887,9 +887,9 @@ s32 func_8007FD30(s32 index) {
     if ((actor->unk54 += 0x180) > 0x7FFF) {
         actor->unk54 = 0x7FFF;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     if ((actor->unk58 -= 3) < 0) {
         actor->unk58 = 0;
         return 3;

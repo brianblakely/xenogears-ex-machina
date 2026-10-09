@@ -295,7 +295,7 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             case 3:
-                func_8003A89C(D_80062528, 0, 0xF0);
+                func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
                 VEHICLE_SCRATCH->rotation.vx = actor->position.vx >> 12;
                 VEHICLE_SCRATCH->rotation.vy = actor->position.vy >> 12;
                 VEHICLE_SCRATCH->rotation.vz = actor->position.vz >> 12;
@@ -344,7 +344,7 @@ s32 func_8008E76C(s32 index) {
                     actor->unk78 = hit;
                     actor->unk68 = func_80093978(actor->position.vx, actor->position.vz);
                     func_80097770(0xB, 0xA);
-                    func_8003A89C(D_80062528, 0, 0xF0);
+                    func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
                     actor->unk7C = 1;
                     func_800894C8(0x3C);
                     func_800894C8(0x3F);

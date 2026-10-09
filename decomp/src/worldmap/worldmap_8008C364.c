@@ -132,7 +132,7 @@ s32 func_8008C75C(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[0], 0x100, 0x1FD, 0x140, 0x140, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = D_8006EF8E[0].x << 12;
     actor->position.vz = D_8006EF8E[0].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -202,12 +202,12 @@ s32 func_8008C844(s32 index) {
                 break;
             default:
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
-                    if (((ModelInstance *)actor->handle)->animation != 0) {
+                    if (SPRITE_ANIMATION(actor->handle) != 0) {
                         func_800245D8(actor->handle, 0);
                         func_800894C8(0x2C);
                     }
                 } else {
-                    if (((ModelInstance *)actor->handle)->animation != 1) {
+                    if (SPRITE_ANIMATION(actor->handle) != 1) {
                         func_800245D8(actor->handle, 1);
                     }
                     func_8008C1DC(0x2C, actor, scratch);
@@ -252,7 +252,7 @@ s32 func_8008C844(s32 index) {
                 break;
             }
             D_8009BD04 = 0;
-        } else if (((ModelInstance *)actor->handle)->animation != 3) {
+        } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             func_800245D8(actor->handle, 3);
             func_800894C8(0x2C);
         }
@@ -504,7 +504,7 @@ s32 func_8008D590(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[1], 0x100, 0x1FC, 0x160, 0x140, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = D_8006EF8E[1].x << 12;
     actor->position.vz = D_8006EF8E[1].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -566,12 +566,12 @@ s32 func_8008D678(s32 index) {
             point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
-                if (((ModelInstance *)actor->handle)->animation != 0) {
+                if (SPRITE_ANIMATION(actor->handle) != 0) {
                     func_800245D8(actor->handle, 0);
                     func_800894C8(index + 0x28);
                 }
             } else {
-                if (((ModelInstance *)actor->handle)->animation != flag) {
+                if (SPRITE_ANIMATION(actor->handle) != flag) {
                     func_800245D8(actor->handle, 1);
                 }
                 func_8008C1DC(index + 0x28, actor, scratch);
@@ -580,7 +580,7 @@ s32 func_8008D678(s32 index) {
             actor->position.vy = point->position.vy;
             actor->position.vz = point->position.vz;
             actor->heading = point->heading;
-        } else if (((ModelInstance *)actor->handle)->animation != 3) {
+        } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             func_800245D8(actor->handle, 3);
             func_800894C8(index + 0x28);
         }
@@ -779,7 +779,7 @@ s32 func_8008DF0C(s32 index) {
     actor->handle = func_80024524(D_8009BDF8[2], 0x100, 0x1FB, 0x280, 0x100, 0x40);
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
-    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = D_8006EF8E[2].x << 12;
     actor->position.vz = D_8006EF8E[2].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);

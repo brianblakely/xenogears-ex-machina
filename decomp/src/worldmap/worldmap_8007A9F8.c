@@ -253,7 +253,7 @@ s32 func_8007B200(s32 index) {
     actor = &D_8009BE24[index];
     object = &D_8009C620[4];
     do {
-        func_8007A06C(object, object->prims, object->def->count);
+        func_8007A06C(object, object->prims, object->def->primitive_count);
         object++;
         i++;
     } while (i < 2);
@@ -320,7 +320,7 @@ s32 func_8007B604(s32 index) {
     actor = &D_8009BE24[index];
     object = &D_8009C620[6];
     do {
-        func_8007A06C(object, object->prims, object->def->count);
+        func_8007A06C(object, object->prims, object->def->primitive_count);
         object++;
         i++;
     } while (i < 2);

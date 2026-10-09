@@ -226,9 +226,9 @@ s32 func_80080A28(s32 index) {
     actor->u.step = 0;
     actor->unk54 = -0x800;
     actor->unk58 = 0x80;
-    func_8007A06C(object, object->prims, object->def->count);
+    func_8007A06C(object, object->prims, object->def->primitive_count);
     object++;
-    func_8007A06C(object, object->prims, object->def->count);
+    func_8007A06C(object, object->prims, object->def->primitive_count);
     return 3;
 }
 
@@ -258,9 +258,9 @@ s32 func_80080AC4(s32 index) {
     if ((actor->unk54 += 0x180) > 0x7FFF) {
         actor->unk54 = 0x7FFF;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     if ((actor->unk58 -= 4) < 0) {
         actor->unk58 = 0;
         return 3;
@@ -271,7 +271,7 @@ s32 func_80080AC4(s32 index) {
 /* Set up the heat-haze scene: fixed start position, music, its director and effect actors. */
 void func_80080D00(void) {
     RECT rect;
-    void *sequence;
+    SoundSeq *sequence;
     void *data;
     u16 debug;
 
@@ -326,8 +326,8 @@ void func_80080D00(void) {
     func_80038428(D_8006259C);
     data = D_8009C884;
     memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850(D_80062648);
-    D_80062528 = sequence;
+    sequence = func_80039850((SoundSeqHeader *)D_80062648);
+    D_80062528 = (s32)sequence;
     func_80039A80(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_80081174, (s32)func_800811C0);
