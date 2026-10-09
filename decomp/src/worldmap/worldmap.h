@@ -10,13 +10,21 @@
 #include "psyq/libgte.h"
 #include "psyq/inline_c.h"
 #include "psyq/libsn.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "resident/window.h"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-
-/* Resident services used by the world map. */
-s32 func_800288EC(s32 file);                              /* file size, rounded to words */
-void *func_80031BDC(s32 size, s32 mode);                  /* allocate a block */
-s32 func_800295D8(s32 file, void *dest, s32 offset, s32 mode); /* read one file */
 
 /* Eight-byte disc-read entry: file at 0, destination at 4. A zero file
  * ends the list; the two bytes between its members are left untouched. */
@@ -24,8 +32,6 @@ typedef struct FileLoad {
     s16 file;
     void *dest;
 } FileLoad;
-
-s32 func_80029AFC(FileLoad *list, s32 offset, s32 mode);  /* read a file list */
 
 /* Per-area file set: the base disc file number and three area parameters. */
 typedef struct {
@@ -43,13 +49,6 @@ extern s32 D_8009D3C4, D_8009C174, D_8009C17C, D_8009D3D0, D_8009CC98;
 extern s32 D_8009D800, D_8009D3C8, D_8009BCD8, D_8009BCC8, D_8009BD08;
 extern s32 D_8009D2B4, D_8009D160, D_8009D7CC, D_8009C610;
 extern void *D_8009C59C, *D_8009BD20, *D_8009C180, *D_8009D528;
-extern void *D_8005945C;
-typedef struct {
-    u8 pad0[0x14];
-    u16 id;
-} SoundBank;
-
-extern SoundBank *D_8006259C; /* area sound bank */
 extern FileLoad D_8009D3F8[]; /* shared read list */
 /* The list's first destination member by a name of its own (worldmap.data.ld):
  * two loaders pass the list from it. Formed from D_8009D3F8 itself, the
@@ -61,14 +60,13 @@ extern void *D_8009D3FC;
 typedef struct {
     u8 gear; /* piloted gear, 0xFF none */
     u8 pad1[0xA3];
-} CharacterRecord;
+} CharacterGear;
 
 extern u8 D_8006F368[3];
-extern CharacterRecord D_8006D940[];
+extern CharacterGear D_8006D940[];
 extern void *D_8009CD34[3]; /* character model buffers */
 extern void *D_8009BDF8[3]; /* gear model buffers */
 extern s32 D_8009C170;      /* loaded party members */
-extern s32 D_8004F304;
 extern void *D_8009C88C, *D_8009C884, *D_8009C888, *D_8009C614;
 
 /* Gouraud quad packet (PsyQ POLY_G4 layout); colour words carry the code
@@ -86,28 +84,6 @@ typedef struct PolyG4 {
 } PolyG4;
 
 extern PolyG4 D_8009D194[4][2]; /* sky gradient bands, per buffer */
-
-/* Resident world-map return state. */
-typedef struct {
-    u16 x;       /* 8006ee54 */
-    u16 z;
-    u16 heading;
-    u16 unk5A;
-    u16 unk5C;
-    u16 unk5E;
-    u16 unk60;   /* saved vehicle position */
-    u16 unk62;
-    u16 unk64;
-    u16 vehicle_heading; /* 8006ee66 */
-    u16 flags;   /* 8006ee68: 0x4000 vehicle, 0x2000 restore, low bits kind */
-    s16 unk6A;
-    u16 unk6C;
-    u16 unk6E;
-    u16 unk70;
-    u16 unk72;
-    u16 unk74;
-    u16 unk76;   /* 8006ee76 */
-} WorldmapReturn;
 
 extern WorldmapReturn D_8006EE54;
 /* Halfword view of the three saved gear flags in that same return state. */
@@ -197,16 +173,8 @@ typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
 extern ScriptOp D_8009A3C0[];
 
 extern WorldmapActor *D_8009BE24;
-extern void *D_80062528;
 extern u16 D_8006F954[]; /* resident flag words */
 
-void func_800320E8(void *block); /* free a block */
-void *func_80032E88(void *block, s32 mode);
-void func_800230A8(s32 handle);
-void func_8003A89C(void *a, s32 b, s32 c);
-void func_80039FF8(void);
-void func_8003852C(void *data);
-void func_80024FB8(void);
 void func_8007474C(void);
 void func_80074F04(void);
 void func_800750DC(void);
@@ -284,7 +252,6 @@ typedef struct {
 extern SVECTOR D_8009A280[4][4]; /* sky band corners */
 extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
-extern s32 D_80050100;          /* ordering-table depth shift */
 
 extern POLY_FT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
 extern DR_TWIN D_8009D3D8[2];
@@ -293,22 +260,15 @@ extern s16 D_8009C854[16];
 extern s32 D_8009D64C, D_8009BE40, D_8009BCC4, D_8009D80C;
 
 extern s32 D_8009D554, D_8009CCA4, D_8009D3CC;
-extern u8 D_80062648[];
 /* Sequence header view of the same resident music buffer; its layout is
  * owned by resident/sound.h and consumed by func_80039850. */
 extern struct SoundSeqHeader D_80062648_sequence;
 #define SCRIPT_VECTOR ((SVECTOR *)0x1F8000A0) /* scratchpad script vector */
 
-void func_80039CC4(void);
-void func_800399D4(void *seq);
-void *func_80039850(void *header);
-void func_80039A80(void *seq, s32 volume, s32 c);
 s32 func_80097770(s32 index, s32 arg);
 void func_80089160(s32 effect, SVECTOR *position, SVECTOR *angle);
 void func_800894C8(s32 a);
 void func_80089514(s32 a);
-void func_80039E60(s32 sound);
-void func_8003A3B8(s32 sound, s32 b, s32 c);
 
 extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
@@ -413,7 +373,6 @@ extern u16 D_8009CD4C; /* pad buttons held */
 extern s32 D_8009CEC0, D_8009C7E8, D_8009BD34;
 extern s16 D_8009BAC8[]; /* 8 columns per row */
 
-void func_800346D4(void *object);
 s32 func_80093E8C(VECTOR *position); /* terrain attribute at a position */
 u8 *func_80093660(s32 x, s32 z);   /* terrain cell at a position */
 
@@ -434,9 +393,6 @@ typedef struct HostReadRequest {
     u8 *destination;
 } HostReadRequest;
 
-s32 func_8003F8B0(s32 angle);                  /* rsin */
-s32 func_8003F8CC(s32 angle);                  /* rcos */
-s32 func_8002C3D8(void);
 s32 func_800967E4(void); /* stream step: func_800968E0 status */
 s32 func_80096668(void);
 
@@ -486,10 +442,7 @@ extern TextWindow D_8009D498;
 extern TextWindow D_8009BD64; /* destination name window */
 
 s32 func_80024524(void *model, s32 a, s32 b, s32 c, s32 d, s32 e);
-void func_800245D8(s32 handle, s32 mode);
-void func_80022000(s32 handle, s32 scale);
 void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
-void func_80034614(void *window);
 
 /* Area object (0x54 bytes, 512 of them, eight per group): a particle
  * emitter. */
@@ -570,7 +523,6 @@ extern u16 D_8009D52C;
 /* func_8007A06C (void, worldmap_80077E68) has no prototype here: the other units
  * call it undeclared (implicit int), which lets the caller schedule its return value
  * early after the call (8007FC8C). */
-void func_8002CBBC(void *def);
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s32 mode);
 
 /* Scratchpad work area of the actor updaters. */
@@ -592,7 +544,6 @@ extern s32 D_8009C618;
 
 s32 func_80093A5C(s32 x, s32 z);  /* terrain height */
 s16 func_80093F18(VECTOR *position);
-void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
 extern u16 D_8009A68C[]; /* exhaust flame sizes */
@@ -672,11 +623,6 @@ extern s16 D_8009CE68; /* destination id, -1 none */
 extern u16 D_8009A5CC[]; /* resident flag word per exit */
 
 /* Scene set-up. */
-s32 func_800286CC(void);
-void func_80028A60(s32 mode);
-void func_8001B66C(void);
-void func_80028470(s32 a, s32 b);
-void func_80038428(void *bank);
 void func_80072BB0(void);
 void func_80072DB4(s32 a, s32 b, s32 c, s32 d);
 void func_80076954(void);
@@ -717,8 +663,6 @@ s32 func_800838E8(), func_80076B34(), func_8008390C(), func_80083A00(), func_800
 
 extern MATRIX D_8009BE4C;
 extern void (*D_8009CD40)(void);
-extern u16 D_8005957C; /* debug switches */
-extern s32 D_8006258C;
 extern s32 D_8009D804;
 extern SVECTOR D_8009A5B4[]; /* start position per entry */
 extern SVECTOR D_8009A488; /* exhaust effect angle */
@@ -799,7 +743,6 @@ extern SVECTOR D_8009C838; /* block cell */
 extern u16 D_8009CCB4[0x40];
 extern u16 D_8009CD54[7];
 
-void func_8002DD20(void *image); /* upload an image file */
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
 
 /* 9x9 terrain blocks around the camera: block numbers, row-major. */
@@ -815,8 +758,6 @@ extern s8 D_8009C588[8];
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode);
 s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out);
 
-s32 func_800289D0(s32 file); /* first sector of a disc file */
-char *func_80028998(s32 file); /* host path of a file */
 s32 func_8009623C(s32 sector, s32 bytes, u8 *destination);
 s32 func_800962B0(char *path, s32 offset, s32 bytes, u8 *destination);
 s32 func_80096328(void);
@@ -880,9 +821,7 @@ typedef struct QuadBuffer {
 
 extern QuadBuffer *D_8009D158[2]; /* per display buffer */
 extern u16 *D_8009D148; /* per-row wobble spread */
-void func_80034714(void *window, s32 text);   /* set the window text */
 s32 func_80033728(void *table, s32 id);         /* text by id */
-void func_80034888(void *window, u32 *ot, s32 buffer); /* draw the window */
 
 extern POLY_FT4 D_8009D2B8[2]; /* destination marker, per display buffer */
 
@@ -937,19 +876,12 @@ extern WorldmapSave D_8005A4E4;
 extern void *D_8009C7E4; /* free memory block kept while away */
 extern void *D_8009C800, *D_8009C890; /* saved VRAM areas */
 extern s32 D_8009D14C, D_8009D804;
-extern u8 D_80059179;
 
 void func_80096694(void);
 void func_80071FEC(void);
 void func_80072BB0(void);
 void func_80072DB4(s32 a, s32 b, s32 c, s32 d);
-s32 func_800286CC(void);
-void func_80032EB4(void *a, void *b);
-void func_80028A60(s32 mode);
-void func_80028470(s32 a, s32 b);
-void func_80032498(s32 a, s32 b);
 void func_80033698(s32 a, s32 b);
-void func_80035DB0(void);
 void func_800978FC(void);
 void func_8008440C(void);
 void func_80085FE0(void);
@@ -966,7 +898,6 @@ typedef struct {
 } EncounterSet;
 
 extern EncounterSet D_800658DC; /* encounter set of the next battle */
-extern u8 D_80059508;           /* chosen formation */
 extern s16 D_8009A3A0[];        /* terrain kind substitutes */
 extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
 
@@ -974,15 +905,7 @@ s32 func_80094028(VECTOR *position);
 
 /* Resident pad state, gathered per dequeued input event. */
 extern s32 D_80059488;
-extern u16 D_80059570, D_80059574; /* buttons held */
-extern u16 D_8005948C, D_80059490; /* buttons pressed */
-extern u16 D_800594A4, D_800594A8;
 extern u16 D_8009CD50, D_8009BD10, D_8009BD14, D_8009BD18, D_8009BD1C;
-
-s32 func_80035CDC(void); /* dequeue one input event */
-void func_80037E8C(void);
-void func_80037EE4(void);
-void func_8001FAB4(s32 a, s32 b);
 
 void func_8009766C(void);
 void func_800721E4(void);
@@ -991,8 +914,6 @@ void func_800979C8(void);
 void func_800736DC(void);
 void func_800863E0(void);
 void func_80088F64(void);
-void func_80038428(void *bank);
-s32 func_80035734(s32 mode);
 void func_80086700(void);
 void func_80097718(s32 kind, s32 update);
 
@@ -1028,14 +949,8 @@ typedef struct {
 extern ActorSpawn D_80099E8C[];  /* actors of every area */
 extern ActorSpawn *D_8009A034[]; /* per area: its actors */
 extern s32 D_8009C894;           /* nonzero when resuming a saved state */
-extern s32 D_8009C178, D_80059198;
-extern u16 D_8005957C;
-extern void *D_8004F2FC;
+extern s32 D_8009C178;
 
-void func_8001B66C(void);
-void func_80024F64(s32 a, s32 b);
-s32 func_80037FD8(void *data, s32 mode);
-void func_80039B68(void *seq, s32 volume, s32 c);
 void func_80071EF0(void);
 void func_80072090(void);
 void func_80073398(void);
@@ -1085,7 +1000,6 @@ void func_80097070(MATRIX *m, SVECTOR *angle);
 void func_8003A2E4(s32 sound, s32 volume);
 
 /* worldmap_80083A00 */
-void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
 s32 func_80093978(s32 x, s32 z); /* terrain height */
 
 typedef struct {
@@ -1100,20 +1014,10 @@ typedef struct {
     POLY_FT4 quads[0x120];
 } QuadBlock288;
 
-/* Saved flight position: fraction and world-unit halves. */
-typedef struct {
-    u16 x_frac;
-    s16 x;
-    u16 z_frac;
-    s16 z;
-    u16 count; /* flights started */
-} FlightSave;
-
 extern FlightSave D_8006EE80;
 s32 func_8008868C(void);
 
 extern u16 D_8009BCE0[16]; /* faded CLUT ids */
-void func_8002DD20(void *image);                            /* unpack an image to VRAM */
 
 extern Drift D_8009AF30[5]; /* drift template points */
 
@@ -1134,10 +1038,7 @@ typedef struct {
 #define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
 
 void func_80093484(VECTOR *offset);
-void func_80024FF4(MATRIX *m);
-void func_8001E298(s32 model, u32 *ot);
 void func_800223B0(s32 model, s32 angle);
-void func_80023210(s32 model);
 
 /* Scratchpad work area of the terrain pass. */
 typedef struct {
@@ -1171,9 +1072,7 @@ typedef struct {
 extern s16 D_8009BD28; /* animation count */
 extern s32 D_8009C16C, D_8009C840;
 extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
-s32 func_8002C3E8(void *defs);
 void func_8002CB54(SpriteDef *def, void **prims, void **prims2, SceneObject *object);
-void func_8002C8CC(SpriteDef *def, void *prims, s32 mode);
 
 /* Scratchpad work area of the face probe. */
 typedef struct {
@@ -1355,12 +1254,7 @@ void func_80074794(s16 id, VECTOR *position);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
 
 /* worldmap.c main loop (round 3) */
-void func_800250E0(s32 buffer);
-void func_8001D468(void);
 void func_80097800(void);
-void func_80019CA0(void);
-void func_8001C634(void);
-void func_80025044(void);
 void func_80074F2C(void);
 void func_80075104(void);
 void func_800762FC(void);
@@ -1369,12 +1263,9 @@ void func_80076594(void);
 void func_800758C0(void);
 void func_80075B58(void);
 s32 func_80075E7C(VECTOR *position, s32 level);
-extern u8 D_80059460, D_80059178, D_80059171, D_8005954C;
 /* Resident return-state words read-modify-written as their own variables
  * (fields flags and unk76 of D_8006EE54). */
 extern u16 D_8006EE68, D_8006EE76;
-
-void func_80039E18(s32 sound);
 
 extern SVECTOR D_8009A490[]; /* rig flight path */
 /* Scratchpad work area of the rig path follower. */
@@ -1577,9 +1468,7 @@ typedef struct {
     MATRIX out;     /* 0x110 */
 } SceneScratch;
 
-extern s32 D_80050104, D_800595C0, D_80059578;
 extern s16 D_8009AD2C[]; /* per object flags: draw mode */
-void func_8002C700(SpriteDef *def, void *prims, u32 *ot, s32 mode);
 
 /* Scratchpad work area of the face containment test. */
 typedef struct {
@@ -1670,15 +1559,11 @@ typedef struct {
 } WorldmapMode;
 
 extern WorldmapMode D_8009A058[]; /* per mode */
-extern u8 D_800591AE, D_800594F8;
 extern u32 D_8006F160;            /* map flags */
 extern s16 D_8006EF68;
 extern s32 D_8009BD0C;
 extern u8 D_8003634C[];           /* resident VSync callback */
 
-void func_800199CC(s32 mode);
-void func_8001996C(s32 mode);
-void func_80019ACC(s32 mode);
 void func_80095F78(void);
 void func_8007369C(void);
 void func_80073300(void);
