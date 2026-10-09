@@ -45,32 +45,6 @@ typedef struct {
     POLY_FT4 poly[2];
 } SpriteParts;
 
-/* A character status panel (0xBEC bytes): sprite quads, two per sprite
- * (one per draw buffer). */
-typedef struct MenuStatusPanel {
-    POLY_FT4 layout[18];  /* 0x0 */
-    POLY_FT4 extra[10];   /* 0x2D0 */
-    POLY_FT4 face[2];     /* 0x460 */
-    POLY_FT4 label[2];    /* 0x4B0 */
-    POLY_FT4 level[6];    /* 0x500 */
-    POLY_FT4 next[6];     /* 0x5F0 */
-    POLY_FT4 hp[10];      /* 0x6E0 */
-    POLY_FT4 hp_max[10];  /* 0x870 */
-    POLY_FT4 ep[6];       /* 0xA00 */
-    POLY_FT4 ep_max[6];   /* 0xAF0 */
-    u8 level_count;       /* 0xBE0 */
-    u8 next_count;        /* 0xBE1 */
-    u8 hp_count;          /* 0xBE2 */
-    u8 hp_max_count;      /* 0xBE3 */
-    u8 ep_count;          /* 0xBE4 */
-    u8 ep_max_count;      /* 0xBE5 */
-    u8 buffer;            /* 0xBE6: buffer it was built for */
-    u8 shown;             /* 0xBE7 */
-    u8 layout_count;      /* 0xBE8 */
-    u8 extra_count;       /* 0xBE9 */
-    u8 pad_BEA[2];
-} StatusPanel;
-
 
 
 extern void func_80039DB8(s32 sound);          /* play a sound */

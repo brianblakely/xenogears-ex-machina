@@ -3417,24 +3417,24 @@ u8 func_801CD710(u8 arg) {
 void func_801CD81C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
     s32 i;
 
-    panel->count0 = 0;
+    panel->layout_count = 0;
     for (i = 0; i < 9; i++) {
         if (D_801EA4DC[layout * 9 + i] != 0xffff) {
-            panel->count0 += func_8002675C(D_800625A0->sheet, D_801EA4DC[layout * 9 + i],
-                                           &panel->list0[panel->count0 * 2], D_800625A0->buffer_index,
+            panel->layout_count += func_8002675C(D_800625A0->sheet, D_801EA4DC[layout * 9 + i],
+                                           &panel->layout[panel->layout_count * 2], D_800625A0->buffer_index,
                                            x->parts[i], row * 56 + y->parts[i], 0x1000);
         }
     }
-    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->frameA, D_800625A0->buffer_index, x->frame,
+    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->face, D_800625A0->buffer_index, x->frame,
                   row * 56 + y->frame, 0x1000);
-    func_801E927C(&panel->frameB[D_800625A0->buffer_index]);
-    panel->frameB[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
+    func_801E927C(&panel->label[D_800625A0->buffer_index]);
+    panel->label[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
     if (layout == 0) {
-        panel->frameB[D_800625A0->buffer_index].clut = (ch & 1) ? D_80059414 : D_800595D4;
+        panel->label[D_800625A0->buffer_index].clut = (ch & 1) ? D_80059414 : D_800595D4;
     } else {
-        panel->frameB[D_800625A0->buffer_index].clut = (D_8006D634.characters[ch].gearId & 1) ? D_800595D4 : D_80059414;
+        panel->label[D_800625A0->buffer_index].clut = (D_8006D634.characters[ch].gearId & 1) ? D_800595D4 : D_80059414;
     }
-    func_801E920C(&panel->frameB[D_800625A0->buffer_index], (u16)x->label, (u16)(y->label + row * 56),
+    func_801E920C(&panel->label[D_800625A0->buffer_index], (u16)x->label, (u16)(y->label + row * 56),
                   (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
                   13);
 }
@@ -3446,17 +3446,17 @@ void func_801CDB1C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnc
     u8 digit;
 
     func_801C80B8(D_8006D634.characters[ch].level);
-    panel->counts[0] = 0;
+    panel->level_count = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
         if (digit != 0xff) {
-            panel->counts[0] += func_8002675C(D_800625A0->sheet, digit, &panel->list1[panel->counts[0] * 2],
+            panel->level_count += func_8002675C(D_800625A0->sheet, digit, &panel->level[panel->level_count * 2],
                                               D_800625A0->buffer_index, i * 8 + x->base, row * 56 + y->base,
                                               0x1000);
         }
     }
     func_801C80B8(D_8006D634.characters[ch].level2);
-    panel->counts[1] = 0;
+    panel->level2_count = 0;
 }
 
 /* Lay out status panel `panel`'s numbers for character `ch` on row `row`:
@@ -3479,11 +3479,11 @@ void func_801CDC6C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnc
         func_801C80B8(D_8006D634.gears[D_8006D634.characters[ch].gearId].hp);
         first = 4;
     }
-    panel->counts[2] = 0;
+    panel->hp_count = 0;
     for (i = 0; i < digits; i++) {
         digit = D_800625A0->digits[first + i];
         if (digit != 0xff) {
-            panel->counts[2] += func_8002675C(D_800625A0->sheet, digit, &panel->list3[panel->counts[2] * 2],
+            panel->hp_count += func_8002675C(D_800625A0->sheet, digit, &panel->hp[panel->hp_count * 2],
                                               D_800625A0->buffer_index, i * 8 + x->hp, row * 56 + y->hp, 0x1000);
         }
     }
@@ -3492,31 +3492,31 @@ void func_801CDC6C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnc
     } else {
         func_801C80B8(D_8006D634.gears[D_8006D634.characters[ch].gearId].maxHp);
     }
-    panel->counts[3] = 0;
+    panel->hp_max_count = 0;
     for (i = 0, n = 0; i < digits; i++) {
         digit = D_800625A0->digits[first + i];
         if (digit != 0xff) {
-            panel->counts[3] += func_8002675C(D_800625A0->sheet, digit, &panel->list4[panel->counts[3] * 2],
+            panel->hp_max_count += func_8002675C(D_800625A0->sheet, digit, &panel->hp_max[panel->hp_max_count * 2],
                                               D_800625A0->buffer_index, n * 8 + x->hpMax, row * 56 + y->hpMax, 0x1000);
             n++;
         }
     }
     if (layout == 0) {
         func_801C80B8(D_8006D634.characters[ch].ep);
-        panel->counts[4] = 0;
+        panel->ep_count = 0;
         for (i = 0; i < 2; i++) {
             digit = D_800625A0->digits[7 + i];
             if (digit != 0xff) {
-                panel->counts[4] += func_8002675C(D_800625A0->sheet, digit, &panel->list5[panel->counts[4] * 2],
+                panel->ep_count += func_8002675C(D_800625A0->sheet, digit, &panel->ep[panel->ep_count * 2],
                                                   D_800625A0->buffer_index, i * 8 + x->ep, row * 56 + y->ep, 0x1000);
             }
         }
         func_801C80B8(D_8006D634.characters[ch].maxEp);
-        panel->counts[5] = 0;
+        panel->ep_max_count = 0;
         for (i = 0, n = 0; i < 2; i++) {
             digit = D_800625A0->digits[7 + i];
             if (digit != 0xff) {
-                panel->counts[5] += func_8002675C(D_800625A0->sheet, digit, &panel->list6[panel->counts[5] * 2],
+                panel->ep_max_count += func_8002675C(D_800625A0->sheet, digit, &panel->ep_max[panel->ep_max_count * 2],
                                                   D_800625A0->buffer_index, n * 8 + x->epMax, row * 56 + y->epMax,
                                                   0x1000);
                 n++;
@@ -4242,15 +4242,15 @@ void func_801D1258(void) {
  * when `extra`). */
 void func_801D12D4(MenuStatusPanel *panel, u8 extra) {
     if (panel->shown != 0) {
-        AddPrim(&D_800625A0->current->ot[4], &panel->frameA[panel->buffer]);
-        AddPrim(&D_800625A0->current->ot[4], &panel->frameB[panel->buffer]);
-        func_801CE2B4(panel->count0, panel->list0, panel->buffer);
-        func_801CE2B4(panel->counts[0], panel->list1, panel->buffer);
-        func_801CE2B4(panel->counts[1], panel->list2, panel->buffer);
-        func_801CE2B4(panel->counts[2], panel->list3, panel->buffer);
-        func_801CE2B4(panel->counts[3], panel->list4, panel->buffer);
-        func_801CE2B4(panel->counts[4], panel->list5, panel->buffer);
-        func_801CE2B4(panel->counts[5], panel->list6, panel->buffer);
+        AddPrim(&D_800625A0->current->ot[4], &panel->face[panel->buffer]);
+        AddPrim(&D_800625A0->current->ot[4], &panel->label[panel->buffer]);
+        func_801CE2B4(panel->layout_count, panel->layout, panel->buffer);
+        func_801CE2B4(panel->level_count, panel->level, panel->buffer);
+        func_801CE2B4(panel->level2_count, panel->level2, panel->buffer);
+        func_801CE2B4(panel->hp_count, panel->hp, panel->buffer);
+        func_801CE2B4(panel->hp_max_count, panel->hp_max, panel->buffer);
+        func_801CE2B4(panel->ep_count, panel->ep, panel->buffer);
+        func_801CE2B4(panel->ep_max_count, panel->ep_max, panel->buffer);
         if (extra) {
             func_801CE2B4(5, panel->extra, panel->buffer);
         }

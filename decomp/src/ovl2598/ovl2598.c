@@ -80,9 +80,9 @@ u16 D_801CB57C[16] = {
     0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
 };
 
-void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
-void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
-void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801C9A08(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801C9F80(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801CA24C(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
 void func_801CAD14(void);
 void func_801CA690(u8 first);
 u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page);
@@ -910,7 +910,7 @@ void func_801C8040(void) {
 
 /* Draw a shown status panel for this buffer: face, label, layout sprites and
  * the level/HP/EP digits, plus the extra sprites when `extra` is set. */
-void func_801C80BC(StatusPanel *panel, u8 extra) {
+void func_801C80BC(MenuStatusPanel *panel, u8 extra) {
     s32 i;
 
     if (panel->shown) {
@@ -1385,7 +1385,7 @@ void func_801C9908(void) {
 
 /* Build a status panel's layout sprites and face for character `id` in row
  * `slot` (x/y tables, row height) and its name label quad. */
-void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+void func_801C9A08(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
     s32 i;
     s32 face;
 
@@ -1428,7 +1428,7 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 
 /* Build a status panel's level digits and the green digits of the record's
  * next value (+0x63) for character `id` in row `slot`. */
-void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+void func_801C9F80(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
     s32 i;
     s32 n;
 
@@ -1443,27 +1443,27 @@ void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
         }
     }
     func_801C969C(D_8006D634.characters[id].level2);
-    panel->next_count = 0;
+    panel->level2_count = 0;
     for (i = 0, n = 0; i < 3; i++) {
         if (D_800625A0->digits[6 + i] != 0xFF) {
-            panel->next_count +=
+            panel->level2_count +=
                 func_8002675C(D_800625A0->sheet, D_800625A0->digits[6 + i],
-                              &panel->next[panel->next_count * 2], D_800625A0->buffer_index,
+                              &panel->level2[panel->level2_count * 2], D_800625A0->buffer_index,
                               n * 8 + x[11], row_height * slot + y[11], 0x1000);
             n++;
         }
     }
-    for (i = 0; i < panel->next_count; i++) {
-        SetShadeTex(&panel->next[i * 2 + D_800625A0->buffer_index], 0);
-        (panel->next + (i * 2 + D_800625A0->buffer_index))->r0 = 0;
-        (panel->next + (i * 2 + D_800625A0->buffer_index))->g0 = 0x80;
-        (panel->next + (i * 2 + D_800625A0->buffer_index))->b0 = 0;
+    for (i = 0; i < panel->level2_count; i++) {
+        SetShadeTex(&panel->level2[i * 2 + D_800625A0->buffer_index], 0);
+        (panel->level2 + (i * 2 + D_800625A0->buffer_index))->r0 = 0;
+        (panel->level2 + (i * 2 + D_800625A0->buffer_index))->g0 = 0x80;
+        (panel->level2 + (i * 2 + D_800625A0->buffer_index))->b0 = 0;
     }
 }
 
 /* Build a status panel's HP / maximum HP (three digits) and EP / maximum EP
  * (two digits) for character `id` in row `slot`. */
-void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+void func_801CA24C(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
     s32 i;
     s32 n;
 
@@ -1513,7 +1513,7 @@ void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 
 /* Build status panel `panel` for character `id` in row `slot` of a layout
  * (x/y tables, row height) and show it for this buffer. */
-void func_801CA5C0(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height,
+void func_801CA5C0(MenuStatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height,
                    u8 party) {
     func_801C9A08(panel, id, slot, x, y, row_height);
     func_801C9F80(panel, id, slot, x, y, row_height);
@@ -1530,7 +1530,7 @@ void func_801CA5C0(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 void func_801CA690(u8 first) {
     s32 i;
     s32 index;
-    StatusPanel *panel;
+    MenuStatusPanel *panel;
     s32 *x;
     s32 *y;
 

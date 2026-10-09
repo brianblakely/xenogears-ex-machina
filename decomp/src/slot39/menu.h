@@ -477,25 +477,6 @@ typedef struct MenuAnchor {
     s32 label; /* 40: name label */
 } MenuAnchor;
 
-/* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
-typedef struct MenuStatusPanel {
-    POLY_FT4 list0[18]; /* 0 */
-    POLY_FT4 extra[10]; /* 2D0 */
-    POLY_FT4 frameA[2]; /* 460 */
-    POLY_FT4 frameB[2]; /* 4B0 */
-    POLY_FT4 list1[6]; /* 500 */
-    POLY_FT4 list2[6]; /* 5F0 */
-    POLY_FT4 list3[10]; /* 6E0 */
-    POLY_FT4 list4[10]; /* 870 */
-    POLY_FT4 list5[6]; /* A00 */
-    POLY_FT4 list6[6]; /* AF0 */
-    u8 counts[6]; /* BE0 */
-    u8 buffer; /* BE6 */
-    u8 shown; /* BE7 */
-    u8 count0; /* BE8 */
-    u8 padBE9[0x3];
-} MenuStatusPanel;
-
 /* A field-menu block (*(state + 39c)): frame quads and part lists. */
 typedef struct MenuFieldBlock {
     POLY_FT4 frameA[2]; /* 0 */

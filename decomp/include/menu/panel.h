@@ -43,6 +43,34 @@ typedef struct MenuGrowth {
     u8 pad14[4];
 } MenuGrowth;
 
-LAYOUT_CHECK(MenuPanelSizes, sizeof(MenuPanel) == 0x720 && sizeof(MenuGrowth) == 0x18);
+/* A character's status panel (MenuState member_panels[], party_panels[]):
+ * its layout, portrait and name sprites and the digits of its levels, HP
+ * and EP, two quads per sprite. */
+typedef struct MenuStatusPanel {
+    POLY_FT4 layout[18];  /* 0x000 */
+    POLY_FT4 extra[10];   /* 0x2d0 */
+    POLY_FT4 face[2];     /* 0x460: the portrait */
+    POLY_FT4 label[2];    /* 0x4b0: the name */
+    POLY_FT4 level[6];    /* 0x500: digits */
+    POLY_FT4 level2[6];   /* 0x5f0 */
+    POLY_FT4 hp[10];      /* 0x6e0 */
+    POLY_FT4 hp_max[10];  /* 0x870 */
+    POLY_FT4 ep[6];       /* 0xa00 */
+    POLY_FT4 ep_max[6];   /* 0xaf0 */
+    u8 level_count;       /* 0xbe0 */
+    u8 level2_count;      /* 0xbe1 */
+    u8 hp_count;          /* 0xbe2 */
+    u8 hp_max_count;      /* 0xbe3 */
+    u8 ep_count;          /* 0xbe4 */
+    u8 ep_max_count;      /* 0xbe5 */
+    u8 buffer;            /* 0xbe6: the buffer it was built for */
+    u8 shown;             /* 0xbe7 */
+    u8 layout_count;      /* 0xbe8 */
+    u8 extra_count;       /* 0xbe9 */
+    u8 padbea[2];
+} MenuStatusPanel;
+
+LAYOUT_CHECK(MenuPanelSizes, sizeof(MenuPanel) == 0x720 && sizeof(MenuGrowth) == 0x18 &&
+                                 sizeof(MenuStatusPanel) == 0xBEC);
 
 #endif
