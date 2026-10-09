@@ -12,6 +12,13 @@ BUILD := .local/decomp/build/resident2
 IMAGE := .local/decomp/build/SLUS_006.69
 LINKER_SCRIPT := .local/decomp/resident2/slus_006.69.ld
 LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/resident2/undefined_funcs_auto.txt decomp/targets/resident/link.ld
+# link.ld names parts of uninitialized objects from the objects' linked
+# addresses where addressing the object itself compiles differently (the
+# window colour's green and blue bytes, the CD mix bytes and the CD request,
+# the base of the name slots' second bytes), and the BSS's last word, which
+# the entry point and the mode table name, from the link's BSS end. verify
+# accepts these names inside the BSS as views (decomp/Makefile).
+LINK_VIEWS := decomp/targets/resident/link.ld
 OBJCOPY_FLAGS := --gap-fill 0
 PAD_TO_SYMBOL := __exe_file_size
 SOURCE_DIRS := decomp/src/resident

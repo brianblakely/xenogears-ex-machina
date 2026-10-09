@@ -13,6 +13,13 @@ BUILD := .local/decomp/build/resident
 IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld
 LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/resident/undefined_funcs_auto.txt decomp/targets/resident/link.ld
+# link.ld names parts of uninitialized objects from the objects' linked
+# addresses where addressing the object itself compiles differently (the
+# window colour's green and blue bytes, the CD mix bytes and the CD request,
+# the base of the name slots' second bytes), and the BSS's last word, which
+# the entry point and the mode table name, from the link's BSS end. verify
+# accepts these names inside the BSS as views (decomp/Makefile).
+LINK_VIEWS := decomp/targets/resident/link.ld
 # The header (decomp/src/resident/header.c) declares t_size 0x49800 from the
 # link (link.ld), and the file is padded with zeros from the end of the small
 # data (0x800592bc) to the same 2048-byte boundary (file 0x4a000), which

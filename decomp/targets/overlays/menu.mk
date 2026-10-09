@@ -10,6 +10,11 @@ BUILD := .local/decomp/build/menu
 IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld
 LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt decomp/targets/overlays/menu.bss.ld
+# menu.bss.ld names the opponent's command byte D_80099DA2 inside the
+# settings common D_80099D98: func_8008F280 reads it by that name three times,
+# and as a member GCC keeps its address in a register where the original
+# loads it absolutely at each read. verify accepts it as a view.
+LINK_VIEWS := decomp/targets/overlays/menu.bss.ld
 SOURCE_DIRS := decomp/src/menu
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:35 2:30

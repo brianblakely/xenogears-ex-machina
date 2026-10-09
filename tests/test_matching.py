@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import shutil
 import struct
@@ -765,23 +766,25 @@ class MatchingTests(unittest.TestCase):
         result = check("--script-symbols", "warn", "--bss-end", "0x80010020")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("up to 80010028, past its declared end 80010020", result.stderr)
-        # verify runs the check after the exact comparison: strict fails,
-        # warn reports and passes.
+        # verify runs the check after the exact comparison: strict, the
+        # default, fails; warn reports and passes.
         image = (self.root / "image.bin").read_bytes()
         self.original.write_bytes(image)
         fixture = self.root / "fixture.mk"
         fixture.write_text(fixture.read_text().replace(
             self.digest, hashlib.sha256(image).hexdigest()))
         repo = Path(__file__).resolve().parents[1]
-        for mode, status in (("strict", 2), ("warn", 0)):
+        environment = {k: v for k, v in os.environ.items() if k != "SCRIPT_SYMBOLS"}
+        for mode, status in ((None, 2), ("strict", 2), ("warn", 0)):
             with self.subTest(mode):
                 result = subprocess.run(
                     ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
                      "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=image.bin",
                      "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings,
                      "LINK_VIEWS=views.ld", "BSS_END=0x80010040",
-                     "SCRIPT_SYMBOLS=" + mode, "verify"],
-                    cwd=self.root, text=True, capture_output=True, check=False)
+                     *(["SCRIPT_SYMBOLS=" + mode] if mode else []), "verify"],
+                    cwd=self.root, env=environment, text=True, capture_output=True,
+                    check=False)
                 self.assertEqual(result.returncode, status, result.stdout + result.stderr)
                 self.assertIn('"matched": true', result.stdout)
                 self.assertIn(f"{'error' if status else 'warning'}: image.bin.elf: 1 name(s)"

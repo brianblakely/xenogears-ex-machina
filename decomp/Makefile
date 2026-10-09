@@ -227,15 +227,14 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 # .data.ld or .resident.ld fragment) defines inside the target's own loaded
 # image or uninitialized data is an address copied from the original where the
 # link should place an object, so the comparison cannot see that object move.
-# verify reports each one. BSS_END declares where the target's uninitialized
-# data ends past its image (the bound its loader clears) while the link does
-# not place all of it. LINK_VIEWS names the scripts whose names there are
-# views, expressions of symbols the link places, each with its reason in the
-# target. SCRIPT_SYMBOLS=warn, the default while the remaining uninitialized
-# data is converted to C, reports and passes; SCRIPT_SYMBOLS=strict (on the
-# make command line or in the environment) fails, and becomes the default here
-# once verify reports none.
-SCRIPT_SYMBOLS ?= warn
+# verify fails on each one. BSS_END declares where the target's uninitialized
+# data ends past its image, the bound its loader clears: the check covers the
+# data up to it, a link that places data past it fails, and the coverage report
+# counts what no linked object holds there. LINK_VIEWS names the scripts whose
+# names there are views, expressions of symbols the link places, each with its
+# reason in the target. SCRIPT_SYMBOLS=warn (on the make command line or in the
+# environment) reports the names and passes, for a probe; strict is the default.
+SCRIPT_SYMBOLS ?= strict
 $(if $(filter warn strict,$(SCRIPT_SYMBOLS)),,$(error SCRIPT_SYMBOLS must be warn or strict))
 
 verify: $(ROOT)/$(IMAGE)
