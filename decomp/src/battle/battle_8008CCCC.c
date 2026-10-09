@@ -39,7 +39,6 @@ void func_800946F4(void);
 void func_80094C78(void);
 void func_800958D8(void);
 void func_80095B44(void);
-
 void func_80096494(u16 *attack, u16 *defense, s8 *hit);
 void func_80096824(void);
 void func_800968C0(void);
@@ -74,7 +73,6 @@ s8 func_8009DBFC(u8 fromGear);
 
 /* The unit's own uninitialized variable (its .bss, after battle.c's). */
 static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
-
 
 /* This unit's data, 800c348c-800c3508: the formula tables of its formula
  * functions, the formation mode and battle.c's combo steps. */

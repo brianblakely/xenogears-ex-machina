@@ -344,7 +344,6 @@ void func_800BDCF8(TotalPopup *total) {
 void func_800BDD34(void) {
 }
 
-
 /* Running total draw: its label glyph, then its digits turned, scaled and
  * centred on the screen. */
 void func_800BDD3C(Task *draw) {
@@ -878,7 +877,6 @@ s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target) {
     list[count] = NULL;
     return count;
 }
-
 
 /* The direction from sprite from to sprite to on the ground. */
 s16 func_800BEF24(Sprite *from, Sprite *to) {

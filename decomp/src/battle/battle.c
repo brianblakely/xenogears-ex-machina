@@ -3568,13 +3568,11 @@ void func_8008A3EC(u8 member) {
         }
     } while (waiting);
     func_8008A144();
-    if (D_800D2D28->unkCA != 0) {
+    if (D_800D2D28->scriptLoaded != 0) {
         for (i = 0; i < 16; i++) {
             if (D_800D3278->threads[i].waiting != 0) {
-                if (--D_800D3278->threads[i].waitTimer
- < 0) {
-                    D_800D3278->threads[i].waitTimer
- = 0;
+                if (--D_800D3278->threads[i].waitTimer < 0) {
+                    D_800D3278->threads[i].waitTimer = 0;
                 }
             }
         }
@@ -3863,8 +3861,7 @@ u8 member;
 /* Hide the command windows (four panels); without `keep` show the
  * +0x641c lists. */
 void func_8008B108(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown
- = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
@@ -3875,8 +3872,7 @@ void func_8008B108(u8 keep) {
 /* Show the command windows (four panels, page 1) and frame the camera on
  * the member and its default target. */
 void func_8008B168(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown
- = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 1;
     D_800D2D28->unkB7 = 1;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));

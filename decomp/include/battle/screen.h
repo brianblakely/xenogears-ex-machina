@@ -54,7 +54,6 @@ typedef struct {
     s16 field4E;     /* 0x4E */
 } LightFade;
 
-
 /* A shard of the shattered screen (0x7C bytes): turning and falling, drawn
  * as a textured triangle per buffer. */
 typedef struct {

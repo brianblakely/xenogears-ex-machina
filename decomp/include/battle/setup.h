@@ -24,7 +24,6 @@ extern u8 D_800D2FC4;      /* battle exit requested */
  * loader overlays set it). */
 extern u8 D_800D3338;
 
-
 /* Party members' battle masks (from the character battle data). */
 typedef struct MemberMasks {
     u16 mask0;

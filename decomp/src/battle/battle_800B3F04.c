@@ -1032,7 +1032,6 @@ void func_800B5B3C(SpriteLink *link) {
     delta.vy = a.vy - b.vy;
     partner->x += delta.vx << 16;
     partner->y += delta.vy << 16;
-
     sprite = link->sprite;
     if (link->motion != (s8)sprite->motion.bytes[3] || (phase = (SPRITE_FRAME_WORD(sprite) >> 28) & 3) == 0 || phase == 1) {
         link->task.destroy(&link->task);

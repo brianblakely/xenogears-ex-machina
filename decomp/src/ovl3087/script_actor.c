@@ -5,7 +5,6 @@
  * functions (ovl3087.mk); it starts at the first of them, after the
  * interpreter's last opcode handler, and ends at the overlay's data
  * (801e9b5c, ovl3087.c's). */
-
 #include "common.h"
 #include "resident/heap.h"
 #include "resident/sprite.h"
@@ -208,7 +207,6 @@ void func_801E9AD4(SpriteTask *model) {
     func_8001CE74(&model->task);
     func_8001CB48(&model->auxiliary);
     func_8001CD94(&model->task);
-
     func_800320E8(model);
     func_800BC3F8(1);
     func_800BC2F0(1);
@@ -218,7 +216,6 @@ void func_801E9AD4(SpriteTask *model) {
 /* Camera value and mode 0 (800bc3f8, 800bc2f0) and effects disabled, as a
  * script slot model's creation leaves them. */
 void func_801E9B2C(void) {
-
     func_800BC3F8(0);
     func_800BC2F0(0);
     D_800C37C8 = 1;

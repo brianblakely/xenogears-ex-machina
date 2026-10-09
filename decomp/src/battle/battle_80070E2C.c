@@ -1479,13 +1479,13 @@ void func_80074EEC(void) {
     }
 }
 
-/* Add the current *800d3278 quad (UI +0xc8) and draw the 800d2dac object
- * (UI +0xc9). */
+/* Add the event script's current portrait quad (UI +0xc8) and draw the
+ * message text window 800d2dac (UI +0xc9). */
 void func_80074F70(void) {
-    if (D_800D2D28->unkC8 != 0) {
+    if (D_800D2D28->scriptPortraitShown != 0) {
         AddPrim(D_800CCB04.ot + 1, &D_800D3278->quads[D_800D3278->portraitBuffer]);
     }
-    if (D_800D2D28->unkC9 != 0) {
+    if (D_800D2D28->messageShown != 0) {
         func_80034888(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);
     }
 }

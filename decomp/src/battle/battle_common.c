@@ -5,8 +5,7 @@
  * them, each in a slot of whole words (decomp/Makefile). GCC emits tentative
  * definitions in the order of their first declaration, so they are defined
  * ahead of the headers that declare them, structures by their tags; the
- * headers then complete the types and check the declarations (all but
- * battle_flow.h's and result_input.h's, which conflict with others). The
+ * headers then complete the types and check the declarations. The
  * names the battle code uses for parts of these objects are in
  * battle.data.ld. Variables no battle code addresses are marked
  * unreferenced, or with the battle-time modules that use them. */

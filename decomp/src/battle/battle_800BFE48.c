@@ -34,7 +34,6 @@ s32 func_8009A1AC(); /* the status bits shown for a slot (a u16, taken as int) *
 /* This unit's functions, declared before their first use. */
 void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out);
 
-
 /* The idle motion of each shown condition, opening the unit's data: its
  * padding holds stray assembler bytes, so it stays original data. */
 INCLUDE_ORIGINAL(".data", D_800C37D4, 0x800C37D4, 20);

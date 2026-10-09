@@ -73,9 +73,9 @@ typedef struct BattleUi {
     u8 windowOpen[7];    /* +0xBF fully open */
     u8 unkC6;
     u8 unkC7;
-    u8 unkC8;
-    u8 unkC9;
-    u8 unkCA;
+    u8 scriptPortraitShown; /* +0xC8 the event script's portrait quad (ScriptState) is drawn */
+    u8 messageShown;   /* +0xC9 the message text window D_800D2DAC is drawn */
+    u8 scriptLoaded;   /* +0xCA the event script is set up: its threads' waits count down */
     u8 unkCB;
     u8 unkCC[4];
     s32 unkD0[2];

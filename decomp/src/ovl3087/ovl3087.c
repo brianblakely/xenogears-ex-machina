@@ -145,7 +145,7 @@ void func_801E5160(void) {
         D_800D3278->quads[i].clut = GetClut(0, 0x1D0);
         D_800D3278->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
     }
-    D_800D2D28->unkCA = 1;
+    D_800D2D28->scriptLoaded = 1;
     D_800D2D28->unkCC[3] = 0;
     for (i = 0; i < 16; i++) {
         D_800D3278->actionRunning[i] = 0;
@@ -332,7 +332,6 @@ u8 func_801E5A98(s32 id) {
 /* Show the next frame of the five-frame cursor glyph (glyphs 0xe0-0xe4, the
  * battle graphics' cursor quads) at (x, y), mirrored horizontally by
  * swapping the current buffer's second and third vertices. */
-
 void func_801E5B00(x, y)
 s16 x;
 s16 y;
@@ -669,7 +668,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
                 while (D_800D2D28->windowOpen[0] == 0) {
                     func_800716D8();
                 }
-                D_800D2D28->unkC8 = 1;
+                D_800D2D28->scriptPortraitShown = 1;
                 if (!(flags & 1)) {
                     x += 0x40;
                 }
@@ -683,8 +682,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         D_800D2DAC->flags |= 2;
         func_80034614(D_800D2DAC);
         func_80034714(D_800D2DAC, (s32)func_80033728(D_800D3340, message));
-
-        D_800D2D28->unkC9 = 1;
+        D_800D2D28->messageShown = 1;
         D_800D3278->windowOpen = 1;
         func_800716D8();
     }
@@ -700,10 +698,10 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         }
     }
     if (!(D_800D2DAC->flags & 4)) {
-        D_800D2D28->unkC9 = 0;
+        D_800D2D28->messageShown = 0;
         func_800346D4(D_800D2DAC);
         func_800716D8();
-        D_800D2D28->unkC8 = 0;
+        D_800D2D28->scriptPortraitShown = 0;
         if (!(flags & 8)) {
             func_8008FA60(0);
         }
@@ -1301,7 +1299,6 @@ s32 func_801E8718(s32 thread, u8 *insn) {
     for (i = 0; i < 11; i++) {
         if (D_800D3368[i] != NULL) {
             D_800D3368[i]->field35 = 0;
-
         }
     }
     return 1;

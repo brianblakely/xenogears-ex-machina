@@ -32,10 +32,8 @@
  * forms it (the high byte shifted, then narrowed). */
 #define VM_S16(p, i) ((s16)((p)[(i) + 1] << 8) | (p)[i])
 
-
 /* The screen fade's blend mode (800B3B6C): a u8, taken as int. */
 s32 func_800B3B6C();
-
 
 /* Run a sprite's animation script until it waits: commands below 80 show a
  * frame (00-0F the next, 10-1F the next of the facing, 20-2F the previous,
