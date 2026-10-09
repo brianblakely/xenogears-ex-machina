@@ -65,6 +65,68 @@ s32 D_80076F08 = 90;            /* frames until they repeat */
 SVECTOR D_80076F0C[4] = {{0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {0, 0, 128}};
 VECTOR D_80076F2C = {0};        /* the playback camera's translation */
 
+/* The unit's .bss (80076f3c-80077458), not in the file: the resident's mode
+ * table clears it before entering the overlay (movie.bss.ld). The variables
+ * are defined here in address order, the order of their first declaration,
+ * in which GCC emits tentative definitions, each in a slot of whole words
+ * (decomp/Makefile); the decoded image ends 7 bytes into the first. */
+s32 D_80076F3C[16];      /* reads per result class */
+s32 D_80076F7C;          /* host stream: the next frame's data (80028f30) */
+s32 D_80076F80;          /* and its first sector header */
+u8 D_80076F84[8];        /* CD command result */
+/* Menu backdrop: each corner's color fades from one random color to the
+ * next over a random number of frames. */
+CVECTOR D_80076F8C[4];   /* from */
+CVECTOR D_80076F9C[4];   /* to */
+s32 D_80076FAC[4];       /* frames into the fade */
+s32 D_80076FBC[4];       /* frames of the fade */
+CVECTOR D_80076FCC[4];   /* menu frame: from */
+CVECTOR D_80076FDC[4];   /* to */
+s32 D_80076FEC[4];       /* frames into the fade */
+s32 D_80076FFC[4];       /* frames of the fade */
+s32 D_8007700C;          /* battle music sequence (8007548c) */
+/* Movie playback. */
+s32 D_80077010;          /* last frame the library loaded */
+s32 D_80077014;          /* 1: stop; 2..5: frames until then */
+s32 D_80077018;          /* buffer the frame went to */
+s32 D_8007701C;          /* buffer on display */
+s32 D_80077020;          /* decoding paused */
+s32 D_80077024;          /* the first buffer's y */
+s32 D_80077028;          /* buttons do not end the movie */
+/* The playback camera (unused by the movie path). */
+VECTOR D_8007702C;       /* eye */
+VECTOR D_8007703C;       /* target */
+s32 D_8007704C;          /* roll */
+MATRIX D_80077050;       /* world to screen */
+MATRIX D_80077070;       /* light colors */
+MATRIX D_80077090;       /* light directions */
+SVECTOR D_800770B0;      /* camera rotation */
+MATRIX D_800770B8;       /* camera translation */
+MATRIX D_800770D8;       /* camera rotation */
+MATRIX D_800770F8;       /* base rotation (identity) */
+s32 D_80077118;          /* menu cursor */
+s32 D_8007711C;          /* movie index */
+MovieBuffer *D_80077120; /* buffer being drawn */
+MovieBuffer D_80077124[2];
+s32 D_80077394;          /* statistics shown */
+s32 D_80077398;          /* XA channel */
+s32 D_8007739C;          /* last frame */
+s32 D_800773A0;          /* rows */
+s32 D_800773A4;          /* first frame */
+s32 D_800773A8;          /* start sector */
+s32 D_800773AC;          /* buttons */
+s32 D_800773B0;          /* monitor shown */
+s32 D_800773B4;          /* previous buttons */
+s32 D_800773B8[32];      /* VSync(1) before and after each decode step */
+s32 D_80077438;          /* split display */
+s32 D_8007743C;          /* end frame: 0 changed, 1 found, 2 not found */
+s32 D_80077440;          /* menu shown */
+s32 D_80077444;          /* start frame: 1 changed, 2 sought */
+s32 D_80077448;          /* movie kind */
+s32 D_8007744C;          /* buffer index */
+s32 D_80077450;          /* disc mode: 0, -1 or host */
+s32 D_80077454;          /* library output mode (bit 0: 24-bit) */
+
 /* The menu's CD-ROM monitor: at 640x240, show the read statistics, the
  * resident's error counters and stream state, a dump of the stream buffer
  * and the reads per result class, run the monitor's input every frame and

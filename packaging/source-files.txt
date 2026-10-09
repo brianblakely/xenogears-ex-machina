@@ -422,6 +422,7 @@ decomp/targets/overlays/menu.classification.txt
 decomp/targets/overlays/menu.mk
 decomp/targets/overlays/menu.symbols.txt
 decomp/targets/overlays/menu.yaml
+decomp/targets/overlays/movie.bss.ld
 decomp/targets/overlays/movie.mk
 decomp/targets/overlays/movie.symbols.txt
 decomp/targets/overlays/movie.yaml
