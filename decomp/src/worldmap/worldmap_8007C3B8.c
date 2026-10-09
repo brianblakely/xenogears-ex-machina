@@ -17,7 +17,12 @@ SVECTOR D_8009A568[7] = {
     {-495, -1063, 852}, {-703, -707, 1647},
 };
 
-/* Vehicle scene director: step through its timed sequence and run each cue (actor commands, sounds, fog). */
+/* Vehicle scene director (mode 12): func_8007A9F8's cue sequencer on
+ * D_8009A4D8/D_8009A4E8, whose starter runs entry 0 at once. Actor slots
+ * (func_8007BF50): 0 the screen fade, 2 the camera shots (func_8007C7D8),
+ * 3-8 the drifting scene objects (func_8007CD20-func_8007D690), 9 object 16
+ * (func_8007D7FC). A fade with rate 1 adds the fade quad (white), with
+ * rate 2 subtracts it (black). */
 s32 func_8007C3B8(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
@@ -25,8 +30,10 @@ s32 func_8007C3B8(s32 index) {
     actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
     switch (actor->state) {
+    /* 0: idle (no entry holds it). */
     case 0:
         break;
+    /* 1: wait, then fetch the next entry. */
     case 1:
         if (--actor->wait < 0) {
             actor->state = D_8009A4D8[actor->u.step];
@@ -34,6 +41,7 @@ s32 func_8007C3B8(s32 index) {
             actor->u.step++;
         }
         break;
+    /* 2: slot 2 request 1; area sounds 0xD-0xF. */
     case 2:
         func_80097770(2, 1);
         actor->state = 1;
@@ -41,6 +49,8 @@ s32 func_8007C3B8(s32 index) {
         func_80039E60((D_8006259C->id << 16) | 0xE);
         func_80039E60((D_8006259C->id << 16) | 0xF);
         break;
+    /* 0x10: start emitter group 0x14 at the camera target's x, z; area
+     * sounds 0x10-0x12. */
     case 0x10:
         scratch->position.vy = 0;
         scratch->position.vx = D_8009BE28.target.vx >> 12;
@@ -51,6 +61,8 @@ s32 func_8007C3B8(s32 index) {
         func_80039E60((D_8006259C->id << 16) | 0x12);
         actor->state = 1;
         break;
+    /* 0x11: slot 2 request 2; fade out at rate 1, 0x40 per frame; area
+     * sounds 0x13-0x15. */
     case 0x11:
         func_80097770(2, 2);
         func_80097770(0, 0xD);
@@ -61,6 +73,8 @@ s32 func_8007C3B8(s32 index) {
         func_80039E60((D_8006259C->id << 16) | 0x14);
         func_80039E60((D_8006259C->id << 16) | 0x15);
         break;
+    /* 0x12: slot 2 request 3, slots 3-7 request 1; fade in at rate 1, 1 per
+     * frame. */
     case 0x12:
         func_80097770(2, 3);
         func_80097770(3, 1);
@@ -73,23 +87,27 @@ s32 func_8007C3B8(s32 index) {
         D_8009D3CC = 1;
         actor->state = 1;
         break;
+    /* 0x13: slot 2 request 4, slot 9 request 1. */
     case 0x13:
         func_80097770(2, 4);
         func_80097770(9, 1);
         actor->state = 1;
         break;
+    /* 0x14: slot 2 request 6, slots 3 and 9 request 2. */
     case 0x14:
         func_80097770(2, 6);
         func_80097770(3, 2);
         func_80097770(9, 2);
         actor->state = 1;
         break;
+    /* 0x16: fade out at rate 2, 4 per frame. */
     case 0x16:
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
         actor->state = 1;
         break;
+    /* 0x40: end the world-map loop with exit 0 (the state stays 1). */
     case 0x40:
         D_8009D554 = 0;
         D_8009D7CC = 0;

@@ -407,8 +407,13 @@ s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
     return 1;
 }
 
-/* Spawn the effect of a hit: between two model points for line types,
- * otherwise at the midpoint of the given points. */
+/* Frame event kind 2: the effect a HitSpec's type selects. Types 0x10-0x1F
+ * go between the two model points: 0x10 a line trail (func_8007CD44),
+ * 0x11-0x13 a bolt of kind 0-2 (func_8007D65C), the rest nothing. Other
+ * types go to point a, or the midpoint when b differs, after setting the
+ * kind-2 sparkle colour to the actor's: 0x20 and up a sparkle trail of size
+ * D_80091228[type - 0x20] (func_8007C880), 0-4 a sparkle of that kind and
+ * 8-12 the same jittered (func_8007D190; other types nothing). */
 void func_80073F34(Actor *actor, HitSpec *hit) {
     Vector a;
     Vector b;
@@ -439,8 +444,14 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
     }
 }
 
-/* Resolve a hit on an actor's model: impact effects at the hit points and,
- * when it lands, a charged shot, a projectile or a trail segment. */
+/* Frame event kind 0, every frame of its range: unless the type has bit
+ * 0x40 (or the actor's unk84[2] is 0), a sparkle trail at point a
+ * (func_8007C880) or a line trail from a to b (func_8007CD44). While the hit
+ * is live (lands): type 0x20 a charged shot (func_80073424 kind 0, from the
+ * midpoint of two points) if func_80073E2C takes the charge, else sparkle 9;
+ * type 4 a kind-1 shot at the opponent; 0x21-0x26 a kind 1-6 shot, away from
+ * b when the points differ; any other type a trail segment from a to b
+ * (func_80073CEC), which func_80075B50 tests against the opponent. */
 void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     Vector a;
     Vector b;
@@ -540,11 +551,12 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
-/* Run the frame events of an actor's current move for count frames from
- * frame (once per frame): hits (flagged 0x4000000 on their first frame),
- * one pair of sound effects, trails (each spec once), return home, and
- * showing or hiding model parts. An unknown event kind stalls the loop, as
- * in the original. */
+/* Run the frame events of an actor's current animation for count frames
+ * from frame (once per frame): its list (header + unk900[anim], 0 for none)
+ * holds FrameEvent records up to first 0xFF, and each record whose range
+ * holds the frame runs the HitSpec at header + spec by its kind byte. An
+ * unknown kind stalls the loop, as in the original. tools/analysis/
+ * overlay_scripts.py decodes the lists of the arena model files. */
 void func_80074678(Actor *actor, s16 frame, s16 count) {
     Vector unused; /* unused in the original; reserves 16 bytes */
     HitSpec *trails[20];
@@ -576,6 +588,9 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                 }
                 spec = (HitSpec *)((u8 *)actor->header + event->spec);
                 switch (spec->unk0) {
+                /* 0 hit (type, part_a, vertex_a, part_b, vertex_b): live
+                 * (0x4000000) from the first frame until the last, unless a
+                 * trail connects first; func_800740E4 on every frame. */
                 case 0:
                     if (frame == event->first) {
                         actor->flags |= 0x4000000;
@@ -585,6 +600,8 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                         actor->flags &= ~0x4000000;
                     }
                     break;
+                /* 1 sounds (part_a, part_b: character sound ids, 0 none):
+                 * play both at the actor; only the call's first kind-1 event. */
                 case 1:
                     if (!sounded) {
                         func_8008EB88(actor, spec->part_a, &actor->pos, 2);
@@ -592,6 +609,9 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                         func_8008EB88(actor, spec->part_b, &actor->pos, 2);
                     }
                     break;
+                /* 2 effect (type, part_a, vertex_a, part_b, vertex_b):
+                 * func_80073F34 once per HitSpec in a call, up to 20 (the
+                 * count is never initialised). */
                 case 2:
                     for (offset = 0; offset < trail_count; offset++) {
                         if (trails[offset] == spec) {
@@ -603,15 +623,19 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                         func_80073F34(actor, spec);
                     }
                     break;
+                /* 3 return home: put the actor at its home position, idle. */
                 case 3:
                     func_80078154(actor);
                     break;
+                /* 4 hide part (type: model node): set its model's hidden flag. */
                 case 4:
                     ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags |= 1;
                     break;
+                /* 5 show part (type: model node): clear its hidden flag. */
                 case 5:
                     ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags &= ~1;
                     break;
+                /* Any other kind retests the same record forever. */
                 default:
                     continue;
                 }

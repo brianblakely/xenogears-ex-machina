@@ -373,9 +373,11 @@ typedef struct {
     s16 spec;
 } FrameEvent;
 
-/* Where a hit effect goes: model part and vertex of one or two points. */
+/* A frame event's operands: its kind (func_80074678's case), the type its
+ * kind dispatches on, and the model part and vertex of one or two points.
+ * Kinds 1, 3, 4 and 5 read only the first 4, 1, 2 and 2 bytes. */
 typedef struct {
-    u8 unk0;
+    u8 unk0; /* kind */
     u8 type;
     u8 part_a;
     u8 part_b;

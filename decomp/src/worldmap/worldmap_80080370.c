@@ -6,14 +6,21 @@
 u16 D_8009A698[9] = {1, 2, 8, 3, 4, 5, 6, 7, 64};
 u16 D_8009A6AC[10] = {135, 15, 135, 188, 2, 2, 120, 128, 0, 0x7542};
 
-/* Flight scene director: step through its timed sequence and run each cue. */
+/* Flight scene director (mode 13): func_8007A9F8's cue sequencer on
+ * D_8009A698/D_8009A6AC; its starter does not step, so entry 0 runs twice.
+ * Actor slots (func_8007FF70): 0 the screen fade, 2 the camera
+ * (func_80080600), 3 effects 0x28-0x2A (func_80080944), 4 the growing
+ * objects 0 and 1 (func_80080AC4). A fade with rate 1 adds the fade quad
+ * (white), with rate 2 subtracts it (black). */
 s32 func_80080370(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
+    /* 0: idle. */
     case 0:
         break;
+    /* 1: wait, then fetch the next entry. */
     case 1:
         if (--actor->wait < 0) {
             actor->state = D_8009A698[actor->u.step];
@@ -21,20 +28,24 @@ s32 func_80080370(s32 index) {
             actor->u.step++;
         }
         break;
+    /* 2: slot 3 request 1. */
     case 2:
         func_80097770(3, 1);
         actor->state = 1;
         break;
+    /* 3: slot 2 request 2. */
     case 3:
         func_80097770(2, 2);
         actor->state = 1;
         break;
+    /* 4: fade out at rate 1, 0x80 per frame. */
     case 4:
         func_80097770(0, 0xD);
         D_8009CCA4 = 1;
         D_8009D3CC = 0x80;
         actor->state = 1;
         break;
+    /* 5: fade in at rate 1, 0x80 per frame; slot 4 request 1. */
     case 5:
         func_80097770(0, 0xC);
         func_80097770(4, 1);
@@ -42,22 +53,26 @@ s32 func_80080370(s32 index) {
         D_8009D3CC = 0x80;
         actor->state = 1;
         break;
+    /* 6: slot 2 request 3. */
     case 6:
         func_80097770(2, 3);
         actor->state = 1;
         break;
+    /* 7: fade out at rate 2, 4 per frame. */
     case 7:
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
         actor->state = 1;
         break;
+    /* 8: area sounds 0x16-0x18. */
     case 8:
         func_80039E60((D_8006259C->id << 16) | 0x16);
         func_80039E60((D_8006259C->id << 16) | 0x17);
         func_80039E60((D_8006259C->id << 16) | 0x18);
         actor->state = 1;
         break;
+    /* 0x40: end the world-map loop with exit 0; idle. */
     case 0x40:
         D_8009D554 = 0;
         D_8009D7CC = 0;

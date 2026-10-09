@@ -15,15 +15,23 @@ SVECTOR D_8009A490[9] = {
     {23251, -248, 24648},
 };
 
-/* Scene director: state 1 steps the timed sequence at D_8009A450/D_8009A46C;
- * the other states start effects, sounds and actor commands and return to 1. */
+/* Scene director (mode 14), a cue sequencer: state 1 counts the wait down
+ * and, once it drops below 0, loads the next entry's state and wait from
+ * D_8009A450/D_8009A46C; each other state runs its cue on the next update
+ * and returns to 1. Requests (func_80097770) go to the setup's actor slots
+ * (func_8007A5DC): 0 the screen fade, 2 the camera (func_8007ADD4), 3 and 4
+ * the growing objects (func_8007B394, func_8007B798), 5 the exhaust trail,
+ * 6 the rig's flight. tools/analysis/overlay_scripts.py decodes the
+ * sequence. */
 s32 func_8007A9F8(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
+    /* 0: idle. */
     case 0:
         break;
+    /* 1: wait, then fetch the next entry. */
     case 1:
         if (--actor->wait < 0) {
             actor->state = D_8009A450[actor->u.step];
@@ -31,11 +39,13 @@ s32 func_8007A9F8(s32 index) {
             actor->u.step++;
         }
         break;
+    /* 2: start emitter group 0x11; area sound 1. */
     case 2:
         func_80089160(0x11, NULL, NULL);
         actor->state = 1;
         func_80039E60((D_8006259C->id << 16) | 1);
         break;
+    /* 3: slot 2 request 2; emitter groups 0xF and 0x10; area sounds 4-6. */
     case 3:
         func_80097770(2, 2);
         actor->state = 1;
@@ -45,11 +55,13 @@ s32 func_8007A9F8(s32 index) {
         func_80039E60((D_8006259C->id << 16) | 5);
         func_80039E60((D_8006259C->id << 16) | 6);
         break;
+    /* 4: slot 2 request 3, slot 3 request 1. */
     case 4:
         func_80097770(2, 3);
         func_80097770(3, 1);
         actor->state = 1;
         break;
+    /* 5: slot 2 request 6, slots 4 and 5 request 1; area sounds 7-9. */
     case 5:
         func_80097770(2, 6);
         func_80097770(4, 1);
@@ -59,6 +71,7 @@ s32 func_8007A9F8(s32 index) {
         func_80039E60((D_8006259C->id << 16) | 8);
         func_80039E60((D_8006259C->id << 16) | 9);
         break;
+    /* 6: slot 2 request 4; area sound 0xA, and 0xB and 0xC on voices 12-13. */
     case 6:
         func_80097770(2, 4);
         actor->state = 1;
@@ -66,24 +79,29 @@ s32 func_8007A9F8(s32 index) {
         func_80039E18((D_8006259C->id << 16) | 0xB);
         func_80039E18((D_8006259C->id << 16) | 0xC);
         break;
+    /* 7: slot 2 request 5. */
     case 7:
         func_80097770(2, 5);
         actor->state = 1;
         break;
+    /* 8: slot 2 request 1. */
     case 8:
         func_80097770(2, 1);
         actor->state = 1;
         break;
+    /* 9: slot 6 request 1, slot 2 request 7. */
     case 9:
         func_80097770(6, 1);
         func_80097770(2, 7);
         actor->state = 1;
         break;
+    /* 10: fade out (slot 0 request 13) at 4 per frame. */
     case 10:
         func_80097770(0, 0xD);
         D_8009D3CC = 4;
         actor->state = 1;
         break;
+    /* 11: end the world-map loop with exit 0. */
     case 11:
         D_8009D554 = 0;
         D_8009D7CC = 0;
