@@ -3563,8 +3563,8 @@ void func_801E6668(s32 index) {
 }
 
 /* Lay out the save's play time (two separators and seven digits at y 7a)
- * and its two-digit number (+23, plus one) with its label at (8, 66). */
-void func_801E68AC(MenuViewSet *set) {
+ * and its file digit plus one, as two digits, with its label at (8, 66). */
+void func_801E68AC(SaveSummary *set) {
     s32 i;
 
     func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->file_info->colon0, D_800625A0->buffer_index, D_801E9FE0[0], 0x7a,
@@ -3578,25 +3578,26 @@ void func_801E68AC(MenuViewSet *set) {
     }
     func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->file_info->discLabel, D_800625A0->buffer_index, 8, 0x66, 0x1000);
     func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->file_info->discMark, D_800625A0->buffer_index, 0x10, 0x66, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->file_info->discDigits[0],
+    func_8002675C(D_800625A0->sheet, (set->digit + 1) / 10, D_800625A0->file_info->discDigits[0],
                   D_800625A0->buffer_index, 0x10, 0x6e, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->file_info->discDigits[1],
+    func_8002675C(D_800625A0->sheet, (set->digit + 1) % 10, D_800625A0->file_info->discDigits[1],
                   D_800625A0->buffer_index, 0x18, 0x6e, 0x1000);
 }
 
-/* Set up view `index` of the block at +34c from its sheet image (14e + set). */
-void func_801E6AE8(u8 index, MenuViewSet *set) {
-    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, &D_800625A0->file_info->views[index],
+/* Set up view `index` of the block at +34c from its character's sheet image
+ * (14e + id). */
+void func_801E6AE8(u8 index, SaveSummary *set) {
+    func_8002675C(D_800625A0->sheet, set->ids[index] + 0x14e, &D_800625A0->file_info->views[index],
                   D_800625A0->buffer_index, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
-/* Lay out view `index`'s number (the set's +16 value) as up to three digit
- * sprites, and reset its second digit row for the +19 value. */
-void func_801E6B70(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s level as up to three digit sprites, and reset its
+ * second digit row for the +63 value. */
+void func_801E6B70(u8 index, SaveSummary *set) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(set->levels[index]);
+    func_801C80B8(set->level[index]);
     D_800625A0->file_info->views[index].levelCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
@@ -3607,80 +3608,80 @@ void func_801E6B70(u8 index, MenuViewSet *set) {
                               D_800625A0->buffer_index, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
         }
     }
-    func_801C80B8(set->unk19[index]);
-    D_800625A0->file_info->views[index].unk871 = 0;
+    func_801C80B8(set->level2[index]);
+    D_800625A0->file_info->views[index].level2Count = 0;
 }
 
-/* Lay out view `index`'s values A (+4) and B (+a) as up to three digit
- * sprites each (B packed without leading blanks). */
-void func_801E6CFC(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s HP and maximum HP as up to three digit sprites
+ * each (the maximum packed without leading blanks). */
+void func_801E6CFC(u8 index, SaveSummary *set) {
     s32 i;
     s32 drawn;
     u8 digit;
 
-    func_801C80B8(set->valueA[index]);
-    D_800625A0->file_info->views[index].aCount = 0;
+    func_801C80B8(set->hp[index]);
+    D_800625A0->file_info->views[index].hpCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->file_info->views[index].aCount +=
+            D_800625A0->file_info->views[index].hpCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->file_info->views[index].aDigits[D_800625A0->file_info->views[index].aCount],
+                              D_800625A0->file_info->views[index].hpDigits[D_800625A0->file_info->views[index].hpCount],
                               D_800625A0->buffer_index, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
         }
     }
     drawn = 0;
-    func_801C80B8(set->valueB[index]);
-    D_800625A0->file_info->views[index].bCount = 0;
+    func_801C80B8(set->hpMax[index]);
+    D_800625A0->file_info->views[index].hpMaxCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->file_info->views[index].bCount +=
+            D_800625A0->file_info->views[index].hpMaxCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->file_info->views[index].bDigits[D_800625A0->file_info->views[index].bCount],
+                              D_800625A0->file_info->views[index].hpMaxDigits[D_800625A0->file_info->views[index].hpMaxCount],
                               D_800625A0->buffer_index, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
             drawn++;
         }
     }
 }
 
-/* Lay out view `index`'s values C (+10) and D (+13) as up to two digit
- * sprites each (D packed without leading blanks). */
-void func_801E6F5C(u8 index, MenuViewSet *set) {
+/* Lay out view `index`'s EP and maximum EP as up to two digit sprites each
+ * (the maximum packed without leading blanks). */
+void func_801E6F5C(u8 index, SaveSummary *set) {
     s32 i;
     s32 drawn;
     u8 digit;
 
-    func_801C80B8(set->valueC[index]);
-    D_800625A0->file_info->views[index].cCount = 0;
+    func_801C80B8(set->ep[index]);
+    D_800625A0->file_info->views[index].epCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->file_info->views[index].cCount +=
+            D_800625A0->file_info->views[index].epCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->file_info->views[index].cDigits[D_800625A0->file_info->views[index].cCount],
+                              D_800625A0->file_info->views[index].epDigits[D_800625A0->file_info->views[index].epCount],
                               D_800625A0->buffer_index, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
         }
     }
     drawn = 0;
-    func_801C80B8(set->valueD[index]);
-    D_800625A0->file_info->views[index].dCount = 0;
+    func_801C80B8(set->epMax[index]);
+    D_800625A0->file_info->views[index].epMaxCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->file_info->views[index].dCount +=
+            D_800625A0->file_info->views[index].epMaxCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->file_info->views[index].dDigits[D_800625A0->file_info->views[index].dCount],
+                              D_800625A0->file_info->views[index].epMaxDigits[D_800625A0->file_info->views[index].epMaxCount],
                               D_800625A0->buffer_index, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
             drawn++;
         }
     }
 }
 
-/* Render the name of view `index`'s sheet entry from listed file `file`'s
- * header (up to ten two-byte characters) and upload it to label row
+/* Render the name of view `index`'s character from listed file `file`'s
+ * name table (up to ten two-byte characters) and upload it to label row
  * `index` of the view rows. */
-void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
+void func_801E71B4(u8 index, SaveSummary *set, s32 file) {
     RECT rect;
     u8 name[24];
     u8 text[24];
@@ -3690,8 +3691,8 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
 
     info = (MenuSaveInfo *)(D_800625A0->card->heads[file] + 0x100);
     for (i = 0; i < 20; i += 2) {
-        name[i] = info->names[set->images[index]].text[i];
-        name[i + 1] = info->names[set->images[index]].text[i + 1];
+        name[i] = info->names[set->ids[index]].text[i];
+        name[i + 1] = info->names[set->ids[index]].text[i + 1];
         if (name[i] == 0 && name[i + 1] == 0) {
             break;
         }
@@ -3739,13 +3740,13 @@ void func_801E733C(void) {
 
 /* Build the three views of card file `index`'s save information. */
 void func_801E76EC(s32 index) {
-    MenuViewSet *set;
+    SaveSummary *set;
     s32 i;
 
-    set = (MenuViewSet *)(D_800625A0->card->heads[index] + 0x100);
+    set = (SaveSummary *)(D_800625A0->card->heads[index] + 0x100);
     func_801E61B0();
     for (i = 0; i < 3; i++) {
-        if (set->images[i] != 0xff) {
+        if (set->ids[i] != 0xff) {
             D_800625A0->file_info->views[i].shown = 1;
             func_801E6AE8(i, set);
             func_801E6B70(i, set);

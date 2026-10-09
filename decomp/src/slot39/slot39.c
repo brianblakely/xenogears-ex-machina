@@ -237,17 +237,17 @@ s32 D_801E9FBC[9] = { 0x4E, 0x4E, 0x4E, 0x62, 0x62, 0x62, 0x6A, 0x6A, 0x6A }; /*
 s32 D_801E9FE0[9] = { 0x34, 0x4C, 0x1C, 0x24, 0x2C, 0x3C, 0x44, 0x54, 0x5C }; /* play time: x of the two separators and seven digits */
 s32 D_801EA004[3] = { 0xC, 0x1C, 0x2C };
 s32 D_801EA010[3] = { 0x4C, 0x54, 0x5C };
-s32 D_801EA01C = 0x5C; /* view digit row x */
-s32 D_801EA020 = 0x4E; /* view digit row y */
+s32 D_801EA01C = 0x5C; /* view level digits x */
+s32 D_801EA020 = 0x4E; /* view level digits y */
 s32 D_801EA024 = 0x7C; /* unreferenced */
 s32 D_801EA028 = 0x4E; /* unreferenced */
-s32 D_801EA02C = 0x5C; /* value A digits x, y */
+s32 D_801EA02C = 0x5C; /* view HP digits x, y */
 s32 D_801EA030 = 0x62;
-s32 D_801EA034 = 0x7C; /* value B digits x, y */
+s32 D_801EA034 = 0x7C; /* view maximum HP digits x, y */
 s32 D_801EA038 = 0x62;
-s32 D_801EA03C = 0x64; /* value C digits x, y */
+s32 D_801EA03C = 0x64; /* view EP digits x, y */
 s32 D_801EA040 = 0x6A;
-s32 D_801EA044 = 0x7C; /* value D digits x, y */
+s32 D_801EA044 = 0x7C; /* view maximum EP digits x, y */
 s32 D_801EA048 = 0x6A;
 s32 D_801EA04C = 0x70; /* save title x, y */
 s32 D_801EA050 = 0x74;
@@ -2733,7 +2733,7 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * and three more bytes), the play time and file digit `digit`, each name
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
-void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
+void func_801CBA4C(SaveSummary *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
     s32 i;
@@ -2751,8 +2751,8 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             payload->hpMax[i] = D_8006D634.characters[D_800625A0->flags->party[i]].maxHp;
             payload->ep[i] = D_8006D634.characters[D_800625A0->flags->party[i]].ep;
             payload->epMax[i] = D_8006D634.characters[D_800625A0->flags->party[i]].maxEp;
-            payload->unk16[i] = D_8006D634.characters[D_800625A0->flags->party[i]].level;
-            payload->unk19[i] = D_8006D634.characters[D_800625A0->flags->party[i]].level2;
+            payload->level[i] = D_8006D634.characters[D_800625A0->flags->party[i]].level;
+            payload->level2[i] = D_8006D634.characters[D_800625A0->flags->party[i]].level2;
         } else {
             payload->ids[i] = 0xff;
         }
@@ -2943,7 +2943,7 @@ u8 func_801CBD90(u8 kind) {
                         buffer = func_80031BDC(0x1f00, 1);
                         bzero(buffer, 0x1f00);
                         p = buffer;
-                        func_801CBA4C((MenuSavePayload *)buffer, port, digit);
+                        func_801CBA4C((SaveSummary *)buffer, port, digit);
                         q = buffer;
                         sum = 0;
                         for (i = 0; i < 0x1eff; i++) {
@@ -4034,15 +4034,15 @@ void func_801D02D8(void) {
                               D_800625A0->file_info->views[i].frameBuffer);
                 func_801CE2B4(D_800625A0->file_info->views[i].levelCount, D_800625A0->file_info->views[i].levelDigits[0],
                               D_800625A0->file_info->views[i].buffer);
-                func_801CE2B4(D_800625A0->file_info->views[i].unk871, D_800625A0->file_info->views[i].levelDigits[3],
+                func_801CE2B4(D_800625A0->file_info->views[i].level2Count, D_800625A0->file_info->views[i].levelDigits[3],
                               D_800625A0->file_info->views[i].buffer);
-                func_801CE2B4(D_800625A0->file_info->views[i].aCount, D_800625A0->file_info->views[i].aDigits[0],
+                func_801CE2B4(D_800625A0->file_info->views[i].hpCount, D_800625A0->file_info->views[i].hpDigits[0],
                               D_800625A0->file_info->views[i].buffer);
-                func_801CE2B4(D_800625A0->file_info->views[i].bCount, D_800625A0->file_info->views[i].bDigits[0],
+                func_801CE2B4(D_800625A0->file_info->views[i].hpMaxCount, D_800625A0->file_info->views[i].hpMaxDigits[0],
                               D_800625A0->file_info->views[i].buffer);
-                func_801CE2B4(D_800625A0->file_info->views[i].cCount, D_800625A0->file_info->views[i].cDigits[0],
+                func_801CE2B4(D_800625A0->file_info->views[i].epCount, D_800625A0->file_info->views[i].epDigits[0],
                               D_800625A0->file_info->views[i].buffer);
-                func_801CE2B4(D_800625A0->file_info->views[i].dCount, D_800625A0->file_info->views[i].dDigits[0],
+                func_801CE2B4(D_800625A0->file_info->views[i].epMaxCount, D_800625A0->file_info->views[i].epMaxDigits[0],
                               D_800625A0->file_info->views[i].buffer);
                 AddPrim(&D_800625A0->current->ot[4],
                         &D_800625A0->file_info->views[i].image[D_800625A0->file_info->views[0].buffer]);

@@ -11,46 +11,52 @@
  * and messages, save and load (the save file layout and the game data it
  * copies), the file screen's slots and views of a save, and the disc checks. */
 
-/* The second half of a listed file's header block (+100). */
+/* The summary at the start of a save payload, which 801cba4c writes: the
+ * play time and, per party slot, the character and its HP, EP and levels.
+ * The file screen shows it from each listed file's first block (+100,
+ * 801e76ec), a view per party slot. */
+typedef struct SaveSummary {
+    s32 time;     /* 0: play time in frames */
+    u16 hp[3];    /* 4: per party slot */
+    u16 hpMax[3]; /* A */
+    u8 ep[3];     /* 10 */
+    u8 epMax[3];  /* 13 */
+    u8 level[3];  /* 16: the character's level (+62) */
+    u8 level2[3]; /* 19: and its +63 */
+    u8 ids[3];    /* 1C: the character, ff empty; the view shows sheet image 14e + id */
+    u8 unk1F;     /* 1F: written 0 */
+    u8 pad20[0x3];
+    u8 digit;     /* 23: the file digit, shown plus one as two digits */
+} SaveSummary;
+
+/* A name of the save's name table (two-byte text). */
 typedef struct MenuSaveName {
-    u8 text[0x14]; /* two-byte text */
+    u8 text[0x14];
 } MenuSaveName;
 
+/* The start of a save payload as the file screen reads it from a listed
+ * file's first block (+100): the summary, then the characters' names. */
 typedef struct MenuSaveInfo {
-    u8 pad0[0x24];
-    MenuSaveName names[4]; /* 24: names of the sheet entries */
+    SaveSummary summary;
+    MenuSaveName names[11]; /* 24: game data 0, encoded */
 } MenuSaveInfo;
-
-/* The record 801e76ec passes to 801e6ae8. */
-typedef struct MenuViewSet {
-    s32 time; /* 0: play time in frames */
-    u16 valueA[3]; /* 4: per view */
-    u16 valueB[3]; /* A: per view */
-    u8 valueC[3]; /* 10: per view */
-    u8 valueD[3]; /* 13: per view */
-    u8 levels[3]; /* 16: per view: number shown in the first digit row */
-    u8 unk19[3]; /* 19: per view: number of the second digit row */
-    u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
-    u8 pad20[0x3];
-    u8 unk23; /* 23: shown plus one as two digits */
-} MenuViewSet;
 
 /* A save information view (801e76ec). */
 typedef struct MenuView {
     POLY_FT4 image[2]; /* 0: the entry's sheet image (801e6ae8) */
     POLY_FT4 frame[9][2]; /* 50: frame sprite list */
-    POLY_FT4 levelDigits[6][2]; /* 320: digit sprite list of the set's level (+16), per buffer */
-    POLY_FT4 aDigits[3][2]; /* 500: of value A (+4) */
-    POLY_FT4 bDigits[3][2]; /* 5F0: of value B (+a) */
-    POLY_FT4 cDigits[2][2]; /* 6E0: of value C (+10) */
-    POLY_FT4 dDigits[2][2]; /* 780: of value D (+13) */
+    POLY_FT4 levelDigits[6][2]; /* 320: digit sprite lists of the summary's level and (from 3) its +63 */
+    POLY_FT4 hpDigits[3][2]; /* 500: of its HP */
+    POLY_FT4 hpMaxDigits[3][2]; /* 5F0: of its maximum HP */
+    POLY_FT4 epDigits[2][2]; /* 6E0: of its EP */
+    POLY_FT4 epMaxDigits[2][2]; /* 780: of its maximum EP */
     POLY_FT4 name[2]; /* 820: the entry's name image */
     u8 levelCount; /* 870 */
-    u8 unk871; /* 871 */
-    u8 aCount; /* 872 */
-    u8 bCount; /* 873 */
-    u8 cCount; /* 874 */
-    u8 dCount; /* 875 */
+    u8 level2Count; /* 871: drawn, but only ever reset */
+    u8 hpCount; /* 872 */
+    u8 hpMaxCount; /* 873 */
+    u8 epCount; /* 874 */
+    u8 epMaxCount; /* 875 */
     u8 frameBuffer; /* 876 */
     u8 buffer; /* 877 */
     u8 shown; /* 878 */
@@ -144,8 +150,7 @@ typedef struct SaveGear {
 
 /* The game data of a save file (after its header). */
 typedef struct SaveData {
-    s32 time; /* 0: play time in frames */
-    u8 pad4[0x20];
+    SaveSummary summary; /* 0 */
     SaveWordsDC names; /* 24: game data 0 */
     SaveWords190 unk100; /* 100: game data dc */
     SaveWordsA4 chars[11]; /* 290: character records */
@@ -155,21 +160,6 @@ typedef struct SaveData {
     SaveWords100 unk1024; /* 1024: game data 1820 */
     u8 unk1124[0xA38]; /* 1124: game data 1920 */
 } SaveData;
-
-/* The summary at the start of a save payload (801cba4c). */
-typedef struct MenuSavePayload {
-    s32 time; /* 0: play time */
-    u16 hp[3]; /* 4: per party slot */
-    u16 hpMax[3]; /* A */
-    u8 ep[3]; /* 10 */
-    u8 epMax[3]; /* 13 */
-    u8 unk16[3]; /* 16 */
-    u8 unk19[3]; /* 19 */
-    u8 ids[3]; /* 1C: character, ff empty */
-    u8 unk1F; /* 1F */
-    u8 pad20[0x3];
-    u8 digit; /* 23: file digit */
-} MenuSavePayload;
 
 /* The 31 names at the start of the game data (encoded in the save). */
 #define GAME_NAMES ((u8 *)&D_8006D634)
@@ -192,17 +182,17 @@ extern s32 D_801EA494[18];    /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
 extern s32 D_801E9FBC[9];     /* view frame y */
 extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
-extern s32 D_801EA01C;         /* view digit row x */
-extern s32 D_801EA020;         /* view digit row y */
+extern s32 D_801EA01C;         /* view level digits x */
+extern s32 D_801EA020;         /* view level digits y */
 extern s32 D_801EA04C;         /* save title x, y */
 extern s32 D_801EA050;
-extern s32 D_801EA02C;         /* value A digits x, y */
+extern s32 D_801EA02C;         /* view HP digits x, y */
 extern s32 D_801EA030;
-extern s32 D_801EA034;         /* value B digits x, y */
+extern s32 D_801EA034;         /* view maximum HP digits x, y */
 extern s32 D_801EA038;
-extern s32 D_801EA03C;         /* value C digits x, y */
+extern s32 D_801EA03C;         /* view EP digits x, y */
 extern s32 D_801EA040;
-extern s32 D_801EA044;         /* value D digits x, y */
+extern s32 D_801EA044;         /* view maximum EP digits x, y */
 extern s32 D_801EA048;
 extern s32 D_801EA900[2]; /* per port: blocks the listed files use (15 fill a card) */
 
