@@ -994,27 +994,27 @@ SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume) {
 
 /* The offset of the sprite's anchor index (mirrored with the sprite,
  * scaled), when it is drawn one sided. */
-Point2 func_800B59BC(Sprite *sprite, s32 index) {
-    Point2 offset;
+DVECTOR func_800B59BC(Sprite *sprite, s32 index) {
+    DVECTOR offset;
 
     if (sprite->renderer != NULL && (sprite->render.word & 3) == 1 && sprite->renderer->pointer34 != NULL) {
-        offset.y = sprite->renderer->pointer34[index].byte1;
-        offset.x = sprite->renderer->pointer34[index].byte0;
+        offset.vy = sprite->renderer->pointer34[index].byte1;
+        offset.vx = sprite->renderer->pointer34[index].byte0;
         if ((sprite->motion.word >> 2) & 1) {
-            offset.x = -offset.x;
+            offset.vx = -offset.vx;
         }
-        offset.y = offset.y * sprite->scale / 4096;
-        offset.x = offset.x * sprite->scale / 4096;
+        offset.vy = offset.vy * sprite->scale / 4096;
+        offset.vx = offset.vx * sprite->scale / 4096;
         return offset;
     }
 }
 
 /* The screen position of the sprite's anchor index. */
-Point2 func_800B5AC4(Sprite *sprite, s32 index) {
-    Point2 point = func_800B59BC(sprite, index);
+DVECTOR func_800B5AC4(Sprite *sprite, s32 index) {
+    DVECTOR point = func_800B59BC(sprite, index);
 
-    point.x += sprite->x >> 16;
-    point.y += sprite->y >> 16;
+    point.vx += sprite->x >> 16;
+    point.vy += sprite->y >> 16;
     return point;
 }
 
@@ -1022,16 +1022,17 @@ Point2 func_800B5AC4(Sprite *sprite, s32 index) {
  * end once the sprite's motion changes or its phase is 0 or 1. */
 void func_800B5B3C(SpriteLink *link) {
     Sprite *partner = link->sprite->partner;
-    Point2 a = func_800B5AC4(link->sprite, link->anchor);
-    Point2 b = func_800B5AC4(partner, link->partnerAnchor);
-    Point2 delta;
+    DVECTOR a = func_800B5AC4(link->sprite, link->anchor);
+    DVECTOR b = func_800B5AC4(partner, link->partnerAnchor);
+    DVECTOR delta;
     Sprite *sprite;
     s32 phase;
 
-    delta.x = a.x - b.x;
-    delta.y = a.y - b.y;
-    partner->x += delta.x << 16;
-    partner->y += delta.y << 16;
+    delta.vx = a.vx - b.vx;
+    delta.vy = a.vy - b.vy;
+    partner->x += delta.vx << 16;
+    partner->y += delta.vy << 16;
+
     sprite = link->sprite;
     if (link->motion != (s8)sprite->motion.bytes[3] || (phase = (SPRITE_FRAME_WORD(sprite) >> 28) & 3) == 0 || phase == 1) {
         link->task.destroy(&link->task);

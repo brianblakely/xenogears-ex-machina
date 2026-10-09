@@ -54,11 +54,6 @@ typedef struct {
     s16 field4E;     /* 0x4E */
 } LightFade;
 
-/* An 8-byte primitive (tag and one command word). */
-typedef struct {
-    u32 tag;
-    u32 code;
-} DrawPrim8;
 
 /* A shard of the shattered screen (0x7C bytes): turning and falling, drawn
  * as a textured triangle per buffer. */

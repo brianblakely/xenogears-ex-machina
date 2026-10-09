@@ -38,7 +38,7 @@ static ScriptEntry D_800C3BD0; /* the selected script */
 static u8 *D_800C3BEC;         /* effect script cursor */
 static s32 D_800C3BF0;         /* effect script step count */
 static s32 D_800C3BF4;         /* unreferenced */
-static DrawPrim8 D_800C3BF8;   /* the blend mode's texture page */
+static DR_TPAGE D_800C3BF8;    /* the blend mode's texture page */
 static ScreenFade D_800C3C00;  /* the second screen fade */
 static s32 D_800C3C4C;         /* unreferenced */
 static ScreenFade D_800C3C50;
@@ -325,10 +325,10 @@ void func_800B1EA0(VertexList *list, s32 shift) {
 /* Add a copy of the draw mode primitive D_800C3BF8 to the ordering table
  * entry ot. */
 void func_800B1F0C(u32 *ot) {
-    DrawPrim8 *prim = (DrawPrim8 *)D_80059580;
+    DR_TPAGE *prim = (DR_TPAGE *)D_80059580;
 
-    if ((u8 *)D_80059580 + sizeof(DrawPrim8) < D_80059534) {
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DrawPrim8));
+    if ((u8 *)D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DR_TPAGE));
         *prim = D_800C3BF8;
         AddPrim(ot, prim);
     }
@@ -393,7 +393,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
     u8 *cmd;
 
     if (blend != 0) {
-        SetDrawTPage((DR_TPAGE *)&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
+        SetDrawTPage(&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
     }
     prims = packets;
     cmd = entry->commands + (u32)entry;

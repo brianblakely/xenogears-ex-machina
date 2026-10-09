@@ -21,11 +21,6 @@ typedef struct {
 #define SCRIPT_S16(p, i) ((((s8 *)(p))[(i) + 1] * 256) | (p)[i])
 #define SCRIPT_DATA(args) ((args) + SCRIPT_S16(args, 0))
 
-/* A point returned by value. */
-typedef struct {
-    s16 x;
-    s16 y;
-} Point2;
 
 /* A sprite's trail (800B572C; two tasks, 0xB8 bytes): its five trail
  * anchors' positions in the current frame and their eased copies drawn by
