@@ -1,8 +1,9 @@
 #ifndef BATTLE_POPUP_H
 #define BATTLE_POPUP_H
 
-/* The battle's floating numbers (damage and recovery popups, 800BE11C-
- * 800BE6E8): sprite tasks spinning and shrinking over their lifetime. */
+/* The battle's floating numbers (damage and recovery popups, 800BD3AC's
+ * unit 800BD3AC-800BE6EC): sprite tasks spinning and shrinking over their
+ * lifetime, and the running total. */
 
 #include "common.h"
 #include "psyq/libgte.h"
@@ -88,8 +89,8 @@ extern s32 D_800D3630;    /* the popup colour kind */
 extern u8 D_800C3784[];   /* hexadecimal digit glyphs */
 extern u32 D_800C37A4[];  /* powers of ten */
 
-void func_800BD3AC(Sprite *sprite, s32 command, s32 kind);
-void func_800BE0DC(void);
+void func_800BD3AC(Sprite *sprite, s32 command, s32 kind); /* show a value over a sprite */
+void func_800BE0DC(void); /* hide the running total */
 void func_800BE108(void);
 
 #endif

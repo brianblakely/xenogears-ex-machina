@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+/* The command panel of the command menus (8008CCCC's unit, 8008D598-
+ * 8008F8F4, 800930AC-80093B08): its pages' glyph lists and glyph sets. */
 
 /* A command panel page's two glyph lists: which of the two +0x641c lists
  * each fills (0xFF: none) and from which glyph set. */

@@ -3,10 +3,11 @@
 
 #include "common.h"
 
-/* The battle's set-up and end (80070e2c's unit from 80070f40): the scene
- * settings, the battle's outcome and exit, the party's battle masks, the
- * music, the modules it runs (801de000, 801e0000, the 80280000 debugger) and
- * the battle heap and disc helpers (battle.c 8008ab4c-8008ac50). */
+/* The battle's set-up and end: the scene settings, the battle's outcome and
+ * exit (80070E2C's unit 80076544), the result screen step (battle.c
+ * 8008A9C0, declared where it is called), the party's battle masks and their
+ * adjustments at the start (8008CCCC's 8009892C), the music, and the battle
+ * heap and disc helpers (battle.c 8008AB4C-8008AC50). */
 
 extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
@@ -28,12 +29,13 @@ typedef struct MemberMasks {
 
 extern MemberMasks D_800C3E0C[3];
 
-void func_80076544(void);
+void func_80076544(void);              /* end the battle by its outcome state */
+void func_8009892C(void);              /* the party's adjustments at battle start */
+
 /* The battle heap and the disc. */
-void func_8008AB4C(void);
-void func_8008AB94(void);
+void func_8008AB4C(void);              /* heap mode 0x20/0 */
+void func_8008AB94(void);              /* heap mode 0x20/3 */
 s32 func_8008ABB8(s32 size, s32 mode); /* allocate a battle heap block */
 void func_8008AC50(void);              /* wait until the disc reads finish */
-void func_8009892C(void); /* the party's adjustments at battle start */
 
 #endif

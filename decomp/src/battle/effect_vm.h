@@ -1,8 +1,9 @@
 #ifndef BATTLE_EFFECT_VM_H
 #define BATTLE_EFFECT_VM_H
 
-/* The battle objects' effect script VM (800AAD54): the object fields it uses
- * beyond BattleObject's, and the services it calls. */
+/* The battle objects' effect script VM (8009E53C's unit, 800AAD54): its
+ * commands and the object fields it uses beyond BattleObject's. Its helpers
+ * (800ADF1C-800B0164) are declared in that unit. */
 
 /* The commands (800aad54's cases): a signed 16-bit word with the opcode in
  * its low byte and the argument (arg) in its high byte, then the listed u16
@@ -257,8 +258,5 @@
 #define ANIMATION_SPAN(animation) (((s16 *)(animation))[8])
 
 extern u8 D_800C3530[]; /* extra file bases */
-
-
-
 
 #endif

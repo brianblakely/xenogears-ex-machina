@@ -6,8 +6,10 @@
 #include "battle/work.h"
 
 /* The battle UI: its state block, the drawing state, the glyph and quad
- * builders, the menu icons, the direction arrows and the text images
- * (battle overlay; the event script overlay ovl3087 reads the UI state). */
+ * builders and text images (80070E2C's unit, 800769E8-80076EA4), the menu
+ * icons, the direction arrows (80077698-80077990), the decimal digits
+ * (battle.c 8008AAA0, 8008AC00) and the cursor glyph (8008CCCC's 80090B90).
+ * The event script overlay reads the UI state too. */
 
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct BattleUi {
@@ -104,9 +106,7 @@ typedef struct {
 extern BattleDraw D_800CCB04;
 extern u8 D_800CCB34;   /* D_800CCB04.buffer's low byte, read on its own */
 
-/* Glyphs (the glyph table D_800D2F5C) and quads (80070e2c's unit). */
-extern void *D_800D2F5C; /* glyph table */
-
+extern void *D_800D2F5C;   /* glyph table */
 extern u8 D_800C3CF4[9];   /* decimal digits */
 
 /* A menu icon cell of the icon image (4 bytes, 800d2f68). */
@@ -131,21 +131,24 @@ typedef struct DirectionArrows {
 
 extern DirectionArrows *D_800C3E24;
 
-/* Text images and decimal digits (battle.c). */
-void func_800769E8(RECT *rect, u32 *pixels);
-s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* full scale */
+/* Images, glyphs and quads (80070E2C's unit). */
+void func_800769E8(RECT *rect, u32 *pixels); /* upload an image and wait */
+s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* build a glyph, full scale */
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* half scale */
-void func_80076B00(POLY_FT4 *prim);
-void func_80076B68(POLY_FT4 *prim);
-void func_80076BF0(POLY_FT4 *prim);
-void func_80076C34(POLY_FT4 *prim);
-void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w);
-void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
-void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page);
-void func_80077698(void);
+void func_80076B00(POLY_FT4 *prim); /* set up a textured quad at full brightness */
+void func_80076B68(POLY_FT4 *prim); /* the same with texture page bit 0x20 */
+void func_80076BF0(POLY_FT4 *prim); /* the same with bit 0x40 */
+void func_80076C34(POLY_FT4 *prim); /* the same at half brightness */
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w); /* place a quad 13 high */
+void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h); /* place a quad */
+void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page); /* set up a quad pair */
+void func_80077698(void); /* set up the direction arrows */
 void func_80077980(void);
-void func_8008AAA0(u32 value);
-s32 func_8008AC00(s32 count);
+
+/* Decimal digits and text images (battle.c), the cursor glyph (8008CCCC's
+ * unit). */
+void func_8008AAA0(u32 value);  /* split a value into decimal digits */
+s32 func_8008AC00(s32 count);   /* allocate a text image block */
 void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 
 #endif

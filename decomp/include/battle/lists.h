@@ -6,7 +6,7 @@
 
 /* The battle HUD's primitive lists (the 800d2db4 block): the glyph lists of
  * the command pages and the gear HUD's values, and the stepped line effect
- * (battle.c 8008860c-80089af8, 8008CCCC's gear HUD). */
+ * (battle.c 8008860C-80089B50; the gear HUD, 8008CCCC's unit 8009A2D4). */
 
 /* The HUD primitive lists (*800d2db4, a 0x5da4-byte heap block) with their
  * counts and draw buffers. */
@@ -69,9 +69,9 @@ extern s32 D_800C2080;
 extern s32 D_800C2084;
 extern s32 D_800C2054[2][5]; /* end points (x, then y) of the stepped line */
 
-void func_80088B80(void);
-void func_800898F0(u8 member);
-void func_80089AF8(u8 member);
-void func_8009A2D4(u8 member);
+void func_80088B80(void);      /* draw the stepped line effect */
+void func_800898F0(u8 member); /* build the member's gear fuel glyphs */
+void func_80089AF8(u8 member); /* run the eight list building steps */
+void func_8009A2D4(u8 member); /* fill the gear HUD (8008CCCC's unit) */
 
 #endif

@@ -97,7 +97,6 @@ typedef struct BattleGraphics {
 
 extern BattleGraphics *D_800C3EA4;
 
-
 /* The party panel: its layout, name glyphs and values. */
 extern u8 D_800D3280;      /* party panel layout */
 extern u16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
@@ -114,9 +113,9 @@ extern s32 D_800D3668;     /* panel gear maximum HP */
 extern u8 D_800C3E08[3]; /* panel value digits */
 extern u8 D_800D2D54[7]; /* panel maximum digits */
 
-void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
-/* The graphics block (80070e2c's unit). */
-void func_80077610(void); /* allocate and set up */
-void func_8007765C(void); /* release after a frame */
+/* 80070E2C's unit. */
+void func_800728B8(POLY_FT4 *prims, s32 count, s32 first); /* add every other primitive to the OT */
+void func_80077610(void); /* allocate and set up the graphics block */
+void func_8007765C(void); /* release it after a frame */
 
 #endif

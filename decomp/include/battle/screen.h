@@ -1,13 +1,15 @@
 #ifndef BATTLE_SCREEN_H
 #define BATTLE_SCREEN_H
 
-/* Screen effects run as resident tasks: the camera quake, the screen fade
- * and the stage light fade (800B3358-800B3E04). */
-
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
+
+/* Screen effects run as resident tasks: the camera quake, the screen fade,
+ * the stage light fade and the saved VRAM columns (800B15D8's unit,
+ * 800B3358-800B3F04), and the shattered screen (800B3F04's unit 800B6F0C,
+ * 800B7134's to 800B7424). */
 
 /* The camera quake task (D_800C3548): an amplitude easing from one to
  * another, applied with alternating signs to the view offset D_800C354C. */
@@ -52,7 +54,6 @@ typedef struct {
     s16 field4E;     /* 0x4E */
 } LightFade;
 
-
 /* An 8-byte primitive (tag and one command word). */
 typedef struct {
     u32 tag;
@@ -89,9 +90,6 @@ extern u8 D_800C355C; /* fade on the second screen fade */
 extern LightFade *D_800C3560;
 extern u8 D_800D3638;
 
-/* Resident tasks. */
-
-
 extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
 extern SVECTOR D_800C35AC[3];
 
@@ -99,10 +97,12 @@ extern SVECTOR D_800C35AC[3];
 extern VECTOR D_800C35C4; /* a shard's launch velocity before turning */
 
 void func_800B3658(SVECTOR *amplitude, s32 frames); /* quake the view towards amplitude */
-void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
-void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
-void func_800B3E04(void);
-void func_800B6F0C(Task *task);
-void func_800B73A0(void);
+void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e); /* fade the screen to a colour */
+/* Fade light slot 0; defined without a prototype (to, frames, red, blue,
+ * field4C, field4E). */
+void func_800B3CD4();
+void func_800B3E04(void);        /* save the three VRAM columns at 0x200-0x2BF */
+void func_800B6F0C(Task *task);  /* the shattered screen's update */
+void func_800B73A0(void);        /* shatter the screen copied to VRAM */
 
 #endif

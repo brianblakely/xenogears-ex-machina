@@ -9,6 +9,12 @@
 #include "battle/area.h"
 #include "battle/model.h"
 
+/* The battle scene (8009E53C's unit): the battle objects (stage objects and
+ * effects), the scene data and its ground triangles, the effect sprite
+ * pools, the lights and trackers, and the scene's set-up and release
+ * (800A2CA4-800A3490, 800A4820, 800A579C-800A5E9C, 800A8B0C, 800A9F94-
+ * 800AA320, 800AA650, 800AAD54-800ADF1C, the object helpers between the
+ * effect VM's, 800B10EC). The stage and event script overlays fill it. */
 
 /* A battle object's extra file: more effect scripts and animations. */
 typedef struct {
@@ -200,9 +206,6 @@ typedef struct Tracker {
     s16 part;       /* 0x12: its part less one */
 } Tracker;
 
-
-
-
 /* Battle scene and effect state. */
 extern SVECTOR *D_800D3344;       /* scene points */
 extern SceneTriangle *D_800D39CC; /* scene triangles */
@@ -233,15 +236,12 @@ extern s32 D_800C360C;
 extern u8 D_800C4000[]; /* per slot */
 extern BattleSlot D_800C3EB4[11];
 
-
-/* Resident services. */
-
-void func_800A4820(void);
-s32 func_800A579C(SVECTOR *point);
-s32 func_800A5870(SVECTOR *point, s32 index, void *out);
-s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth);
-void func_800A8B0C(void);
-void func_800A9F94(void);
-void func_800A9FF0(s32 index);
+void func_800A4820(void);         /* free the battle scene's resources */
+s32 func_800A579C(SVECTOR *point); /* the first scene triangle containing a point */
+s32 func_800A5870(SVECTOR *point, s32 index, void *out); /* relate a point to a triangle */
+s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth); /* the triangle containing a point, from a neighbour */
+void func_800A8B0C(void);         /* reset the battle scene */
+void func_800A9F94(void);         /* free the stage objects and the pools */
+void func_800A9FF0(s32 index);    /* free a stage object */
 
 #endif

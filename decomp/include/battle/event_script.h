@@ -63,15 +63,15 @@ extern ScriptState *D_800D3278;
 extern struct EventScriptFile *D_800D39D0; /* the script file */
 extern void *D_800D3340;                   /* the script set's data */
 
-
-/* The battle's side (80070e2c's unit): the module block and its load. */
+/* The battle's side: the module block and its load, a byte forwarded to the
+ * module (80070E2C's unit) and a thread's member state (80079ED8's). */
 extern u8 D_800C3D48;      /* the 801e5000 module is loaded */
 extern s32 D_800D3284;     /* its block */
 extern s32 D_800D328C;
 
-void func_80070EB0(s32 value);
-/* Services of other units. */
-void func_80080C6C(u8 index);
+void func_80070EB0(s32 value); /* forward a byte to the module when it is loaded */
+void func_80080C6C(u8 index);  /* set thread index's member state to done */
+
 /* The interpreter's entries (ovl3087). */
 void func_801E5160(void); /* load the script set and set up the threads */
 s32 func_801E563C(void);  /* release everything; whether it handled the music */

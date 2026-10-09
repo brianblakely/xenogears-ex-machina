@@ -1,14 +1,15 @@
 #ifndef BATTLE_HIGHLIGHT_H
 #define BATTLE_HIGHLIGHT_H
 
-/* Slot highlights (800BCB54-800BD098): the acting slot's sprite pulses in
- * colour, highlighted slots (D_800C3D14) carry a spinning effect-script
- * ring above their sprite. */
-
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
 #include "battle/area.h"
+
+/* Slot highlights and results (800B8098's unit, 800BCB54-800BD3AC): the
+ * acting slot's sprite pulses in colour, highlighted slots (D_800C3D14)
+ * carry a spinning effect-script ring above their sprite, and the current
+ * event's results show on the slots' sprites. */
 
 /* The acting slot's pulse (D_800C3748), a child task of its actor task. */
 typedef struct {
@@ -39,10 +40,8 @@ typedef struct {
  * area (the menu's path points overlap it). */
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
-extern u8 D_8001C76C[];  /* resident TMD model (objects.h's effect script file format) */
-
-void func_800BCD98(u16 mask);
-void func_800BD1FC(s32 slot);
-void func_800BD2E4(void);
+void func_800BCD98(u16 mask);  /* highlight the slots of mask */
+void func_800BD1FC(s32 slot);  /* show the current event's result on a slot */
+void func_800BD2E4(void);      /* show the current event's results on every slot */
 
 #endif

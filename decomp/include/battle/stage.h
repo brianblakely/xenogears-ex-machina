@@ -1,13 +1,15 @@
 #ifndef BATTLE_STAGE_H
 #define BATTLE_STAGE_H
 
-/* The battle stage: its hierarchy, geometry and image animations, drawn each
- * frame (800A4654-800A7948). */
-
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "battle/model.h"
+
+/* The battle stage: its hierarchy, geometry, lighting and colours, drawn
+ * each frame (8009E53C's unit, 800A4654-800A7064 but for the scene's ground
+ * triangles, and 800A9A50). */
+
 
 /* Run the calls between the two on a stack at the top of the scratchpad. */
 #define SPAD_STACK_ENTER()                                                                         \
@@ -63,13 +65,12 @@ extern s16 D_800D2D30;          /* stage image x */
 extern s16 D_800D2D34;          /* stage image y */
 extern s16 D_800C3EA8;          /* stage image height */
 
-/* Resident services. */
-
+/* Draw the stage. */
 void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth);
-void func_800A5EB4(void);
-void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5);
-void func_800A6F98(void);
-void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer);
+void func_800A5EB4(void); /* set up the stage lighting */
+void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5); /* set a light slot */
+void func_800A6F98(void); /* release the stage image */
+void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer); /* run the stage for the elapsed frames */
 
 #endif

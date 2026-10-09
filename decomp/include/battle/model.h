@@ -5,6 +5,10 @@
 #include "psyq/libgte.h"
 #include "resident/model.h"
 
+/* The battle objects' models: their model tables, hierarchies of posed parts
+ * and the effect pools that animate the parts (8009E53C's unit, 8009EF3C-
+ * 8009F794 and 800A0838-800A2BB8). */
+
 /* A table of the models of a relocated model group: the group's records
  * (resident SpriteModels, 0x38 bytes each from group +0x10) and their
  * count. */
@@ -51,6 +55,6 @@ typedef struct ModelPart {
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
-u16 func_8009EF3C(ModelPart *part, s32 scale);
+u16 func_8009EF3C(ModelPart *part, s32 scale); /* pose a model hierarchy */
 
 #endif

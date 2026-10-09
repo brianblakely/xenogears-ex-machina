@@ -4,9 +4,12 @@
 #include "common.h"
 
 /* The battle's turns: the turn and menu state, the turn queue and the
- * slots' turn order, their flags, masks and running results, and the battle
- * frame that every wait runs (battle overlay; the event script overlay
- * ovl3087 reads the turn state too). */
+ * slots' turn order and timers, their flags, masks and running results; a
+ * battle frame and the ATB tick (80070E2C's unit 800716D8-80071730), the
+ * timers' reset (80078508), the next slot in turn order (80079ED8's
+ * 80080AE4), the slot masks and random values (battle.c 80089B50-80089CCC)
+ * and a slot's turn timer (8008CCCC's 80098AF8). The event script overlay
+ * reads the turn state too. */
 
 /* Per-slot block of the turn state (0x40 bytes). */
 typedef struct {
@@ -84,18 +87,22 @@ extern u16 D_800C3234[16]; /* single-bit masks, 0x8000 down to 1 */
 extern u8 D_800D2D5C[11];  /* running result code per slot */
 extern s16 D_800D2D70[11]; /* running result amount per slot */
 
-/* The battle frame and the turn order (80070e2c's unit, 80079ed8's). */
-s32 func_800716D8(void);
-void func_8007171C(void);
-void func_80078508(u8 *order);
-s32 func_80080AE4(u8 actor);
+/* Frames and the turn order (80070E2C's and 80079ED8's units). */
+s32 func_800716D8(void);       /* one battle frame: the debugger's hook, the task runner */
+void func_8007171C(void);      /* one ATB tick */
+void func_80078508(u8 *order); /* reset every slot's turn timers */
+s32 func_80080AE4(u8 actor);   /* the next slot in turn order */
+
 /* Slot masks and random values (battle.c). */
-u16 func_80089B50(u16 low, u16 high);
-u16 func_80089BEC(u8 bit);
-u16 func_80089C08(u8 slot);
-u16 func_80089C48(u8 slot);
-u16 func_80089C6C(u16 mask, u8 bit);
-u16 func_80089C9C(u16 mask, u8 slot);
+u16 func_80089B50(u16 low, u16 high);  /* a random value in low..high */
+u16 func_80089BEC(u8 bit);             /* mask bit `bit` */
+u16 func_80089C08(u8 slot);            /* the mask bit of a slot */
+u16 func_80089C48(u8 slot);            /* every slot bit but a slot's */
+u16 func_80089C6C(u16 mask, u8 bit);   /* bit `bit` of a mask */
+u16 func_80089C9C(u16 mask, u8 slot);  /* a slot's bit of a mask */
+
+/* A slot's turn timer from its speed (8008CCCC's unit); defined old-style,
+ * its callers pass the slot unnarrowed. */
 s32 func_80098AF8(s32 slot, s32 mode);
 
 #endif

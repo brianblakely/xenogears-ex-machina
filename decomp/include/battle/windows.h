@@ -6,9 +6,10 @@
 #include "resident/window.h"
 #include "battle/graphics.h"
 
-/* The battle's windows and messages: the window frames (8008f8f4-8008fad8),
- * the battle message strip (800780a8-8007819c, 80079e18), and the message
- * text window the event script overlay ovl3087 prints into. */
+/* The battle's windows and messages: the windows' primitives (80070E2C's
+ * unit, 80077454) and frames (8008CCCC's, 8008F8F4-8008FAD8), the battle
+ * message strip (80070E2C's 800780A8-8007819C, 800792F8's 80079E18-80079E4C),
+ * and the message text window the event script overlay prints into. */
 
 /* Window rectangle (*800d2d90[window]). */
 typedef struct WindowRect {
@@ -71,8 +72,9 @@ extern Window *D_800D2DAC; /* the message text window */
 void func_80077454(u8 window); /* set up a window's primitives */
 void func_80079E18(u8 index); /* show battle message window `index` */
 void func_80079E4C(u8 index); /* hide it */
-void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait);
-void func_8008FA60(u8 window);
+void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait); /* open a window */
+void func_8008FA60(u8 window); /* close a window */
+
 void func_8008FAD8(void);    /* grow the opening windows */
 
 #endif

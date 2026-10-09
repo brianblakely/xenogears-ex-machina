@@ -1,13 +1,14 @@
 #ifndef BATTLE_FLOW_H
 #define BATTLE_FLOW_H
 
-/* Battle start/end steps of the late unit (800B838C-800B9F78): sound
- * playback that waits for its end, the battle's closing, and the acting
- * sprite's walks run through the battle menu (D_800C3610). */
-
 #include "common.h"
 #include "battle/area.h"
 #include "battle/frame.h"
+
+/* The battle's flow (800B8098's unit, 800B8098-800B9F78): its start and
+ * closing, the loads it waits for, and the acting slot's turn run through
+ * the battle menu (D_800C3610): sound playback that waits for its end and
+ * the acting sprite's walks. */
 
 /* A sound of the battle's table (4 bytes): its sound bank (the wave bank
  * follows it) and its sound number in the bank. */
@@ -19,7 +20,6 @@ typedef struct {
 extern BattleSound D_800C35DC[];
 
 extern void *D_800D39C8; /* the enemy set data copy */
-
 
 /* The acting slot's turn (800B89FC-800B9F78). */
 extern u8 D_800C3624;
@@ -40,15 +40,17 @@ extern u16 D_800C3626; /* slots whose gear sound played */
 extern s16 D_800C3630[]; /* per target code: its first command */
 extern s16 D_800C3648[]; /* per target code: its commands from here play motion 0x11 */
 
-void func_800B8098(s32 kind);
-void func_800B81BC(s32 a);
-void func_800B8354(void);
-void func_800B853C(s32 mode);
-void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3);
-void func_800B8D04(void);
-void func_800B8D7C(void);
-void func_800B9258(void);
-void func_800B9C00(); /* unprototyped (sprite, other) */
-void func_800B9F78(BattleMenu *menu);
+void func_800B8098(s32 kind);  /* start the battle in a mode */
+void func_800B81BC(s32 a);     /* enter the battle */
+void func_800B8354(void);      /* run frames while the disc is busy */
+void func_800B853C(s32 mode);  /* close the battle */
+void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3); /* open the battle menu for a turn */
+void func_800B8D04(void);      /* finish the battle's loads */
+void func_800B8D7C(void);      /* stop the resident transfer and finish the loads */
+void func_800B9258(void);      /* count a step of the battle menu */
+/* Put the sprite at its target, idle, facing the other; defined without a
+ * prototype (800BF0C4 calls it with the sprite alone). */
+void func_800B9C00();
+void func_800B9F78(BattleMenu *menu); /* the battle menu's update */
 
 #endif

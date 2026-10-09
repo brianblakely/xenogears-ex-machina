@@ -1,9 +1,10 @@
 #ifndef BATTLE_SPRITE_EFFECT_H
 #define BATTLE_SPRITE_EFFECT_H
 
-/* The battle's sprite effects (800B4EDC-800B6004) on the resident sprite
- * engine's sprites (resident/sprite.h; battle/sprite.h has the battle's
- * views of them). */
+/* The battle's sprite effects (800B3F04's unit, 800B4EDC-800B6F0C) on the
+ * resident sprite engine's sprites (resident/sprite.h; battle/sprite.h has
+ * the battle's views of them): trails, approach watches, partner links and
+ * streaks. */
 
 #include "common.h"
 #include "psyq/libgte.h"
@@ -70,10 +71,6 @@ extern s16 D_800C3E9C;   /* its colour count */
 extern s16 D_800C3D4C;   /* its blend */
 extern s16 D_800D3334;
 
-
-
-
-
 /* Sprite script commands (800B3F04). */
 extern Sprite *D_800C3E1C;
 extern s16 D_800D36BC;
@@ -81,7 +78,7 @@ extern s16 D_800D36BC;
 /* Sprite streaks and sprite effects (800B5DF4-800B7424). */
 extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
 
-s32 func_800B57E4(Sprite *sprite);
-SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume);
+s32 func_800B57E4(Sprite *sprite); /* the distance from a sprite to its target */
+SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume); /* watch a sprite approach its target */
 
 #endif

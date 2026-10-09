@@ -34,18 +34,18 @@ typedef struct EnemyReaction {
 
 extern EnemyReaction D_800C3D18[8];
 
-
 /* The enemies' names. */
 extern void *D_800C3DDC;   /* enemy name table */
 extern u8 D_800C3E40[8];   /* enemy name per enemy slot (3-10) */
 
-void func_80079934(u8 **pc);
-/* The AI script interpreter. */
+/* The AI script interpreter (800792F8's unit 80079934-80079E7C, 80079ED8's
+ * 8007EF6C-8007F8C0). */
+void func_80079934(u8 **pc);                /* step past a four-byte instruction */
 void func_800799C8(u8 slot, u16 attacking); /* run enemy slot's turn script */
 s32 func_80079AB0(u8 slot); /* run the enemy reaction script; it ran action 0x62 */
 void func_80079C24(void);                   /* the after-turn scripts */
-u8 func_80079E7C(u16 mask);
-u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count);
-u8 func_8007F8C0(u8 **pc, u8 enemy);
+u8 func_80079E7C(u16 mask);                 /* the first slot in mask; 11 when none */
+u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count); /* run an AI action */
+u8 func_8007F8C0(u8 **pc, u8 enemy);        /* evaluate an AI condition */
 
 #endif

@@ -8,6 +8,11 @@
 #include "battle/model.h"
 #include "battle/scene.h"
 
+/* The stage objects (8009E53C's unit, 8009F794-800A0838, 800A2BB8-800A2CA4,
+ * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their files, their animation
+ * events and the camera channels, their creation, selection, effects and
+ * per-frame update. */
+
 /* An object's model or extra data (fields as far as recovered). */
 struct ObjectData {
     u8 pad0[4];
@@ -69,8 +74,6 @@ typedef struct {
     ObjectHeader *header; /* 0x10 */
 } ObjectModelFile;
 
-
-
 /* Per-frame update and drawing of the stage objects. */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
@@ -82,9 +85,6 @@ extern SVECTOR D_800D335C; /* camera look-at point */
 extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
 extern s16 D_800C3544;     /* its ground height */
 extern s16 D_800C3546;     /* key of the last update */
-
-/* Resident services. */
-
 
 /* The battle's block of a sprite following an object part (0x18 bytes),
  * after the sprite in its resident sprite task (the sprite's size bytes
@@ -203,9 +203,6 @@ typedef union {
     ImageEvent image;
 } AnimEvent;
 
-
-
-
 /* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
 typedef struct {
     u8 used;
@@ -220,22 +217,17 @@ typedef struct {
     s16 duration;    /* 0x12 */
 } CameraChannel;
 
-
-
-
+/* Create a stage object from its script and model files. */
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position);
-void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y);
-void func_800AA454(u16 index, u16 mask, s32 script);
-s32 func_800AA600(s32 index);
-/* The command handlers of this unit, called with (sprite, args) whatever
- * they take (defined without using the rest). */
-void func_800AA788(s32 value);
-void func_800AA79C(s32 a, s32 b);         /* swap two stage objects */
-void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
-void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
-/* Other battle units. */
-void func_800B136C(void);
-void func_800B14CC(s32 keep);
+void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
+void func_800AA454(u16 index, u16 mask, s32 script); /* select an object and start its effect */
+s32 func_800AA600(s32 index);            /* the scaled size of an object */
+void func_800AA788(s32 value);           /* a sprite script command: set the flag D_800C3B74 */
+void func_800AA79C(s32 a, s32 b);        /* swap two stage objects */
+void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations); /* reset an object */
+void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3); /* start or queue its effect */
+void func_800B136C(void);                /* wait until no object is busy */
+void func_800B14CC(s32 keep);            /* end the party's objects other than keep's */
 
 #endif

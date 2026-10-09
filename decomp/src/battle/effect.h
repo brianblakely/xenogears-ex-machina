@@ -1,9 +1,11 @@
 #ifndef BATTLE_EFFECT_H
 #define BATTLE_EFFECT_H
 
-/* Keyframe tracks, sprite drawing, colour fades and image animations of the
- * battle effect library (8009F1C4-800A44C0; the same code is linked into
- * overlay 2143 at +0x13D3C0/+0x13D684). */
+/* Keyframe tracks, sprite drawing, colour fades, image animations and
+ * surfaces of the battle effect library (8009E53C's unit, 800A3490-800A4654
+ * and 800A7064-800A8A88; the same code is linked into overlay 2143 at
+ * +0x13D3C0/+0x13D684). */
+
 
 #include "common.h"
 #include "psyq/libgpu.h"
@@ -113,9 +115,6 @@ typedef struct ImageAnim {
     FrameCurve curve;         /* 0x24 */
     RECT rect;                /* 0x28 */
 } ImageAnim;
-
-/* Resident image decoders. */
-
 
 /* A collision sphere of a surface (0x10 bytes). */
 typedef struct {
