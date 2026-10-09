@@ -345,9 +345,10 @@ restore (Memory card and saves) and the dormant CdMix.
     (func_80028B14); func_800859DC gathers the first four into a 0x2000-byte
     wave bank (func_800380D0) and hands later ones to the SPU (func_8003827C)
     after the previous transfer (func_8003BDFC(0x10)). A full ring makes the
-    drive read the sector again (Retries). Sequences (0x14 + 2 * music) and the
-    battle music (func_800379D8, a two-file list of directory (12, 3)) are
-    plain reads.
+    drive read the sector again (Retries). Sequences (0x14 + 2 * music) are
+    plain reads, as is the battle stage (func_800379D8: its stage file 6 + 2s
+    and scene data 7 + 2s, a two-file list of directory (12, 3);
+    [formations.md](scripts/formations.md)).
   - Image streams (func_80029EB0): the field map's (file 0xB9 + 2 * map of
     entry 4, four slots, field.c func_80070488, waited for by func_80070508)
     and a battle action's (file 0x23 + 2 * index of (0xC, 2), eight slots,

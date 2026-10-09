@@ -235,8 +235,11 @@ maps are identical to Disc 1's.
   kind of its gear weapon record, not by its count; for 0xff that is record
   255, 5100 bytes into the 2003-byte table that `801c72bc` unpacks into a heap
   block of its own, so whether 0xff is offered depends on the heap. Loaded, it
-  would set the resident's `D_8006F9DC[13]` (scene state, `0x8006f9e9`) to 100
-  (`801df0d4`), and the battle would read and lower that byte as its rounds.
+  would set byte 0x0D of the resident's battle formation `D_8006F9DC`
+  (`enemyIds[5]`, resident/formation.h; `0x8006f9e9`) to 100 (`801df0d4`).
+  Every battle copies its formation over `D_8006F9DC` before its turns (battle
+  `func_80070F40`), so it would read and lower that formation's enemy id byte
+  as the rounds, not the 100.
 - The stock of the shop numbers past the tables, weapon shops 40-255 and gear
   shops 30-255, which maps 488 and 723's selectors and the debug start can
   open: each reads the memory after its unpacked table.
