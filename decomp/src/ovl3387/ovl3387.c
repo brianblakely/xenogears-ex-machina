@@ -30,7 +30,7 @@ u32 *D_801FCE48 = NULL;
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
  * frames. The empty loops over a 2x14x20 grid are left from removed work. */
 void func_801FC000(Task *node) {
-    Burst *burst = node->data;
+    BurstTask *burst = node->data;
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 i, j, k;
 
@@ -67,7 +67,7 @@ void func_801FC000(Task *node) {
  * scaled by the twist, and lights up with it; projected with a 512 screen
  * distance about the screen centre. */
 void func_801FC11C(Task *node) {
-    Burst *burst = node->data;
+    BurstTask *burst = node->data;
     long ofs[2];
     MATRIX m;
     BurstCell *cell;
@@ -137,7 +137,7 @@ void func_801FC11C(Task *node) {
 }
 
 /* Wait for drawing to finish and release the effect. */
-void func_801FC400(Burst *burst) {
+void func_801FC400(BurstTask *burst) {
     DrawSync(0);
     func_800320E8(burst);
 }
@@ -150,8 +150,8 @@ void func_801FC434(Task *node) {
 }
 
 /* Allocate and set up the effect's state. */
-Burst *func_801FC470(void) {
-    Burst *burst = func_80031BDC(sizeof(Burst), 1);
+BurstTask *func_801FC470(void) {
+    BurstTask *burst = func_80031BDC(sizeof(BurstTask), 1);
 
     burst->task.data = burst;
     burst->draw.data = burst;
@@ -161,7 +161,7 @@ Burst *func_801FC470(void) {
 /* Set up the effect: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
-Burst *func_801FC4A8(Burst *burst) {
+BurstTask *func_801FC4A8(BurstTask *burst) {
     s32 row, half;
     BurstCell *cell;
     SVECTOR *triangle;
@@ -288,7 +288,7 @@ void func_801FC8F4(void) {
     u16 *p;
     FrameBuffer *next;
     POLY_F4 *prim;
-    Burst *burst;
+    BurstTask *burst;
     BattleArea *work;
     FrameBuffer *buffers;
     FrameBuffer *shown;

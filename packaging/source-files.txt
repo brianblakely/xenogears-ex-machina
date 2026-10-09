@@ -112,6 +112,7 @@ decomp/include/battle/action_file.h
 decomp/include/battle/actions.h
 decomp/include/battle/actor.h
 decomp/include/battle/area.h
+decomp/include/battle/burst.h
 decomp/include/battle/combatant.h
 decomp/include/battle/command.h
 decomp/include/battle/effect_script.h

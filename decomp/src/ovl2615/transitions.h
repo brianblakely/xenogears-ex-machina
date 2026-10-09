@@ -3,7 +3,8 @@
 
 /* The load modes' screen transitions (load_modes.c, burst_modes.c): the
  * screen split into cells that fly apart (shatter, 801e8588) or ripple
- * (burst, 801e91e8), run in their own frame loops while the setup phases
+ * (burst, 801e91e8; its types are in battle/burst.h, which the battle module
+ * ovl3387 shares), run in their own frame loops while the setup phases
  * load. */
 
 #include "common.h"
@@ -11,6 +12,7 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "battle/area.h"
+#include "battle/burst.h"
 #include "resident/cd.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
@@ -37,27 +39,6 @@ typedef struct {
     s32 frame;           /* +38 */
     ShatterCell cells[2][7][10]; /* +3c: two triangles per 32x32 cell */
 } ShatterTask;           /* 0x440c */
-
-typedef struct {
-    u32 pad0;
-    POLY_GT3 prim[2];    /* +04 */
-    SVECTOR corner[3];   /* +54 */
-    s32 distance[3];     /* +6c */
-    u32 pad78;
-} BurstCell;             /* 0x7c */
-
-typedef struct {
-    Task task;           /* +00 */
-    Task draw;           /* +1c */
-    s32 brightness;      /* +38 */
-    s32 angle;           /* +3c */
-    s32 twist;           /* +40 */
-    s32 frame;           /* +44 */
-    s32 speed;           /* +48 */
-    VECTOR trans;        /* +4c */
-    SVECTOR rot;         /* +5c */
-    BurstCell cells[2][14][20]; /* +64: two triangles per 16x16 cell */
-} BurstTask;             /* 0x10fa4 */
 
 void func_801E7F4C(Task *node);
 void func_801E80B4(Task *node);
