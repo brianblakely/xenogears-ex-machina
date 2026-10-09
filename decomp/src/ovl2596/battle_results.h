@@ -2,38 +2,8 @@
 #define OVL2596_BATTLE_RESULTS_H
 
 #include "common.h"
-
-/* libgpu primitives (PsyQ layout). */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} POLY_G4;
-
-#define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
 
 /* A glyph-table sprite part, one primitive per draw buffer. */
 typedef POLY_FT4 Glyph[2];
@@ -251,9 +221,6 @@ extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
 extern s16 D_800C32A0[18];
 
-void AddPrim(void *ot, void *prim);                   /* AddPrim */
-void SetShadeTex(void *prim, s32 textured);               /* SetShadeTex */
-void SetPolyG4(POLY_G4 *prim);                          /* SetPolyG4 */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 
@@ -499,10 +466,6 @@ void func_8008FA60(s32 id);     /* close a window */
 void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
 void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 width);
 
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
 void *func_8008AC00(s32 kind);                  /* allocate a text image */
 s32 func_80034EAC(void *text, void *image, s32 mode, s32 flags); /* render text */
 void func_800769E8(RECT *rect, void *image);   /* load an image to VRAM */
@@ -588,9 +551,7 @@ void func_801E42C4(void);
 void func_801E403C(void);
 void func_801E41B4(void);
 void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
-void bzero(void *dest, s32 size);
 void func_80039FF8(void);
-s32 rand(void);                                 /* libc */
 u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level);
 u16 func_801E3700(u16 maxHp, u8 level);
 u8 func_801E38CC(u8 maxEp, u8 level);

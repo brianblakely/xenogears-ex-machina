@@ -1087,10 +1087,10 @@ void func_801E1FB8(u32 experience) {
     D_800D2D28->waitingCross = 0;
     for (i = 0; i < 3; i++) {
         D_800D32F8[i] = func_8008ABB8(sizeof(MemberCard), 0);
-        bzero(D_800D32F8[i], sizeof(MemberCard));
+        bzero((u8 *)D_800D32F8[i], sizeof(MemberCard));
     }
     D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
-    bzero(D_800D334C, sizeof(ResultSummary));
+    bzero((u8 *)D_800D334C, sizeof(ResultSummary));
     D_800D32F8[0]->flag15F8 = (D_8006F8EA >> 15) ^ 1;
     func_800716D8();
     D_800C48EA = 0;
