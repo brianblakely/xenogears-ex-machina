@@ -1,30 +1,45 @@
-/* Battle unit from 800C11CC to the end of the overlay text (Cygnus CDK
- * GCC 2.7.2). 800C11CC's tables start at 0x80070C14 (4 mod 8) directly
- * after 800C0564's odd-length one at 0 mod 8; the functions from 800C06E4
- * to 800C1140 have no rodata, and the boundary is placed at the first
- * function that has. */
+/* Battle unit from 800C11CC to the end of the overlay text: the battle's copy
+ * of the resident sprite animation VM (Cygnus CDK GCC 2.7.2). 800C11CC's
+ * tables start at 0x80070C14 (4 mod 8) directly
+ *
+ * after 800C0564's odd-length one at 0 mod 8; the functions from 800C06E4 to
+ * 800C1140 have no rodata, and the boundary is placed at the first function
+ * that has. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "item_command.h"
-#include "sprite_vm.h"
+#include "psyq/libc.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/effect_script.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/highlight.h"
+#include "battle/item_command.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/sprite.h"
+#include "battle/sprite_script.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+#include "sprite_effect.h"
+
+/* A little-endian s16 at index i of a command's arguments, as the VM
+ * forms it (the high byte shifted, then narrowed). */
+#define VM_S16(p, i) ((s16)((p)[(i) + 1] << 8) | (p)[i])
+
+/* The screen fade's blend mode (800B3B6C): a u8, taken as int. */
+s32 func_800B3B6C();
 
 /* Run a sprite's animation script until it waits: commands below 80 show a
  * frame (00-0F the next, 10-1F the next of the facing, 20-2F the previous,
  * 30-3F none) and wait (op & 0xF) + 1 frames scaled by its divisor; the
  * others are the battle's commands, falling back to the resident VM's. */
-void func_800C11CC(BattleSprite *sprite) {
+void func_800C11CC(Sprite *sprite) {
     u8 *args;
     u8 op;
     s32 duration;
@@ -37,7 +52,7 @@ void func_800C11CC(BattleSprite *sprite) {
     u8 *data;
     u8 *buffer;
     u8 *part;
-    BattleSprite *partner;
+    Sprite *partner;
     SVECTOR *angles;
     SVECTOR v;
     MATRIX m;
@@ -59,7 +74,7 @@ next:
                 func_8001D2B0(sprite, sprite->frame + 1);
                 duration = (op & 0xF) + 1;
             } else if (op < 0x20) {
-                SPRITE_FRAME_BITS(sprite).frame++;
+                sprite->frame_bits.frame++;
                 func_80022D44(sprite);
                 duration = (op & 0xF) + 1;
             } else if (op < 0x30) {
@@ -70,13 +85,13 @@ next:
                 duration = (op & 0xF) + 1;
             }
             /* 40-7F leave duration unset (the original reads a stale register). */
-            duration = duration * SPRITE_MOTION_BITS(sprite).divisor / 256;
+            duration = duration * sprite->motion.bits.divisor / 256;
             if (duration == 0) {
                 duration = 1;
             }
             sprite->countdown += duration;
-            if (++SPRITE_FRAME_BITS(sprite).commands == 0) {
-                SPRITE_FRAME_BITS(sprite).commands--;
+            if (++sprite->frame_bits.field22 == 0) {
+                sprite->frame_bits.field22--;
             }
             return;
         }
@@ -112,11 +127,11 @@ next:
          * 3f (80023538). */
         case 0xE3:
             {
-                BattleSprite *target = sprite->partner;
+                Sprite *target = sprite->partner;
                 u8 *animation = sprite->script + VM_S16(args, 0);
 
                 target->motion.bytes[3] = 0x3F;
-                func_80023538(target, animation);
+                func_80023538(target, (u16 *)animation);
             }
             break;
         /* fb s16 u8: go on; once the sprite comes nearer its target point (+a0) than u8 * 2,
@@ -134,40 +149,40 @@ next:
         /* 9d: mark the camera eye point (800d3354, group 10) or look-at point (800d335c,
          * others) at the sprite's position. */
         case 0x9D:
-            if (sprite->flags.bits.group == 10) {
-                D_800D3354.vx = sprite->x.fixed >> 16;
-                D_800D3354.vy = sprite->y.fixed >> 16;
-                D_800D3354.vz = sprite->z.fixed >> 16;
+            if (((SpriteFlagBits *)&sprite->flags)->type == 10) {
+                D_800D3354.vx = sprite->x >> 16;
+                D_800D3354.vy = sprite->y >> 16;
+                D_800D3354.vz = sprite->z >> 16;
             } else {
-                D_800D335C.vx = sprite->x.fixed >> 16;
-                D_800D335C.vy = sprite->y.fixed >> 16;
-                D_800D335C.vz = sprite->z.fixed >> 16;
+                D_800D335C.vx = sprite->x >> 16;
+                D_800D335C.vy = sprite->y >> 16;
+                D_800D335C.vz = sprite->z >> 16;
             }
             break;
         /* 99: view angles = the camera's angles (800d30b0). */
         case 0x99:
-            sprite->view->angle[0] = D_800D30B0.vx;
-            sprite->view->angle[1] = D_800D30B0.vy;
-            sprite->view->angle[2] = D_800D30B0.vz;
+            sprite->renderer->angle_x = D_800D30B0.vx;
+            sprite->renderer->angle_y = D_800D30B0.vy;
+            sprite->renderer->angle_z = D_800D30B0.vz;
             break;
         /* 9a: v = (camera distance 800d30b8, 0, 0) by the view angles; group 10 moves to
          * 8006f9ac - v, group 11 to 8006f99c + v. */
         case 0x9A:
-            angles = (SVECTOR *)sprite->view;
+            angles = (SVECTOR *)sprite->renderer;
             v.vx = D_800D30B8;
             v.vy = 0;
             v.vz = 0;
             func_8003F738(angles, &m);
             ApplyMatrix(&m, &v, &out);
-            if (sprite->flags.bits.group == 10) {
-                sprite->x.fixed = D_8006F9AC.vx - (out.vx << 16);
-                sprite->y.fixed = D_8006F9AC.vy - (out.vy << 16);
-                sprite->z.fixed = D_8006F9AC.vz - (out.vz << 16);
+            if (((SpriteFlagBits *)&sprite->flags)->type == 10) {
+                sprite->x = D_8006F9AC.vx - (out.vx << 16);
+                sprite->y = D_8006F9AC.vy - (out.vy << 16);
+                sprite->z = D_8006F9AC.vz - (out.vz << 16);
             }
-            if (sprite->flags.bits.group == 11) {
-                sprite->x.fixed = D_8006F99C.vx + (out.vx << 16);
-                sprite->y.fixed = D_8006F99C.vy + (out.vy << 16);
-                sprite->z.fixed = D_8006F99C.vz + (out.vz << 16);
+            if (((SpriteFlagBits *)&sprite->flags)->type == 11) {
+                sprite->x = D_8006F99C.vx + (out.vx << 16);
+                sprite->y = D_8006F99C.vy + (out.vy << 16);
+                sprite->z = D_8006F99C.vz + (out.vz << 16);
             }
             break;
         /* 9b: scale = (s16)80059454 << 12 / the camera distance. */
@@ -182,49 +197,49 @@ next:
             v.vz = 0;
             func_8003F738(angles, &m);
             ApplyMatrix(&m, &v, &out);
-            if (sprite->flags.bits.group == 10) {
-                sprite->x.fixed = D_8006F9AC.vx - (out.vx << 16);
-                sprite->y.fixed = D_8006F9AC.vy - (out.vy << 16);
-                sprite->z.fixed = D_8006F9AC.vz - (out.vz << 16);
+            if (((SpriteFlagBits *)&sprite->flags)->type == 10) {
+                sprite->x = D_8006F9AC.vx - (out.vx << 16);
+                sprite->y = D_8006F9AC.vy - (out.vy << 16);
+                sprite->z = D_8006F9AC.vz - (out.vz << 16);
             }
-            if (sprite->flags.bits.group == 11) {
-                sprite->x.fixed = D_8006F99C.vx + (out.vx << 16);
-                sprite->y.fixed = D_8006F99C.vy + (out.vy << 16);
-                sprite->z.fixed = D_8006F99C.vz + (out.vz << 16);
+            if (((SpriteFlagBits *)&sprite->flags)->type == 11) {
+                sprite->x = D_8006F99C.vx + (out.vx << 16);
+                sprite->y = D_8006F99C.vy + (out.vy << 16);
+                sprite->z = D_8006F99C.vz + (out.vz << 16);
             }
             break;
         /* c2 s8: y = ground - 1; aim the jump (800ba768) at the target point (+a0) = the
          * partner's x + s8 (scaled, negated unless mirrored), y 0 and z. */
         case 0xC2:
             {
-                BattleSprite *target;
+                Sprite *target;
                 s32 distance;
 
-                sprite->y.fixed = (sprite->ground - 1) << 16;
+                sprite->y = (sprite->ground - 1) << 16;
                 target = sprite->partner;
                 distance = (s8)args[0] * sprite->scale / 4096;
-                if (!SPRITE_MOTION_BITS(sprite).mirror) {
+                if (!sprite->motion.bits.mirror) {
                     distance = -distance;
                 }
-                sprite->target[0] = (target->x.fixed >> 16) + distance;
-                sprite->target[2] = target->z.fixed >> 16;
-                sprite->target[1] = 0;
+                sprite->target_x = (target->x >> 16) + distance;
+                sprite->target_z = target->z >> 16;
+                sprite->target_y = 0;
                 func_800BA768(sprite);
             }
             break;
         /* 97: wait until landed (retrying each frame), then stop walking and turn this
          * sprite and its partner to face each other. */
         case 0x97:
-            if ((sprite->y.fixed >> 16) < sprite->ground) {
+            if ((sprite->y >> 16) < sprite->ground) {
                 sprite->countdown = 1;
                 return;
             }
             partner = sprite->partner;
             func_80021FC0(sprite, 0);
-            a.x = sprite->x.fixed >> 16;
-            a.z = sprite->z.fixed >> 16;
-            b.x = partner->x.fixed >> 16;
-            b.z = partner->z.fixed >> 16;
+            a.x = sprite->x >> 16;
+            a.z = sprite->z >> 16;
+            b.x = partner->x >> 16;
+            b.z = partner->z >> 16;
             func_80021FE0(sprite, func_80023124(b, a));
             func_800223B0(sprite, func_80023124(b, a));
             func_80021FE0(partner, func_80023124(a, b));
@@ -234,10 +249,10 @@ next:
          * an animation block, else 800245d8. */
         case 0xA4:
             {
-                BattleSprite *target = sprite->partner;
+                Sprite *target = sprite->partner;
                 s32 motion = (s8)args[0];
 
-                if (target->field48 == 0) {
+                if (target->animations == 0) {
                     func_800AA454(SPRITE_SLOT(target), 1 << SPRITE_SLOT(sprite), motion);
                 } else {
                     func_800245D8(target, motion);
@@ -270,7 +285,7 @@ next:
         case 0x8F:
             D_800C3624 = 1;
             sprite->script = NULL;
-            SPRITE_FRAME_BITS(sprite).state = 0;
+            sprite->frame_bits.field28 = 0;
             return;
         /* f8 s16 c: jump by s16 from this command when condition c (bits 0-6, bit 7 negates)
          * holds: 0-6 the current event's code for the partner's slot (4: 4 or 7), 7 more
@@ -330,26 +345,26 @@ next:
         /* f3 s24: queue the old part list; with s24 nonzero, build the parts and anchors of
          * the effect entry at the operand + s24, else drop them. */
         case 0xF3:
-            if (sprite->view->parts != NULL) {
-                func_80025180(sprite->view->parts);
+            if (sprite->renderer->parts[0] != NULL) {
+                func_80025180((u32)sprite->renderer->parts[0]);
             }
             offset = ((s8)args[2] << 16) + (args[1] << 8) + args[0];
             data = (u8 *)(offset + (s32)args);
             if (offset != 0) {
                 size = func_800B16A4(func_800B168C(data, 0));
                 buffer = func_80031BDC(size * 2, 0);
-                if (sprite->field3A != 0) {
+                if (sprite->rate != 0) {
                     func_800B1EA0(func_800B168C(data, 0), 3);
                 }
-                func_800B1720(func_800B168C(data, 0), buffer, sprite->render.bytes[0] >> 5, sprite->colourFlags & 1);
+                func_800B1720(func_800B168C(data, 0), buffer, ((u8 *)&sprite->render)[0] >> 5, sprite->colour_flags & 1);
                 part = buffer + size;
                 memcpy(part, buffer, size);
-                sprite->view->parts = buffer;
-                sprite->view->part = (SpriteImagePart *)part;
-                sprite->view->anchors = (SpriteAnchor *)func_800B168C(data, 0);
+                sprite->renderer->parts[0] = (SpritePart *)buffer;
+                sprite->renderer->parts[1] = (SpritePart *)part;
+                sprite->renderer->pointer34 = (SpriteRendererEntry *)func_800B168C(data, 0);
             } else {
-                sprite->view->parts = NULL;
-                sprite->view->anchors = NULL;
+                sprite->renderer->parts[0] = NULL;
+                sprite->renderer->pointer34 = NULL;
             }
             break;
         /* 8b: show the current event's results (800bd2e4). */
@@ -363,7 +378,7 @@ next:
             argument = args[0] | ((s8)args[1] << 8);
             wait = ((argument >> 11) & 0xF) + 1;
             frame = argument & 0x1FF;
-            wait = wait * SPRITE_MOTION_BITS(sprite).divisor / 256;
+            wait = wait * sprite->motion.bits.divisor / 256;
             if (wait == 0) {
                 wait = 1;
             }
@@ -374,14 +389,14 @@ next:
                 return;
             } else {
                 if (argument < 0 && frame != 0) {
-                    frame = SPRITE_FRAME_MAP(sprite)[frame - 1];
+                    frame = ((u8 *)sprite->word60)[frame - 1];
                 }
-                SPRITE_MOTION_BITS(sprite).frameFlip = (argument >> 9) & 1;
-                SPRITE_RENDER_BITS(sprite).flip = SPRITE_MOTION_BITS(sprite).frameFlip ^ SPRITE_MOTION_BITS(sprite).mirror;
+                sprite->motion.bits.frame_flip = (argument >> 9) & 1;
+                sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
                 if ((argument >> 10) & 1) {
-                    SPRITE_RENDER_BITS(sprite).flipY = 1;
+                    sprite->render.bits.flip_y = 1;
                 } else {
-                    SPRITE_RENDER_BITS(sprite).flipY = 0;
+                    sprite->render.bits.flip_y = 0;
                 }
                 func_8001D2B0(sprite, frame);
             }
@@ -398,7 +413,7 @@ next:
             {
                 s32 jump = args[0] + (s16)(args[1] << 8);
 
-                func_80021CF8(sprite, sprite->script + 3);
+                func_80021CF8(sprite, (s32)(sprite->script + 3));
                 sprite->script += (s16)jump;
             }
             goto next;
@@ -416,20 +431,20 @@ next:
         /* d4 s16: jump by s16 from this command, then run the completion callback. */
         case 0xD4:
             sprite->script += VM_S16(args, 0);
-            if (SPRITE_CALLBACK(sprite) != NULL) {
-                SPRITE_CALLBACK(sprite)(sprite);
+            if (sprite->callback != NULL) {
+                sprite->callback(sprite);
             }
             goto next;
         /* 86: wait while rising (vertical speed below 0), retrying each frame. */
         case 0x86:
-            if (sprite->velocity[1] < 0) {
+            if (sprite->speed_y < 0) {
                 sprite->countdown = 1;
                 return;
             }
             break;
         /* 87: wait while above the ground (y < ground), retrying each frame. */
         case 0x87:
-            if ((sprite->y.fixed >> 16) < sprite->ground) {
+            if ((sprite->y >> 16) < sprite->ground) {
                 sprite->countdown = 1;
                 return;
             }
@@ -438,30 +453,30 @@ next:
          * b0) when it is not negative. */
         case 0x80:
         end:
-            SPRITE_FRAME_BITS(sprite).state = 0;
-            if (SPRITE_CALLBACK(sprite) != NULL) {
-                SPRITE_CALLBACK(sprite)(sprite);
+            sprite->frame_bits.field28 = 0;
+            if (sprite->callback != NULL) {
+                sprite->callback(sprite);
                 return;
             }
-            if (sprite->idle.mode >= 0) {
-                func_800245D8(sprite, sprite->idle.mode);
+            if ((s8)sprite->b0.byteb0 >= 0) {
+                func_800245D8(sprite, (s8)sprite->b0.byteb0);
             }
-            SPRITE_FRAME_BITS(sprite).state = 0;
+            sprite->frame_bits.field28 = 0;
             return;
         /* 98: with a creator (+70) running this sprite's wait animation (+8d) in state 2,
          * retry each frame; then go on after a frame (at once without a creator). */
         case 0x98:
             {
-                BattleSprite *parent = sprite->parent;
+                Sprite *parent = sprite->parent;
 
                 if (parent == NULL) {
                     break;
                 }
                 sprite->countdown = 1;
-                if (parent->motion.bytes[3] != SPRITE_WAIT_MOTION(sprite)) {
+                if ((s8)parent->motion.bytes[3] != (s8)sprite->unknown8d) {
                     break;
                 }
-                if (SPRITE_FRAME_BITS(parent).state == 2) {
+                if (parent->frame_bits.field28 == 2) {
                     return;
                 }
             }
@@ -469,26 +484,26 @@ next:
         /* 82: restart: completion callback, then the current animation again (800245d8,
          * keeping the vertical speed), run at once. */
         case 0x82:
-            if (SPRITE_CALLBACK(sprite) != NULL) {
-                SPRITE_CALLBACK(sprite)(sprite);
+            if (sprite->callback != NULL) {
+                sprite->callback(sprite);
             }
-            velocity = sprite->velocity[1];
-            func_800245D8(sprite, sprite->motion.bytes[3]);
-            sprite->velocity[1] = velocity;
+            velocity = sprite->speed_y;
+            func_800245D8(sprite, (s8)sprite->motion.bytes[3]);
+            sprite->speed_y = velocity;
             sprite->countdown = 0;
             func_800C11CC(sprite);
             return;
         /* 81: hold: animation 3f ends (80); others stop here (countdown 0) after the
          * completion callback, in state 1. */
         case 0x81:
-            if (sprite->motion.bytes[3] == 0x3F) {
+            if ((s8)sprite->motion.bytes[3] == 0x3F) {
                 goto end;
             }
             sprite->countdown = 0;
-            if (SPRITE_CALLBACK(sprite) != NULL) {
-                SPRITE_CALLBACK(sprite)(sprite);
+            if (sprite->callback != NULL) {
+                sprite->callback(sprite);
             }
-            SPRITE_FRAME_BITS(sprite).state = 1;
+            sprite->frame_bits.field28 = 1;
             return;
         /* e4 s16: loop: pop a count; when nonzero, push it less one and jump (e1). */
         case 0xE4:
@@ -516,7 +531,7 @@ next:
                 return;
             }
             {
-                s32 frames = (args[0] + 2) * SPRITE_MOTION_BITS(sprite).divisor / 256;
+                s32 frames = (args[0] + 2) * sprite->motion.bits.divisor / 256;
 
                 if (frames == 0) {
                     frames = 1;

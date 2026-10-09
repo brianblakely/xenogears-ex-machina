@@ -1,27 +1,34 @@
-/* Battle unit from 800B15D8 to 800B3F04, built by the
- * Cygnus CDK GCC 2.7.2 with a later ASPSX (docs/matching.md): stores to
- * globals take a register for %hi, positive `li` becomes `addiu`, and some
- * epilogues (800B8090, 800B88BC, 800BEF84, 800BEFEC, 800BF718) carry the
- * stack adjustment in the `jr $ra` delay slot. The unit starts at 800B15D8,
- * the first function whose global stores take a register for %hi (800B14CC's
- * take $at); its rodata starts at 0x800707DC, after 800B12D0's jump table.
- * Its one table (800B1F6C's, 29 entries at 4 mod 8) is followed directly by
- * 800B3F04's at 0x80070850 (0 mod 8), so the unit ends before 800B3F04. */
+/* Battle unit from 800B15D8 to 800B3F04: the effect scripts' drawing (TMD
+ * primitives, 800B168C-800B2AEC) and the screen effects run as tasks: the
+ * camera quake, the screen fade, the stage light fade and the saved VRAM
+ * columns (800B3358-800B3E04). It is built by the Cygnus CDK GCC 2.7.2 with a
+ * later ASPSX (docs/matching.md): stores to globals take a register for %hi,
+ * positive `li` becomes `addiu`, and some epilogues (800B8090, 800B88BC,
+ * 800BEF84, 800BEFEC, 800BF718) carry the stack adjustment in the `jr $ra`
+ * delay slot. The unit starts at 800B15D8, the first function whose global
+ * stores take a register for %hi (800B14CC's take $at); its rodata starts at
+ * 0x800707DC, after 800B12D0's jump table. Its one table (800B1F6C's, 29
+ * entries at 4 mod 8) is followed directly by 800B3F04's at 0x80070850
+ * (0 mod 8), so the unit ends before 800B3F04. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
+#include "psyq/inline_c.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "battle/effect_script.h"
+#include "battle/screen.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
 #include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "effect_script.h"
+#include "own_declarations.h"
+#include "resident_views.h"
+
+/* A command's u16 at offset, and the vertex (or normal) its index at offset
+ * names. */
+#define SCRIPT_CMD_U16(cmd, offset) (*(u16 *)((cmd) + (offset)))
+#define SCRIPT_CMD_VERTEX(list, cmd, offset) ((SVECTOR *)(SCRIPT_CMD_U16(cmd, offset) * 8 + (s32)(list)))
 
 /* The unit's own uninitialized variables (its .bss, after
  * battle_8009E53C.c's; ASPSX 2.56 aligns each by its size up to a word:
@@ -31,7 +38,7 @@ static ScriptEntry D_800C3BD0; /* the selected script */
 static u8 *D_800C3BEC;         /* effect script cursor */
 static s32 D_800C3BF0;         /* effect script step count */
 static s32 D_800C3BF4;         /* unreferenced */
-static DrawPrim8 D_800C3BF8;   /* the blend mode's texture page */
+static DR_TPAGE D_800C3BF8;    /* the blend mode's texture page */
 static ScreenFade D_800C3C00;  /* the second screen fade */
 static s32 D_800C3C4C;         /* unreferenced */
 static ScreenFade D_800C3C50;
@@ -52,8 +59,8 @@ s32 func_800B15D8(ScriptFile *file, s32 index) {
 
     D_800C3BD0 = *entry;
     if (!(file->flags & 1)) {
-        D_800C3BD0.data0 += (u32)entry;
-        D_800C3BD0.data8 += (u32)entry;
+        D_800C3BD0.vertices += (u32)entry;
+        D_800C3BD0.normals += (u32)entry;
         D_800C3BD0.commands += (u32)entry;
     }
     D_800C3BF0 = 0;
@@ -318,10 +325,10 @@ void func_800B1EA0(VertexList *list, s32 shift) {
 /* Add a copy of the draw mode primitive D_800C3BF8 to the ordering table
  * entry ot. */
 void func_800B1F0C(u32 *ot) {
-    DrawPrim8 *prim = (DrawPrim8 *)D_80059580;
+    DR_TPAGE *prim = (DR_TPAGE *)D_80059580;
 
-    if (D_80059580 + sizeof(DrawPrim8) < D_80059534) {
-        D_80059580 += sizeof(DrawPrim8);
+    if ((u8 *)D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DR_TPAGE));
         *prim = D_800C3BF8;
         AddPrim(ot, prim);
     }
@@ -386,13 +393,13 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
     u8 *cmd;
 
     if (blend != 0) {
-        SetDrawTPage((DR_TPAGE *)&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
+        SetDrawTPage(&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
     }
     prims = packets;
     cmd = entry->commands + (u32)entry;
-    vertices = (SVECTOR *)(entry->data0 + (u32)entry);
+    vertices = (SVECTOR *)(entry->vertices + (u32)entry);
     count = entry->count;
-    normals = (SVECTOR *)(entry->data8 + (u32)entry);
+    normals = (SVECTOR *)(entry->normals + (u32)entry);
     for (i = 0; i != count; i++) {
         kind = cmd[3] & 0x1C;
         kind |= ((cmd[2] ^ 1) & 1) << 8; /* lit from normals */
@@ -885,6 +892,7 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
     }
 }
 
+/* Empty, as is the next; nothing in the overlay calls them. */
 void func_800B3348(void) {
 }
 
@@ -941,7 +949,7 @@ void func_800B3358(Quake *quake) {
 
 /* End the quake task. */
 void func_800B3588(Quake *quake) {
-    func_8001CD94(quake);
+    func_8001CD94(&quake->task);
     func_800320E8(quake);
     D_800C3548 = NULL;
 }
@@ -951,9 +959,9 @@ Quake *func_800B35C0(void) {
     Quake *quake;
 
     if (D_800C3548 == NULL) {
-        quake = func_8001CD08(0, sizeof(Quake) - sizeof(BattleTask));
-        func_8001CD6C(quake, func_800B3358);
-        func_8001CD74(quake, func_800B3588);
+        quake = (Quake *)func_8001CD08(NULL, sizeof(Quake) - sizeof(Task));
+        func_8001CD6C(&quake->task, (void (*)(Task *))func_800B3358);
+        func_8001CD74(&quake->task, (void (*)(Task *))func_800B3588);
         quake->from.vx = 0;
         quake->from.vy = 0;
         quake->from.vz = 0;
@@ -981,7 +989,7 @@ void func_800B3658(SVECTOR *amplitude, s32 frames) {
 
 /* Screen fade update: ease the colour to the target over the frames left;
  * end once it is black. */
-void func_800B36BC(BattleTask *task) {
+void func_800B36BC(Task *task) {
     ScreenFade *fade = (ScreenFade *)task;
     VECTOR delta;
 
@@ -1013,18 +1021,18 @@ void func_800B36BC(BattleTask *task) {
 /* End the screen fade tasks. */
 void func_800B383C(ScreenFade *fade) {
     func_8001CB48(&fade->draw);
-    func_8001CD94(fade);
+    func_8001CD94(&fade->task);
     D_800C3558 = NULL;
 }
 
 /* Draw the screen fade: a blended rectangle over the whole screen. */
-void func_800B3878(BattleTask *draw) {
+void func_800B3878(Task *draw) {
     POLY_F4 *poly = (POLY_F4 *)D_80059580;
     ScreenFade *fade = draw->data;
     DR_MODE *mode;
 
-    if (D_80059580 + 0x50 < D_80059534) {
-        D_80059580 += sizeof(POLY_F4) + sizeof(DR_MODE);
+    if ((u8 *)D_80059580 + 0x50 < D_80059534) {
+        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F4) + sizeof(DR_MODE));
         SetPolyF4(poly);
         SetSemiTrans(poly, 1);
         poly->r0 = fade->colour[0];
@@ -1040,8 +1048,8 @@ void func_800B3878(BattleTask *draw) {
         poly->y3 = 240;
         mode = (DR_MODE *)(poly + 1);
         SetDrawMode(mode, 0, 0, GetTPage(0, fade->blend, 0, 0), NULL);
-        AddPrim(D_8005956C + 2, poly);
-        AddPrim(D_8005956C + 2, mode);
+        AddPrim((u32 *)D_8005956C + 2, poly);
+        AddPrim((u32 *)D_8005956C + 2, mode);
     }
 }
 
@@ -1087,15 +1095,15 @@ void func_800B39C0(frames, blend, r, g, b)
             goto resume;
         }
     }
-    func_8001CC18(0, fade);
-    func_8001CA58(fade, &fade->draw);
-    fade->task.link &= 0x7FFFFFFF;
+    func_8001CC18(NULL, &fade->task);
+    func_8001CA58(&fade->task, &fade->draw);
+    fade->task.link.word &= 0x7FFFFFFF;
     if (D_800591AC != 0) {
         D_80059464--;
     }
-    func_8001CD6C(fade, func_800B36BC);
+    func_8001CD6C(&fade->task, func_800B36BC);
     func_8001CD64(&fade->draw, func_800B3878);
-    func_8001CD74(fade, func_800B383C);
+    func_8001CD74(&fade->task, (void (*)(Task *))func_800B383C);
     fade->task.data = fade;
     fade->draw.data = fade;
     fade->field40 = 0;
@@ -1127,7 +1135,7 @@ u8 func_800B3B6C(void) {
 
 /* Light fade update: ease the level from its start to its target over the
  * frames left; end once it is zero. */
-void func_800B3B94(BattleTask *task) {
+void func_800B3B94(Task *task) {
     LightFade *fade = (LightFade *)task;
     s32 left;
     s32 to;
@@ -1152,14 +1160,14 @@ void func_800B3B94(BattleTask *task) {
 /* End the light fade tasks and restore the stage lights (800A6F98). */
 void func_800B3C2C(LightFade *fade) {
     func_8001CB48(&fade->draw);
-    func_8001CD94(fade);
+    func_8001CD94(&fade->task);
     func_800320E8(fade);
     D_800C3560 = NULL;
     func_800A6F98();
 }
 
 /* Apply the light fade's level to light slot 0 when it changed. */
-void func_800B3C74(BattleTask *draw) {
+void func_800B3C74(Task *draw) {
     LightFade *fade = draw->data;
 
     if (fade->applied != fade->level) {
@@ -1184,7 +1192,8 @@ void func_800B3CD4(to, frames, red, blue, field4C, field4E)
     u8 *stack;
 
     if (D_800C3560 == NULL) {
-        D_800C3560 = fade = func_8001D1D8(sizeof(LightFade), 0, func_800B3B94, func_800B3C74, func_800B3C2C);
+        D_800C3560 = fade = (LightFade *)func_8001D1D8(sizeof(LightFade), NULL, func_800B3B94, func_800B3C74,
+                                                    (void (*)(Task *))func_800B3C2C);
         stack = func_80031BDC(0x1000, 1);
         STACK_ENTER(stack + 0xC00);
         func_800A5EB4();

@@ -1017,8 +1017,8 @@ def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
 # TMD primitives
 # ---------------------------------------------------------------------------
 #
-# Battle draws PlayStation TMD models (objects.h's "effect script file"): the
-# resident D_8001C76C (the slot-highlight ring, func_800BD098) and the model a
+# Battle draws PlayStation TMD models (battle/effect_script.h's "effect script
+# file"): the resident D_8001C76C (the slot-highlight ring, func_800BD098) and the model a
 # battle sprite command f3 binds as its parts (func_800C11CC), which ovl3384
 # func_801FC4C4 can also break into pieces. Both read object 0
 # (func_800B168C: 0x1c-byte entries after a 0xc-byte header); each primitive

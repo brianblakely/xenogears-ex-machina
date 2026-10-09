@@ -265,11 +265,14 @@ small headers beside the source; what several targets share has one definition i
 `decomp/include`: `psyq/` (the SDK's types and prototypes, members the symbol file
 leaves unnamed under their `func_` names), `resident/` (one header per resident
 subsystem with its types, variables and calls; `gamedata.h` holds the game data
-D_8006D634) and `battle/` (the battle area D_800C3EB0 and its work area D_800CCCE8,
-which the battle modules and overlays use). A resident function whose callers in
-other targets were built with other argument or result conversions (narrow
-parameters, another count) stays out of them: each target declares it, the resident
-in `own_declarations.h`. A function that is understood but does not yet
+D_8006D634) and `battle/` (one header per battle overlay subsystem whose types,
+variables or calls its modules and overlays use, with the battle area D_800C3EB0
+and its work area D_800CCCE8; each function sits in the header of the subsystem
+that defines it). A resident or battle function whose callers in other targets were
+built with other argument or result conversions (narrow parameters, another count)
+stays out of them: each target declares it, the resident and the battle in their
+`own_declarations.h`. A unit declares what only it uses itself, before the first
+use. A function that is understood but does not yet
 match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
 INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 

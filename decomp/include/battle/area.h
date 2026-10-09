@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "psyq/libgpu.h"
+#include "resident/sprite.h"
 #include "battle/work.h"
 
 /* The battle area D_800C3EB0 (0x8E38 bytes and its work area): the formation,
@@ -93,8 +94,8 @@ typedef struct BattleArea {
     PadRecord history[4];       /* 0x8C64: the last changes, newest first */
     s32 buffer;                 /* 0x8C84: the buffer being drawn */
     u8 pad8C88[4];
-    struct BattleSprite *sprites[11];  /* 0x8C8C: the slots' sprites */
-    struct ActorTask *tasks[11]; /* 0x8CB8: their tasks */
+    Sprite *sprites[11];        /* 0x8C8C: the slots' sprites */
+    SpriteTask *tasks[11];      /* 0x8CB8: their tasks */
     u8 pad8CE4[0x8D24 - 0x8CE4];
     SlotSource sources[11];     /* 0x8D24 */
     u8 field8DA8;               /* 0x8DA8 */

@@ -8,7 +8,7 @@
 
 /* A texture-scroll animation: `count` bands of `step` lines of a VRAM area,
  * each rotated horizontally by its own phase (8004495c, MoveImage). */
-typedef struct {
+typedef struct TextureScroll {
     u16 x, y;          /* area */
     u16 w, h;
     u16 step;          /* lines per band */
@@ -23,7 +23,7 @@ typedef struct {
  * tex_y) drawn as up to eight textured quads per draw buffer, turning with
  * the view direction, with optional sky and ground fills and a fade
  * between them. */
-typedef struct {
+typedef struct Panorama {
     POLY_FT4 quads[2][8]; /* per buffer */
     POLY_F4 fills[4];     /* per buffer: sky [0..1], ground [2..3] */
     POLY_G4 fades[2];     /* per buffer */

@@ -2,16 +2,22 @@
 #define BATTLE_OBJECTS_H
 
 #include "common.h"
-#include "psyq.h"
-#include "scene.h"
-#include "battle_core.h"
-#include "effect.h"
+#include "psyq/libgte.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/model.h"
+#include "battle/scene.h"
+
+/* The stage objects (8009E53C's unit, 8009F794-800A0838, 800A2BB8-800A2CA4,
+ * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their files, their animation
+ * events and the camera channels, their creation, selection, effects and
+ * per-frame update. */
 
 /* An object's model or extra data (fields as far as recovered). */
 struct ObjectData {
     u8 pad0[4];
     void *image;        /* 0x04: image == sounds when there is none */
-    SoundSystem *sounds; /* 0x08: its sound bank */
+    SoundBank *sounds;  /* 0x08: its sound bank */
     void *soundsEnd;     /* 0x0C: the same as sounds when there are none */
     u8 pad10[4];
     void *images;       /* 0x14: additional image data */
@@ -68,58 +74,24 @@ typedef struct {
     ObjectHeader *header; /* 0x10 */
 } ObjectModelFile;
 
-/* Resident services. */
-void func_80030988(s32 a, s32 b, s32 c, s32 d);
-s32 func_8003864C(SoundSystem *bank, s32 mode); /* whether a sound bank is loaded */
-void func_80038428(SoundSystem *bank);          /* load a sound bank */
-void func_8002C644(u8 *group);
-void func_8002C4BC(u8 *group);
-s32 func_80031894(void *block); /* a block's size */
-
-void func_800AA6E0(BattleObject *object);
-void func_800A8A88(Surface *surface);
-void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
-                   s16 z, s16 w, SVECTOR *position);
-void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
-
 /* Per-frame update and drawing of the stage objects. */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
 extern u8 D_800C3DF8;      /* effects run */
 extern MATRIX *D_800D2FC0; /* the stage colour matrix */
-extern s32 D_80050104;     /* resident: drawing with lighting */
-extern SoundSystem *D_800C4924;
+extern SoundBank *D_800C4924;
 extern SVECTOR D_800D3354; /* camera position */
 extern SVECTOR D_800D335C; /* camera look-at point */
 extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
 extern s16 D_800C3544;     /* its ground height */
 extern s16 D_800C3546;     /* key of the last update */
 
-/* Resident services. */
-s32 func_8003F8B0(s32 angle); /* rcos (4096 = 1.0) */
-
-void func_8009F844(BattleObject *object, MATRIX *m, MATRIX *light, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
-s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
-void func_800AAB34(BattleObject *object);
-u8 func_800AA514(s16 a, s16 b, s32 c);
-s32 func_800AA600(s32 index);
-void func_8009F794(ModelList *list, s32 release);
-void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 kind);
-void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
-
-/* A resident sprite task (fields as far as the battle uses them): its
- * sprite's position from +0x38, and at +link its caller block. */
-typedef struct EffectSprite {
-    u8 pad0[0x38];
-    s32 x, y, z; /* 0x38: 16.16 */
-    u8 pad44[0xBE - 0x44];
-    s16 link; /* 0xBE */
-} EffectSprite;
-
-/* The battle's block of a sprite following an object part (0x18 bytes). */
+/* The battle's block of a sprite following an object part (0x18 bytes),
+ * after the sprite in its resident sprite task (the sprite's size bytes
+ * from the task, read signed). */
 typedef struct {
     u8 pad0[4];
-    void (*update)(EffectSprite *sprite); /* 0x04: the sprite's own update */
+    void (*update)(Task *task);           /* 0x04: the sprite's own update */
     BattleObject *object;                 /* 0x08 */
     s16 part;                             /* 0x0C: 0 the root */
     s16 onGround;                         /* 0x0E: keep the object's ground height */
@@ -231,21 +203,6 @@ typedef union {
     ImageEvent image;
 } AnimEvent;
 
-extern u8 D_8006BE10[]; /* resident sprite resources */
-extern u8 D_8005A474[];
-
-/* Resident sound. */
-void func_80039E60(s32 sound);             /* play */
-void func_8003A2E4(s32 sound, s32 volume); /* set its volume */
-
-void *func_800AA820(s32 mode);
-void func_800AA454(u16 index, u16 mask, s32 script);
-void func_800AA564(BattleObject *target, u16 index, u16 mask, s32 script);
-void func_800BF6CC(void);
-s32 func_800B12D0(s32 slot, u8 mask);
-void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
-                   BattleObject *object);
-
 /* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
 typedef struct {
     u8 used;
@@ -260,41 +217,13 @@ typedef struct {
     s16 duration;    /* 0x12 */
 } CameraChannel;
 
-s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
-s16 func_800B0B14(s32 key);
-
-/* An entry of an effect script file (0x1C bytes); the offsets are from the
- * entry until relocated. */
-typedef struct ScriptEntry {
-    u8 *data0;    /* 0x00 */
-    s32 field4;   /* 0x04 */
-    u8 *data8;    /* 0x08 */
-    s32 fieldC;   /* 0x0C */
-    u8 *commands; /* 0x10: 4-byte aligned commands; byte 1 is the length in words less one */
-    s32 count;    /* 0x14: commands */
-    s32 field18;  /* 0x18 */
-} ScriptEntry;
-
-/* An effect script file. Its layout is a PlayStation TMD model: id 0x41,
- * flags (bit 0 FIXP), object count, then per object its vertex, normal and
- * primitive tables with their counts and a scale; its commands are TMD
- * primitives. It is not bytecode of the effect VM (800AAD54); the resident's
- * D_8001C76C (0x170 bytes, one object) is one. */
-typedef struct {
-    u8 pad0[4];
-    u32 flags; /* 0x04: bit 0 relocated */
-    u8 pad8[4];
-    ScriptEntry entries[1]; /* 0x0C */
-} ScriptFile;
-
-/* Resident sprites. */
-EffectSprite *func_80023FD8(s32 kind, void *resource, SVECTOR *position, s32 size);
-void func_80021FE0(void *body, s32 direction);
-void func_800223B0(void *body, s32 direction);
-void func_80022000(s32 *body, s32 scale);
-void *func_8001CD7C(void *task); /* a task's update */
-void func_8001CD6C(void *task, void (*update)()); /* set it */
-
-void func_800AFC68(EffectSprite *sprite);
+void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
+void func_800AA454(u16 index, u16 mask, s32 script); /* select an object and start its effect */
+s32 func_800AA600(s32 index);            /* the scaled size of an object */
+void func_800AA788(s32 value);           /* a sprite script command: set the flag D_800C3B74 */
+void func_800AA79C(s32 a, s32 b);        /* swap two stage objects */
+void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3); /* start or queue its effect */
+void func_800B136C(void);                /* wait until no object is busy */
+void func_800B14CC(s32 keep);            /* end the party's objects other than keep's */
 
 #endif

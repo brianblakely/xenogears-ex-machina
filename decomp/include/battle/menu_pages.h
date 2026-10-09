@@ -1,9 +1,11 @@
 #ifndef BATTLE_MENU_PAGES_H
 #define BATTLE_MENU_PAGES_H
 
-/* Command menu list pages (item, technique and gear pages) and their windows. */
-
 #include "common.h"
+
+/* The command menu's list pages (item, technique and gear pages): the
+ * command names' text images (80070E2C's unit, 80076EA4) and the item list
+ * page (8008CCCC's, 8008FE18). */
 
 /* A text image's pixels. */
 typedef struct TextImage {
@@ -19,14 +21,7 @@ extern s32 D_800C3404[16];   /* their y */
 
 extern u8 D_800C3DE0[8];     /* the entered combo steps' buttons */
 
-u8 *func_80033818(s32 id);   /* item name */
-u8 *func_80033908(s32 id);   /* art name */
-u8 *func_800339FC(s32 id);   /* gear art name */
-u8 *func_800338D8(s32 id);   /* battle system text */
-u8 *func_800339C8(s32 gear, s32 id); /* a gear's combo step text */
-u8 *func_80033A8C(s32 id);   /* gear part text */
-u8 *func_80033848(s32 id);   /* equipment name */
-void func_80076EA4(void);
-void func_8008FE18(u8 column, u8 row, u8 open);
+void func_80076EA4(void);                       /* render the command names' text images */
+void func_8008FE18(u8 column, u8 row, u8 open); /* build the item list page */
 
 #endif

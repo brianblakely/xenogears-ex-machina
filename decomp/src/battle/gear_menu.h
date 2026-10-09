@@ -1,12 +1,10 @@
 #ifndef BATTLE_GEAR_MENU_H
 #define BATTLE_GEAR_MENU_H
 
-#include "battle_core.h"
+#include "common.h"
 
-/* The gear command menu (8008cde4-8008d598). */
-void func_800930AC(u8 member, u8 *ids, u16 *costs); /* build its list */
-void func_800939CC(u8 member, u8 kind);
-s32 func_8008D598(u8 member, u8 page, u8 fade); /* build or fade the command panel, return its buffer */
+/* The command panel of the command menus (8008CCCC's unit, 8008D598-
+ * 8008F8F4, 800930AC-80093B08): its pages' glyph lists and glyph sets. */
 
 /* A command panel page's two glyph lists: which of the two +0x641c lists
  * each fills (0xFF: none) and from which glyph set. */
@@ -26,5 +24,7 @@ typedef struct {
 
 extern GlyphPage *D_800C3000[]; /* per command panel page */
 extern GlyphEntry *D_800C2F4C[]; /* glyph sets */
+
+s32 func_8008D598(u8 member, u8 page, u8 fade); /* build or fade the command panel, return its buffer */
 
 #endif
