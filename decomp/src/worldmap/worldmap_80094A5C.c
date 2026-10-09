@@ -15,6 +15,7 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
+#include "psyq/types.h"
 #include "resident/cd.h"
 #include "resident/heap.h"
 #include "resident/model.h"

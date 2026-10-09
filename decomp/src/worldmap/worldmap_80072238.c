@@ -18,6 +18,7 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/types.h"
 #include "resident/cd.h"
 #include "resident/console.h"
 #include "resident/gamedata.h"
