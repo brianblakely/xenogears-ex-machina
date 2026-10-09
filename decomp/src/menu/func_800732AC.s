@@ -2,6 +2,8 @@
 # The end pointer is tested after each copy, including the first. This is
 # used with positive, word-aligned counts; there is no zero-count guard
 # or reverse-copy path for overlapping ranges.
+# Handwritten: the word moves through t0 and the end stays in a2; a plain-C
+# probe under GCC 2.7.2 and 2.6.3 uses v0 and puts the end in v1.
 glabel func_800732AC
     addu    $a2, $a2, $a1
 .Lmenu_word_copy:

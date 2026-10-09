@@ -2,6 +2,8 @@
 # preserved registers live below its unchanged sp while the task runs on
 # its own stack. The save layout skips sp-12 and does not save t8/t9.
 # k0/k1 are preserved too, as required by this original context interface.
+# Handwritten: saves below the unchanged sp, stores sp, k0 and k1, and loads
+# sp and every other register from the task, which compiled code never does.
 glabel func_8008BB3C
     sw      $s0, -4($sp)
     sw      $s1, -8($sp)

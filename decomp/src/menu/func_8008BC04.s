@@ -1,6 +1,8 @@
 # Yield the current task: save its live register bank, including the
 # return address after this yield, then return through the suspended
 # caller's save area. zero and at have no slots written by the switch.
+# Handwritten: stores the register file through at, including k0/k1/sp,
+# and loads sp from memory, which compiled code never does.
 glabel func_8008BC04
     lui     $at, %hi(D_80096D8C)
     lw      $at, %lo(D_80096D8C)($at)

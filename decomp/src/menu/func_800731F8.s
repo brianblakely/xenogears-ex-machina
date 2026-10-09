@@ -3,6 +3,8 @@
 # the original rotation and scales before the first in-place matrix store.
 # Matrix padding and translation are untouched. The GTE rotation retains
 # the original unscaled matrix; its IR values finish on the last column.
+# Handwritten: a leaf on t1-t6 alone; a plain-C probe under GCC 2.7.2 and
+# 2.6.3 starts its temporaries at v0/v1 and the free argument registers.
 glabel func_800731F8
     lw      $t1, 0($a0)
     lw      $t2, 4($a0)

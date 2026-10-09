@@ -5,6 +5,8 @@
 # address to form the packet address. a1 is used as the OT base. The saved
 # ra is never reloaded, and sp remains 0x28 bytes below its entry value.
 # Do not present this entry as an ordinary C-callable projection helper.
+# Handwritten: it returns with sp still lowered and ra never reloaded, and
+# overwrites an offset it has just computed (dead code GCC deletes).
 glabel func_8008DE54
     addiu   $sp, $sp, -0x28
     addu    $a2, $a0, $zero
