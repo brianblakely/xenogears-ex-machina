@@ -382,8 +382,8 @@ converted to C per unit. What converting the targets' `.data` established:
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are
-  scaffolding, deleted when their last assembly user matches (slot39.data.ld went
-  with 801E78C8). One of a static resolves only because maspsx makes `.lcomm` symbols
+  scaffolding, deleted when their last assembly user matches (slot39's and field's
+  have gone). One of a static resolves only because maspsx makes `.lcomm` symbols
   global, where ASPSX kept them local.
 - GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
   heap tag names).
@@ -425,14 +425,14 @@ converted to C per unit. What converting the targets' `.data` established:
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's
   own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
-  (`data_users.py menu.mk --end 80096fa8`: no FOREIGN reference or INVERSION). The
-  GCC 2.6.3 images keep one `.bss` in declaration order (slot39_801DBE54's 2-, 200-,
-  200- and 1-byte statics at 801ea72c-801ea8c0; mdec's 64-byte movie_decoder among
-  4-byte statics), so the split is likely the original assembler's 8-byte small-data
-  threshold applied to the `.lcomm`/`.comm` GCC emits after the code, with the
-  linker's small commons. Until it is modelled the larger variables stay extern
-  (`undefined_syms_auto.txt`): defined in their units they would be allocated among
-  the small ones.
+  (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no FOREIGN
+  reference or INVERSION). The GCC 2.6.3 images keep one `.bss` in declaration order
+  (slot39_801DBE54's 2-, 200-, 200- and 1-byte statics at 801ea72c-801ea8c0; mdec's
+  64-byte movie_decoder among 4-byte statics), so the split is likely the original
+  assembler's 8-byte small-data threshold applied to the `.lcomm`/`.comm` GCC emits
+  after the code, with the linker's small commons. Until it is modelled the larger
+  variables stay extern (`undefined_syms_auto.txt`): defined in their units they
+  would be allocated among the small ones.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
   definition placed after its use: `extern int late_var; int g(void) { return
   late_var; } int late_var = 2;` through `psx-cc1-<version> -O2 -G8` puts `late_var:`
