@@ -67,7 +67,7 @@ model. These choices add no work to Phase 1's original-compatible matching exit.
   WebAssembly, with a qualified shared ABI/link strategy and thin JavaScript glue,
   not a JavaScript game rewrite, emulator or streamed native session. Browser APIs
   own canvas/input, Web Audio, asynchronous asset/storage access and page lifecycle;
-  do not require desktop SDL/GPUI loops, native filesystem access or a local server
+  do not require the desktop SDL loop, native filesystem access or a local server
   process for hosted play. Keep a usable single-thread baseline; gate optional
   workers/shared-memory acceleration on proven browser and deployment support.
 - **WebXR:** Browser immersive sessions, poses/views, reference spaces, frame
@@ -76,13 +76,17 @@ model. These choices add no work to Phase 1's original-compatible matching exit.
   detect session and optional hand/gaze capabilities rather than inferring them
   from native-device support. Require secure hosting, user-initiated entry and
   explicit exit; unavailable or denied XR must leave ordinary browser play usable.
-- **GPUI:** Desktop application interface for launcher/settings, bindings, asset
-  import, save/mod management and later tools. Original dialogue, battle menus
-  and other game UI stay in game presentation. Qualify GPUI on actual devices
-  before adopting it beyond desktop; otherwise use a platform-appropriate client
-  of the same services. Use a browser-appropriate application UI over those same
-  services, not a GPUI web-port requirement. Settings must remain accessible during
-  browser play and inside XR even when ordinary page UI is not visible.
+- **Slint:** Application interface for launcher/settings, bindings, asset import,
+  save/mod management and later tools on desktop, Android/Horizon panels and in-XR
+  panels. Run it as a custom Slint platform under the host loop: forward host input
+  and render through Slint's wgpu renderer into textures on the shared wgpu device
+  and queue, not a second window, event loop or GPU stack. Pin Slint and wgpu
+  together while Slint's wgpu integration is unstable. This UI uses an ordinary
+  application style, not Seraph Glass. Original dialogue, battle menus and other
+  game UI stay in game presentation. Qualify Slint's WebAssembly rendering before
+  using it in browsers; otherwise use a browser-appropriate application UI over the
+  same services. Settings must remain accessible during browser play and inside XR
+  even when ordinary page UI is not visible.
 
 Keep application services (validation, settings persistence, session control and
 available save/mod operations) independent of widgets. GUIs and agents call the
@@ -91,14 +95,14 @@ in a GUI callback. Logical separation does not require separate executables or
 processes: settings must remain accessible while playing.
 
 Give each host explicit window, GPU-resource, input-focus and lifecycle ownership.
-Coordinate SDL and GPUI event handling under platform main-thread requirements;
-do not start competing application loops. OpenXR or WebXR owns immersive frame
+Drive Slint from the host loop under platform main-thread requirements; do not
+start competing application loops. OpenXR or WebXR owns immersive frame
 scheduling; browser animation callbacks own flat web presentation, not a blocking
 native loop. One owner mutates simulation state through commands; presentation
 consumes read-only state and never advances gameplay per eye, UI repaint or
 spectator view. Yield browser work in bounded batches; page throttling, lost focus
 and XR visibility changes must not create uncontrolled simulation catch-up.
-Keep graphical dependencies optional: the native headless runtime needs no GPUI,
+Keep graphical dependencies optional: the native headless runtime needs no Slint,
 wgpu, OpenXR, WebXR, browser or SDL video/audio initialization.
 
 ## Phase 0 — Preserve the research and build baseline
@@ -190,11 +194,12 @@ second independently maintained game-rules implementation.
   even without output devices; optional screenshots/spectator streams are read-only
   and independent of simulation time.
 - [ ] Prove the integration risks with small working paths: a live SDL/wgpu game
-  surface alongside a GPUI settings control; Android startup, asset access and
-  suspend/resume; and an actual Horizon headset rendering a stereo test scene
-  through wgpu/OpenXR. Verify swapchain/device ownership and synchronization,
-  frame scheduling and head tracking while simulation is paused. These are
-  foundation checks, not the full UX or VR feature work of Phases 5, 6 and 10.
+  surface with a Slint settings panel rendered on the same wgpu device; Android
+  startup, asset access and suspend/resume; and an actual Horizon headset rendering
+  a stereo test scene and a Slint panel through wgpu/OpenXR. Verify swapchain/
+  device ownership and synchronization, frame scheduling and head tracking while
+  simulation is paused. These are foundation checks, not the full UX or VR feature
+  work of Phases 5, 6 and 10.
 - [ ] Prove the browser Rust/C WebAssembly build with a real execution path, canvas
   rendering, user-activated audio, asynchronous local asset import and persisted
   settings/save round-trip. Bound memory and stream/cache assets rather than
@@ -323,19 +328,20 @@ remains available; graphics style and viewing mode are independent choices.
   actions; agents issue those actions directly without SDL, DOM or OS injection.
 - [ ] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
   game menu and Esc toggles the app menu. Provide touch/headset equivalents and
-  explicit focus/capture transitions without rebuilding original game UI in GPUI.
+  explicit focus/capture transitions without rebuilding original game UI in Slint.
 - [ ] Implement the shared headset hand/gaze contract below as an optional
   assisted-input profile. Navigation and approach/interact use authoritative
   traversal data and shared legal commands, not coordinate rewrites, remote confirms
   or another game rules model. Expose resolved intents/actions to agents and deterministic replay;
   replay must not depend on recording raw eye movements or headset frame timing.
-- [ ] Deliver the GPUI desktop launcher/settings and available application-service
+- [ ] Deliver the Slint launcher/settings and available application-service
   screens. Apply changes through shared validation, acknowledgment and persistence;
   changing settings from an agent uses the same path. Add later save/mod/editor
   screens when their owning phases implement those services.
-- [ ] Qualify mobile and in-headset application controls, using GPUI only where
-  device integration is proven. Verify controller reconnects, live settings changes
-  and return to play; a desktop companion is not a substitute for headset settings.
+- [ ] Qualify the Slint application controls on actual mobile and headset devices,
+  including controller and hand-ray input on in-XR panels. Verify controller
+  reconnects, live settings changes and return to play; a desktop companion is not
+  a substitute for headset settings.
 - [ ] Deliver browser application controls as their shared services become
   available, plus usable in-XR panels; do not depend on DOM overlays being available.
   Provide visible Enter/Exit XR and controller/pointer alternatives. Handle page
@@ -499,13 +505,16 @@ loss. Use shared legal commands, not automated gameplay sequences.
 
 #### Seraph Glass visual language
 
-Unify every added cursor, button, ring, scaling handle, shop panel, arcade deck
-and native/browser VR control under **Seraph Glass**: iOS Liquid Glass-like material
-behavior with Xenogears' Seraph Angels-inspired structure. Use faceted silver-white
-shells, hollow halos, tapered fins, dark recesses and sparse gold/copper accents
-around translucent inner surfaces, not generic blue holograms. Apply this to the
-control layer, not a glass coating over the original game world or a requirement
-to rebuild original game UI in GPUI.
+**Seraph Glass** applies only to bespoke widgets added for VR functionality: hand/
+gaze cursors, targeting rings, scaling handles, VR shop/arcade decks and other
+native/browser VR controls. It does not apply to settings, launcher, bindings,
+save/mod management, editors, in-XR settings panels or other ordinary application
+UI, which use a plain application style. It is not a glass coating over the
+original game world or a reason to rebuild original game UI. Give these widgets
+iOS Liquid Glass-like material behavior with Xenogears' Seraph Angels-inspired
+structure. Use faceted silver-white shells, hollow halos, tapered fins, dark
+recesses and sparse gold/copper accents around translucent inner surfaces, not
+generic blue holograms.
 
 Keep cursor centers stable, silhouettes related across surface/2D targeting and
 committed destinations, and feedback restrained. Give ornate shapes generous,
@@ -625,7 +634,7 @@ overclaims or changes to game physics.
 
 **Goal:** Human clients of the same source/build/runtime/debug services agents use.
 
-- [ ] Deliver GPUI desktop level, geometry, object, event and cutscene editing,
+- [ ] Deliver Slint desktop level, geometry, object, event and cutscene editing,
   selection/source attribution, preview, diagnostics, undo/redo and transactions.
 - [ ] Preserve components, stable IDs and handwritten source; do not promise
   arbitrary code round-tripping. No operation exists only in a GUI callback.
