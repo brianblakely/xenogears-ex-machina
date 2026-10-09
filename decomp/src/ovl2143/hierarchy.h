@@ -23,20 +23,16 @@ void func_8002CB54(SpriteModel *model, void **packets0, void **packets1);
 void func_8002CC10(s16 x, s16 y);
 void func_8002CC74(s16 x, s16 y);
 
-/* A model file's hierarchy entry (ovl2143/actors.h, which the unit includes
- * after its state). */
-struct HierarchyLink;
-
 ModelTable *func_801DC22C(u8 *group, ModelTable *list);
-ModelPart *func_801DC2D0(ModelTable *group, struct HierarchyLink *links, s32 mode, s32 configure,
-                         s16 param0, s16 param1, s16 param2, s16 param3);
+ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+                         s16 x1, s16 y1);
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
 void func_801DCD8C(ModelPart *parts);
 void func_801DCE18(ModelTable *list, s32 release_models);
 s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale);
-u16 func_801DEF10(ModelPart *parts, s16 *data);
-u16 func_801DF0B4(EffectPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode, s32 smooth,
+u16 func_801DEF10(ModelPart *root, s16 *data);
+u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
                   s32 tag);
 void func_801DF52C(EffectPool *pool, ModelPart *part, s32 index, s32 mask);
 EffectPool *func_801DF5F4(EffectPool *pool, s32 capacity);

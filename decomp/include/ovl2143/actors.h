@@ -142,50 +142,9 @@ typedef struct Actor {
 
 LAYOUT_CHECK(ActorLayoutCheck, sizeof(Actor) == 0x134);
 
-/* An actor's description (the model file's +10 record's +4): its extents,
- * scale, reference, flags and record counts, then each surface's
- * parameters. */
-typedef struct ActorDesc {
-    u8 pad0[2];
-    s16 size[3];            /* +2 */
-    s16 scale;              /* +8 */
-    u8 reference;           /* +a */
-    u8 padB;
-    u16 flags;              /* +c */
-    u8 channel_count;       /* +e */
-    u8 padF;
-    u8 imageCount;          /* +10 */
-    u8 pad11;
-    u8 surfaceCount;        /* +12 */
-    u8 pad13;
-    u16 records[1];         /* +14: the surfaces' parameters */
-} ActorDesc;
-
-typedef struct ActorInfo {
-    u8 pad0[4];
-    ActorDesc *desc;        /* +4 */
-    s32 *tables[1];         /* +8: per surface */
-} ActorInfo;
-
-/* A model file's hierarchy entry: a model index (ffff: none) and its parent
- * entry. */
-typedef struct HierarchyLink {
-    u16 model;
-    u16 parent;
-} HierarchyLink;
-
-/* An actor's model file (relocated by 8003342C): its images, the model group
- * (up to the hierarchy links) and its description. */
-typedef struct ActorFile {
-    u8 pad0[4];
-    void *images;           /* +4 */
-    u8 *group;              /* +8 */
-    HierarchyLink *links;   /* +c: follows the model group */
-    ActorInfo *info;        /* +10 */
-} ActorFile;
-
-/* An actor's script file (relocated by 8003342C): its script block and its
- * sound bank. */
+/* An actor's model file is a stage object's (ObjectModelFile, battle/model.h:
+ * 801E742C reads it as 800A8BF0 does). Its script file (relocated by
+ * 8003342C) holds its script block and its sound bank. */
 typedef struct ScriptBlock {
     u8 pad0[4];
     s32 *locals;            /* +4 */
@@ -208,8 +167,8 @@ extern Actor *D_801E8670[10]; /* the actors */
 void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node);
 void func_801E7378(s32 on); /* while on, tweens to keyframes apply at once (801E39F0 op 0x13) */
 void func_801E738C(s32 slot_count); /* reset the module and its pools */
-void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
-                   s16 w, s16 *pos); /* create actor `index` from its files */
+void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
+                   s16 z, s16 w, s16 *pos); /* create actor `index` from its files */
 void func_801E7FD4(void);   /* release every actor and both pools */
 void func_801E8030(s32 index); /* release actor `index` */
 /* Select actor `index` and mask `mask` and run its script entry `entry`. */

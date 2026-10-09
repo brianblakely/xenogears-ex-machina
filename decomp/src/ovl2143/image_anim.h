@@ -16,6 +16,6 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E165C(ImageAnim *anim);
 void func_801E1708(ImageAnim *anim, s16 level);
 void func_801E17B8(ImageAnim *anim, s16 level);
-FrameCurve func_801E34BC(s32 type);
+FrameCurve func_801E34BC(s32 mode);
 
 #endif

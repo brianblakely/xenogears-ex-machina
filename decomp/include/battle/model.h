@@ -7,7 +7,7 @@
 
 /* The battle objects' models: their model tables, hierarchies of posed parts
  * and the effect pools that animate the parts (8009E53C's unit, 8009EF3C-
- * 8009F794 and 800A0838-800A2BB8). */
+ * 8009F794 and 800A0838-800A2BB8), and the model files they are built from. */
 
 /* A table of the models of a relocated model group: the group's records
  * (resident SpriteModels, 0x38 bytes each from group +0x10) and their
@@ -58,5 +58,47 @@ typedef struct ModelPart {
     void *packets[2];        /* 0x68: one buffer per frame */
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
+
+/* A model file's description of its object (800A8BF0 reads a stage object's,
+ * ovl2143's 801E742C an actor's): its extents and scale, flags and record
+ * counts, then its meshes' descriptions. */
+typedef struct {
+    u8 pad0[2];
+    s16 size[3];       /* 0x02: height, x and z extents (the draws 8009F844 and
+                        * 801DCEC8 place the shadow at the x and z extents;
+                        * 800AA600/800AA650 and 801E8430/801E8480 scale them) */
+    s16 scale;         /* 0x08 */
+    u8 field2A;        /* 0x0A: the object's byte 0x2A, whose low 7 bits 800AF518
+                        * and 801E6910 take as the animation of ids 0xFE/0xFF
+                        * and bit 7 as a flag */
+    u8 padB;
+    u16 flags;         /* 0x0C: the object's flags4A */
+    u8 channelCount;   /* 0x0E */
+    u8 padF;
+    u8 imageAnimCount; /* 0x10 */
+    u8 pad11;
+    u8 meshCount;      /* 0x12: its surfaces (800A7064) */
+    u8 pad13;
+    s16 meshes[1];     /* 0x14: per surface its h0, 16 parameter words for
+                        * 800A7064, its key count and its keys (five halfwords
+                        * each) */
+} ObjectDesc;
+
+/* The header of a model file. */
+typedef struct {
+    u8 pad0[4];
+    ObjectDesc *desc;  /* 0x04 */
+    void *meshData[1]; /* 0x08: per mesh, its surface's table (800A7064) */
+} ObjectHeader;
+
+/* A model file (relocated by 8003342C). */
+typedef struct {
+    u8 pad0[4];
+    void *images;         /* 0x04 */
+    u8 *models;           /* 0x08: the model group */
+    u16 *hierarchy;       /* 0x0C: after the models: (model, parent) pairs
+                           * (8009EC4C) */
+    ObjectHeader *header; /* 0x10 */
+} ObjectModelFile;
 
 #endif

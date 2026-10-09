@@ -100,68 +100,69 @@ ModelTable *func_801DC22C(u8 *group, ModelTable *list) {
     return list;
 }
 
-/* Build a model hierarchy: a root node and one node per link up to the first
- * model index past the group; each model node gets its packets for both
- * buffers (optionally after setting 8002cc10/8002cc74 parameters). Returns the
- * nodes, or NULL when there are none or an allocation fails. */
-ModelPart *func_801DC2D0(ModelTable *group, HierarchyLink *links, s32 mode, s32 configure,
-                         s16 param0, s16 param1, s16 param2, s16 param3) {
-    HierarchyLink *link;
-    ModelPart *parts;
+/* Build a model hierarchy from (model, parent) pairs, up to the first pair
+ * naming neither a listed model nor 0xFFFF: a root part, then one part per
+ * pair with its packets for both buffers (built with mode; offset by (x0, y0)
+ * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
+ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+                         s16 x1, s16 y1) {
+    ModelPart *root;
     ModelPart *part;
+    u16 *pair;
     s32 count;
-    s32 index;
-    u16 model;
+    s16 index;
+    u16 id;
     u16 parent;
 
     func_80032498(4, 0);
-    link = links;
+    pair = hierarchy;
     count = 0;
-    while (link->model < group->count || link->model == 0xFFFF) {
+    while (pair[0] < list->count || pair[0] == 0xFFFF) {
         count++;
-        link++;
+        pair += 2;
     }
     if (count == 0) {
         return NULL;
     }
     count++;
-    parts = func_80031BDC(count * sizeof(ModelPart), 0);
-    link = links;
-    if (parts == NULL) {
+    root = func_80031BDC(count * sizeof(ModelPart), 0);
+    pair = hierarchy;
+    if (root == NULL) {
         return NULL;
     }
-    part = parts + 1;
+    part = root + 1;
     index = 1;
-    model = link->model;
-    parent = link->parent;
-    parts->dirty = 1;
-    parts->rotate = 1;
-    parts->yxz = 1;
-    parts->scale[0] = 0x1000;
-    parts->scale[1] = 0x1000;
-    parts->scale[2] = 0x1000;
-    parts->parent = NULL;
-    parts->visible = 0;
-    parts->modelId = 0xFFFF;
-    parts->index = count;
-    parts->packets[0] = NULL;
-    parts->packets[1] = NULL;
-    parts->rotation.vx = 0;
-    parts->rotation.vy = 0;
-    parts->rotation.vz = 0;
-    parts->translation[0] = 0;
-    parts->translation[1] = 0;
-    parts->translation[2] = 0;
-    parts->effects[0] = NULL;
-    parts->effects[1] = NULL;
-    parts->effects[2] = NULL;
-    while (model < group->count || model == 0xFFFF) {
+    id = pair[0];
+    parent = pair[1];
+    root->dirty = 1;
+    root->rotate = 1;
+    root->yxz = 1;
+    root->scale[0] = 0x1000;
+    root->scale[1] = 0x1000;
+    root->scale[2] = 0x1000;
+    root->parent = NULL;
+    root->visible = 0;
+    root->modelId = 0xFFFF;
+    root->index = count;
+    root->packets[0] = NULL;
+    root->packets[1] = NULL;
+    root->rotation.vx = 0;
+    root->rotation.vy = 0;
+    root->rotation.vz = 0;
+    root->translation[0] = 0;
+    root->translation[1] = 0;
+    root->translation[2] = 0;
+    root->effects[0] = NULL;
+    root->effects[1] = NULL;
+    root->effects[2] = NULL;
+    while (id < list->count || id == 0xFFFF) {
         if (parent == 0xFFFF) {
             part->parent = NULL;
         } else {
-            part->parent = parts + parent + 1;
+            part->parent = root + parent + 1;
         }
-        part->index = index++;
+        part->index = index;
+        index++;
         part->dirty = 1;
         part->rotate = 1;
         part->visible = 1;
@@ -170,19 +171,19 @@ ModelPart *func_801DC2D0(ModelTable *group, HierarchyLink *links, s32 mode, s32 
         part->scale[2] = 0x1000;
         part->yxz = 0;
         part->field52 = 0;
-        part->modelId = model;
-        if (model != 0xFFFF) {
-            func_8002CB54(group->models[model], &part->packets[0], &part->packets[1]);
+        part->modelId = id;
+        if (id != 0xFFFF) {
+            func_8002CB54(list->models[id], &part->packets[0], &part->packets[1]);
             if (part->packets[0] == NULL) {
-                func_801DCD8C(parts);
+                func_801DCD8C(root);
                 return NULL;
             }
-            if (configure) {
-                func_8002CC10(param0, param1);
-                func_8002CC74(param2, param3);
+            if (offset) {
+                func_8002CC10(x0, y0);
+                func_8002CC74(x1, y1);
             }
-            func_8002C8CC(group->models[model], part->packets[0], mode);
-            memcpy(part->packets[1], part->packets[0], group->models[model]->packet_size);
+            func_8002C8CC(list->models[id], part->packets[0], mode);
+            memcpy(part->packets[1], part->packets[0], list->models[id]->packet_size);
             part->rotation.vx = 0;
         } else {
             part->packets[0] = NULL;
@@ -198,11 +199,11 @@ ModelPart *func_801DC2D0(ModelTable *group, HierarchyLink *links, s32 mode, s32 
         part->effects[1] = NULL;
         part->effects[2] = NULL;
         part++;
-        link++;
-        model = link->model;
-        parent = link->parent;
+        pair += 2;
+        id = pair[0];
+        parent = pair[1];
     }
-    return parts;
+    return root;
 }
 
 /* Recompose a hierarchy's matrices: the root's world matrix from its rotation
@@ -1133,77 +1134,83 @@ s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     return result;
 }
 
-/* Apply a keyframe to the nodes after the root: each rotation or position
- * that changed is set unless the node's tween is kept (tag 0xff). Returns
- * the node count. */
-u16 func_801DEF10(ModelPart *parts, s16 *data) {
+/* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
+ * flag 1) and translations (unless flag 2), marking each changed part; parts
+ * with a kept tween (tag 0xFF) keep theirs. The frame holds halfwords: [2]
+ * flags, [3] base flag, [6] rotation count, [7] translation count, then from
+ * [12] (x, y, z) triples, after the base rotations when [3] is 0. Returns the
+ * part count less the root. */
+u16 func_801DEF10(ModelPart *root, s16 *data) {
     u16 rotations;
-    u16 positions;
-    u16 rot_count;
-    u16 pos_count;
+    u16 translations;
+    u16 rotationCount;
+    u16 translationCount;
     u16 flags;
+    ModelPart *part;
     u16 count;
+    s32 i;
     s32 x;
     s32 y;
     s32 z;
-    s32 i;
 
     rotations = 0;
-    positions = 0;
-    i = data[3];
-    rot_count = ((AnimationFrame *)data)->rotationCount;
-    pos_count = ((AnimationFrame *)data)->translationCount;
-    flags = ((AnimationFrame *)data)->flags;
-    data += sizeof(AnimationFrame) / sizeof(s16);
+    translations = 0;
+    i = data[3]; /* the base flag */
+    rotationCount = data[6];
+    translationCount = data[7];
+    flags = data[2];
+    data += 12;
     if (i == 0) {
-        data += (rot_count + 1) * 3;
+        data += (rotationCount + 1) * 3;
     }
-    count = parts->index - 1;
+    count = root->index - 1;
+    part = root;
     for (i = 0; i < count; i++) {
-        parts++;
-        if (!(flags & 1) && rotations < rot_count) {
+        part++;
+        if (!(flags & 1) && rotations < rotationCount) {
             x = *data++;
             y = *data++;
             z = *data++;
             rotations++;
-            if ((parts->rotation.vx != x || parts->rotation.vy != y || parts->rotation.vz != z) &&
-                (parts->effects[0] == NULL || parts->effects[0]->tag != 0xFF)) {
-                parts->rotation.vx = x;
-                parts->rotation.vy = y;
-                parts->rotation.vz = z;
-                parts->dirty = 1;
-                parts->rotate = 1;
+            if ((part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z)
+                && (part->effects[0] == NULL || part->effects[0]->tag != 0xFF)) {
+                part->rotation.vx = x;
+                part->rotation.vy = y;
+                part->rotation.vz = z;
+                part->dirty = 1;
+                part->rotate = 1;
             }
         }
-        if (!(flags & 2) && positions < pos_count) {
+        if (!(flags & 2) && translations < translationCount) {
             x = *data++;
             y = *data++;
             z = *data++;
-            positions++;
-            if ((parts->translation[0] != x || parts->translation[1] != y || parts->translation[2] != z) &&
-                (parts->effects[1] == NULL || parts->effects[1]->tag != 0xFF)) {
-                parts->translation[0] = x;
-                parts->translation[1] = y;
-                parts->translation[2] = z;
-                parts->dirty = 1;
+            translations++;
+            if ((part->translation[0] != x || part->translation[1] != y || part->translation[2] != z)
+                && (part->effects[1] == NULL || part->effects[1]->tag != 0xFF)) {
+                part->translation[0] = x;
+                part->translation[1] = y;
+                part->translation[2] = z;
+                part->dirty = 1;
             }
         }
     }
     return count;
 }
 
-/* Tween the nodes after the root towards a keyframe over `duration` ticks
- * (at least 1): each changed rotation gets a tween (kind mode + 3) of the
- * shortest angle differences (mode 1: to the absolute angles), each changed
- * position one of its movement (mode 1: to the absolute position); kept
- * tweens (tag 0xff) stay, other nodes lose theirs. Returns the node count. */
-u16 func_801DF0B4(EffectPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode,
-                  s32 smooth, s32 tag) {
-    EffectEntry *tween;
-    u16 rot_count;
+/* Tween the parts after the root towards an animation frame over `duration`
+ * ticks (at least 1): each changed rotation gets a tween (kind mode + 3) of
+ * the shortest angle differences (mode 1: to the absolute angles), each
+ * changed translation one of its movement (mode 1: to the absolute
+ * translation); kept tweens (tag 0xFF) stay, other parts lose theirs. The
+ * frame is read as 801DEF10 reads it. Returns the part count less the root. */
+u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+                  s32 tag) {
+    EffectEntry *entry;
+    u16 rotationCount;
     u16 rotations;
-    u16 pos_count;
-    u16 positions;
+    u16 translationCount;
+    u16 translations;
     u16 count;
     u16 flags;
     s32 x;
@@ -1215,115 +1222,115 @@ u16 func_801DF0B4(EffectPool *pool, ModelPart *parts, s16 *data, s32 duration, s
         duration = 1;
     }
     rotations = 0;
-    positions = 0;
+    translations = 0;
     smooth &= 1;
-    rot_count = ((AnimationFrame *)data)->rotationCount;
-    i = data[3];
-    pos_count = ((AnimationFrame *)data)->translationCount;
+    rotationCount = data[6];
+    i = data[3]; /* the base flag */
+    translationCount = data[7];
     mode &= 1;
-    flags = ((AnimationFrame *)data)->flags;
-    data += sizeof(AnimationFrame) / sizeof(s16);
+    flags = data[2];
+    data += 12;
     if (i == 0) {
-        data += (rot_count + 1) * 3;
+        data += (rotationCount + 1) * 3;
     }
-    count = parts->index - 1;
+    count = part->index - 1;
     for (i = 0; i < count; i++) {
-        parts++;
-        if (!(flags & 1) && rotations < rot_count) {
+        part++;
+        if (!(flags & 1) && rotations < rotationCount) {
             x = *data++;
             y = *data++;
             z = *data++;
             rotations++;
-            if (parts->rotation.vx != x || parts->rotation.vy != y || parts->rotation.vz != z) {
-                if (parts->effects[0] != NULL) {
-                    tween = parts->effects[0];
-                    if (tween->tag == 0xFF) {
-                        goto positions; /* a kept tween stays */
+            if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
+                if (part->effects[0] != NULL) {
+                    entry = part->effects[0];
+                    if (entry->tag == 0xFF) {
+                        goto translation;
                     }
                 } else {
-                    tween = func_801DF6F0(pool);
+                    entry = func_801DF6F0(pool);
                 }
-                if (tween != NULL) {
-                    tween->used = 1;
-                    tween->field1 = smooth;
-                    tween->kind = mode + 3;
-                    tween->tag = tag;
-                    tween->params[0] = parts->rotation.vx;
-                    tween->params[1] = parts->rotation.vy;
-                    tween->params[2] = parts->rotation.vz;
-                    x = (x - parts->rotation.vx) & 0xFFF;
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->kind = mode + 3;
+                    entry->tag = tag;
+                    entry->params[0] = part->rotation.vx;
+                    entry->params[1] = part->rotation.vy;
+                    entry->params[2] = part->rotation.vz;
+                    x = (x - part->rotation.vx) & 0xFFF;
                     if (x >= 0x800) {
                         x -= 0x1000;
                     }
-                    tween->params[3] = x;
-                    y = (y - parts->rotation.vy) & 0xFFF;
+                    entry->params[3] = x;
+                    y = (y - part->rotation.vy) & 0xFFF;
                     if (y >= 0x800) {
                         y -= 0x1000;
                     }
-                    tween->params[4] = y;
-                    z = (z - parts->rotation.vz) & 0xFFF;
+                    entry->params[4] = y;
+                    z = (z - part->rotation.vz) & 0xFFF;
                     if (z >= 0x800) {
                         z -= 0x1000;
                     }
-                    tween->params[5] = z;
+                    entry->params[5] = z;
                     if (mode) {
-                        tween->params[3] += parts->rotation.vx;
-                        tween->params[4] += parts->rotation.vy;
-                        tween->params[5] += parts->rotation.vz;
+                        entry->params[3] += part->rotation.vx;
+                        entry->params[4] += part->rotation.vy;
+                        entry->params[5] += part->rotation.vz;
                     }
-                    tween->time = 0;
-                    tween->duration = duration;
-                    parts->effects[0] = tween;
-                    goto positions;
+                    entry->time = 0;
+                    entry->duration = duration;
+                    part->effects[0] = entry;
+                    goto translation;
                 }
             }
         }
-        if (parts->effects[0] != NULL && parts->effects[0]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->effects[0]);
-            parts->effects[0] = NULL;
+        if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
+            func_801DF7A8(pool, part->effects[0]);
+            part->effects[0] = NULL;
         }
-    positions:
-        if (!(flags & 2) && positions < pos_count) {
+    translation:
+        if (!(flags & 2) && translations < translationCount) {
             x = *data++;
             y = *data++;
             z = *data++;
-            positions++;
-            if (parts->translation[0] != x || parts->translation[1] != y || parts->translation[2] != z) {
-                if (parts->effects[1] != NULL) {
-                    tween = parts->effects[1];
-                    if (tween->tag == 0xFF) {
-                        continue; /* a kept tween stays */
+            translations++;
+            if (part->translation[0] != x || part->translation[1] != y || part->translation[2] != z) {
+                if (part->effects[1] != NULL) {
+                    entry = part->effects[1];
+                    if (entry->tag == 0xFF) {
+                        continue;
                     }
                 } else {
-                    tween = func_801DF6F0(pool);
+                    entry = func_801DF6F0(pool);
                 }
-                if (tween != NULL) {
-                    tween->used = 1;
-                    tween->field1 = smooth;
-                    tween->kind = mode + 3;
-                    tween->tag = tag;
-                    tween->params[0] = parts->translation[0];
-                    tween->params[1] = parts->translation[1];
-                    tween->params[2] = parts->translation[2];
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->kind = mode + 3;
+                    entry->tag = tag;
+                    entry->params[0] = part->translation[0];
+                    entry->params[1] = part->translation[1];
+                    entry->params[2] = part->translation[2];
                     if (mode) {
-                        tween->params[3] = x;
-                        tween->params[4] = y;
-                        tween->params[5] = z;
+                        entry->params[3] = x;
+                        entry->params[4] = y;
+                        entry->params[5] = z;
                     } else {
-                        tween->params[3] = x - parts->translation[0];
-                        tween->params[4] = y - parts->translation[1];
-                        tween->params[5] = z - parts->translation[2];
+                        entry->params[3] = x - part->translation[0];
+                        entry->params[4] = y - part->translation[1];
+                        entry->params[5] = z - part->translation[2];
                     }
-                    tween->time = 0;
-                    tween->duration = duration;
-                    parts->effects[1] = tween;
+                    entry->time = 0;
+                    entry->duration = duration;
+                    part->effects[1] = entry;
                     continue;
                 }
             }
         }
-        if (parts->effects[1] != NULL && parts->effects[1]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->effects[1]);
-            parts->effects[1] = NULL;
+        if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
+            func_801DF7A8(pool, part->effects[1]);
+            part->effects[1] = NULL;
         }
     }
     return count;
@@ -2641,17 +2648,19 @@ void func_801E3438(Surface *record) {
     }
 }
 
-/* The frame curve of type `type` (0: cosine). */
-FrameCurve func_801E34BC(s32 type) {
-    switch (type) {
+/* The frame curve of mode: 801E08D4, 801E0938 or 801E0988 for 1-3, any other
+ * the cosine curve 801E0850. */
+FrameCurve func_801E34BC(s32 mode) {
+    switch (mode) {
     case 1:
         return (FrameCurve)func_801E08D4;
     case 2:
         return (FrameCurve)func_801E0938;
     case 3:
         return (FrameCurve)func_801E0988;
+    default:
+        return (FrameCurve)func_801E0850;
     }
-    return (FrameCurve)func_801E0850;
 }
 
 /* Reset actor `a`'s script state: run `list` with the tables `tables`, no
@@ -4307,7 +4316,7 @@ void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value
     link->node = command->part;
     if (command->follow) {
         link->update = func_8001CD7C(&sprite->task);
-        func_8001CD6C(&sprite->task, (void (*)(Task *))func_801E6F64);
+        func_8001CD6C(&sprite->task, func_801E6F64);
         link->offset.vx = command->offset[0];
         link->offset.vy = command->offset[1];
         link->offset.vz = command->offset[2];
@@ -4317,15 +4326,14 @@ void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value
 
 /* Sprite update: place the sprite at its offset through its actor node,
  * then run its own update. */
-void func_801E6F64(SpriteTask *sprite) {
+void func_801E6F64(Task *node) {
+    SpriteTask *sprite = (SpriteTask *)node;
+    SpriteLink *link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
+    MATRIX *m = SCRATCH_MATRIX;
     VECTOR world;
-    SpriteLink *link;
-    MATRIX *m;
 
-    link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
-    m = SCRATCH_MATRIX;
     if (link->node != 0) {
-        CompMatrix(&link->actor->parts->transform, &link->actor->parts[link->node].world, SCRATCH_MATRIX);
+        CompMatrix(&link->actor->parts->transform, &link->actor->parts[link->node].world, m);
     } else {
         m = &link->actor->parts->transform;
     }
@@ -4454,21 +4462,21 @@ void func_801E738C(s32 slot_count) {
  * shadow quads, image animations and surfaces, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
  * The model list is attached even when the files were already relocated. */
-void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
-                   s16 w, s16 *pos) {
+void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
+                   s16 z, s16 w, s16 *pos) {
     Actor *actor;
-    ActorInfo *info;
+    ObjectHeader *info;
     /* The descriptor, read as its header and then as the surfaces'
      * parameter words that follow it. */
     union {
-        ActorDesc *header;
+        ObjectDesc *header;
         s16 *p;
     } desc;
     SoundOwner *sounds;
     ScriptBlock *block;
     void *images;
     u8 *group;
-    HierarchyLink *links;
+    u16 *hierarchy;
     s32 size;
     u8 *compact;
     s32 i, k;
@@ -4483,7 +4491,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     actor = func_80031BDC(sizeof(Actor), 0);
     if (!(flags & 1)) {
         func_8003342C(file);
-        func_8003342C(file->info);
+        func_8003342C(file->header);
     }
     actor->b62 = 0;
     actor->b63 = 0;
@@ -4499,18 +4507,18 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
             actor->b62 = 1;
         }
     }
-    info = file->info;
+    info = file->header;
     desc.header = info->desc;
     images = file->images;
-    group = file->group;
-    links = file->links;
+    group = file->models;
+    hierarchy = file->hierarchy;
     D_801E8670[index] = actor;
     actor->size[0] = desc.header->size[0];
     actor->size[1] = desc.header->size[1];
     actor->size[2] = desc.header->size[2];
-    actor->reference = desc.header->reference;
+    actor->reference = desc.header->field2A;
     actor->flags = desc.header->flags;
-    size = (u8 *)links - group;
+    size = (u8 *)hierarchy - group;
     if (actor->flags & 0x200) {
         func_80030988(2, 2, 0x40, 0x40);
     }
@@ -4533,12 +4541,12 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     actor->models = &D_801E85F4[D_801E8634];
     if (!(flags & 0x40)) {
         if (actor->flags & 4) {
-            actor->parts = func_801DC2D0(actor->models, links, 2, 0, 0, 0, 0, 0);
+            actor->parts = func_801DC2D0(actor->models, hierarchy, 2, 0, 0, 0, 0, 0);
         } else {
-            actor->parts = func_801DC2D0(actor->models, links, 2, 1, x, y, z, w);
+            actor->parts = func_801DC2D0(actor->models, hierarchy, 2, 1, x, y, z, w);
         }
     } else {
-        actor->parts = func_801DC2D0(actor->models, links, 0, 0, 0, 0, 0, 0);
+        actor->parts = func_801DC2D0(actor->models, hierarchy, 0, 0, 0, 0, 0, 0);
     }
     if (pos != NULL) {
         actor->parts->translation[0] = pos[0];
@@ -4577,9 +4585,9 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         actor->prims[i].v3 = 0xEF;
     }
     actor->scale = desc.header->scale;
-    actor->channel_count = desc.header->channel_count;
+    actor->channel_count = desc.header->channelCount;
     func_801E8510(actor);
-    actor->imageCount = desc.header->imageCount;
+    actor->imageCount = desc.header->imageAnimCount;
     if (actor->imageCount != 0) {
         actor->images = func_80031BDC(actor->imageCount * sizeof(ImageAnim), 0);
         for (i = 0; i < actor->imageCount; i++) {
@@ -4589,16 +4597,16 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
             actor->images[i].work = NULL;
         }
     }
-    actor->surfaceCount = desc.header->surfaceCount;
+    actor->surfaceCount = desc.header->meshCount;
     if (actor->surfaceCount != 0) {
-        desc.p = desc.header->records;
+        desc.p = desc.header->meshes;
         record = func_80031BDC(actor->surfaceCount * sizeof(Surface), 0);
         actor->surfaces = record;
         for (i = 0; i < actor->surfaceCount; i++, record++) {
             count = desc.p[17];
             record->h0 = *desc.p++;
             /* The parameters are read in order. */
-            func_801E1A14(record, (u16 *)info->tables[i], *desc.p++, *desc.p++, *desc.p++,
+            func_801E1A14(record, info->meshData[i], *desc.p++, *desc.p++, *desc.p++,
                           *desc.p++, *desc.p++, count, x + *desc.p++, y + *desc.p++, *desc.p++,
                           *desc.p++, z + *desc.p++, w, *desc.p++, *desc.p++, *desc.p++, *desc.p++,
                           *desc.p++, *desc.p);

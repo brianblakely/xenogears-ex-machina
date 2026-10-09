@@ -3847,9 +3847,9 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
         models = modelFile->models;
         hierarchy = modelFile->hierarchy;
         D_800D3368[index] = object;
-        object->scale24 = OBJECT_DESC(stream)->scale24;
-        object->scale26 = OBJECT_DESC(stream)->scale26;
-        object->scale28 = OBJECT_DESC(stream)->scale28;
+        object->scale24 = OBJECT_DESC(stream)->size[0];
+        object->scale26 = OBJECT_DESC(stream)->size[1];
+        object->scale28 = OBJECT_DESC(stream)->size[2];
         object->field2A = OBJECT_DESC(stream)->field2A;
         object->flags4A = OBJECT_DESC(stream)->flags;
         size = (u8 *)hierarchy - models;
@@ -4439,17 +4439,18 @@ u8 func_800AA7DC(s32 index) {
     return type;
 }
 
-/* The effect step handler for mode (1-3; any other the default). */
-void *func_800AA820(s32 mode) {
+/* The frame curve of mode: 800A3514, 800A3578 or 800A35C8 for 1-3, any other
+ * the cosine curve 800A3490. */
+FrameCurve func_800AA820(s32 mode) {
     switch (mode) {
     case 1:
-        return func_800A3514;
+        return (FrameCurve)func_800A3514;
     case 2:
-        return func_800A3578;
+        return (FrameCurve)func_800A3578;
     case 3:
-        return func_800A35C8;
+        return (FrameCurve)func_800A35C8;
     default:
-        return func_800A3490;
+        return (FrameCurve)func_800A3490;
     }
 }
 
@@ -6386,7 +6387,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             if ((event->image.mode & 0x7F) >= 4) {
                                 colour = (ColorRow *)D_800D2FC0;
                             }
-                            curve = (FrameCurve)func_800AA820(event->image.curve);
+                            curve = func_800AA820(event->image.curve);
                             x = event->image.x;
                             y = event->image.y;
                             x2 = event->image.x2;

@@ -9,9 +9,10 @@
 #include "battle/scene.h"
 
 /* The stage objects (8009E53C's unit, 8009F794-800A0838, 800A2BB8-800A2CA4,
- * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their files and the camera
- * channels, their creation, selection, effects and per-frame update (their
- * animation events are in battle/effect.h). */
+ * 800A8A88-800AAD54 and 800AFB4C-800B15D8): their script files and the
+ * camera channels, their creation, selection, effects and per-frame update
+ * (their model files are in battle/model.h, their animation events in
+ * battle/effect.h). */
 
 /* An object's model or extra data (fields as far as recovered). */
 struct ObjectData {
@@ -37,42 +38,6 @@ typedef struct {
     ObjectScripts *scripts;  /* 0x04 */
     struct ObjectData *data; /* 0x08 */
 } ObjectScriptFile;
-
-/* A stage object's description: its scales and flags, then its mesh
- * descriptions (MeshDesc and its keys). */
-typedef struct {
-    u8 pad0[2];
-    s16 scale24;       /* 0x02 */
-    s16 scale26;       /* 0x04 */
-    s16 scale28;       /* 0x06 */
-    s16 scale;         /* 0x08 */
-    u8 field2A;        /* 0x0A */
-    u8 padB;
-    u16 flags;         /* 0x0C: the object's flags4A */
-    u8 channelCount;   /* 0x0E */
-    u8 padF;
-    u8 imageAnimCount; /* 0x10 */
-    u8 pad11;
-    u8 meshCount;      /* 0x12 */
-    u8 pad13;
-    s16 meshes[1];     /* 0x14 */
-} ObjectDesc;
-
-/* The header of a stage object's model file. */
-typedef struct {
-    u8 pad0[4];
-    ObjectDesc *desc;  /* 0x04 */
-    void *meshData[1]; /* 0x08: per mesh */
-} ObjectHeader;
-
-/* A stage object's model file (relocated by 8003342C). */
-typedef struct {
-    u8 pad0[4];
-    void *images;         /* 0x04 */
-    u8 *models;           /* 0x08: the model group */
-    u16 *hierarchy;       /* 0x0C: after the models */
-    ObjectHeader *header; /* 0x10 */
-} ObjectModelFile;
 
 /* Per-frame update and drawing of the stage objects. */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */

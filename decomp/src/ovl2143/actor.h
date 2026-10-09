@@ -56,7 +56,7 @@ s32 func_801E6910(Actor *actor, u8 ref, s32 *flag);
 void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
                    u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration);
 void func_801E6D94(Actor *actor, ModelPart *part, s32 flags);
-void func_801E6F64(SpriteTask *sprite);
+void func_801E6F64(Task *node);
 void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z);
 void func_801E7298(Actor *actor);
 void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
