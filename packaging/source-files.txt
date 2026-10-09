@@ -936,3 +936,4 @@ tools/repository/reproduce.py
 tools/repository/source_archive.py
 tools/repository/validate.py
 tools/service_calls.py
+tools/stray_padding.py

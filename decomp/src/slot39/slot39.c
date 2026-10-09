@@ -16,7 +16,7 @@ void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
  * units' uninitialized variables. */
 u8 D_801E96A4 = 0; /* the file screen saves (nonzero) or loads */
 u8 D_801E96A5 = 0;
-u8 D_801E96A6 = 8; /* unreferenced */
+u8 D_801E96A6 = 8; /* unreferenced; a variable or stray fill (open, docs/matching.md) */
 /* single-bit masks */
 u16 D_801E96A8[16] = {
     0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080,
