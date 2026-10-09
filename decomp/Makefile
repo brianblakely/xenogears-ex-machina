@@ -133,6 +133,7 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
 		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_EXTRA)) -o $(IMAGE).elf
 	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(IMAGE).elf $(IMAGE)
+	$(if $(PACKER_TAIL),cd $(ROOT) && head -c $(PACKER_TAIL) /dev/zero >> $(IMAGE))
 
 verify: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
@@ -145,10 +146,14 @@ audit: coverage
 
 # Compressed-container reproduction (a separate claim from image matching):
 # CONTAINERS lists DISC:SLOT pairs whose packed file holds this image.
+# PACKER_TAIL counts the zero literals the original packer appended to complete
+# its last group; the image rule appends them after the linked program, so the
+# image matches only when the link ends exactly where the program does.
 container: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && for pair in $(CONTAINERS); do \
 		disc=$${pair%%:*}; slot=$${pair##*:}; \
-		$(PYTHON) tools/packed_container.py $(IMAGE) --disc .local/discs/disc$$disc.bin \
+		$(PYTHON) tools/packed_container.py $(IMAGE) --tail $(or $(PACKER_TAIL),0) \
+			--disc .local/discs/disc$$disc.bin \
 			--manifest .local/extract/disc$$disc/manifest.json --slot $$slot || exit 1; \
 	done
 

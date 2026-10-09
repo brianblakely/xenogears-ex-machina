@@ -6,19 +6,37 @@ a u32 decoded length, then groups of one flag byte and eight tokens; a set flag
 bit is a two-byte copy (12-bit backward distance, 4-bit length - 3), a clear bit
 a literal. The original packer behaves exactly like Haruhiko Okumura's
 public-domain LZSS binary-tree encoder (N 4096, F 18, threshold 2) with two
-game-specific differences established against every packed mode overlay:
+game-specific differences:
 
 * the preset ring bytes are never inserted into the search tree, so no copy
   reaches before the start of the data;
-* the stream always ends with a complete group of eight tokens (the decoder
-  consumes whole groups): trailing copies are turned into literals, the last
-  one needed only shortened, until the token count is a multiple of eight.
+* the decoder consumes whole groups, so the packer completes the last group
+  with zero literal tokens and records the program's length plus theirs: a
+  decoded image ends with those 0-7 zero bytes, which belong to no object.
 
-Copies take the tree's first longest match; distances are relative. The packed
-stream ends inside its last 2048-byte sector, which is zero-filled; the disc
-index's declared file size is not the stream length and is not derived here.
+Copies take the tree's first longest match; distances are relative. The plain
+encoding of each target's program followed by its zero literals is the disc
+stream of all 14 packed containers (worldmap 2, field 6, movie 7, menu 5,
+battle and slot39 0), and some such tail reproduces each of the 24 other disc-1
+files that hold one whole packed stream of up to 384 KiB (`--sample`).
+Splitting trailing copies into literals instead also reproduces the 14, but
+not files/0090.bin. Where a program itself ends in zero bytes the stream does
+not fix the split (field's tail could be 4-6 bytes, worldmap's 1-3); there
+the resident's mode table, which starts the overlay's BSS at its program end,
+does. A target appends its tail after the link (PACKER_TAIL in its .mk), so the
+image only matches when the link ends at the program end. The packed stream ends inside its last 2048-byte sector,
+which is zero-filled; the disc index's declared file size is not the stream
+length and is not derived here.
 
-    packed_container.py verify IMAGE --disc RAW --slot N
+    packed_container.py IMAGE --tail K --disc RAW --manifest MANIFEST --slot N
+    packed_container.py --sample .local/extract/disc1/files [--max-size 0x60000]
+
+IMAGE's last K bytes are the packer's zero literals and the rest the program
+it encoded; the rule is checked, not assumed: the program's plain encoding
+must leave exactly K tokens to complete its last group. `--sample` lists, for
+each file of a directory that holds one packed stream (decoded 256 bytes to
+--max-size, at most a sector or zeros after it), the zero tails that
+reproduce it, and fails if none does.
 """
 
 from __future__ import annotations
@@ -38,6 +56,8 @@ SECTOR = 2352
 
 
 def encode(data: bytes) -> bytes:
+    """Pack a program as the original packer did: the decoded image is `data`
+    followed by the zero literals that complete the last group."""
     size = len(data)
     text = bytearray(b" ") * (N + F - 1)
     lson = [NIL] * (N + 1)
@@ -140,37 +160,12 @@ def encode(data: bytes) -> bytes:
             length -= 1
             if length:
                 insert(r)
-    return serialize(data, complete_groups(data, tokens))
+    tail = -len(tokens) % 8
+    return serialize(size + tail, tokens + [(0, 0)] * tail)
 
 
-def complete_groups(data: bytes, tokens: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    """Split trailing copies into literals until the last group is full.
-
-    Working back from the end, a copy is shortened (keeping at least three
-    bytes) when that alone completes the group, otherwise it becomes literals.
-    Input too short to fill a group keeps its partial last group.
-    """
-    need = -len(tokens) % 8
-    end = len(data)
-    index = len(tokens)
-    while need and index:
-        index -= 1
-        distance, length = tokens[index]
-        end -= length if distance else 1
-        if not distance:
-            continue
-        if length - need >= 3 and need < length - 1:
-            kept = length - need
-            tokens[index : index + 1] = [(distance, kept)] + [(0, data[end + kept + k]) for k in range(need)]
-            need = 0
-        else:
-            tokens[index : index + 1] = [(0, data[end + k]) for k in range(length)]
-            need = (need - (length - 1)) % 8
-    return tokens
-
-
-def serialize(data: bytes, tokens: list[tuple[int, int]]) -> bytes:
-    out = bytearray(len(data).to_bytes(4, "little"))
+def serialize(size: int, tokens: list[tuple[int, int]]) -> bytes:
+    out = bytearray(size.to_bytes(4, "little"))
     for start in range(0, len(tokens), 8):
         flags, body = 0, bytearray()
         for bit, (distance, value) in enumerate(tokens[start : start + 8]):
@@ -191,25 +186,70 @@ def disc_file(raw: bytes, manifest: Path, slot: int) -> bytes:
     return b"".join(raw[base + n * SECTOR : base + n * SECTOR + 2048] for n in range(sectors))
 
 
+def sample(directory: Path, max_size: int) -> int:
+    """Print the zero tails that reproduce each whole packed file of directory."""
+    sys.path.insert(0, str(ROOT))
+    from tools.analysis.packed import PackedError, decode_block
+
+    failures = 0
+    for path in sorted(directory.glob("*.bin")):
+        raw = path.read_bytes()
+        size = int.from_bytes(raw[:4], "little") if len(raw) >= 16 else 0
+        if not 256 <= size <= max_size:
+            continue
+        try:
+            block = decode_block(raw, output_limit=max_size)
+        except (PackedError, IndexError):
+            continue
+        rest = raw[block.token_bytes :]
+        if any(rest) and len(rest) > 2048:
+            continue  # more data follows the stream
+        data = block.data
+        tails = []
+        for k in range(8):
+            if any(data[len(data) - k :]):
+                break
+            stream = encode(data[: len(data) - k])
+            if stream == raw[: len(stream)]:
+                tails.append(k)
+        failures += not tails
+        print(f"{path.name}\t{size:#x}\tzero literals {tails or 'NONE'}", flush=True)
+    return 1 if failures else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("image", type=Path, help="decoded or rebuilt image to pack")
-    parser.add_argument("--disc", type=Path, required=True, help="MODE2/2352 raw track")
-    parser.add_argument("--manifest", type=Path, required=True, help="tools/extraction/disc_files.py manifest")
-    parser.add_argument("--slot", type=int, required=True)
+    parser.add_argument("image", type=Path, nargs="?", help="decoded or rebuilt image to pack")
+    parser.add_argument("--tail", type=int, default=0, help="the image's trailing zero literals (PACKER_TAIL)")
+    parser.add_argument("--disc", type=Path, help="MODE2/2352 raw track")
+    parser.add_argument("--manifest", type=Path, help="tools/extraction/disc_files.py manifest")
+    parser.add_argument("--slot", type=int)
+    parser.add_argument("--sample", type=Path, help="directory of extracted disc files")
+    parser.add_argument("--max-size", type=lambda s: int(s, 0), default=0x60000)
     args = parser.parse_args()
-    packed = encode(args.image.read_bytes())
+    if args.sample:
+        return sample(args.sample, args.max_size)
+    if args.image is None or args.disc is None or args.manifest is None or args.slot is None:
+        parser.error("IMAGE, --disc, --manifest and --slot are required without --sample")
+    image = args.image.read_bytes()
+    program = image[: len(image) - args.tail]
+    if not 0 <= args.tail < 8 or any(image[len(program) :]):
+        raise SystemExit(f"{args.image}: the last {args.tail} bytes are not a packer tail of zero literals")
+    packed = encode(program)
     original = disc_file(args.disc.read_bytes(), args.manifest, args.slot)
     result = {
         "claim": "compressed_container_reproduction",
         "slot": args.slot,
+        "program_bytes": len(program),
+        "zero_literals": int.from_bytes(packed[:4], "little") - len(program),
         "stream_bytes": len(packed),
         "stream_sha256": hashlib.sha256(packed).hexdigest(),
         "stream_matches_disc": original[: len(packed)] == packed,
         "sector_tail_zero": not any(original[len(packed) :]),
     }
     print(json.dumps(result, sort_keys=True))
-    return 0 if result["stream_matches_disc"] and result["sector_tail_zero"] else 1
+    ok = result["zero_literals"] == args.tail and result["stream_matches_disc"] and result["sector_tail_zero"]
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

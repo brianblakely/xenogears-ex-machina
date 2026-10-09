@@ -8,11 +8,11 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/field
-# The data ends at 0x800af5e8 (file 0x3faf8), where the resident's mode table
-# starts the field BSS. The original packer then appended zero literal tokens
-# until its last group held eight and recorded the padded length: the plain
-# encoding of the 0x3faf8 linked bytes plus six zero literals is the disc
-# stream. The six zero bytes are reproduced here as file padding.
-OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x3fafe
+# The program ends at 0x800af5e8 (file 0x3faf8), where the resident's mode
+# table starts the field BSS. The original packer then appended zero literal
+# tokens until its last group held eight and recorded the padded length: the
+# plain encoding of the program plus six zero literals is the disc stream
+# (tools/packed_container.py). The six bytes follow the link as file padding.
+PACKER_TAIL := 6
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:36 2:31

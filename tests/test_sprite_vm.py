@@ -367,7 +367,9 @@ class SpriteDisassemblyTests(unittest.TestCase):
         packed = encode(sprite) + bytes(1)
         views = list(vm.file_views(1, 5, packed, Counter()))
         self.assertEqual([view.name for view in views], ["raw", "unpacked"])
-        self.assertEqual(views[1].data, sprite)
+        # The packer's zero literals that complete its last group follow.
+        self.assertEqual(views[1].data[: len(sprite)], sprite)
+        self.assertFalse(any(views[1].data[len(sprite) :]))
         archive = struct.pack("<4I", 2, 16, 16 + len(packed), 16 + 2 * len(packed))
         names = [view.name for view in vm.file_views(1, 5, archive + packed * 2, Counter())]
         self.assertEqual(names, ["raw", "raw/0p", "raw/1p"])

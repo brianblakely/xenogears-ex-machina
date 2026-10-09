@@ -105,12 +105,18 @@ python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxx
 The six packed overlay files (mode overlays in slots 35-40 and the slot-39
 image's second copy) are reproduced from the rebuilt images by
 `tools/packed_container.py` (`make -C decomp all-container`). The packer is
-Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
-complete eight-token group; the same rule reproduces a 25-file sample of other
-packed disc files. The zero literals that complete the last group count in the
-decoded length, so a decoded image can end a few bytes past its last object
-(worldmap 2, field 6, movie 7, menu 5 bytes): those bytes belong to no object
-and stay out of C as file padding (`OBJCOPY_FLAGS := --gap-fill 0 --pad-to`).
+Okumura's LZSS binary-tree encoder without preset-ring matches; it completes the
+last eight-token group with zero literals, which count in the decoded length.
+The plain encoding of the program plus those literals is every container's
+stream, and some such tail reproduces each of the 24 other disc-1 files holding
+one whole packed stream (`packed_container.py --sample .local/extract/disc1/files`);
+splitting trailing copies into literals instead fails on files/0090.bin. A
+decoded image therefore ends a few bytes past its program (worldmap 2, field 6,
+movie 7, menu 5 bytes): they belong to no object and stay out of C. Where a
+program ends in zeros the stream alone cannot place them (field's could be 4-6,
+worldmap's 1-3); there the resident's mode table, which starts the overlay's BSS
+at its program end, does. A target appends its tail after the link
+(`PACKER_TAIL`), so the image matches only when the link ends at the program end.
 This is a separate claim from image matching; whole-disc filesystem/ECC
 reproduction is not attempted.
 
