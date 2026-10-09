@@ -481,9 +481,10 @@ alignment gaps and a packer's tail belong to no input section). A byte is compil
 (`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
 INCLUDE_ORIGINAL'd in C (`included`), authored assembly, a classified `sdk`/`asset`
 range, or a generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss
-included). Every INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name in a target's C
-units and headers must resolve to one sized, section-relative ELF symbol, an
-INCLUDE_ASSET object must lie in an `asset` range, and no macro may wrap them;
+included). Each INCLUDE_* use in a target's C units and headers must be spelled as
+the report reads it and not be wrapped in a macro, and each
+INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name must resolve to one sized,
+section-relative ELF symbol (an INCLUDE_ASSET object inside an `asset` range);
 otherwise the report fails rather than count original bytes as C. `asset` marks
 user-supplied game data or bytecode that is parsed and documented rather than
 rewritten as source.

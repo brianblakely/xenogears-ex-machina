@@ -33,15 +33,17 @@ section, where an image holds its uninitialized variables as zeros. NOLOAD
                    (remaining work)
 
 Bytes outside every input section (alignment gaps, a packer's zero tail) are
-not counted. Each INCLUDE_RODATA, INCLUDE_ORIGINAL and INCLUDE_ASSET name in
-the sources (.c and .h; a macro wrapping one is rejected) must resolve to
-exactly one sized, section-relative ELF symbol (a linker-script assignment
-would make it absolute), and an INCLUDE_ASSET object must lie inside an
-``asset`` range; otherwise the report fails rather than count original bytes
-as C. Instruction counts are static MIPS words (four bytes each) in the same
-ELF function ranges as the byte totals, including nops and branch delay
-slots. Paths in the map are relative to the working directory, the
-repository root.
+not counted. Each INCLUDE_ASM, INCLUDE_RODATA, INCLUDE_ORIGINAL and
+INCLUDE_ASSET token of the sources (.c and .h, outside comments) must be
+spelled as the patterns read it, ``INCLUDE_X("...", NAME...)``, and not be
+wrapped in a macro; each INCLUDE_RODATA, INCLUDE_ORIGINAL and INCLUDE_ASSET
+name must resolve to exactly one sized, section-relative ELF symbol (a
+linker-script assignment would make it absolute), and an INCLUDE_ASSET
+object must lie inside an ``asset`` range; otherwise the report fails rather
+than count original bytes as C. Instruction counts are static MIPS words
+(four bytes each) in the same ELF function ranges as the byte totals,
+including nops and branch delay slots. Paths in the map are relative to the
+working directory, the repository root.
 """
 
 from __future__ import annotations
@@ -56,7 +58,10 @@ INCLUDE_ASM = re.compile(r"INCLUDE_ASM\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
 INCLUDE_RODATA = re.compile(r"INCLUDE_RODATA\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
 INCLUDE_ORIGINAL = re.compile(r"INCLUDE_ORIGINAL\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*,")
 INCLUDE_ASSET = re.compile(r"INCLUDE_ASSET\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*,")
-WRAPPER = re.compile(r"^[ \t]*#[ \t]*define\b.*\bINCLUDE_(RODATA|ORIGINAL|ASSET)\b", re.M)
+STRICT = {"ASM": INCLUDE_ASM, "RODATA": INCLUDE_RODATA, "ORIGINAL": INCLUDE_ORIGINAL, "ASSET": INCLUDE_ASSET}
+INCLUDE_TOKEN = re.compile(r"\bINCLUDE_(ASM|RODATA|ORIGINAL|ASSET)\b")
+WRAPPER = re.compile(r"^[ \t]*#[ \t]*define\b.*\bINCLUDE_(ASM|RODATA|ORIGINAL|ASSET)\b", re.M)
+COMMENT_OR_LITERAL = re.compile(r"\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'|/\*.*?\*/|//[^\n]*", re.S)
 DATA_SECTION = re.compile(r"\.(rodata|data|sdata|sbss|bss)\b")
 BSS_SECTION = re.compile(r"\.s?bss\b")
 NON_MATCHING = re.compile(r"#ifdef\s+NON_MATCHING(.*?)#else(.*?)#endif", re.DOTALL)
@@ -170,23 +175,38 @@ def data_coverage(
     return totals
 
 
+def strip_comments(text: str) -> str:
+    """C text without its comments (each becomes a space or its line breaks)."""
+
+    def blank(match: re.Match[str]) -> str:
+        found = match.group(0)
+        return found if found[0] in "\"'" else "\n" * found.count("\n") or " "
+
+    return COMMENT_OR_LITERAL.sub(blank, text)
+
+
 def source_names(roots: list[Path]) -> tuple[set[str], set[str], set[str], set[str]]:
     """Names linked as assembly and reviewed nonmatching candidates in the C units
-    under roots, and the original data objects of their C units and headers:
-    INCLUDE_RODATA/INCLUDE_ORIGINAL (`included`) and INCLUDE_ASSET (assets)."""
+    and headers under roots, and their original data objects: INCLUDE_RODATA/
+    INCLUDE_ORIGINAL (`included`) and INCLUDE_ASSET (assets). Fails on a use
+    the patterns would miss: a wrapping macro or another spelling."""
     asm_names: set[str] = set()
     nonmatching: set[str] = set()
     included: set[str] = set()
     assets: set[str] = set()
     for root in roots:
         for source in sorted(root.rglob("*.[ch]")):
-            text = source.read_text()
+            text = strip_comments(source.read_text())
             if WRAPPER.search(text.replace("\\\n", " ")):
-                raise SystemExit(f"{source}: a macro wrapping INCLUDE_RODATA/ORIGINAL/ASSET hides its names")
-            if source.suffix == ".c":
-                for _block, fallback in NON_MATCHING.findall(text):
-                    nonmatching.update(INCLUDE_ASM.findall(fallback))
-                asm_names.update(INCLUDE_ASM.findall(text))
+                raise SystemExit(f"{source}: a macro wrapping INCLUDE_ASM/RODATA/ORIGINAL/ASSET hides its names")
+            for token in INCLUDE_TOKEN.finditer(text):
+                if not STRICT[token.group(1)].match(text, token.start()):
+                    macro = token.group(0)
+                    line = text.count("\n", 0, token.start()) + 1
+                    raise SystemExit(f'{source}:{line}: {macro} is not spelled {macro}("...", NAME...) as the report reads it')
+            for _block, fallback in NON_MATCHING.findall(text):
+                nonmatching.update(INCLUDE_ASM.findall(fallback))
+            asm_names.update(INCLUDE_ASM.findall(text))
             included.update(INCLUDE_RODATA.findall(text))
             included.update(INCLUDE_ORIGINAL.findall(text))
             assets.update(INCLUDE_ASSET.findall(text))

@@ -595,6 +595,37 @@ class MatchingTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "wrap.h: a macro wrapping"):
             source_names([self.root / "decomp/src"])
 
+    def test_include_spellings_the_scan_cannot_read_fail(self):
+        from tools.matching_coverage import source_names
+
+        unit = self.root / "decomp/src/t/unit.c"
+        unit.parent.mkdir(parents=True)
+        # Comments may name the macros; their text is not scanned.
+        unit.write_text(
+            '/* INCLUDE_ASSET (".data", D_comment, 0x80010000, 4) */\n'
+            '// INCLUDE_ASM ("asm", in_comment)\n'
+            'INCLUDE_ASM("asm", func_a);\n'
+            'INCLUDE_ORIGINAL(\n    ".data", D_80010004, 0x80010004, 4);\n'
+        )
+        asm_names, _nonmatching, included, assets = source_names([self.root / "decomp/src"])
+        self.assertEqual((asm_names, included, assets), ({"func_a"}, {"D_80010004"}, set()))
+        # Spellings the preprocessor accepts but the patterns would miss: the
+        # function would count as C, the object's original bytes as C.
+        for line in (
+            'INCLUDE_ORIGINAL (".data", D_x, 0x80010004, 4);',
+            "INCLUDE_ORIGINAL(SECTION, D_x, 0x80010004, 4);",
+            'INCLUDE_ASSET\t(".data", D_x, 0x80010004, 4);',
+            "INCLUDE_RODATA(FOLDER, D_x);",
+            'INCLUDE_ASM (".local/asm", func_b);',
+        ):
+            unit.write_text('#include "include_asm.h"\n' + line + "\n")
+            with self.subTest(line=line), self.assertRaisesRegex(SystemExit, r"unit\.c:2: INCLUDE_\w+ is not spelled"):
+                source_names([self.root / "decomp/src"])
+        # A macro wrapping INCLUDE_ASM would hide the function's name too.
+        unit.write_text('#define ASM(name) INCLUDE_ASM("asm", name)\nASM(func_c);\n')
+        with self.assertRaisesRegex(SystemExit, "unit.c: a macro wrapping"):
+            source_names([self.root / "decomp/src"])
+
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as", "psx-readelf",
