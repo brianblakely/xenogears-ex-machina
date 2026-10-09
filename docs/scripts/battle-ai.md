@@ -84,17 +84,13 @@ whose enemy files are identical:
   (slot39); the `800d32a1` slot flag is "in a gear" (ovl2615 copies the game
   data's per-member gear flag `D_8006F8E5` and the formation id's bit 7; battle
   reads it as `D_800D32A0[slot].unk1` to choose gear commands).
-- Formations are cross-checked ([formations.md](formations.md); `python3 -m
-  tools.analysis.formations --sweep`). The field and world map encounter sets place
-  256 (battle, enemy id) pairs, each a block of its battle's enemy file, and none of
-  the 33 blocks without a script table. 319 of the 575 script tables are placed by no
-  formation; 313 of them are byte-identical to a placed block (277 are copies of one
-  84-byte block). No formation names battle 58. The commands every enemy's scripts
-  select are counted against the formula tables in
+- [formations.md](formations.md#census-and-cross-check) checks the (battle, enemy id)
+  pairs the formations place against these enemy files and counts the script tables
+  no formation places (`python3 -m tools.analysis.formations --sweep`). The commands
+  every enemy's scripts select are counted against the formula tables in
   [dispatch-tables.md](dispatch-tables.md) whatever places it.
 
 **Open.**
 
-- Six script tables differ from every placed block and no formation places them:
-  battle 5 id 4, 8 id 4, 25 id 2, 53 id 2, and 58 ids 0 and 1. Nothing else is known
-  to start them or battle 58 ([formations.md](formations.md)).
+- Whether anything starts the script tables that no formation places and that
+  differ from every placed block ([formations.md](formations.md#open)).
