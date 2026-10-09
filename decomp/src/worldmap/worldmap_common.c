@@ -62,7 +62,7 @@ void *D_8009BE1C[2]; /* effect quads, per display buffer */
 struct WorldmapActor *D_8009BE24;
 struct Camera D_8009BE28;
 s32 D_8009BE38;
-struct WorldmapView *D_8009BE3C;
+struct DisplayBuffer *D_8009BE3C;
 s32 D_8009BE40;
 s32 D_8009BE44;
 s32 D_8009BE48;

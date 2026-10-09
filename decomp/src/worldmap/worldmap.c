@@ -166,14 +166,14 @@ void func_80070CFC(void) {
  * frame, and handle pause, encounters and leaving for another scene until
  * D_8009D554 clears. */
 void func_800712D0(void) {
-    WorldmapView *view;
+    DisplayBuffer *view;
     /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
     u8 *gear_state = D_8006D634.inGear;
     RECT rect;
     s32 i;
     s32 found;
 
-    D_8009BE3C = (WorldmapView *)&D_8009BBC8[1];
+    D_8009BE3C = &D_8009BBC8[1];
     D_8009D7F0 = 1;
     D_8009D554 = 1;
     do {
@@ -195,9 +195,9 @@ void func_800712D0(void) {
             VSync(0);
         }
         CdSync(1, D_8009C588);
-        view = (WorldmapView *)D_8009BBC8;
+        view = D_8009BBC8;
         if (D_8009BE3C == view) {
-            view = (WorldmapView *)&D_8009BBC8[1];
+            view = &D_8009BBC8[1];
         }
         D_8009BE3C = view;
         D_8009D7F0 = D_8009D7F0 == 0;
@@ -208,8 +208,8 @@ void func_800712D0(void) {
         DrawSync(0);
         VSync(2);
         func_80019CA0();
-        PutDispEnv(&((DisplayBuffer *)D_8009BE3C)->disp);
-        PutDrawEnv(&((DisplayBuffer *)D_8009BE3C)->draw);
+        PutDispEnv(&D_8009BE3C->disp);
+        PutDrawEnv(&D_8009BE3C->draw);
         if (D_80059179 == 0 && D_8009BD34 != 0 && D_8009C178 == 0 && D_8009D804 == 0 &&
             D_8009BD24 == -1 && D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C == 0) {
             D_8009BD34 = 0;
@@ -332,7 +332,7 @@ s32 func_80071A58(void) {
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, (s32)D_8009BE3C->packets, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();

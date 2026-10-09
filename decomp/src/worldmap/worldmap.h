@@ -192,15 +192,8 @@ typedef struct DisplayBuffer {
     void *packets; /* 0x74 */
 } DisplayBuffer;
 
-/* The buffer being drawn, as the frame steps read it. */
-typedef struct WorldmapView {
-    u8 pad0[0x70];
-    u32 *ot; /* ordering table */
-    s32 unk74;
-} WorldmapView;
-
 extern DisplayBuffer D_8009BBC8[2];
-extern WorldmapView *D_8009BE3C; /* the buffer being drawn */
+extern DisplayBuffer *D_8009BE3C; /* the buffer being drawn */
 extern s32 D_8009D7F0;           /* its index */
 extern s32 D_8009BCDC;           /* projection distance */
 extern u8 D_8009BB48[3];         /* background colour */
