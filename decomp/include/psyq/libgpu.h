@@ -315,6 +315,7 @@ void DrawPrim(void *p);
 void AddPrim(void *ot, void *p);
 void AddPrims(void *ot, void *p0, void *p1);
 void TermPrim(void *p);
+int MargePrim(void *p0, void *p1);
 void SetPolyF3(POLY_F3 *p);
 void SetPolyF4(POLY_F4 *p);
 void SetPolyG4(POLY_G4 *p);
