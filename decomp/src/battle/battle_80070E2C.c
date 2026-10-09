@@ -650,7 +650,7 @@ void func_80071B94(u8 mode) {
             actor = D_800C3EAC->actor;
             if (!(D_800C3EB4[actor].hidden & 0x80) && !(D_800CCCE8.records[actor].pilot.flags34 & 0x400)) {
                 D_800D2D28->windows[5] = 1;
-                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E3D[D_800C3EAC->actor]),
+                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E40[D_800C3EAC->actor - 3]),
                                                     D_800D36C8[0].pixels, 0x39, 0);
                 func_800769E8(&D_800D36C8[0].rect, D_800D36C8[0].pixels);
                 D_800D36C8[0].shown = 1;
@@ -2365,7 +2365,7 @@ void func_80078E24(u8 slot, u8 index, u8 target) {
             break;
         }
     }
-    D_800C3E3D[slot] = D_800C3E3D[source];
+    D_800C3E40[slot - 3] = D_800C3E40[source - 3];
     D_800D3400[slot - 3].script = D_800D3400[source - 3].script;
     D_800D3400[slot - 3].unk4 = D_800D3400[source - 3].unk4;
     D_800D3400[slot - 3].reaction = D_800D3400[source - 3].reaction;

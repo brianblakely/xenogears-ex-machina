@@ -60,7 +60,7 @@ u16 D_800C3E30;               /* slot mask */
 struct Combatant *D_800C3E34; /* target record */
 s32 D_800C3E38;
 s32 D_800C3E3C;   /* unreferenced */
-u8 D_800C3E40[8]; /* enemy name per enemy slot (3-10), by slot from D_800C3E3D */
+u8 D_800C3E40[8]; /* enemy name per enemy slot (3-10) */
 struct ModelList *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
 u8 D_800C3E4C;                /* battle end state */
 u8 D_800C3E50;                /* target slot */

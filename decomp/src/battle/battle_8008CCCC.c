@@ -618,7 +618,7 @@ void func_8008FE18(u8 column, u8 row, u8 open) {
             digit = D_800D2DB0;
         }
         func_800769E8(&onesRect, digit);
-        if ((u8)(D_800D2CC0[i] / 10) != 0) {
+        if ((u8)(D_800D2CB0[i + 16] / 10) != 0) {
             digit = D_800C3E5C[counts[i + 16] / 10].pixels;
         } else {
             digit = D_800D2DB0;

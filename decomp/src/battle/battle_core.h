@@ -628,7 +628,7 @@ void func_800BAF48(s32 slot);
 /* Turn start (80071b94). */
 extern u8 D_800C4922;      /* acting slot */
 extern void *D_800C3DDC;   /* enemy name table */
-extern u8 D_800C3E3D[];    /* enemy name per slot */
+extern u8 D_800C3E40[8];   /* enemy name per enemy slot (3-10) */
 extern u16 D_8005941C;     /* count of turns taken with 2ea set */
 extern u8 D_800D36C0;      /* the party member whose menu is open */
 void func_80079778(u8 actor);
