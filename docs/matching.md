@@ -453,9 +453,10 @@ converted to C per unit. What converting the targets' `.data` established:
 - Embedded game data stays generated and is classified `asset` with its format
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
-  function, so coverage counted libpress/libcd messages as C until they became a
-  generated rodata segment classified `sdk`. Name data only by what its readers show
-  (the libcd commons).
+  function's `.s` file, and coverage counts it with the function (the resident's
+  library strings and jump tables as `sdk`, field's jtbl_8006FD30 as `nonmatching`);
+  mdec's libpress/libcd messages are a generated rodata segment classified `sdk`.
+  Name data only by what its readers show (the libcd commons).
 
 ## Recover incrementally
 
@@ -479,13 +480,20 @@ input section and, where an image holds its uninitialized variables as zeros, ea
 .bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
 alignment gaps and a packer's tail belong to no input section). A byte is compiled C
 (`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
-INCLUDE_ORIGINAL'd in C (`included`), authored assembly, a classified `sdk`/`asset`
-range, or a generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss
-included). Each INCLUDE_* use in a target's C units and headers must be spelled as
-the report reads it and not be wrapped in a macro, and each
+INCLUDE_ORIGINAL'd in C (`included`, also the resident's libcd/libgpu/libspu strings
+that several library functions share), data an INCLUDE_ASM'd `.s` file carries
+(under its function's class: `sdk`, `handwritten`, or `nonmatching`/`asm`, totalled in
+`remaining_data_asm_bytes`), authored assembly, a classified `sdk`/`asset` range, or a
+generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss included).
+Each INCLUDE_* use in a target's C units and headers must be spelled as the report
+reads it and not be wrapped in a macro, each data line of an included `.s` file must
+lie in a `dlabel`...`enddlabel` object, and each such object and
 INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name must resolve to one sized,
 section-relative ELF symbol (an INCLUDE_ASSET object inside an `asset` range);
-otherwise the report fails rather than count original bytes as C. `asset` marks
+otherwise the report fails rather than count original bytes as C. Two limits remain:
+the alignment padding ahead of an included file's first object counts with its
+section (field's 7 bytes ahead of jtbl_8006FD30, as C), and data written in inline
+`__asm__` outside these macros is not checked (no unit has any). `asset` marks
 user-supplied game data or bytecode that is parsed and documented rather than
 rewritten as source.
 GCC emits a static initializer's string literals last to first once the initializer
