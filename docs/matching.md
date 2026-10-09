@@ -176,7 +176,8 @@ that the link did not produce (`matching_coverage.py --relocations`): an aligned
 holding one without an `R_MIPS_32` relocation in its input section, in a loaded data
 section or in .text outside every function; in .text, a `lui` whose immediate is the
 `%hi` of one without `R_MIPS_HI16`, and any `j`/`jal` without `R_MIPS_26`. Bytes
-classified asset, included or handwritten are exempt by class; any other only by a
+classified asset or included, original data the build copies, are exempt by class;
+any other, the authored (handwritten) assembly's too, only by a
 `START END unrelocated REASON` line of the target's classification, which may lie in
 a class's range and must cover a reported word. No target needs one. Each resident's
 21 such words lie in its asset ranges (its disc file index, the packed boot logo and

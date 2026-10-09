@@ -100,8 +100,9 @@ aligned word holding one without an R_MIPS_32 relocation in its input object,
 in a loaded data input section or in .text outside every function, and in
 .text a lui whose immediate is the %hi of one without R_MIPS_HI16 and any
 j/jal without R_MIPS_26. Words in a range the ``--classification`` classes
-asset, included or handwritten are exempt; any other only through an
-``unrelocated`` line giving the reason, which must cover a reported word.
+asset or included, original data the build copies, are exempt; any other,
+authored (handwritten) assembly too, only through an ``unrelocated`` line
+giving the reason, which must cover a reported word.
 
 A C unit's bytes are attributed by where GAS put them, not by source
 spellings. ``make coverage`` compiles each C unit again with a label line at
@@ -682,10 +683,11 @@ def check_relocations(elf: Path, map_path: Path, ranges: list[tuple[int, int, st
     without an R_MIPS_32 relocation in a loaded data input section or in
     .text outside every function, a lui in .text whose immediate is the %hi
     of such an address without R_MIPS_HI16, and any j/jal in .text without
-    R_MIPS_26. Words in a range classified asset,
-    included or handwritten are exempt, and so are those an `unrelocated`
-    line of the classification gives its reason for; each such line must
-    cover a reported word. Returns the exit status."""
+    R_MIPS_26. Words in a range classified asset or included (original data
+    the build copies) are exempt, and so are those an `unrelocated` line of
+    the classification gives its reason for; each such line must cover a
+    reported word. Authored (handwritten) assembly is not exempt: its words
+    are written in the repository like C. Returns the exit status."""
     sections, symbols = read_elf(elf)
     lo, _hi, end = extent(sections, bss_end)
     loaded = [s for s in sections if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC and s.size]
@@ -705,7 +707,7 @@ def check_relocations(elf: Path, map_path: Path, ranges: list[tuple[int, int, st
         return index >= 0 and address < functions[index][1]
 
     first_hi, last_hi = (lo + 0x8000) >> 16, (end - 1 + 0x8000) >> 16
-    exempt = [(s, e) for s, e, kind, _ in ranges if kind in ("asset", "included", "handwritten")]
+    exempt = [(s, e) for s, e, kind, _ in ranges if kind in ("asset", "included")]
     reviewed = [(s, e) for s, e, kind, _ in ranges if kind == "unrelocated"]
     used: set[tuple[int, int]] = set()
     objects: dict[str, list[Section]] = {}

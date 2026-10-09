@@ -257,9 +257,10 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 # verify also fails on each address of the target's own image or uninitialized
 # data that a loaded word holds without its relocation (a data word without
 # R_MIPS_32, a lui of its %hi without R_MIPS_HI16, a j/jal without R_MIPS_26):
-# the link did not produce it. Bytes classified asset, included or handwritten
-# are exempt, others only by an `unrelocated` line of the classification
-# giving the reason (matching_coverage.py --relocations).
+# the link did not produce it. Bytes classified asset or included (original
+# data the build copies) are exempt, others, authored assembly too, only by an
+# `unrelocated` line of the classification giving the reason
+# (matching_coverage.py --relocations).
 SCRIPT_SYMBOLS ?= strict
 $(if $(filter warn strict,$(SCRIPT_SYMBOLS)),,$(error SCRIPT_SYMBOLS must be warn or strict))
 

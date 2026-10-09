@@ -869,10 +869,11 @@ class MatchingTests(unittest.TestCase):
             f"error: image.bin.elf: 8001002c (.data of image.o): word 80010004, {span},"
             " without R_MIPS_32",
         ])
-        # Bytes classified handwritten, asset or included are exempt; any
-        # other only by an unrelocated line with its reason, also inside a
-        # class's range.
+        # Bytes classified asset or included, original data, are exempt; any
+        # other, authored (handwritten) assembly too, only by an unrelocated
+        # line with its reason, also inside a class's range.
         reviewed = ("80010010 80010018 handwritten a routine the compiler does not emit\n"
+                    "80010010 80010018 unrelocated a patcher's literal targets\n"
                     "80010024 80010028 asset an embedded file's bytes\n")
         for lines in (reviewed + "8001002c 80010030 unrelocated a count, not an address\n",
                       reviewed.replace("asset an", "included D_80010024 an")
@@ -881,9 +882,14 @@ class MatchingTests(unittest.TestCase):
             with self.subTest(lines):
                 result = check(lines)
                 self.assertEqual(result.returncode, 0, result.stderr)
+        unreviewed = reviewed.replace("80010010 80010018 unrelocated a patcher's literal targets\n",
+                                      "")
         for lines, message in (
-            (reviewed.replace("handwritten", "sdk"),
+            (unreviewed + "8001002c 80010030 unrelocated a count, not an address\n",
              "80010010 (.text of image.o): lui 3c098001"),
+            (unreviewed.replace("handwritten", "sdk")
+             + "8001002c 80010030 unrelocated a count, not an address\n",
+             "80010014 (.text of image.o): jal 0c004000"),
             (reviewed + "8001002c 80010030 unrelocated a count\n"
              "80010030 80010034 unrelocated a word outside the image\n",
              "unrelocated line 80010030-80010034: no word there that the relocation scan"
