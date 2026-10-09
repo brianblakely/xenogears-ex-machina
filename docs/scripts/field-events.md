@@ -169,10 +169,11 @@ maps are identical to Disc 1's.
   and gears 5 and 13 weapons 31 and 37 with 50 and 57 (`python3 -m
   tools.analysis.special_parts --sweep`). Each id's
   byte (`ammo`, `gearAmmo`) counts its rounds: the field menu sets it to 100
-  when the id is loaded (slot39 `801df0d4`), each action of a command that
-  uses the slot takes one (battle `8009afd8`, `8009e788`), at 0 such a command
-  misses (`80096ab8`, `8009d3a0`), and the battle window prints the count
-  beside the name (`80093b08`).
+  when the id is loaded (slot39 `801df0d4`), each action takes one from the
+  slots its command number names (battle `8009afd8`, `8009e788`), a command
+  whose descriptor names a slot at 0 misses (`itemKinds` 0x80 the first, 0x10
+  or a gear's 0x20 the fourth; `80096ab8`, `8009d3a0`), and the battle window
+  prints the count beside the name (`80093b08`).
 - The round counts lie between the words of `d1` and `9f`. The code addresses
   an id's byte from 50 bytes before its array (splat's `D_8006F8BA`, `+2286`,
   and `D_8006F8EA`, `+22b6`), so ids 50-97 are the 48-byte arrays at `+22b8`

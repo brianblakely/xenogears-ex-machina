@@ -278,9 +278,10 @@ typedef struct GameData {
      * are ammo: system texts 23 and 51 name ids 50-72 "... Ammo", and only
      * character 4 and its gears 5 and 13 may use them
      * (docs/scripts/field-events.md). The field menu sets an id's byte to 100
-     * when it is loaded (slot39 func_801DF0D4), each action of a command that
-     * uses it takes one (battle func_8009AFD8, func_8009E788) and at 0 such a
-     * command misses (func_80096AB8, func_8009D3A0). The code forms
+     * when it is loaded (slot39 func_801DF0D4), each action takes one from the
+     * slots its command number names (battle func_8009AFD8, func_8009E788), and
+     * a command whose descriptor names a slot at 0 misses (func_80096AB8,
+     * func_8009D3A0). The code forms
      * an id's address from 50 bytes before each array, splat's D_8006F8BA
      * (+0x2286) and D_8006F8EA (+0x22B6, the address of `flags`). An empty
      * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,
