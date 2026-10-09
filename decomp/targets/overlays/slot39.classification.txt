@@ -1,0 +1,5 @@
+# START END CLASS NAME NOTE (hex VRAM, END exclusive). included: an object a C
+# unit links from the original image (INCLUDE_ORIGINAL) at its place among the
+# unit's .data, with the reason: C cannot emit the stray bytes the original
+# assembler left in its alignment padding, which nothing reads.
+801e97ac 801e97f0 included D_801E97AC u8[13 * 5] sheet images of the 801e1544 screen's 13 rows (menu.h; func_801E1544 reads row * 5 + 0-4, rows 0-12 from func_801E1AC8); padding 00 07 2e
