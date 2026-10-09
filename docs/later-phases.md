@@ -563,7 +563,7 @@ instruction on either disc. For Phases 7, 11 and 12:
 | LZSS blocks, offset archives | `func_80032EB4`, `func_8003342C` | `tools/analysis/packed.py`, `tools/packed_container.py` | none |
 | Field bundle (nine components) | field.c `func_80070CC8`; header `FieldBundle` in field.h | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones and the header's view block (+0x154, lights and background) |
 | Field event bytecode | field_800854D0.c | [field-events.md](scripts/field-events.md), `events.py` | see its Open items |
-| Messages and text controls | resident main2.c `func_80033DF0` | [text-control.md](scripts/text-control.md), `text_control.py` | none |
+| Messages and text controls | resident main2.c `func_80033DF0` | [text-control.md](scripts/text-control.md), `text_control.py` | the characters of punctuation and two-byte glyphs (its Open line) |
 | Models (`ModelGroup`, `SpriteModel`, TMD) | `func_8002C3E8`, `func_8002C700`; battle `func_800B1F6C` | [dispatch-tables.md](scripts/dispatch-tables.md) (primitive census) | no mesh exporter |
 | Sprite blocks | resident sprite units | [sprite-vm.md](scripts/sprite-vm.md), `sprite_vm.py` | none |
 | Sound: `smds`, `seds`, `wds ` | sound.c, main2_800366E0.c | [sound-sequence.md](scripts/sound-sequence.md), `sound_sequence.py` | no ADPCM sample decoder |
@@ -777,7 +777,7 @@ in replays.
 | Sprite replay steps `be` by 2 | `func_80022660`; [sprite-vm.md](scripts/sprite-vm.md) | the interpreters take 3 bytes, so the replay reads `be`'s last byte as the next command |
 | Battle 70's targeted script runs into enemy id 1's table | [battle-ai.md](scripts/battle-ai.md) | id 1's turn rule runs |
 | Three effect commands count one event short; some name unused or out-of-range animations | [battle-effect-vm.md](scripts/battle-effect-vm.md) | an 8-byte sound event never plays; the animation lookups (800AF518, 801E6910) do not check bounds |
-| One random stream for effects and gameplay | `rand` (8003fa38): 230 call sites in 29 files; the battle shatter setup `func_800B7424` draws 3,920 values (2 x 14 x 20 shards, 7 each) | skipping, adding or reordering a visual effect changes later rolls |
+| One random stream for effects and gameplay | `rand` (8003fa38): 228 call sites in 28 files; the battle shatter setup `func_800B7424` draws 3,920 values (2 x 14 x 20 shards, 7 each) | skipping, adding or reordering a visual effect changes later rolls |
 | Lag changes battle | `func_800BE790` | see [Timing consequences](#timing-consequences-for-a-port) |
 | Model renderers never reject overflowed faces | `model_draw.s` (reads LZCR, not FLAG) | oversized triangles reach the GPU ([original-boundaries.md](original-boundaries.md)) |
 | Soft reset keeps modified `.data` | `func_80019CD0` jumps to the entry | not equivalent to restarting the process |
@@ -795,7 +795,7 @@ in replays.
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
 | Missing media decoders | no IDCT, colour conversion, XA ADPCM or SPU ADPCM in the repository | implementations in Phase 2, tested against captured frames and audio |
 | BIOS font source | `Krom2RawAdd` users in slot39 and field | a user BIOS import or a labelled substitute |
-| Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md) | as stated there |
+| Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [text-control.md](scripts/text-control.md), [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md), [timelines.md](scripts/timelines.md) | as stated there |
 
 ## Suggested sequencing for Phases 2-5
 
