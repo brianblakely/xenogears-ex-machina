@@ -1,6 +1,3 @@
-// The copied music buffer is also consumed as the resident sequence header.
-D_80062648 = 0x80062648; // allow_duplicated:True
-D_80062648_sequence = 0x80062648; // allow_duplicated:True
 // The resident's VSync callback (resident/pad.h), which the overlay entry
 // installs again.
 func_8003634C = 0x8003634C; // type:func

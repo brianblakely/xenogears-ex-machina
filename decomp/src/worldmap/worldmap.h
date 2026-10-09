@@ -96,10 +96,11 @@ void func_80072090(void); /* read the area's files 4-8 */
 void func_800721E4(void); /* read its sound bank (file 6) */
 
 /* The music files' sequence data (D_80062648, resident/mode.h), as the
- * sequence header the sound driver reads: by a name of its own,
- * func_80072238 forms the address anew rather than from the destination of
- * the copy before it. */
-extern struct SoundSeqHeader D_80062648_sequence;
+ * sequence header the sound driver reads. A declaration of its own for the
+ * same symbol: func_80072238 forms the address anew rather than from the
+ * destination of the copy before it, which cse keeps in a saved register
+ * when both are D_80062648. */
+extern struct SoundSeqHeader D_80062648_sequence __asm__("D_80062648");
 
 /* The area data's header (file 1): section offsets from its start. */
 typedef struct {
