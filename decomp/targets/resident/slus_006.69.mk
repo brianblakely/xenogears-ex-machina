@@ -8,6 +8,9 @@ ORIGINAL_SHA256 := 3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19
 # the words after D_800592B8 through D_8006FAEC, the bounds of the mode
 # table's entries 0 and 5.
 BSS_END := 0x8006FAF0
+# The mode table (main.c), whose overlay entries and BSS bounds
+# tools/cross_image.py compares with the mode overlays' links (their MODE).
+MODE_TABLE := D_8001808C
 BUILD := .local/decomp/build/resident2
 IMAGE := .local/decomp/build/SLUS_006.69
 LINKER_SCRIPT := .local/decomp/resident2/slus_006.69.ld

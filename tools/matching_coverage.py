@@ -39,8 +39,10 @@ END exclusive; nonempty, disjoint ranges): ``sdk``, ``handwritten`` and
 ``START END text_data NAME REASON...`` line, whose reason is the evidence that
 the original keeps it there; and ``START END included NAME REASON...`` lines,
 the reviewed reasons of included objects (below). Each text_data and included
-line must be used. This tool never reads or asserts binary agreement; run the
-exact comparison separately.
+line must be used. ``START END unrelocated REASON...`` lines are the reviewed
+words of the relocation scan (``--relocations``, below); they may lie in
+another line's range. This tool never reads or asserts binary agreement; run
+the exact comparison separately.
 
 Every loaded data byte counts in one class: each .rodata/.data/.sdata input
 section of the GNU ld map, and the .bss/.sbss that lies in a loaded (PROGBITS)
@@ -91,6 +93,15 @@ stands in for an object the link should place. A script named with
 ``--views`` may define names there only as views, expressions of symbols
 the link places (``D_800C3EB4 = D_800C3EB0 + 0x4``), and must define one.
 ``warn`` reports and passes; ``strict`` fails.
+
+``--relocations`` (also run by ``verify``) fails on each address of the
+target's own image or uninitialized data that the link did not produce: an
+aligned word holding one without an R_MIPS_32 relocation in its input object,
+in a loaded data input section or in .text outside every function, and in
+.text a lui whose immediate is the %hi of one without R_MIPS_HI16 and any
+j/jal without R_MIPS_26. Words in a range the ``--classification`` classes
+asset, included or handwritten are exempt; any other only through an
+``unrelocated`` line giving the reason, which must cover a reported word.
 
 A C unit's bytes are attributed by where GAS put them, not by source
 spellings. ``make coverage`` compiles each C unit again with a label line at
@@ -146,7 +157,7 @@ import json
 import re
 import struct
 import sys
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from itertools import pairwise
 from pathlib import Path
@@ -324,6 +335,9 @@ LINE_MARKER = re.compile(r'[ \t]*#[ \t]*\d+(?:[ \t]+"[^"\\\x00-\x1f]*"(?:[ \t]+\
 SHT_PROGBITS, SHT_SYMTAB, SHT_NOBITS, SHT_REL = 1, 2, 8, 9
 SHF_ALLOC = 2
 STT_FUNC, STT_SECTION, STT_FILE = 2, 3, 4
+# The relocations of an address the link produces: a data word, a j/jal
+# target, a lui's %hi.
+R_MIPS_32, R_MIPS_26, R_MIPS_HI16 = 2, 4, 5
 
 
 def mark_asm(text: str) -> str:
@@ -467,7 +481,9 @@ def relocations(
 
 def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
     """The (START, END, CLASS, NOTE) lines of a classification file in address
-    order; their ranges are nonempty and disjoint."""
+    order; their ranges are nonempty and disjoint, the `unrelocated` lines
+    (reviewed words of the relocation scan, which may lie in a class's range)
+    among themselves."""
     if path is None:
         return []
     ranges = []
@@ -475,7 +491,8 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
         line = line.split("#", 1)[0].strip()
         if line:
             start, end, kind, *note = line.split()
-            if kind not in ("sdk", "handwritten", "asset", "text_data", "included"):
+            if kind not in ("sdk", "handwritten", "asset", "text_data", "included",
+                            "unrelocated"):
                 raise SystemExit(f"unknown classification {kind!r}")
             if kind == "text_data" and len(note) < 2:
                 raise SystemExit(f"{line}: a text_data line names its object and the evidence"
@@ -483,15 +500,20 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
             if kind == "included" and len(note) < 2:
                 raise SystemExit(f"{line}: an included line names its object and the reason"
                                  " it stays original")
+            if kind == "unrelocated" and not note:
+                raise SystemExit(f"{line}: an unrelocated line gives the reason its words hold"
+                                 " no address the link should produce")
             if int(end, 16) <= int(start, 16):
                 raise SystemExit(f"{line}: an empty range")
             ranges.append((int(start, 16), int(end, 16), kind, " ".join(note)))
     ranges.sort()
-    for (_, end, kind, _), (start, _, other, _) in pairwise(ranges):
-        if start < end:
-            raise SystemExit(
-                f"classification: {other} at {start:08x} overlaps {kind} up to {end:08x}"
-            )
+    for reviewed in (False, True):
+        lines = [entry for entry in ranges if (entry[2] == "unrelocated") == reviewed]
+        for (_, end, kind, _), (start, _, other, _) in pairwise(lines):
+            if start < end:
+                raise SystemExit(
+                    f"classification: {other} at {start:08x} overlaps {kind} up to {end:08x}"
+                )
     return ranges
 
 
@@ -583,6 +605,23 @@ def script_assignments(path: Path) -> list[tuple[str, str, bool]]:
     return result
 
 
+def script_names(map_path: Path, scripts: list[Path]) -> dict[str, tuple[Path, str]]:
+    """Each name the scripts define in the link, with its script and
+    expression: the last plain assignment wins (also over an object's
+    definition); a PROVIDE counts only where the link used it (its map)."""
+    used = {match.group(2) for match in MAP_PROVIDE.finditer(map_path.read_text())
+            if match.group(1) != "[!provide]"}
+    defined: dict[str, tuple[Path, str]] = {}
+    provided: dict[str, tuple[Path, str]] = {}
+    for path in scripts:
+        for name, expression, provide in script_assignments(path):
+            if not provide:
+                defined[name] = (path, expression)
+            elif name in used:
+                provided.setdefault(name, (path, expression))
+    return {**{n: p for n, p in provided.items() if n not in defined}, **defined}
+
+
 def check_script_symbols(elf: Path, map_path: Path, scripts: list[Path], views: list[Path],
                          bss_end: int | None, strict: bool) -> int:
     """Report each symbol the scripts define inside the target's own image or
@@ -595,19 +634,7 @@ def check_script_symbols(elf: Path, map_path: Path, scripts: list[Path], views: 
     for path in views:
         if str(path) not in known:
             raise SystemExit(f"{path}: a views script that is not among the link's scripts")
-    used = {match.group(2) for match in MAP_PROVIDE.finditer(map_path.read_text())
-            if match.group(1) != "[!provide]"}
-    # Each name the scripts define in the link: the last plain assignment
-    # wins (also over an object's definition); a PROVIDE only where used.
-    defined: dict[str, tuple[Path, str]] = {}
-    provided: dict[str, tuple[Path, str]] = {}
-    for path in scripts:
-        for name, expression, provide in script_assignments(path):
-            if not provide:
-                defined[name] = (path, expression)
-            elif name in used:
-                provided.setdefault(name, (path, expression))
-    defined = {**{n: p for n, p in provided.items() if n not in defined}, **defined}
+    defined = script_names(map_path, scripts)
     view_scripts = {str(path) for path in views}
 
     def view(name: str, seen: frozenset[str] = frozenset()) -> bool:
@@ -645,6 +672,83 @@ def check_script_symbols(elf: Path, map_path: Path, scripts: list[Path], views: 
         print(f"{level}: {elf}: views script {path} defines no view inside the target's own"
               " image or uninitialized data", file=sys.stderr)
     return 1 if strict and (found or view_scripts - allowed) else 0
+
+
+def check_relocations(elf: Path, map_path: Path, ranges: list[tuple[int, int, str, str]],
+                      bss_end: int | None) -> int:
+    """Report each address of the target's own image or uninitialized data
+    that the link did not produce, a number copied from the original that
+    would not follow its object: an aligned word whose value lies there
+    without an R_MIPS_32 relocation in a loaded data input section or in
+    .text outside every function, a lui in .text whose immediate is the %hi
+    of such an address without R_MIPS_HI16, and any j/jal in .text without
+    R_MIPS_26. Words in a range classified asset,
+    included or handwritten are exempt, and so are those an `unrelocated`
+    line of the classification gives its reason for; each such line must
+    cover a reported word. Returns the exit status."""
+    sections, symbols = read_elf(elf)
+    lo, _hi, end = extent(sections, bss_end)
+    loaded = [s for s in sections if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC and s.size]
+
+    def word(address: int) -> int | None:
+        for s in loaded:
+            if s.address <= address and address + 4 <= s.address + s.size:
+                return struct.unpack_from("<I", s.data, address - s.address)[0]
+        return None
+
+    functions = sorted((s.value, s.value + s.size) for s in symbols
+                       if s.kind == STT_FUNC and s.section and s.size)
+    starts = [start for start, _ in functions]
+
+    def in_function(address: int) -> bool:
+        index = bisect_right(starts, address) - 1
+        return index >= 0 and address < functions[index][1]
+
+    first_hi, last_hi = (lo + 0x8000) >> 16, (end - 1 + 0x8000) >> 16
+    exempt = [(s, e) for s, e, kind, _ in ranges if kind in ("asset", "included", "handwritten")]
+    reviewed = [(s, e) for s, e, kind, _ in ranges if kind == "unrelocated"]
+    used: set[tuple[int, int]] = set()
+    objects: dict[str, list[Section]] = {}
+    found = []
+    for name, address, size, obj in map_sections(map_path):
+        if not any(s.address <= address < s.address + s.size for s in loaded):
+            continue  # uninitialized data the file does not hold
+        if obj not in objects:
+            objects[obj] = read_elf(Path(obj))[0]
+        indices = [i for i, s in enumerate(objects[obj]) if s.name == name]
+        if len(indices) != 1:
+            raise SystemExit(f"{obj}: {len(indices)} input sections {name}")
+        types: dict[int, set[int]] = {}
+        for section in objects[obj]:
+            if section.type == SHT_REL and section.info == indices[0]:
+                for offset, info in struct.iter_unpack("<II", section.data):
+                    types.setdefault(offset, set()).add(info & 0xFF)
+        for a in range((address + 3) & ~3, address + size - 3, 4):
+            value, kinds, problem = word(a), types.get(a - address, set()), None
+            opcode = value >> 26
+            if name == ".text" and opcode == 0x0F and first_hi <= value & 0xFFFF <= last_hi:
+                if R_MIPS_HI16 not in kinds:
+                    problem = (f"lui {value:08x}: the %hi of an address in {lo:08x}-{end:08x}"
+                               " without R_MIPS_HI16")
+            elif name == ".text" and opcode in (2, 3):
+                if R_MIPS_26 not in kinds:
+                    problem = f"{'j' if opcode == 2 else 'jal'} {value:08x} without R_MIPS_26"
+            elif (lo <= value < end and R_MIPS_32 not in kinds
+                  and not (name == ".text" and in_function(a))):
+                problem = f"word {value:08x}, an address in {lo:08x}-{end:08x}, without R_MIPS_32"
+            if problem is None or any(s <= a < e for s, e in exempt):
+                continue
+            line = next(((s, e) for s, e in reviewed if s <= a < e), None)
+            if line is not None:
+                used.add(line)
+                continue
+            found.append(f"{a:08x} ({name} of {obj}): {problem}")
+    for entry in found:
+        print(f"error: {elf}: {entry}", file=sys.stderr)
+    for s, e in sorted(set(reviewed) - used):
+        print(f"error: {elf}: unrelocated line {s:08x}-{e:08x}: no word there that the"
+              " relocation scan reports", file=sys.stderr)
+    return 1 if found or set(reviewed) - used else 0
 
 
 def strip_comments(text: str) -> str:
@@ -902,6 +1006,9 @@ def main() -> None:
                         help="a linker script of the link (repeatable)")
     parser.add_argument("--views", type=Path, action="append", default=[], help=(
         "a --script whose names inside the target are views of linked symbols (repeatable)"))
+    parser.add_argument("--relocations", action="store_true", help=(
+        "check the link instead (with --script-symbols, too): every address of the target's"
+        " own image or uninitialized data in a loaded word carries its relocation"))
     parser.add_argument("--mark-asm", action="store_true", help=(
         "coverage build: label each asm statement of preprocessed C (stdin to stdout)"))
     parser.add_argument("--mark-gas", action="store_true", help=(
@@ -914,9 +1021,15 @@ def main() -> None:
         return
     if args.elf is None or args.map is None:
         parser.error("the ELF and --map are required")
-    if args.script_symbols:
-        sys.exit(check_script_symbols(args.elf, args.map, args.script, args.views,
-                                      args.bss_end, args.script_symbols == "strict"))
+    if args.script_symbols or args.relocations:
+        status = 0
+        if args.script_symbols:
+            status |= check_script_symbols(args.elf, args.map, args.script, args.views,
+                                           args.bss_end, args.script_symbols == "strict")
+        if args.relocations:
+            status |= check_relocations(args.elf, args.map, classification(args.classification),
+                                        args.bss_end)
+        sys.exit(status)
 
     nonmatching = nonmatching_names(args.src)
     ranges = classification(args.classification)
@@ -924,7 +1037,8 @@ def main() -> None:
     allowed = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "text_data"}
     # The reviewed reasons of included objects: START: (END, NAME).
     reasons = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "included"}
-    ranges = [entry for entry in ranges if entry[2] not in ("text_data", "included")]
+    ranges = [entry for entry in ranges
+              if entry[2] not in ("text_data", "included", "unrelocated")]
 
     def ranged(address: int) -> str | None:
         return next((k for s, e, k, _ in ranges if s <= address < e), None)

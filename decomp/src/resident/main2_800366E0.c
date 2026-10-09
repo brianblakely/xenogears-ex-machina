@@ -50,6 +50,11 @@ u16 D_80050598[64] = {
 };
 s32 D_80050618 = 0; /* the menu's mode (800379b4) */
 u8 D_8005061C[6] = {1, 0, 0, 2, 2, 0}; /* option bytes of the field and menu */
+/* The arena bout's outcome, the byte after them: the menu writes it (menu3.c
+ * func_80075060, menu2.c func_80072170) and a field event reads it
+ * (field_800854D0.c func_80087800); no resident code addresses it. Whether
+ * the original declared it apart or as a seventh byte of D_8005061C is open. */
+u8 D_80050622 = 0;
 
 
 /* Install the character output run by 800366f0. */

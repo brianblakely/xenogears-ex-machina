@@ -482,6 +482,7 @@ decomp/targets/overlays/ovl3386.yaml
 decomp/targets/overlays/ovl3387.mk
 decomp/targets/overlays/ovl3387.symbols.txt
 decomp/targets/overlays/ovl3387.yaml
+decomp/targets/overlays/slot39.classification.txt
 decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml
@@ -896,6 +897,7 @@ tools/authoring/package.json
 tools/authoring/qualification.ts
 tools/authoring/qualify.py
 tools/authoring/tsconfig.json
+tools/cross_image.py
 tools/data_users.py
 tools/decomp_rename.py
 tools/extraction/README.md
@@ -935,3 +937,4 @@ tools/repository/reproduce.py
 tools/repository/source_archive.py
 tools/repository/validate.py
 tools/service_calls.py
+tools/stray_padding.py

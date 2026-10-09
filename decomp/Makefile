@@ -17,15 +17,33 @@ MAKEFLAGS += --no-builtin-rules
 # maspsx into the filters) fails its rule instead of leaving a partial object.
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
-.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container
+.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container cross-image
 TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
 
 # Every supported executable image: split, exact comparison, source coverage.
-all-split all-verify all-coverage all-audit all-container:
+all-split all-coverage all-audit all-container:
 	@for config in $(TARGET_CONFIGS); do \
 		echo "== $$config"; \
 		$(MAKE) --no-print-directory CONFIG=$$config $(@:all-%=%) || exit 1; \
 	done
+
+# The acceptance run: each target's verify with SCRIPT_SYMBOLS=strict on its
+# command line, which neither the environment nor this make's command line
+# can weaken, then the links against each other.
+all-verify:
+	@for config in $(TARGET_CONFIGS); do \
+		echo "== $$config"; \
+		$(MAKE) --no-print-directory CONFIG=$$config SCRIPT_SYMBOLS=strict verify || exit 1; \
+	done
+	@$(MAKE) --no-print-directory cross-image
+
+# After every target links: each address a link takes from another target
+# (its linker scripts' names there) must be that target's rebuilt symbol, by
+# name or else by address, or lie inside an object it places, and the
+# resident's mode table (MODE_TABLE) must hold each mode overlay's (MODE)
+# entry symbol and linked BSS bounds (tools/cross_image.py).
+cross-image:
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/cross_image.py $(abspath $(TARGET_CONFIGS))
 
 smoke:
 	@command -v psx-as >/dev/null && command -v psx-ld >/dev/null && command -v psx-objcopy >/dev/null || { echo "Enter the matching Nix shell first." >&2; exit 2; }
@@ -233,7 +251,15 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 # counts what no linked object holds there. LINK_VIEWS names the scripts whose
 # names there are views, expressions of symbols the link places, each with its
 # reason in the target. SCRIPT_SYMBOLS=warn (on the make command line or in the
-# environment) reports the names and passes, for a probe; strict is the default.
+# environment) reports the names and passes a single target's verify, for a
+# probe, which then prints NOT ACCEPTANCE; strict is the default, and
+# all-verify passes it to every target.
+# verify also fails on each address of the target's own image or uninitialized
+# data that a loaded word holds without its relocation (a data word without
+# R_MIPS_32, a lui of its %hi without R_MIPS_HI16, a j/jal without R_MIPS_26):
+# the link did not produce it. Bytes classified asset, included or handwritten
+# are exempt, others only by an `unrelocated` line of the classification
+# giving the reason (matching_coverage.py --relocations).
 SCRIPT_SYMBOLS ?= strict
 $(if $(filter warn strict,$(SCRIPT_SYMBOLS)),,$(error SCRIPT_SYMBOLS must be warn or strict))
 
@@ -241,7 +267,9 @@ verify: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
 	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map \
 		--script-symbols $(SCRIPT_SYMBOLS) $(addprefix --script ,$(LINKER_SCRIPTS)) \
-		$(addprefix --views ,$(LINK_VIEWS)) $(if $(BSS_END),--bss-end $(BSS_END))
+		$(addprefix --views ,$(LINK_VIEWS)) $(if $(BSS_END),--bss-end $(BSS_END)) \
+		--relocations $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+	$(if $(filter warn,$(SCRIPT_SYMBOLS)),@echo 'NOT ACCEPTANCE: SCRIPT_SYMBOLS=warn' >&2)
 
 # The coverage builds of the C units among the objects.
 COVERAGE_OBJECTS = $(foreach object,$(OBJECTS),$(if $(wildcard $(patsubst $(ROOT)/$(BUILD)/%.o,$(ROOT)/%.c,$(object))),$(object:.o=.cov.o)))

@@ -77,12 +77,13 @@ ParticleShape D_8009B040[10] = {
 s16 D_8009B180[6] = {1, 1, 0, 1, 1, 1};
 
 /* Per party member: the parameters func_8008C28C passes with its gear
- * model. The original object keeps a stray halfword (0x3C00) in the last
- * table's alignment padding. */
+ * model. The last table (0x140, 0x140, 0x100) has a stray halfword (00 3c)
+ * in its alignment padding that nothing reads, so it stays original data
+ * (worldmap.classification.txt). */
 s16 D_8009B18C[3] = {0x100, 0x100, 0x100};
 s16 D_8009B194[3] = {0x1FD, 0x1FC, 0x1FB};
 s16 D_8009B19C[3] = {0x140, 0x160, 0x280};
-s16 D_8009B1A4[4] = {0x140, 0x140, 0x100, 0x3C00};
+INCLUDE_ORIGINAL(".data", D_8009B1A4, 0x8009B1A4, 8);
 
 /* Scripted camera stages 1-6 around the player (commands set the angle, distance
  * and position of each stage), with easing and a random vertical shake. */
