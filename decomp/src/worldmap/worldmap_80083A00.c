@@ -77,8 +77,8 @@ ParticleShape D_8009B040[10] = {
 s16 D_8009B180[6] = {1, 1, 0, 1, 1, 1};
 
 /* Per party member: the parameters func_8008C28C passes with its gear
- * model. The last table (0x140, 0x140, 0x100) has a stray halfword (00 3c)
- * in its alignment padding that nothing reads, so it stays original data
+ * model. The last table (0x140, 0x140, 0x100) ends the unit's data before a
+ * stray halfword (00 3c) that nothing reads, so it stays original data
  * (worldmap.classification.txt). */
 s16 D_8009B18C[3] = {0x100, 0x100, 0x100};
 s16 D_8009B194[3] = {0x1FD, 0x1FC, 0x1FB};

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Initialized C data that may spell stray assembler padding as elements
+"""Initialized C data that may spell stray padding bytes as elements
 (docs/matching.md, Recovering data).
 
     stray_padding.py [CONFIG.mk ...]     # default: every target
 
 Run inside the matching Nix shell after `make -C decomp all-verify`. The
-original assembler left stray bytes in some alignment fill; C cannot emit
-them, so an object whose fill holds them is linked with INCLUDE_ORIGINAL. A C
-initializer can still spell such bytes as invented trailing elements. This
-lists every linked C data object of the targets (each C unit's .data, .rodata
-and .sdata input section in the link map) that could hide them, for review
-against its readers:
+originals hold stray bytes in some alignment fill and after some units' last
+object; C cannot emit them, so an object they follow is linked with
+INCLUDE_ORIGINAL. A C initializer can still spell such bytes as invented
+trailing elements. This lists every linked C data object of the targets
+(each C unit's .data, .rodata and .sdata input section in the link map) that
+could hide them, for review against its readers:
 
 * each unit's GAS input (``<unit>.o.s``) is reassembled with ``-L``, so every
   label has its offset, string literals included; the directives cc1 emitted

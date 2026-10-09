@@ -432,6 +432,7 @@ decomp/targets/overlays/movie.bss.ld
 decomp/targets/overlays/movie.mk
 decomp/targets/overlays/movie.symbols.txt
 decomp/targets/overlays/movie.yaml
+decomp/targets/overlays/ovl2143.classification.txt
 decomp/targets/overlays/ovl2143.mk
 decomp/targets/overlays/ovl2143.symbols.txt
 decomp/targets/overlays/ovl2143.yaml

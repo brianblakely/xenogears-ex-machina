@@ -110,6 +110,6 @@ void func_8028022C(void) {
     }
 }
 
-/* "\nChar#%d:". The original assembler left a stray byte (0x2c) in the
- * string's alignment padding, so the literal is linked as original rodata. */
+/* "\nChar#%d:". A stray byte (0x2c) follows the string at the end of the
+ * unit's rodata, so the literal is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/debug2611/asm/nonmatchings/pages", D_8028007C);

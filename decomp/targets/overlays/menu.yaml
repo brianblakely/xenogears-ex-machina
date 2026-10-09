@@ -86,8 +86,8 @@ segments:
       # menu6's gear list: its strings open menu6's rodata (80070284).
       - [0x21E74, .data, menu6]
       # menu7's .data ends with the embedded sprite model D_80091FB0 (asset,
-      # menu.classification.txt) and D_800925A4, whose padding holds three
-      # stray assembler bytes ("ind").
+      # menu.classification.txt) and D_800925A4, followed by three stray
+      # bytes ("ind").
       - [0x2211C, .data, menu7]
       # The uninitialized variables. The menu's assembler put those of up
       # to eight bytes in .sbss and the larger ones in .bss (menu.mk),

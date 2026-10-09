@@ -19,13 +19,11 @@
 
 /* Copies of the battle overlay's extra file bases (800c3530) and gear file
  * table (800c3508, base and variant count per gear); this module never reads
- * them. The last pair is 102, 0 here and 0, 0 there: a twentieth gear's, or
- * here the gap the link left before the .bss (open, docs/matching.md). */
+ * them. The table ends the unit's data with 66 00 where battle's has 0, 0: a
+ * twentieth pair, or stray bytes after 19 (open, docs/matching.md), so it
+ * stays original data (ovl2143.classification.txt). */
 u8 D_801E8590[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
-u8 D_801E85A4[] = {
-    1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,
-    34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 102, 0,
-};
+INCLUDE_ORIGINAL(".data", D_801E85A4, 0x801E85A4, 40);
 
 /* The module state, zero in the file (its .bss, loaded), each object in a
  * slot of whole words (decomp/Makefile): D_801E869C starts its own slot

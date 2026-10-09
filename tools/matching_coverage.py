@@ -70,10 +70,11 @@ statement's bytes in one section, from its label; GAS may put alignment fill
 ahead of it) that a classified range does not cover needs a reason, or the
 report fails. Either its bytes are one text string whose terminator is
 followed by 1-3 bytes of alignment padding to a word boundary, one of them
-non-zero: a stray byte the original assembler left, which C cannot emit. Or
-an ``included`` line of the classification names it (its range and label,
+non-zero: a stray byte, which C cannot emit (the assembler's fill, or where
+the string ends its unit's section, perhaps the link's; docs/matching.md).
+Or an ``included`` line of the classification names it (its range and label,
 ``-`` for none) with the reviewed reason, as for strings that several SDK
-library functions share or a data object whose padding holds stray bytes.
+library functions share or a data object followed by stray bytes.
 Each such line must name an included object.
 
 ``--list CLASS`` prints the class's ranges instead of the report: its

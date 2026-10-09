@@ -53,9 +53,9 @@ segments:
       # Each unit's .data in link order, then each unit's .bss: the file holds
       # the battle_loader/load_modes/burst_modes pointers that only their own
       # units use at 801e96b4-801e96c0, after all .data (so .bss is loaded).
-      # D_801E9638 (u16 0) ends battle_loader's .data; its padding holds stray
-      # assembler bytes (0x00 0xe0), so battle_loader.c includes it from the
-      # original (INCLUDE_ORIGINAL).
+      # D_801E9638 (u16 0) ends battle_loader's .data before stray bytes
+      # (0x00 0xe0), so battle_loader.c includes it from the original
+      # (INCLUDE_ORIGINAL).
       - [0x55bc, .data, battle_loader]
       - [0x563c, .data, load_modes]
       - [0x5680, .data, burst_modes]

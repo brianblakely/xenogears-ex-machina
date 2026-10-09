@@ -10,12 +10,13 @@
 8009a450 8009a488 asset Cue sequence of the mode-14 scene director func_8007A9F8 (worldmap_8007A9F8.c), started by func_8007A9B4: 14 u16 states D_8009A450 and 14 u16 waits D_8009A46C; state 1 counts the wait down and fetches the next pair, every other state is a switch case that runs one cue (docs/scripts/worldmap-scene.md)
 8009a4d8 8009a4f8 asset Cue sequence of the mode-12 director func_8007C3B8 (worldmap_8007C3B8.c), started by func_8007C36C: 8 u16 states D_8009A4D8 and 8 u16 waits D_8009A4E8, the format above
 8009a5d4 8009a65a asset Cue sequences of the mode-15 director func_8007DE98 (worldmap_8007DE98.c), one per entry D_8009D3D4 picked by func_8007DE14 through D_8009A65C: s16 states and u16 waits D_8009A5D4/D_8009A5F0 (14), D_8009A60C/D_8009A620 (9) and D_8009A634/D_8009A648 (9), the format above
-8009a698 8009a6c0 asset Cue sequence of the mode-13 director func_80080370 (worldmap_80080370.c), started by func_8008032C: 9 u16 states D_8009A698 and 9 u16 waits D_8009A6AC, whose alignment padding holds a stray halfword (0x7542), the format above
+8009a698 8009a6c0 asset Cue sequence of the mode-13 director func_80080370 (worldmap_80080370.c), started by func_8008032C: 9 u16 states D_8009A698 and 9 u16 waits D_8009A6AC, which end the unit's data before a stray halfword (0x7542), the format above
 8009a6c0 8009a758 asset Cue sequence of the mode-16 director func_800811C0 (worldmap_800811C0.c), started by func_80081174: 37 u16 states D_8009A6C0 and 37 u16 waits D_8009A70C, whose alignment padding holds a stray halfword (0x2E07), the format above
 8009a758 8009aabc asset Actor script D_8009A758 (434 s16), given by func_800827C8 (mode 17) and run by func_80076B34 through D_8009A3C0: each command is the word at the script position (opcode in the low halfword, first argument in the high one) and the next two halfwords; a handler returns the halfwords to advance (docs/scripts/worldmap-actor.md)
 8009ac60 8009ad2c asset Actor script D_8009AC60 (102 s16), given by func_800838E8 (mode 18), the format above
 # included: an object a C unit links from the original image (INCLUDE_ORIGINAL)
 # at its place among the unit's .data, with the reason: C cannot emit the stray
-# bytes the original assembler left in its alignment padding, which nothing reads.
-8009a68c 8009a698 included D_8009A68C u16[5] exhaust flame sizes, ending worldmap_8007DE98.c's data (worldmap.h; func_8007F8AC and func_8007F968 read entries 0-4 for flame actors 4-8); padding 65 79 ("ey")
-8009b1a4 8009b1ac included D_8009B1A4 s16[3] gear sprite parameter per party member (worldmap.h; func_8008C28C reads members 0-2, from func_8008C364); padding 00 3c
+# bytes after it, which nothing reads, here before the next unit's data
+# (docs/matching.md).
+8009a68c 8009a698 included D_8009A68C u16[5] exhaust flame sizes, ending worldmap_8007DE98.c's data before worldmap_80080370.c's (worldmap.h; func_8007F8AC and func_8007F968 read entries 0-4 for flame actors 4-8); then 65 79 ("ey")
+8009b1a4 8009b1ac included D_8009B1A4 s16[3] gear sprite parameter per party member, ending worldmap_80083A00.c's data before worldmap_8008E190.c's (worldmap.h; func_8008C28C reads members 0-2, from func_8008C364); then 00 3c

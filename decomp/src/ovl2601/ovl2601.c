@@ -13,9 +13,9 @@
 #include "menu_card.h"
 
 /* The save file name prefix, this unit's only rodata (the struct copy in
- * func_801C54B4 reads its 13 bytes). The padding after it holds a stray byte
- * (0x03) that nothing reads, like the original assembler's string padding
- * elsewhere, so it is linked as original rodata. */
+ * func_801C54B4 reads its 13 bytes). A stray byte (0x03) that nothing reads
+ * follows it at the end of the unit's rodata, so it is linked as original
+ * rodata. */
 INCLUDE_RODATA(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", D_801C5000);
 
 /* The shared screen data. */

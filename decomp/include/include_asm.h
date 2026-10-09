@@ -43,8 +43,8 @@
             "\t.previous")
 
 /*
- * The .data analogue of INCLUDE_RODATA: an object whose alignment padding
- * holds stray bytes the original assembler left there and nothing reads.
+ * The .data analogue of INCLUDE_RODATA: an object followed by stray bytes
+ * that nothing reads, in its alignment padding or before the next unit's data.
  * C cannot emit them, so the object and its padding (SIZE bytes at VRAM)
  * stay original, linked from the pristine input as INCLUDE_ASSET does, at
  * the object's place among its unit's definitions.
