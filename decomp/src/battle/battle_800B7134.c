@@ -1,12 +1,13 @@
-/* Battle unit from 800B7134 to 800B8098 (Cygnus CDK GCC 2.7.2).
- * 800B7870's jump table at 0x800709FC sits at 4 mod 8 directly after
- * 800B3F04's odd-length table at 0 mod 8, so a unit starts between the two
- * functions (that table is all of 800B3F04's unit's rodata). The screen
- * shatter's draw (800B7134, 800B7160) and the intro swirl 800B7870 share
- * the unit's own variable D_800C3CB4, which follows 800B3F04's .bss, so the
- * unit starts at 800B7134 at the latest; that is where it is placed.
- * Its own 5-entry table is followed directly by 800B8098's at 0x80070A10
- * (0 mod 8). */
+/* Battle unit from 800B7134 to 800B8098: the shattered screen's draw and
+ * set-up, the battle's intro swirl and the single actions' command files
+ * (800B7870-800B8068), built by the Cygnus CDK GCC 2.7.2. 800B7870's jump
+ * table at 0x800709FC sits at 4 mod 8 directly after 800B3F04's odd-length
+ * table at 0 mod 8, so a unit starts between the two functions (that table is
+ * all of 800B3F04's unit's rodata). The screen shatter's draw (800B7134,
+ * 800B7160) and the intro swirl 800B7870 share the unit's own variable
+ * D_800C3CB4, which follows 800B3F04's .bss, so the unit starts at 800B7134
+ * at the latest; that is where it is placed. Its own 5-entry table is
+ * followed directly by 800B8098's at 0x80070A10 (0 mod 8). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

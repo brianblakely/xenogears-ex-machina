@@ -1,10 +1,14 @@
-/* Battle unit from 800B8098 to 800BD3AC, built like battle_800B15D8.c by
- * the Cygnus CDK GCC 2.7.2. Its jump tables sit at 0 mod 8 (800B8098's at
- * 0x80070A10) where the previous unit's sit at 4 (800B7870's at 0x800709FC),
- * so a unit starts between the two; the functions from 800B7C28 to 800B8068
- * have no rodata, and the boundary is placed at the first function that has.
- * Its last table (800B9F78's, 9 entries at 0x80070AB8) is followed directly
- * by 800BD3AC's at 0x80070ADC (4 mod 8), so the unit ends before 800BD3AC. */
+/* Battle unit from 800B8098 to 800BD3AC: the battle's start and close and the
+ * loads it waits for, the acting slot's turn run through the battle menu
+ * (walks, sounds, the turn cancel), the slots' sprites and gear objects, the
+ * battle camera, and the slot highlights and results. It is built like
+ * battle_800B15D8.c by the Cygnus CDK GCC 2.7.2. Its jump tables sit at
+ * 0 mod 8 (800B8098's at 0x80070A10) where the previous unit's sit at 4
+ * (800B7870's at 0x800709FC), so a unit starts between the two; the functions
+ * from 800B7C28 to 800B8068 have no rodata, and the boundary is placed at the
+ * first function that has. Its last table (800B9F78's, 9 entries at
+ * 0x80070AB8) is followed directly by 800BD3AC's at 0x80070ADC (4 mod 8), so
+ * the unit ends before 800BD3AC. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
@@ -387,6 +391,7 @@ void func_800B88C4(void) {
     BATTLE_AREA.buffers[1].drawEnv.b0 = BATTLE_AREA.buffers[0].drawEnv.b0;
 }
 
+/* Empty; the frame state's reset (800B8840) calls it last. */
 void func_800B89F4(void) {
 }
 
@@ -1289,6 +1294,8 @@ void func_800BAEB8(s32 slot) {
     }
 }
 
+/* Empty; its callers (the combo and technique commits) pass a slot and a
+ * mode it ignores. */
 void func_800BAF40(void) {
 }
 

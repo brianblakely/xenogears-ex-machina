@@ -1,4 +1,8 @@
-/* Battle unit from 80079ED8: its rodata starts at 8006FB7C, 4 mod 8, right
+/* Battle unit from 80079ED8 to 8008115C: the combatants' byte and halfword
+ * attributes, the AI script actions (01-74) and conditions (81-9b) with their
+ * interpreters (8007EF6C, 8007F8C0), and a party member's turn in the command
+ * menu (8007FB70-80080C94: the menu blocks, the number strings, the menu
+ * itself and automatic turns). Its rodata starts at 8006FB7C, 4 mod 8, right
  * after 800793F0's odd-length table at 0 mod 8 (docs/matching.md); the text
  * boundary lies after 800793F0. */
 #include "common.h"

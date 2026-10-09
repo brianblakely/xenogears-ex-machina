@@ -1,9 +1,12 @@
-/* Battle unit from 800BFE48 to 800C11CC (Cygnus CDK GCC 2.7.2).
- * 800BFE48's tables start at 0x80070B08 (0 mod 8) directly after
- * 800BD3AC's odd-length one at 4 mod 8; the functions from 800BD7A0 to
- * 800BFDA8 have no rodata, and the boundary is placed at the first function
- * that has. 800C0564's 25-entry table at 0x80070BB0 is followed directly by
- * 800C11CC's at 0x80070C14 (4 mod 8), so the unit ends before 800C11CC. */
+/* Battle unit from 800BFE48 to 800C11CC: returning the slots' sprites to
+ * their places, knocking down slots and waiting for the sprites to settle,
+ * distances and directions on the ground, the curves the sprite trails draw,
+ * and the command files' parts (Cygnus CDK GCC 2.7.2). 800BFE48's tables
+ * start at 0x80070B08 (0 mod 8) directly after 800BD3AC's odd-length one at
+ * 4 mod 8; the functions from 800BD7A0 to 800BFDA8 have no rodata, and the
+ * boundary is placed at the first function that has. 800C0564's 25-entry
+ * table at 0x80070BB0 is followed directly by 800C11CC's at 0x80070C14
+ * (4 mod 8), so the unit ends before 800C11CC. */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/heap.h"

@@ -1,13 +1,15 @@
-/* Battle unit from 800B3F04 to 800B7134 (Cygnus CDK GCC 2.7.2, like
- * battle_800B15D8.c). 800B1F6C's odd-length table ends at 0x80070850 and
- * 800B3F04's follows unpadded at 0 mod 8, so a unit starts between the two;
- * the functions from 800B2AEC to 800B3E04 have no rodata, and the boundary
- * is placed at the first function that has (the previous unit's own .bss is
- * used up to 800B3E04). Its 107-entry table, all its rodata, is followed
- * directly by 800B7870's at 0x800709FC (4 mod 8), so the unit ends before
- * 800B7870; it ends before 800B7134, whose shatter draw shares 800B7870's
- * own variable D_800C3CB4 (a unit's .bss is read by its own code only,
- * docs/matching.md). */
+/* Battle unit from 800B3F04 to 800B7134: the sprite script command handler
+ * (800B3F04, commands 1-107) and its commands, the sprite effects (trails,
+ * approach watches, partner links, streaks) and the shattered screen's update
+ * (Cygnus CDK GCC 2.7.2, like battle_800B15D8.c). 800B1F6C's odd-length table
+ * ends at 0x80070850 and 800B3F04's follows unpadded at 0 mod 8, so a unit
+ * starts between the two; the functions from 800B2AEC to 800B3E04 have no
+ * rodata, and the boundary is placed at the first function that has (the
+ * previous unit's own .bss is used up to 800B3E04). Its 107-entry table, all
+ * its rodata, is followed directly by 800B7870's at 0x800709FC (4 mod 8), so
+ * the unit ends before 800B7870; it ends before 800B7134, whose shatter draw
+ * shares 800B7870's own variable D_800C3CB4 (a unit's .bss is read by its own
+ * code only, docs/matching.md). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

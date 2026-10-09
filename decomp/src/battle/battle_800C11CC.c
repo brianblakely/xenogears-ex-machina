@@ -1,8 +1,10 @@
-/* Battle unit from 800C11CC to the end of the overlay text (Cygnus CDK
- * GCC 2.7.2). 800C11CC's tables start at 0x80070C14 (4 mod 8) directly
- * after 800C0564's odd-length one at 0 mod 8; the functions from 800C06E4
- * to 800C1140 have no rodata, and the boundary is placed at the first
- * function that has. */
+/* Battle unit from 800C11CC to the end of the overlay text: the battle's copy
+ * of the resident sprite animation VM (Cygnus CDK GCC 2.7.2). 800C11CC's
+ * tables start at 0x80070C14 (4 mod 8) directly
+ *
+ * after 800C0564's odd-length one at 0 mod 8; the functions from 800C06E4 to
+ * 800C1140 have no rodata, and the boundary is placed at the first function
+ * that has. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgte.h"

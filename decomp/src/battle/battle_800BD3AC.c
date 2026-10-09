@@ -1,9 +1,12 @@
-/* Battle unit from 800BD3AC to 800BFE48 (Cygnus CDK GCC 2.7.2).
- * 800BD3AC's table at 0x80070ADC sits at 4 mod 8 directly after 800B9F78's
- * odd-length table at 0 mod 8; the functions from 800BA4E0 to 800BD2E4 have
- * no rodata, and the boundary is placed at the first function that has. Its
- * own 11 entries are followed directly by 800BFE48's at 0x80070B08 (0 mod 8),
- * so the unit ends before 800BFE48. */
+/* Battle unit from 800BD3AC to 800BFE48: the number popups and the running
+ * total, a battle frame (800BE790), the battle modules' load, the battle menu
+ * with the acting slot's walk and command file, command motions, value
+ * watches and targets, requested loads, gear restarts and effect sprites
+ * (Cygnus CDK GCC 2.7.2). 800BD3AC's table at 0x80070ADC sits at 4 mod 8
+ * directly after 800B9F78's odd-length table at 0 mod 8; the functions from
+ * 800BA4E0 to 800BD2E4 have no rodata, and the boundary is placed at the
+ * first function that has. Its own 11 entries are followed directly by
+ * 800BFE48's at 0x80070B08 (0 mod 8), so the unit ends before 800BFE48. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -337,8 +340,10 @@ void func_800BDCF8(TotalPopup *total) {
     func_8001CD94(&total->task);
 }
 
+/* The running total's empty update (800BDE58 starts its task with it). */
 void func_800BDD34(void) {
 }
+
 
 /* Running total draw: its label glyph, then its digits turned, scaled and
  * centred on the screen. */

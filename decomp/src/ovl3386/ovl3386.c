@@ -1,15 +1,15 @@
 /* ovl3386: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file
- * (D_800591B3 + 2) of the battle directory, D_800591B3 being the platform
- * bits (6..11) of the directory header of battle file 2, whenever they differ
- * from the loaded module's (D_800591B2). Battle script opcodes call fixed
- * entry addresses in the loaded module: this one provides 801fc6fc, called by
- * the opcode handler 800b3f04, which holds an actor in place and draws its
- * sprite as a scrolling row.
+ * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
+ * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * the directory header of battle file 2, whenever they differ from the loaded
+ * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * the loaded module: this one provides 801fc6fc, called by the opcode handler
+ * 800b3f04, which holds an actor in place and draws its sprite as a scrolling
+ * row.
  *
- * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
- * (see ovl3386.mk). */
+ * The module is one unit, its whole file (801fc000-801fc784), built by the
+ * Cygnus CDK GCC 2.7.2 with a later ASPSX (see ovl3386.mk). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

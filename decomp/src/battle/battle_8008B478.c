@@ -1,8 +1,9 @@
-/* Battle unit from 8008B478: its rodata is the three jump tables at
- * 80070314-80070370 (8008B478, 8008BED8, 8008C81C), at 4 mod 8 between runs
- * at 0 mod 8 (docs/matching.md). The text boundaries are not fixed by the
- * tables: this unit starts after 800861D0 and ends before 80094EE4; these
- * files take the tables' owners. */
+/* Battle unit from 8008B478 to 8008CCCC: the technique, item and combo menus
+ * and the execution of the chosen technique, item or combo steps. Its rodata
+ * is the three jump tables at 80070314-80070370 (8008B478, 8008BED8,
+ * 8008C81C), at 4 mod 8 between runs at 0 mod 8 (docs/matching.md). The text
+ * boundaries are not fixed by the tables: this unit starts after 800861D0 and
+ * ends before 80094EE4; these files take the tables' owners. */
 #include "common.h"
 #include "resident/gamedata.h"
 #include "resident/sprite.h"

@@ -1,12 +1,15 @@
-/* Battle unit from 800B15D8 to 800B3F04, built by the
- * Cygnus CDK GCC 2.7.2 with a later ASPSX (docs/matching.md): stores to
- * globals take a register for %hi, positive `li` becomes `addiu`, and some
- * epilogues (800B8090, 800B88BC, 800BEF84, 800BEFEC, 800BF718) carry the
- * stack adjustment in the `jr $ra` delay slot. The unit starts at 800B15D8,
- * the first function whose global stores take a register for %hi (800B14CC's
- * take $at); its rodata starts at 0x800707DC, after 800B12D0's jump table.
- * Its one table (800B1F6C's, 29 entries at 4 mod 8) is followed directly by
- * 800B3F04's at 0x80070850 (0 mod 8), so the unit ends before 800B3F04. */
+/* Battle unit from 800B15D8 to 800B3F04: the effect scripts' drawing (TMD
+ * primitives, 800B168C-800B2AEC) and the screen effects run as tasks: the
+ * camera quake, the screen fade, the stage light fade and the saved VRAM
+ * columns (800B3358-800B3E04). It is built by the Cygnus CDK GCC 2.7.2 with a
+ * later ASPSX (docs/matching.md): stores to globals take a register for %hi,
+ * positive `li` becomes `addiu`, and some epilogues (800B8090, 800B88BC,
+ * 800BEF84, 800BEFEC, 800BF718) carry the stack adjustment in the `jr $ra`
+ * delay slot. The unit starts at 800B15D8, the first function whose global
+ * stores take a register for %hi (800B14CC's take $at); its rodata starts at
+ * 0x800707DC, after 800B12D0's jump table. Its one table (800B1F6C's, 29
+ * entries at 4 mod 8) is followed directly by 800B3F04's at 0x80070850
+ * (0 mod 8), so the unit ends before 800B3F04. */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libgpu.h"
@@ -889,6 +892,7 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
     }
 }
 
+/* Empty, as is the next; nothing in the overlay calls them. */
 void func_800B3348(void) {
 }
 

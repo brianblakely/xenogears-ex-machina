@@ -1,4 +1,9 @@
-/* Battle code from 8008CCCC to 8009E53C: its rodata starts at 80070370
+/* Battle code from 8008CCCC to 8009E53C: the gear command menu and the
+ * command panel's pages, the windows (opened, closed, grown), the item list
+ * page, the cursor glyph, character 4's command window, the action resolver
+ * with its rolls, formulas, elements and statuses, the turn timers and
+ * regeneration, the gear HUD, the escape and defense commands and the party's
+ * adjustments at the battle's start and end. Its rodata starts at 80070370
  * (80094EE4's jump table), back at 0 mod 8 after the previous unit's tables
  * at 4 mod 8 (docs/matching.md); the text boundary lies after 8008C81C. */
 #include "common.h"
@@ -2263,14 +2268,6 @@ void func_80096018(void) {
     }
 }
 
-/* Element adjustment of an attack/defense pair: the command's element (or
- * the attacker's own element status) against the target's weakness, its
- * resistance statuses (which may also force hit result 4) and its single
- * element guards, then a 20% boost for either side's +0x32 bit 0x10.
- * Both target branches test the resist bit with the same statement macro;
- * jump.c turns the first into a bit extract (resist is still 0 there) and
- * keeps the branch in the second. */
-
 /* Mark the target resistant when its status word has bit 0x2. */
 #define STATUS_RESIST(word, resist) \
     do {                            \
@@ -2279,6 +2276,13 @@ void func_80096018(void) {
         }                           \
     } while (0)
 
+/* Element adjustment of an attack/defense pair: the command's element (or
+ * the attacker's own element status) against the target's weakness, its
+ * resistance statuses (which may also force hit result 4) and its single
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10.
+ * Both target branches test the resist bit with the same statement macro;
+ * jump.c turns the first into a bit extract (resist is still 0 there) and
+ * keeps the branch in the second. */
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
     s8 ether = 0;
     u8 flag = 0;
@@ -2739,6 +2743,7 @@ s16 func_80097610(void) {
     return value;
 }
 
+/* Empty; nothing in the overlay calls it. */
 void func_8009795C(void) {
 }
 

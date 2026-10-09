@@ -602,6 +602,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     return count;
 }
 
+/* Empty; nothing in the overlay calls it. */
 void func_8009F5B0(void) {
 }
 

@@ -9,8 +9,8 @@
  * screen broken into triangles (func_801FC2C0 starts it; no caller is known
  * from the overlays, so it is reached by address).
  *
- * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
- * (see ovl3381.mk). */
+ * The module is one unit, its whole file (801fc000-801fc728), built by the
+ * Cygnus CDK GCC 2.7.2 with a later ASPSX (see ovl3381.mk). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

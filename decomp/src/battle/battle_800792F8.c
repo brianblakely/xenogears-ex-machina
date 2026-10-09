@@ -1,7 +1,10 @@
-/* Battle unit from 800792F8: 800793F0's jump table (8006FB38) is at 0 mod 8
- * after the previous unit's at 4 mod 8 (docs/matching.md). Its rodata starts
- * at 8006FB08 with 800792F8's strings, or at 8006FB38 if those belong to the
- * previous unit; both fit, as does any text boundary after 800745EC. */
+/* Battle unit from 800792F8 to 80079ED8: the script error screen, the actor's
+ * action list execution, the enemies' AI scripts (turn, reaction and
+ * after-turn scripts) and the battle message windows. 800793F0's jump table
+ * (8006FB38) is at 0 mod 8 after the previous unit's at 4 mod 8
+ * (docs/matching.md). Its rodata starts at 8006FB08 with 800792F8's strings,
+ * or at 8006FB38 if those belong to the previous unit; both fit, as does any
+ * text boundary after 800745EC. */
 #include "common.h"
 #include "resident/console.h"
 #include "resident/mode.h"

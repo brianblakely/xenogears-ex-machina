@@ -1,5 +1,11 @@
-/* Battle unit from 80070E2C: its rodata starts at 8006FAF4, after the
- * overlay's number, with 800745EC's jump table at 4 mod 8 (docs/matching.md). */
+/* Battle unit from 80070E2C to 800792F8: the event script module's start, the
+ * battle's main loop (80070F40: set-up, turns until the end), the ATB tick
+ * and the turn's start, the party panel and the HUD's drawing, the glyph and
+ * quad builders, the command names' text images, the windows' primitives and
+ * the battle messages, the CLUT cycle, the portraits, and the action list's
+ * event queueing and entry handlers (80078508-80079270). Its rodata starts at
+ * 8006FAF4, after the overlay's number, with 800745EC's jump table at 4 mod 8
+ * (docs/matching.md). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

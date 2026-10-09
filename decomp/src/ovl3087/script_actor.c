@@ -1,6 +1,11 @@
-/* Actor and model helpers the battle event script opcodes call: actor
- * animations and actions (with completion reported to the interpreter),
- * the scripted attack, and the script slot models. */
+/* Actor and model helpers the battle event script opcodes call
+ * (801e93e8-801e9b5c): actor animations and actions (with completion reported
+ * to the interpreter), the scripted attack, and the script slot models. The
+ * unit is built by the Cygnus CDK GCC 2.7.2, which alone reproduces its
+ * functions (ovl3087.mk); it starts at the first of them, after the
+ * interpreter's last opcode handler, and ends at the overlay's data
+ * (801e9b5c, ovl3087.c's). */
+
 #include "common.h"
 #include "resident/heap.h"
 #include "resident/sprite.h"
@@ -48,6 +53,8 @@ void func_801E950C(s32 actor) {
     func_800245D8(self, (s8)self->motion.bytes[3]);
 }
 
+/* Stop actor n's commands: clear its command countdown, its pending frame
+ * and flag bits 2-7. */
 void func_801E9550(s32 actor) {
     Sprite *self = D_800C3EB0.sprites[actor];
 
@@ -56,6 +63,7 @@ void func_801E9550(s32 actor) {
     self->flags &= ~0xFC;
 }
 
+/* Clear actor n's command countdown. */
 void func_801E958C(s32 actor) {
     D_800C3EB0.sprites[actor]->countdown = 0;
 }
@@ -207,7 +215,10 @@ void func_801E9AD4(SpriteTask *model) {
     D_800C37C8 = 0;
 }
 
+/* Camera value and mode 0 (800bc3f8, 800bc2f0) and effects disabled, as a
+ * script slot model's creation leaves them. */
 void func_801E9B2C(void) {
+
     func_800BC3F8(0);
     func_800BC2F0(0);
     D_800C37C8 = 1;

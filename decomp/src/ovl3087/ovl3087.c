@@ -6,7 +6,12 @@
  * start and between turns) to run the script threads until opcode 22 hands
  * back, and 801e563c at the end to release everything. Opcode
  * handlers use the battle overlay's actor, camera and message services
- * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
+ * (8007xxxx-800cxxxx) and resident file/heap/sound helpers.
+ *
+ * This unit holds the overlay's rodata (801e5000), the interpreter and its
+ * opcode handlers (801e5160-801e93e8) and the overlay's data (801e9b5c); it
+ * ends at 801e93e8, where the actor helpers' compiler takes over
+ * (script_actor.c, ovl3087.mk). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

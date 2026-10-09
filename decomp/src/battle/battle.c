@@ -1,7 +1,12 @@
 /* Battle code from 8008115C to 8008B478 (the earlier units have files of
- * their own). Its rodata starts at 80070010, where the jump tables return to
- * 0 mod 8 right after 80080160's (docs/matching.md); the text boundary lies
- * after 80080160. The next unit's tables start at 80070314 at 4 mod 8. */
+ * their own): the command menu's windows, attack page and combos, target
+ * selection, approach routes and formation groups, committing and presenting
+ * results, the HUD's glyph lists and stepped line, slot masks and random
+ * values, the battle input, the result step, the battle heap and the
+ * technique and item commits. Its rodata starts at 80070010, where the jump
+ * tables return to 0 mod 8 right after 80080160's (docs/matching.md); the
+ * text boundary lies after 80080160. The next unit's tables start at 80070314
+ * at 4 mod 8. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
@@ -2465,6 +2470,13 @@ s32 func_80086B88(s32 step, u8 member) {
     return result;
 }
 
+/* Place entry `index`'s fuel cost quad (`count` digits) in list 13. */
+#define PLACE_FUEL_COST(index, column, count)                                                                     \
+    do {                                                                                                          \
+        func_80076C78(&D_800D2DB4->list13[(index) * 2 + D_800CCB04.buffer], (index) * 4 + ((column) + 1) * 16 + 0xEA, \
+                      0xC8 - (index) * 16, (index) * 32 + 0x78, 0, (count) * 8);                                  \
+    } while (0)
+
 /* Add entry `index` to lists 11 and 13 (the gear's combo chain display):
  * render the gear's text for combo step `step` into the shared image (two
  * entries per image cell) and place its quad after `column` + 1 steps, then
@@ -2475,14 +2487,6 @@ s32 func_80086B88(s32 step, u8 member) {
  * rectangle address); the cost quad is placed by a statement macro (its
  * loop block weights the index for register allocation as in the
  * original). */
-
-/* Place entry `index`'s fuel cost quad (`count` digits) in list 13. */
-#define PLACE_FUEL_COST(index, column, count)                                                                     \
-    do {                                                                                                          \
-        func_80076C78(&D_800D2DB4->list13[(index) * 2 + D_800CCB04.buffer], (index) * 4 + ((column) + 1) * 16 + 0xEA, \
-                      0xC8 - (index) * 16, (index) * 32 + 0x78, 0, (count) * 8);                                  \
-    } while (0)
-
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
     RECT digits[4];
