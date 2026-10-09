@@ -43,6 +43,14 @@
   cue, and the slot handler each request goes to). `tests/test_overlay_scripts.py`
   checks each cue table against the switch cases, the starters, the setups' slots and
   the table lengths.
-
-Open: a request's effect depends on the receiving slot's own handler (named in each
-director's comment and in the listing). The directors do not decode those handlers.
+- **Requests:** `func_80097770` sets the slot's command to 1, so the actor pass
+  (`func_80097800`) runs its update handler from then on, waking a slot whose start
+  handler returned 3 (idle), and, unless a request is pending, stores the argument
+  in `unk4`. A receiver that reads `unk4` (a `switch`, `== n` tests or `!= 0`)
+  clears it and acts on it, mostly by moving to the state it names; its comments
+  give each state's effect. Of the 98 request calls in the directors' cases, 96 name
+  an argument their receiver takes. `func_8007A9F8`'s case 9 wakes the rig's flight
+  (`func_8007BBEC`, idle since `func_8007BB60` returned 3), which never reads the
+  argument, and `func_800811C0`'s case 3 sends 0, the "none pending" value, so the
+  heat haze keeps its state. `tests/test_overlay_scripts.py` checks every request
+  against its receiver.

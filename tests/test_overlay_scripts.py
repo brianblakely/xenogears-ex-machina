@@ -443,7 +443,55 @@ def case_actions(case: str) -> tuple[tuple, int | None]:
     return tuple(actions), state
 
 
+def requests_taken(text: str, name: str, argument: int) -> tuple[bool, bool]:
+    """Whether handler `name` acts on request `argument` (a case of `switch
+    (actor->unk4)`, an `actor->unk4 == n` test, or `actor->unk4 != 0` for any
+    nonzero one), and whether it reads unk4 at all."""
+    body = function(text, name)
+    taken = {int(n, 0) for n in re.findall(r"actor->unk4 == (\w+)\)", body)}
+    if "switch (actor->unk4) {" in body:
+        taken |= {label for label in cases(body, "actor->unk4") if label != "default"}
+    anything = "actor->unk4 != 0" in body and argument != 0
+    return argument in taken or anything, "actor->unk4" in body
+
+
 class SceneSourceTests(unittest.TestCase):
+    def test_requests_wake_their_slot_and_name_a_state_it_takes(self):
+        """func_80097770 sets the slot's command to 1 (the actor pass, 80097800,
+        runs its update; a start handler returning 3 leaves it idle until then)
+        and, unless one is pending, unk4 to the argument. Every request names an
+        argument its receiver takes, except two."""
+        sources = "".join(
+            path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
+        )
+        sender = function(sources, "func_80097770")
+        self.assertIn("actor->command = 1;\n        actor->unk4 = arg;", sender)
+        actor_pass = function(sources, "func_80097800")
+        self.assertIn(
+            "case 1:\n                actor->command = ((ActorFunc)actor->update)(i);", actor_pass
+        )
+        untaken = []
+        for each in DIRECTORS:
+            for state, cue in each.cues.items():
+                for verb, *args in cue.actions:
+                    if verb == "request":
+                        slot, argument = args
+                        taken, reads = requests_taken(sources, each.slots[slot], argument)
+                        if not taken:
+                            untaken.append(
+                                (each.interpreter, state, each.slots[slot], argument, reads)
+                            )
+        self.assertEqual(
+            untaken,
+            [
+                # wakes the rig's flight, idle since func_8007BB60 returned 3; never read
+                ("func_8007A9F8", 9, "func_8007BBEC", 1, False),
+                # 0 is "none pending": the heat haze keeps its state
+                ("func_800811C0", 3, "func_80081FD8", 0, True),
+            ],
+        )
+        self.assertIn("return 3;", function(sources, "func_8007BB60"))
+
     def test_every_case_of_each_director_is_its_cue(self):
         for each in DIRECTORS:
             body = function((ROOT / each.source).read_text(), each.interpreter)
