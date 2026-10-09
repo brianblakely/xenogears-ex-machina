@@ -13,6 +13,7 @@
 #include "resident/heap.h"
 #include "resident/text.h"
 #include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/combatant.h"
 #include "battle/command.h"
 #include "battle/graphics.h"

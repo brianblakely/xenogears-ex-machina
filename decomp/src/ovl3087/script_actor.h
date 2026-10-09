@@ -15,13 +15,8 @@
 void func_80021FE0(Sprite *sprite, s32 arg);
 void func_800223B0(Sprite *sprite, s32 arg);
 
-/* Battle functions whose callers convert arguments/result differently from
- * the battle's definition (decomp/src/battle/own_declarations.h; 800BF7C8 is
- * declared in its unit). */
+/* Defined u8 in the battle (own_declarations.h); u8 here adds andi 0xff to the result's test. */
 s32 func_800B7E94(void);
-void func_800BC404(u16 arg);
-s16 func_800BEEB4(s32 mask, Sprite **list, Sprite *target);
-void func_800BF7C8(Sprite *sprite, s32 arg1, void (*callback)(Sprite *sprite));
 
 void func_801E93E8(Sprite *actor);
 void func_801E9430(s32 actor, s32 animation);

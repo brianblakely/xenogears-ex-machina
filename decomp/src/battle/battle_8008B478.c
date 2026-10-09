@@ -8,6 +8,7 @@
 #include "resident/gamedata.h"
 #include "resident/sprite.h"
 #include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/command.h"
 #include "battle/flow.h"
 #include "battle/formation.h"

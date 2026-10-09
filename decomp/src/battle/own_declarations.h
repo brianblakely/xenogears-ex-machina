@@ -4,7 +4,6 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "resident/sprite.h"
 #include "battle/model.h"
 #include "battle/objects.h"
 #include "battle/scene.h"
@@ -57,12 +56,8 @@ u8 func_800B7E94(void); /* start the loaded single action file; 1 when the actin
 
 /* battle/actor.h's. */
 void func_800BB350(u32 slot); /* create a slot's sprite following its object */
-void func_800BC404(s32 mask); /* start a camera move */
 
 /* battle/highlight.h's. */
 void func_800BCD98(u16 mask); /* highlight the slots of mask */
-
-/* battle/frame.h's. */
-s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target); /* list the sprites of the slots in mask */
 
 #endif

@@ -67,6 +67,7 @@ void func_800BB9D4(void);            /* set the battle view and draw the stage *
 void func_800BBAB8(void);            /* step the battle camera */
 void func_800BC2F0(s32 mode);        /* set the camera mode */
 void func_800BC3F8(s32 value);
+void func_800BC404(s32 mask);        /* start a camera move */
 void func_800BCAA4(void);            /* camera mode 4 */
 void func_800BCAD0(void);            /* camera mode 1 */
 
