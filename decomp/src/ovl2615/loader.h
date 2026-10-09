@@ -3,13 +3,17 @@
 
 /* The setup module's loading task and enemy set loader (battle_loader.c):
  * the loading task, the enemy set file's entries, the member sprite files,
- * the battle sprite as the loader reads it, and the calls it makes. */
+ * the battle sprite as the loader reads it, and the calls it makes. The
+ * battle overlay's slots, gear object loads, start mode and enemy set copy
+ * come from the shared battle headers. */
 
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "battle/actor.h"
 #include "battle/area.h"
+#include "battle/flow.h"
 #include "resident/cd.h"
 #include "resident/heap.h"
 #include "resident/sound.h"
@@ -87,18 +91,16 @@ typedef struct {
     u32 sequence;        /* the sprite's sequencer word */
 } MemberFile;
 
-extern s32 D_800C35D8;          /* members still moving */
-extern void *D_800D2D54;        /* battle file 2 */
-extern u8 D_800D36B8;
-extern void *D_800D39C8;        /* the enemy set data copy */
+/* Battle file 2's block, in the first word of what the battle declares as
+ * the party panel's maximum digits (u8[7], battle/graphics.h), which the
+ * battle releases from there (800b8098). */
+extern void *D_800D2D54;
 
 /* The battle overlay's sprite task for a sprite row: a resident task whose
  * data is the sprite (BattleArea.tasks and .sprites take the two). */
 Task *func_800BA984(void *data, s32 a1, s32 palette, s16 x, s16 y, s32 a5, s32 a6, s32 a7,
                     s32 a8, s32 animation, s32 a10, s32 a11, s32 a12, s32 variant);
 void func_800BB350(s32 slot);
-void func_800BB760(s32 slot);
-void func_800BA8F4(BattleSprite *sprite);                  /* place on the stage floor */
 void func_800B14B8(void);
 
 void func_801E6314(u8 *data);

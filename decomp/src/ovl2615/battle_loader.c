@@ -236,7 +236,7 @@ void func_801E6AC4(void) {
         for (member = 0; member != 3; member++) {
             sprite = D_800C3EB0.sprites[member];
             if (sprite != NULL) {
-                func_800BA8F4(sprite);
+                func_800BA8F4((Sprite *)sprite);
                 x = sprite->x;
                 y = sprite->y;
                 z = sprite->z;
