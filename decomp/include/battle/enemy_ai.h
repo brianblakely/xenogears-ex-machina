@@ -18,9 +18,9 @@ typedef struct EnemyAi {
                         * member's attack step on the enemy (80079ab0) */
     u8 *turnScript;    /* +0x0C table +6: run after a party member's turn for
                         * each enemy it targeted (80079c24) */
-    s32 longs[4];      /* +0x10 */
-    u16 vars[8];       /* +0x20 */
-    u8 bytes[16];      /* +0x30 */
+    s32 longs[4];      /* +0x10 (the debug overlay's state page: lFlag) */
+    u16 vars[8];       /* +0x20 (hFlag) */
+    u8 bytes[16];      /* +0x30 (bFlag) */
 } EnemyAi;
 
 extern EnemyAi D_800D3400[8];

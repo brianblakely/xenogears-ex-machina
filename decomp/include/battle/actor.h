@@ -26,14 +26,14 @@ typedef struct BattleCamera {
     SVECTOR rot;    /* +14 */
     s32 range;      /* +1C */
     MATRIX matrix;  /* +20 */
-    s32 drawn;      /* +40: vertical blank after drawing */
-    s32 synced;     /* +44: after the GPU finished */
-    s32 start;      /* +48: at the frame's start */
+    s32 cpu;        /* +40: the frame's CPU time: VSync(1) once its drawing is queued */
+    s32 gpu;        /* +44: its GPU time: VSync(1) once the GPU finished */
+    s32 start;      /* +48: VSync(-1) at the frame's start */
 } BattleCamera;
 
 extern BattleCamera D_800D309C;
 extern SVECTOR D_800D30A0[2];  /* the camera's wanted eye and look-at points */
-extern SVECTOR D_800D30B0;     /* the camera's angles */
+extern SVECTOR D_800D30B0;     /* the camera's angles (the debug overlay's 80280960 too) */
 extern s32 D_800D30B8;         /* the camera's distance */
 extern MATRIX D_800D30BC;      /* the battle view matrix */
 extern s32 D_800C3674;

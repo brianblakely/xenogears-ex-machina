@@ -9,7 +9,8 @@
  * presentation events that apply them (battle.c 80085350-800879A8), and the
  * item effects. */
 
-/* Action list entry (8 bytes, 32 from 800d2e5c). */
+/* Action list entry (8 bytes, 32 from 800d2e5c). The debug overlay's state
+ * page prints the first 23 under the columns Cd, Cl, An, P1, P2, P3 and Tg. */
 typedef struct BattleAction {
     u8 type;
     u8 arg1;

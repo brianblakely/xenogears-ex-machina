@@ -7,7 +7,9 @@
  * also the event script overlay's), the direction input, and the pause the
  * input wait applies (8008a3ec). */
 
-extern u8 D_800D3014;     /* the pressed key, dequeued each frame */
+/* The pressed key, dequeued each frame: 0-3 right/down/left/up, 4 Circle,
+ * 5 Cross, 7 Triangle, 13, 14 Start. */
+extern u8 D_800D3014;
 extern u8 D_800C3E28[2];  /* direction input: [0] the previous, [1] the current */
 extern u8 D_800C3444;     /* the battle is paused */
 

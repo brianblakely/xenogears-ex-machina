@@ -711,9 +711,9 @@ void func_800BE790(void) {
     while (--D_80059494 != -1) {
         func_8008A9C0(1);
     }
-    D_800D309C.drawn = VSync(1);
+    D_800D309C.cpu = VSync(1);
     DrawSync(0);
-    D_800D309C.synced = VSync(1);
+    D_800D309C.gpu = VSync(1);
     D_80059494 = VSync(-1) - D_800D309C.start - D_80059198;
     if (D_80059494 < 0) {
         D_80059494 = 0;

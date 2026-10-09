@@ -35,19 +35,19 @@ void func_8028022C(void) {
             func_80037058(0, (i + 2) * 8);
             func_8003700C("%X", i);
             func_80037058(0x24, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].code);
+            func_8003700C("%X", D_800D2E5C[i].type);
             func_80037058(0x48, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].cls);
+            func_8003700C("%X", D_800D2E5C[i].arg1);
             func_80037058(0x6C, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].anim);
+            func_8003700C("%X", D_800D2E5C[i].animation);
             func_80037058(0x90, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].param[0]);
+            func_8003700C("%X", D_800D2E5C[i].named);
             func_80037058(0xB4, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].param[1]);
+            func_8003700C("%X", D_800D2E5C[i].param);
             func_80037058(0xD8, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].param[2]);
+            func_8003700C("%X", D_800D2E5C[i].unk5);
             func_80037058(0xFC, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].target);
+            func_8003700C("%X", D_800D2E5C[i].targets);
         }
         break;
     case 2:
@@ -72,27 +72,27 @@ void func_8028022C(void) {
         func_80037058(0, 0x50);
         func_8003700C("bFlag\n");
         for (i = 0; i < 8; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bflag[i]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i]);
         }
         func_8003700C("\n");
         for (i = 0; i < 8; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bflag[i + 8]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i + 8]);
         }
         func_8003700C("\nhFlag\n");
         for (i = 0; i < 4; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].hflag[i]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i]);
         }
         func_8003700C("\n");
         for (i = 0; i < 4; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].hflag[i + 4]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i + 4]);
         }
         func_8003700C("\nlFlag\n");
         for (i = 0; i < 2; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].lflag[i]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i]);
         }
         func_8003700C("\n");
         for (i = 0; i < 2; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].lflag[i + 2]);
+            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i + 2]);
         }
         break;
     case 4:

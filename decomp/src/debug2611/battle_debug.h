@@ -1,14 +1,19 @@
 #ifndef DEBUG2611_BATTLE_DEBUG_H
 #define DEBUG2611_BATTLE_DEBUG_H
 
-/* The battle debug tools (debug2611.c): the battle overlay objects they read
- * beyond the shared battle area (battle/area.h), by their own views, and the
- * tools' load meter and calls. */
+/* The battle debug tools (debug2611.c): the battle overlay's objects come
+ * from the shared battle headers (the area, the camera and the slots'
+ * sprites in battle/actor.h, the camera's points in battle/objects.h, the
+ * followed sprite in battle/sprite_script.h); the tools' load meter and
+ * calls are here. */
 
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "battle/actor.h"
 #include "battle/area.h"
+#include "battle/objects.h"
+#include "battle/sprite_script.h"
 #include "resident/console.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
@@ -25,23 +30,6 @@ typedef struct {
     u8 unk0[0x14];
     s32 polys;         /* +14 */
 } DebugShape;
-
-extern Sprite *D_800C3568; /* the battle sprite the actor tool follows */
-void func_800BC2F0(s32 mode); /* battle display mode */
-
-/* Battle camera (800d309c). */
-typedef struct {
-    u8 unk0[0x14];
-    SVECTOR rot;      /* +14 */
-    s32 range;        /* +1c */
-    MATRIX matrix;    /* +20 */
-    s32 cpu;          /* +40: CPU time last frame */
-    s32 gpu;          /* +44: GPU time last frame */
-} BattleCamera;
-extern BattleCamera D_800D309C;
-extern SVECTOR D_800D30B0; /* the camera's rot, addressed on its own by 80280960 */
-extern SVECTOR D_800D3354; /* camera position */
-extern SVECTOR D_800D335C; /* look-at point */
 
 /* The CPU/GPU load meter task: two needles over a dial, eased averages and
  * peaks held for 80 frames. */
