@@ -925,37 +925,37 @@ void func_8008AE1C(OtPair *layer) {
     AddPrim(D_80092938, &layer->area[D_800928A0]);
 }
 
-/* Relocate a scene file's pointers to where it was loaded. */
-SceneFile *func_8008AF6C(SceneFile *scene) {
-    s32 delta = (u8 *)scene - scene->base;
+/* Relocate a model file's pointers to where it was loaded. */
+ModelFile *func_8008AF6C(ModelFile *file) {
+    s32 delta = (u8 *)file - file->base;
     u32 i;
 
-    scene->base = (u8 *)scene;
-    scene->unk0 += delta;
-    scene->unk4 += delta;
-    scene->unk10 += delta;
-    scene->unk14 += delta;
-    scene->unk18 += delta;
-    scene->unk20 += delta;
-    scene->unk24 += delta;
-    if (scene->target != NULL) {
-        scene->target += delta;
-        func_8008A040(scene->target);
+    file->base = (u8 *)file;
+    file->hierarchy = (u32 *)((u8 *)file->hierarchy + delta);
+    file->models += delta;
+    file->header = (SceneHeader *)((u8 *)file->header + delta);
+    file->unk14 += delta;
+    file->slots = (MoveSlot *)((u8 *)file->slots + delta);
+    file->image += delta;
+    file->unk24 += delta;
+    if (file->target != NULL) {
+        file->target += delta;
+        func_8008A040(file->target);
     }
-    if (scene->table != NULL) {
-        scene->table = (u32 *)((u8 *)scene->table + delta);
-        for (i = 1; i < scene->table[0] + 1; i++) {
-            if (scene->table[i] != 0) {
-                scene->table[i] += delta;
+    if (file->animations != NULL) {
+        file->animations = (u32 *)((u8 *)file->animations + delta);
+        for (i = 1; i < file->animations[0] + 1; i++) {
+            if (file->animations[i] != 0) {
+                file->animations[i] += delta;
             }
         }
     }
-    return scene;
+    return file;
 }
 
-/* Load and relocate a scene file. */
-SceneFile *func_8008B070(s32 file) {
-    SceneFile *scene;
+/* Load and relocate a model file. */
+ModelFile *func_8008B070(s32 file) {
+    ModelFile *scene;
 
     func_800324B8(0xA);
     scene = func_80031BDC(func_80028738(file), 0);
@@ -1077,7 +1077,7 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
  * animation. Returns the root node. One pointer serves first as the model
  * file and then as the animation table, as the original's register use
  * shows. */
-Node *func_8008B38C(ModelSetFile *file) {
+Node *func_8008B38C(ModelFile *file) {
     Node *root;
     u32 i;
     u32 *data = (u32 *)file->models;

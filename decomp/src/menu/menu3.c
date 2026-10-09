@@ -3144,7 +3144,7 @@ void func_8007B270(CVECTOR *first, CVECTOR *second) {
 /* Load the effect textures from the scene file table: the twelve frames
  * of sparkle kind 0, the textures of kinds 1-4 (kind 3 is kind 1 drawn
  * additively), the sparkle packets, and the two other effect textures. */
-void func_8007B388(u_long **files) {
+void func_8007B388(MenuImages *files) {
     TIM_IMAGE tim;
     RECT unused; /* the original frame has 8 unused bytes */
     s16 *clut;
@@ -3153,7 +3153,7 @@ void func_8007B388(u_long **files) {
     s32 i;
 
     for (i = 0; i < 12; i++) {
-        OpenTIM(files[i + 1]);
+        OpenTIM(files->sparkle0[i]);
         ReadTIM(&tim);
         D_800947E8[i] = (u8)tim.prect->x * 4;
         D_800947F4[i] = tim.prect->y;
@@ -3171,7 +3171,7 @@ void func_8007B388(u_long **files) {
     D_80092A74[0].gravity = 0;
     D_80092A74[0].unkB = 0;
 
-    OpenTIM(files[13]);
+    OpenTIM(files->sparkle1);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
@@ -3195,7 +3195,7 @@ void func_8007B388(u_long **files) {
     D_80092A74[1].gravity = -2;
     D_80092A74[1].unkB = 0;
 
-    OpenTIM(files[16]);
+    OpenTIM(files->sparkle2);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
@@ -3222,7 +3222,7 @@ void func_8007B388(u_long **files) {
     D_80092A74[3] = D_80092A74[1];
     D_80092A74[3].tpage = (D_80092A74[3].tpage & ~0x60) | 0x40;
 
-    OpenTIM(files[26]);
+    OpenTIM(files->sparkle4);
     ReadTIM(&tim);
     if (first) {
         for (i = 0; i < 16; i++) {
@@ -3251,7 +3251,7 @@ void func_8007B388(u_long **files) {
         sparkle->frame = 0;
     }
 
-    OpenTIM(files[14]);
+    OpenTIM(files->backdrop);
     ReadTIM(&tim);
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
@@ -3260,7 +3260,7 @@ void func_8007B388(u_long **files) {
     D_80092680 = GetClut(tim.crect->x, tim.crect->y);
     D_80092684 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
 
-    OpenTIM(files[17]);
+    OpenTIM(files->effect);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     clut[0] = 0;

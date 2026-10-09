@@ -143,28 +143,22 @@ typedef struct {
     HierarchyRecord *records; /* 0x18 */
 } ModelSet;
 
-/* Model set file: hierarchy (count, records), models, animations
- * (count, then that many animation data pointers or null). */
-typedef struct {
-    u32 *hierarchy;
-    u8 *models;
-    u32 *animations;
-} ModelSetFile;
-
-/* Scene file loaded as one block; its pointers are relative to the
- * address it was built at (0x1C). */
-typedef struct {
-    u8 *unk0;
-    u8 *unk4;
-    u32 *table;        /* 0x08: count, then that many pointers */
+/* An actor's model file, loaded as one block: a model set (hierarchy,
+ * models, animations), the actor's header, move slots and images. Its
+ * pointers are relative to the address it was built at (0x1C) until
+ * func_8008AF6C relocates them. */
+typedef struct ModelFile {
+    u32 *hierarchy;    /* count, then that many HierarchyRecords */
+    u8 *models;        /* 0x04: the model group */
+    u32 *animations;   /* 0x08: count, then that many animation pointers or null */
     u8 *target;        /* 0x0C: texture/CLUT target */
-    u8 *unk10;
-    u8 *unk14;
-    u8 *unk18;
+    struct SceneHeader *header; /* 0x10 */
+    s32 unk14;
+    struct MoveSlot *slots; /* 0x18: one per combo number */
     u8 *base;          /* 0x1C */
-    u8 *unk20;
+    u8 *image;         /* 0x20: palette and emblem pixels */
     u8 *unk24;
-} SceneFile;
+} ModelFile;
 
 /* Three-light rig with an ambient colour (0x28C bytes): the 3D view's
  * camera node, its lights and its drawing layer. */
@@ -215,10 +209,10 @@ void func_8008A63C(NodeModel *model);
 void func_8008A78C(Node *node);
 void func_8008A7E0(Node *node);
 void func_8008ABAC(Node **lights);
-SceneFile *func_8008AF6C(SceneFile *scene);
+ModelFile *func_8008AF6C(ModelFile *file);
 void func_8008B0D8(Player *player);
 void func_8008B13C(AnimRecord *record, Player *player, Node *root);
-Node *func_8008B38C(ModelSetFile *file);
+Node *func_8008B38C(ModelFile *file);
 s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void func_8008BCC8(SpriteModel *mesh, u8 *work);
 void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work);

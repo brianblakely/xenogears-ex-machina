@@ -5,9 +5,9 @@
 #include "psyq/libgpu.h"
 
 /* The menus (menu4 8007F834-800802A4, 800808F4-80081ECC): eight choice
- * menus on translucent panels, the settings, vibration and options pages
- * (the same records viewed as pages), the two captions, the copy of the
- * shown screen and the screen fades. */
+ * menus on translucent panels, among them the settings, vibration and
+ * options pages, whose draw callbacks show the values; the two captions,
+ * the copy of the shown screen and the screen fades. */
 
 /* A centred one-line caption: its text image and one sprite per buffer. */
 typedef struct {
@@ -32,7 +32,8 @@ typedef struct {
 
 typedef struct Menu Menu;
 
-/* A choice menu drawn on a translucent panel (eight in D_800915AC). */
+/* A choice menu drawn on a translucent panel (eight in D_800915AC, 0x3C
+ * bytes each); a page's draw callback adds its values column. */
 struct Menu {
     u8 title_width;    /* 0x00: nonzero shifts the lines right */
     u8 unk1[3];
@@ -48,25 +49,6 @@ struct Menu {
     TILE panel[2];  /* 0x1C: one per buffer */
 };
 
-/* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
-/* An entry block of a page; +0x14 bit 2 hides it. */
-typedef struct {
-    u8 unk0[0x14];
-    u8 flags;
-} PageItem;
-
-typedef struct {
-    u8 unk0[4];
-    PageItem *item; /* 0x04 */
-    u8 unk8[2];
-    s16 count;  /* 0x0A */
-    u8 unkC[6];
-    s16 cursor; /* 0x12 */
-    s16 y;      /* 0x14: first text line */
-    u8 unk16[6];
-    TILE frame[2]; /* 0x1C: the page's box, per draw buffer */
-} MenuPage;
-
 extern s32 D_800912F0;
 extern char *D_800912F4[];
 extern u8 D_80091300[];       /* frame rate of each rate setting */
@@ -81,7 +63,7 @@ extern s32 D_80092924;
 
 void func_8007F834(void);
 void func_8007F8B4(void);
-void func_8007F948(MenuPage *page, s32 entry);
+void func_8007F948(Menu *page, s32 entry);
 char *func_8007F97C(void);
 s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080964(s32 page);

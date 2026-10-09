@@ -4,6 +4,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "mode.h"
 
 /* The scene's particle effects (menu3 800732CC-80073424, 8007B270-8007E528):
  * the glow emitter, the sparkles (sprite quads that fall or trail), the
@@ -119,7 +120,7 @@ extern s32 D_800928E8;    /* owner of the segments started now */
 void func_800732CC(void);
 void func_8007334C(u32 *ot, MATRIX *view);
 void func_8007B270(CVECTOR *first, CVECTOR *second);
-void func_8007B388(u_long **files);
+void func_8007B388(MenuImages *files);
 void func_8007BB7C(void);
 void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot);
 void func_8007C100(CVECTOR *color);

@@ -2,12 +2,33 @@
 #define MENU_MODE_H
 
 #include "common.h"
+#include "psyq/types.h"
 #include "resident/cd.h"
 
 /* The menu mode (menu5 80084FD0-8008509C, 8008518C-80085E34, 800888B0-
  * 80088BFC; menu6): its entry and frame loop, the task that loads its
  * files and runs the title, options and scene screens, its music, and the
  * option settings and progress flags it keeps in the game data. */
+
+/* The menu's image file (D_800917C0[4], unpacked): pointers to its TIM
+ * images, named by their readers. */
+typedef struct MenuImages {
+    u_long *unk0;
+    u_long *sparkle0[12];  /* 0x04: sparkle kind 0's frames */
+    u_long *sparkle1;      /* 0x34: kind 1 (and 3) */
+    u_long *backdrop;      /* 0x38 (8007b388 also loads it) */
+    u_long *font;          /* 0x3C */
+    u_long *sparkle2;      /* 0x40: kind 2 */
+    u_long *effect;        /* 0x44: the trail and line texture */
+    u_long *icons[4];      /* 0x48 */
+    u_long *name;          /* 0x58: the name plates */
+    u_long *bar;           /* 0x5C: the gauge bars */
+    u_long *sheet;         /* 0x60: the menu's sprite sheet */
+    u_long *banner;        /* 0x64 */
+    u_long *sparkle4;      /* 0x68: kind 4 */
+    u_long *floor;         /* 0x6C */
+    u_long *extra[9];      /* 0x70 */
+} MenuImages;
 
 /* Current option settings (0x80099d98). */
 typedef struct Settings {

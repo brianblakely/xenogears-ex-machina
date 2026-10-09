@@ -6,6 +6,7 @@
 #include "psyq/libgte.h"
 #include "actor.h"
 #include "node.h"
+#include "mode.h"
 
 /* The arena (menu5 80081ECC-800831C8, 80083DCC-80084BEC, 800875EC-80087E38;
  * menu2's handwritten 80072D18): the stage colours, the floor and its
@@ -31,19 +32,6 @@ typedef struct GroundSquare {
     u16 unk2; /* map renderer: UV high nibbles 0xF0F0, orientation bits 0..1,
                * texture-page/CLUT selector bits 2..3 */
 } GroundSquare;
-
-/* The stage file: its TIM images (floor, backdrop, icons, name and bars). */
-typedef struct {
-    u8 unk0[0x38];
-    void *backdrop_tim;   /* 0x38 */
-    u8 unk3C[0xC];
-    void *icon_tims[4];   /* 0x48 */
-    void *name_tim;       /* 0x58 */
-    void *bar_tim;        /* 0x5C */
-    u8 unk60[0xC];
-    void *floor_tim;      /* 0x6C */
-    void *extra_tims[9];  /* 0x70 */
-} StageFiles;
 
 /* Map drawing table copied into the scratchpad; ends with the icons. */
 typedef struct {
@@ -72,7 +60,7 @@ void func_80082458(SVECTOR *out);
 s32 func_80082488(VECTOR *pos, s32 lift);
 s32 func_800828C4(VECTOR *pos);
 void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius);
-void func_80082C4C(StageFiles *files);
+void func_80082C4C(MenuImages *files);
 void func_800875EC(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* widen the map's row spans along a line */
 void func_8008779C(u32 *ot, s32 originX, s32 originZ);

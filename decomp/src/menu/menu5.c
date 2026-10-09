@@ -460,13 +460,13 @@ void func_80082A70(void) {
 /* Load the stage's floor texture (a TIM, palette made semi-transparent)
  * and build the two pools of 64 textured floor quads, alternating the two
  * halves of the texture. */
-void func_80082C4C(StageFiles *files) {
+void func_80082C4C(MenuImages *files) {
     TIM_IMAGE tim;
     POLY_FT4 *quad;
     s16 *clut;
     s32 i;
 
-    OpenTIM(files->floor_tim);
+    OpenTIM(files->floor);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     for (i = 0; i < 0x100; i++) {
@@ -1047,7 +1047,7 @@ void func_80084BEC(Actor *actor) {
 /* Set up an actor from its loaded model file on one side of the scene:
  * opponent link, model object, kind flags from the model id, part counts,
  * and the palette/emblem images in VRAM (mirrored for side 0). */
-void func_80084C88(Actor *actor, ModelData *data, s32 side) {
+void func_80084C88(Actor *actor, ModelFile *data, s32 side) {
     RECT rect;
     void *block; /* the model object, later the mirrored emblem */
     SceneHeader *header;
@@ -1098,7 +1098,7 @@ void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     header = data->header;
     actor->header = header;
     actor->unk7C = data->unk14;
-    actor->move_slots = (MoveSlot *)data->parts;
+    actor->move_slots = data->slots;
     actor->unk900 = (u8 *)header + 0x34;
     actor->visible = (u8 *)(header->unk30 + (s32)header);
     actor->visible_count = header->unkE;
@@ -1237,7 +1237,7 @@ s32 func_80085264(void) {
  * themselves, one scene mode (D_80092790) per frame. */
 void func_800852C4(s32 arg) {
     LightRig *rig;
-    s32 *file;
+    void *file;
     void *model;
     s32 sequence;
     s32 step;
@@ -1286,8 +1286,8 @@ void func_800852C4(s32 arg) {
     file = func_80032E88(D_800917C0[2].destination, 0);
     func_800320E8(D_800917C0[2].destination);
     func_8003342C(file);
-    D_80092880 = file[1];
-    D_80092874 = (struct MoveList *)file[2];
+    D_80092880 = ((s32 *)file)[1];
+    D_80092874 = (MoveList *)((s32 *)file)[2];
     func_8007EEE8(D_8005061C == 1);
     file = func_80032E88(D_800917C0[4].destination, 1);
     func_800320E8(D_800917C0[4].destination);
@@ -1802,7 +1802,7 @@ void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth) {
  * pair pointer walks the icons and then the gauges (the original keeps it
  * in $s2). Each bar quad gets its colour/code word and then its length, and
  * the gauge sprite its length, code, size and texture position. */
-void func_800868E0(StageFiles *files) {
+void func_800868E0(MenuImages *files) {
     TIM_IMAGE tim;
     RECT rect;
     s16 *clut;
@@ -1810,7 +1810,7 @@ void func_800868E0(StageFiles *files) {
     SpritePair *pair;
     POLY_FT4 *bar;
 
-    OpenTIM(files->name_tim);
+    OpenTIM(files->name);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
@@ -1836,7 +1836,7 @@ void func_800868E0(StageFiles *files) {
     pair[0].s[0].u0 = 0x20;
     pair[0].s[0].clut = GetClut(0, 0x1F7);
     pair[1] = pair[0];
-    OpenTIM(files->bar_tim);
+    OpenTIM(files->bar);
     ReadTIM(&tim);
     bar = D_80095698.bar_l;
     pair = D_80095698.gauge;
@@ -2118,21 +2118,21 @@ void func_80087830(void) {
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
  * first entry is transparent and the rest semi-transparent. */
-void func_800878DC(StageFiles *files) {
+void func_800878DC(MenuImages *files) {
     TIM_IMAGE tim;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        OpenTIM(files->icon_tims[i]);
+        OpenTIM(files->icons[i]);
         ReadTIM(&tim);
         D_80091934.icons[i * 2 + 1] = GetClut(tim.crect->x, tim.crect->y);
         D_80091934.icons[i * 2] = GetTPage(1, 1, tim.prect->x, tim.prect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
     }
-    OpenTIM(files->backdrop_tim);
+    OpenTIM(files->backdrop);
     ReadTIM(&tim);
     D_800927D8 = GetClut(tim.crect->x, tim.crect->y);
     D_800927D4 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
@@ -2146,7 +2146,7 @@ void func_800878DC(StageFiles *files) {
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
     for (i = 0x1C; i < 0x25; i++) {
-        OpenTIM(files->extra_tims[i - 0x1C]);
+        OpenTIM(files->extra[i - 0x1C]);
         ReadTIM(&tim);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);

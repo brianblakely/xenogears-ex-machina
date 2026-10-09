@@ -128,16 +128,6 @@ typedef struct SceneHeader {
     s32 unk30;       /* offset of a table from the header */
 } SceneHeader;
 
-/* A loaded model file. */
-typedef struct {
-    u8 unk0[0x10];
-    SceneHeader *header; /* 0x10 */
-    s32 unk14;
-    u8 (*parts)[4];    /* 0x18: byte 3 set = part kind A */
-    u8 unk1C[4];
-    u8 *image;         /* 0x20: palette and emblem pixels */
-} ModelData;
-
 /* A character moved in the menu scene. */
 typedef struct Actor {
     VECTOR pos;          /* 0x00 */

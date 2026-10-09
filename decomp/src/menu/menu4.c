@@ -146,7 +146,7 @@ s32 func_8007E624(void) {
 
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
  * and 3 replaced) and the banner image, and build the banner sprite. */
-void func_8007E634(MenuFiles *files) {
+void func_8007E634(MenuImages *files) {
     TIM_IMAGE image;
     SceneSprite *banner;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
@@ -579,7 +579,7 @@ void func_8007F854(void) {
 
     D_800912F0 = 1;
     func_80083C0C(1);
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_8007F834();
     ACTOR_STANCE_BITS(&D_8009872C)->prev_stance = 3;
     ACTOR_STANCE_BITS(&D_80097010)->prev_stance = 3;
@@ -589,7 +589,7 @@ void func_8007F8B4(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_80083C0C(1);
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_8007F834();
 }
 
@@ -604,7 +604,7 @@ void func_8007F8E4(void) {
 }
 
 /* Highlight the text of a page's entry when it is under the cursor. */
-void func_8007F948(MenuPage *page, s32 entry) {
+void func_8007F948(Menu *page, s32 entry) {
     if (page->cursor == entry) {
         func_8007EE08(1);
     } else {
@@ -619,10 +619,10 @@ char *func_8007F97C(void) {
 
 /* Draw the values column of the settings page, right-aligned, applying the
  * chosen speed as it is shown. */
-void func_8007F9A0(MenuPage *page) {
+void func_8007F9A0(Menu *page) {
     char text[8];
 
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007F948(page, 0);
     func_8007ECF0(func_8007F97C());
@@ -642,10 +642,10 @@ void func_8007F9A0(MenuPage *page) {
 
 /* Draw the values column of the second settings page; the chosen entry of
  * setting 10 is also passed to 80081100 as 0x15 + entry. */
-void func_8007FB0C(MenuPage *page) {
+void func_8007FB0C(Menu *page) {
     char text[8];
 
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007ECF0("");
     func_8007F948(page, 1);
@@ -661,15 +661,15 @@ void func_8007FB0C(MenuPage *page) {
  * a type-4 controller without the "COM" setting is connected (the entry is
  * hidden otherwise). */
 void func_8007FBEC(void) {
-    MenuPage *page;
+    Menu *page;
     s32 active;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_8007E894(0xA0, 0x8C);
     active = D_80092710 ^ 1;
     active &= 1;
-    page = &((MenuPage *)D_800915AC)[5];
-    if (active && ((MenuPage *)D_800915AC)[5].cursor == 0) {
+    page = &D_800915AC[5];
+    if (active && D_800915AC[5].cursor == 0) {
         D_8009272C = 1;
     } else {
         D_8009272C = 0;
@@ -680,9 +680,9 @@ void func_8007FBEC(void) {
             func_8007F948(page, 1);
         }
         func_8007EC54((D_80099D98.option4 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
-        ((MenuPage *)D_800915AC)[5].item->flags &= ~4;
+        D_800915AC[5].items[1].flags &= ~4;
     } else {
-        ((MenuPage *)D_800915AC)[5].item->flags |= 4;
+        D_800915AC[5].items[1].flags |= 4;
     }
     func_8007EE08(0);
 
@@ -692,8 +692,8 @@ void func_8007FBEC(void) {
     if (active && D_80092754 == 0) {
         active = 0;
     }
-    page = &((MenuPage *)D_800915AC)[6];
-    if (active && ((MenuPage *)D_800915AC)[6].cursor == 0) {
+    page = &D_800915AC[6];
+    if (active && D_800915AC[6].cursor == 0) {
         D_80092730 = 1;
     } else {
         D_80092730 = 0;
@@ -704,21 +704,21 @@ void func_8007FBEC(void) {
             func_8007F948(page, 1);
         }
         func_8007EC54((D_80099D98.option5 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
-        ((MenuPage *)D_800915AC)[6].item->flags &= ~4;
+        D_800915AC[6].items[1].flags &= ~4;
     } else {
-        ((MenuPage *)D_800915AC)[6].item->flags |= 4;
+        D_800915AC[6].items[1].flags |= 4;
     }
     func_8007EE08(0);
     func_8007F258(D_80092938, 1);
 }
 
 /* Draw the values column of the options page. */
-void func_8007FE48(MenuPage *page) {
+void func_8007FE48(Menu *page) {
     char text[16];
     char *value;
 
     func_8007EE08(0);
-    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007E894(page->panel[0].x0 + page->panel[0].w - 10, page->y);
     func_8007ECF0("");
     func_8007ECF0("");
     func_8007ECF0("");
@@ -947,11 +947,11 @@ void func_80080780(s32 mode) {
     }
     D_800928C8 = mode;
     if (mode == 4) {
-        ((MenuPage *)D_800915AC)[5].count = 3;
+        D_800915AC[5].parent = 3;
     } else {
-        ((MenuPage *)D_800915AC)[5].count = 4;
+        D_800915AC[5].parent = 4;
     }
-    ((MenuPage *)D_800915AC)[6].count = 5;
+    D_800915AC[6].parent = 5;
     if (mode == 3) {
         D_80091368[0].caption = 0x27;
         D_80091390[0].caption = 0x28;
@@ -984,29 +984,29 @@ void func_80080920(void) {
 
 /* Show a page, remembering the current one; 0xff returns to it. */
 void func_80080964(s32 page) {
-    MenuPage *previous;
+    Menu *previous;
 
     if (page == 0xFF) {
-        D_80092734 = (Menu *)((MenuPage *)D_80092738);
+        D_80092734 = D_80092738;
         return;
     }
-    previous = ((MenuPage *)D_80092734);
-    D_80092734 = (Menu *)&((MenuPage *)D_800915AC)[page];
-    D_80092738 = (Menu *)previous;
+    previous = D_80092734;
+    D_80092734 = &D_800915AC[page];
+    D_80092738 = previous;
 }
 
 /* Whether page 3 is shown. */
 s32 func_800809BC(void) {
-    return ((MenuPage *)D_80092734) == &((MenuPage *)D_800915AC)[3];
+    return D_80092734 == &D_800915AC[3];
 }
 
 /* Enter the settings/system menu at page 3 with every state reset. */
 void func_800809D8(void) {
     func_80039FF8();
-    D_80092734 = (Menu *)NULL;
+    D_80092734 = NULL;
     func_80080964(3);
-    ((MenuPage *)D_800915AC)[3].cursor = 0;
-    ((MenuPage *)D_800915AC)[4].cursor = 0;
+    D_800915AC[3].cursor = 0;
+    D_800915AC[4].cursor = 0;
     D_800928C8 = 0;
     D_80092758 = 0;
     func_8007F834();
@@ -1074,14 +1074,14 @@ void func_80080C48(s32 mode) {
     func_80039FF8();
     func_8008EB4C(0x1F);
     if (mode == 1) {
-        D_80092734 = (Menu *)NULL;
+        D_80092734 = NULL;
         func_80080964(0);
-        ((MenuPage *)D_800915AC)[0].cursor = 0;
-        ((MenuPage *)D_800915AC)[2].cursor = 1;
+        D_800915AC[0].cursor = 0;
+        D_800915AC[2].cursor = 1;
     } else if (mode == 2) {
-        D_80092734 = (Menu *)NULL;
+        D_80092734 = NULL;
         func_80080964(7);
-        ((MenuPage *)D_800915AC)[7].cursor = 1;
+        D_800915AC[7].cursor = 1;
     } else {
         goto close;
     }
@@ -1112,9 +1112,9 @@ void func_80080D20(void *ot) {
     }
     D_800926DC = 0;
     func_800811AC(ot);
-    if ((((MenuPage *)D_80092734) != NULL && D_80092758 != 0) || D_800912F0 != 0) {
-        if (((MenuPage *)D_80092734) != NULL) {
-            AddPrim(ot, &((MenuPage *)D_80092734)->frame[D_800928A0]);
+    if ((D_80092734 != NULL && D_80092758 != 0) || D_800912F0 != 0) {
+        if (D_80092734 != NULL) {
+            AddPrim(ot, &D_80092734->panel[D_800928A0]);
             SetDrawTPage(&D_800954C8[D_800928A0], 0, 0, GetTPage(0, 2, 0, 0));
             AddPrim(ot, &D_800954C8[D_800928A0]);
         }

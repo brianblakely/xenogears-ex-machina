@@ -582,12 +582,12 @@ void func_80071724(u32 *ot) {
 
 /* Upload the menu's sprite sheet TIM (its first CLUT colour made
  * transparent), build both texture page packets and the sprite template. */
-void func_80071794(u_long **resources) {
+void func_80071794(MenuImages *files) {
     TIM_IMAGE image;
     RECT unused; /* the original frame reserves 8 more bytes */
     s16 *clut;
 
-    OpenTIM(resources[0x60 / 4]);
+    OpenTIM(files->sheet);
     ReadTIM(&image);
     clut = (s16 *)image.caddr;
     clut[2] = -0x8000;
