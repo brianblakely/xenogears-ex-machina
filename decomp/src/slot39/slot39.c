@@ -6,6 +6,13 @@
  * commands; kind 0), the title screen's file (memory-card load) screen
  * (kind 2) or kind 6. It keeps its state behind D_800625A0 and reads and
  * writes "bu00:"/"bu10:" memory-card files (BASLUS-00664...).
+ *
+ * This unit is the image's first: the screen framework, the memory card
+ * and save code and the field menu's screens up to the item screen. Rodata
+ * 801C5000-801C50FC, text 801C531C-801DBDB4, the overlay's initialized data
+ * (801E96A4-801EA6D0, all of it: the other units' tables lie among its own)
+ * and its variables from 801EA6D0. slot39_801DBE54.c's head gives the
+ * boundary evidence.
  */
 #include "common.h"
 #include "psyq/libapi.h"

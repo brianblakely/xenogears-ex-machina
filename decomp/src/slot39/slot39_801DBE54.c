@@ -1,14 +1,16 @@
-/* Menu overlay unit from 801DBDB4 (screens reached from the field menu),
- * named after 801DBE54, where it started before its variables moved the
- * boundary. Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump
- * tables), where 801DBE54's table sits; func_801CD2AC is the last function
- * using the previous unit's rodata. Its uninitialized variables open with
- * the item list's scroll bar, which 801DBDB4 sizes and 801DBE54 reads, so
- * the text boundary lies after 801CD2AC and at or before 801DBDB4, where it
- * is kept. An earlier one would move the .bss boundary with it and must not
- * split 801D84B4/801D8644 or 801D9C84/801D9E3C, which share variables; the
- * item screen's helpers from 801DA4A8, which only this unit's functions
- * call, may belong here too. */
+/* Menu overlay unit from 801DBDB4: the field menu's arts, equipment and
+ * status screens, the gear stat computations, the file screen's views and
+ * the label builders. Rodata 801C50FC-801C5278, text 801DBDB4-801E8070 and
+ * its variables 801EA724-801EA8F4. Named after 801DBE54, where it started
+ * before its variables moved the boundary. Its rodata starts at 801C50FC,
+ * 4 mod 8 (docs/matching.md, jump tables), where 801DBE54's table sits;
+ * func_801CD2AC is the last function using the previous unit's rodata. Its
+ * uninitialized variables open with the item list's scroll bar, which
+ * 801DBDB4 sizes and 801DBE54 reads, so the text boundary lies after
+ * 801CD2AC and at or before 801DBDB4, where it is kept. An earlier one would
+ * move the .bss boundary with it and must not split 801D84B4/801D8644 or
+ * 801D9C84/801D9E3C, which share variables; the item screen's helpers from
+ * 801DA4A8, which only this unit's functions call, may belong here too. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"

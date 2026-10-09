@@ -1,6 +1,10 @@
-/* Menu overlay unit 801E8070. Its rodata starts at 801C5278, where the jump
- * tables return to 0 mod 8 after 801E433C's odd-length table: the text
- * boundary lies between 801E433C and 801E8070. */
+/* Menu overlay unit 801E8070, the last code unit: label placement, the
+ * command and choice windows, the name images, the quads' blending and
+ * set-up helpers, the drive reset, the development host file read and the
+ * disc check. Rodata 801C5278-801C531C, text 801E8070-801E96A4 and its
+ * variable at 801EA8F4. Its rodata starts where the jump tables return to
+ * 0 mod 8 after 801E433C's odd-length table: the text boundary lies between
+ * 801E433C and 801E8070. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libcd.h"
