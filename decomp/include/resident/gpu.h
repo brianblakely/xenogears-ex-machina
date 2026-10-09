@@ -42,13 +42,24 @@ typedef struct {
     s16 fade_start;
 } Panorama;
 
-Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
-                        s32 mode, s32 turn, VECTOR *position, u8 *colours, u16 fill_scale,
-                        u16 fade_range, u16 fade_start);
 s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot,
                   s32 buffer);
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 
 MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* Rx * Ry * Rz of three angles */
+
+/* More of the display services. */
+void func_80027D40(void *block);
+void func_80027EAC(TextureScroll *scroll);
+void func_8002800C(TextureScroll *scroll);
+
+/* Link a primitive at the head of an ordering table entry (handwritten,
+ * func_80031678.s and its kin: the word count after the tag is the
+ * primitive's). */
+void func_80031678(u_long *ot, POLY_G4 *prim);
+void func_800316C0(u_long *ot, LINE_F2 *prim);
+void func_80031708(u_long *ot, LINE_F3 *prim);
+void func_80031750(u_long *ot, LINE_F4 *prim);
+void func_80031870(u_long *ot, TILE_1 *prim);
 
 #endif

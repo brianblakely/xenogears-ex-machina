@@ -76,4 +76,13 @@ void func_800317E0(u_long *ot, void *prim); /* link a SPRT_8 */
 void func_80031804(u_long *ot, void *prim); /* link a TILE */
 void func_80037DC0(void);
 
+/* More of the debug console and the system screens' services. */
+void func_80036DC8(s32 r, s32 g, s32 b);
+void func_80037058(s32 x, s32 y);
+void func_8003708C(s32 x, s32 y);
+void func_8003748C(void);
+void func_80037E8C(void);
+void func_80037EE4(void);
+extern s32 D_80050618; /* the menu's mode (800379b4) */
+
 #endif

@@ -17,7 +17,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
-#include "area.h"
+#include "battle/area.h"
 
 /* The battle's shared tables and state, which open .data (800c2048-800c348c).
  * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488

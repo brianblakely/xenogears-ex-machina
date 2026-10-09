@@ -795,8 +795,8 @@ typedef struct {
     u8 pad8CE4[0x40];
     SpriteRow rows[SLOT_COUNT];  /* +8d24 */
     u8 loaded;                   /* +8da8: set when loading ends */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* A file list entry for the disc reader (ended by file 0). */
 typedef struct {
@@ -985,7 +985,7 @@ void func_801E91E8(void);
 /* Load modes (load_modes.c, burst_modes.c): flip to the other display
  * buffer and clear its ordering table. */
 static inline void swap_buffers(void) {
-    BattleWork *work = &D_800C3EB0;
+    BattleArea *work = &D_800C3EB0;
     DrawBuffer *next = &work->buffers[0];
 
     if (work->current == next) {

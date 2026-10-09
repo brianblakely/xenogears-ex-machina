@@ -5,14 +5,15 @@
 #include "psyq/libgpu.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "text.h"
-#include "window.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
-#include "cd.h"
-#include "heap.h"
-#include "mode.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
+#include "resident/cd.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (8005934c), the larger window, text and controller queue buffers in its
@@ -60,10 +61,10 @@ u16 D_80050190[32] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
     0xC086, 0xC086, 0xC086, 0xC086, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
 };
-/* The rows of the special 0xFFFF glyph. */
-u16 D_800501D0[11] = {
-    0xC07F, 0x60C0, 0xA0A0, 0x2091, 0x208A, 0x2084, 0x208A, 0x2091, 0xA0A0, 0x60C0, 0xC07F,
-};
+/* The glyph of character pair 0xFF 0xFF: eleven rows of 12 bits, the
+ * font block's 22-byte glyph format, which func_80034FFC draws in place
+ * of a font glyph. */
+INCLUDE_ASSET(".data", D_800501D0, 0x800501D0, 0x16);
 u16 D_800501E8[8] = {0x20, 0x40, 0x10, 0x80, 0x4, 0x1, 0x8, 0x2}; /* button bits */
 u8 D_800501F8 = 0;              /* play time stopped at 100 hours */
 void (*D_800501FC)(void) = NULL; /* vertical-blank hook */

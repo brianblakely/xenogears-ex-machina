@@ -1,0 +1,4 @@
+# START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
+# asset: cue data embedded in a unit's .data, linked from the user's image with
+# INCLUDE_ASSET and decoded by tools/analysis/overlay_scripts.py.
+800ae060 800ae1e0 asset Movie sound timelines D_800AE060 (field_800854D0.c, 96 entries): u16 (frame, sound) pairs, a leading end and then one run per movie sound-effect bank, each ended by frame 0xFFFF; func_80085788 loads the movie's bank (file 0x115 + bank of directory 0x1C/0, the bank operand of event fe a0) and seeks past bank + 1 ends, and func_80085678 plays, each movie frame, every entry whose frame plus the movie's sound start has come: the bank's effect in the low byte on the voice pair in bits 8-10 (docs/scripts/timelines.md)

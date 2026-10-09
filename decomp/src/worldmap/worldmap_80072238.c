@@ -158,21 +158,21 @@ MATRIX D_8009A140 = {{{1536, 0, 0}, {1536, 0, 0}, {1536, 0, 0}}, {0, 0, 0}};
 MATRIX D_8009A160 = {{{0, -4096, 0}, {0, 0, 0}, {0, 0, 0}}, {0, 0, 0}};
 MATRIX D_8009A180 = {{{4096, 0, 0}, {0, 4096, 0}, {0, 0, 4096}}, {0, 0, 0}};
 
-/* Terrain texture animations: frame sequences and the slots they upload
- * to, for the two animation sections of an area. */
-TexAnimFrame D_8009A1A0[9] = {
-    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
-};
-TexAnimFrame D_8009A1C4[9] = {
-    {0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}, {5, 5}, {6, 5}, {7, 5}, {0, -1},
-};
+/* Terrain texture animations: the frame sequences and the slots they upload
+ * to, for the two animation sections of an area. The sequences are
+ * user-supplied cue data (assets in worldmap.classification.txt): (image,
+ * duration) frames ended by a negative duration, stepped by func_80074F2C
+ * and func_80075104 (tools/analysis/overlay_scripts.py decodes them). */
+extern TexAnimFrame D_8009A1A0[], D_8009A1C4[], D_8009A208[], D_8009A220[], D_8009A238[];
+INCLUDE_ASSET(".data", D_8009A1A0, 0x8009A1A0, 0x24);
+INCLUDE_ASSET(".data", D_8009A1C4, 0x8009A1C4, 0x24);
 TexAnimSlot D_8009A1E8[2] = {
     {{0xF8, 0x1B0, 8, 1}, 0, D_8009A1A0},
     {{0xF8, 0x1D0, 8, 1}, 1, D_8009A1C4},
 };
-TexAnimFrame D_8009A208[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
-TexAnimFrame D_8009A220[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
-TexAnimFrame D_8009A238[6] = {{0, 8}, {1, 8}, {2, 8}, {3, 8}, {4, 8}, {0, -1}};
+INCLUDE_ASSET(".data", D_8009A208, 0x8009A208, 0x18);
+INCLUDE_ASSET(".data", D_8009A220, 0x8009A220, 0x18);
+INCLUDE_ASSET(".data", D_8009A238, 0x8009A238, 0x18);
 TexAnimSlot D_8009A250[3] = {
     {{0x280, 0xC0, 0x20, 0x40}, 0, D_8009A208},
     {{0x2A0, 0xC0, 0x10, 0x20}, 1, D_8009A220},

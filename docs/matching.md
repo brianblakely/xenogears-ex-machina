@@ -147,8 +147,9 @@ link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 uninitialized data (`matching_coverage.py --script-symbols`): an address copied from
 the original where the link should place an object, which the exact comparison
 cannot see move. Names of other images (the `*.resident.ld` fragments, an overlay's
-addresses in the resident) lie outside and pass; splat's main script, which also
-sets the ABI's `_gp`, is not among the checked scripts. `BSS_END` in a target gives
+addresses in the resident, also the `_gp` an overlay's splat script sets) lie outside
+and pass; splat's main script is not among the checked scripts, so the resident's
+`_gp` comes from its checked `link.ld`. `BSS_END` in a target gives
 the end of its uninitialized data past the image, the bound its loader clears (the
 resident's entry point, the mode table entries): the check covers the data up to it,
 a link placing any past it fails, and the coverage report counts what no linked
@@ -158,9 +159,10 @@ such a script assigns there still fails, and so does a views script that defines
 view. Four scripts are allowed: battle's (`battle.data.ld`, 42 names: parts of its
 commons that the units, CDK ones too, address by names of their own, and the timer
 reload and combo step tables from before them), the resident's (`link.ld`, 8: the
-window colour's green and blue bytes, the CD mix bytes and request, a base for the
-name slots' second bytes, which compile differently as members, and the BSS's last
-word D_8006FAEC from the link's BSS end, for the entry point and the mode table),
+window colour's green and blue bytes, the CD mix bytes and a base for the name
+slots' second bytes, which compile differently as members, the BSS's last word
+D_8006FAEC from the link's BSS end, for the entry point and the mode table, and `_gp`
+from the start of the small data, where the original's 80059170 lies),
 the menu's (`menu.bss.ld`: the opponent's command byte D_80099DA2, which
 func_8008F280 loads absolutely at each of its three reads) and the world map's
 (`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
@@ -258,8 +260,16 @@ Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
 reconstruction (search `src/reconstruction` for the address), then compile,
 `make verify`, and read `matching_diff.py -f` for the first difference. Keep
 functions in original order; the function's jump tables and strings move with
-it (splat migrated them into the function's assembly). Shared structures go in
-small headers beside the source. A function that is understood but does not yet
+it (splat migrated them into the function's assembly). A unit's structures go in
+small headers beside the source; what several targets share has one definition in
+`decomp/include`: `psyq/` (the SDK's types and prototypes, members the symbol file
+leaves unnamed under their `func_` names), `resident/` (one header per resident
+subsystem with its types, variables and calls; `gamedata.h` holds the game data
+D_8006D634) and `battle/` (the battle area D_800C3EB0 and its work area D_800CCCE8,
+which the battle modules and overlays use). A resident function whose callers in
+other targets were built with other argument or result conversions (narrow
+parameters, another count) stays out of them: each target declares it, the resident
+in `own_declarations.h`. A function that is understood but does not yet
 match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
 INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 
@@ -351,8 +361,68 @@ the audit; they are never counted as matches. This diagnostic does not replace
   scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them
   in place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE`
   set in the .mk), and an `asset` line in the classification names the format and
-  its reader. Never commit their bytes as C initializers; numeric program tables
-  (sine, pitch, note encodings, opcode lengths) are source.
+  its reader. Never commit their bytes as C initializers. Media is image, glyph,
+  sound and model data in a format that a generic loader or renderer of the game
+  parses for whichever file supplies it (LZSS-packed data, TIM images, the font
+  block's 22-byte glyphs of eleven 12-bit rows that `func_80034FFC` draws, seds/wds
+  banks, TMD and SpriteModel models), also where the code picks one record itself
+  (the resident's glyph `D_800501D0`, which `func_80034FFC` draws for the character
+  pair 0xFF 0xFF); a bare palette the code uploads is source where the code builds
+  or rewrites it before the upload, where it decodes pixel values the code writes
+  or computes, or where it is a formula's ramp, and otherwise media, the colours of
+  a picture. Media, and authored content that a reader walks as a sequence
+  (scripts, cue timelines, scene directions: entries that say what happens or
+  when, consumed in order from a position the reader keeps across updates up to
+  the data's own end), are assets; tables the program indexes to compute a result
+  are source (sine, pitch, note encodings, opcode lengths, dispatch, per-character
+  file numbers, and points, paths and layouts that code interpolates or steps
+  through on its own count and timing). So the field's movie sound timelines
+  `D_800AE060`, (frame, sound) runs ended by frame 0xFFFF that `func_80085678`
+  plays in order, are an asset, and the world map ferry's eight waypoints, which
+  `func_80087FD0` steps through on each update and wraps itself (`func_80087C6C`
+  only resumes the route when the ferry spawns), are source.
+- The rule was applied to every initialized object cc1 emits from the 26 targets' C
+  (at 8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every
+  named data symbol of the C objects is one of them or linked by
+  INCLUDE_ASSET/INCLUDE_ORIGINAL/INCLUDE_RODATA. All 571 that are not scalars (488
+  numeric arrays and structures, 65 pointer tables, 18 character arrays) were read
+  with their comments, and the 283 objects (56 of them scalars) flagged by shape (an
+  end value 0xFF, 0xFFFF, -1, 0x8000 or 0x7FFF that ends the object or recurs), by
+  reader (an index or pointer into it that persists or advances, a test of its
+  elements against an end value, its address stored for later) or by their comment's
+  wording were checked against their readers. Six were authored sequences and are
+  now assets, 528 bytes: `D_800AE060` and the world map's terrain texture animation
+  runs `D_8009A1A0`, `D_8009A1C4`, `D_8009A208`, `D_8009A220` and `D_8009A238`,
+  (image, duration) frames ended by a negative duration that `func_80074F2C` and
+  `func_80075104` step (docs/scripts/timelines.md). That pass looked for media only
+  among the objects passed to LoadImage or SpuWrite. A second pass (at 5559538:
+  1,020 named objects, 565 of them not scalars) followed each object into its
+  readers: the calls it reaches itself or through a local pointer set from it, the
+  other values that pointer takes, and where its address is stored. It found one
+  more asset, the glyph `D_800501D0` (22 bytes), which `func_80034FFC` takes in
+  place of a 22-byte record of the loaded font. No other object reaches a media
+  reader as the data it parses (they give it file numbers, sound and character
+  codes, VRAM places, draw modes, colours or a destination), except the four
+  palettes below. None remains: the others are lookups by a key the code computes,
+  also where an end value closes them (the picture table `D_800AF47C` searched by
+  map, the battle modes' sound programs `D_8004F388`, the gear shop lamps' frames
+  `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
+  panel glyph sets ended by 0xFFFF, the world map's object links `D_8009AFA0`),
+  geometry the code interpolates or steps through on its own count (the world
+  map's camera and flight paths, which `func_80076858` interpolates at the
+  parameter its scene code advances; the ferry's waypoints; the scripted flights'
+  waypoints, whose counts `func_8008E76C` fixes, never reading their -1 ends),
+  texture layouts (the menu font's glyph rectangles `D_80091230`), and masks and
+  thresholds. The four bare palettes passed to LoadImage are source: the text
+  palette `D_80050190` decodes the 2-bit codes `func_80034FFC` writes into either
+  half of each 4-bit pixel (1 the glyph, 2 its outline), entry i of its first CLUT
+  being the colour of code i & 3 and of its second that of code i >> 2, and
+  `func_80032F54` gives each line the CLUT of its plane; `func_80036E4C` rebuilds
+  all 64 entries of the console font CLUTs `D_80050598` before their only upload;
+  the gauge palette `D_80091814` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
+  opaque black at 0 and 15); and menu7's glow ramp `D_80091CE0` colours the heat
+  values `func_8008E120` computes, with bit 15 set on every entry by
+  `func_8008DF50` before its upload.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per code unit (Qualified configuration, above,
@@ -493,7 +563,7 @@ converted to C per unit. What converting the targets' `.data` established:
   the -1 in the load instead. Where the index form compiles alike, C indexes the
   object (battle's party panel name glyphs, `D_800C3068[member * 24 + 7 + i]`).
   The resident's `link.ld` (the window colour's last two bytes, the CD mix bytes,
-  the CD request, a base for the name slots' second bytes), `menu.bss.ld` (the
+  a base for the name slots' second bytes), `menu.bss.ld` (the
   opponent's command byte) and `worldmap.data.ld` (the read list's first
   destination) name parts of uninitialized objects the same way, each where the
   member compiles differently. splat writes an interior address of a C object as an
@@ -587,6 +657,11 @@ converted to C per unit. What converting the targets' `.data` established:
   2.6.3 lays out such a tentative definition once a header completes the type.
   Functions on both sides of a supposed unit boundary that read the same statics
   are one unit: the resident's main_8002709C.c runs from 8002709C to 8002C3E8.
+  One declaration then serves every user, which leaves one accepted compromise
+  there: the CD mode byte D_80059F18 is a `u8` (80028f30's tests match only with a
+  scalar; a `u8[4]`, a union or a word read bytewise keep its address in a
+  register), while 80029690 and 8002a428 clear and pass all four bytes of the
+  CdlSetmode parameter in its word slot through `&D_80059F18 + 3`.
   Zeros a packer added past the program are file padding (Compressed containers).
 - Code shows where an object starts and how far it reaches. A member at a nonzero
   offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates

@@ -785,7 +785,6 @@ extern void func_8003852C(void *bank);
 extern void func_80039F9C(s32 id, s16 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
-extern void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern s32 func_8001B484(s32 file, s32);
@@ -803,7 +802,6 @@ extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);
 extern void func_80032EB4(void *source, void *destination);
 extern MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 extern void func_80030A30(s32 index, FieldLight *light);
 extern void func_80030B14(MATRIX *m);
 
@@ -931,7 +929,6 @@ extern s32 D_80059578; /* models drawn */
 extern s32 D_800595C0; /* primitives drawn */
 extern s32 D_80050104; /* model level of detail */
 extern void func_8002C6E0(s32 r, s32 g, s32 b); /* fog color */
-extern void func_8004A10C(s32 r, s32 g, s32 b); /* far color */
 extern void func_80030C40(s32 r, s32 g, s32 b); /* background color */
 extern void func_800305D8(void *list);
 extern void func_8002C700(FieldMesh *mesh, void *packets, u32 *ot, s32 mode);
@@ -1314,8 +1311,6 @@ extern void func_8008083C(s32 index);
 extern void func_8007999C(void);
 extern void func_800A83B4(void);
 extern s16 D_800C3A68[0x400];       /* event variable bank */
-extern s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
-extern VECTOR *func_8004A414(VECTOR *v, VECTOR *squares); /* square each */
 
 /* Event operand readers; each takes the byte offset from the working PC. */
 extern s32 func_800ACD7C(s32 offset);  /* signed halfword */
