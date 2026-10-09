@@ -125,8 +125,8 @@ void func_801C50E8(u32 value) {
 /* Allocate (nonzero) or release the card state block. */
 void func_801C5194(u8 allocate) {
     if (allocate) {
-        D_800625A0->card = func_80031BDC(sizeof(CardState), 0);
-        bzero(D_800625A0->card, sizeof(CardState));
+        D_800625A0->card = func_80031BDC(sizeof(MenuCard), 0);
+        bzero(D_800625A0->card, sizeof(MenuCard));
     } else {
         func_800320E8(D_800625A0->card);
     }
@@ -220,7 +220,7 @@ void func_801C54B4(void) {
     packed = func_80032E88(res->files[0], 1);
     OpenTIM(packed);
     ReadTIM(&D_800625A0->card->icon);
-    *(CardPrefix *)D_800625A0->card->game_prefix = D_801C5000;
+    *(CardPrefix *)D_800625A0->card->prefix = D_801C5000;
     D_800625A0->card->save_magic[0] = 'S';
     D_800625A0->card->save_magic[1] = 'C';
     D_800625A0->card->save_icon_flag = 0x11;
@@ -1283,21 +1283,21 @@ void func_801C9C2C(void) {
             if (D_800625A0->markers->shown[i] != 0) {
                 if (D_800625A0->markers->at_cursor[i] != 0) {
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x0 =
-                        D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 8;
+                        D_801D2094[D_801D201C[D_800625A0->card->cursor]] + 8;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y0 =
-                        D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] - 6;
+                        D_801D2114[D_801D201C[D_800625A0->card->cursor]] - 6;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x1 =
-                        D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 0x18;
+                        D_801D2094[D_801D201C[D_800625A0->card->cursor]] + 0x18;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y1 =
-                        D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] - 6;
+                        D_801D2114[D_801D201C[D_800625A0->card->cursor]] - 6;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x2 =
-                        D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 8;
+                        D_801D2094[D_801D201C[D_800625A0->card->cursor]] + 8;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y2 =
-                        D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] + 0xA;
+                        D_801D2114[D_801D201C[D_800625A0->card->cursor]] + 0xA;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x3 =
-                        D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 0x18;
+                        D_801D2094[D_801D201C[D_800625A0->card->cursor]] + 0x18;
                     (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y3 =
-                        D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] + 0xA;
+                        D_801D2114[D_801D201C[D_800625A0->card->cursor]] + 0xA;
                 }
                 AddPrim(&D_800625A0->current->ot[4],
                               D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]));

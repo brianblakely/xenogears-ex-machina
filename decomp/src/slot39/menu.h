@@ -22,6 +22,7 @@
 #include "resident/sprite.h"
 #include "resident/stream.h"
 #include "resident/text.h"
+#include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
 
@@ -33,21 +34,6 @@
  */
 
 /* structs: begin */
-/* One file entry of a card listing. */
-typedef struct MenuCardFile {
-    s32 frames[6]; /* 0: icon animation: image y of each step */
-    char name[21]; /* 18: directory entry name */
-    u8 pad2D[0x2B];
-    u8 state; /* 58 */
-    u8 pad59[0x3];
-} MenuCardFile;
-
-/* A memory card's header on the file screen: its label and name sprites. */
-typedef struct MenuCardHeader {
-    POLY_FT4 label[2]; /* 0 */
-    POLY_FT4 name[4];  /* 50 */
-} MenuCardHeader;
-
 /* The second half of a listed file's header block (+100). */
 typedef struct MenuSaveName {
     u8 text[0x14]; /* two-byte text */
@@ -57,43 +43,6 @@ typedef struct MenuSaveInfo {
     u8 pad0[0x24];
     MenuSaveName names[4]; /* 24: names of the sheet entries */
 } MenuSaveInfo;
-
-/* Memory-card state (*(state + 32c)). */
-typedef struct MenuCard {
-    MenuCardFile files[32]; /* 0 */
-    TIM_IMAGE icon; /* B80: the file icon TIM */
-    u8 headers[32][0x200]; /* B94: first block of each listed file */
-    u8 saveMagic[2]; /* 4B94: header of a written file: "SC" */
-    u8 saveIconFlag; /* 4B96 */
-    u8 saveBlocks; /* 4B97 */
-    char saveTitle[0x5C]; /* 4B98: Shift-JIS */
-    u8 savePalette[0x20]; /* 4BF4 */
-    u8 saveIcon[0x80]; /* 4C14 */
-    u8 pad4C94[0x100];
-    MenuCardHeader cardHeaders[2]; /* 4D94: per port */
-    s32 result[2]; /* 4F74: per port: last card check result */
-    s32 cursor; /* 4F7C: file cursor over both ports (port 2 from 15) */
-    s32 unk4F80; /* 4F80 */
-    s32 fileCount; /* 4F84 */
-    u8 scanned[2]; /* 4F88: per port */
-    u8 unk4F8A[2]; /* 4F8A */
-    u8 unk4F8C[2]; /* 4F8C */
-    u8 ours[32]; /* 4F8E: per listed file: carries this game's prefix */
-    u8 fileSlots[32]; /* 4FAE */
-    char prefix[12]; /* 4FCE: this game's file name prefix */
-    u8 pad4FDA[0xA];
-    u8 present[2]; /* 4FE4: per port: card present */
-    u8 mode; /* 4FE6 */
-    u8 busy; /* 4FE7 */
-    u8 presentShown[2]; /* 4FE8 */
-    u8 pad4FEA[0x2];
-    s32 events[4]; /* 4FEC: card event descriptors */
-    char title[30]; /* 4FFC: save title line of the text file */
-    u8 unk501A; /* 501A */
-    u8 unk501B; /* 501B */
-    u32 otherPrefix[4]; /* 501C: the other file name prefix (13 bytes) */
-    u8 pad502C[0x8];
-} MenuCard;
 
 /* A gear frame record of the data tables. */
 typedef struct GearFrame {

@@ -18,13 +18,9 @@
 #include "resident/sound.h"
 #include "resident/sprite.h"
 #include "resident/text.h"
+#include "menu/card.h"
 #include "menu/panel.h"
 #include "menu/screen.h"
-
-/* A save file name prefix (13 bytes with its terminator). */
-typedef struct {
-    char name[13];
-} CardPrefix;
 
 /*
  * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
@@ -110,27 +106,6 @@ typedef struct ModelParts {
     u8 unk8[0x12 - 8];
     u8 unk12;    /* 12 */
 } ModelParts;
-
-/*
- * Card state block (menu state + 32c, 5034h bytes): the directory scan, the
- * file heads and this game's save header.
- */
-typedef struct MenuCard {
-    u8 unk0[0xB80];
-    TIM_IMAGE icon;    /* b80: the save icon TIM */
-    u8 heads[32][0x200]; /* b94: first 200h bytes of each file */
-    u8 save_magic[2];  /* 4b94: "SC" */
-    u8 save_icon_flag; /* 4b96 */
-    u8 save_blocks;    /* 4b97 */
-    u8 save_title[0x5C];   /* 4b98 */
-    u8 save_palette[0x20]; /* 4bf4 */
-    u8 save_icon[0x80];    /* 4c14 */
-    u8 unk4C94[0x4F7C - 0x4C94];
-    s32 cursor_slot;   /* 4f7c */
-    u8 unk4F80[0x4FCE - 0x4F80];
-    char game_prefix[13]; /* 4fce */
-    u8 unk4FDB[0x5034 - 0x4FDB];
-} CardState;
 
 
 /* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */

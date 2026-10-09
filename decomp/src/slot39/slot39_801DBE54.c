@@ -3669,7 +3669,7 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     MenuSaveInfo *info;
     s32 i;
 
-    info = (MenuSaveInfo *)(D_800625A0->card->headers[file] + 0x100);
+    info = (MenuSaveInfo *)(D_800625A0->card->heads[file] + 0x100);
     for (i = 0; i < 20; i += 2) {
         name[i] = info->names[set->images[index]].text[i];
         name[i + 1] = info->names[set->images[index]].text[i + 1];
@@ -3723,7 +3723,7 @@ void func_801E76EC(s32 index) {
     MenuViewSet *set;
     s32 i;
 
-    set = (MenuViewSet *)(D_800625A0->card->headers[index] + 0x100);
+    set = (MenuViewSet *)(D_800625A0->card->heads[index] + 0x100);
     func_801E61B0();
     for (i = 0; i < 3; i++) {
         if (set->images[i] != 0xff) {
@@ -3782,15 +3782,15 @@ void func_801E78C8(s32 file) {
     D_801EA8EC.y = 0x1c1 + file / 16;
     D_801EA8EC.w = 0x10;
     D_801EA8EC.h = 1;
-    memmove(D_801EA8C4, &D_800625A0->card->headers[file][0x60], 0x20);
+    memmove(D_801EA8C4, &D_800625A0->card->heads[file][0x60], 0x20);
     LoadImage(&D_801EA8EC, D_801EA8C4);
     DrawSync(0);
     for (i = 0; i < 3; i++) {
         D_801EA8E4.y = 0x80 + i * 32 + file / 16 * 16;
-        LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
+        LoadImage(&D_801EA8E4, &D_800625A0->card->heads[file][0x80 + i * 0x80]);
         DrawSync(0);
     }
-    switch (D_800625A0->card->headers[file][2]) {
+    switch (D_800625A0->card->heads[file][2]) {
     case 0x11:
         D_800625A0->card->files[file].frames[0] = 0x80 + file / 16 * 16;
         D_800625A0->card->files[file].frames[1] = 0x80 + file / 16 * 16;
@@ -3819,7 +3819,7 @@ void func_801E78C8(s32 file) {
         noIcon = 0;
         break;
     }
-    D_801EA900[file / 16] += D_800625A0->card->headers[file][3];
+    D_801EA900[file / 16] += D_800625A0->card->heads[file][3];
     if (noIcon) {
         D_800625A0->card->files[file].state = 0;
     }

@@ -789,13 +789,13 @@ void func_801C6400(void) {
 
     for (i = 0; i < 2; i++) {
         D_800625A0->card->scanned[i] = 0;
-        D_800625A0->card->unk4F8A[i] = 0;
-        D_800625A0->card->unk4F8C[i] = 0xff;
+        D_800625A0->card->unknown4f8a[i] = 0;
+        D_800625A0->card->unknown4f8c[i] = 0xff;
     }
     D_800625A0->card->mode = 0;
     for (i = 0; i < 32; i++) {
         D_800625A0->card->files[i].state = 0;
-        D_800625A0->card->fileSlots[i] = 0xff;
+        D_800625A0->card->file_slots[i] = 0xff;
     }
     line = D_8006D634.vars[0];
     i = 0;
@@ -825,7 +825,7 @@ void func_801C6400(void) {
     for (j = 0; j < 30; j++) {
         D_800625A0->card->title[j] = text[i++];
     }
-    D_800625A0->card->unk501A = D_800625A0->card->unk501B = 0;
+    D_800625A0->card->unknown501a = D_800625A0->card->unknown501b = 0;
     func_80028470(0x10, 0);
     func_800320E8(text);
 }
@@ -847,14 +847,14 @@ void func_801C65F4(void) {
     OpenTIM(data);
     ReadTIM(&D_800625A0->card->icon);
     strcpy(D_800625A0->card->prefix, "BASLUS-00664");
-    strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
-    D_800625A0->card->saveMagic[0] = 'S';
-    D_800625A0->card->saveMagic[1] = 'C';
-    D_800625A0->card->saveIconFlag = 0x11;
-    D_800625A0->card->saveBlocks = 1;
-    bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
-    memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
-    memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
+    strcpy((char *)D_800625A0->card->other_prefix, "BASLUS-01160");
+    D_800625A0->card->save_magic[0] = 'S';
+    D_800625A0->card->save_magic[1] = 'C';
+    D_800625A0->card->save_icon_flag = 0x11;
+    D_800625A0->card->save_blocks = 1;
+    bzero(D_800625A0->card->save_title, sizeof(D_800625A0->card->save_title));
+    memmove(D_800625A0->card->save_palette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->save_palette));
+    memmove(D_800625A0->card->save_icon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->save_icon));
     func_800320E8(data);
     data = func_80032E88(res->files[1], 1);
     func_8002DD20(data);
@@ -1613,11 +1613,11 @@ u8 func_801C8A10(u8 port) {
         D_800625A0->card->result[port] = result;
     }
     if (result == -1) {
-        D_800625A0->card->unk4F8A[port] = 0;
+        D_800625A0->card->unknown4f8a[port] = 0;
         D_800625A0->card->present[port] = 0;
         D_801EA900[port] = 0;
         for (i = 0; i < 16; i++) {
-            D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+            D_800625A0->card->file_slots[port * 16 + i] = 0xff;
             D_800625A0->card->ours[port * 16 + i] = 0;
             D_800625A0->card->files[port * 16 + i].state = 0;
         }
@@ -1625,9 +1625,9 @@ u8 func_801C8A10(u8 port) {
     if (result == -2) {
         ok = 0;
     }
-    if (D_800625A0->card->presentShown[port] != D_800625A0->card->present[port]) {
+    if (D_800625A0->card->present_shown[port] != D_800625A0->card->present[port]) {
         D_800625A0->card->scanned[port] = 0;
-        D_800625A0->card->presentShown[port] = D_800625A0->card->present[port];
+        D_800625A0->card->present_shown[port] = D_800625A0->card->present[port];
     }
     return ok;
 }
@@ -1689,7 +1689,7 @@ u8 func_801C8D78(u8 port) {
     D_801EA900[port] = 0;
     retry = 5;
     for (i = 0; i < 16; i++) {
-        D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+        D_800625A0->card->file_slots[port * 16 + i] = 0xff;
         D_801EA6D0[port][i] = 0;
     }
     if (port == 0) {
@@ -1705,7 +1705,7 @@ u8 func_801C8D78(u8 port) {
                 count++;
             } while (func_80040594(&dir) == &dir);
         }
-        D_800625A0->card->unk4F8A[port] = count;
+        D_800625A0->card->unknown4f8a[port] = count;
         break;
     }
     return count;
@@ -1775,15 +1775,15 @@ void func_801C90B0(u8 port, u8 file) {
     }
     strcpy(name, device);
     strcat(name, D_800625A0->card->files[port * 16 + file].name);
-    while (func_801C9038(name, D_800625A0->card->headers[port * 16 + file]) == -1) {
+    while (func_801C9038(name, D_800625A0->card->heads[port * 16 + file]) == -1) {
         if (--retry == 0) {
             break;
         }
         func_801C8CA4(port);
     }
-    for (i = 0; i < D_800625A0->card->headers[port * 16 + file][3]; i++) {
-        D_800625A0->card->fileSlots[port * 16 + D_800625A0->card->fileCount] = file + port * 16;
-        D_800625A0->card->fileCount++;
+    for (i = 0; i < D_800625A0->card->heads[port * 16 + file][3]; i++) {
+        D_800625A0->card->file_slots[port * 16 + D_800625A0->card->file_count] = file + port * 16;
+        D_800625A0->card->file_count++;
     }
 }
 
@@ -1803,7 +1803,7 @@ void func_801C9270(s32 port) {
         j = 0;
         match = 1;
         for (; j < 12; j++) {
-            if (D_800625A0->card->files[D_800625A0->card->fileSlots[port * 16 + i]].name[j] !=
+            if (D_800625A0->card->files[D_800625A0->card->file_slots[port * 16 + i]].name[j] !=
                 D_800625A0->card->prefix[j]) {
                 match = 0;
                 break;
@@ -1811,7 +1811,7 @@ void func_801C9270(s32 port) {
         }
         if (match) {
             D_800625A0->card->ours[port * 16 + i] = 1;
-            header = D_800625A0->card->headers[D_800625A0->card->fileSlots[port * 16 + i]];
+            header = D_800625A0->card->heads[D_800625A0->card->file_slots[port * 16 + i]];
             D_801EA6F4 = header + 0x100;
             saves = D_801EA6D0[port];
             saves[header[0x123]] = 1;
@@ -1853,10 +1853,10 @@ u8 func_801C93A8(void) {
         func_801D2F4C(0x23);
         D_800625A0->load_state = 1;
         D_800625A0->flags->markers_shown = 0;
-        D_800625A0->card->unk4F80 = 0xff;
+        D_800625A0->card->unknown4f80 = 0xff;
         D_800625A0->card->cursor = 0;
         if (*(u16 *)D_800625A0->card->present == 0) {
-            D_800625A0->card->unk4F8C[0] = D_800625A0->card->unk4F8C[1] = 0xff;
+            D_800625A0->card->unknown4f8c[0] = D_800625A0->card->unknown4f8c[1] = 0xff;
             func_801C7BF4();
             wait = 59;
             do {
@@ -1866,7 +1866,7 @@ u8 func_801C93A8(void) {
         }
         if (!noCard) {
             func_801D9B08();
-            D_800625A0->card->presentShown[0] = D_800625A0->card->presentShown[1] = 0xff;
+            D_800625A0->card->present_shown[0] = D_800625A0->card->present_shown[1] = 0xff;
             D_800625A0->card->scanned[0] = 0;
             D_800625A0->card->scanned[1] = 0;
             D_800625A0->card_poll_timer = 0x3c;
@@ -1882,11 +1882,11 @@ u8 func_801C93A8(void) {
         D_800625A0->sounds = 0;
         for (port = 0; port < 2; port++) {
             stop = 0;
-            if (D_800625A0->card->unk4F8A[port] != D_800625A0->card->unk4F8C[port] &&
-                D_800625A0->card->unk4F8A[port] != 0) {
+            if (D_800625A0->card->unknown4f8a[port] != D_800625A0->card->unknown4f8c[port] &&
+                D_800625A0->card->unknown4f8a[port] != 0) {
                 func_801D9B08();
                 for (i = 0; i < 16; i++) {
-                    D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+                    D_800625A0->card->file_slots[port * 16 + i] = 0xff;
                 }
                 if (port == 0) {
                     __builtin_memcpy(path, "bu00:", 6);
@@ -1895,9 +1895,9 @@ u8 func_801C93A8(void) {
                 }
                 strcat(path, "__tmp_file");
                 func_800405B4(path);
-                D_800625A0->card->fileCount = 0;
+                D_800625A0->card->file_count = 0;
                 D_801EA900[port] = 0;
-                for (i = 0; i < D_800625A0->card->unk4F8A[port]; i++) {
+                for (i = 0; i < D_800625A0->card->unknown4f8a[port]; i++) {
                     if (D_800625A0->card->present[port] != 0 && present[0] == D_800625A0->card->present[0] &&
                         present[1] == D_800625A0->card->present[1]) {
                         func_801C90B0(port, i);
@@ -1919,14 +1919,14 @@ u8 func_801C93A8(void) {
                     for (; i < 16; i++) {
                         D_800625A0->card->files[port * 16 + i].state = 0;
                     }
-                    D_800625A0->card->unk4F8C[port] = D_800625A0->card->unk4F8A[port];
+                    D_800625A0->card->unknown4f8c[port] = D_800625A0->card->unknown4f8a[port];
                 }
             }
-            if (!stop && D_800625A0->card->unk4F8A[port] == 0) {
+            if (!stop && D_800625A0->card->unknown4f8a[port] == 0) {
                 for (i = 0; i < 16; i++) {
                     D_800625A0->card->files[port * 16 + i].state = 0;
                 }
-                D_800625A0->card->unk4F8C[port] = 0xff;
+                D_800625A0->card->unknown4f8c[port] = 0xff;
             }
         }
         if (!stop) {
@@ -1967,7 +1967,7 @@ s32 func_801C9BCC(s32 mode) {
     case 0:
         if (*(u32 *)card->scanned & 0xffff0000) {
             if (card->present[D_801E981C[cursor] / 16]) {
-                if (card->fileSlots[D_801E981C[cursor]] == 0xff) {
+                if (card->file_slots[D_801E981C[cursor]] == 0xff) {
                     ok = 0;
                 }
             } else {
@@ -1979,7 +1979,7 @@ s32 func_801C9BCC(s32 mode) {
         break;
     case 1:
         if (*(u32 *)card->scanned & 0xffff0000) {
-            if (card->present[D_801E981C[cursor] / 16] && card->fileSlots[D_801E981C[cursor]] != 0xff) {
+            if (card->present[D_801E981C[cursor] / 16] && card->file_slots[D_801E981C[cursor]] != 0xff) {
                 if (!card->ours[D_801E981C[cursor]]) {
                     ok = 0;
                 }
@@ -2024,7 +2024,7 @@ s32 func_801C9D34(s32 mode) {
         case 0:
             if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
                 if (D_800625A0->card->present[D_801E981C[i] / 16] &&
-                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff) {
+                    D_800625A0->card->file_slots[D_801E981C[i]] != 0xff) {
                     found = i;
                     searching = 0;
                 }
@@ -2035,7 +2035,7 @@ s32 func_801C9D34(s32 mode) {
         case 1:
             if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
                 if (D_800625A0->card->present[D_801E981C[i] / 16] &&
-                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff && D_800625A0->card->ours[D_801E981C[i]]) {
+                    D_800625A0->card->file_slots[D_801E981C[i]] != 0xff && D_800625A0->card->ours[D_801E981C[i]]) {
                     found = i;
                     searching = 0;
                 }
@@ -2065,7 +2065,7 @@ void func_801C9EF4(s32 mode, s32 slot) {
     switch (mode) {
     case 0:
         for (; slot + 3 < 30; slot += 3) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot + 3]] != 0xff) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot + 3]] != 0xff) {
                 D_800625A0->card->cursor = slot + 3;
                 break;
             }
@@ -2074,7 +2074,7 @@ void func_801C9EF4(s32 mode, s32 slot) {
             i = D_800625A0->card->cursor + 3;
             if (i < 30) {
                 for (; i + 1 < 30; i++) {
-                    if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] != 0xff) {
+                    if (D_800625A0->card->file_slots[D_801E981C[i + 1]] != 0xff) {
                         D_800625A0->card->cursor = i + 1;
                         break;
                     }
@@ -2084,7 +2084,7 @@ void func_801C9EF4(s32 mode, s32 slot) {
         break;
     case 1:
         while (slot + 3 < 30) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot + 3]] == 0xff ||
+            if (D_800625A0->card->file_slots[D_801E981C[slot + 3]] == 0xff ||
                 !D_800625A0->card->ours[D_801E981C[slot + 3]]) {
                 slot += 3;
             } else {
@@ -2096,7 +2096,7 @@ void func_801C9EF4(s32 mode, s32 slot) {
             i = D_800625A0->card->cursor + 3;
             if (i < 30) {
                 while (i + 1 < 30) {
-                    if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] == 0xff ||
+                    if (D_800625A0->card->file_slots[D_801E981C[i + 1]] == 0xff ||
                         !D_800625A0->card->ours[D_801E981C[i + 1]]) {
                         i++;
                     } else {
@@ -2137,7 +2137,7 @@ void func_801CA1D4(s32 mode, s32 slot) {
     switch (mode) {
     case 0:
         for (; slot - 3 >= 0; slot -= 3) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot - 3]] != 0xff) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot - 3]] != 0xff) {
                 D_800625A0->card->cursor = slot - 3;
                 break;
             }
@@ -2146,7 +2146,7 @@ void func_801CA1D4(s32 mode, s32 slot) {
             i = D_800625A0->card->cursor - 3;
             if (i >= 0) {
                 for (; i - 1 >= 0; i--) {
-                    if (D_800625A0->card->fileSlots[D_801E981C[i - 1]] != 0xff) {
+                    if (D_800625A0->card->file_slots[D_801E981C[i - 1]] != 0xff) {
                         D_800625A0->card->cursor = i - 1;
                         break;
                     }
@@ -2156,7 +2156,7 @@ void func_801CA1D4(s32 mode, s32 slot) {
         break;
     case 1:
         while (slot - 3 >= 0) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot - 3]] == 0xff ||
+            if (D_800625A0->card->file_slots[D_801E981C[slot - 3]] == 0xff ||
                 !D_800625A0->card->ours[D_801E981C[slot - 3]]) {
                 slot -= 3;
             } else {
@@ -2169,7 +2169,7 @@ void func_801CA1D4(s32 mode, s32 slot) {
             i = cursor - 3;
             if (i >= 0) {
                 while (i - 1 >= 0) {
-                    if (D_800625A0->card->fileSlots[D_801E981C[i - 1]] == 0xff ||
+                    if (D_800625A0->card->file_slots[D_801E981C[i - 1]] == 0xff ||
                         !D_800625A0->card->ours[D_801E981C[i - 1]]) {
                         i--;
                     } else {
@@ -2209,7 +2209,7 @@ void func_801CA480(s32 mode, s32 slot) {
     switch (mode) {
     case 0:
         for (; slot + 1 < 30; slot++) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot + 1]] != 0xff) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot + 1]] != 0xff) {
                 D_800625A0->card->cursor = slot + 1;
                 break;
             }
@@ -2217,7 +2217,7 @@ void func_801CA480(s32 mode, s32 slot) {
         break;
     case 1:
         while (slot + 1 < 30) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot + 1]] == 0xff || !D_800625A0->card->ours[D_801E981C[slot + 1]]) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot + 1]] == 0xff || !D_800625A0->card->ours[D_801E981C[slot + 1]]) {
                 slot++;
             } else {
                 D_800625A0->card->cursor = slot + 1;
@@ -2243,7 +2243,7 @@ void func_801CA5F0(s32 mode, s32 slot) {
     switch (mode) {
     case 0:
         for (; slot - 1 >= 0; slot--) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot - 1]] != 0xff) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot - 1]] != 0xff) {
                 D_800625A0->card->cursor = slot - 1;
                 break;
             }
@@ -2251,7 +2251,7 @@ void func_801CA5F0(s32 mode, s32 slot) {
         break;
     case 1:
         while (slot - 1 >= 0) {
-            if (D_800625A0->card->fileSlots[D_801E981C[slot - 1]] == 0xff || !D_800625A0->card->ours[D_801E981C[slot - 1]]) {
+            if (D_800625A0->card->file_slots[D_801E981C[slot - 1]] == 0xff || !D_800625A0->card->ours[D_801E981C[slot - 1]]) {
                 slot--;
             } else {
                 D_800625A0->card->cursor = slot - 1;
@@ -2298,10 +2298,10 @@ s32 func_801CA750(s32 mode) {
         func_801CA5F0(mode, D_800625A0->card->cursor);
         break;
     }
-    if (D_800625A0->card->cursor != D_800625A0->card->unk4F80) {
-        func_801E781C(D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]],
+    if (D_800625A0->card->cursor != D_800625A0->card->unknown4f80) {
+        func_801E781C(D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]],
                       D_800625A0->card->ours[D_801E981C[D_800625A0->card->cursor]]);
-        D_800625A0->card->unk4F80 = D_800625A0->card->cursor;
+        D_800625A0->card->unknown4f80 = D_800625A0->card->cursor;
     }
     return result;
 }
@@ -2310,17 +2310,17 @@ s32 func_801CA750(s32 mode) {
  * `file` + 1 as two full-width digits, a full-width space and the save title
  * line. */
 void func_801CA8C0(u8 file) {
-    strcpy(D_800625A0->card->saveTitle, "\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72"
+    strcpy(D_800625A0->card->save_title, "\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72"
                                          "\x81\x5e\x82\x6d\x82\x8f\x81\x44");
-    D_800625A0->card->saveTitle[26] = 0x82;
-    D_800625A0->card->saveTitle[27] = (file + 1) / 10 + 0x4f;
-    D_800625A0->card->saveTitle[28] = 0x82;
-    D_800625A0->card->saveTitle[29] = (file + 1) % 10 + 0x4f;
-    D_800625A0->card->saveTitle[30] = 0x81;
-    D_800625A0->card->saveTitle[31] = 0x40;
-    D_800625A0->card->saveTitle[32] = 0;
-    D_800625A0->card->saveTitle[33] = 0;
-    strcat(D_800625A0->card->saveTitle, D_800625A0->card->title);
+    D_800625A0->card->save_title[26] = 0x82;
+    D_800625A0->card->save_title[27] = (file + 1) / 10 + 0x4f;
+    D_800625A0->card->save_title[28] = 0x82;
+    D_800625A0->card->save_title[29] = (file + 1) % 10 + 0x4f;
+    D_800625A0->card->save_title[30] = 0x81;
+    D_800625A0->card->save_title[31] = 0x40;
+    D_800625A0->card->save_title[32] = 0;
+    D_800625A0->card->save_title[33] = 0;
+    strcat(D_800625A0->card->save_title, D_800625A0->card->title);
 }
 
 /* The yes/no choice: wait for confirm or cancel while left/right move the
@@ -2410,7 +2410,7 @@ s32 func_801CACF8(u8 message, u8 confirm, u8 arg) {
 
 /* Reset the file cursor: the first port with a card (port 2's slots start at 15). */
 void func_801CADB0(void) {
-    D_800625A0->card->unk4F80 = 0xff;
+    D_800625A0->card->unknown4f80 = 0xff;
     D_800625A0->card->cursor = 0;
     if (D_800625A0->card->present[0] == 0 && D_800625A0->card->present[1] != 0) {
         D_800625A0->card->cursor = 15;
@@ -2526,7 +2526,7 @@ void func_801CB28C(s32 *save) {
             }                                                \
             done += 0x100;                                   \
             p += 0x100;                                      \
-        } while (done < D_800625A0->card->saveBlocks << 13); \
+        } while (done < D_800625A0->card->save_blocks << 13); \
         close(fd);                                           \
         p = buffer + 0x100;                                  \
         sum = 0;                                             \
@@ -2596,9 +2596,9 @@ u8 func_801CB304(void) {
                 port = 1;
             }
             strcat(path,
-                   D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+                   D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]].name);
             if (!(u8)func_801CACF8(0x65, 0xff, 1)) {
-                D_800625A0->card->unk4F80 = 0xff;
+                D_800625A0->card->unknown4f80 = 0xff;
             } else {
                 func_801D2F4C(0x3b);
                 retry = 5;
@@ -2632,8 +2632,8 @@ u8 func_801CB304(void) {
                 func_801CAE08(0);
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
-                D_800625A0->card->unk4F8C[0] = 0xff;
-                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_800625A0->card->unknown4f8c[0] = 0xff;
+                D_800625A0->card->unknown4f8c[1] = 0xff;
             }
             D_800625A0->markers->at_cursor[0] = 1;
             break;
@@ -2828,19 +2828,19 @@ u8 func_801CBD90(u8 kind) {
                 }
             }
             if (proceed) {
-                if (D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] != 0xff) {
+                if (D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] != 0xff) {
                     if (D_800625A0->card->ours[D_801E981C[D_800625A0->card->cursor]]) {
                         if ((u8)func_801CACF8(0x38, 0xff, 1)) {
                             strcpy(tempName, device);
                             strcat(tempName, D_800625A0->card
-                                                 ->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                                                 ->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                                                  .name);
                             func_800405B4(tempName);
-                            existing = (D_800625A0->card->headers +
-                                        D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]])[0][0x123];
+                            existing = (D_800625A0->card->heads +
+                                        D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]])[0][0x123];
                         } else {
                             proceed = 0;
-                            D_800625A0->card->unk4F80 = 0xff;
+                            D_800625A0->card->unknown4f80 = 0xff;
                         }
                     } else {
                         func_801CACF8(0xc4, 0xff, 0);
@@ -2849,15 +2849,15 @@ u8 func_801CBD90(u8 kind) {
                     }
                 } else if (!(u8)func_801CACF8(0x5f, 0xff, 1)) {
                     proceed = 0;
-                    D_800625A0->card->unk4F80 = 0xff;
+                    D_800625A0->card->unknown4f80 = 0xff;
                 }
             }
             if (proceed) {
                 D_800625A0->flags->markers_shown = 0;
                 D_800625A0->flags->file_info_shown = 0;
-                D_800625A0->card->unk4F80 = 0xff;
-                D_800625A0->card->unk4F8C[0] = 0xff;
-                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_800625A0->card->unknown4f80 = 0xff;
+                D_800625A0->card->unknown4f8c[0] = 0xff;
+                D_800625A0->card->unknown4f8c[1] = 0xff;
                 digit = func_801CB9E8(port, existing);
                 digitText[0] = digit + '0';
                 digitText[1] = 0;
@@ -2871,7 +2871,7 @@ u8 func_801CBD90(u8 kind) {
                 func_800405B4(tempName);
                 retry = 3;
                 do {
-                    fd = open(tempName, D_800625A0->card->saveBlocks << 16 | 0x200);
+                    fd = open(tempName, D_800625A0->card->save_blocks << 16 | 0x200);
                     if (fd == -1) {
                         fd = 0;
                         func_801C8CA4(port);
@@ -2898,7 +2898,7 @@ u8 func_801CBD90(u8 kind) {
                     func_801CA8C0(digit);
                     retry = 3;
                     do {
-                        if (write(fd, D_800625A0->card->saveMagic, 0x100) == -1) {
+                        if (write(fd, D_800625A0->card->save_magic, 0x100) == -1) {
                             fd = 0;
                             func_801C8CA4(port);
                         }
@@ -2937,7 +2937,7 @@ u8 func_801CBD90(u8 kind) {
                             }
                             written += 0x100;
                             p += 0x100;
-                        } while (written < D_800625A0->card->saveBlocks << 13);
+                        } while (written < D_800625A0->card->save_blocks << 13);
                         close(fd);
                         strcpy(tempName, device);
                         strcat(tempName, "__tmp_file");
@@ -3063,7 +3063,7 @@ u8 func_801CC6D8(void) {
             }
             if (!(u8)func_801CACF8(ask, 0xff, 1)) {
                 proceed = 0;
-                D_800625A0->card->unk4F80 = 0xff;
+                D_800625A0->card->unknown4f80 = 0xff;
             }
             if (proceed && !D_800625A0->card->present[dest]) {
                 func_801D2F4C(noCard);
@@ -3111,8 +3111,8 @@ u8 func_801CC6D8(void) {
                 }
             }
             if (proceed) {
-                for (i = 0; i < D_800625A0->card->unk4F8A[dest]; i++) {
-                    if (!strcmp(D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name,
+                for (i = 0; i < D_800625A0->card->unknown4f8a[dest]; i++) {
+                    if (!strcmp(D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]].name,
                                 D_800625A0->card->files[dest * 16 + i].name)) {
                         i = 0xff;
                         break;
@@ -3128,14 +3128,14 @@ u8 func_801CC6D8(void) {
                 D_800625A0->sounds = 0;
                 D_800625A0->flags->markers_shown = 0;
                 D_800625A0->flags->file_info_shown = 0;
-                D_800625A0->card->unk4F80 = 0xff;
-                D_800625A0->card->unk4F8C[0] = 0xff;
-                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_800625A0->card->unknown4f80 = 0xff;
+                D_800625A0->card->unknown4f8c[0] = 0xff;
+                D_800625A0->card->unknown4f8c[1] = 0xff;
                 strcpy(srcName, device);
                 strcpy(destName, other);
                 strcpy(tempName, other);
-                strcat(srcName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
-                strcat(destName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+                strcat(srcName, D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]].name);
+                strcat(destName, D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]].name);
                 strcat(tempName, "__tmp_file");
                 retry = 3;
                 do {
@@ -3268,7 +3268,7 @@ u8 func_801CC6D8(void) {
                     func_801C7BF4();
                 }
                 for (slot = 0; slot < 32; slot++) {
-                    D_800625A0->card->fileSlots[slot] = 0xff;
+                    D_800625A0->card->file_slots[slot] = 0xff;
                     D_800625A0->card->ours[slot] = 0;
                     D_800625A0->card->files[slot].state = 0;
                 }
@@ -3330,13 +3330,13 @@ u8 func_801CD2AC(void) {
                 func_801D2F4C(0x50);
                 D_800625A0->flags->markers_shown = 0;
                 D_800625A0->flags->file_info_shown = 0;
-                D_800625A0->card->unk4F80 = 0xff;
+                D_800625A0->card->unknown4f80 = 0xff;
                 if (D_800625A0->card->cursor < 15) {
                     __builtin_memcpy(path, "bu00:", 6);
                 } else {
                     __builtin_memcpy(path, "bu10:", 6);
                 }
-                strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                strcat(path, D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                                  .name);
                 func_800405B4(path);
                 func_801D32B4();
@@ -3349,14 +3349,14 @@ u8 func_801CD2AC(void) {
                     func_801C7BF4();
                 }
                 for (i = 0; i < 32; i++) {
-                    D_800625A0->card->fileSlots[i] = 0xff;
+                    D_800625A0->card->file_slots[i] = 0xff;
                     D_800625A0->card->ours[i] = 0;
                     D_800625A0->card->files[i].state = 0;
                 }
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
-                D_800625A0->card->unk4F8C[0] = 0xff;
-                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_800625A0->card->unknown4f8c[0] = 0xff;
+                D_800625A0->card->unknown4f8c[1] = 0xff;
                 D_801E9778 = 1;
             }
             D_800625A0->markers->at_cursor[0] = 1;
@@ -3758,10 +3758,10 @@ void func_801CF37C(void) {
     u8 match;
 
     if (D_800625A0->load_state == 2) {
-        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        file = D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]];
         for (i = 0; i < 32; i++) {
             match = 1;
-            if (file == D_800625A0->card->fileSlots[i]) {
+            if (file == D_800625A0->card->file_slots[i]) {
                 if (file == 0xff) {
                     match = i == D_801E981C[D_800625A0->card->cursor];
                 }
@@ -3796,7 +3796,7 @@ void func_801CF5E4(s32 first, s32 firstSlot, s32 end) {
     slot = firstSlot;
     for (; row < end; row++) {
         if (D_800625A0->card->files[row].state != 0) {
-            for (i = 0; i < D_800625A0->card->headers[row][3]; i++, slot++) {
+            for (i = 0; i < D_800625A0->card->heads[row][3]; i++, slot++) {
                 image = D_800625A0->slots[slot];
                 (image->icon + D_800625A0->buffer_index)->u0 = row * 16;
                 (image->icon + D_800625A0->buffer_index)->v0 = D_800625A0->card->files[row].frames[D_800625A0->unknown4cc];
@@ -3833,23 +3833,23 @@ void func_801CF8D8(void) {
                     normal = 0;
                 }
                 if (normal) {
-                    func_8002675C(D_800625A0->sheet, 0x115, D_800625A0->card->cardHeaders[side].label,
+                    func_8002675C(D_800625A0->sheet, 0x115, D_800625A0->card->card_headers[side].label,
                                   D_800625A0->buffer_index, side * 0x90 + 0x1e, 0x36, 0x1000);
                 } else {
-                    func_8002675C(D_800625A0->sheet, 0x122, D_800625A0->card->cardHeaders[side].label,
+                    func_8002675C(D_800625A0->sheet, 0x122, D_800625A0->card->card_headers[side].label,
                                   D_800625A0->buffer_index, side * 0x90 + 0x1e, 0x36, 0x1000);
                 }
-                parts = func_8002675C(D_800625A0->sheet, side + 0x162, D_800625A0->card->cardHeaders[side].name,
+                parts = func_8002675C(D_800625A0->sheet, side + 0x162, D_800625A0->card->card_headers[side].name,
                                       D_800625A0->buffer_index, side * 0x90 + 0x1b, 0x36, 0x1000);
                 built[side] = 1;
             }
             if (built[side]) {
                 for (i = 0; i < parts; i++) {
                     AddPrim(&D_800625A0->current->ot[4],
-                            &D_800625A0->card->cardHeaders[side].name[i * 2 + D_800625A0->buffer_index]);
+                            &D_800625A0->card->card_headers[side].name[i * 2 + D_800625A0->buffer_index]);
                 }
                 AddPrim(&D_800625A0->current->ot[4],
-                        &D_800625A0->card->cardHeaders[side].label[D_800625A0->buffer_index]);
+                        &D_800625A0->card->card_headers[side].label[D_800625A0->buffer_index]);
             }
         }
     }
@@ -3867,12 +3867,12 @@ void func_801CFB48(void) {
     u8 match;
 
     if (D_800625A0->load_state != 0) {
-        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        file = D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]];
         for (i = 0; i < 32; i++) {
             image = D_800625A0->slots[i];
             if (D_800625A0->card->present[i / 16] && (i / 16) * 16 != i - 15) {
                 match = 0;
-                if (file == D_800625A0->card->fileSlots[i] && D_800625A0->load_state == 2) {
+                if (file == D_800625A0->card->file_slots[i] && D_800625A0->load_state == 2) {
                     match = 1;
                     if (file == 0xff) {
                         match = i == D_801E981C[D_800625A0->card->cursor];
@@ -3972,28 +3972,28 @@ void func_801D02D8(void) {
     if (!D_800625A0->file_info->rebuilt) {
         func_801CE2B4(32, D_800625A0->file_info->chars, D_800625A0->buffer_index);
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->u0 =
-            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16;
+            D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] * 16;
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->v0 =
-            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+            D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                 .frames[D_800625A0->unknown4cc];
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->u1 =
-            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
+            D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->v1 =
-            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+            D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                 .frames[D_800625A0->unknown4cc];
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->u2 =
-            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16;
+            D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] * 16;
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->v2 =
-            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+            D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                 .frames[D_800625A0->unknown4cc] + 15;
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->u3 =
-            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
+            D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
         (D_800625A0->file_info->cursor + D_800625A0->buffer_index)->v3 =
-            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+            D_800625A0->card->files[D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]]]
                 .frames[D_800625A0->unknown4cc] + 15;
         D_800625A0->file_info->cursor[D_800625A0->buffer_index].clut =
-            GetClut(D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16,
-                    D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] / 16 + 0x1c1);
+            GetClut(D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] * 16,
+                    D_800625A0->card->file_slots[D_801E981C[D_800625A0->card->cursor]] / 16 + 0x1c1);
         AddPrim(&D_800625A0->current->ot[4], &D_800625A0->file_info->cursor[D_800625A0->buffer_index]);
     } else {
         for (i = 0; i < 3; i++) {
@@ -6448,7 +6448,7 @@ u8 func_801D9C84(void) {
     D_801EA720 = CdReadCallback(0);
     ExitCriticalSection();
     card = D_800625A0->card;
-    card->presentShown[0] = card->presentShown[1] = 0xff;
+    card->present_shown[0] = card->present_shown[1] = 0xff;
     D_800625A0->card->scanned[0] = 0;
     D_800625A0->card->scanned[1] = 0;
     D_800625A0->card->mode = 2;
@@ -6477,8 +6477,8 @@ void func_801D9E3C(void) {
     for (i = 0; i < 32; i++) {
         D_800625A0->card->files[i].state = 0;
     }
-    D_800625A0->card->unk4F8C[0] = 0xff;
-    D_800625A0->card->unk4F8C[1] = 0xff;
+    D_800625A0->card->unknown4f8c[0] = 0xff;
+    D_800625A0->card->unknown4f8c[1] = 0xff;
     D_801EA900[1] = 0;
     D_801EA900[0] = 0;
     DrawSync(0);
