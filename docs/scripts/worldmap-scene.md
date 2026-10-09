@@ -16,9 +16,11 @@
 - **Tables:** each director's unit opens its data with its u16 state and wait
   tables. They stay user-supplied: the units link them from the user's image
   (`INCLUDE_ASSET`; `asset` lines in
-  `decomp/targets/overlays/worldmap.classification.txt`). The wait tables of
-  `func_80080370` and `func_800811C0` end with a stray halfword in their alignment
-  padding (0x7542, 0x2E07), which no entry reaches.
+  `decomp/targets/overlays/worldmap.classification.txt`). `func_80080370`'s waits
+  `D_8009A6AC` end its unit's data, and a stray halfword (0x7542) follows them
+  before the next unit's ([matching.md](../matching.md#recovering-data));
+  `func_800811C0`'s waits `D_8009A70C` hold one (0x2E07) in their alignment
+  padding. No entry reaches either.
 - **Dispatch:** `switch (actor->state)`, 65 cases in all (12, 10, 20, 10, 13), each
   commented with its effect. Case 1 decrements the s16 wait and, once it drops below
   0, loads the state and wait of entry `u.step` from the two u16 tables and steps.
