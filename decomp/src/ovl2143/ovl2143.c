@@ -1928,7 +1928,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
             rect.y = y;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, anim->pixels);
+            StoreImage(&rect, (u_long *)anim->pixels);
             DrawSync(0);
             break;
         case 2:
@@ -1944,7 +1944,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
             rect.y = y2;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, anim->pixels2);
+            StoreImage(&rect, (u_long *)anim->pixels2);
             DrawSync(0);
             break;
         case 2:
@@ -2060,13 +2060,13 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
         case 0:
             func_80026F44(anim->h12, frame, anim->work, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 1:
             func_80026FE8(anim->h12, frame, anim->work, anim->pixels2, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 4:
@@ -2127,7 +2127,7 @@ void func_801E165C(ImageAnim *anim) {
     if (anim->active) {
         if (anim->pixels != NULL) {
             if (anim->mode < 4) {
-                LoadImage(&anim->rect, anim->pixels);
+                LoadImage(&anim->rect, (u_long *)anim->pixels);
             }
             func_800320E8(anim->pixels);
             anim->pixels = NULL;

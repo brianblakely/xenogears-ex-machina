@@ -2,74 +2,10 @@
 #define OVL2143_OVL2143_H
 
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "gte.h"
-
-/* libgte types. */
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-/* libgpu textured quad. */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-/* libgpu gouraud textured triangle. */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    u8 r1, g1, b1, p1;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    u8 r2, g2, b2, p2;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad2;
-} POLY_GT3;
-
-void SetPolyGT3(POLY_GT3 *p);
-
-/* libgpu rectangle. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-/* libgte 32-bit vector. */
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-/* libgpu primitive tag and addPrim. */
-typedef struct {
-    unsigned addr : 24;
-    unsigned len : 8;
-} P_TAG;
-
-#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
-#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
-#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
 
 extern s32 D_80050100; /* ordering-table depth shift */
 
@@ -490,7 +426,6 @@ void func_800223B0(SpriteBody *body, s32 value);
 void func_80022000(SpriteBody *body, s32 scale);
 void *func_8001CD7C(Sprite *sprite);          /* the sprite's update */
 void func_8001CD6C(Sprite *sprite, void (*update)(Sprite *sprite)); /* set it */
-void func_8004A480(void *a, void *b, VECTOR *out);
 
 /* Resident image decoders (frame `frame` of a packed image into `out`). */
 void func_80026F44(s32 arg0, s32 frame, u16 *out, u16 *pixels);
@@ -504,29 +439,15 @@ void func_8002CB54(ModelRecord *model, void **packets0, void **packets1); /* all
 void func_8002C8CC(ModelRecord *model, void *packets, s32 mode); /* build a model's packets */
 void func_8002CC10(s16 a, s16 b);
 void func_8002CC74(s16 a, s16 b);
-void *memcpy(void *dst, void *src, s32 size); /* memcpy */
 void func_8002C700(ModelRecord *model, void *packets, s32 arg2, s32 arg3); /* draw a model's packets */
 void func_8002CBBC(ModelRecord *model);       /* release a model's own packets */
 
-/* libgpu. */
-void LoadImage(RECT *rect, u16 *pixels);     /* LoadImage */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-u16 GetClut(s32 x, s32 y);                  /* GetClut */
-void SetSemiTrans(void *p, s32 abe);            /* SetSemiTrans */
-void SetPolyFT4(POLY_FT4 *p);                 /* SetPolyFT4 */
 
 /* Resident maths. */
 s32 func_8003F8CC(s32 angle);                    /* cosine (4096 = 1.0) */
-s32 SquareRoot0(s32 value);                    /* square root */
 
 /* libgte. */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m);        /* RotMatrix */
-MATRIX *func_8004A92C(SVECTOR *rot, MATRIX *m);        /* RotMatrixYXZ */
-MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* MulMatrix0 */
-MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* CompMatrix */
-void SetRotMatrix(MATRIX *m);                /* SetRotMatrix */
-void SetLightMatrix(MATRIX *m);                /* SetLightMatrix */
-void SetTransMatrix(MATRIX *m);                /* SetTransMatrix */
 
 extern View *D_8005919C;
 
@@ -628,19 +549,12 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
-s32 ratan2(s32 y, s32 x);
 s32 func_8003F8B0(s32 angle);                 /* sine (4096 = 1.0) */
-MATRIX *func_80049ACC(MATRIX *m, MATRIX *scale); /* scale a matrix's columns */
 struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
 s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor);
 
-void VectorNormal(VECTOR *v0, VECTOR *v1);
-VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
-
-void MoveImage(RECT *rect, s32 x, s32 y);
-s32 rand(void);
 void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* slide its volume to arg1 over arg2 frames */
 s32 func_800286CC(void);
 void func_800796F4(void);
@@ -683,8 +597,6 @@ void func_801E0844(s16 *id, s32 unused);
 ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
                          s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
                          s16 speed, s16 divisor, s16 base, FrameCurve curve);
-void StoreImage(RECT *rect, u16 *pixels);
-s32 DrawSync(s32 mode);
 FrameCurve func_801E34BC(s32 type);
 void func_801E8330(u16 index, u16 mask, s32 arg2);
 void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
@@ -699,9 +611,7 @@ void func_801DCE18(ModelList *list, s32 release_models);
 void func_801E165C(ImageAnim *anim);
 void func_801E3438(Record24 *record);
 u16 func_801DEF10(ModelPart *parts, s16 *data);
-void SetColorMatrix(MATRIX *m);              /* SetColorMatrix */
 void func_8003852C(void *bank);              /* release a sound effect bank */
-void MulMatrix2(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
 s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale);
