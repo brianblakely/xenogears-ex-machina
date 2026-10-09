@@ -653,8 +653,8 @@ void func_800826CC(u8 member) {
     D_800C3EB4[member].gear = 1;
     D_800C3EAC->reaction[member] = 1;
     for (i = 0; i < 3; i++) {
-        if (D_8006F364.party[i] == D_800D2D24[member] && D_80059179 == 0) {
-            D_8006F364.inGear[i] = 1;
+        if (D_8006D634.party[i] == D_800D2D24[member] && D_80059179 == 0) {
+            D_8006D634.inGear[i] = 1;
         }
     }
 }
@@ -2203,7 +2203,7 @@ u8 func_80085EB4(u8 mode, u8 member) {
         case 11:
             i++;
         case 12:
-            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0,
+            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills,
                               D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i])) {
                 result = 1;
             }
@@ -2333,7 +2333,7 @@ void func_800861D0(u8 code, u8 member) {
     case 11:
         i++;
     case 12:
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
             D_800C3EAC->slots[member].items[2] == 0) {
             if (D_800C3EAC->unk2E1[3] == 0) {
                 D_800D2DB4->counts[12] +=
@@ -2373,7 +2373,7 @@ void func_800861D0(u8 code, u8 member) {
     case 5:
         i++;
     case 8:
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
             D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
@@ -2394,7 +2394,7 @@ void func_800861D0(u8 code, u8 member) {
     case 1:
         i++;
     case 3:
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
             D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
@@ -2426,7 +2426,7 @@ s32 func_80086B88(s32 step, u8 member) {
         if (D_800CCCE8.gearHud.level == 4) {
             index = step + 12;
         }
-        if (!func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[index])) {
+        if (!func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[index])) {
             result = 0;
         } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800CCCE8.gearHud.level != 4 &&
                    D_800CCCE8.gearHud.level < D_800C3EAC->unk2CC[0] + 1) {
@@ -2558,7 +2558,7 @@ u8 func_80086F98(u8 step, u8 member) {
                 flag = step + 12;
             }
         }
-        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[flag])) {
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[flag])) {
             if (D_800C3EAC->unk2E1[3] == 0) {
                 if (D_800C3EAC->slots[member].items[0] == 0) {
                     D_800D2DB4->counts[12] +=
@@ -2593,7 +2593,7 @@ u8 func_80086F98(u8 step, u8 member) {
         } else {
             next = 13;
         }
-        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[next]) &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
             D_800C3EAC->slots[member].items[1] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
@@ -2605,7 +2605,7 @@ u8 func_80086F98(u8 step, u8 member) {
         } else {
             next = 14;
         }
-        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[next]) &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
             D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
@@ -2722,7 +2722,7 @@ u8 func_80087AF0(u8 member, u8 cost) {
         if (D_800C3EAC->unk2DC < 8) {
             payment = cost;
             D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][payment];
-        } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C3EAC->unk2DC - 8)) {
+        } else if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C3EAC->unk2DC - 8)) {
             reacted = 1;
         } else {
             D_800C3EAC->unk2DC = 7;
@@ -3862,11 +3862,11 @@ u8 func_8008B224(u8 member, u8 column, u8 row) {
     if (D_800D32A0[member].unk1 == 0) {
         command = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
         cost = D_800CCCE8.partyCommands[member][row * 2 + column + 22].cost;
-        allowed = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
+        allowed = func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
     } else {
         command = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
         cost = D_800CCCE8.gearCommands[member][row * 2 + column + 21].cost;
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2) != 0) {
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2) != 0) {
             allowed = 1;
         }
     }

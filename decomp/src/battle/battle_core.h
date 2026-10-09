@@ -530,14 +530,6 @@ typedef struct DirectionArrows {
 
 extern DirectionArrows *D_800C3E24;
 
-/* Persistent character records (resident, 0x20 bytes from 8006ecf8). */
-typedef struct {
-    u16 combos;
-    u8 unk2[0x1E];
-} CharacterCombos;
-
-extern CharacterCombos D_8006ECF8[];
-
 
 /* Per-slot flags (8 bytes from 800d32a0). */
 typedef struct SlotFlags {
@@ -585,7 +577,6 @@ typedef struct TurnQueue {
 
 extern TurnQueue D_800D2DCC;
 extern s16 D_8005A3A0[];
-extern s32 D_8006EF58;     /* party gold */
 
 /* Command menu. */
 void func_8008BC40(u8 keep);
@@ -611,17 +602,6 @@ s32 func_8009A9D0(void); /* the escape succeeds */
 extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
-/* Game data party state (8006f364): joined members, the three party
- * character ids and whether each party slot entered its gear. */
-typedef struct {
-    u16 joined;
-    u16 available;
-    u8 party[3];      /* 0x004: character ids */
-    u8 pad7[0x57A];
-    u8 inGear[3];     /* 0x581 */
-} PartyState;
-
-extern PartyState D_8006F364;
 void func_80088490(s32 slot);
 void func_8009AEFC(u8 slot);
 void func_800BAF48(s32 slot);

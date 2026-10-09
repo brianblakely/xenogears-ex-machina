@@ -61,10 +61,10 @@ s16 D_800C3546 = -1;
 s32 func_8009E53C(u8 index) {
     BattlePart *part = &D_800C34B0->lists.parts.members[index];
 
-    if (D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[0].id == part->id || D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[1].id == part->id) {
+    if (D_8006D634.gears[D_8006D634.characters[4].gearId].entries[0].id == part->id || D_8006D634.gears[D_8006D634.characters[4].gearId].entries[1].id == part->id) {
         return 1;
     }
-    return D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[2].id == part->id;
+    return D_8006D634.gears[D_8006D634.characters[4].gearId].entries[2].id == part->id;
 }
 
 /* Put battle gear part index into character 4's gear entry holding its id
@@ -73,23 +73,23 @@ s32 func_8009E53C(u8 index) {
  * character 4's gear. */
 void func_8009E5C8(u8 index, u8 k) {
     BattlePart *part = &D_800C34B0->lists.parts.list[index];
-    u8 gearId = D_8006D8A0.characters[4].gearId;
+    u8 gearId = D_8006D634.characters[4].gearId;
     u8 i;
 
-    if (D_8006D8A0.gears[gearId].entries[0].id == part->id) {
+    if (D_8006D634.gears[gearId].entries[0].id == part->id) {
         k = 0;
     }
-    if (D_8006D8A0.gears[gearId].entries[1].id == part->id) {
+    if (D_8006D634.gears[gearId].entries[1].id == part->id) {
         k = 1;
     }
-    if (D_8006D8A0.gears[gearId].entries[2].id == part->id) {
+    if (D_8006D634.gears[gearId].entries[2].id == part->id) {
         k = 3;
     }
-    D_8006D8A0.gears[gearId].entries[k].valueE = part->valueE;
-    D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
-    D_8006D8A0.gears[gearId].entries[k].value10 = part->value10;
-    D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
-    D_8006D8A0.gears[gearId].partItems[k] = index;
+    D_8006D634.gears[gearId].entries[k].valueE = part->valueE;
+    D_8006D634.gears[gearId].entries[k].value11 = part->value11;
+    D_8006D634.gears[gearId].entries[k].value10 = part->value10;
+    D_8006D634.gears[gearId].entries[k].value11 = part->value11;
+    D_8006D634.gears[gearId].partItems[k] = index;
     D_8006F8BA[index] = part->durability;
     for (i = 0; i < 3; i++) {
         if ((D_800C34B0->records + i)->pilot.characterId == 4) {

@@ -399,8 +399,8 @@ void func_80070F40(void) {
     func_8009892C();
     for (i = 0; i < 3; i++) {
         if (D_800D2D24[i] != 0x7F) {
-            D_800C3E0C[i].mask0 = D_8006ECF4[D_800D2D24[i]].mask0;
-            D_800C3E0C[i].mask2 = D_8006ECF4[D_800D2D24[i]].mask2;
+            D_800C3E0C[i].mask0 = D_8006D634.skills[D_800D2D24[i]].counterSkills;
+            D_800C3E0C[i].mask2 = D_8006D634.skills[D_800D2D24[i]].levelSkills;
         }
     }
     while (D_800C48EA == 0 && D_800D2FC4 == 0) {

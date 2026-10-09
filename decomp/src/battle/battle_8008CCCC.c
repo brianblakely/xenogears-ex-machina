@@ -115,7 +115,7 @@ u8 func_8008CDE4(u8 member, u8 index) {
     refused = 1;
 
     if (D_800CCCE8.records[member].gear.fuel >= cost &&
-        func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, index) != 0 &&
+        func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, index) != 0 &&
         !(D_800CCCE8.records[member].pilot.status7A & sealed[index])) {
         func_8008CCCC(1);
         D_800D2D28->unkC6 = 1;
@@ -165,7 +165,7 @@ u8 member;
         costs[i] = 0;
     }
     for (i = 0; i < 4; i++) {
-        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, i) != 0 &&
+        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, i) != 0 &&
             !(D_800CCCE8.records[member].pilot.status7A & seals[i])) {
             ids[i] = D_800CCCE8.records[member].pilot.gearId * 4 + i;
             costs[i] = D_800CCCE8.gearCommands[member][i + 37].hudState;
@@ -852,7 +852,7 @@ void func_80091064(u8 member) {
     func_800769E8(&rect, D_800D2DB0);
     if (D_800D32A0[member].unk1 == 0) {
         for (i = 0; i < 16; i++) {
-            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, i)) {
+            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, i)) {
                 known[i] = 1;
                 costs[i] = D_800CCCE8.partyCommands[member][i + 22].cost;
             } else {
@@ -862,7 +862,7 @@ void func_80091064(u8 member) {
         }
     } else {
         for (i = 0; i < 16; i++) {
-            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, i)) {
+            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, i)) {
                 known[i] = 1;
                 costs[i] = D_800CCCE8.gearCommands[member][i + 21].cost;
             } else {
@@ -1037,7 +1037,7 @@ void func_80091B38(u8 member, u8 column, u8 row) {
     if (D_800D32A0[member].unk1 == 0) {
         text = D_800D2D24[member] * 32 + (row * 2 + column) * 2;
     } else {
-        text = D_8006D8A0.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
+        text = D_8006D634.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
     }
     pixels = (u32 *)func_8008AC00(0x39);
     bzero(pixels, 0x618);
@@ -1064,8 +1064,8 @@ u8 row;
     u8 known = 0;
 
     if (D_800D32A0[member].unk1 == 0) {
-        known = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
-    } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)) {
+        known = func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
+    } else if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2)) {
         known = 1;
     }
     if (known) {
@@ -1464,7 +1464,7 @@ void func_800939CC(u8 member, u8 kind) {
     seals[1] = D_800C3234[14];
     seals[2] = D_800C3234[15];
     seals[3] = D_800C3234[3];
-    if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, kind) &&
+    if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].flags1A, kind) &&
         !(D_800CCCE8.records[member].pilot.status7A & seals[kind])) {
         func_80093578(member, kind);
         func_8009382C(member, kind);
@@ -1498,13 +1498,13 @@ void func_80093B08(u8 member) {
         divisors[0] = 100;
         divisors[1] = 10;
         if (D_800D32A0[member].unk1 == 0) {
-            slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
-            slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
+            slots[0] = D_8006D634.characters[D_800D2D24[member]].entryItems[0];
+            slots[1] = D_8006D634.characters[D_800D2D24[member]].entryItems[3];
             values[0] = D_8006F8BA[slots[0]];
             values[1] = D_8006F8BA[slots[1]];
         } else {
-            slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
-            slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
+            slots[0] = D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[0];
+            slots[1] = D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3];
             values[0] = D_8006F8EA[slots[0]];
             values[1] = D_8006F8EA[slots[1]];
         }
@@ -2834,11 +2834,11 @@ void func_80097D5C(void) {
         D_800D2D6C = &D_800C34B0->records[member].gear;
         level = &D_800C34B0->records[member].field148;
         if (D_800D2D24[member] == 9) {
-            D_8006D8A0.characters[9].characterId = 9;
+            D_8006D634.characters[9].characterId = 9;
             D_800C3E00->pilot.characterId = 9;
         }
         if (D_800D2D24[member] == 10) {
-            D_8006D8A0.characters[10].characterId = 10;
+            D_8006D634.characters[10].characterId = 10;
             D_800C3E00->pilot.characterId = 10;
         }
         if (D_800C3E00->pilot.characterId == 4) {
@@ -2907,13 +2907,13 @@ void func_80097D5C(void) {
             D_800C34B0->gearCommands[member][37].hudState *= 10;
         }
         level[1] = 0;
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x1C00) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x1C00) {
             level[1] = 1;
         }
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x380) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x380) {
             level[1] = 2;
         }
-        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x70) {
+        if (D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA & 0x70) {
             level[1] = 3;
         }
         D_800D2D6C->attackScale = D_800D2D6C->field74;
@@ -2937,7 +2937,7 @@ void func_80097D5C(void) {
             }
         }
         if (D_800C3E00->pilot.level >= 50) {
-            D_8006ECF4[D_800C3E00->pilot.characterId].mask4 |= 8;
+            D_8006D634.skills[D_800C3E00->pilot.characterId].unlocksA |= 8;
         }
         if (D_800C3E00->pilot.characterId == 7) {
             D_800D2D6C->hp = D_800C3E00->pilot.hp * 50;
@@ -2953,14 +2953,14 @@ void func_80097D5C(void) {
             }
         }
         if (D_800C3E00->pilot.gearId == 0xF) {
-            D_8006ECF4[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
+            D_8006D634.skills[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
         }
         if (D_800C3E00->pilot.gearId == 0x12) {
             D_800C3E00->pilot.status7A = 0x238;
             D_800D2D6C->fuel = 0x26AC;
             D_800D2D6C->maxFuel = 0x26AC;
             level[1] = 0;
-            D_8006ECF4[3].flags1A = 0x8000;
+            D_8006D634.skills[3].flags1A = 0x8000;
         }
         if (D_8006D634.vars[0] >= 231 && !(D_8006D634.flags2355 & 0x80)) {
             D_8006D634.characters[9].weapons[0] = 0x27;
@@ -3007,21 +3007,21 @@ void func_8009892C(void) {
             D_800D2D6C->speed = 16;
         }
     }
-    D_8006D8A0.characters[8].speed = 7;
-    if (D_8006ECF4[8].flags1A & 0x2000) {
-        D_8006ECF4[8].mask2 |= 0x800;
+    D_8006D634.characters[8].speed = 7;
+    if (D_8006D634.skills[8].flags1A & 0x2000) {
+        D_8006D634.skills[8].levelSkills |= 0x800;
     }
     if (D_8006D634.vars[0] < 0xBB) {
-        D_8006D8A0.gears[0].field74 = 10;
-        D_8006D8A0.gears[1].field74 = 10;
-        D_8006D8A0.gears[11].field74 = 9;
-        D_8006D8A0.gears[12].field74 = 9;
-        D_8006D8A0.gears[13].field74 = 8;
-        D_8006D8A0.gears[14].field74 = 12;
-        D_8006D8A0.gears[15].field74 = 12;
-        D_8006D8A0.gears[13].engine = 0x58;
-        D_8006D8A0.gears[7].field3 = 0;
-        D_8006D8A0.gears[15].frame = 0x28;
+        D_8006D634.gears[0].field74 = 10;
+        D_8006D634.gears[1].field74 = 10;
+        D_8006D634.gears[11].field74 = 9;
+        D_8006D634.gears[12].field74 = 9;
+        D_8006D634.gears[13].field74 = 8;
+        D_8006D634.gears[14].field74 = 12;
+        D_8006D634.gears[15].field74 = 12;
+        D_8006D634.gears[13].engine = 0x58;
+        D_8006D634.gears[7].field3 = 0;
+        D_8006D634.gears[15].frame = 0x28;
     }
 }
 
@@ -3240,8 +3240,8 @@ void func_80098D2C(u8 slot, u8 param) {
             D_800C34B0->message = 0x28;
             break;
         case 14:
-            D_8006D8A0.characters[record->pilot.characterId].expNextA = 1;
-            D_8006D8A0.characters[record->pilot.characterId].expNextB = 1;
+            D_8006D634.characters[record->pilot.characterId].expNextA = 1;
+            D_8006D634.characters[record->pilot.characterId].expNextB = 1;
             break;
         case 15:
             for (i = 0; i < 7; i++) {
@@ -3778,19 +3778,19 @@ void func_8009A2D4(u8 member) {
 
 /* Byte 5 of game-data unit record id. */
 u8 func_8009A7B8(u8 id) {
-    return D_8006D8A0.characters[id].entries[0].pad5;
+    return D_8006D634.characters[id].entries[0].pad5;
 }
 
 /* Whether gear item index is one of character 4's four entries. */
 s32 func_8009A7E4(u8 index) {
     BattleItem *item = &D_800C34B0->lists.items.members[index];
 
-    if (D_8006D8A0.characters[4].entries[0].id == item->id
-        || D_8006D8A0.characters[4].entries[1].id == item->id
-        || D_8006D8A0.characters[4].entries[2].id == item->id) {
+    if (D_8006D634.characters[4].entries[0].id == item->id
+        || D_8006D634.characters[4].entries[1].id == item->id
+        || D_8006D634.characters[4].entries[2].id == item->id) {
         return 1;
     }
-    return D_8006D8A0.characters[4].entries[3].id == item->id;
+    return D_8006D634.characters[4].entries[3].id == item->id;
 }
 
 /* Put battle item index into character 4's entry holding its id (entry k when
@@ -3800,25 +3800,25 @@ void func_8009A854(u8 index, u8 k) {
     BattleItem *item = &D_800C34B0->lists.items.list[index];
     u8 i;
 
-    if (D_8006D8A0.characters[4].entries[0].id == item->id) {
+    if (D_8006D634.characters[4].entries[0].id == item->id) {
         k = 0;
     }
-    if (D_8006D8A0.characters[4].entries[1].id == item->id) {
+    if (D_8006D634.characters[4].entries[1].id == item->id) {
         k = 1;
     }
-    if (D_8006D8A0.characters[4].entries[2].id == item->id) {
+    if (D_8006D634.characters[4].entries[2].id == item->id) {
         k = 2;
     }
-    if (D_8006D8A0.characters[4].entries[3].id == item->id) {
+    if (D_8006D634.characters[4].entries[3].id == item->id) {
         k = 3;
     }
-    D_8006D8A0.characters[4].entries[k].value4 = item->valueC;
-    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
-    D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
-    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
-    D_8006D8A0.characters[4].entryItems[k] = index;
+    D_8006D634.characters[4].entries[k].value4 = item->valueC;
+    D_8006D634.characters[4].entries[k].value3 = item->valueB;
+    D_8006D634.characters[4].entries[k].value2 = item->valueA;
+    D_8006D634.characters[4].entries[k].value3 = item->valueB;
+    D_8006D634.characters[4].entryItems[k] = index;
     D_8006F8BA[index] = item->durability;
-    D_8006D8A0.characters[4].entryItems[k] = index;
+    D_8006D634.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
 
@@ -4079,75 +4079,75 @@ void func_8009B1E4(void) {
     u8 i;
 
     for (i = 1; i < 48; i++) {
-        D_8006F65A[i] = i;
-        D_8006F5C4[i] = 99;
+        D_8006D634.itemIds[i] = i;
+        D_8006D634.itemCounts[i] = 99;
     }
-    D_8006ECF4[0].mask0 = 0xFFF8;
-    D_8006ECF4[0].mask2 = 0xFF00;
-    D_8006ECF4[0].mask4 = 0xFFFF;
-    D_8006ECF4[0].mask6 = 0xFE00;
-    D_8006ECF4[0].flags1A = 0xF000;
-    D_8006ECF4[0].field17 = 7;
-    D_8006ECF4[1].mask0 = 0xFFE0;
-    D_8006ECF4[1].mask2 = 0xFFF0;
-    D_8006ECF4[1].mask4 = 0xFFFF;
-    D_8006ECF4[1].mask6 = 0xFFF0;
-    D_8006ECF4[1].flags1A = 0xC000;
-    D_8006ECF4[1].field17 = 7;
-    D_8006ECF4[2].mask0 = 0xFFE0;
-    D_8006ECF4[2].mask2 = 0xFFE0;
-    D_8006ECF4[2].mask4 = 0xFFFF;
-    D_8006ECF4[2].mask6 = 0xFF00;
-    D_8006ECF4[2].flags1A = 0x8000;
-    D_8006ECF4[2].field17 = 7;
-    D_8006ECF4[3].mask0 = 0xFFE0;
-    D_8006ECF4[3].mask2 = 0xFFC0;
-    D_8006ECF4[3].mask4 = 0xFFFF;
-    D_8006ECF4[3].mask6 = 0xFF00;
-    D_8006ECF4[3].flags1A = 0xF000;
-    D_8006ECF4[3].field17 = 7;
-    D_8006ECF4[4].mask0 = 0xFFC0;
-    D_8006ECF4[4].mask2 = 0xFFC0;
-    D_8006ECF4[4].mask4 = 0xFFFF;
-    D_8006ECF4[4].mask6 = 0xFC00;
-    D_8006ECF4[4].flags1A = 0xE000;
-    D_8006ECF4[4].field17 = 7;
-    D_8006ECF4[5].mask0 = 0xFFC0;
-    D_8006ECF4[5].mask2 = 0xF000;
-    D_8006ECF4[5].mask4 = 0xFFFF;
-    D_8006ECF4[5].mask6 = 0xF000;
-    D_8006ECF4[5].flags1A = 0x8000;
-    D_8006ECF4[5].field17 = 7;
-    D_8006ECF4[6].mask0 = 0xFFC0;
-    D_8006ECF4[6].mask2 = 0xFF00;
-    D_8006ECF4[6].mask4 = 0xFFFF;
-    D_8006ECF4[6].mask6 = 0xFF00;
-    D_8006ECF4[6].flags1A = 0x8000;
-    D_8006ECF4[6].field17 = 7;
-    D_8006ECF4[7].mask0 = 0;
-    D_8006ECF4[7].mask2 = 0xFF00;
-    D_8006ECF4[7].mask4 = 0;
-    D_8006ECF4[7].mask6 = 0xFF00;
-    D_8006ECF4[7].flags1A = 0;
-    D_8006ECF4[7].field17 = 7;
-    D_8006ECF4[8].mask0 = 0;
-    D_8006ECF4[8].mask2 = 0xF800;
-    D_8006ECF4[8].mask4 = 0xFFFF;
-    D_8006ECF4[8].mask6 = 0;
-    D_8006ECF4[8].flags1A = 0xE000;
-    D_8006ECF4[8].field17 = 7;
-    D_8006ECF4[9].mask0 = 0xFFE0;
-    D_8006ECF4[9].mask2 = 0xFFE0;
-    D_8006ECF4[9].mask4 = 0xFFFF;
-    D_8006ECF4[9].mask6 = 0xFFE0;
-    D_8006ECF4[9].flags1A = 0x8000;
-    D_8006ECF4[9].field17 = 7;
-    D_8006ECF4[10].mask0 = 0xFFC0;
-    D_8006ECF4[10].mask2 = 0xFF00;
-    D_8006ECF4[10].mask4 = 0xFFFF;
-    D_8006ECF4[10].mask6 = 0xFF00;
-    D_8006ECF4[10].flags1A = 0xC000;
-    D_8006ECF4[10].field17 = 7;
+    D_8006D634.skills[0].counterSkills = 0xFFF8;
+    D_8006D634.skills[0].levelSkills = 0xFF00;
+    D_8006D634.skills[0].unlocksA = 0xFFFF;
+    D_8006D634.skills[0].unlocksB = 0xFE00;
+    D_8006D634.skills[0].flags1A = 0xF000;
+    D_8006D634.skills[0].tier = 7;
+    D_8006D634.skills[1].counterSkills = 0xFFE0;
+    D_8006D634.skills[1].levelSkills = 0xFFF0;
+    D_8006D634.skills[1].unlocksA = 0xFFFF;
+    D_8006D634.skills[1].unlocksB = 0xFFF0;
+    D_8006D634.skills[1].flags1A = 0xC000;
+    D_8006D634.skills[1].tier = 7;
+    D_8006D634.skills[2].counterSkills = 0xFFE0;
+    D_8006D634.skills[2].levelSkills = 0xFFE0;
+    D_8006D634.skills[2].unlocksA = 0xFFFF;
+    D_8006D634.skills[2].unlocksB = 0xFF00;
+    D_8006D634.skills[2].flags1A = 0x8000;
+    D_8006D634.skills[2].tier = 7;
+    D_8006D634.skills[3].counterSkills = 0xFFE0;
+    D_8006D634.skills[3].levelSkills = 0xFFC0;
+    D_8006D634.skills[3].unlocksA = 0xFFFF;
+    D_8006D634.skills[3].unlocksB = 0xFF00;
+    D_8006D634.skills[3].flags1A = 0xF000;
+    D_8006D634.skills[3].tier = 7;
+    D_8006D634.skills[4].counterSkills = 0xFFC0;
+    D_8006D634.skills[4].levelSkills = 0xFFC0;
+    D_8006D634.skills[4].unlocksA = 0xFFFF;
+    D_8006D634.skills[4].unlocksB = 0xFC00;
+    D_8006D634.skills[4].flags1A = 0xE000;
+    D_8006D634.skills[4].tier = 7;
+    D_8006D634.skills[5].counterSkills = 0xFFC0;
+    D_8006D634.skills[5].levelSkills = 0xF000;
+    D_8006D634.skills[5].unlocksA = 0xFFFF;
+    D_8006D634.skills[5].unlocksB = 0xF000;
+    D_8006D634.skills[5].flags1A = 0x8000;
+    D_8006D634.skills[5].tier = 7;
+    D_8006D634.skills[6].counterSkills = 0xFFC0;
+    D_8006D634.skills[6].levelSkills = 0xFF00;
+    D_8006D634.skills[6].unlocksA = 0xFFFF;
+    D_8006D634.skills[6].unlocksB = 0xFF00;
+    D_8006D634.skills[6].flags1A = 0x8000;
+    D_8006D634.skills[6].tier = 7;
+    D_8006D634.skills[7].counterSkills = 0;
+    D_8006D634.skills[7].levelSkills = 0xFF00;
+    D_8006D634.skills[7].unlocksA = 0;
+    D_8006D634.skills[7].unlocksB = 0xFF00;
+    D_8006D634.skills[7].flags1A = 0;
+    D_8006D634.skills[7].tier = 7;
+    D_8006D634.skills[8].counterSkills = 0;
+    D_8006D634.skills[8].levelSkills = 0xF800;
+    D_8006D634.skills[8].unlocksA = 0xFFFF;
+    D_8006D634.skills[8].unlocksB = 0;
+    D_8006D634.skills[8].flags1A = 0xE000;
+    D_8006D634.skills[8].tier = 7;
+    D_8006D634.skills[9].counterSkills = 0xFFE0;
+    D_8006D634.skills[9].levelSkills = 0xFFE0;
+    D_8006D634.skills[9].unlocksA = 0xFFFF;
+    D_8006D634.skills[9].unlocksB = 0xFFE0;
+    D_8006D634.skills[9].flags1A = 0x8000;
+    D_8006D634.skills[9].tier = 7;
+    D_8006D634.skills[10].counterSkills = 0xFFC0;
+    D_8006D634.skills[10].levelSkills = 0xFF00;
+    D_8006D634.skills[10].unlocksA = 0xFFFF;
+    D_8006D634.skills[10].unlocksB = 0xFF00;
+    D_8006D634.skills[10].flags1A = 0xC000;
+    D_8006D634.skills[10].tier = 7;
 }
 
 /* Raise an attack's damage: by half for each of characters 0 and 3 in the
@@ -4391,7 +4391,7 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
         if (rand() % 100 < 25 && !(record->pilot.status7A & 0x20)) {
             choice[0] = 2;
             skill = rand() % count;
-            if (D_8006ECF4[record->pilot.characterId].mask2 & ((0x8000 >> skill) & skills)) {
+            if (D_8006D634.skills[record->pilot.characterId].levelSkills & ((0x8000 >> skill) & skills)) {
                 choice[1] = skill;
                 return;
             }
@@ -4440,9 +4440,9 @@ void func_8009BE0C(void) {
             continue;
         }
         record = &D_800CCCE8.records[i];
-        character = &D_8006D8A0.characters[record->pilot.characterId];
+        character = &D_8006D634.characters[record->pilot.characterId];
         gear = &D_800CCCE8.records[i].gear;
-        gearRecord = &D_8006D8A0.gears[record->pilot.gearId];
+        gearRecord = &D_8006D634.gears[record->pilot.gearId];
         if (record->pilot.characterId == 7 && (D_800CCCE8.records[i].flags15A & 0x80)) {
             record->pilot.hp = (gear->hp + 1) / 50;
             if (record->pilot.hp == 0) {
@@ -4523,7 +4523,7 @@ s32 func_8009C050(u8 slot) {
 void func_8009C0E0(u8 slot) {
     D_800CCCE8.records[slot].field148 = 4;
     D_800CCCE8.records[slot].statusTimers[6] = 3;
-    D_8006ECF4[0].flags1A |= 0x4000;
+    D_8006D634.skills[0].flags1A |= 0x4000;
 }
 
 /* Target the party member that is character 3. */

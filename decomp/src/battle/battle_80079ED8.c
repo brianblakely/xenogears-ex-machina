@@ -638,7 +638,7 @@ void func_8007B6C0(u8 **pc, u8 enemy) {
             D_800CCCE8.records[func_80079E7C(D_800D3400[enemy].vars[op[3]])].gear.hp;
         break;
     case 2:
-        D_800D3400[enemy].longs[op[1]] = D_8006EF58;
+        D_800D3400[enemy].longs[op[1]] = D_8006D634.gold;
         break;
     }
 }
@@ -1106,7 +1106,7 @@ void func_8007D148(u8 **pc, u8 *list, u8 enemy, u8 count) {
 
 /* AI action 53: long b1 = the party's gold. */
 void func_8007D1A8(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].longs[(*pc)[1]] = D_8006EF58;
+    D_800D3400[enemy].longs[(*pc)[1]] = D_8006D634.gold;
 }
 
 /* AI action 54: variable b1 = the bit of a random slot passing 8007a744

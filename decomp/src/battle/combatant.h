@@ -4,32 +4,12 @@
 #include "common.h"
 #include "battle/work.h"
 
-/* The game data's unit records. */
-typedef struct {
-    CharacterRecord characters[11];
-    GearRecord gears[20];
-} UnitRecords;
-
-extern UnitRecords D_8006D8A0;
+/* Views of the game data D_8006D634 (resident/gamedata.h) the battle indexes
+ * by slot: the item durabilities from +0x2286 and the gear part durabilities
+ * from its flags at +0x22B6 (word 0 the option flags). Their extent is not
+ * settled, so they stay names of their own. */
 extern u8 D_8006F8BA[]; /* item durability by slot */
 extern u8 D_8006F8EA[]; /* gear part durability by slot */
-extern u8 D_8006F5C4[]; /* inventory counts */
-extern u8 D_8006F65A[]; /* inventory items */
-
-/* Per-character battle data in the game data (0x20 bytes). */
-typedef struct {
-    u16 mask0;
-    u16 mask2;
-    u16 mask4;
-    u16 mask6;
-    u8 pad8[0x17 - 0x8];
-    u8 field17;
-    u8 pad18[0x1A - 0x18];
-    u16 flags1A;
-    u8 pad1C[0x20 - 0x1C];
-} CharacterBattleData;
-
-extern CharacterBattleData D_8006ECF4[11];
 
 extern BattleWork *D_800C34B0;
 
