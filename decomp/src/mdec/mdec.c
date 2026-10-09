@@ -505,13 +505,15 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_status);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", timeout);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4C94);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", D_801D4C94);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcSize);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D502C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", D_801D502C);
+
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcSize2);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc2);
 

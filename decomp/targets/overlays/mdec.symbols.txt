@@ -53,10 +53,14 @@ movie_skipped_frames = 0x801E89D4; // size:0x4
 movie_load_restart = 0x801E89E0; // size:0x4
 movie_previous_frame = 0x801E89EC; // size:0x4
 movie_stall_count = 0x801E89F4; // size:0x4
-// libpress statics placed inside .text (the decode-call limit and VLC context);
-// kept under their original split names.
-func_801D4C94 = 0x801D4C94; // type:func
-func_801D502C = 0x801D502C; // type:func
+// The first .text word of libpress VLC.OBJ and VLC_C.OBJ (their signatures'
+// text_0, before DecDCTvlcSize and DecDCTvlcSize2 at +4): the decode-call
+// limit (initially 0x00ffffff) that DecDCTvlcSize/DecDCTvlcSize2 set and
+// DecDCTvlc/DecDCTvlc2 load, data inside .text. As data labels they split
+// the text without being disassembled, so the code after each one keeps its
+// %hi/%lo relocations against it.
+D_801D4C94 = 0x801D4C94; // type:u32
+D_801D502C = 0x801D502C; // type:u32
 DecDCTvlcBuild = 0x801D444C; // type:func
 DecDCTGetEnv = 0x801D456C; // type:func
 DecDCTPutEnv = 0x801D45F8; // type:func
@@ -75,6 +79,7 @@ MDEC_status = 0x801D4B4C; // type:func
 timeout = 0x801D4B64; // type:func
 DecDCTvlcSize = 0x801D4C98; // type:func
 DecDCTvlc = 0x801D4CC8; // type:func
+DecDCTvlcSize2 = 0x801D5030; // type:func
 DecDCTvlc2 = 0x801D5060; // type:func
 _EncSPU_encode = 0x801D53C0; // type:func
 _EncSPU = 0x801D5544; // type:func
