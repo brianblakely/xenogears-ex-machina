@@ -676,6 +676,29 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual((found["gte"], found["indirect"]), (1, 1))
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_data_users_resolve_bases_gp_and_indexed_accesses(self):
+        from tools.data_users import formed_addresses
+
+        words = [
+            0x3C1C8006,  # lui   gp, 0x8006
+            0x279C9170,  # addiu gp, gp, -0x6e90  (the start code's $gp: no data address)
+            0x3C048009,  # lui   a0, 0x8009
+            0x248425D4,  # addiu a0, a0, 0x25d4   (formed only)
+            0x8C820004,  # lw    v0, 4(a0)
+            0x00852021,  # addu  a0, a0, a1       (an indexed access keeps the base)
+            0x90830002,  # lbu   v1, 2(a0)
+            0x83820010,  # lb    v0, 0x10(gp)
+            0x0C010000,  # jal   0x80040000
+            0x00000000,  # nop
+            0x8C850000,  # lw    a1, 0(a0)        (a0 clobbered by the call)
+            0x03E00008,  # jr    ra
+        ]
+        blob = b"".join(w.to_bytes(4, "little") for w in words)
+        self.assertEqual(formed_addresses(blob, 0x80010000), {
+            0x800925D4: {"addiu"}, 0x800925D8: {"lw"}, 0x800925D6: {"lbu"}, 0x80059180: {"lb@gp"},
+        })
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):
         from tools.nonmatching_score import instruction_differences
 
