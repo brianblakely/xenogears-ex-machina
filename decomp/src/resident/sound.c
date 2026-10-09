@@ -156,7 +156,9 @@ u8 D_80050824[128] = {
     2, 2, 3, 2, 4, 4, 1, 1, 2, 2, 3, 2, 4, 4, 1, 1, 4, 4, 3, 0, 0, 2, 2, 2, 4, 3, 0, 0, 3, 2, 2, 1,
 };
 
-/* Modulator waves by shape; shapes 8-15 only switch the modulator off. */
+/* Modulator waves by shape, indexed by mode & 0xF (D9/E5/ED/F0); shapes 8-15
+ * only switch the modulator off. tools/analysis/sound_sequence.py counts the
+ * shapes the data install. */
 s32 (*D_800508A4[16])(SoundModulator *modulator) = {
     func_8003F1A4, func_8003F1EC, func_8003F240, func_8003F2A0,
     func_8003F308, func_8003F308, func_8003F354, func_8003F3C0,

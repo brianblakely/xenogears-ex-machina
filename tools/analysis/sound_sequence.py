@@ -16,6 +16,10 @@ channel offsets per effect at +0x20, read by func_8003B644; func_8003F614
 accepts a bank only with a zero word sum and version 0x101 at +0xC). The
 driver never validates sequence headers (func_8003F67C returns 0).
 
+The sweep also counts the operand-indexed tables of this machine: the
+modulator waves D_800508A4[mode & 0xF] that D9/E5/ED (with a nonzero rate and
+depth) and F0 install, and F0's index into the channel's modulator[4].
+
     python3 -m tools.analysis.sound_sequence --sweep      # both discs, aggregate only
     python3 -m tools.analysis.sound_sequence FILE [--offset N]   # list one local script
 
@@ -559,6 +563,25 @@ def lookahead_length(code: int) -> int:
     return LOOKAHEAD.get(code, OPCODES[code].length)
 
 
+# D_800508A4 (sound.c): the modulator wave of each shape, 16 slots indexed by
+# mode & 0xF (8-15 switch the modulator off). D9/E5/ED install one only with a
+# nonzero rate and depth; F0 always, in modulator[index] of the channel
+# (SoundSeqChannel.modulator[4], sound.h).
+WAVE_SLOTS = 16
+WAVE_OPCODES = (0xD9, 0xE5, 0xED, 0xF0)
+MODULATORS = 4
+
+
+def installed_wave(instruction) -> int | None:
+    """The D_800508A4 index the instruction's handler installs, if any."""
+    if instruction.code not in WAVE_OPCODES:
+        return None
+    values = dict(instruction.operands)
+    if instruction.code != 0xF0 and not (values["rate"] and values["depth"]):
+        return None
+    return values["mode"] & 0xF
+
+
 class SequenceError(ValueError):
     def __init__(self, offset: int, reason: str):
         self.offset, self.reason = offset, reason
@@ -761,6 +784,8 @@ class Sweep:
     unreferenced_errors: list = field(default_factory=list)
     table_problems: list = field(default_factory=list)
     disc_codes: dict = field(default_factory=dict)  # disc -> opcodes its scripts use
+    waves: Counter = field(default_factory=Counter)  # (opcode, D_800508A4 index) installed
+    modulators: Counter = field(default_factory=Counter)  # F0's modulator indices
 
     def add(self, where: str, script: Script) -> set:
         """Decode the script's channels into the counts; returns the opcodes
@@ -778,6 +803,12 @@ class Sweep:
             used = [i.code if i.code >= 0x80 else "note" for i in instructions]
             self.uses.update(used)
             codes.update(used)
+            for instruction in instructions:
+                wave = installed_wave(instruction)
+                if wave is not None:
+                    self.waves[(instruction.code, wave)] += 1
+                if instruction.code == 0xF0:
+                    self.modulators[dict(instruction.operands)["index"]] += 1
             end = instructions[-1].offset + instructions[-1].length
             covered[start:end] = b"\1" * (end - start)
         if script.entries:
@@ -914,6 +945,16 @@ def report(result: Sweep) -> str:
         lines.append(f"    {code:02x} {OPCODES[code].mnemonic}: {result.uses[code]}")
     unused = [f"{code:02x}" for code in sorted(OPCODES) if code not in result.uses]
     lines.append(f"  defined but unused: {' '.join(unused)}")
+    lines.append(f"  modulator waves installed (D_800508A4[mode & 0xf], {WAVE_SLOTS} slots):")
+    for code in WAVE_OPCODES:
+        shapes = {shape: n for (op, shape), n in sorted(result.waves.items()) if op == code}
+        text = " ".join(f"{shape}:{n}" for shape, n in shapes.items()) or "none"
+        lines.append(f"    {code:02x} {OPCODES[code].mnemonic}: {text}")
+    indices = " ".join(f"{i}:{n}" for i, n in sorted(result.modulators.items())) or "none"
+    past = sum(n for i, n in result.modulators.items() if i >= MODULATORS)
+    lines.append(
+        f"  f0 modulator indices (modulator[{MODULATORS}]): {indices}; past the array: {past}"
+    )
     lines.append(f"  unknown/undecodable: {len(result.unknown)}")
     lines += [f"    {u}" for u in result.unknown]
     for kind in ("smds", "seds"):
