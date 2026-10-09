@@ -14,6 +14,15 @@ class PackedError(ValueError):
     """The supplied block cannot follow the recovered decoder safely."""
 
 
+class PackedTruncated(PackedError):
+    """The decoder reads past the source; `output` holds what it decoded before
+    that read, which depends on the source alone."""
+
+    def __init__(self, position: int, output: bytes):
+        super().__init__(f"source truncated at +0x{position:x}")
+        self.output = output
+
+
 @dataclass(frozen=True)
 class PackedBlock:
     data: bytes
@@ -46,7 +55,7 @@ def decode_block(source: bytes, *, output_limit: int = 0x200000) -> PackedBlock:
     def read_byte() -> int:
         nonlocal position
         if position >= len(source):
-            raise PackedError(f"source truncated at +0x{position:x}")
+            raise PackedTruncated(position, bytes(output))
         value = source[position]
         position += 1
         return value

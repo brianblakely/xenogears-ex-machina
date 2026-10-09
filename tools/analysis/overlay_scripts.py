@@ -26,12 +26,18 @@ data:
   runs one cue and stores state 1 (or 0). A cue that clears D_8009D554 ends
   the world-map loop (func_800712D0) after that frame, so the director never
   runs again.
+* Arena move frame events, func_80074678 (decomp/src/menu/menu3.c). A gear
+  model file (directory 0x30/1) holds per animation a list of FrameEvent
+  records {first, last, spec} ending in first 0xFF; each record whose frame
+  range holds the frame runs the HitSpec at header + spec through a switch on
+  its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
 
 None of the machines has jumps: a script runs straight to its stop.
 Sizes and flow follow each handler's advance; the C comments of the handlers
 give each opcode's effect. `--sweep` decodes every script of every machine
-from each disc's own packed overlay container and prints aggregate counts
-only; `--list` prints the disassembly of the user's discs to stdout.
+from each disc's own files (the packed overlays and model files) and prints
+aggregate counts only; `--list` prints the disassembly of the user's discs
+to stdout.
 """
 
 from __future__ import annotations
@@ -46,6 +52,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from tools.analysis.disc_index import Disc
+from tools.analysis.packed import PackedError, PackedTruncated, decode_block
 from tools.extraction.overlays import OVERLAYS, image
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -775,23 +783,377 @@ def scene_listing(disc: int) -> None:
                 print(f"  never fetched entry {index}: state {state} wait={wait}")
 
 
+# Arena move frame events -----------------------------------------------------
+#
+# Layouts from decomp/src/menu/menu.h, as (offset, size, signed).
+FRAME_EVENT = {"first": (0, 1, False), "last": (1, 1, False), "spec": (2, 2, True)}
+HIT_SPEC = {
+    "unk0": (0, 1, False),  # the kind
+    "type": (1, 1, False),
+    "part_a": (2, 1, False),
+    "part_b": (3, 1, False),
+    "vertex_a": (4, 2, True),
+    "vertex_b": (6, 2, True),
+}
+EVENT_END = 0xFF  # a record whose first frame is 0xFF ends the list
+EVENT_TABLE = 0x34  # header + 0x34: an s16 event list offset per animation (func_80084C88)
+MODEL_DIRECTORY = (0x30, 1)  # func_8008509C: model id n is file n + 2
+
+
+@dataclass(frozen=True)
+class EventKind:
+    mnemonic: str
+    handler: str  # func_80074678's case and the function it calls
+    fields: tuple[tuple[str, str], ...]  # (HitSpec field the case reads, its role)
+    runs: str  # which of a call's frames run it
+
+    def size(self) -> int:
+        """HitSpec bytes the case reads, the kind byte included."""
+        return max([1] + [HIT_SPEC[name][0] + HIT_SPEC[name][1] for name, _ in self.fields])
+
+
+POINTS = (
+    ("type", "form"),
+    ("part_a", "part_a"),
+    ("vertex_a", "vertex_a"),
+    ("part_b", "part_b"),
+    ("vertex_b", "vertex_b"),
+)
+EVENT_KINDS = {
+    0: EventKind(
+        "hit",
+        "func_80074678 case 0: func_800740E4",
+        POINTS,
+        "every frame of the range; it is live (actor flag 0x4000000) from the first frame"
+        " until the last or until one of its trails connects (func_80075B50)",
+    ),
+    1: EventKind(
+        "sounds",
+        "func_80074678 case 1: func_8008EB88",
+        (("part_a", "sound_a"), ("part_b", "sound_b")),
+        "only the first kind-1 event of a call",
+    ),
+    2: EventKind(
+        "effect",
+        "func_80074678 case 2: func_80073F34",
+        POINTS,
+        "once per HitSpec in a call, up to 20 (the count is never initialised)",
+    ),
+    3: EventKind("return_home", "func_80074678 case 3: func_80078154", (), "every frame"),
+    4: EventKind("hide_part", "func_80074678 case 4", (("type", "part"),), "every frame"),
+    5: EventKind("show_part", "func_80074678 case 5", (("type", "part"),), "every frame"),
+}
+
+
+def hit_form(type_: int) -> str:
+    """func_800740E4's use of a hit's type while the hit is live; bit 0x40
+    drops the sparkle trail (func_8007C880 / func_8007CD44) of every frame."""
+    if type_ == 0x20:
+        return "charged_shot"  # func_80073424 kind 0 if the charge is taken, else sparkle 9
+    if type_ == 4:
+        return "shot_1_at_opponent"  # func_80073424 kind 1, b unused
+    if 0x21 <= type_ <= 0x26:
+        return f"shot_{type_ - 0x20}"  # func_80073424, away from b when the points differ
+    return "trail_no_sparkle" if type_ & 0x40 else "trail"  # func_80073CEC
+
+
+SPARKLE_SIZES = 3  # D_80091228, indexed by type - 0x20
+
+
+def effect_form(type_: int) -> str:
+    """func_80073F34's dispatch on an effect's type; "none" has no case in the
+    callee and "past_table" indexes past D_80091228."""
+    if 0x10 <= type_ < 0x20:  # func_8007D25C: between the two points
+        if type_ == 0x10:
+            return "line"  # func_8007CD44
+        return f"bolt_{type_ - 0x11}" if type_ <= 0x13 else "none"  # func_8007D65C
+    if type_ >= 0x20:  # func_8007C880 at a or the midpoint
+        return f"sparkle_trail_{type_ - 0x20}" if type_ - 0x20 < SPARKLE_SIZES else "past_table"
+    if type_ <= 4:
+        return f"sparkle_{type_}"  # func_8007D190
+    if 8 <= type_ <= 12:
+        return f"sparkle_{type_ - 8}_jittered"
+    return "none"
+
+
+@dataclass(frozen=True)
+class FrameEvent:
+    offset: int  # of the record, from the header
+    first: int
+    last: int
+    spec: int  # of the HitSpec, from the header
+    kind: int
+    values: tuple[int, ...]  # the kind's fields
+
+    @property
+    def form(self) -> str | None:
+        if self.kind == 0:
+            return hit_form(self.values[0])
+        if self.kind == 2:
+            return effect_form(self.values[0])
+        return None
+
+    def text(self) -> str:
+        spec = EVENT_KINDS[self.kind]
+        values = [
+            f"{role}={value}"
+            for (_, role), value in zip(spec.fields, self.values, strict=True)
+            if role != "form"
+        ]
+        name = spec.mnemonic + (f" {self.form}" if self.form else "")
+        return f"frames {self.first}-{self.last} {name} {', '.join(values)}".rstrip()
+
+
+class UnknownKind(ScriptError):
+    def __init__(self, offset: int, kind: int):
+        self.offset, self.kind = offset, kind
+        super().__init__(f"HitSpec +0x{offset:x}: kind {kind} has no case (the loop stalls)")
+
+
+def field_value(data: bytes, offset: int, layout: tuple[int, int, bool]) -> int:
+    start, size, signed = layout
+    if offset < 0 or offset + start + size > len(data):
+        raise ScriptError(f"read at +0x{offset + start:x} lies outside the decoded file")
+    return int.from_bytes(data[offset + start : offset + start + size], "little", signed=signed)
+
+
+def frame_events(data: bytes, header: int, offset: int) -> list[FrameEvent]:
+    """The FrameEvent list at header + offset through its 0xFF record, each
+    with the HitSpec fields its kind's case reads."""
+    events = []
+    position = header + offset
+    while (first := field_value(data, position, FRAME_EVENT["first"])) != EVENT_END:
+        last = field_value(data, position, FRAME_EVENT["last"])
+        spec = field_value(data, position, FRAME_EVENT["spec"])
+        kind = field_value(data, header + spec, HIT_SPEC["unk0"])
+        if kind not in EVENT_KINDS:
+            raise UnknownKind(spec, kind)
+        values = tuple(
+            field_value(data, header + spec, HIT_SPEC[name]) for name, _ in EVENT_KINDS[kind].fields
+        )
+        events.append(FrameEvent(position - header, first, last, spec, kind, values))
+        position += 4
+    return events
+
+
+@dataclass(frozen=True)
+class ModelFile:
+    header: int  # file offset of the model header (pointer +0x10)
+    lists: tuple[int, ...]  # per animation of the table at +0x08: list offset from the header
+
+
+WORD = (0, 4, False)
+
+
+def model_file(data: bytes) -> ModelFile:
+    """The pointers func_8008AF6C relocates (absolute against the build address
+    at +0x1C) and the event list offsets at header + 0x34 (func_80084C88), one
+    per animation of the table at +0x08 (0: none)."""
+    base = field_value(data, 0x1C, WORD)
+    header = field_value(data, 0x10, WORD) - base
+    table = field_value(data, 0x08, WORD)
+    count = field_value(data, table - base, WORD) if table else 0
+    lists = tuple(
+        field_value(data, header + EVENT_TABLE + 2 * i, (0, 2, True)) for i in range(count)
+    )
+    return ModelFile(header, lists)
+
+
+def loaded(disc: Disc, slot: int) -> bytes:
+    """The bytes func_800891C0 reads into memory: the file's size rounded up
+    to words (func_800288EC); the rest of its last sector is not copied."""
+    return disc.sectors(slot)[: (disc.entries[slot]["size"] + 3) & ~3]
+
+
+def unpack(source: bytes) -> tuple[bytes, int]:
+    """80032E88's output for `source` and how many of its declared bytes are
+    left out. A stream that reads past the source depends on memory after the
+    file from there on, so only the output decoded before that read is kept."""
+    try:
+        return decode_block(source).data, 0
+    except PackedTruncated as error:
+        return error.output, int.from_bytes(source[:4], "little") - len(error.output)
+
+
+def model_slots(disc: Disc) -> list[tuple[int, int]]:
+    """(file, slot) of every model file: the directory's own index entry
+    (file 1) holds minus the number of files that follow it."""
+    group, index = MODEL_DIRECTORY
+    count = -disc.entries[disc.slot(group, index, 1)]["size"]
+    return [(file, disc.slot(group, index, file)) for file in range(2, count + 2)]
+
+
+@dataclass
+class EventSweep:
+    files: int = 0
+    short: list = field(default_factory=list)  # output bytes left out, per file that has any
+    animations: int = 0
+    with_list: int = 0
+    lists: int = 0  # distinct lists
+    events: int = 0
+    uses: Counter = field(default_factory=Counter)
+    forms: Counter = field(default_factory=Counter)  # (kind, form)
+    types: Counter = field(default_factory=Counter)  # (kind, type) of the kinds with forms
+    never: int = 0  # first > last: no frame runs it
+    tails: int = 0  # hit HitSpecs followed by two bytes no event reads
+    unread: int = 0  # other HitSpec-area bytes (before the first list) no event reads
+    unlisted: int = 0  # bytes between lists that no animation reaches
+    inert: list = field(default_factory=list)  # forms with no effect or past a table
+    failures: list = field(default_factory=list)
+
+
+def event_sweep_file(result: EventSweep, name: str, data: bytes) -> None:
+    model = model_file(data)
+    result.animations += len(model.lists)
+    lists = {}
+    for number, offset in enumerate(model.lists):
+        if offset:
+            result.with_list += 1
+            lists.setdefault(offset, number)
+    read, spans, hits = set(), set(), set()
+    for offset, number in sorted(lists.items()):
+        try:
+            events = frame_events(data, model.header, offset)
+        except ScriptError as error:
+            result.failures.append((name, number, str(error)))
+            continue
+        result.lists += 1
+        result.events += len(events)
+        spans.update(range(offset, offset + 4 * len(events) + 4))  # with the 0xFF record
+        for event in events:
+            result.uses[event.kind] += 1
+            read.update(range(event.spec, event.spec + EVENT_KINDS[event.kind].size()))
+            if event.kind == 0:
+                hits.add(event.spec)
+            if event.form is not None:
+                result.forms[event.kind, event.form] += 1
+                result.types[event.kind, event.values[0]] += 1
+                if event.form in ("none", "past_table"):
+                    result.inert.append((name, number, event.text()))
+            if event.first > event.last:
+                result.never += 1
+    if spans:
+        start = EVENT_TABLE + 2 * len(model.lists)
+        unread = set(range(start, min(spans))) - read
+        tails = sum(1 for spec in hits if {spec + 8, spec + 9} <= unread)
+        result.tails += tails
+        result.unread += len(unread) - 2 * tails
+        result.unlisted += len(set(range(min(spans), max(spans))) - spans)
+
+
+def event_sweep(disc: Disc) -> EventSweep:
+    result = EventSweep()
+    for file, slot in model_slots(disc):
+        result.files += 1
+        name = f"file {file} (slot {slot})"
+        try:
+            data, short = unpack(loaded(disc, slot))
+            event_sweep_file(result, name, data)
+        except (PackedError, ScriptError) as error:
+            result.failures.append((name, None, str(error)))
+            continue
+        if short:
+            result.short.append(short)
+    return result
+
+
+def spans_text(values: list[int]) -> str:
+    """Sorted values as runs, e.g. 0x00-0x04, 0x10."""
+    runs = []
+    for value in values:
+        if runs and value == runs[-1][1] + 1:
+            runs[-1][1] = value
+        else:
+            runs.append([value, value])
+    return ", ".join(f"{a:#04x}" if a == b else f"{a:#04x}-{b:#04x}" for a, b in runs)
+
+
+def event_report(root: Path = ROOT) -> int:
+    group, index = MODEL_DIRECTORY
+    print(
+        f"arena-events: interpreter func_80074678, {len(EVENT_KINDS)} kinds (switch),"
+        f" model files of directory {group:#x}/{index}"
+    )
+    results = {}
+    for number in (1, 2):
+        results[number] = result = event_sweep(Disc(number, root))
+        short = sorted(result.short)
+        short = f"{len(short)} decode {short[0]}-{short[-1]} bytes short" if short else "all whole"
+        print(
+            f"  disc {number}: {result.files} files ({short}), {result.animations} animations,"
+            f" {result.with_list} with a list ({result.lists} distinct), {result.events} events,"
+            f" {len(result.failures)} undecodable"
+        )
+        for name, animation, error in result.failures:
+            print(f"    {name} animation {animation}: {error}")
+        print(
+            f"    ranges with first > last: {result.never}; forms without effect or past a"
+            f" table: {len(result.inert)}; bytes between lists that no animation reaches:"
+            f" {result.unlisted}"
+        )
+        print(
+            f"    HitSpec-area bytes no event reads: {2 * result.tails} in the two-byte tails"
+            f" of {result.tails} hits, {result.unread} others"
+        )
+        for name, animation, text in result.inert:
+            print(f"    {name} animation {animation}: {text}")
+    print("  kind uses (disc 1, disc 2):")
+    for kind, spec in EVENT_KINDS.items():
+        counts = " ".join(f"{result.uses[kind]:5d}" for result in results.values())
+        print(f"    {kind:3d} {spec.mnemonic:<22} {counts}")
+        forms = sorted(
+            {form for result in results.values() for k, form in result.forms if k == kind}
+        )
+        for form in forms:
+            counts = " ".join(f"{result.forms[kind, form]:5d}" for result in results.values())
+            print(f"          {form:<20} {counts}")
+        types = {t for result in results.values() for k, t in result.types if k == kind}
+        if types:
+            print(f"          types used: {spans_text(sorted(types))}")
+    for number, result in results.items():
+        used = sum(1 for kind in EVENT_KINDS if result.uses[kind])
+        print(f"  disc {number} kinds used: {used} of {len(EVENT_KINDS)}")
+    return sum(len(result.failures) for result in results.values())
+
+
+def event_listing(number: int, root: Path = ROOT) -> None:
+    disc = Disc(number, root)
+    for file, slot in model_slots(disc):
+        data, _ = unpack(loaded(disc, slot))
+        model = model_file(data)
+        print(f"file {file} (slot {slot}, model {file - 2}): header +0x{model.header:x}")
+        shown = {}
+        for animation, offset in enumerate(model.lists):
+            if not offset:
+                continue
+            if offset in shown:
+                print(f"  animation {animation}: list +0x{offset:x} (as animation {shown[offset]})")
+                continue
+            shown[offset] = animation
+            print(f"  animation {animation}: list +0x{offset:x}")
+            for event in frame_events(data, model.header, offset):
+                print(f"    +0x{event.offset:x} spec +0x{event.spec:x}: {event.text()}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sweep", action="store_true", help="aggregate decode of both discs")
     parser.add_argument(
         "--list",
-        choices=sorted([*MACHINES, "worldmap-scene"]),
+        choices=sorted([*MACHINES, "worldmap-scene", "arena-events"]),
         help="print one machine's scripts",
     )
     parser.add_argument("--disc", type=int, choices=(1, 2), default=1)
     args = parser.parse_args()
     if args.list == "worldmap-scene":
         scene_listing(args.disc)
+    elif args.list == "arena-events":
+        event_listing(args.disc)
     elif args.list:
         listing(MACHINES[args.list], args.disc)
     if args.sweep:
         failures = sum(report(machine) for machine in MACHINES.values())
-        failures += scene_report()
+        failures += scene_report() + event_report()
         if failures:
             raise SystemExit(f"{failures} undecodable scripts")
     if not (args.sweep or args.list):

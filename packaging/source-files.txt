@@ -507,6 +507,7 @@ docs/phase1-progress.md
 docs/platforms.json
 docs/recovery-inventory.md
 docs/reverse-engineering.md
+docs/scripts/arena-frame-events.md
 docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
 docs/scripts/battle-effect-vm.md

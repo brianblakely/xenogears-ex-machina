@@ -8,17 +8,32 @@ from tools.analysis.overlay_scripts import (
     ARENA,
     BASE,
     DIRECTORS,
+    EVENT_KINDS,
+    EVENT_TABLE,
+    FRAME_EVENT,
+    HIT_SPEC,
     ROOT,
+    SPARKLE_SIZES,
     WORLDMAP,
+    EventSweep,
     ScriptError,
+    UnknownKind,
     UnknownOpcode,
     decode,
     disassemble,
+    effect_form,
+    event_sweep_file,
     expected_sha256,
+    frame_events,
+    hit_form,
+    loaded,
+    model_file,
     run,
     scene_sweep,
     sequence_tables,
+    spans_text,
     sweep,
+    unpack,
 )
 
 
@@ -181,6 +196,118 @@ class SceneDirectorTests(unittest.TestCase):
             sequence_tables(scene, bytes(data))
 
 
+def frame_event(first: int, last: int, spec: int) -> bytes:
+    return struct.pack("<BBh", first, last, spec)
+
+
+def hit_spec(kind: int, type_: int = 0, a: int = 0, b: int = 0, va: int = 0, vb: int = 0) -> bytes:
+    return struct.pack("<BBBBhh", kind, type_, a, b, va, vb)
+
+
+def model_bytes(lists: list[int], body: dict[int, bytes], base: int = 0x80100000) -> bytes:
+    """A relocatable model file: animation table at 0x40, header at 0x80,
+    header-relative event lists and HitSpecs from body."""
+    data = bytearray(0x180)
+    struct.pack_into("<I", data, 0x08, base + 0x40)
+    struct.pack_into("<I", data, 0x10, base + 0x80)
+    struct.pack_into("<I", data, 0x1C, base)
+    struct.pack_into(f"<I{len(lists)}I", data, 0x40, len(lists), *[base + 0x100] * len(lists))
+    struct.pack_into(f"<{len(lists)}h", data, 0x80 + EVENT_TABLE, *lists)
+    for offset, raw in body.items():
+        data[0x80 + offset : 0x80 + offset + len(raw)] = raw
+    return bytes(data)
+
+
+class FrameEventTests(unittest.TestCase):
+    def test_records_run_their_specs_by_kind_until_the_ff_record(self):
+        body = {
+            0x40: hit_spec(0, 0x21, 3, 4, 7, -1),
+            0x48: hit_spec(1, 0x99, 5, 6),
+            0x4C: bytes([4, 9]),
+            0x50: frame_event(0, 3, 0x40) + frame_event(5, 5, 0x48) + frame_event(2, 1, 0x4C),
+            0x5C: b"\xff\x00\x00\x00",
+        }
+        data = model_bytes([0x50], body)
+        events = frame_events(data, 0x80, 0x50)
+        self.assertEqual(
+            [(e.first, e.last, e.kind) for e in events], [(0, 3, 0), (5, 5, 1), (2, 1, 4)]
+        )
+        self.assertEqual(events[0].values, (0x21, 3, 7, 4, -1))
+        self.assertEqual(
+            events[0].text(), "frames 0-3 hit shot_1 part_a=3, vertex_a=7, part_b=4, vertex_b=-1"
+        )
+        self.assertEqual(events[1].values, (5, 6))  # byte 1 is not read
+        self.assertEqual(events[2].text(), "frames 2-1 hide_part part=9")
+
+    def test_kinds_without_a_case_and_reads_past_the_file_fail(self):
+        body = {0x40: hit_spec(6), 0x50: frame_event(0, 0, 0x40) + b"\xff"}
+        with self.assertRaises(UnknownKind) as caught:
+            frame_events(model_bytes([0x50], body), 0x80, 0x50)
+        self.assertEqual((caught.exception.offset, caught.exception.kind), (0x40, 6))
+        with self.assertRaises(ScriptError):
+            frame_events(model_bytes([0x50], {0x50: frame_event(0, 0, 0x7FF0)}), 0x80, 0x50)
+        with self.assertRaises(ScriptError):
+            frame_events(model_bytes([0x50], {0x50: frame_event(0, 0, 0x40)})[:0xD4], 0x80, 0x50)
+
+    def test_kind_sizes_are_the_bytes_their_cases_read(self):
+        self.assertEqual(
+            {k: s.size() for k, s in EVENT_KINDS.items()}, {0: 8, 1: 4, 2: 8, 3: 1, 4: 2, 5: 2}
+        )
+
+    def test_hit_and_effect_types_pick_their_forms(self):
+        self.assertEqual(
+            [hit_form(t) for t in (0x20, 4, 0x21, 0x26, 0x27, 0x00, 0x10, 0x41, 0x60)],
+            ["charged_shot", "shot_1_at_opponent", "shot_1", "shot_6", "trail", "trail", "trail"]
+            + ["trail_no_sparkle"] * 2,
+        )
+        self.assertEqual(
+            [effect_form(t) for t in (0, 4, 5, 8, 0xC, 0xD, 0x10, 0x11, 0x13, 0x14, 0x22, 0x23)],
+            ["sparkle_0", "sparkle_4", "none", "sparkle_0_jittered", "sparkle_4_jittered", "none"]
+            + ["line", "bolt_0", "bolt_2", "none", "sparkle_trail_2", "past_table"],
+        )
+
+    def test_model_files_relocate_against_their_build_address(self):
+        model = model_file(model_bytes([0x50, 0, 0x50], {}))
+        self.assertEqual((model.header, model.lists), (0x80, (0x50, 0, 0x50)))
+        without_table = bytearray(model_bytes([0x50], {}))
+        without_table[0x08:0x0C] = bytes(4)
+        self.assertEqual(model_file(bytes(without_table)).lists, ())
+
+    def test_a_file_sweep_counts_shared_lists_once_and_reports_unread_bytes(self):
+        body = {
+            0x40: hit_spec(0, 0x41, 1, 1),  # 0x3C-0x3F and 0x48-0x4B are unread
+            0x4C: frame_event(0, 2, 0x40) + frame_event(3, 1, 0x40) + b"\xff\x00\x00\x00",
+            0x58: b"\x00" * 4,  # between the lists
+            0x5C: b"\xff\x00\x00\x00",
+        }
+        result = EventSweep()
+        event_sweep_file(result, "t", model_bytes([0x4C, 0, 0x4C, 0x5C], body))
+        self.assertEqual((result.animations, result.with_list, result.lists), (4, 3, 2))
+        self.assertEqual((result.events, result.uses[0], result.never), (2, 2, 1))
+        self.assertEqual((result.forms[0, "trail_no_sparkle"], result.types[0, 0x41]), (2, 2))
+        self.assertEqual((result.tails, result.unread, result.unlisted), (1, 6, 4))
+        self.assertEqual(
+            spans_text([0, 1, 2, 3, 4, 0x10, 0x20, 0x21]), "0x00-0x04, 0x10, 0x20-0x21"
+        )
+
+    def test_unpack_keeps_only_output_decoded_before_a_read_past_the_source(self):
+        stream = struct.pack("<I", 8) + b"\x00ABCDEFGH"
+        self.assertEqual(unpack(stream + b"\x00"), (b"ABCDEFGH", 0))
+        self.assertEqual(unpack(stream), (b"ABCDEFGH", 0))  # only the final flag read
+        longer = struct.pack("<I", 16) + b"\x00ABCDEFGH\x00IJK"
+        self.assertEqual(unpack(longer), (b"ABCDEFGHIJK", 5))
+
+    def test_a_model_file_is_loaded_to_its_size_rounded_up_to_words(self):
+        class Sectors:
+            entries = {7: {"size": 5}, 8: {"size": 8}}
+
+            def sectors(self, slot):
+                return bytes(range(16))
+
+        self.assertEqual(loaded(Sectors(), 7), bytes(range(8)))
+        self.assertEqual(loaded(Sectors(), 8), bytes(range(8)))
+
+
 class SourceTests(unittest.TestCase):
     """The opcode tables follow the recovered interpreters in decomp/src."""
 
@@ -333,6 +460,73 @@ class SceneSourceTests(unittest.TestCase):
                     a[1] for cue in each.cues.values() for a in cue.actions if a[0] == "request"
                 }
                 self.assertLess(max(targets), len(each.slots))
+
+
+def struct_fields(text: str, name: str) -> dict:
+    body = re.search(rf"typedef struct \{{([^}}]*)\}} {name};", text).group(1)
+    layout, offset = {}, 0
+    for kind, field_name in re.findall(r"\b([us](?:8|16|32)) (\w+);", body):
+        size = int(kind[1:]) // 8
+        layout[field_name] = (offset, size, kind[0] == "s")
+        offset += size
+    return layout
+
+
+class FrameEventSourceTests(unittest.TestCase):
+    def setUp(self):
+        self.menu3 = (ROOT / "decomp/src/menu/menu3.c").read_text()
+
+    def test_layouts_follow_menu_h(self):
+        header = (ROOT / "decomp/src/menu/menu.h").read_text()
+        self.assertEqual(struct_fields(header, "FrameEvent"), FRAME_EVENT)
+        self.assertEqual(struct_fields(header, "HitSpec"), HIT_SPEC)
+
+    def test_kinds_follow_the_cases_of_func_80074678(self):
+        body = function(self.menu3, "func_80074678")
+        self.assertIn("while (event->first != 0xFF) {", body)
+        self.assertIn(
+            "event = (FrameEvent *)((u8 *)actor->header + ", body.replace("events", "event")
+        )
+        self.assertIn("spec = (HitSpec *)((u8 *)actor->header + event->spec);", body)
+        found = cases(body, "spec->unk0")
+        self.assertEqual(found.pop("default").split(), ["continue;"])  # stays on the record
+        self.assertEqual(sorted(found), sorted(EVENT_KINDS))
+        callees = {name: function(self.menu3, name) for name in ("func_800740E4", "func_80073F34")}
+        for kind, case in found.items():
+            spec = EVENT_KINDS[kind]
+            callee = spec.handler.partition(": ")[2]
+            self.assertEqual(spec.handler.partition(":")[0], f"func_80074678 case {kind}")
+            read = set(re.findall(r"spec->(\w+)", case)) - {"unk0"}
+            if callee in callees:
+                self.assertIn(f"{callee}(actor, spec", case)
+                read |= set(re.findall(r"hit->(\w+)", callees[callee]))
+            elif callee:
+                self.assertIn(f"{callee}(actor", case)
+            self.assertEqual(read, {name for name, _ in spec.fields}, kind)
+        self.assertIn("flags |= 1;", found[4])
+        self.assertIn("flags &= ~1;", found[5])
+        self.assertIn("if (!sounded) {", found[1])
+        self.assertIn("if (trail_count < 20) {", found[2])
+
+    def test_forms_follow_the_type_dispatch_of_the_callees(self):
+        hit = function(self.menu3, "func_800740E4")
+        self.assertIn("if (hit->type == 0x20) {", hit)
+        self.assertEqual(hit.count("!(hit->type & 0x40)"), 2)
+        shots = set(cases(hit, "hit->type")) - {"default"}
+        self.assertEqual(shots, {t for t in range(256) if hit_form(t).startswith("shot")})
+        effect = function(self.menu3, "func_80073F34")
+        for text in ("func_8007D25C(hit->type) != 0", "hit->type == 0x10", "hit->type >= 0x20"):
+            self.assertIn(text, effect)
+        self.assertIn(
+            "if (code < 0x10) {\n        return 0;\n    }\n    return code < 0x20;",
+            function(self.menu3, "func_8007D25C"),
+        )
+        bolts = set(cases(function(self.menu3, "func_8007D65C"), "code"))
+        self.assertEqual(bolts, {t for t in range(0x10, 0x20) if effect_form(t).startswith("bolt")})
+        sparkles = set(cases(function(self.menu3, "func_8007D190"), "kind"))
+        self.assertEqual(sparkles, {t for t in range(0x10) if effect_form(t).startswith("sparkle")})
+        sizes = re.search(r"s16 D_80091228\[\] = \{([^}]*)\};", self.menu3).group(1)
+        self.assertEqual(len(sizes.split(",")), SPARKLE_SIZES)
 
 
 class TargetTests(unittest.TestCase):
