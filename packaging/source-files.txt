@@ -115,6 +115,7 @@ decomp/include/battle/area.h
 decomp/include/battle/burst.h
 decomp/include/battle/combatant.h
 decomp/include/battle/command.h
+decomp/include/battle/effect.h
 decomp/include/battle/effect_script.h
 decomp/include/battle/enemy_ai.h
 decomp/include/battle/event_script.h
@@ -194,7 +195,6 @@ decomp/src/battle/battle_800C11CC.c
 decomp/src/battle/battle_common.c
 decomp/src/battle/battle_prefix.c
 decomp/src/battle/curve.h
-decomp/src/battle/effect.h
 decomp/src/battle/effect_vm.h
 decomp/src/battle/files.h
 decomp/src/battle/gear_menu.h

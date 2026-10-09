@@ -1,15 +1,17 @@
 #ifndef BATTLE_EFFECT_H
 #define BATTLE_EFFECT_H
 
-/* Keyframe tracks, sprite drawing, colour fades, image animations and
- * surfaces of the battle effect library (8009E53C's unit, 800A3490-800A4654
- * and 800A7064-800A8A88; the same code is linked into overlay 2143 at
- * +0x13D3C0/+0x13D684). */
+/* The records of the battle's model and effect library (8009E53C's unit):
+ * keyframes and their tracks, tweens, effect sprites and their pools,
+ * colour fades, image animations and surfaces (battle/model.h has the
+ * hierarchies and effect pools). Most of the same code is linked into
+ * ovl2143, the actor module at 0x801DC000, which uses these records too
+ * (its overview pairs the functions). This header declares no variables, so
+ * units outside the battle can include it. */
 
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "battle/scene.h"
 
 /* An animation frame header (0x18 bytes; read as halfwords by 800A1B50). */
 typedef struct {
@@ -47,6 +49,29 @@ typedef struct {
     s16 time;     /* +0x10 */
     s16 duration; /* +0x12 */
 } Tween;
+
+/* An effect sprite, a record of a sprite pool (0x7C bytes): a
+ * quadrilateral of four vertices, a colour fading each tick, and its
+ * primitive for both frame buffers. */
+typedef struct {
+    s16 x0, y0, z0, pad06;
+    s16 x1, y1, z1;
+    s16 projected; /* 0x0E: the vertices are 3D, projected with the GTE */
+    s16 x2, y2, z2;
+    s16 age;       /* 0x16: -1 free */
+    s16 x3, y3, z3;
+    s16 lifetime;  /* 0x1E */
+    u16 color[3];  /* 0x20: 10.6 fixed point */
+    s16 fade[3];   /* 0x26: per tick */
+    POLY_FT4 packets[2]; /* 0x2C: one per frame buffer */
+} EffectSprite;
+
+/* A pool of effect sprites; next is the first record that may be free. */
+typedef struct SpritePool {
+    EffectSprite *records;
+    s16 count;
+    s16 next;
+} SpritePool;
 
 /* An object's trail channel (0x70 bytes): a sprite following two points of a
  * model part, with fading colours. Screen-space trails retain eight projected
@@ -155,7 +180,5 @@ typedef struct Surface {
     SurfacePoint **strands; /* 0x1C: each ring's first point */
     SurfacePoly *polyList;  /* 0x20 */
 } Surface;
-
-extern ImageAnim D_800D3600;  /* the stage's image animation */
 
 #endif
