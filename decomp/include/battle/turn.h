@@ -11,11 +11,14 @@
  * and a slot's turn timer (8008CCCC's 80098AF8). The event script overlay
  * reads the turn state too. */
 
-/* Per-slot block of the turn state (0x40 bytes). */
+/* Per-slot block of the turn state (0x40 bytes). The command menu's glyph
+ * records index its bytes from layout on (8008CCCC's unit). */
 typedef struct {
-    u8 unk0[8];
-    u8 digits[5][4];   /* +0x08 five four-glyph number strings */
-    u16 items[16];     /* menu item availability, 0 = available */
+    u8 layout[8];      /* +0x00 the command menu layout of the slot's character
+                        * (the setup, ovl2615, copies it) */
+    u8 digits[5][4];   /* +0x08 five four-glyph strings: 0 and 1 the setup copies
+                        * from the command menu sources, 2-4 number strings */
+    u16 items[16];     /* +0x1C menu item availability per command, 0 = available */
     u8 defaultTarget;  /* +0x3C */
     u8 unk3D[3];
 } TurnSlot;
@@ -29,7 +32,8 @@ typedef struct TurnState {
     u8 actor;          /* +0x2D3 acting slot */
     u8 unk2D4[2];
     u8 unk2D6;
-    u8 unk2D7[0x2DA - 0x2D7];
+    u8 unk2D7[2];
+    u8 lastItem;       /* +0x2D9 the item list's last row (the setup sets 47) */
     u8 eventCount;     /* +0x2DA queued presentation events */
     u8 eventsDone;     /* +0x2DB */
     u8 unk2DC;         /* action index + 1 */

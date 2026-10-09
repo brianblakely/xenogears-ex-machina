@@ -66,7 +66,7 @@ typedef struct BattleGraphics {
     POLY_GT4 gaugeBars[8];    /* +0x05A0 two per panel slot, one per draw buffer */
     POLY_G4 shade[6];         /* +0x0740 two per member, one per draw buffer */
     POLY_FT4 portrait[3][2];  /* +0x0818 */
-    LINE_F2 unk908[12];
+    LINE_F2 unk908[12];       /* +0x0908 white lines (the setup, ovl2615) */
     POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
@@ -78,9 +78,9 @@ typedef struct BattleGraphics {
                                 * fourth is the party-wide label */
     POLY_FT4 unk3A88[3][80]; /* party panel name glyphs */
     POLY_FT4 unk6008[3][8];  /* party panel value digits */
-    POLY_F4 unk63C8[2];
-    DR_MODE unk63F8[2];
-    s32 unk6410;       /* shade */
+    POLY_F4 panel[2];         /* +0x63C8 semi-transparent panel backdrops */
+    DR_MODE panelMode[2];     /* +0x63F8 */
+    s32 panelAlpha;           /* +0x6410 their shade */
     u8 unk6414;
     u8 unk6415;
     u8 unk6416;        /* fading down */

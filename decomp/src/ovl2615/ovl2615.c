@@ -157,38 +157,38 @@ void func_801E4870(void) {
     records = D_800C3DD0 + 0x32;
     D_800C3DDC = D_800C3DD0 + ((u16 *)D_800C3DD0)[0x18];
     for (i = 3; i < SLOT_COUNT; i++) {
-        D_800C3D0C.enemy[i - 3].b3 = 0;
+        D_800C3D18[i - 3].unk3 = 0;
         if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
             memmove(&D_800CCCE8_setup.work.records[i], records + D_800C3EB0.slots[i].field2 * sizeof(Combatant),
                           sizeof(Combatant));
             scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB0.slots[i].field2]);
-            D_800D3400[i - 3].main = (u8 *)scripts + scripts[0];
-            D_800D3400[i - 3].sub = (u8 *)scripts + scripts[1];
+            D_800D3400[i - 3].script = (u8 *)scripts + scripts[0];
+            D_800D3400[i - 3].unk4 = (u8 *)scripts + scripts[1];
             if (scripts[2] != 0xFFFF) {
-                D_800D3400[i - 3].script = (u8 *)scripts + scripts[2];
-                D_800C3D0C.enemy[i - 3].script_armed = 1;
+                D_800D3400[i - 3].reaction = (u8 *)scripts + scripts[2];
+                D_800C3D18[i - 3].armed = 1;
             } else {
-                D_800C3D0C.enemy[i - 3].script_armed = 0;
+                D_800C3D18[i - 3].armed = 0;
             }
             if (scripts[3] != 0xFFFF) {
-                D_800D3400[i - 3].reaction = (u8 *)scripts + scripts[3];
-                D_800C3D0C.enemy[i - 3].reaction_armed = 1;
+                D_800D3400[i - 3].turnScript = (u8 *)scripts + scripts[3];
+                D_800C3D18[i - 3].unk1[0] = 1;
             } else {
-                D_800C3D0C.enemy[i - 3].reaction_armed = 0;
+                D_800C3D18[i - 3].unk1[0] = 0;
             }
             for (j = 3; j >= 0; j--) {
-                D_800D3400[i - 3].vars[j] = 0;
+                D_800D3400[i - 3].longs[j] = 0;
             }
             for (j = 7; j >= 0; j--) {
-                D_800D3400[i - 3].hvars[j] = 0;
+                D_800D3400[i - 3].vars[j] = 0;
             }
             for (j = 15; j >= 0; j--) {
-                D_800D3400[i - 3].bvars[j] = 0;
+                D_800D3400[i - 3].bytes[j] = 0;
             }
         } else {
             bzero((u8 *)&D_800CCCE8_setup.work.records[i], sizeof(Combatant));
-            D_800C3D0C.enemy[i - 3].script_armed = 0;
-            D_800C3D0C.enemy[i - 3].reaction_armed = 0;
+            D_800C3D18[i - 3].armed = 0;
+            D_800C3D18[i - 3].unk1[0] = 0;
         }
     }
 }
@@ -204,12 +204,12 @@ void func_801E4AC0(void) {
     }
     for (i = 0; i < 3; i++) {
         if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            D_800C3EA4->member_panel[i].state = 1;
+            D_800C3EA4->panels[i].state = 1;
             if (D_800C3EB0.slots[i].gear != 0) {
                 D_800D32A1.party[i].in_gear = 1;
                 D_800CCCE8_setup.work.records[i].flags15A |= 0x80;
                 if (D_800C3EB0.slots[i].field2 != 7) {
-                    D_800C3EA4->member_panel[i].state = 2;
+                    D_800C3EA4->panels[i].state = 2;
                 }
             } else {
                 D_800D32A1.party[i].in_gear = 0;
@@ -218,7 +218,7 @@ void func_801E4AC0(void) {
         } else {
             D_800D32A1.party[i].in_gear = 0;
             D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
-            D_800C3EA4->member_panel[i].state = 0;
+            D_800C3EA4->panels[i].state = 0;
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
@@ -277,7 +277,7 @@ void func_801E4CD0(void) {
             listed++;
         }
     }
-    D_800C3EAC->last_item = 47;
+    D_800C3EAC->lastItem = 47;
     for (i = 0, listed = 0; i < 100; i++) {
         if (D_8006D634.weaponIds[i] >= 50 && D_8006D634.weaponIds[i] < 73) {
             LIST_ITEM(D_800C3D70, listed, D_8006D634.weaponIds[i]);
@@ -312,17 +312,17 @@ void func_801E4E7C(void) {
             i++;
         }
     } while (i < SLOT_COUNT);
-    D_800D2DCC.order_pos = 0;
+    D_800D2DCC.cursor = 0;
     for (i = 3; i < SLOT_COUNT; i++) {
         if (D_800D2DCC.present[i] != 0 && (D_800CCCE8_setup.work.records[i].pilot.flags34 & 0x200)) {
-            D_800D2DCC.timer_reset[i] = D_800D2DCC.timer[i] = 1;
+            D_800D2DCC.timers[0][i] = D_800D2DCC.timers[1][i] = 1;
         }
     }
     least = 0xFFFF;
     for (i = 0; i < SLOT_COUNT; i++) {
         if (D_800D2DCC.present[i] != 0) {
-            if (D_800D2DCC.timer[i] < least) {
-                least = D_800D2DCC.timer[i];
+            if (D_800D2DCC.timers[1][i] < least) {
+                least = D_800D2DCC.timers[1][i];
             }
         }
     }
@@ -330,7 +330,7 @@ void func_801E4E7C(void) {
     delta = least - 1;
     for (; i < SLOT_COUNT; i++) {
         if (D_800D2DCC.present[i] != 0) {
-            D_800D2DCC.timer[i] -= delta;
+            D_800D2DCC.timers[1][i] -= delta;
         }
     }
 }
@@ -349,33 +349,33 @@ void func_801E5014(void) {
     for (i = 0; i < 3; i++) {
         D_800D32A1.party[i].character_b = D_8006D634.skills[D_800CCCE8_setup.partyIds[i]].tier;
         for (j = 0; j < 8; j++) {
-            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
+            D_800C3EAC->slots[i].layout[j] = D_800C20F0[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
         }
         for (j = 0; j < 4; j++) {
             if (D_800CCCE8_setup.partyIds[i] != 7) {
-                D_800C3EAC->slot[i].menu8[j] = D_800C2130[j];
+                D_800C3EAC->slots[i].digits[0][j] = D_800C2130[j];
             } else {
-                D_800C3EAC->slot[i].menu8[j] = D_800C2138[j];
+                D_800C3EAC->slots[i].digits[0][j] = D_800C2138[j];
             }
-            D_800C3EAC->slot[i].menuC[j] = D_800C2134[j];
+            D_800C3EAC->slots[i].digits[1][j] = D_800C2134[j];
         }
-        D_800C3EAC->slot[i].target = func_800841E0(i);
-        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slot[i].target);
+        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
+        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
         for (k = 0; k < 16; k++) {
-            D_800C3EAC->slot[i].commands[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & D_800C3234[k];
+            D_800C3EAC->slots[i].items[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & D_800C3234[k];
         }
         if (D_800CCCE8_setup.work.records[i].pilot.gearId == 0xFF || (FORMATION_FLAGS & 0x40)) {
-            D_800C3EAC->slot[i].commands[7] = D_800C3234[7];
+            D_800C3EAC->slots[i].items[7] = D_800C3234[7];
             D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[7];
         }
         if (FORMATION_FLAGS & 0x80) {
-            D_800C3EAC->slot[i].commands[8] = D_800C3234[8];
+            D_800C3EAC->slots[i].items[8] = D_800C3234[8];
             D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[8];
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        D_800C3EAC->slot[i].target = func_800841E0(i);
-        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slot[i].target);
+        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
+        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
     }
 }
 
@@ -462,8 +462,8 @@ void func_801E5384(void) {
     D_800D33EC = D_800C3DD0;
     list = &D_800D33E8;
     *list = D_8006F9DC[0] * 2 + 2;
-    D_800C3DEC = func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 3), 1);
-    D_800D33F4 = D_800C3DEC;
+    D_800C3DEC = (s32)func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 3), 1);
+    D_800D33F4 = (void *)D_800C3DEC;
     D_800D33F8 = 0;
     D_800D33FC = NULL;
     D_800D33F0 = D_8006F9DC[0] * 2 + 3;
@@ -488,7 +488,7 @@ void func_801E5840(u8 phase) {
         func_801E4E7C();
         func_801E5014();
         D_800C3E24 = func_8008ABB8(0xEC, 0);
-        bzero(D_800C3E24, 0xEC);
+        bzero((u8 *)D_800C3E24, 0xEC);
         break;
     case 3:
         func_801E6290();
@@ -502,46 +502,46 @@ void func_801E5840(u8 phase) {
 void func_801E5924(void) {
     s32 i;
 
-    D_800D2D28->gauge_shown[0] = 1;
-    D_800D2D28->gauge_shown[1] = 1;
-    D_800D2D28->gauge_shown[2] = 1;
-    func_80026338(D_800D2F5C, 0x5C, &D_800C3EA4->glyph_a234, &D_800C3EA4->tpage_tp,
-                  &D_800C3EA4->clut_x, &D_800C3EA4->clut_y, &D_800C3EA4->tpage_x,
-                  &D_800C3EA4->tpage_y);
-    D_800C3EA4->gauge_clut[1] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y);
-    D_800C3EA4->gauge_clut[0] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 1);
-    D_800C3EA4->gauge_clut[3] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 2);
-    D_800C3EA4->gauge_clut[2] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 3);
+    D_800D2D28->reaction[0] = 1;
+    D_800D2D28->reaction[1] = 1;
+    D_800D2D28->reaction[2] = 1;
+    func_80026338(D_800D2F5C, 0x5C, &D_800C3EA4->sprites[0].unk0, &D_800C3EA4->sprites[0].tpageMode,
+                  &D_800C3EA4->sprites[0].clutX, &D_800C3EA4->sprites[0].clutY, &D_800C3EA4->sprites[0].pageX,
+                  &D_800C3EA4->sprites[0].pageY);
+    D_800C3EA4->barCluts[1] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY);
+    D_800C3EA4->barCluts[0] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 1);
+    D_800C3EA4->barCluts[3] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 2);
+    D_800C3EA4->barCluts[2] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 3);
     for (i = 0; i < 8; i++) {
-        SetPolyGT4(&D_800C3EA4->gauge[i]);
-        SetShadeTex(&D_800C3EA4->gauge[i], 0);
-        (D_800C3EA4->gauge + i)->r0 = 0x80;
-        (D_800C3EA4->gauge + i)->g0 = 0x80;
-        (D_800C3EA4->gauge + i)->b0 = 0x80;
-        (D_800C3EA4->gauge + i)->r1 = 0x80;
-        (D_800C3EA4->gauge + i)->g1 = 0x80;
-        (D_800C3EA4->gauge + i)->b1 = 0x80;
-        (D_800C3EA4->gauge + i)->r2 = 0;
-        (D_800C3EA4->gauge + i)->g2 = 0;
-        (D_800C3EA4->gauge + i)->b2 = 0;
-        (D_800C3EA4->gauge + i)->r3 = 0;
-        (D_800C3EA4->gauge + i)->g3 = 0;
-        (D_800C3EA4->gauge + i)->b3 = 0;
-        D_800C3EA4->gauge[i].tpage =
-            GetTPage(D_800C3EA4->tpage_tp, 0, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y);
-        SetPolyG4(&D_800C3EA4->gauge_shade[i]);
-        (D_800C3EA4->gauge_shade + i)->r2 = 0x4F;
-        (D_800C3EA4->gauge_shade + i)->g2 = 0x4F;
-        (D_800C3EA4->gauge_shade + i)->b2 = 0x4F;
-        (D_800C3EA4->gauge_shade + i)->r3 = 0x4F;
-        (D_800C3EA4->gauge_shade + i)->g3 = 0x4F;
-        (D_800C3EA4->gauge_shade + i)->b3 = 0x4F;
+        SetPolyGT4(&D_800C3EA4->gaugeBars[i]);
+        SetShadeTex(&D_800C3EA4->gaugeBars[i], 0);
+        (D_800C3EA4->gaugeBars + i)->r0 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->g0 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->b0 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->r1 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->g1 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->b1 = 0x80;
+        (D_800C3EA4->gaugeBars + i)->r2 = 0;
+        (D_800C3EA4->gaugeBars + i)->g2 = 0;
+        (D_800C3EA4->gaugeBars + i)->b2 = 0;
+        (D_800C3EA4->gaugeBars + i)->r3 = 0;
+        (D_800C3EA4->gaugeBars + i)->g3 = 0;
+        (D_800C3EA4->gaugeBars + i)->b3 = 0;
+        D_800C3EA4->gaugeBars[i].tpage =
+            GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX, D_800C3EA4->sprites[0].pageY);
+        SetPolyG4(&D_800C3EA4->shade[i]);
+        (D_800C3EA4->shade + i)->r2 = 0x4F;
+        (D_800C3EA4->shade + i)->g2 = 0x4F;
+        (D_800C3EA4->shade + i)->b2 = 0x4F;
+        (D_800C3EA4->shade + i)->r3 = 0x4F;
+        (D_800C3EA4->shade + i)->g3 = 0x4F;
+        (D_800C3EA4->shade + i)->b3 = 0x4F;
     }
     for (i = 0; i < 12; i++) {
-        SetLineF2(&D_800C3EA4->gauge_line[i]);
-        (D_800C3EA4->gauge_line + i)->r0 = 0xFF;
-        (D_800C3EA4->gauge_line + i)->g0 = 0xFF;
-        (D_800C3EA4->gauge_line + i)->b0 = 0xFF;
+        SetLineF2(&D_800C3EA4->unk908[i]);
+        (D_800C3EA4->unk908 + i)->r0 = 0xFF;
+        (D_800C3EA4->unk908 + i)->g0 = 0xFF;
+        (D_800C3EA4->unk908 + i)->b0 = 0xFF;
     }
 }
 
@@ -561,12 +561,12 @@ void func_801E5D2C(void) {
         (D_800C3EA4->panel + i)->g0 = 0xFF;
         (D_800C3EA4->panel + i)->b0 = 0xFF;
         SetSemiTrans(&D_800C3EA4->panel[i], 1);
-        SetDrawMode(&D_800C3EA4->panel_mode[i], 0, 0,
-                      GetTPage(0, 2, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y), &window);
+        SetDrawMode(&D_800C3EA4->panelMode[i], 0, 0,
+                      GetTPage(0, 2, D_800C3EA4->sprites[0].pageX, D_800C3EA4->sprites[0].pageY), &window);
     }
-    D_800C3EA4->panel6415 = 0;
-    D_800C3EA4->panel_alpha = 0xFF;
-    D_800C3EA4->panel6416 = 0;
+    D_800C3EA4->unk6415 = 0;
+    D_800C3EA4->panelAlpha = 0xFF;
+    D_800C3EA4->unk6416 = 0;
 }
 
 /* Render the ten battle messages 0-9 into text images. The original frame
@@ -576,8 +576,8 @@ void func_801E5E78(void) {
     s32 i;
 
     for (i = 0; i < 10; i++) {
-        D_800C3E5C[i] = func_8008AC00(4);
-        func_80034EAC(func_800338D8(i), D_800C3E5C[i], 2, 0);
+        D_800C3E5C[i].pixels = func_8008AC00(4);
+        func_80034EAC(func_800338D8(i), D_800C3E5C[i].pixels, 2, 0);
     }
 }
 
@@ -591,30 +591,30 @@ void func_801E5EE8(void) {
 
     for (i = 0; i < 3; i++) {
         if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            D_800D2D28->gauge_parts[i] += func_80076A6C(
-                0x52, &D_800C3EA4->member_gauge[i].prim[D_800D2D28->gauge_parts[i] * 2],
+            D_800D2D28->gaugeParts[i] += func_80076A6C(
+                0x52, &D_800C3EA4->gauge[i][0][D_800D2D28->gaugeParts[i] * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
-            part = D_800D2D28->gauge_parts[i];
+            part = D_800D2D28->gaugeParts[i];
             first = part * 2;
-            D_800D2D28->gauge_parts[i] += func_80076A6C(
-                0x53, &D_800C3EA4->member_gauge[i].prim[part * 2],
+            D_800D2D28->gaugeParts[i] += func_80076A6C(
+                0x53, &D_800C3EA4->gauge[i][0][part * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
-            for (k = first; k < D_800D2D28->gauge_parts[i] * 2; k += 2) {
-                func_80076C34(&D_800C3EA4->member_gauge[i].prim[k + D_800C3EB0.buffer]);
+            for (k = first; k < D_800D2D28->gaugeParts[i] * 2; k += 2) {
+                func_80076C34(&D_800C3EA4->gauge[i][0][k + D_800C3EB0.buffer]);
             }
             func_80076A10(0x61 + i, D_800C3EA4->portrait[i],
                           i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x1C), 0x14);
-            D_800C3EA4->member_panel[i].digit_parts[0] =
-                func_80076A10(0x90, D_800C3EA4->member_panel[i].digit[0],
+            D_800C3EA4->panels[i].parts[0] =
+                func_80076A10(0x90, D_800C3EA4->panels[i].value[0],
                               i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x38), 0x27);
-            D_800C3EA4->member_panel[i].digit_parts[1] =
-                func_80076A10(0x91, D_800C3EA4->member_panel[i].digit[1],
+            D_800C3EA4->panels[i].parts[1] =
+                func_80076A10(0x91, D_800C3EA4->panels[i].gear[0],
                               i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x3C), 0x27);
-            D_800C3EA4->member_panel[i].buffer = D_800C3EB0.buffer;
+            D_800C3EA4->panels[i].buffer = D_800C3EB0.buffer;
         }
     }
-    D_800D2D28->bA2 = D_800C3EB0.buffer;
-    D_800D2D28->b83 = D_800C3EB0.buffer;
+    D_800D2D28->gaugeBuffer = D_800C3EB0.buffer;
+    D_800D2D28->portraitBuffer = D_800C3EB0.buffer;
 }
 
 /* Setup phase 3, first frame: the gauge panels and each member's glyphs. */

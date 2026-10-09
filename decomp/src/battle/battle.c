@@ -3511,15 +3511,15 @@ void func_8008A274(u8 member) {
     D_800D2D28->unkAB++;
     if (D_800C3EA4->unk6415 != 0) {
         if (D_800C3EA4->unk6416 == 0) {
-            D_800C3EA4->unk6410 += 4;
-            if (D_800C3EA4->unk6410 > 0x80) {
-                D_800C3EA4->unk6410 = 0x7C;
+            D_800C3EA4->panelAlpha += 4;
+            if (D_800C3EA4->panelAlpha > 0x80) {
+                D_800C3EA4->panelAlpha = 0x7C;
                 D_800C3EA4->unk6416 = 1;
             }
         } else {
-            D_800C3EA4->unk6410 -= 4;
-            if (D_800C3EA4->unk6410 < 0) {
-                D_800C3EA4->unk6410 = 4;
+            D_800C3EA4->panelAlpha -= 4;
+            if (D_800C3EA4->panelAlpha < 0) {
+                D_800C3EA4->panelAlpha = 4;
                 D_800C3EA4->unk6416 = 0;
             }
         }

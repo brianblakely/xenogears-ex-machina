@@ -25,10 +25,12 @@ typedef struct EnemyAi {
 
 extern EnemyAi D_800D3400[8];
 
-/* Enemy reaction state (4 bytes per enemy from 800c3d18). */
+/* Enemy reaction state (4 bytes per enemy from 800c3d18). The setup (ovl2615)
+ * arms the scripts an enemy has and clears unk3. */
 typedef struct EnemyReaction {
     u8 armed;          /* the reaction script runs */
-    u8 unk1[2];
+    u8 unk1[2];        /* [0] the after-turn script is armed; [1] a party
+                        * member's turn targeted the enemy (both run it) */
     u8 unk3;
 } EnemyReaction;
 

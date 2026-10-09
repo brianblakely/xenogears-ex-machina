@@ -228,7 +228,7 @@ extern u16 D_800C3E30;             /* slot mask */
 extern u16 D_800C3D40;
 extern EffectPool D_800C3D0C;
 extern SpritePool D_800C3D04;
-extern s32 D_800C3E38;
+extern ModelPart *D_800C3E38; /* the stage model's parts (the setup, ovl2615, sets them) */
 extern Panorama *D_800C3D50[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
 extern void *D_800C3EA0;
 extern TextureScroll D_800C3DA0[2]; /* the stage's texture scrolls */

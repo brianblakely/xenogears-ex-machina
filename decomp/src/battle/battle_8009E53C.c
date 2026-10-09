@@ -2550,7 +2550,7 @@ void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, S
         func_80027EAC(&D_800C3DA0[i]);
     }
     if (D_800C3E38 != 0) {
-        func_800A48EC(D_800C3E48, (ModelPart *)D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
+        func_800A48EC(D_800C3E48, D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
     }
     for (i = 0; i < 2; i++) {
         func_800273C4(D_800C3D50[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);

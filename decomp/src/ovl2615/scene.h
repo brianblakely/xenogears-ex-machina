@@ -4,9 +4,9 @@
 /* The battle scene data (the resident pointer 0x8005949C, a u8 * in
  * resident/mode.h, and the scene data pointer 0x800658C8): the standing
  * positions of each formation group and of the members placed alone, the
- * stage description, its origin and colours, and the offsets of the stage
- * actors, lights and motion. The setup places the formation from it
- * (ovl2615.c) and builds the stage (stage.c). */
+ * stage description, its origin and colours, and the offsets of the scene's
+ * points and triangles (battle/scene.h) and motion. The setup places the
+ * formation from it (ovl2615.c) and builds the stage (stage.c). */
 
 #include "common.h"
 
@@ -68,8 +68,8 @@ typedef struct {
     u8 pad472[2];
     u8 back[3];           /* 0x474: the GTE back colour */
     u8 pad477[0x50C - 0x477];
-    s32 actors;           /* 0x50C: offsets in the scene data (0: none) */
-    s32 lights;           /* 0x510 */
+    s32 points;           /* 0x50C: offsets in the scene data (0: none) */
+    s32 triangles;        /* 0x510: a count, then the triangles */
     s32 motion;           /* 0x514 */
 } BattleScene;
 

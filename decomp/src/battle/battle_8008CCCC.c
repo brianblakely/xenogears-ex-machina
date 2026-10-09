@@ -329,8 +329,8 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
         j = 0;
         while ((id = ((u16 *)D_800C2F4C[sets[i]])[j]) != 0xFFFF) {
             if (id >= 0x4000) {
-                D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].unk0[id & 0xFF];
-                id = D_800C3EAC->slots[member].unk0[id & 0xFF];
+                D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].layout[id & 0xFF];
+                id = D_800C3EAC->slots[member].layout[id & 0xFF];
                 if (id == 0xFF) {
                     j += 4;
                     continue;

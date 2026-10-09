@@ -708,7 +708,7 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        setXYWH(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+        setXYWH(&D_800C3EA4->panel[D_800CCB04.buffer],
                 D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8, 0x18, 0x18);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
@@ -1191,10 +1191,10 @@ void func_80073538(void) {
  * +0x6410 and add it with its draw mode to the ordering table. */
 void func_80073A58(void) {
     if (D_800C3EA4->unk6415 != 0) {
-        setRGB0(&D_800C3EA4->unk63C8[D_800C3EA4->unk6414], D_800C3EA4->unk6410, D_800C3EA4->unk6410,
-                D_800C3EA4->unk6410);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
+        setRGB0(&D_800C3EA4->panel[D_800C3EA4->unk6414], D_800C3EA4->panelAlpha, D_800C3EA4->panelAlpha,
+                D_800C3EA4->panelAlpha);
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->panel[D_800C3EA4->unk6414]);
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->panelMode[D_800C3EA4->unk6414]);
     }
 }
 
