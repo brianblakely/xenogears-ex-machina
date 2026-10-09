@@ -17,9 +17,15 @@ statically scans the linked image's instructions and reports:
   game functions that load them;
 * functions using the GTE (cop2 instructions, including GTE commands).
 
-SDK functions are the FUNC symbols inside each target's `sdk` classification
-ranges (the resident's for the overlays, which call it at fixed addresses);
-their library comes from the PsyQ object signatures that cover them
+SDK entry points are the FUNC symbols inside each target's `sdk`
+classification ranges and the entries inside those symbols: BIOS call stubs,
+named by table and number where splat merged consecutive stubs into one
+symbol (`close` also holds B(41h)-B(45h)), and any other called word as
+`symbol+0xN` (GetGp is ChangeClearPAD+0x10). A call resolves against the
+caller's own image and the images that can be loaded beside it, i.e. those
+whose span does not overlap the caller's: the resident for every overlay, but
+not mdec's libraries for ovl2602, whose own code lies at the same addresses.
+An entry's library comes from the PsyQ object signatures that cover it
 (tools/psyq_signatures.py; SIGNATURES is the pinned psx_psyq_signatures data).
 Indirect calls (`jalr`) are counted, not resolved. Run inside the matching shell.
 """
@@ -47,6 +53,7 @@ LOADS_STORES = {
     "lb", "lbu", "lh", "lhu", "lw", "lwl", "lwr", "sb", "sh", "sw", "swl", "swr", "lwc2", "swc2",
 }
 VOLATILE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31)  # at, v, a, t, ra
+BIOS_TABLES = {0xA0: "A", 0xB0: "B", 0xC0: "C"}
 
 
 def constant_bases(blob: bytes, address: int, gp: int | None = None, indexed: bool = False):
@@ -99,27 +106,60 @@ def target(config_path: Path) -> dict:
     image = ROOT / values["IMAGE"]
     elf = Path(str(image) + ".elf")
     ranges = classification(ROOT / values["CLASSIFICATION"]) if values.get("CLASSIFICATION") else []
+    data = image.read_bytes()
+    delta = load_offset(elf)
     return {
         "name": config_path.stem,
         "elf": elf,
-        "data": image.read_bytes(),
-        "delta": load_offset(elf),
+        "data": data,
+        "delta": delta,
+        "span": (-delta, len(data) - delta),  # VRAM the image file covers
         "functions": functions(elf),
         "ranges": ranges,
     }
 
 
+def beside(t: dict, other: dict) -> bool:
+    """Whether `other` can be loaded while `t` runs: itself, or an image
+    whose span does not overlap t's."""
+    return other is t or other["span"][1] <= t["span"][0] or t["span"][1] <= other["span"][0]
+
+
+def bios_call(blob: bytes, offset: int) -> str | None:
+    """`B(41h)` when the words at `offset` are a BIOS call stub:
+    `addiu $t2, $zero, 0xA0/0xB0/0xC0; jr $t2; addiu $t1, $zero, n`."""
+    if offset < 0 or offset + 12 > len(blob):
+        return None
+    table, jump, number = (int.from_bytes(blob[offset + i : offset + i + 4], "little") for i in (0, 4, 8))
+    if table >> 8 != 0x240A00 or table & 0xFF not in BIOS_TABLES:
+        return None
+    if jump != 0x01400008 or number >> 16 != 0x2409:
+        return None
+    return f"{BIOS_TABLES[table & 0xFF]}({number & 0xFFFF:02X}h)"
+
+
+def sdk_entries(blob: bytes, start: int, functions) -> dict[int, str]:
+    """address -> name of each word of the FUNC symbols in `blob` (loaded at
+    `start`): the symbol's name at its start, a BIOS call stub inside it by
+    its table and number, any other word as `symbol+0xN`."""
+    names = {}
+    for address, size, name in functions:
+        names[address] = name
+        for inner in range(4, size, 4):
+            names[address + inner] = bios_call(blob, address + inner - start) or f"{name}+0x{inner:x}"
+    return names
+
+
 def sdk_functions(t: dict, signatures: Path) -> dict[int, tuple[str, str]]:
-    """address -> (name, library) for the FUNC symbols inside the target's sdk ranges."""
+    """address -> (name, library) for the entry points inside the target's sdk ranges."""
     result = {}
     for start, end, kind, _ in t["ranges"]:
         if kind != "sdk":
             continue
         blob = t["data"][start + t["delta"] : end + t["delta"]]
         objects = scan(signatures, blob, start)
-        for address, size, name in t["functions"]:
-            if not start <= address < end:
-                continue
+        inside = [f for f in t["functions"] if start <= f[0] < end]
+        for address, name in sdk_entries(blob, start, inside).items():
             libraries = sorted({
                 hit.split()[1] for (s, e), hits in objects.items() if s <= address < e for hit in hits
             })
@@ -186,13 +226,10 @@ def main() -> None:
     args = parser.parse_args()
 
     targets = [target(c if c.is_absolute() else ROOT / c) for c in args.configs]
-    sdk: dict[int, tuple[str, str]] = {}
-    pointers: dict[int, int] = {}
-    names: dict[int, str] = {}
     for t in targets:
-        sdk.update(sdk_functions(t, args.signatures))
-        pointers.update(hardware_pointers(t))
-        names.update(symbol_names(t["elf"]))
+        t["sdk"] = sdk_functions(t, args.signatures)
+        t["pointers"] = hardware_pointers(t)
+        t["names"] = symbol_names(t["elf"])
     pointer_users: dict[str, set[str]] = defaultdict(set)
     services: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     io: dict[str, list[str]] = {}
@@ -201,6 +238,10 @@ def main() -> None:
     indirect = 0
     game_functions = 0
     for t in targets:
+        visible = [other for other in targets if beside(t, other)]
+        sdk = {a: entry for other in visible for a, entry in other["sdk"].items()}
+        pointers = {a: value for other in visible for a, value in other["pointers"].items()}
+        names = {a: label for other in visible for a, label in other["names"].items()}
         for address, size, name in t["functions"]:
             if size == 0 or classified(t, address) in ("sdk", "handwritten"):
                 continue

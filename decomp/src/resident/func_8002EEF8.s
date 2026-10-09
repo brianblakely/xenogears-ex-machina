@@ -55,7 +55,7 @@ alabel func_8002EF0C
     model_vertex2 $t0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .Ldepth_cue_triangle
      sltu   $t0, $t1, $v0

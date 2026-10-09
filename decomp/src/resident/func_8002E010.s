@@ -8,14 +8,14 @@
 #
 # Triangles: func_8002E010 (POLY_GT3), func_8002E024 (POLY_G3),
 # func_8002E038 (POLY_F3) and func_8002E04C (POLY_FT3) select the packet
-# format in t9/t8/a3. A face is kept when its RTPT flags show no error,
-# the screen bounds test passes and NCLIP is positive. Its three SXY words
-# are written and s2 counts it; it is then linked at OT[OTZ >> D_80050100]
-# with OTZ = AVSZ3, unless OTZ is 0.
+# format in t9/t8/a3. A face is kept when the error test after RTPT (which
+# never fails, model_draw.s) and the screen bounds test pass and NCLIP is
+# positive. Its three SXY words are written and s2 counts it; it is then
+# linked at OT[OTZ >> D_80050100] with OTZ = AVSZ3, unless OTZ is 0.
 # Quads: func_8002E22C (POLY_GT4), func_8002E240 (POLY_G4),
 # func_8002E254 (POLY_F4) and func_8002E268 (POLY_FT4). RTPT projects the
 # first three points and NCLIP tests their winding only; RTPS then
-# projects the fourth, whose own flags are tested. OTZ = AVSZ4. A quad
+# projects the fourth, followed by the error test again. OTZ = AVSZ4. A quad
 # that passes the bounds test is counted, and only then skipped when its
 # OTZ is 0; otherwise its tag and four SXY words are written.
 #
@@ -76,7 +76,7 @@ alabel func_8002E04C
     model_vertex2 $t0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12            # SXY0
     bltz    $t0, .Lavsz_triangle  # error bit set
      sltu   $t0, $t1, $v0
@@ -176,7 +176,7 @@ alabel func_8002E268
     model_vertex2 $t0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
-    mfc2    $t0, $31            # RTPT flags
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     nclip
     bltz    $t0, .Lavsz_quad
      and    $s3, $s3, $s6
@@ -191,7 +191,7 @@ alabel func_8002E268
     lwc2    $1, 4($t0)
     mfc2    $t3, $14
     rtps
-    mfc2    $t0, $31            # the fourth point's flags
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t4, $14            # its SXY, pushed onto the FIFO
     bltz    $t0, .Lavsz_quad
      avsz4

@@ -281,7 +281,7 @@ void func_80031708(u32 *ot, LineF3 *prim);
 void func_80031750(u32 *ot, LineF4 *prim);
 void func_80031804(u32 *ot, TileRgb *prim);
 void func_80031870(u32 *ot, Tile1Tag *prim);
-void func_80048E94(Matrix *m, Matrix *out); /* transpose */
+void func_80048E94(Matrix *m, Matrix *out); /* orthonormal rows from two outer products */
 Matrix *func_80049ACC(Matrix *m0, Matrix *m1);     /* m0 = m0 * m1 */
 void SetRotMatrix(Matrix *m);                      /* load the GTE rotation */
 Emitter *func_8008D3F4(s32 shape, s32 placement);

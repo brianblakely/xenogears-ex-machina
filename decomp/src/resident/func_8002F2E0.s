@@ -50,7 +50,7 @@ glabel func_8002F2E0
     model_vertex2 $t1
     lwc2    $4, 0($t1)
     lwc2    $5, 4($t1)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .Llit_ft3
      sltu   $t0, $t1, $v0

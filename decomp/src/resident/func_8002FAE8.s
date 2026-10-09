@@ -10,8 +10,8 @@
 # own code byte) and linked.
 # a0 = records, a1 = count; t9 = cache pointer. Inside the loop, index 0
 # is masked to thirteen bits like index 1 (the first face's is not). SXY2
-# is read twice and the first y test is computed into t5 before the RTPS
-# flags. The old OT word is held in s1. Exits through func_8002E010's
+# is read twice and the first y test is computed into t5 before the second
+# error test. The old OT word is held in s1. Exits through func_8002E010's
 # shared exit with a3 = 40, the packet size. Handwritten: no frame,
 # cross-routine exit, pipelined GTE work.
 glabel func_8002FAE8
@@ -53,7 +53,7 @@ glabel func_8002FAE8
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
     addiu   $t9, $t9, 8         # this face's normal ends here
-    mfc2    $t0, $31            # RTPT flags
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     nclip
     bltz    $t0, .Llit_ft4
      and    $s3, $s3, $s6
@@ -70,7 +70,7 @@ glabel func_8002FAE8
     mfc2    $t3, $14
     rtps
     sltu    $t5, $t1, $v0
-    mfc2    $t0, $31
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t4, $14
     bltz    $t0, .Llit_ft4
      avsz4

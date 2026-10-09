@@ -1146,6 +1146,40 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual((found["gte"], found["indirect"]), (1, 1))
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_service_scan_names_bios_stubs_and_entries_inside_symbols(self):
+        from tools.service_calls import beside, bios_call, sdk_entries
+
+        words = [
+            0x240A00B0,  # addiu t2, zero, 0xb0   close: B(36h)
+            0x01400008,  # jr    t2
+            0x24090036,  # addiu t1, zero, 0x36
+            0x00000000,
+            0x240A00B0,  # the next stub, merged into the same symbol: B(41h)
+            0x01400008,
+            0x24090041,
+            0x00000000,
+            0x03E00008,  # jr    ra               GetGp, an entry inside the symbol
+            0x03801021,  # addu  v0, gp, zero
+        ]
+        blob = b"".join(w.to_bytes(4, "little") for w in words)
+        self.assertEqual(bios_call(blob, 0), "B(36h)")
+        self.assertEqual(bios_call(blob, 16), "B(41h)")
+        self.assertIsNone(bios_call(blob, 4))
+        self.assertIsNone(bios_call(blob, 32))  # runs past the blob
+        names = sdk_entries(blob, 0x80040564, [(0x80040564, len(blob), "close")])
+        self.assertEqual(names[0x80040564], "close")
+        self.assertEqual(names[0x80040574], "B(41h)")
+        self.assertEqual(names[0x80040584], "close+0x20")
+        self.assertEqual(len(names), len(words))
+
+        resident = {"span": (0x8000F800, 0x80059800)}
+        menu = {"span": (0x801C5000, 0x801D9070)}
+        movie_library = {"span": (0x801D3000, 0x801E8A1C)}
+        self.assertTrue(beside(menu, resident))
+        self.assertTrue(beside(menu, menu))
+        self.assertFalse(beside(menu, movie_library))
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_data_users_resolve_bases_gp_and_indexed_accesses(self):
         from tools.data_users import formed_addresses
 

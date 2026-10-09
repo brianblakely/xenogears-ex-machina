@@ -1104,7 +1104,9 @@ void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     LoadImage(&rect, data->image + 0x3E4);
 }
 
-/* While the overlay fade runs, redraw it when button bit 0 is down. */
+/* The vertical-blank hook, run by the resident handler 8003634c: while the
+ * overlay fade runs, step the glow field (8008e120, which calls rand) on odd
+ * blank counts. */
 void func_80084FD0(void) {
     if (D_80092784 != 0 && (D_80059488 & 1)) {
         func_8008E120();

@@ -55,7 +55,7 @@ glabel func_80030750
     lwc2    $3, 4($t7)
     lwc2    $4, 0($t8)
     lwc2    $5, 4($t8)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .Lenvmap
      sltu   $t0, $t1, $v0
