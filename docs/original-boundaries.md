@@ -278,7 +278,7 @@ state and an image at one address can be any of its tenants:
 | --- | --- | --- |
 | 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field func_800799D4 (reads the file), world map func_800758C0 (decodes its packed copy D_8009D528), resident func_8001C1A8 on the debug start; func_8001C1A8 then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
 | 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field func_800A7C58 copies directory 4 file 0xA9 there |
-| 0x801DC000 | ovl2143 | field func_80077884 (directory 4 file 0x6B9); for the gear shop func_800799D4 reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident func_8001C1A8 on the debug start |
+| 0x801DC000 | ovl2143 (actor module) | field func_80077884 (directory 4 file 0x6B9); for the gear shop func_800799D4 reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident func_8001C1A8 on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its func_80076098, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle func_80070F40 |
 | 0x801E0000 | ovl2606 (debug battle selector) | battle func_80070F40 |
 | 0x801E4000 | ovl2615 (battle setup) | resident func_8001BBAC |
