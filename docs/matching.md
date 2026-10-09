@@ -207,10 +207,10 @@ D_800C3EB0 and its work D_800CCCE8, and the field view D_800AF880's camera vecto
 `D_8006D8A0 = D_8006D634 + 0x26C`); otherwise a target holding the value has a
 symbol there (19: the movie library's functions and variables that field and movie
 address by number, battle functions whose addresses ovl3087 uses, two resident
-symbols the world map names differently); otherwise the address must
-lie inside an input section that target's link places (187 members or parts of
-objects that no symbol names, such as game data members, all from splat's lists).
-For these last two groups the check ties a value only to the address its name gives,
+symbols the world map names differently); otherwise the address must lie inside an
+input section that target's link places (187 members or parts of objects that no
+symbol names, such as game data members, all from splat's lists). For these last
+two groups the check ties a value only to the address its name gives,
 not to a particular object or, where targets overlap (debug595's field names also
 lie in battle), to a particular target; naming them as their definers do needs the
 importing C to use those names (left open). Values outside every target (the
@@ -223,15 +223,14 @@ table); in the 26 links they are battle's three reads of the boot word D_8001000
 func_800C0FAC), a number in the original too: its CDK units load it with one
 register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they compile
 `lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link fails its
-BSS bounds; and the
-load addresses of overlays and the heap's end (resident main.c:78,
-main_8001B6C4.c:180/428/436; battle_80070E2C.c:286/349/362/463,
+BSS bounds; and the load addresses of overlays and the heap's end (resident
+main.c:78, main_8001B6C4.c:180/428/436; battle_80070E2C.c:286/349/362/463,
 battle_800BD3AC.c:723; field.c:2940), which no check ties to the images loaded
 there. In data the only such words are the mode table's, compared below, and five
 in each resident's packed boot logo and console font, asset bytes that merely look
-like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the mode
-overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
-mode 2 enters resident code and declares only `MODE`): the entry must be the
+like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the
+mode overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6;
+battle's mode 2 enters resident code and declares only `MODE`): the entry must be the
 overlay's entry symbol, and the words after bss_start through bss_end, which the
 dispatcher clears (func_80019560), must be the overlay's linked .sbss/.bss. The check
 found one resident byte that other images use outside every object: the arena bout's
@@ -590,8 +589,8 @@ converted to C per unit. What converting the targets' `.data` established:
   4096 of its sine table), or are the sentinels their loops stop at (-1, 0xffff,
   also the world map's texture animation frames and camera path pad); a stray byte
   that continued its structure's pattern would pass this review too. The
-  unreferenced ones are words, structures, strings,
-  documented unread tables and copies, or tables read through a base formed before
+  unreferenced ones are words, structures, strings, documented unread tables and
+  copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). Two stay open. slot39's D_801E96A6 is a byte 08, then 00, between
   the flag bytes D_801E96A4/D_801E96A5 and the word-aligned D_801E96A8; no image's
