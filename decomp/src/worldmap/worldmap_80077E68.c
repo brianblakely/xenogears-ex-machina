@@ -81,7 +81,7 @@ s32 func_80077E68(s32 index) {
         VIEW.eye.vy = scratch->at.vy >> 16;
         VIEW.at.vy = D_8009BE28.target.vy >> 12;
     }
-    func_80097244(D_8009BD40);
+    func_80097244(&D_8009BD40);
     func_80097070(&D_8009C808, &D_8009BD38);
     switch (actor->state) {
     case 0:
@@ -239,9 +239,9 @@ s32 func_80078948(void) {
 /* Per-frame update and draw of the scene mode. */
 s32 func_80078950(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_80089748();
     func_80089C78();
@@ -409,7 +409,7 @@ s32 func_80078EA4(s32 index) {
         break;
     case 4:
         actor->wait--;
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         scratch->view.vx = rand() % 12 - 6;
         scratch->view.vy = rand() % 12 - 6;
         VIEW_VECTORS[0].vx += scratch->view.vx;
@@ -426,7 +426,7 @@ s32 func_80078EA4(s32 index) {
         break;
     case 5:
         actor->wait--;
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         scratch->view.vx = rand() % 4 - 2;
         scratch->view.vy = rand() % 4 - 2;
         VIEW_VECTORS[0].vx += scratch->view.vx;
@@ -488,7 +488,7 @@ s32 func_80078EA4(s32 index) {
         break;
     }
     if (actor->state != 4 && actor->state != 5) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     return 1;
 }

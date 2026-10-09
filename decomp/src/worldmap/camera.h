@@ -25,15 +25,15 @@ extern MATRIX D_8009C808; /* camera matrix */
  * which the orbit placement (func_80096F18) writes and the look-at camera
  * (func_80097244) reads; some camera actors swap its two view vectors per
  * frame. */
-typedef struct {
+typedef struct ViewSetup {
     SVECTOR eye;
     SVECTOR at;
     VECTOR up;
 } ViewSetup;
 
-extern u8 D_8009BD40[];
-#define VIEW (*(ViewSetup *)D_8009BD40)
-#define VIEW_VECTORS ((SVECTOR *)D_8009BD40) /* two view vectors, swapped per frame */
+extern ViewSetup D_8009BD40;
+#define VIEW D_8009BD40
+#define VIEW_VECTORS ((SVECTOR *)&D_8009BD40) /* two view vectors, swapped per frame */
 
 /* Scratchpad work area of the camera steering. */
 typedef struct {
@@ -42,7 +42,7 @@ typedef struct {
     SVECTOR view;     /* 0xA0: swap space */
 } CameraScratch;
 
-void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
+void func_80096F18(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle);
 void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
 void func_80097244(void *);                    /* look-at camera matrix */
 void func_80097440(void *);                    /* camera matrix by angle */

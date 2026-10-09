@@ -47,7 +47,7 @@ s32 D_8009BD2C;
 void *D_8009BD30;
 s32 D_8009BD34;
 SVECTOR D_8009BD38; /* camera angle */
-u8 D_8009BD40[0x20]; /* view setup: eye, look-at point and up vector (VIEW) */
+struct ViewSetup D_8009BD40; /* view setup: eye, look-at point and up vector (VIEW) */
 u8 D_8009BD60;
 Window D_8009BD64; /* destination name window */
 struct EffectSlot *D_8009BDF4;

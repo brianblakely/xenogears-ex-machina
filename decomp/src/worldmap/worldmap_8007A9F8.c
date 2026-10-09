@@ -209,7 +209,7 @@ s32 func_8007ADD4(s32 index) {
     }
     switch (actor->state) {
     case 0:
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 1:
         actor->u.step += 0x200;
@@ -217,7 +217,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x8000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 2:
         actor->u.step -= 0x200;
@@ -225,7 +225,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x8000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 3:
         actor->u.step -= 0x100;
@@ -233,7 +233,7 @@ s32 func_8007ADD4(s32 index) {
             actor->u.step = 0x1000;
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 4:
         D_8009BE28.target.vz += 0x3A000;
@@ -246,7 +246,7 @@ s32 func_8007ADD4(s32 index) {
         VIEW.at.vy = D_8009BE28.target.vy >> 12;
         VIEW.eye.vy = (D_8009BE28.target.vy >> 12) - 0x40;
         VIEW.eye.vz = (D_8009BE28.target.vz - originZ) >> 12;
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     case 5:
@@ -254,12 +254,12 @@ s32 func_8007ADD4(s32 index) {
         if (D_8009BD38.vy > 0x600) {
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     }
     scratch->view.vx = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
     scratch->view.vy = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
-    ((s16 *)D_8009BD40)[0] += scratch->view.vx; /* VIEW.eye.vx */
+    VIEW.eye.vx += scratch->view.vx;
     VIEW.at.vx += scratch->view.vx;
     VIEW.eye.vy += scratch->view.vy;
     VIEW.at.vy += scratch->view.vy;

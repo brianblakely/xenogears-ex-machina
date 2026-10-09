@@ -333,7 +333,7 @@ s32 func_8007E4E4(s32 index) {
     }
     if (D_8009D144 == 0) {
         func_80093354(&actor->position);
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 0:
@@ -456,7 +456,7 @@ s32 func_8007E4E4(s32 index) {
     }
     shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
     scratch->view.vy = shake;
-    ((s16 *)D_8009BD40)[1] += shake; /* VIEW_VECTORS[0].vy */
+    VIEW.eye.vy += shake;
     VIEW_VECTORS[1].vy += scratch->view.vy;
     return 1;
 }

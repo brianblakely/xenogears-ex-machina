@@ -210,7 +210,7 @@ s32 func_8007C7D8(s32 index) {
         break;
     }
     if (D_8009D144 == 0) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 2:
@@ -245,7 +245,7 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vy = scratch->point.vy >> 16;
             VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     case 3:
@@ -299,13 +299,13 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vy = scratch->point.vy >> 16;
             VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     }
     shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
     scratch->spot.vy = shake;
-    ((s16 *)D_8009BD40)[1] += shake; /* VIEW.eye.vy */
+    VIEW.eye.vy += shake;
     VIEW.at.vy += scratch->spot.vy;
     return 1;
 }

@@ -652,7 +652,7 @@ s32 func_80091C18(s32 index) {
             actor->unk58 = pitches[actor->u.step];
             actor->unk60 = D_8009BD38.vx << 12;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 1:
         if (actor->wait >= 5) {
@@ -696,7 +696,7 @@ s32 func_80091C18(s32 index) {
         if ((actor->unk54 == D_8009D3F0) & (actor->unk58 == D_8009BD38.vx)) {
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 2:
         VIEW.at.vx = 0;
@@ -707,7 +707,7 @@ s32 func_80091C18(s32 index) {
         if (actor->unk58 != D_8009BD38.vx) {
             D_8009BD38.vx += 2;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     }
     actor->wait++;
@@ -738,7 +738,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     scratch->angle.vz = D_8009BD38.vz;
     for (i = 0; i < 3; i++, pitches++, distance++, heights++) {
         scratch->angle.vx = *pitches;
-        func_80096F18(D_8009BD40, &D_8009BE28, *distance - ((D_8009BCDC / 2) << 12), &scratch->angle);
+        func_80096F18(&D_8009BD40, &D_8009BE28, *distance - ((D_8009BCDC / 2) << 12), &scratch->angle);
         left = D_8009BE28.target.vx + ((VIEW.eye.vx - 0x180) << 12);
         offsetZ = (VIEW.eye.vz + 0x180) << 12;
         value = D_8009BE28.target.vz - offsetZ;

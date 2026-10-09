@@ -1293,8 +1293,7 @@ typedef struct {
 
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
-void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
-    ViewSetup *view = (ViewSetup *)buffer;
+void func_80096F18(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle) {
     SVECTOR *rotation;
 
     view->at.vx = 0;

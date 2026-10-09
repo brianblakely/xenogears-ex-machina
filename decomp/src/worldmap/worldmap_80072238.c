@@ -1742,9 +1742,9 @@ s32 func_80076A14(void) {
 /* One world-map frame of a scripted scene (no player input). */
 s32 func_80076A1C(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_80089748();
     func_80089C78();
@@ -2086,7 +2086,7 @@ s32 func_8007756C(s32 index) {
     D_8009BE28.target.vx = D_8009C5AC.vx;
     D_8009BE28.target.vy = D_8009C5AC.vy;
     D_8009BE28.target.vz = D_8009C5AC.vz;
-    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     *SCRIPT_VECTOR = VIEW_VECTORS[0];
     VIEW_VECTORS[0] = VIEW_VECTORS[1];
     VIEW_VECTORS[1] = *SCRIPT_VECTOR;
@@ -2130,7 +2130,7 @@ s32 func_800776E0(s32 index) {
     }
     D_8009BD38.vx = actor->motion.vx >> 12;
     D_8009BD38.vy = actor->motion.vy >> 12;
-    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     scratch->view = VIEW_VECTORS[0];
     VIEW_VECTORS[0] = VIEW_VECTORS[1];
     VIEW_VECTORS[1] = scratch->view;
@@ -2147,9 +2147,9 @@ s32 func_80077954(void) {
 /* One world-map frame of a scripted scene without actor updates. */
 s32 func_8007795C(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_8008615C();
     func_800848F4();
