@@ -39,3 +39,30 @@ packed overlay.
   prints each bank's run. `tests/test_overlay_scripts.py` checks the decoder
   against `func_80085788`, `func_80085678` and `func_8008EA58`, and that the table
   stays an asset.
+
+## World map terrain texture animations
+
+- **Readers:** `func_80074F2C` and `func_80075104` in the `worldmap` overlay (Disc 1
+  file 37, Disc 2 file 32), run each update. `func_80074E58` and `func_80075030`
+  create the animations of the area file's two animation sections (+0x20 and
+  +0x24: a count, then each animation's image offset): animation i gets slot i of
+  `D_8009A1E8` (two slots) or `D_8009A250` (three), frame 0 and timer 1.
+- **Tables:** a slot is a `TexAnimSlot` {RECT rect; s32; frames}, the VRAM rect
+  the images go to and the frame sequence; the slots are C. The sequences
+  `D_8009A1A0`, `D_8009A1C4` (the slots of `D_8009A1E8`) and `D_8009A208`,
+  `D_8009A220`, `D_8009A238` (those of `D_8009A250`) are `TexAnimFrame` {s16 image;
+  s16 duration} runs ended by a negative duration, assets in
+  `decomp/targets/overlays/worldmap.classification.txt`.
+- **Timing:** each update counts a slot's timer down; at 0 the stepper moves to the
+  next frame and takes its duration, restarts at frame 0 with that frame's
+  duration when the new one is negative, and uploads the frame's image into the
+  slot's rect (16 bytes per image in the first set, w * h * 2 in the second).
+  Update 1 uploads frame 1; frame 0 follows the end.
+- **Coverage:** both discs hold the same five runs, 31 frames: eight images of 5
+  updates each in the first set and five of 8 in the second, a cycle of 40 updates
+  per slot. Open: how many animations each area starts comes from its area file,
+  which this decoder does not read; a count past two (or three) would take slots
+  beyond `D_8009A1E8` (`D_8009A250`).
+- **Tool:** `--sweep`; `--list worldmap-textures [--disc N]` prints each slot's rect
+  and frames. `tests/test_overlay_scripts.py` checks the decoder against the slot
+  tables, the creators and the steppers, and that the runs stay assets.

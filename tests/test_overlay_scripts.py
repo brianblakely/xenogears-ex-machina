@@ -22,6 +22,8 @@ from tools.analysis.overlay_scripts import (
     MOVIE_SOUNDS,
     ROOT,
     SPARKLE_SIZES,
+    TEXTURE_SLOT_BYTES,
+    TEXTURE_SLOTS,
     WORLDMAP,
     EventSweep,
     MovieSound,
@@ -48,6 +50,10 @@ from tools.analysis.overlay_scripts import (
     sequence_tables,
     spans_text,
     sweep,
+    texture_frames,
+    texture_slots,
+    texture_sweep,
+    texture_uploads,
     unpack,
 )
 
@@ -318,6 +324,68 @@ class MovieSoundTests(unittest.TestCase):
         self.assertEqual(movie_sound_sweep(bytes(tail)).failures[0][0], "table")
 
 
+def slot_rows(*rows: tuple) -> bytes:
+    """TexAnimSlot rows (rect, the s32, frames address)."""
+    return b"".join(struct.pack("<4hiI", *rect, value, frames) for rect, value, frames in rows)
+
+
+def frames_bytes(*frames: tuple[int, int]) -> bytes:
+    return b"".join(struct.pack("<2h", picture, duration) for picture, duration in frames)
+
+
+def texture_image(first: bytes, second: bytes) -> bytes:
+    """Both slot tables pointing at the runs `first` (at D_8009A1A0) and
+    `second` (at D_8009A208)."""
+    rows = [((0xF8, 0x1B0 + 0x20 * i, 8, 1), i, 0x8009A1A0) for i in range(2)]
+    more = [((0x280 + 0x20 * i, 0xC0, 0x10, 0x20), i, 0x8009A208) for i in range(3)]
+    return bytes(
+        image(
+            0x2C0C6,
+            D_8009A1A0=first,
+            D_8009A1E8=slot_rows(*rows),
+            D_8009A208=second,
+            D_8009A250=slot_rows(*more),
+        )
+    )
+
+
+class TextureAnimationTests(unittest.TestCase):
+    def test_slots_point_at_runs_that_end_at_a_negative_duration(self):
+        data = texture_image(frames_bytes((0, 5), (1, 5), (0, -1)), frames_bytes((3, 8), (0, -1)))
+        slots = texture_slots(data)
+        self.assertEqual(
+            [(s.table, s.index, s.stepper) for s in slots],
+            [("D_8009A1E8", i, "func_80074F2C") for i in range(2)]
+            + [("D_8009A250", i, "func_80075104") for i in range(3)],
+        )
+        self.assertEqual((slots[1].rect, slots[1].frames), ((0xF8, 0x1D0, 8, 1), 0x8009A1A0))
+        self.assertEqual(texture_frames(data, slots[0].frames), [(0, 5), (1, 5), (0, -1)])
+        result = texture_sweep(data)
+        self.assertEqual((result.slots, result.frames, result.failures), (5, 2 * 2 + 3, []))
+        self.assertEqual(result.cycles[0], ("D_8009A1E8[0]", 10))
+        self.assertEqual(result.cycles[-1], ("D_8009A250[2]", 8))
+
+    def test_the_stepper_shows_frame_1_first_and_restarts_at_frame_0(self):
+        run = [(0, 5), (1, 5), (2, 3), (0, -1)]
+        self.assertEqual(
+            texture_uploads(run, 20), [(1, 1, 1), (6, 2, 2), (9, 0, 0), (14, 1, 1), (19, 2, 2)]
+        )
+
+    def test_runs_without_an_end_or_a_restart_fail(self):
+        good = frames_bytes((3, 8), (0, -1))
+        empty = texture_sweep(texture_image(frames_bytes((0, -1)), good))  # nothing to restart at
+        self.assertEqual([where for where, _ in empty.failures], ["D_8009A1E8[0]", "D_8009A1E8[1]"])
+        zero = texture_sweep(texture_image(good, frames_bytes((0, 4), (1, 0), (0, -1))))
+        self.assertEqual(
+            [where for where, _ in zero.failures], [f"D_8009A250[{i}]" for i in range(3)]
+        )
+        data = bytearray(texture_image(good, good))
+        struct.pack_into("<I", data, 0x8009A250 + 12 - BASE, BASE + len(data) - 2)
+        self.assertEqual(texture_sweep(bytes(data)).failures[0][0], "D_8009A250[0]")  # no end
+        with self.assertRaises(ScriptError):
+            texture_frames(bytes(8), BASE + 4)
+
+
 def frame_event(first: int, last: int, spec: int) -> bytes:
     return struct.pack("<BBh", first, last, spec)
 
@@ -509,6 +577,9 @@ class AssetTests(unittest.TestCase):
 
     def test_field_movie_sound_timelines(self):
         self.check("field", [MOVIE_SOUNDS])
+
+    def test_world_map_texture_animations(self):
+        self.check("worldmap", texture_runs())
 
 
 def function(text: str, name: str) -> str:
@@ -788,6 +859,62 @@ class MovieSoundSourceTests(unittest.TestCase):
 
     def test_the_whole_table_is_linked(self):
         self.assertEqual(asset_size(self.text, MOVIE_SOUNDS), 4 * MOVIE_SOUND_ENTRIES)
+
+
+TEXTURE_SOURCE = ROOT / "decomp/src/worldmap/worldmap_80072238.c"
+
+
+def texture_runs() -> list[int]:
+    """The runs the slot tables name, in slot order."""
+    text = code(TEXTURE_SOURCE.read_text())
+    runs = []
+    for table, _, count, _ in TEXTURE_SLOTS:
+        rows = re.search(rf"TexAnimSlot {table}\[{count}\] = \{{(.*?)\n\}};", text, re.S).group(1)
+        runs += [int(name, 16) for name in re.findall(r", D_([0-9A-F]{8})\}", rows)]
+    return runs
+
+
+class TextureSourceTests(unittest.TestCase):
+    """The texture animation decoder follows the slot tables and steppers."""
+
+    def setUp(self):
+        self.text = TEXTURE_SOURCE.read_text()
+
+    def test_each_slot_names_a_linked_run_of_whole_entries(self):
+        runs = texture_runs()
+        self.assertEqual(len(runs), sum(count for _, _, count, _ in TEXTURE_SLOTS))
+        for start in runs:
+            self.assertEqual(asset_size(self.text, start) % 4, 0, f"{start:08x}")
+
+    def test_the_steppers_count_down_step_and_restart_at_frame_0(self):
+        creators = {"D_8009A1E8": "func_80074E58", "D_8009A250": "func_80075030"}
+        for table, _, _, stepper in TEXTURE_SLOTS:
+            with self.subTest(table=table):
+                body = function(self.text, creators[table])
+                self.assertIn(f"anim->slot = &{table}[i];", body)
+                self.assertIn("anim->frame = 0;\n        anim->timer = 1;", body)
+                body = function(self.text, stepper)
+                for line in (
+                    "if (--anim->timer == 0) {",
+                    "anim->frame++;",
+                    "anim->timer = anim->slot->frames[anim->frame].duration;",
+                    "if (anim->timer < 0) {",
+                    "anim->frame = 0;",
+                    "anim->timer = anim->slot->frames[0].duration;",
+                ):
+                    self.assertIn(line, body)
+
+    def test_layouts_follow_worldmap_h(self):
+        header = (ROOT / "decomp/src/worldmap/worldmap.h").read_text()
+        self.assertEqual(
+            struct_fields(header, "TexAnimFrame"),
+            {"image": (0, 2, True), "duration": (2, 2, True)},
+        )
+        slot = re.search(r"typedef struct \{([^}]*)\} TexAnimSlot;", header).group(1)
+        self.assertEqual(
+            slot.split(), ["RECT", "rect;", "s32", "unk8;", "TexAnimFrame", "*frames;"]
+        )
+        self.assertEqual(TEXTURE_SLOT_BYTES, 8 + 4 + 4)
 
 
 class TargetTests(unittest.TestCase):

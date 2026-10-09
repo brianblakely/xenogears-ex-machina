@@ -35,6 +35,13 @@ with its handler, and its decoder sweeps both discs.
 
 The decoders are `python3 -m tools.analysis.<decoder> --sweep`.
 
+## Cue timelines
+
+Two readers step through (time, value) entries without dispatching on them: the
+field's movie sound timelines (`80085678`, seeked by `80085788`) and the world map's
+terrain texture animations (`80074f2c`, `80075104`). [timelines.md](timelines.md)
+documents both; `overlay_scripts` decodes them.
+
 ## Function-pointer tables
 
 | Table | Image | Index | Census |
