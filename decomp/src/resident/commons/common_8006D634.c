@@ -16,6 +16,7 @@ s32 D_8006FABC[3]; /* party members of the loaded field files */
 u8 D_8006FAC8[0x28]; /* the SPU memory management table (SpuInitMalloc, 4 blocks) */
 
 #include "resident/cd.h"
+#include "resident/gamedata.h"
 #include "resident/mode.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"

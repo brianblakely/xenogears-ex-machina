@@ -2,25 +2,13 @@
  * orientation, resources, construction and child sprites. Built like the
  * first unit (sprite.c). */
 #include "common.h"
-#include "psyq/libapi.h"
 #include "psyq/libc.h"
-#include "psyq/libcd.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "psyq/libsn.h"
-#include "psyq/libspu.h"
-#include "resident/mode.h"
-#include "resident/menu.h"
-#include "resident/sprite.h"
-#include "resident/cd.h"
-#include "resident/stream.h"
-#include "resident/model.h"
+#include "resident/gpu.h"
 #include "resident/heap.h"
-#include "resident/text.h"
-#include "resident/pad.h"
-#include "resident/console.h"
-#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/task.h"
 #include "own_declarations.h"
 
 /* Lengths in bytes of the frame script commands 0x80-0xff, including the

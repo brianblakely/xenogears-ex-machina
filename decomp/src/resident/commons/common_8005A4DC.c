@@ -25,4 +25,3 @@ struct PadBuffer D_800625FC[2]; /* controller receive buffers */
 #include "resident/mode.h"
 #include "resident/pad.h"
 #include "resident/sound.h"
-#include "resident/stream.h"

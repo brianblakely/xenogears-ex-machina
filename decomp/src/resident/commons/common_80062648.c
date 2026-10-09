@@ -23,4 +23,5 @@ s16 D_8006BE2C[3]; /* field */
 
 #include "resident/menu.h"
 #include "resident/mode.h"
+#include "resident/sound.h"
 #include "resident/sprite.h"
