@@ -361,17 +361,26 @@ the audit; they are never counted as matches. This diagnostic does not replace
   scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them
   in place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE`
   set in the .mk), and an `asset` line in the classification names the format and
-  its reader. Never commit their bytes as C initializers. Media, and authored
-  content that a reader walks as a sequence (scripts, cue timelines, scene
-  directions: entries that say what happens or when, consumed in order from a
-  position the reader keeps across updates up to the data's own end), are assets;
-  tables the program indexes to compute a result are source (sine, pitch, note
-  encodings, opcode lengths, dispatch, per-character file numbers, and points,
-  paths and layouts that code interpolates or steps through on its own count and
-  timing). So the field's movie sound timelines `D_800AE060`, (frame, sound) runs
-  ended by frame 0xFFFF that `func_80085678` plays in order, are an asset, and the
-  world map ferry's eight waypoints, which `func_80087C6C` steps through and wraps
-  itself, are source.
+  its reader. Never commit their bytes as C initializers. Media is image, glyph,
+  sound and model data in a format that a generic loader or renderer of the game
+  parses for whichever file supplies it (LZSS-packed data, TIM images, the font
+  block's 22-byte glyphs of eleven 12-bit rows that `func_80034FFC` draws, seds/wds
+  banks, TMD and SpriteModel models), also where the code picks one record itself
+  (the resident's glyph `D_800501D0`, which `func_80034FFC` draws for the character
+  pair 0xFF 0xFF); a bare palette the code uploads is source where the code builds
+  or rewrites it before the upload, where it decodes pixel values the code writes
+  or computes, or where it is a formula's ramp, and otherwise media, the colours of
+  a picture. Media, and authored content that a reader walks as a sequence
+  (scripts, cue timelines, scene directions: entries that say what happens or
+  when, consumed in order from a position the reader keeps across updates up to
+  the data's own end), are assets; tables the program indexes to compute a result
+  are source (sine, pitch, note encodings, opcode lengths, dispatch, per-character
+  file numbers, and points, paths and layouts that code interpolates or steps
+  through on its own count and timing). So the field's movie sound timelines
+  `D_800AE060`, (frame, sound) runs ended by frame 0xFFFF that `func_80085678`
+  plays in order, are an asset, and the world map ferry's eight waypoints, which
+  `func_80087FD0` steps through on each update and wraps itself (`func_80087C6C`
+  only resumes the route when the ferry spawns), are source.
 - The rule was applied to every initialized object cc1 emits from the 26 targets' C
   (at 8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every
   named data symbol of the C objects is one of them or linked by
@@ -385,18 +394,35 @@ the audit; they are never counted as matches. This diagnostic does not replace
   now assets, 528 bytes: `D_800AE060` and the world map's terrain texture animation
   runs `D_8009A1A0`, `D_8009A1C4`, `D_8009A208`, `D_8009A220` and `D_8009A238`,
   (image, duration) frames ended by a negative duration that `func_80074F2C` and
-  `func_80075104` step (docs/scripts/timelines.md). None remains: the others are
-  lookups by a key the code computes, also where an end value closes them (the
-  picture table `D_800AF47C` searched by map, the battle modes' sound programs
-  `D_8004F388`, the gear shop lamps' frames `D_801D6FE0` on the code's timing),
-  lists one call processes whole (the battle panel glyph sets ended by 0xFFFF, the
-  world map's object links `D_8009AFA0`), geometry the code interpolates or steps
-  through on its own count (the world map's camera and flight paths, which
-  `func_80076858` interpolates at the parameter its scene code advances; the ferry's
-  waypoints; the scripted flights' waypoints, whose counts `func_8008E76C` fixes,
-  never reading their -1 ends), and masks and thresholds. The four objects passed
-  to LoadImage are palettes the code's own drawing indexes (text, gauges, the
-  console font, menu7's glow ramp).
+  `func_80075104` step (docs/scripts/timelines.md). That pass looked for media only
+  among the objects passed to LoadImage or SpuWrite. A second pass (at 5559538:
+  1,020 named objects, 565 of them not scalars) followed each object into its
+  readers: the calls it reaches itself or through a local pointer set from it, the
+  other values that pointer takes, and where its address is stored. It found one
+  more asset, the glyph `D_800501D0` (22 bytes), which `func_80034FFC` takes in
+  place of a 22-byte record of the loaded font. No other object reaches a media
+  reader as the data it parses (they give it file numbers, sound and character
+  codes, VRAM places, draw modes, colours or a destination), except the four
+  palettes below. None remains: the others are lookups by a key the code computes,
+  also where an end value closes them (the picture table `D_800AF47C` searched by
+  map, the battle modes' sound programs `D_8004F388`, the gear shop lamps' frames
+  `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
+  panel glyph sets ended by 0xFFFF, the world map's object links `D_8009AFA0`),
+  geometry the code interpolates or steps through on its own count (the world
+  map's camera and flight paths, which `func_80076858` interpolates at the
+  parameter its scene code advances; the ferry's waypoints; the scripted flights'
+  waypoints, whose counts `func_8008E76C` fixes, never reading their -1 ends),
+  texture layouts (the menu font's glyph rectangles `D_80091230`), and masks and
+  thresholds. The four bare palettes passed to LoadImage are source: the text
+  palette `D_80050190` decodes the 2-bit codes `func_80034FFC` writes into either
+  half of each 4-bit pixel (1 the glyph, 2 its outline), entry i of its first CLUT
+  being the colour of code i & 3 and of its second that of code i >> 2, and
+  `func_80032F54` gives each line the CLUT of its plane; `func_80036E4C` rebuilds
+  all 64 entries of the console font CLUTs `D_80050598` before their only upload;
+  the gauge palette `D_80091814` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
+  opaque black at 0 and 15); and menu7's glow ramp `D_80091CE0` colours the heat
+  values `func_8008E120` computes, with bit 15 set on every entry by
+  `func_8008DF50` before its upload.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per code unit (Qualified configuration, above,
