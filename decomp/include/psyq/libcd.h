@@ -4,9 +4,13 @@
 #include "psyq/types.h"
 
 /* PsyQ libcd interface as linked in the resident (SDK library code). */
+#define CdlNop 0x01
 #define CdlSetloc 0x02
+#define CdlStop 0x08
 #define CdlPause 0x09
 #define CdlSetfilter 0x0D
+#define CdlGetTN 0x13
+#define CdlSeekL 0x15
 
 typedef struct {
     u_char minute;

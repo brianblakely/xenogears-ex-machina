@@ -1,6 +1,9 @@
-/* Stage setup: the stage image list bounds, its images and actors, and
- * the stage lights. */
-#include "battle_setup.h"
+/* Stage setup (rodata 801E4000-801E4020, text 801E70E8-801E7F4C): the stage
+ * image list bounds, its images and actors, its objects (panoramas, the
+ * backdrop, fog, texture scrolls) and the stage lights. A GCC 2.6.3 unit
+ * between the CDK units battle_loader.c and load_modes.c (ovl2615.mk); its
+ * rodata opens the image. */
+#include "stage.h"
 
 /* Relocate the stage image list and take the bounds of its pixel sections
  * (kind 0x1101: position, offset, size); returns the bounds' area. */
@@ -58,9 +61,9 @@ s32 func_801E70E8(s32 *images) {
 
 /* Set up the battle stage: register the stage model and place its parts,
  * move the scene data into its own block, start the stage motion, take the
- * origin and colour matrix, build the stage objects (lights, backdrop, fog,
- * animations) and publish the actors and lights. Returns whether the stage
- * has fog (its colour goes to tint); 0 without a stage or scene. */
+ * origin and colour matrix, build the stage objects (panoramas, backdrop,
+ * fog, texture scrolls) and publish the actors and lights. Returns whether
+ * the stage has fog (its colour goes to tint); 0 without a stage or scene. */
 /* The relocated section pointers stay NULL for a zero offset (the original
  * converts these tests to masks), and a failed allocation returns without a
  * value: the original leaves the allocator's NULL in v0. */
@@ -100,7 +103,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         D_800C3D50[i] = NULL;
     }
     for (j = 0; j < 2; j++) {
-        D_800C3DA0[j].motion = NULL;
+        D_800C3DA0[j].phases = NULL;
     }
     D_800D361A = 0;
     if (stage != NULL) {
@@ -121,7 +124,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     table = (s32 *)data;
     size = table[-1];
     data = func_80031BDC(size, 0);
-    D_800658C8 = data;
+    D_800658C8 = (u8 *)data;
     if (data == NULL) {
         return; /* no value: v0 still holds the NULL block */
     }
@@ -183,7 +186,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     D_800D2FD0 = first_motion + 2;
     D_800D2FC8 = motion_count;
     D_800D2FC0 = colours;
-    SetColorMatrix(colours);
+    SetColorMatrix((MATRIX *)colours);
     SetBackColor(data->back[0], data->back[1], data->back[2]);
     for (i = 0; i < 6; i++) {
         object = &info->objects[i];
@@ -218,7 +221,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             info->fog = 1;
             break;
         case 7:
-            if (D_800C3DA0[placed].motion == NULL && placed < 2 && i + 1 < 4) {
+            if (D_800C3DA0[placed].phases == NULL && placed < 2 && i + 1 < 4) {
                 func_80027D64(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
                     object->v16, object->v20, object->v1A, object->v1C, motions[i + 1]);
             }
@@ -236,7 +239,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         func_801E7EC4(actors, entries, *lights);
     }
     for (i = 0; i < 4; i++) {
-        D_800D2D10[i] = D_800658C8->info.flags[i];
+        D_800D2D10[i] = ((BattleScene *)D_800658C8)->info.flags[i];
     }
     DrawSync(0);
     func_800320E8(stage);

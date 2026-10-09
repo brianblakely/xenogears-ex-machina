@@ -1,14 +1,15 @@
-/* Debug battle-scene selector (slot 2606, loaded at 801e0000).
- * The battle entry 80070f40 (battle overlay, at 80071050) loads this module
- * (directory 16 file 2) when the mode-2 byte 800594f8 is nonzero and calls
- * 801e0a34 before building the battle. A debug-font screen ("SceneNo",
- * "Party", "Robo" Off/Nml/Bar, "FileNo" or Event1-3) is edited with the pad
- * until Start; the choice becomes the enemy set, the party and their gear,
- * and the field file whose formation table and event data are loaded.
- * Resident calls: libgpu environments/ordering tables, the debug text print
- * 8003700c, disc file size/read/wait, the heap. Its load address is fixed by
- * the absolute jump table at 801e00e8, whose 15 targets are case labels of
- * 801e0238. */
+/* Debug battle-scene selector (slot 2606, loaded at 801e0000; the whole
+ * image is this one unit: rodata 801E0000-801E0124, text 801E0124-801E0D40,
+ * data 801E0D40-801E1DDC). The battle entry 80070f40 (battle overlay, at
+ * 80071050) loads this module (directory 16 file 2) when the mode-2 byte
+ * 800594f8 is nonzero and calls 801e0a34 before building the battle. A
+ * debug-font screen ("SceneNo", "Party", "Robo" Off/Nml/Bar, "FileNo" or
+ * Event1-3) is edited with the pad until Start; the choice becomes the enemy
+ * set, the party and their gear, and the field file whose formation table
+ * and event data are loaded. Resident calls: libgpu environments/ordering
+ * tables, the debug text print 8003700c, disc file size/read/wait, the heap.
+ * Its load address is fixed by the absolute jump table at 801e00e8, whose 15
+ * targets are case labels of 801e0238. */
 #include "scene_select.h"
 
 /* The row labels and character names, each in a 256-byte text buffer, and
@@ -30,7 +31,10 @@ char *D_801E1D50[12] = {
 u8 D_801E1D80[16] = {0, 2, 3, 4, 5, 6, 9, 7, 8, 16, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 u8 D_801E1D90[16] = {1, 2, 11, 12, 13, 14, 9, 7, 8, 11, 18, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-/* The selector's values and shown columns, set by func_801E0124. */
+/* The selector's values, set by func_801E0124: row 0 the scene (enemy set,
+ * 0-15), row 1 the three party characters (0-11, ff none), row 2 their gear
+ * mode (Off, Nml, Bar), row 3 the file number (253-255 the three event
+ * files); and the columns shown on each row. */
 s32 D_801E1DA0[4][3] = {0};
 u8 D_801E1DD0[4][3] = {0};
 
@@ -40,16 +44,16 @@ void func_801E0124(void) {
     s32 i;
     s32 j;
 
-    PutDrawEnv(&D_800C4A20[0].draw);
-    PutDrawEnv(&D_800C4A20[1].draw);
-    PutDispEnv(&D_800C4A20[0].disp);
-    PutDispEnv(&D_800C4A20[1].disp);
+    PutDrawEnv(&D_800C3EB0.buffers[0].drawEnv);
+    PutDrawEnv(&D_800C3EB0.buffers[1].drawEnv);
+    PutDispEnv(&D_800C3EB0.buffers[0].dispEnv);
+    PutDispEnv(&D_800C3EB0.buffers[1].dispEnv);
     SetDispMask(1);
-    D_8006F364.party[1] = 1;
-    D_8006F364.party[2] = 2;
+    D_8006D634.party[1] = 1;
+    D_8006D634.party[2] = 2;
     D_801E1DA0[0][0] = 3;
     D_801E1DA0[1][1] = 1;
-    D_8006F364.party[0] = 0;
+    D_8006D634.party[0] = 0;
     D_801E1DA0[1][0] = 0;
     D_801E1DA0[1][2] = 2;
     D_801E1DA0[2][2] = 0;
@@ -79,19 +83,19 @@ void func_801E0238(void) {
     s32 j;
     s32 value;
     char *name;
-    BattleFrame *frame;
+    FrameBuffer *frame;
 
     running = 1;
     row = 0;
     col = 0;
     do {
         func_80089CCC(0);
-        frame = D_800C4A20;
-        if (D_800CCB00 == frame) {
+        frame = D_800C3EB0.buffers;
+        if (D_800C3EB0.current == frame) {
             frame++;
         }
-        D_800CCB00 = frame;
-        ClearOTagR(frame->ot, 0x1000);
+        D_800C3EB0.current = frame;
+        ClearOTagR((u_long *)frame->ot, 0x1000);
         switch (D_800D3014) {
         case 14: /* Start */
             running = 0;
@@ -275,12 +279,12 @@ void func_801E0238(void) {
         func_8003700C("\n\n     LU       Start  to Battle");
         func_8003700C("\n   LL  LR     Maru   +");
         func_8003700C("\n     LD       Batsu  -");
-        func_80037324(D_800CCB00->ot);
+        func_80037324((u_long *)D_800C3EB0.current->ot);
         DrawSync(0);
         VSync(0);
-        PutDrawEnv(&D_800CCB00->draw);
-        PutDispEnv(&D_800CCB00->disp);
-        DrawOTag(&D_800CCB00->ot[0xFFF]);
+        PutDrawEnv(&D_800C3EB0.current->drawEnv);
+        PutDispEnv(&D_800C3EB0.current->dispEnv);
+        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     } while (running);
 }
 
@@ -298,21 +302,21 @@ void func_801E0A34(void) {
     func_801E0238();
     member = 0;
     for (i = 0; i < 3; i++) {
-        D_8006F364.inGear[i] = 0;
-        D_8006F364.party[i] = 0xFF;
+        D_8006D634.inGear[i] = 0;
+        D_8006D634.party[i] = 0xFF;
         if (D_801E1DA0[1][i] < 11) {
-            D_8006F364.party[member] = D_801E1DA0[1][i];
+            D_8006D634.party[member] = D_801E1DA0[1][i];
             switch (D_801E1DA0[2][i]) {
             case 0:
-                D_8006F364.inGear[member] = 0;
+                D_8006D634.inGear[member] = 0;
                 break;
             case 2:
-                D_8006D8A0[D_8006F364.party[member]].gear = D_801E1D90[D_8006F364.party[member]];
-                D_8006F364.inGear[member] = 1;
+                D_8006D634.characters[D_8006D634.party[member]].gearId = D_801E1D90[D_8006D634.party[member]];
+                D_8006D634.inGear[member] = 1;
                 break;
             case 1:
-                D_8006D8A0[D_8006F364.party[member]].gear = D_801E1D80[D_8006F364.party[member]];
-                D_8006F364.inGear[member] = 1;
+                D_8006D634.characters[D_8006D634.party[member]].gearId = D_801E1D80[D_8006D634.party[member]];
+                D_8006D634.inGear[member] = 1;
                 break;
             }
             member++;
@@ -346,12 +350,12 @@ void func_801E0A34(void) {
     func_800320E8(D_800D39D8);
     func_8009B1E4();
     for (i = 0; i < 11; i++) {
-        D_8006D8A0[i].hp = 999;
-        D_8006D8A0[i].maxHp = 999;
-        D_8006D8A0[i].ep = 99;
-        D_8006D8A0[i].maxEp = 99;
+        D_8006D634.characters[i].hp = 999;
+        D_8006D634.characters[i].maxHp = 999;
+        D_8006D634.characters[i].ep = 99;
+        D_8006D634.characters[i].maxEp = 99;
     }
-    D_8006F364.joined = 0xFFFF;
+    D_8006D634.joined = 0xFFFF;
     func_8003748C();
     D_8005954C = D_80059508 & 3;
 }

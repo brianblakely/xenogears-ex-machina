@@ -1,6 +1,15 @@
-#include "common.h"
-#include "psyq/libcd.h"
-#include "psyq/libsn.h"
+/* The movie library (disc file 19, loaded at 0x801d3000 by the movie mode,
+ * decomp/src/movie): a CD or host-file STR stream player. It decodes each
+ * frame's bitstream into run-level data, lets the MDEC expand it slice by
+ * slice into two VRAM display buffers, reports each loaded frame to the
+ * caller and fades the CD-XA audio in and out.
+ *
+ * The player is this unit's C: text 801D30C4-801D444C, its initialized
+ * statics (data 801D68B4-801D68D0) and its uninitialized ones (801E8910-
+ * 801E89AC). The PsyQ libpress, libds and libcd streaming members that the
+ * linker placed after its code (801D444C-801D68B4, located by
+ * tools/psyq_signatures.py) stay SDK assembly below, and its five commons
+ * are linked among libcd's from commons/ (mdec.classification.txt). */
 #include "movie.h"
 
 /* The player's initialized statics open the image's .data (all zero). */
@@ -19,7 +28,7 @@ s32 movie_end_frame = 0;
  * libcd modules' .bss, each in a slot of whole words (decomp/Makefile): the u8
  * flags at 801e8958..801e8968 sit four bytes apart. */
 static MovieSectorHeader *movie_decoded_bitstream;
-static u32 *movie_frame_bitstream;
+static u_long *movie_frame_bitstream;
 static MovieDecoder movie_decoder;
 static u8 movie_mdec_idle;         /* the MDEC finished a frame */
 static u8 movie_frame_waiting;     /* no frame was in the ring */
@@ -47,7 +56,7 @@ static s32 movie_fade_out_pending;
  * VRAM (column by column for a split display), then start the MDEC on the
  * next slice or, past the frame's last column, report the loaded frame. */
 void movie_slice_decoded(void) {
-    MovieRect column;
+    RECT column;
     s16 rows;
     s32 i;
     s32 k;
@@ -69,7 +78,7 @@ void movie_slice_decoded(void) {
             movie_decoder.slice[movie_decoder.load_display].x += movie_slice_width;
             if (movie_load_enabled != 0) {
                 LoadImage(&column,
-                          (u32 *)((u16 *)movie_decoder.slice_buffers[movie_decoder.slice_index] +
+                          (u_long *)((u16 *)movie_decoder.slice_buffers[movie_decoder.slice_index] +
                                   i * rows * (s16)movie_slice_width));
             }
         }
@@ -172,7 +181,8 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
  * frame, `x0, y0, x1, y1` place the two display buffers, `rows` limits the
  * rows a slice loads, and `callback` receives each loaded frame. */
 void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
-                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows, void (*callback)()) {
+                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows,
+                 void (*callback)(u16 frame, u16 x, u16 y)) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     CdlFILTER filter;
 
@@ -255,13 +265,13 @@ void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
 /* The next frame's bitstream from the ring, or NULL when no frame is complete;
  * its first sector's header goes to `header`. A frame of another size moves
  * the display buffers' far corners and the rows each slice loads. */
-u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
-    u32 *data;
+u_long *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
+    u_long *data;
     MovieSectorHeader *sector;
     u32 columns;
 
     if (movie_host_stream != 0) {
-        if (func_80028F30(&data, &sector) != 0) {
+        if (func_80028F30((u8 **)&data, (StreamFrame **)&sector) != 0) {
             return NULL;
         }
         movie_ring_frame = sector->frame;
@@ -269,7 +279,7 @@ u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
             func_8002A498(0);
         }
     } else {
-        if (StGetNext(&data, &sector) != 0) {
+        if (StGetNext(&data, (u_long **)&sector) != 0) {
             movie_stall_count++;
             return NULL;
         }
@@ -309,7 +319,7 @@ u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
  * next frame's bitstream into a run-level buffer, or continue a partial
  * decode; a finished bitstream's ring sectors are freed. */
 void movie_decode(void) {
-    u32 *bitstream;
+    u_long *bitstream;
     void *output;
 
     if (movie_vlc_pending == 0) {
@@ -342,7 +352,7 @@ void movie_decode(void) {
         return;
     }
     if (movie_host_stream != 0) {
-        func_800294B4(movie_decoded_bitstream);
+        func_800294B4((u8 *)movie_decoded_bitstream);
     } else {
         StFreeRing(movie_frame_bitstream);
     }

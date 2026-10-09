@@ -4,7 +4,12 @@
  * 19 at 0x801d3000), plays the movie that the request bytes 8004fe44..47
  * name and selects the next mode. Without a request it runs a development
  * menu: movie test settings, a CD-ROM monitor, a CD-ROM read check, a FAT
- * check and a disc change test, drawn with the resident debug font. */
+ * check and a disc change test, drawn with the resident debug font.
+ *
+ * Everything after the overlay number is this unit: rodata 8006FAF4-800704E8,
+ * text 800704E8-80076E48, data 80076E48-80076F3C and the .bss to 80077458.
+ * Its rodata starts at 4 mod 8, the phase of all six of its jump tables,
+ * which is why the number is a unit of its own (movie_number.c). */
 #include "common.h"
 #include "movie_mode.h"
 
@@ -22,14 +27,14 @@ s32 D_80076E6C = 0;             /* size */
 s32 D_80076E70 = 0;             /* and the resident's stream counters */
 s32 D_80076E74 = 0;
 s32 D_80076E78 = 0;
-StreamEntry *D_80076E7C = NULL; /* stream list */
-StreamEntry *D_80076E80 = NULL; /* verify copy of the stream list */
+FileEntry *D_80076E7C = NULL;   /* stream list */
+FileEntry *D_80076E80 = NULL;   /* verify copy of the stream list */
 s32 *D_80076E84 = NULL;         /* stream destination */
 s32 *D_80076E88 = NULL;         /* read buffer */
 s32 *D_80076E8C = NULL;         /* verify copy of the read */
 s32 D_80076E90 = 0;             /* read size */
 s32 D_80076E94 = 0;             /* stream bytes left */
-s32 *D_80076E98 = NULL;         /* stream buffer */
+StreamRing *D_80076E98 = NULL;  /* stream buffer */
 s32 *D_80076E9C = NULL;         /* arrived stream chunk */
 void *D_80076EA0 = NULL;        /* FAT check read buffer */
 s32 D_80076EA4 = 0;             /* reads ended */
@@ -71,8 +76,8 @@ VECTOR D_80076F2C = {0};        /* the playback camera's translation */
  * in which GCC emits tentative definitions, each in a slot of whole words
  * (decomp/Makefile); the decoded image ends 7 bytes into the first. */
 s32 D_80076F3C[16];      /* reads per result class */
-s32 D_80076F7C;          /* host stream: the next frame's data (80028f30) */
-s32 D_80076F80;          /* and its first sector header */
+u8 *D_80076F7C;          /* host stream: the next frame's data (80028f30) */
+StreamFrame *D_80076F80; /* and its first sector header */
 u8 D_80076F84[8];        /* CD command result */
 /* Menu backdrop: each corner's color fades from one random color to the
  * next over a random number of frames. */
@@ -84,7 +89,7 @@ CVECTOR D_80076FCC[4];   /* menu frame: from */
 CVECTOR D_80076FDC[4];   /* to */
 s32 D_80076FEC[4];       /* frames into the fade */
 s32 D_80076FFC[4];       /* frames of the fade */
-s32 D_8007700C;          /* battle music sequence (8007548c) */
+SoundSeq *D_8007700C;    /* battle music sequence (8007548c) */
 /* Movie playback. */
 s32 D_80077010;          /* last frame the library loaded */
 s32 D_80077014;          /* 1: stop; 2..5: frames until then */
@@ -142,7 +147,7 @@ void func_800704E8(void) {
     s32 hours;
     s32 cursor;
     MovieBuffer *buffer;
-    u32 *ot;
+    u_long *ot;
 
     func_80028A94(NULL);
     func_80074B58();
@@ -204,43 +209,43 @@ void func_800704E8(void) {
             func_8003700C("S %8x Adrs %8x Write %8x Rest %8x\n", D_80076E98, D_80076E9C,
                           D_80076E84, D_80076E94);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", D_80076E98[i]);
+                func_8003700C("%08x ", ((s32 *)D_80076E98)[i]);
             }
-            func_8003700C(D_8006FC6C);
+            func_8003700C((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", D_80076E98[i + 7]);
+                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 7]);
             }
-            func_8003700C(D_8006FC6C);
+            func_8003700C((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", D_80076E98[i + 14]);
+                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 14]);
             }
-            func_8003700C(D_8006FC6C);
+            func_8003700C((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", D_80076E98[i + 21]);
+                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 21]);
             }
-            func_8003700C(D_8006FC6C);
+            func_8003700C((char *)D_8006FC6C);
             if (D_80076E7C != NULL) {
-                func_8003700C(D_8006FC70, D_80076E7C[0].dest, D_80076E7C[1].dest,
-                              D_80076E7C[2].dest, D_80076E7C[3].dest);
+                func_8003700C((char *)D_8006FC70, D_80076E7C[0].data, D_80076E7C[1].data,
+                              D_80076E7C[2].data, D_80076E7C[3].data);
             }
         }
         D_80076EA8 = 0;
-        func_8003700C(D_8006FC8C, D_80076EA4);
+        func_8003700C((char *)D_8006FC8C, D_80076EA4);
         for (i = 0; i < 13; i++) {
-            func_8003700C(D_8006FC98, i, D_80076F3C[i]);
+            func_8003700C((char *)D_8006FC98, i, D_80076F3C[i]);
             D_80076EA8 += D_80076F3C[i];
             if (D_80076EB0 == i) {
-                func_8003700C(D_8006FCA4);
+                func_8003700C((char *)D_8006FCA4);
             }
             if (D_80076EAC == i) {
-                func_8003700C(D_8006FCAC);
+                func_8003700C((char *)D_8006FCAC);
             }
-            func_8003700C(D_8006FC6C);
+            func_8003700C((char *)D_8006FC6C);
         }
         hours = D_80076EC8 / 3600;
-        func_8003700C(D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
+        func_8003700C((char *)D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
                       D_80076EC8 % 60);
-        func_8003700C(D_8006FCD8);
+        func_8003700C((char *)D_8006FCD8);
         if (D_80077394 > 0) {
             func_8003278C(1, 0, 6, 0x808D);
         }
@@ -320,7 +325,7 @@ void func_80070DCC(void) {
         func_80071BA0();
     }
     if (D_80076EB8 == 1) {
-        D_80076E9C = func_80028B14();
+        D_80076E9C = (s32 *)func_80028B14();
         if (D_80076E9C != NULL) {
             i = 0;
             if (D_80076E94 > 0x800) {
@@ -334,17 +339,17 @@ void func_80070DCC(void) {
             }
             D_80076E94 -= 0x800;
             if (D_80076E94 <= 0 && D_80076E48 == 12) {
-                i = D_80076E7C[++D_80076EB4].file;
+                i = D_80076E7C[++D_80076EB4].id;
                 if (i != 0) {
                     D_80076E94 = func_800288EC(i);
                 }
-                D_80076E84 = D_80076E7C[D_80076EB4].dest;
+                D_80076E84 = D_80076E7C[D_80076EB4].data;
             }
-            func_8002945C(D_80076E9C);
+            func_8002945C((u8 *)D_80076E9C);
         }
     }
     if (D_80076EB8 == 2 && func_80028F30(&D_80076F7C, &D_80076F80) == 0) {
-        func_800294B4(D_80076F80);
+        func_800294B4((u8 *)D_80076F80);
     }
     if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
         func_80071C34(11);
@@ -436,12 +441,12 @@ void func_800712C4(void) {
                 D_80076E48 = 0;
                 break;
             }
-            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
-                copy = D_80076E80[index].dest;
+            for (index = 0; (file = D_80076E80[index].id) > 0; index++) {
+                copy = D_80076E80[index].data;
                 D_80076E90 = func_800288EC(file);
                 FILL_WORDS(copy, D_80076E90, i, -1);
             }
-            func_80029AFC(D_80076E80, 0, 0);
+            func_80029AFC((FileRequest *)D_80076E80, 0, 0);
             break;
         case 4:
             D_80076E90 = 0x2000;
@@ -462,12 +467,12 @@ void func_800712C4(void) {
                 D_80076E48 = 0;
                 break;
             }
-            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
-                copy = D_80076E80[index].dest;
+            for (index = 0; (file = D_80076E80[index].id) > 0; index++) {
+                copy = D_80076E80[index].data;
                 D_80076E90 = func_800288EC(file);
                 FILL_WORDS(copy, D_80076E90, i, -1);
             }
-            func_80029AFC(D_80076E80, 1, 0);
+            func_80029AFC((FileRequest *)D_80076E80, 1, 0);
             break;
         case 7:
         case 8:
@@ -514,11 +519,11 @@ void func_800712C4(void) {
         case 6:
         case 12:
             index = 0;
-            file = D_80076E7C[0].file;
+            file = D_80076E7C[0].id;
             if (file > 0) {
                 do {
-                    copy = D_80076E80[index].dest;
-                    dest = D_80076E7C[index].dest;
+                    copy = D_80076E80[index].data;
+                    dest = D_80076E7C[index].data;
                     D_80076E90 = func_800288EC(file);
                     for (i = 0; i < D_80076E90 / 4; i++) {
                         if (dest[i] != copy[i]) {
@@ -526,7 +531,7 @@ void func_800712C4(void) {
                             break;
                         }
                     }
-                } while ((file = D_80076E7C[++index].file) > 0);
+                } while ((file = D_80076E7C[++index].id) > 0);
             }
             func_8002A524(D_80076E7C);
             func_8002A524(D_80076E80);
@@ -631,12 +636,12 @@ void func_80071C34(s32 command) {
             D_80076E48 = 0;
             break;
         }
-        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
-            dest = D_80076E7C[index].dest;
+        for (index = 0; (file = D_80076E7C[index].id) > 0; index++) {
+            dest = D_80076E7C[index].data;
             D_80076E90 = func_800288EC(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
-        func_80029AFC(D_80076E7C, 0, 0);
+        func_80029AFC((FileRequest *)D_80076E7C, 0, 0);
         break;
     case 4:
         D_80076E90 = 0x2000;
@@ -660,12 +665,12 @@ void func_80071C34(s32 command) {
             D_80076E48 = 0;
             break;
         }
-        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
-            dest = D_80076E7C[index].dest;
+        for (index = 0; (file = D_80076E7C[index].id) > 0; index++) {
+            dest = D_80076E7C[index].data;
             D_80076E90 = func_800288EC(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
-        func_80029AFC(D_80076E7C, 1, 0);
+        func_80029AFC((FileRequest *)D_80076E7C, 1, 0);
         break;
     case 7:
         D_80076F3C[7]++;
@@ -708,17 +713,17 @@ void func_80071C34(s32 command) {
             D_80076E48 = 0;
             break;
         }
-        file = D_80076E7C[0].file;
+        file = D_80076E7C[0].id;
         D_80076E94 = func_800288EC(file);
         D_80076EB4 = 0;
-        D_80076E84 = D_80076E7C[0].dest;
-        for (index = 0; file > 0; file = D_80076E7C[++index].file) {
-            dest = D_80076E7C[index].dest;
+        D_80076E84 = D_80076E7C[0].data;
+        for (index = 0; file > 0; file = D_80076E7C[++index].id) {
+            dest = D_80076E7C[index].data;
             D_80076E90 = func_800288EC(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
         func_80028A94(D_80076E98);
-        func_80029AFC(D_80076E7C, 1, 0x100);
+        func_80029AFC((FileRequest *)D_80076E7C, 1, 0x100);
         break;
     case 13:
         D_80076EB8 = 2;
@@ -758,7 +763,7 @@ void func_80072480(void) {
     s32 state;
     s32 frames;
     MovieBuffer *buffer;
-    u32 *ot;
+    u_long *ot;
 
     frames = 0;
     state = 0;
@@ -788,7 +793,7 @@ void func_80072480(void) {
         } else {
             func_8003700C("[ NOP ]\n");
         }
-        func_8003700C(D_8006FC6C);
+        func_8003700C((char *)D_8006FC6C);
         for (step = 0; step < 9; step++) {
             if (step < state) {
                 switch (step) {
@@ -1033,7 +1038,7 @@ void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
  * corner colors each fade toward a new random color (as func_800734B8).
  * Each channel's difference of two bytes is formed in the channel's int and
  * kept in a short for the fade step. */
-void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
+void func_80072F98(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     u8 from;
     s16 delta;
@@ -1139,7 +1144,7 @@ void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
 /* Add the menu frame to `ot`: a gouraud quad at (x, y), w by h, whose corner
  * colors each fade toward a new random pale yellow. Each component is eased
  * from the byte `from` and added back to a fresh read of the from-colour. */
-void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
+void func_800734B8(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     u8 from;
     s32 delta;
@@ -1224,7 +1229,7 @@ void func_800737EC(void) {
     void *top;
     void *library;
     MovieBuffer *buffer;
-    u32 *ot;
+    u_long *ot;
 
     func_80032498(4, 0);
     func_80028470(0x18, 0);
@@ -1286,21 +1291,21 @@ void func_800737EC(void) {
     } else {
         D_800773AC = 0;
     }
-    if (D_8004FE44[0] != 0xFF && !(D_800773AC & 0x100)) {
+    if (D_8004FE44_request[0] != 0xFF && !(D_800773AC & 0x100)) {
         D_80077440 = 0;
         D_80077398 = 1;
         D_800773A4 = 1;
-        D_80077448 = D_8004FE44[0] & 0x7F;
-        D_8007711C = D_8004FE44[1];
-        if (D_8004FE44[0] & 0x80) {
+        D_80077448 = D_8004FE44_request[0] & 0x7F;
+        D_8007711C = D_8004FE44_request[1];
+        if (D_8004FE44_request[0] & 0x80) {
             D_8007739C = D_80062514;
         } else {
             D_8007739C = 0xE9;
         }
-        func_800763BC(D_8004FE44[3]);
+        func_800763BC(D_8004FE44_request[3]);
         func_801D43B0();
         func_800320E8(library);
-        func_8001996C(D_8004FE44[2]);
+        func_8001996C(D_8004FE44_request[2]);
         func_80019ACC(0);
     }
     func_80072D84((POLY_G4 *)D_80077124[0].box, (POLY_G4 *)D_80077124[1].box, 0, 0, 0, 0);
@@ -1326,7 +1331,7 @@ void func_800737EC(void) {
             func_8003700C("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", func_80028530());
         }
         func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
-                      D_8005A4B8);
+                      (s16)D_8005A4B8);
         step = 1;
         func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4, D_801E89D4,
                       D_80062514);
@@ -1882,6 +1887,8 @@ void func_800753B8(void) {
     func_800320E8(bank);
 }
 
+/* Two strings of this unit linked as original rodata below their users
+ * (INCLUDE_RODATA, each after its function). */
 extern char D_80070394[];
 extern char D_800704D4[];
 
@@ -1902,6 +1909,8 @@ void func_8007548C(void) {
  * stray byte (0x08) in its alignment padding; it is linked as original rodata. */
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070394);
 
+/* Play the battle music sequence (8007548c loads it) from its start at full
+ * volume. */
 void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
 }
@@ -1924,7 +1933,7 @@ void func_80075534(void) {
     u8 c;
     s32 cursor;
     MovieBuffer *draw;
-    u32 *ot;
+    u_long *ot;
 
     func_80074B58();
     buffer = func_80031BDC(0x800, 0);
@@ -2029,9 +2038,9 @@ void func_80075534(void) {
                 }
                 text++;
             }
-            func_8003700C(D_8007042C);
+            func_8003700C((char *)D_8007042C);
         }
-        func_8003700C(D_80070430);
+        func_8003700C((char *)D_80070430);
         if (D_80077394 > 0) {
             func_8003278C(1, 0, 6, 0x808D);
         }
@@ -2096,7 +2105,7 @@ void func_80075D8C(void) {
     char *name;
     char *p;
     MovieBuffer *buffer;
-    u32 *ot;
+    u_long *ot;
 
     func_80074B58();
     top = 0;
@@ -2176,7 +2185,7 @@ void func_80075D8C(void) {
                             }
                             func_8003700C("%s\n", name);
                         } else {
-                            func_8003700C(D_8007042C);
+                            func_8003700C((char *)D_8007042C);
                         }
                         index++;
                     }
@@ -2184,12 +2193,12 @@ void func_80075D8C(void) {
                     func_8003700C("Size%9x\n", func_80075D4C(index));
                     index++;
                 } else {
-                    func_8003700C(D_800704D4, func_80075D4C(index));
+                    func_8003700C((char *)D_800704D4, func_80075D4C(index));
                     index++;
                 }
             }
         } while (index < top + 20);
-        func_8003700C(D_80070430);
+        func_8003700C((char *)D_80070430);
         if (D_80077394 > 0) {
             func_8003278C(1, 0, 6, 0x808D);
         }
@@ -2310,7 +2319,7 @@ s32 func_80076488(void) {
     }
     if (func_80028738(file) == 0x18) {
         SetDispMask(1);
-        D_8004FE44[2] = 0;
+        D_8004FE44_request[2] = 0;
     } else {
         VSync(0);
         ClearImage(&screen, 0, 0, 0);

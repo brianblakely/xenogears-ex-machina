@@ -207,6 +207,7 @@ decomp/src/battle/sprite_effect.h
 decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c
 decomp/src/debug2611/pages.c
+decomp/src/debug2611/pages.h
 decomp/src/debug595/debug595.c
 decomp/src/debug595/debug595.h
 decomp/src/field/field.c
@@ -297,9 +298,13 @@ decomp/src/menu/vector_scale.s
 decomp/src/movie/movie.c
 decomp/src/movie/movie_mode.h
 decomp/src/movie/movie_number.c
+decomp/src/ovl2143/actor.h
 decomp/src/ovl2143/gte.h
+decomp/src/ovl2143/hierarchy.h
+decomp/src/ovl2143/image_anim.h
 decomp/src/ovl2143/ovl2143.c
-decomp/src/ovl2143/ovl2143.h
+decomp/src/ovl2143/particles.h
+decomp/src/ovl2143/surface.h
 decomp/src/ovl2596/battle_results.h
 decomp/src/ovl2596/ovl2596.c
 decomp/src/ovl2598/ovl2598.c
@@ -319,8 +324,13 @@ decomp/src/ovl2615/battle_loader.c
 decomp/src/ovl2615/battle_setup.h
 decomp/src/ovl2615/burst_modes.c
 decomp/src/ovl2615/load_modes.c
+decomp/src/ovl2615/loader.h
 decomp/src/ovl2615/ovl2615.c
+decomp/src/ovl2615/ovl2615.h
+decomp/src/ovl2615/scene.h
 decomp/src/ovl2615/stage.c
+decomp/src/ovl2615/stage.h
+decomp/src/ovl2615/transitions.h
 decomp/src/ovl3087/ovl3087.c
 decomp/src/ovl3087/ovl3087.h
 decomp/src/ovl3087/script_actor.c
@@ -462,6 +472,7 @@ decomp/targets/overlays/debug2611.symbols.txt
 decomp/targets/overlays/debug2611.yaml
 decomp/targets/overlays/debug595.field.ld
 decomp/targets/overlays/debug595.mk
+decomp/targets/overlays/debug595.resident.ld
 decomp/targets/overlays/debug595.symbols.txt
 decomp/targets/overlays/debug595.yaml
 decomp/targets/overlays/field.bss.ld
@@ -509,6 +520,7 @@ decomp/targets/overlays/ovl2606.symbols.txt
 decomp/targets/overlays/ovl2606.yaml
 decomp/targets/overlays/ovl2615.classification.txt
 decomp/targets/overlays/ovl2615.mk
+decomp/targets/overlays/ovl2615.resident.ld
 decomp/targets/overlays/ovl2615.symbols.txt
 decomp/targets/overlays/ovl2615.yaml
 decomp/targets/overlays/ovl3087.mk

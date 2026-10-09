@@ -19,7 +19,7 @@ typedef struct {
     u8 field2; /* 0x7F none */
     u8 hidden; /* 0x03 */
     u8 gear;   /* 0x04: fights in a gear */
-    u8 pad5;
+    u8 field5; /* 0x05: an enemy's formation flag bit 0 (the setup module) */
     u8 targetCode; /* 0x06: from the default target (80085310) */
     u8 pad7[0xA - 0x7];
     s16 x; /* 0x0A */

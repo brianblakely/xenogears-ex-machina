@@ -84,7 +84,8 @@ typedef struct {
     u8 field77;
     u8 field78;
     u8 field79;
-    u16 status7A;
+    u16 status7A;         /* 0x7A: the battle commands available (the battle setup masks
+                           * the command menus with it) */
     u16 status7C;         /* 0x7C: bits 0xC002 mark a member out of action; 0x80 inactive,
                            * 0x1000 slow (ticks every other frame), 0x2000 delay counter
                            * statusTimers[0] active */
