@@ -43,7 +43,8 @@ packed overlay.
 ## World map terrain texture animations
 
 - **Readers:** `func_80074F2C` and `func_80075104` in the `worldmap` overlay (Disc 1
-  file 37, Disc 2 file 32), run each update. `func_80074E58` and `func_80075030`
+  file 37, Disc 2 file 32), run once per frame of the world-map loop
+  (`func_800712D0`), an update below. `func_80074E58` and `func_80075030`
   create the animations of the area file's two animation sections (+0x20 and
   +0x24: a count, then each animation's image offset): animation i gets slot i of
   `D_8009A1E8` (two slots) or `D_8009A250` (three), frame 0 and timer 1.

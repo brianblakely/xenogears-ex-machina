@@ -1152,9 +1152,10 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 # pairs: a leading end, then one run per movie sound-effect bank, each ended
 # by an entry whose frame is 0xFFFF. func_80085788 loads the movie's bank,
 # file 0x115 + bank of directory (0x1C, 0), and leaves D_800C3A64 past bank + 1
-# ends. Once per movie frame func_80085678 then plays every entry from there
-# whose frame plus the movie's sound start (FIELD_MOVIE.sound_start) the movie
-# frame D_800B06A0 has reached: the bank's effect in the low byte on the voice
+# ends. After each movie step (func_800A732C) func_80085678 then plays every
+# entry from there whose frame plus the movie's sound start
+# (FIELD_MOVIE.sound_start) the movie frame D_800B06A0 has reached (the frame
+# callback func_800A7120 stores it): the bank's effect in the low byte on the voice
 # pair in bits 8-10 (func_80039EC4 gets pair * 2). Neither tests the run's end
 # itself: frame 0xFFFF lies past every movie. Event fe a0 (func_8008EA58)
 # names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset value)
@@ -1436,8 +1437,8 @@ def texture_frames(data: bytes, address: int, base: int = BASE) -> list[tuple[in
         offset = address + 4 * len(run) - base
         if offset < 0 or offset + 4 > len(data):
             raise ScriptError(f"texture run 0x{address:08x} has no end inside the image")
-        image, duration = struct.unpack_from("<2h", data, offset)
-        run.append((image, duration))
+        picture, duration = struct.unpack_from("<2h", data, offset)
+        run.append((picture, duration))
         if duration < 0:
             return run
 
