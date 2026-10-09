@@ -67,7 +67,9 @@ LAYOUT_CHECK(BattleFormationLayout, sizeof(BattleFormation) == 0x20 &&
 
 extern EncounterSet D_800658DC;    /* the set of the next battle */
 extern u8 D_80065ADC[16];          /* the field's random-encounter weight per formation
-                                    * (field func_80079288) */
+                                    * (field func_80079288, which draws only after a
+                                    * script of the map arms it with event f7,
+                                    * func_8008E85C) */
 extern u8 D_80059508;              /* the formation the battle copies: drawn by the field
                                     * (func_80079288) or the world map (func_80075E7C),
                                     * named by a field script (events 71, fe 84), or

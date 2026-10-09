@@ -38,16 +38,16 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   prints the weights with its per-formation counts (debug595 page 10).
 
   A script of the map has to arm the draw. Player control (events 0c and a7,
-  `func_8009F5F4`) calls `func_80079288` on frames the player holds a direction, and
-  `func_80079288` returns at once while the period `D_800B2078.unk2298` is 0. Every map
-  load clears the period and the count `unk229C` (`func_800705DC`, which
-  `func_80070CC8` calls first). Event f7 (`func_8008E85C`) sets the period from operand
-  1 and the count from operand 3 (at most 32); `func_8008E718` then gives that many
-  countdowns `unk22A0` distinct values from 1 to period + 1, or clears the period when
-  the count is 0. `func_80079288` counts them down and draws when one reaches 0, and
-  `func_8008E718` deals new values each time `unk2294` counts the period down. Nothing
-  else writes the period or the count but the debug monitor's page 10 (TIME and
-  ENCOUNT, `func_80281B90`).
+  `func_8009F5F4`) calls `func_80079288` on frames the player holds a direction with
+  no dialogue open, and `func_80079288` returns at once while the period
+  `D_800B2078.unk2298` is 0. Every map load clears the period and the count `unk229C`
+  (`func_800705DC`, which `func_80070CC8` calls first). Event f7 (`func_8008E85C`)
+  sets the period from operand 1 and the count from operand 3 (at most 32);
+  `func_8008E718` then gives that many countdowns `unk22A0` distinct values from 1 to
+  period + 1, or clears the period when the count is 0. `func_80079288` counts them
+  down and draws when one reaches 0, and `func_8008E718` deals new values each time
+  `unk2294` counts the period down. Nothing else writes the period or the count but
+  the debug monitor's page 10 (TIME and ENCOUNT, `func_80281B90`).
 - **The world map.** The area file (0x24, 0) area + 1 of each set of `D_8009B584`
   (`func_80071B9C`). `func_80073530` points `D_8009D73C[kind]` at the offsets in header
   words 11-26 (`AreaHeader` +0x2c), one table per terrain kind. The roll
@@ -102,10 +102,10 @@ bundles, area files and discs. On the user's discs:
 - Field scripts: 348 battle requests in 125 maps. 334 are immediate, naming formations
   0-15 of maps that have a set; 14 take variable `v0400` (maps 480, 485 and 486).
   Opcode 24 occurs in event sets 2, 41 and 46, naming formations 0, 6 and 13 of the
-  set they run from. A named formation runs each: map 2's formation 2 (set 2) chains
-  to 0, map 713's 5 (set 41) to 6 and map 174's 14 (set 46) to 13. Map 489's formation
-  2 also runs set 2, but only its weight could start it, and map 489's scripts reach
-  no f7.
+  set they run from. Each runs from a named formation: map 2's formation 2 (set 2)
+  chains to 0, map 713's 5 (set 41) to 6 and map 174's 14 (set 46) to 13. Map 489's
+  formation 2 also runs set 2, but only its weight could start it, and map 489's
+  scripts reach no f7.
 - Disc 2 holds 205 bundles (525 placeholder files). Its 176 sets, the area files and
   the debug files are identical to disc 1's, as are the enemy files and the event
   archive (their sweeps), so disc 1's cross-check covers both: disc 2 places no pair
