@@ -170,12 +170,12 @@ BATTLE = {
     ),
     0x1B: _op(
         "image_animation",
-        "start image animation arg (800a3640) from a source animation (0xFF none), mode (bit 7: "
-        "at the image placement), step handler (800aa820), flags, rectangles and parameters; the "
-        "15 words are read even when arg is out of range",
+        "start image animation arg (800a3640) copying its frames into image animation `target` "
+        "(0xFF none), with mode (bit 7: at the image placement), frame curve (800aa820), flags, "
+        "rectangles and parameters; the 15 words are read even when arg is out of range",
         [
-            "mode_source",
-            "step_flags",
+            "mode_target",
+            "curve_flags",
             "x",
             "y",
             "z",
@@ -526,7 +526,7 @@ def _event(name, length, effect, short=None):
     return EventType(name, length, short, effect)
 
 
-# Animation events, read from 800ae2a4's cases (objects.h SpriteCommand to
+# Animation events, read from 800ae2a4's cases (battle/effect.h SpriteCommand to
 # ImageEvent): an s16 frame time, the type byte, then the type's fields. The
 # runner takes them in order while their time is the animation's frame; each
 # case advances by the length below. A type without a case does not advance.
@@ -560,7 +560,7 @@ BATTLE_EVENTS = {
         "object's volume, unless byte 4 excludes the first selected slot's event code",
     ),
     6: _event("menu_update", 4, "update the battle menu when open (800bf6cc)"),
-    7: _event("show_part", 6, "draw part byte 4 (flag7) = byte 5 bit 0"),
+    7: _event("show_part", 6, "part byte 4 visible = byte 5 bit 0"),
     8: _event(
         "slot_scripts",
         0x0A,
@@ -572,9 +572,9 @@ BATTLE_EVENTS = {
     9: _event(
         "image",
         0x1C,
-        "byte 4 set: start image animation byte 3 (800a3640) from source byte 5, mode, step "
-        "handler (800aa820) and rectangles; clear: stop it (800a429c); mode bit 7 without an "
-        "image placement: not stepped over",
+        "byte 4 set: start image animation byte 3 (800a3640) copying its frames into image "
+        "animation byte 5 (0xFF none), with mode, frame curve byte 7 (800aa820) and rectangles; "
+        "clear: stop it (800a429c); mode bit 7 without an image placement: not stepped over",
         6,
     ),
 }

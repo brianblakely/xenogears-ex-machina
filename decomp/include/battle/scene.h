@@ -7,6 +7,7 @@
 #include "resident/gpu.h"
 #include "resident/sound.h"
 #include "battle/area.h"
+#include "battle/effect.h"
 #include "battle/model.h"
 
 /* The battle scene (8009E53C's unit): the battle objects (stage objects and
@@ -100,15 +101,6 @@ typedef struct BattleObject {
 /* Layout check (a negative array size fails the build). */
 typedef char BattleObjectLayoutCheck[sizeof(BattleObject) == 0x11C ? 1 : -1];
 
-/* An animation header (fields as far as recovered). */
-typedef struct {
-    u8 pad0[2];
-    u16 loop; /* 0x02 */
-    u8 pad4[0x12 - 0x4];
-    u16 length;     /* 0x12: the event count */
-    u32 dataOffset; /* 0x14: offset of the events (AnimEvent) */
-} Animation;
-
 /* A rectangle of the scene's ground (8 bytes; the scene data's areas at
  * 0x100, one per formation group). */
 typedef struct {
@@ -153,29 +145,6 @@ typedef struct {
  * D_800658C8 (resident/sound.h). */
 #define SCENE_DATA ((BattleSceneData *)D_800658C8)
 
-/* An effect sprite, a record of a sprite pool (0x7C bytes): a
- * quadrilateral of four vertices, a colour fading each tick, and its
- * primitive for both frame buffers. */
-typedef struct {
-    s16 x0, y0, z0, pad06;
-    s16 x1, y1, z1;
-    s16 projected; /* 0x0E: the vertices are 3D, projected with the GTE */
-    s16 x2, y2, z2;
-    s16 age;       /* 0x16: -1 free */
-    s16 x3, y3, z3;
-    s16 lifetime;  /* 0x1E */
-    u16 color[3];  /* 0x20: 10.6 fixed point */
-    s16 fade[3];   /* 0x26: per tick */
-    POLY_FT4 packets[2]; /* 0x2C: one per frame buffer */
-} EffectSprite;
-
-/* A pool of effect sprites; next is the first record that may be free. */
-typedef struct SpritePool {
-    EffectSprite *records;
-    s16 count;
-    s16 next;
-} SpritePool;
-
 /* A triangle of the scene's light geometry (0xE bytes). */
 typedef struct SceneTriangle {
     s16 vertices[3];   /* indices into the scene's points */
@@ -193,18 +162,6 @@ typedef struct {
     u8 field4;
     u8 field5;
 } LightSlot;
-
-/* A position tracker (0x14 bytes, D_800D3304): an offset from a part of a
- * stage object. */
-typedef struct Tracker {
-    s16 x;
-    s16 y;
-    s16 z;
-    s16 active;     /* 0x06 */
-    SVECTOR offset; /* 0x08 */
-    s16 object;     /* 0x10: stage object, negative none */
-    s16 part;       /* 0x12: its part less one */
-} Tracker;
 
 /* Battle scene and effect state. */
 extern SVECTOR *D_800D3344;       /* scene points */
@@ -228,6 +185,7 @@ extern u16 D_800C3E30;             /* slot mask */
 extern u16 D_800C3D40;
 extern EffectPool D_800C3D0C;
 extern SpritePool D_800C3D04;
+extern ImageAnim D_800D3600; /* the stage's image animation */
 extern ModelPart *D_800C3E38; /* the stage model's parts (the setup, ovl2615, sets them) */
 extern Panorama *D_800C3D50[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
 extern void *D_800C3EA0;

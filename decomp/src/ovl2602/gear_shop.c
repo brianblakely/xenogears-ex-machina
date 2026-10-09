@@ -565,8 +565,10 @@ void func_801CF9BC(u8 model, u8 slot) {
 }
 
 /*
- * Load gear `gear`'s model into slot `slot` (with the model code outside this
- * overlay), move the camera back, and show the parts panel.
+ * Create gear `gear`'s model as actor `slot` of the actor module (ovl2143)
+ * with its ground height and scale, turn actor 1 a quarter turn back and
+ * tilt it, run the script entry of the gear's variant, and show the parts
+ * panel.
  */
 void func_801CFAB8(u8 slot, u8 gear) {
     u8 variant;
@@ -574,11 +576,11 @@ void func_801CFAB8(u8 slot, u8 gear) {
     variant = 0;
     func_801E742C(slot, 0, D_800625A0->model_parts[slot]->data0, D_800625A0->model_parts[slot]->data1,
                   slot * 64 + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->position);
-    D_801E8670[slot]->unk60 = D_801D6DB4[gear];
-    D_801E8670[slot]->unk1C = D_801D6DD8[gear];
-    D_801E8670[1]->view->distance -= 0x400;
+    D_801E8670[slot]->groundY = D_801D6DB4[gear];
+    D_801E8670[slot]->scale = D_801D6DD8[gear];
+    D_801E8670[1]->parts->rotation.vy -= 0x400;
     D_80050100 = 0;
-    D_801E8670[1]->view->unk54 -= 0x20;
+    D_801E8670[1]->parts->rotation.vx -= 0x20;
     if (gear != 0xFF) {
         variant = D_801D6DA0[gear];
     }
@@ -2428,7 +2430,7 @@ u8 func_801D5828(void) {
     return 1;
 }
 
-/* Set up the Gear model: the model code, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
+/* Set up the Gear model: the actor module, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
 void func_801D5D38(void) {
     s32 i;
 

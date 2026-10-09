@@ -31,6 +31,7 @@
 #include "resident/sound.h"
 #include "resident/sprite.h"
 #include "resident/text.h"
+#include "ovl2143/actors.h"
 #include "worldmap.h"
 #include "camera.h"
 #include "effect.h"
@@ -1539,8 +1540,14 @@ typedef struct {
 
 #define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
 
-/* Place the distant landmark model (drawn by the scene overlay) relative to
- * the camera and draw it when it is in front and nearer than depth 0xD00. */
+/* The actor module's draw, which each target declares itself
+ * (ovl2143/actors.h says why). */
+void func_801E7D14(MATRIX *m, MATRIX *light, u_long *ot, s32 buffer, s32 elapsed);
+
+/* Place the distant landmark model (actor 0 of the actor module, ovl2143)
+ * relative to the camera and draw it when it is in front and nearer than
+ * depth 0xD00. No code calls this function, and none in the world map
+ * creates the actor. */
 void func_80076098(void) {
     s32 *flag;
     s32 *depth;
@@ -1549,12 +1556,14 @@ void func_80076098(void) {
     LANDMARK_SCRATCH->position.vx = 0x4E0E - (D_8009BE28.target.vx >> 12);
     LANDMARK_SCRATCH->position.vz = 0x1B68 - (D_8009BE28.target.vz >> 12);
     func_80093534(&LANDMARK_SCRATCH->position);
-    D_801E8670[0]->model->x = LANDMARK_SCRATCH->position.vx;
-    D_801E8670[0]->model->y = 0;
-    D_801E8670[0]->model->z = -LANDMARK_SCRATCH->position.vz;
-    D_801E8670[0]->model->angle.vx = D_801E8670[0]->model->angle.vy = D_801E8670[0]->model->angle.vz = 0;
-    D_801E8670[0]->unk5C = -0x100;
-    D_801E8670[0]->unk1C = 0x40;
+    D_801E8670[0]->parts->translation[0] = LANDMARK_SCRATCH->position.vx;
+    D_801E8670[0]->parts->translation[1] = 0;
+    D_801E8670[0]->parts->translation[2] = -LANDMARK_SCRATCH->position.vz;
+    D_801E8670[0]->parts->rotation.vx = D_801E8670[0]->parts->rotation.vy = D_801E8670[0]->parts->rotation.vz = 0;
+    /* The carrier byte and its rotation flag are stored as one halfword (sh):
+     * the bytes 0 and 0xFF, as two members two stores. */
+    *(s16 *)&D_801E8670[0]->parent = -0x100;
+    D_801E8670[0]->scale = 0x40;
     LANDMARK_SCRATCH->local = D_8009A180;
     LANDMARK_SCRATCH->local.t[0] = LANDMARK_SCRATCH->position.vx;
     LANDMARK_SCRATCH->local.t[1] = LANDMARK_SCRATCH->position.vy;

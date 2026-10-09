@@ -358,8 +358,8 @@ typedef struct FieldWork {
     s32 camera_counter;        /* 21D8 */
     s16 unk21DC[4];            /* 21DC: per 801e layer */
     s16 unk21E4[4];            /* 21E4 */
-    SVECTOR layer_angles[4];   /* 21EC: per 801e layer */
-    s32 layer_depths[4];       /* 220C: per 801e layer, from its +1c */
+    SVECTOR layer_positions[4]; /* 21EC: per 801e layer, its root's first position (801e742c) */
+    s32 layer_scales[4];       /* 220C: per 801e layer, its actor's scale */
     s16 unk221C[5][3];         /* 221C */
     u8 unk223A[2];
     s16 unk223C[3][3];         /* 223C */

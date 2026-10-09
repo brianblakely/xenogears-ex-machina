@@ -400,27 +400,6 @@ typedef struct {
 
 extern WorldmapSave D_8005A4E4;
 
-/* Model and object of the scene overlay at 0x801E0000, which draws the
- * distant landmark (func_80076098). */
-typedef struct {
-    u8 pad0[0x54];
-    SVECTOR angle;    /* 0x54 */
-    s32 x, y, z;      /* 0x5C */
-} OverlayModel;
-
-typedef struct {
-    u8 pad0[4];
-    OverlayModel *model; /* 0x04 */
-    u8 pad8[0x14];
-    s16 unk1C;
-    u8 pad1E[0x3E];
-    s16 unk5C;
-} OverlayObject;
-
-extern OverlayObject *D_801E8670[]; /* scene overlay objects; [0] is the landmark */
-extern MATRIX *D_801E8644;
-void func_801E7D14(MATRIX *view, MATRIX *light, u_long *ot, s32 buffer, s32 mode);
-
 /* A resident window call the world map declares itself: its call passes
  * words where the resident's definition takes halfwords. */
 void func_80033698(s32 a, s32 b);

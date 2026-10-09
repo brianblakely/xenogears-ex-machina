@@ -68,11 +68,12 @@
  *   1a move_image(x, y, dst_x, dst_y, w, h): MoveImage the rectangle (width
  *         rounded up to even) to (dst_x, dst_y); arg bit 0: relative to the
  *         object's image placement (none: skipped)
- *   1b image_animation(mode_source, step_flags, x, y, z, x2, y2, z2, x3, y3,
- *         p0, p1, p2, p3, p4): start image animation arg (800a3640) from a
- *         source animation (0xFF none), mode (bit 7: at the image
- *         placement), step handler (800aa820), flags, rectangles and
- *         parameters; the 15 words are read even when arg is out of range
+ *   1b image_animation(mode_target, curve_flags, x, y, z, x2, y2, z2, x3, y3,
+ *         p0, p1, p2, p3, p4): start image animation arg (800a3640) copying
+ *         its frames into image animation `target` (0xFF none), with mode
+ *         (bit 7: at the image placement), frame curve (800aa820), flags,
+ *         rectangles and parameters; the 15 words are read even when arg is
+ *         out of range
  *   1c stop_image_animation: stop image animation arg (800a429c)
  *   1d tween_part(mode_flags, field1_kind, start_x, start_y, start_z, end_x,
  *         end_y, end_z, duration): tween part arg's rotation, translation or

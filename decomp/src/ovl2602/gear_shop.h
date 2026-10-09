@@ -6,11 +6,13 @@
 #include "psyq/libgte.h"
 #include "resident/menu.h"
 #include "menu/tables.h"
+#include "ovl2143/actors.h"
 
 /* The Gear parts shop (ovl2602): what its units share, the menu screen code
  * (ovl2602.c), the Gear screen and shop (gear_shop.c) and the commons
- * (ovl2602_common.c), and the Gear model code outside the overlay that it
- * calls. Its other blocks are the menu screens' (decomp/include/menu). */
+ * (ovl2602_common.c), and its view of the actor module that draws the gear
+ * (ovl2143/actors.h). Its other blocks are the menu screens'
+ * (decomp/include/menu). */
 
 /*
  * The gear screen block (MenuState gear_screen, 1f00h bytes): its backdrop
@@ -67,22 +69,6 @@ typedef struct CameraMove {
     u8 frames;       /* 33: steps per update */
 } CameraMove;
 
-/* The Gear model code's state (801e8674, outside this overlay). */
-typedef struct ModelView {
-    u8 unk0[0x54];
-    s16 unk54;    /* 54 */
-    s16 distance; /* 56: camera distance */
-} ModelView;
-
-typedef struct ModelState {
-    u8 unk0[4];
-    ModelView *view; /* 04 */
-    u8 unk8[0x1C - 8];
-    s16 unk1C;       /* 1c */
-    u8 unk1E[0x60 - 0x1E];
-    s16 unk60;       /* 60 */
-} ModelState;
-
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
@@ -98,16 +84,12 @@ s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, 
                   s32 flip_y); /* mirrored sprite */
 u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
 
-/* The Gear model code (801e7xxx-801e8xxx, outside this overlay) and its state. */
-extern MATRIX *D_801E8644;        /* the model code's light colour matrix */
-extern ModelState *D_801E8670[2]; /* per model slot */
-extern ModelState *D_801E8674;
-void func_801E738C(s32 unk0); /* model code setup */
-void func_801E742C(s32 index, u16 flags, void *script, void *file, s16 x, s16 y, s16 z, s16 w, s16 *pos);
-void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
-void func_801E7FD4(void);
-void func_801E8030(s32 unk0);
-void func_801E8330(u16 index, u16 mask, s32 variant);
+/* The actor module (ovl2143/actors.h), whose actor 1 is the gear shown. Its
+ * draw, which each target declares itself: this screen passes four
+ * arguments where the module takes five (the fifth, the frames elapsed, is
+ * read from a stack slot this call does not write), with its light record,
+ * whose first 0x20 bytes the module reads as the light matrix. */
+void func_801E7D14(MATRIX *m, MenuLight *light, u32 *ot, s32 buffer);
 
 /* The screen code's data and calls the Gear screen uses (ovl2602.c). */
 extern u8 D_801D697C;    /* the model values debug display is on */

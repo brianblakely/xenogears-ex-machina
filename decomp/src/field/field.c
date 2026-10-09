@@ -2370,9 +2370,9 @@ void func_80075B44(u_long *ot, s32 buffer) {
             }
         } else if (D_8004F380 == 0) {
             if (!(actor->flags & 0x10000) && !(actor->unk014 & 0x200002) && !(actor->layer_flags & 0x800)) {
-                D_801E8670[party]->unk4A &= 0xFFFE;
+                D_801E8670[party]->flags &= 0xFFFE;
             } else {
-                D_801E8670[party]->unk4A |= 1;
+                D_801E8670[party]->flags |= 1;
             }
             if (!(kind & 0x20)) {
                 D_801E8670[party]->active = 1;
@@ -2380,14 +2380,14 @@ void func_80075B44(u_long *ot, s32 buffer) {
                 D_801E8670[party]->active = 0;
             }
             if (!(actor->layer_flags & 0x20000)) {
-                D_801E8670[party]->model->facing = actor->unk108 + 0xC00;
+                D_801E8670[party]->parts->rotation.vy = actor->unk108 + 0xC00;
             } else {
-                actor->heading_goal = actor->unk108 = D_801E8670[party]->model->facing - 0xC00;
+                actor->heading_goal = actor->unk108 = D_801E8670[party]->parts->rotation.vy - 0xC00;
             }
-            D_801E8670[party]->scale = (actor->scale[0] * D_800B2078.layer_depths[party]) >> 12;
-            D_801E8670[party]->y = actor->position[1] >> 16;
-            D_801E8670[party]->model->x = actor->position[0] >> 16;
-            D_801E8670[party]->model->z = actor->position[2] >> 16;
+            D_801E8670[party]->scale = (actor->scale[0] * D_800B2078.layer_scales[party]) >> 12;
+            D_801E8670[party]->groundY = actor->position[1] >> 16;
+            D_801E8670[party]->parts->translation[0] = actor->position[0] >> 16;
+            D_801E8670[party]->parts->translation[2] = actor->position[2] >> 16;
             party++;
             actor->layer_flags &= ~0x200;
         }
@@ -2788,9 +2788,9 @@ void func_80077884(void) {
 
 /* Start the 801e module's layers when enabled: sync and flush the cache,
  * initialise the module, set the back colour, then create each layer from
- * its two resources (releasing the first) and keep its depth. */
+ * its two resources (releasing the first) and keep its scale. */
 void func_80077AB4(void) {
-    SVECTOR *angles;
+    SVECTOR *position;
     s32 row;
     s32 i;
 
@@ -2798,19 +2798,19 @@ void func_80077AB4(void) {
         func_8008A520();
         func_8007999C();
         func_801E738C(D_800B2078.unk234A);
-        D_801E8644 = D_800B2078.unk223C;
+        D_801E8644 = (MATRIX *)D_800B2078.unk223C;
         SetBackColor(D_800B2078.unk225C[0], D_800B2078.unk225C[1], D_800B2078.unk225C[2]);
         for (i = 0; i < D_800B2078.unk2264; i++) {
-            angles = &D_800B2078.layer_angles[i];
-            angles->vx = 0;
-            angles->vy = 0;
-            angles->vz = 0;
+            position = &D_800B2078.layer_positions[i];
+            position->vx = 0;
+            position->vy = 0;
+            position->vz = 0;
             row = D_800B2078.unk225F[i];
             func_801E742C(i, 0, D_8005A420[i], D_8005A450[i],
                           (s16)(0x240 - ((i + row) << 6)), 0x100, 0, (s16)(i + 0xFC),
-                          angles);
+                          &position->vx);
             func_800320E8(D_8005A450[i]);
-            D_800B2078.layer_depths[i] = D_801E8670[i]->scale;
+            D_800B2078.layer_scales[i] = D_801E8670[i]->scale;
         }
         func_80032498(8, 0);
     }

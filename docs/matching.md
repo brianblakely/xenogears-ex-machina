@@ -202,7 +202,7 @@ that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
 address, and each must agree with the rebuilt targets by their own symbols: every
 other target that defines the name defines it there, each that exports it wherever
 the copied value points and one holding the value also by a local symbol (2318 of
-2378 at present); where none does, a fragment may give it as a view, another name
+2377 at present); where none does, a fragment may give it as a view, another name
 plus a constant that agrees by name, and the value must lie in the object holding
 that name in its definer (4: battle's game data member `D_8006F364 = D_8006D634 +
 0x1D30` and debug595's three camera vectors of the field view D_800AF880);
@@ -210,7 +210,7 @@ otherwise a target holding the value has a symbol there (none: the movie library
 entries and variable that field and movie use, the battle functions ovl3087 passes
 and the resident's VSync callback and sequence buffer that the world map uses all
 take their definers' names, which the importing symbol files give); otherwise the
-address must lie inside an input section that target's link places (56 members or
+address must lie inside an input section that target's link places (55 members or
 parts of objects that no symbol names, such as game data members, all from splat's
 lists). For this last group the check ties a value only to the address its name
 gives, not to a particular object or, where targets overlap (debug595's field
@@ -343,23 +343,30 @@ calls; `gamedata.h` holds the game data D_8006D634), `battle/` (one header per
 battle overlay subsystem whose types, variables or calls its modules and overlays
 use, with the battle area D_800C3EB0 and its work area D_800CCCE8; each function
 sits in the header of the subsystem that defines it; also the screen burst that
-ovl2615 and ovl3387 both carry), `menu/` (the blocks the menu mode's screens, slot39
-and ovl2598-ovl2602, keep behind the menu state of `resident/menu.h`), `mdec/` (the
-movie library's player, which the movie mode and the field call) and `field/`
-(`monitor.h`: the field state and calls that its debug monitor, debug595, also uses,
-and the monitor's entries and debug-lines flag, which the field calls and sets).
-Another image's functions and variables keep their definer's names, which the
-importing overlay's symbol file gives its link (movie and field name the library's
-entries, ovl3087 the battle's callbacks it passes, the world map the resident's
-VSync callback). A resident or battle function whose callers in other targets were
-built with other argument or result conversions (narrow parameters, another count)
-stays out of them: each target declares it, the resident and the battle in their
-`own_declarations.h`. So does a variable some target declares with another qualifier
-(the vertical blank count, volatile in the mode 4 menu), and a target keeps its own
-view of an object whose members its code reads with other types (ovl2615 reads the
-scene data's positions unsigned); a second declaration of one object takes its
-assembler name (the world map's sequence header over D_80062648, whose address cse
-would otherwise keep from the copy before it). A unit declares what only it uses
+ovl2615 and ovl3387 both carry; `model.h` and `effect.h` hold the records of the
+battle's model and effect library, which ovl2143 links a copy of, and declare no
+variables), `menu/` (the blocks the menu mode's screens, slot39 and ovl2598-ovl2602,
+keep behind the menu state of `resident/menu.h`), `mdec/` (the movie library's
+player, which the movie mode and the field call), `field/` (`monitor.h`: the field
+state and calls that its debug monitor, debug595, also uses, and the monitor's
+entries and debug-lines flag, which the field calls and sets) and `ovl2143/` (the
+actor module's records, variables and entries, which the field, the world map and
+the Gear parts shop use). Another image's functions and variables keep their
+definer's names, which the importing overlay's symbol file gives its link (movie and
+field name the library's entries, ovl3087 the battle's callbacks it passes, the
+world map the resident's VSync callback). A resident, battle or ovl2143 function
+whose callers in other targets were built with other argument or result conversions
+(narrow parameters, another count) stays out of them: each target declares it, the
+resident and the battle in their `own_declarations.h` (ovl2143's draw 801E7D14,
+which ovl2602 calls with four arguments, in each caller). So does a variable some
+target declares with another qualifier (the vertical blank count, volatile in the
+mode 4 menu), and a target keeps its own view of an object whose members its code
+reads with other types (ovl2615 reads the scene data's positions unsigned); a second
+declaration of one object takes its assembler name (the world map's sequence header
+over D_80062648, whose address cse would otherwise keep from the copy before it). A
+shared header's `extern` sets the order of the defining unit's tentative
+definitions, so that unit defines them ahead of the header (ovl2143.c's state before
+`ovl2143/actors.h`, as the commons units do). A unit declares what only it uses
 itself, before the first use. A function that is understood but does not yet match
 stays linked as assembly inside
 `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report counts

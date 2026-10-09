@@ -3,8 +3,9 @@
  * parts shop. Its entry (801ce024) sets up the same shop screen as ovl2601
  * (sell lists, buying with prices and gold, yes/no prompts) and adds the
  * Gear side: the game data's gear records and their part tables, a 3D model
- * of the chosen Gear drawn through code at 801e7xxx outside this overlay
- * with a second 400h-entry ordering table, the member switch and the gear
+ * of the chosen Gear drawn as actor 1 of the actor module ovl2143
+ * (ovl2143/actors.h) with a second 400h-entry ordering table, the member
+ * switch and the gear
  * screen block (menu state gear_screen). Functions shared with ovl2601 are
  * recovered from the same source; the ones that differ keep their own
  * versions here.
@@ -1830,7 +1831,8 @@ void func_801CB690(void) {
 
 /*
  * Advance the camera move one update: x and y move the model's depth and
- * height, z the model code's camera distance; each axis stops (clears its
+ * height, z turns the gear (actor 1's root's y rotation, from which the
+ * module's 801DC5C0 builds its transform); each axis stops (clears its
  * motion bit) at its target. The whole part of the 16.16 offset is written
  * out in each comparison and store.
  */
@@ -1881,17 +1883,17 @@ void func_801CBA2C(void) {
         D_801D9050.offset[2] += D_801D9050.step[2];
         if (D_801D9050.negative[2] == 0) {
             if (D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2] >= D_801D9050.to[2]) {
-                D_801E8674->view->distance = D_801D9050.to[2];
+                D_801E8670[1]->parts->rotation.vy = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
+                D_801E8670[1]->parts->rotation.vy = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
             }
         } else {
             if (D_801D9050.to[2] >= D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000) {
-                D_801E8674->view->distance = D_801D9050.to[2];
+                D_801E8670[1]->parts->rotation.vy = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
+                D_801E8670[1]->parts->rotation.vy = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
             }
         }
     }
@@ -1910,7 +1912,7 @@ void func_801CBDA0(void) {
     SetTransMatrix(&D_800625A0->matrix);
 }
 
-/* Debug display (when enabled and the model is loaded): the model translation, camera distance and two model values, in decimal with a minus sign. */
+/* Debug display (when enabled and the model is loaded): the model translation, the gear actor's turn, ground height and scale, in decimal with a minus sign. */
 void func_801CBE60(void) {
     s32 values[6];
     s32 i;
@@ -1931,9 +1933,9 @@ void func_801CBE60(void) {
         values[0] = D_800625A0->offset2.vx;
         values[1] = D_800625A0->offset2.vy;
         values[2] = D_800625A0->offset2.vz;
-        values[3] = D_801E8674->view->distance;
-        values[4] = D_801E8674->unk60;
-        values[5] = D_801E8674->unk1C;
+        values[3] = D_801E8670[1]->parts->rotation.vy;
+        values[4] = D_801E8670[1]->groundY;
+        values[5] = D_801E8670[1]->scale;
         D_801D9048 = 7;
         for (i = 0; i < 6; i++) {
             value = values[i];

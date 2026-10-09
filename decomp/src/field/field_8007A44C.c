@@ -2712,8 +2712,8 @@ void func_80081F80(Sprite *sprite, s16 heading, FieldDescriptor *descriptor) {
             sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             layer = actor->state.bits.layer;
-            sprite->speed_x = -D_801E8670[layer]->speed_x << 16;
-            sprite->speed_z = -D_801E8670[layer]->speed_z << 16;
+            sprite->speed_x = -D_801E8670[layer]->moved[0] << 16;
+            sprite->speed_z = -D_801E8670[layer]->moved[2] << 16;
         }
     } else {
         sprite->speed_x = 0;
@@ -2843,7 +2843,7 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     SVECTOR turn;
     Sprite *model;
     FieldActor *platform;
-    LayerObject **entry;
+    Actor **entry;
     s32 push_x;
     s32 push_z;
     s32 speed;
@@ -2955,8 +2955,8 @@ conveyed:
     }
     if ((actor->layer_flags & 0x22000) == 0x22000) {
         entry = &D_801E8670[D_800AF858];
-        actor->unk40[0] -= (((*entry)->speed_x << 16) / (u16)actor->unk76) << 8;
-        actor->unk40[2] -= (((*entry)->speed_z << 16) / (u16)actor->unk76) << 8;
+        actor->unk40[0] -= (((*entry)->moved[0] << 16) / (u16)actor->unk76) << 8;
+        actor->unk40[2] -= (((*entry)->moved[2] << 16) / (u16)actor->unk76) << 8;
         D_800AF858++;
     }
 }
