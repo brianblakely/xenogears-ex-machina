@@ -34,11 +34,12 @@ Flags (an object can carry several):
           table, the end of a 2-D table's last row, a structure's last
           members), would be alignment fill if the object ended before them
           (the next object or input section starts at the first address at
-          or after them aligned as it is) and hold a non-zero byte. Notes: ``read`` (an exact access reads
-          them: not listed, counted as ``tail read``), ``unread`` (every access
-          is exact and none reaches them), ``text`` (every non-zero byte is
-          printable ASCII), ``outlier`` (a value outside the range of the
-          object's other elements).
+          or after them aligned as it is) and hold a non-zero byte. Notes:
+          ``read`` (an exact access reads them: not listed, counted as
+          ``tail read``), ``unread`` (every access is exact and none reaches
+          them), ``text`` (every non-zero byte is printable ASCII),
+          ``outlier`` (a value outside the range of the object's other
+          elements).
   unread  every access is exact and the unread rest of the object lies in an
           alignment slot with a non-zero byte (also for word elements).
   wide    every load or store is narrower than the declared elements and a

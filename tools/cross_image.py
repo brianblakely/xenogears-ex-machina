@@ -272,7 +272,7 @@ def numbers(targets: list[Target]) -> list[str]:
             left += [(v, v + MODE_ENTRY_SIZE * count) for v in t.names[t.values["MODE_TABLE"]]]
         loaded = [s for s in t.sections if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC]
 
-        def held(address: int) -> list[str]:
+        def held(address: int, t: Target = t) -> list[str]:
             return [d.name for d in targets
                     if d is not t and d.lo <= address < d.end and not t.lo <= address < t.end]
 
