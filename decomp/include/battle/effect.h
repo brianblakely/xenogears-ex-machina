@@ -103,9 +103,11 @@ typedef struct ColorFade {
 
 typedef char ColorFadeLayoutCheck[sizeof(ColorFade) == 0x70 ? 1 : -1];
 
-/* A frame curve mapping time to a frame (800A3490-800A35C8, called without
- * a prototype: time, divisor, base); negative ends the animation. */
-typedef s32 (*FrameCurve)();
+/* A frame curve mapping time to a frame: the s16 functions 800A3490,
+ * 800A3514, 800A3578 and 800A35C8 (ovl2143's 801E0850, 801E08D4, 801E0938
+ * and 801E0988), called without a prototype (time, divisor, base); negative
+ * ends the animation. */
+typedef s16 (*FrameCurve)();
 
 /* A row of three colours. */
 typedef struct {

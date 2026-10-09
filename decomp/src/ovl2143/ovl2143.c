@@ -2071,15 +2071,16 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended; an unchanged frame returns nothing (the
- * original falls off the end). */
+ * once the animation ended. */
 s16 func_801E1258(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
     ImageAnim *target;
     u16 *pixels;
     u16 *work;
+    u16 result;
     s16 frame;
+    s32 value;
     s32 x;
     s32 y;
 
@@ -2087,16 +2088,15 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    /* This copy calls the curve as returning a halfword (the curves are
-     * s16 functions); with the shared FrameCurve's word result one register
-     * of the call's result differs (the battle's 800A3E98 takes the word). */
-    frame = ((s16 (*)())anim->curve)(anim->time, anim->divisor, anim->base);
+    value = result = anim->curve(anim->time, anim->divisor, anim->base);
+    frame = value;
     if (frame < 0) {
         func_801E165C(anim);
         return frame;
     }
-    if (frame != anim->frame) {
-        anim->frame = frame;
+    value = anim->frame;
+    if (frame != value) {
+        anim->frame = result;
         switch (anim->mode) {
         case 0:
             func_80026F44(anim->size, frame, anim->work, anim->pixels);
@@ -2158,8 +2158,9 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
                 }
             }
         }
-        return frame;
+        return result;
     }
+    return frame;
 }
 
 /* Stop an image animation: restore its original pixels to VRAM (resident
