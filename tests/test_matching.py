@@ -907,10 +907,12 @@ class MatchingTests(unittest.TestCase):
         "enter the matching Nix shell to test the cross-image check")
     def test_cross_image_names_and_mode_table_agree_with_the_other_links(self):
         # A resident r (80010000-80010028: res_func, fill, the mode table,
-        # res_var) and an overlay o (80020000-80020018, its .bss to 80020028)
+        # res_var), an overlay o (80020000-80020018, its .bss to 80020028)
         # that takes res_func from a PROVIDE list and other names from a
-        # fragment: by name, by address (alias: the table) and inside an
-        # object (inner: res_var's second word).
+        # fragment, and a module p (80030000-8003000c: p_func, which loads
+        # res_var's second word by number): by name, by view (member:
+        # res_var + 4), by address (alias: the table, and D_80030000: p_func)
+        # and inside an object (inner: res_var's second word).
         def resident(entry=0x80020000, bss=(0x80020014, 0x80020024)):
             self.link_assembly("r", (
                 ".set noreorder\n.text\n.globl res_func\n.type res_func, @function\n"
@@ -940,27 +942,47 @@ class MatchingTests(unittest.TestCase):
             "IMAGE := o.bin\nBUILD := build/o\nLINKER_SCRIPT := o.ld\n"
             "LINKER_EXTRA := auto/undefined_funcs_auto.txt o.resident.ld\n"
             "MODE := 0\nMODE_ENTRY := ov_entry\n")
+        (self.root / "p.mk").write_text("IMAGE := p.bin\nBUILD := build/p\nLINKER_SCRIPT := p.ld\n")
+        self.link_assembly("p", (
+            ".set noreorder\n.text\n.globl p_func\n.type p_func, @function\n"
+            "p_func:\nlui $8, 0x8001\njr $31\nlw $8, 0x24($8)\n.size p_func, . - p_func\n"),
+            "SECTIONS {\n  .p 0x80030000 : SUBALIGN(4) { p.o(.text) }\n  /DISCARD/ : { *(*) }\n}\n")
         names = ("res_var = 0x80010020;\nalias = 0x80010010;\ninner = 0x80010024;\n"
-                 "timer = 0x1F801100;\n")
+                 "member = res_var + 4;\nD_80030000 = 0x80030000;\ntimer = 0x1F801100;\n")
         resident()
         overlay(names)
         tool = Path(__file__).resolve().parents[1] / "tools/cross_image.py"
 
         def check():
-            return subprocess.run([sys.executable, str(tool), "r.mk", "o.mk"], cwd=self.root,
-                                  text=True, capture_output=True, check=False)
+            return subprocess.run([sys.executable, str(tool), "r.mk", "o.mk", "p.mk"],
+                                  cwd=self.root, text=True, capture_output=True, check=False)
 
         result = check()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), {
-            "claim": "cross_image_agreement", "targets": 2, "names": 4, "by_name": 2,
-            "by_address": 1, "inside_object": 1, "mode_entries": 1})
-        # A name another link places elsewhere, one in no object (the fill
+            "claim": "cross_image_agreement", "targets": 3, "names": 6, "by_name": 2,
+            "by_view": 1, "by_address": 2, "inside_object": 1, "mode_entries": 1})
+        # --numbers lists the other links' addresses a link holds as numbers:
+        # p's lui/lw of res_var's second word, not o's relocated ones.
+        listed = subprocess.run([sys.executable, str(tool), "r.mk", "o.mk", "p.mk", "--numbers"],
+                                cwd=self.root, text=True, capture_output=True, check=True)
+        self.assertEqual(listed.stdout, "p 80030000 lui 80010024 (p.o): r\n")
+        # A name another link places elsewhere, also where its copied value
+        # points into a third link (r exports table, which p does not
+        # define), a view outside the object holding its base, a name whose
+        # value is not the address it gives, one in no object (the fill
         # after res_func) and a mode table that does not hold the overlay's
         # entry and uninitialized data all fail.
         for change, message in (
             (lambda: overlay(names.replace("0x80010020", "0x80010024")),
              "o: res_var = 80010024 (o.resident.ld), but r defines res_var at 80010020"),
+            (lambda: overlay(names + "table = 0x80030000;\n"),
+             "o: table = 80030000 (o.resident.ld), but r defines table at 80010010"),
+            (lambda: overlay(names + "table = 0x80010010;\npast = table + 0x10;\n"),
+             "o: past = 80010020 (o.resident.ld) is table + 0x10, outside the object holding"
+             " table in r (80010010-80010020)"),
+            (lambda: overlay(names + "D_80010004 = 0x80010000;\n"),
+             "o: D_80010004 = 80010000 (o.resident.ld), but its name gives 80010004"),
             (lambda: overlay(names + "gap = 0x8001000C;\n"),
              "o: gap = 8001000c (o.resident.ld) lies in r but in no input section they place"),
             (lambda: resident(entry=0x80020004),

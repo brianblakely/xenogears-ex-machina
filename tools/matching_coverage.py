@@ -336,6 +336,8 @@ LINE_MARKER = re.compile(r'[ \t]*#[ \t]*\d+(?:[ \t]+"[^"\\\x00-\x1f]*"(?:[ \t]+\
 SHT_PROGBITS, SHT_SYMTAB, SHT_NOBITS, SHT_REL = 1, 2, 8, 9
 SHF_ALLOC = 2
 STT_FUNC, STT_SECTION, STT_FILE = 2, 3, 4
+STB_LOCAL = 0
+SHN_ABS = 0xFFF1
 # The relocations of an address the link produces: a data word, a j/jal
 # target, a lui's %hi.
 R_MIPS_32, R_MIPS_26, R_MIPS_HI16 = 2, 4, 5
@@ -436,6 +438,7 @@ class Symbol:
     size: int
     kind: int
     section: int
+    bind: int = STB_LOCAL
 
 
 def read_elf(path: Path) -> tuple[list[Section], list[Symbol]]:
@@ -457,7 +460,7 @@ def read_elf(path: Path) -> tuple[list[Section], list[Symbol]]:
         for h in headers
     ]
     symbols = [
-        Symbol(string(h[6], name), value, size, info & 0xF, index)
+        Symbol(string(h[6], name), value, size, info & 0xF, index, info >> 4)
         for h in headers if h[1] == SHT_SYMTAB
         for name, value, size, info, _other, index
         in struct.iter_unpack("<IIIBBH", data[h[4]:h[4] + h[5]])

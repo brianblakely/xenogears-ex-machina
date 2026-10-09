@@ -38,8 +38,10 @@ all-verify:
 	@$(MAKE) --no-print-directory cross-image
 
 # After every target links: each address a link takes from another target
-# (its linker scripts' names there) must be that target's rebuilt symbol, by
-# name or else by address, or lie inside an object it places, and the
+# (its linker scripts' names there) must hold the address its name gives and
+# agree with the other targets' rebuilt symbols, by name (wherever a target
+# exporting the name places it), as a view inside a named object, or else by
+# address, or lie inside an object a target holding it places, and the
 # resident's mode table (MODE_TABLE) must hold each mode overlay's (MODE)
 # entry symbol and linked BSS bounds (tools/cross_image.py).
 cross-image:

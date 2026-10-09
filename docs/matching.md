@@ -195,16 +195,41 @@ After every target links, `all-verify` runs `make -C decomp cross-image`
 (`tools/cross_image.py` over every configuration). Each name a target's linker
 scripts assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them,
 and the fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another
-target's image or uninitialized data is an address copied from the original. Each
-must agree with the rebuilt targets holding that address, by their own symbols: each
-that defines the name defines it there (2287 of 2510 at present); where none does,
-one has a symbol there (19: the movie library's functions and variables that field
-and movie address by number, battle functions whose addresses ovl3087 uses, two
-resident symbols the world map names differently); otherwise the address must lie
-inside an input section that target's link places (204 members or parts of objects
-that no symbol names, such as game data members; for these the check cannot tell
-which object). Values outside every target (the resident's sizes, a constant) are
-not checked. It also compares each resident's mode table (`MODE_TABLE`) with the mode
+target's image or uninitialized data is an address copied from the original. A name
+that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
+address, and each must agree with the rebuilt targets by their own symbols: every
+other target that defines the name defines it there, each that exports it wherever
+the copied value points and one holding the value also by a local symbol (2297 of
+2513 at present); where none does, a fragment may give it as a view, another name
+plus a constant that agrees by name, and the value must lie in the object holding
+that name in its definer (10: members of the game data D_8006D634, the battle area
+D_800C3EB0 and its work D_800CCCE8, and the field view D_800AF880's camera vectors,
+`D_8006D8A0 = D_8006D634 + 0x26C`); otherwise a target holding the value has a
+symbol there (19: the movie library's functions and variables that field and movie
+address by number, battle functions whose addresses ovl3087 uses, two resident
+symbols the world map names differently); otherwise the address must
+lie inside an input section that target's link places (187 members or parts of
+objects that no symbol names, such as game data members, all from splat's lists).
+For these last two groups the check ties a value only to the address its name gives,
+not to a particular object or, where targets overlap (debug595's field names also
+lie in battle), to a particular target; naming them as their definers do needs the
+importing C to use those names (left open). Values outside every target (the
+resident's sizes, a constant) are not checked, nor is an address the C spells as a
+number, which neither this check nor the relocation scan (a target's own range only)
+sees. `tools/cross_image.py --numbers` lists those (each other target's address a
+link holds without a relocation, outside asset and included bytes and the mode
+table); in the 26 links they are battle's three reads of the boot word D_80010000
+(battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45, battle_800BFE48.c
+func_800C0FAC), a number in the original too: its CDK units load it with one
+register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they compile
+`lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link fails its
+BSS bounds; and the
+load addresses of overlays and the heap's end (resident main.c:78,
+main_8001B6C4.c:180/428/436; battle_80070E2C.c:286/349/362/463,
+battle_800BD3AC.c:723; field.c:2940), which no check ties to the images loaded
+there. In data the only such words are the mode table's, compared below, and five
+in each resident's packed boot logo and console font, asset bytes that merely look
+like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the mode
 overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
 mode 2 enters resident code and declares only `MODE`): the entry must be the
 overlay's entry symbol, and the words after bss_start through bss_end, which the
