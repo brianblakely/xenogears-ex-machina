@@ -23,6 +23,6 @@ u8 D_80059171 = 0;  /* menu screen parameter */
 s16 D_80059172 = 0; /* unreferenced; size from value and alignment */
 s32 D_80059174 = 1; /* unreferenced; size from value and alignment */
 u8 D_80059178 = 1;  /* debug start: choose the menu screen */
-u8 D_80059179 = 0;  /* battle-entry flag (field, world map, battle, slot39) */
+u8 D_80059179 = 0;  /* battle-entry flag (field and world map set it, battle and slot39 read it) */
 s32 *D_8005917C = &D_80010000;
 u8 D_80059180 = 0; /* battle music playing (battle, ovl2596) */

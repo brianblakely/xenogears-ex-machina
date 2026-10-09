@@ -1,6 +1,6 @@
 /* Initialized small globals between the first sprite unit's .sdata and the
  * second's: the sprite engine's settings and the battle overlay's module and
- * sound requests. Every user loads and stores them absolutely: the first
+ * single-action requests. Every user loads and stores them absolutely: the first
  * three sprite units, which reach small data of their own through $gp, and
  * the overlays (tools/data_users.py --range 80059198:800591b8). GCC writes a
  * -G8 unit's data, commons and .externs ahead of its code, so a one-pass
@@ -26,7 +26,7 @@ u8 D_800591AD = 0;
 u8 D_800591AE = 0;
 u8 D_800591AF = 0; /* allocation mode for sprite tasks */
 u8 D_800591B0 = 1; /* the battle module is loaded */
-u8 D_800591B1 = 1; /* the battle's sound request is done */
+u8 D_800591B1 = 1; /* the battle's requested single action is done (800b8068) */
 u8 D_800591B2 = 0; /* the loaded battle module */
 u8 D_800591B3 = 0; /* the requested battle module */
-u16 D_800591B4 = 0; /* the battle's sound request */
+u16 D_800591B4 = 0; /* the battle's single-action request (800b8054), run by its frame loop */

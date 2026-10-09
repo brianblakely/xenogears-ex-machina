@@ -2,7 +2,7 @@
  * allocated them after both units' own variables, at the end of the file
  * (zero there), each in a slot of whole words (decomp/Makefile), so this
  * unit, linked last, defines them. Both units read all but D_801D9088
- * (tools/bss_owners.py). */
+ * (tools/data_users.py). */
 #include "menu_card.h"
 
 CameraMove D_801D9050;

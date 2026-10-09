@@ -434,17 +434,19 @@ converted to C per unit. What converting the targets' `.data` established:
   (`undefined_syms_auto.txt`): defined in their units they would be allocated among
   the small ones.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
-  definition placed after its use (a probe defining `int late_var = 2;` after its
-  reader shows it under 2.6.3, 2.7.2 and 2.7.2-cdk, as does any GP 8 unit's
-  `.o.cc1.s` in the build directory), so a one-pass ASPSX has seen a unit's own
-  definitions before any use: small data that every user loads and stores absolutely
-  is no user's own (addresses, `la`, are formed absolutely even of a unit's own).
-  Only the link position constrains its owner, so the resident's (80059170-80059184,
-  80059198-800591b8) is defined by data-only `-G8` units there, the simplest owners
-  that fit (kernel_settings.c, sprite_settings.c; their compiler is immaterial).
-  Before calling shared data unreferenced, check every image
-  (`tools/data_users.py --range START:END`): four of the resident's fillers are
-  battle and ovl2596 flags.
+  definition placed after its use: `extern int late_var; int g(void) { return
+  late_var; } int late_var = 2;` through `psx-cc1-<version> -O2 -G8` puts `late_var:`
+  before `g:` under 2.6.3, 2.7.2 and 2.7.2-cdk, and every GP 8 unit's `.o.cc1.s` in
+  the build directory shows the same order. A one-pass ASPSX has therefore seen a
+  unit's own definitions before any use: small data that every user loads and stores
+  absolutely is no user's own (addresses, `la`, are formed absolutely even of a unit's
+  own). Only the link position constrains its owner, so the resident's
+  (80059170-80059184, 80059198-800591b8) is defined by data-only `-G8` units there,
+  the simplest owners that fit (kernel_settings.c, sprite_settings.c; their compiler
+  is immaterial: the three give identical `.sdata` and relocations). Before calling
+  shared data unreferenced, check every image (`tools/data_users.py --range
+  START:END`): four of the resident's fillers are battle and ovl2596 flags, and the
+  battle-entry flag at 80059179 sat in what was taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).

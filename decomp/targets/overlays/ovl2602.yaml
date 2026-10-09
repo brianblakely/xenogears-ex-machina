@@ -51,7 +51,7 @@ segments:
       # The file ends with the uninitialized variables (loaded .bss) as
       # zeros, each in a slot of whole words (decomp/Makefile): each unit's
       # own, which only its code reads, in unit order, then the commons
-      # both units read (tools/bss_owners.py).
+      # both units read (tools/data_users.py).
       - [0x12108, .bss, ovl2602]
       - [0x1404c, .bss, gear_shop]
       - [0x14050, .bss, ovl2602_common]

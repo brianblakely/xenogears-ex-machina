@@ -74,7 +74,7 @@ u32 D_801D6C88[32] = {
 
 /* The unit's own uninitialized variables, the first in the file after both
  * units' data (zero there), each in a slot of whole words (decomp/Makefile).
- * Only this unit's code reads them (tools/bss_owners.py). */
+ * Only this unit's code reads them (tools/data_users.py). */
 static POLY_FT4 D_801D7108[200]; /* model values debug display packets, two per sprite */
 static s32 D_801D9048;           /* their sprite count */
 

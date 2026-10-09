@@ -95,7 +95,8 @@ def formed_addresses(code: bytes, address: int) -> dict[int, set[str]]:
         if name in ("addiu", "ori") and ins.rs.value in regs:
             value, immediate = regs[ins.rs.value], ins.getProcessedImmediate()
             value = (value + immediate if name == "addiu" else value | immediate) & 0xFFFFFFFF
-            found.setdefault(value, set()).add(name + ("@gp" if ins.rs.value == 28 else ""))
+            if ins.rt.value != 28:  # setting $gp itself (the start code) forms no data address
+                found.setdefault(value, set()).add(name + ("@gp" if ins.rs.value == 28 else ""))
             regs[ins.rt.value] = value
             continue
         if name == "addu" and (ins.rs.value in regs) != (ins.rt.value in regs):
