@@ -1644,17 +1644,21 @@ void func_800A84C0(void) {
 }
 
 /* Build the status panel: load its image, allocate the quads of both
- * buffers and texture each piece from its frame (flip in flags bits 0-3,
- * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
- * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
- * Both tables are read one unsigned halfword field at a time, so each field
- * has its own base constant (layout + 6, layout and frames + 4 stay in
- * registers), and the buffer table through a pointer, reloaded at each use.
- * The page flags, the position and the flip flags are read through three
- * copies of the piece index made after the exit test: loop.c recognizes the
- * copies as induction variables only there, so the scaled reads keep their
- * shifts, and the three together (two are not worth it) get a counter of
- * their own, the original's layout index beside the loop counter. */
+ * buffers and texture each piece from its frame (flip in flags bits 0-3;
+ * bits 4-7 pick semi-transparency rate 1 or 2 on a 4-bit page, other values
+ * keep the previous piece's rate, 0 before the first). The original passes
+ * the coordinates to 8007a44c unconverted (no s16 prototype in scope: a
+ * separate unit). Both tables are read one unsigned halfword field at a
+ * time, so each field has its own base constant (layout + 6, layout and
+ * frames + 4 stay in registers). The page flags, the position and the flip
+ * flags are read through three copies of the piece index made after the
+ * reads, so loop.c cannot turn the scaled reads into pointers, and after the
+ * exit test, so the counter increment stays in place (before it the
+ * increment gains a move). loop.c reduces the combined copies to a counter of
+ * their own, the original's layout index beside the loop counter: each copy
+ * is worth 1 against the add's cost of 2, so three is the minimum (one:
+ * -6107 vs 171; two: 0 vs 172), and which read uses which copy cannot be
+ * recovered. */
 #define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
 enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
 #define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
@@ -1702,14 +1706,7 @@ void func_800A8BA4(void) {
         h = FRAME(frame, FRAME_H);
         u = FRAME(frame, FRAME_U);
         v = FRAME(frame, FRAME_V);
-        quad->x0 = x;
-        quad->y0 = y;
-        quad->y1 = y;
-        quad->x2 = x;
-        quad->x1 = x + w;
-        quad->y2 = y + h;
-        quad->x3 = x + w;
-        quad->y3 = y + h;
+        setXYWH(quad, x, y, w, h);
         switch (PIECE(flip_piece, PIECE_FLAGS) & 0xF) {
         case 0:
             func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
