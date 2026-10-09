@@ -1326,11 +1326,11 @@ void func_80097070(MATRIX *m, SVECTOR *angle) {
     if (m->m[2][0] | m->m[2][2]) {
         angle->vy = ratan2(m->m[2][0], m->m[2][2]) & 0xFFF;
         *SCRATCH_MATRIX_A = *m;
-        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        *SCRATCH_MATRIX_B = D_8009A180;
         func_8004AFEC(angle->vy, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_A, SCRATCH_MATRIX_B, SCRATCH_MATRIX_C);
         angle->vx = ratan2(SCRATCH_MATRIX_C->m[1][2], SCRATCH_MATRIX_C->m[1][1]);
-        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        *SCRATCH_MATRIX_B = D_8009A180;
         func_8004AE4C(angle->vx, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_C, SCRATCH_MATRIX_B, SCRATCH_MATRIX_A);
         angle->vz = -ratan2(SCRATCH_MATRIX_A->m[1][0], SCRATCH_MATRIX_A->m[1][1]);
@@ -1384,7 +1384,7 @@ void func_80097440(void *arg) {
     SVECTOR *eye;
 
     eye = arg;
-    *SCRATCH_MATRIX_A = *(MATRIX *)&D_8009A180;
+    *SCRATCH_MATRIX_A = D_8009A180;
     *SCRATCH_MATRIX_B = *SCRATCH_MATRIX_A;
     *SCRATCH_MATRIX_C = *SCRATCH_MATRIX_A;
     func_8004AE4C(-D_8009BD38.vx, SCRATCH_MATRIX_A);

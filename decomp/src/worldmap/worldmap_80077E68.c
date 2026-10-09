@@ -731,7 +731,7 @@ s32 func_8007A1B4(s32 index) {
         actor->unk70 = 0;
         actor->unk6C = 0;
     }
-    SCALE_SCRATCH->matrix[0] = *(MATRIX *)&D_8009A180;
+    SCALE_SCRATCH->matrix[0] = D_8009A180;
     SCALE_SCRATCH->matrix[1] = SCALE_SCRATCH->matrix[0];
     SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->unk6C;
     SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk70;

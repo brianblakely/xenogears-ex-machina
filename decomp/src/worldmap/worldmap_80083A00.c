@@ -1058,7 +1058,7 @@ void func_8008615C(void) {
     BILLBOARD_SCRATCH->corner[3].vy = 0;
     BILLBOARD_SCRATCH->corner[3].vz = 0;
     BILLBOARD_SCRATCH->view = D_8009C808;
-    BILLBOARD_SCRATCH->roll = *(MATRIX *)&D_8009A180;
+    BILLBOARD_SCRATCH->roll = D_8009A180;
     RotMatrixZ(-D_8009BD38.vz, &BILLBOARD_SCRATCH->roll);
     for (i = 0; i < 0x10; i++) {
         BILLBOARD_SCRATCH->clut[i] = D_8009D478[i];
@@ -1701,7 +1701,7 @@ s32 func_80087C6C(s32 index) {
     if (D_8006D634.vars[0] < 0xCD) {
         actor->position.vx = 0xD80000;
         actor->position.vz = 0x7280000;
-        object->matrix = *(MATRIX *)&D_8009A180;
+        object->matrix = D_8009A180;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     } else {
         if (D_8006D634.unk184A == 0) {
@@ -2504,7 +2504,7 @@ void func_80089C78(void) {
 
     scratch = (ParticleScratch *)0x1F800000;
     PARTICLE_SCRATCH->view = D_8009C808;
-    PARTICLE_SCRATCH->identity = *(MATRIX *)&D_8009A180;
+    PARTICLE_SCRATCH->identity = D_8009A180;
     i = 0;
     camera_x = D_8009BE28.target.vx >> 12;
     camera_z = D_8009BE28.target.vz >> 12;
