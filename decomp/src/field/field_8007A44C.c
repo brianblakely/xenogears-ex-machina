@@ -18,9 +18,32 @@
  * drawing and collision helpers, the end where the actor motion gives way
  * to the music and sound-effect code (800854d0). */
 #include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
 #include "field.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_event.h"
 #include "field_gte.h"
+#include "field_layer.h"
+#include "field_mode.h"
 #include "field_motion.h"
+#include "field_pad.h"
+#include "field_party.h"
+#include "field_resident.h"
 
 /* The compass grid: corner x by column, corner z by row, texture u by
  * column and v by row (four corners each), and each style's texture page
@@ -680,7 +703,6 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     actor->unk72 = (actor->position[1] + delta->vy) >> 16;
     return 0;
 }
-
 
 s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
                   s32 *attribute);
@@ -1599,7 +1621,6 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
     poly->y3 = y + h;
 }
 
-
 /* Draw dialogue window `w`'s frame into `ot` for `buffer`: while opening
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
@@ -1750,7 +1771,6 @@ void func_8007E1C0(u_long *ot, s32 buffer, s32 w) {
     }
 }
 
-
 /* Build dialogue window `w`'s packets for both buffers: the backing draw
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
@@ -1897,9 +1917,6 @@ void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     *x = (s16)screen;
 }
 
-void func_80032F54(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
-s32 func_80033728(void *messages, void *message);
-
 /* Open dialogue window `w` for `message` at (x, y) with `columns` x `rows`
  * characters for actor `owner`, spoken by `speaker`: take a message slot,
  * keep event variables 16-1c, find where the window flies in from (mode 2:
@@ -1907,7 +1924,7 @@ s32 func_80033728(void *messages, void *message);
  * owner's portrait unless disabled, set up the text and the opening slide.
  * The signed opening result is -1 (clearing the window's +414) when the
  * speaker has layer flag 0x200 and the style lacks bit 1, else 0. */
-s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
+s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
     s32 target_y;
@@ -2705,11 +2722,6 @@ void func_80081F80(Sprite *sprite, s16 heading, FieldDescriptor *descriptor) {
     sprite->speed_z &= ~0xFFF;
 }
 
-
-
-
-
-
 /* Start animation `animation` on a descriptor's model (flag 0x40 set):
  * clears the actor's flag 0x800 outside jumps or on a change; 801e layer
  * actors (layer bit 13) set their layer frame instead (below 0x10 through
@@ -2751,7 +2763,11 @@ typedef struct {
     u8 unk24[6];
     s16 z;       /* 2A */
 } FieldBox;
+
+/* The debug monitor's box report (field_debug.h lists its other entries);
+ * declared beside the box type only this unit has. */
 extern void func_80281678(FieldBox *box);
+
 /* -1 unless point (x, z) lies inside `box` grown by `margin`; inside, run
  * 80281678 on it (unless 800c268c is set) and return 0. */
 s32 func_8008237C(s32 x, s32 z, FieldBox *box, s32 margin) {
@@ -3674,6 +3690,8 @@ s32 func_8008492C(FieldActor *actor) {
     return -1;
 }
 
+/* "ERROR ID0 ACT=%d\n", linked as original rodata after the function that
+ * prints it (the INCLUDE_RODATA below it). */
 extern char D_8006FC74[];
 
 /* Move an actor to its next position: query every collision layer's floor

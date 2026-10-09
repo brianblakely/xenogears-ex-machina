@@ -3,10 +3,47 @@
  * Its rodata runs 0x0-0x9c (the overlay number first); where its text ends
  * is chosen with the next unit (see field_8007A44C.c). */
 #include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
 #include "field.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
 #include "field_gte.h"
+#include "field_layer.h"
+#include "field_load.h"
+#include "field_mode.h"
 #include "field_motion.h"
+#include "field_movie.h"
 #include "field_music.h"
+#include "field_pad.h"
+#include "field_panel.h"
+#include "field_party.h"
+#include "field_picture.h"
+#include "field_resident.h"
+#include "field_screen.h"
+#include "field_sound.h"
 
 /* The overlay's number, ahead of this unit's other rodata (the field is
  * mode overlay 4). */
@@ -592,8 +629,8 @@ void func_80070CC8(void) {
         func_8002C3E8((void *)(*data + (s32)D_800AF880.components.geometry));
     }
 
-    func_8007008C(BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10,
-                  BUNDLE_COMPONENT(BUNDLE_MESSAGES), D_800658DC);
+    func_8007008C(BUNDLE_SIZE(BUNDLE_ENCOUNTERS) + 0x10,
+                  BUNDLE_COMPONENT(BUNDLE_ENCOUNTERS), D_800658DC);
 
     size = BUNDLE_SIZE(BUNDLE_EVENTS) + 0x10;
     D_800ADBF8 = func_80031BDC(size, 0);
@@ -606,9 +643,9 @@ void func_80070CC8(void) {
     D_800ADBF4 = func_80031BDC(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_ZONES), D_800ADBF4);
 
-    size = BUNDLE_SIZE(BUNDLE_8) + 0x10;
+    size = BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10;
     D_800ADBF0 = func_80031BDC(size, 0);
-    func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_8), D_800ADBF0);
+    func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_MESSAGES), D_800ADBF0);
 
     size = BUNDLE_SIZE(BUNDLE_COLLISION) + 0x10;
     D_800AF880.components.collision = func_80031BDC(size, 0);
@@ -2174,7 +2211,6 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-
 /* The rotation matrix whose second row is `axis`: the first row is the unit
  * vector perpendicular to world up and `axis`, the third completes the basis. */
 void func_800759E4(MATRIX *m, VECTOR *axis) {
@@ -2659,11 +2695,6 @@ void func_800775F8(void) {
     VSync(0);
 }
 
-extern RECT D_800B004C;      /* compass colour strip */
-extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
-extern s16 D_800C2690[2];
-extern s16 D_800C38FC[2];
-void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
  * relocate its offset table, load its eight TIMs where 800adc44 places them
@@ -2727,7 +2758,6 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
     m->m[2][2] = m22;
 }
 
-
 /* Load the 801e module and its per-layer resources when the layer is
  * enabled: allocate the module (file 6b9), two blocks per layer (files
  * 6bb and 6ba plus the layer's id), then read them all as one list. */
@@ -2764,7 +2794,6 @@ void func_80077884(void) {
         func_80029AFC(D_800B2394, 0, 0);
     }
 }
-
 
 /* Start the 801e module's layers when enabled: sync and flush the cache,
  * initialise the module, set the back colour, then create each layer from
@@ -2850,26 +2879,7 @@ s32 func_80077E10(void) {
     return 0;
 }
 
-extern s32 D_800AFC78;
-extern s32 D_80059488;
-extern u16 D_800C3900;      /* pad buttons held */
-extern u16 D_800C3908;      /* pad buttons pressed */
-extern u16 D_800AFE9C;
 void func_8007781C(void);
-void func_80085890(); /* called with an argument it ignores */
-void func_802811EC(void);
-void func_800A94A4(s32 actor);
-void func_800A5924(void);
-void func_8007FFE8(void);
-void func_800A3F4C(void);
-void func_800A5C40(void);
-void func_800ACE90(void);
-void func_800ABA98(void);
-void func_800A7C58(void);
-void func_800A9460(void);
-void func_800864F0(void);
-void func_800700B0(void);
-void func_80085988(void);
 
 /* The field mode entry: set up the heap and the debug hooks, take the map
  * and music from the game state, run the field entry (80078d44), then the
@@ -3197,12 +3207,7 @@ void func_80078C5C(void) {
     }
 }
 
-void func_80070CC8(void);
-void func_800A24C4(void);
-void func_801E7378(s32 on);
 /* Declared without prototypes: this caller passes arguments they ignore. */
-void func_800A5884();
-void func_800A77C4();
 
 /* The field entry: load the text palette and screen, set up both draw
  * buffers, load the map (80070cc8, 80070488), finish the stream read ahead
@@ -3365,8 +3370,6 @@ void func_80078D44(void) {
     D_800AFD04 = 0;
 }
 
-void func_80281204(s32 kind);
-
 /* Count down the random-encounter steps while encounters are possible; on a
  * step whose drawn number (800b22a0) reaches zero, pick an encounter kind by
  * the weights at 80065adc and request battle with its music. The original
@@ -3432,12 +3435,6 @@ draw:
         }
     }
 }
-
-extern s32 D_800AFC78;
-extern s32 D_800B0064;
-void func_800A30FC(void);
-s32 func_80085F30(void);
-void func_80085FB8(void);
 
 /* Leave the field for another game mode, then run the mode dispatcher:
  * kind 0 selects battle (2) after saving the map and event variable 1 in
@@ -3505,10 +3502,6 @@ void func_800796FC(void) {
     PutDrawEnv(&D_800C426C->draw);
 }
 
-extern DR_MODE D_800AFE24[2]; /* fade draw mode per buffer */
-extern RECT D_800AFE4C;       /* fade copy source */
-extern TILE D_800AFE54[2];    /* fade tile per buffer */
-
 /* Present the current buffer under a full-screen tile of brightness
  * `level * 4`: link the tile and its draw mode, copy the display area, then
  * put the environments and draw. */
@@ -3556,7 +3549,6 @@ void func_8007999C(void) {
     FlushCache();
     ExitCriticalSection();
 }
-
 
 /* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
  * the field: fade out, save the 801e module and the VRAM the menu uses,

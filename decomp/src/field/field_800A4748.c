@@ -10,13 +10,36 @@
  * 800a4748 where the event runner and state snapshots give way to the
  * screen effects; the next unit is placed at the particle effects. */
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 #include "field.h"
-#include "field_gte.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
+#include "field_glyph.h"
+#include "field_layer.h"
+#include "field_load.h"
+#include "field_mode.h"
 #include "field_motion.h"
-#include "field_script.h"
-#include "field_actor_events.h"
-#include "field_screen.h"
+#include "field_movie.h"
+#include "field_pad.h"
 #include "field_panel.h"
+#include "field_screen.h"
+#include "field_sound.h"
 
 /* The saved strip sources (x, y) of the screen effects. */
 DVECTOR D_800AEB24[15] = {
@@ -129,8 +152,6 @@ ParticleSprite D_800AF27C[21] = {
     {0x10, 0x10, 0, 0, {{0xE0, 0x20}, {0xF0, 0x20}, {0xE0, 0x30}, {0xF0, 0x30}}},
 };
 
-void func_800A476C(s32 x, s32 y);
-
 /* Reset the screen effect view with the image moved to (2c0, 100). */
 void func_800A4748(void) {
     func_800A476C(0x2C0, 0x100);
@@ -149,8 +170,6 @@ void func_800A476C(s32 x, s32 y) {
     MoveImage(&rect, x, y);
     func_800775F8();
 }
-
-extern s32 D_800ADB24; /* screen effect buffers allocated */
 
 /* Stop the screen effect and release its buffers. */
 void func_800A47D4(void) {
@@ -432,9 +451,6 @@ void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
     object[7] = c;
 }
 
-extern void *D_800AFE80;
-extern void *D_800B069C;
-
 /* Release the two blocks at 800afe80 and 800b069c. */
 void func_800A55C8(void) {
     func_800320E8(D_800AFE80);
@@ -507,8 +523,6 @@ void func_800A5774(s32 x, s32 y, s32 h) {
 }
 
 void func_800A663C(s32 semitrans, s32 abr);
-void func_800A6408(void);
-void func_800A6924(void);
 
 /* Set up the screen pieces, draw them twice, mask the saved screen columns at
  * (2c0..3c0, 100) and draw twice more. */
@@ -533,8 +547,6 @@ void func_800A5884(s32 semitrans, s32 abr) {
         func_800A6924();
     }
 }
-
-#include "field_screen.h"
 
 /* Run the requested screen transition (800adb38) over 800adb3c frames:
  * 1-2 fade the screen pieces out, 3 fades them in and holds while it
@@ -1077,9 +1089,6 @@ void func_800A7064(void) {
     func_800320E8(D_800B00C4);
 }
 
-extern s32 D_801D68B4;
-extern void func_801D3538(s32 w, s32 h, s32, s32, s32, s32, s32 rgb24);
-
 /* Set up the movie player for a 320x224 picture. */
 void func_800A708C(void) {
     func_80032498(4, 0);
@@ -1112,9 +1121,6 @@ void func_800A7120(u16 frame, s32 unused, u16 buffer) {
     }
 }
 
-extern void func_801D37CC(s32 file, s32, s32, s32, s32, s32 mode, s32, s32, s32, s32, s32, s32 h,
-                          void (*callback)(u16, s32, u16));
-
 /* Start the field movie with the current parameters. */
 void func_800A7218(void) {
     s32 mode;
@@ -1134,9 +1140,6 @@ void func_800A7218(void) {
     }
     func_80032498(8, 0);
 }
-
-extern void func_801D3F7C(void);
-void func_80085678(void);
 
 /* Run `frames` movie frames (with field sound) unless the movie stopped. */
 void func_800A732C(s32 frames) {
@@ -1162,8 +1165,6 @@ void func_800A7394(void) {
     } while (D_800ADB08 != 0);
     CdDataSync(0);
 }
-
-#include "field_movie.h"
 
 /* After a movie: reload the VRAM kept in party sprite blocks 1 and 2
  * (unless movie mode 2), then release both blocks. */
@@ -1236,10 +1237,6 @@ void func_800A74F8(void) {
     DrawSync(0);
 }
 
-extern s32 D_800B14A8; /* nibble counter */
-extern u32 *D_800C3904; /* packed stream */
-extern u32 D_800C2688; /* current word */
-
 /* Next byte of the packed stream (four per word), scaled down by 8 but
  * at least 1 when nonzero. */
 u32 func_800A7744(void) {
@@ -1260,8 +1257,6 @@ u32 func_800A7744(void) {
     }
     return value;
 }
-
-extern u32 *D_800C390C; /* converted pixels */
 
 /* Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
  * pixels at (0..0x140, 100). Both callers pass 0, which it ignores. */
@@ -1534,6 +1529,9 @@ void func_800A7C58(void) {
     D_800ADB6C = -1;
 }
 
+/* field.c's TIM upload, declared here for the call below: the calls in
+ * field_800854D0.c and the first in field_800A9274.c pass it unnarrowed
+ * ints without a prototype, so no header declares it. */
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
 /* Load file 0xaa and upload its image to (380, 0) with its CLUT at
@@ -1550,8 +1548,6 @@ void func_800A8314(void) {
     DrawSync(0);
     func_800320E8(data);
 }
-
-extern POLY_FT4 *D_800AFC60[2];
 
 /* Release the two primitive buffers once allocated. */
 void func_800A83B4(void) {
@@ -1777,12 +1773,6 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     quad->clut = GetClut(0x100, 0xF7);
     *copy = *quad;
 }
-
-extern RECT D_800AFC28;
-typedef struct ScreenColumn {
-    u32 words[0x2000];
-} ScreenColumn; /* a 64x256 16-bit VRAM column */
-extern ScreenColumn *D_800AFC70; /* saved screen column */
 
 /* Move the saved screen column into a new block allocated with `flags`. */
 void func_800A90B4(s32 flags) {

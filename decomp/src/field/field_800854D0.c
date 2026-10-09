@@ -9,10 +9,43 @@
  * again, so further units start after 800a1bd0 (at or before 800a5c40) and
  * after 800a5c40 (at or before 800ab748). */
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
 #include "field.h"
-#include "field_gte.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
+#include "field_layer.h"
+#include "field_load.h"
+#include "field_mode.h"
 #include "field_motion.h"
+#include "field_movie.h"
 #include "field_music.h"
+#include "field_pad.h"
+#include "field_panel.h"
+#include "field_party.h"
+#include "field_resident.h"
+#include "field_screen.h"
+#include "field_sound.h"
 
 /* The movie sound timelines: one run per movie sound-effect bank, each of
  * (time, sound) entries ended by 0xffff; 80085788 skips bank + 1 ends. A
@@ -1099,7 +1132,6 @@ void func_80087FD4(void) {
     D_800B0078->pc++;
 }
 
-extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 /* Event: transform the vector (operands 5, 7, 9) by the world matrix of node
  * operand 3 of 801e layer actor operand 1 (801e72cc; selected by flags byte 11)
  * and store its x, y, z in the variables operands 12, 14 and 16 name. */
@@ -1197,8 +1229,6 @@ void func_800883D4(void) {
     }
     D_800B0078->pc += 4;
 }
-
-#include "field_script.h"
 
 /* Event: set 800b236c to the inverse of its byte operand's low bit. */
 void func_8008848C(void) {
@@ -1415,7 +1445,6 @@ void func_80088D38(s32 first) {
     D_800B0078->pc += 0x12;
 }
 
-extern s32 D_800ADB40;
 /* Event: select emitter template operand 1 (800b2384) for the template
  * instructions that follow and set it up for the effect's actor (+52 and
  * 800adb40 = 800b2374): operand 3 particles, start delay operand 5, lifetime
@@ -3512,9 +3541,6 @@ void func_8008EFE4(void) {
     D_800B0078->pc += 9;
 }
 
-extern s32 D_800ADB38;
-extern s32 D_800ADB3C;
-
 /* Event: request screen transition 3 over operand 1 frames (800adb38/800adb3c):
  * 800a5924 fades the screen pieces in and holds them while the request stays
  * 3. */
@@ -3563,7 +3589,6 @@ void func_8008F1C8(void) {
     D_800B0078->pc += 8;
 }
 
-
 /* Event fe 5e: set the blend rate of the current actor's sprite to operand 1 &
  * 7 (80023290; 0 clears its blending flag). */
 void func_8008F2D8(void) {
@@ -3572,9 +3597,6 @@ void func_8008F2D8(void) {
     func_80023290(D_800AF880.components.descriptors[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
-
-extern s32 D_800C3A5C;
-extern s32 D_800C3A60;
 
 /* Set the screen margins 800c3a5c (x) and 800c3a60 (y) from operands 1 and 3:
  * 800aaa74 widens the screen by them when testing whether a field model
@@ -3593,7 +3615,6 @@ void func_8008F394(void) {
     D_800B0078->pc += 3;
 }
 
-
 /* Event: slide the volume of the two effect channels of sound 2 * operand 3 to
  * operand 1 over operand 5 frames (resident 8003a450). */
 void func_8008F3D0(void) {
@@ -3606,7 +3627,6 @@ void func_8008F3D0(void) {
     D_800B0078->pc += 7;
 }
 
-
 /* Event fe 62: set the volume of the two effect channels of voice pair operand
  * 3 (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
  * (8003a344). */
@@ -3617,7 +3637,6 @@ void func_8008F444(void) {
     func_8003A344(a, func_800ACDEC(1));
     D_800B0078->pc += 5;
 }
-
 
 /* Event fe 63: set the pan of the two effect channels of voice pair operand 3
  * (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
@@ -3641,8 +3660,6 @@ void func_8008F4FC(void) {
     D_800B0078->pc += 5;
 }
 
-void func_800855C8(s32 a, s32 b, s32 c, s32 d);
-
 /* Event fe 66: play sound effect operand 1 on effect voice pair operand 7 at
  * volume operand 5 and pan operand 3, stopping the pair first (800855c8). */
 void func_8008F558(void) {
@@ -3656,7 +3673,6 @@ void func_8008F558(void) {
     func_800855C8(a, b, c, func_800ACDEC(7));
     D_800B0078->pc += 9;
 }
-
 
 /* Event fe 64: wait (pc-- to the fe) while any effect channel whose bit is set
  * in operand 1 << 8 is playing (8003a5d0(-1): the mask of active effect
@@ -3692,7 +3708,6 @@ void func_8008F6AC(void) {
     D_800B0078->pc += 7;
 }
 
-extern s32 D_800ADBDC;
 void func_8008F7B8(void);
 
 /* Select field music track operand 1 (8008f7b8) with 8004f340 = 0 (its sequence
@@ -3720,9 +3735,6 @@ void func_8008F76C(void) {
     D_8004F340 = -1;
     func_8008F7B8();
 }
-
-void func_80085EEC(void);
-s32 func_8008A558(void);
 
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
  * only recorded; otherwise yield until the music system can take a change.
@@ -3840,7 +3852,6 @@ void func_8008FB98(void) {
     D_800AF880.scripted_elevation = D_800AF880.elevation;
     D_800AF880.scripted_zoom = (D_800AF880.projection * D_800AF880.distance) >> 12;
 }
-
 
 /* Leave the scripted camera by its mode: 0 clears the hold flag; 1 with
  * operand 1 zero returns to mode 0 at once (hold flag cleared, camera
@@ -4176,7 +4187,6 @@ void func_80090DEC(void) {
     D_800B0078->pc += 7;
 }
 
-
 /* Derive the scripted heading, pitch and zoom (half the distance) from
  * point A looking at point B, reset the scripted scale and store them in
  * variables operands 1, 3 and 5. */
@@ -4393,8 +4403,6 @@ void func_80091720(void) {
     D_800B0078->pc += 3;
 }
 
-void func_80073E38(void);
-
 /* Set the fog colour (operands 1, 3, 5), far colour (7, 9, 11) and fog
  * range (13, 15), set 800b218e (sprite gate) and reselect every shown
  * model's drawing mode (80073e38). */
@@ -4421,7 +4429,6 @@ void func_80091A08(void) {
     D_800AF880.bounds[3] = -func_800ACD7C(7);
     D_800B0078->pc += 9;
 }
-
 
 /* Set the clear colour (800b219c) from operands 1, 3 and 5. */
 void func_80091A78(void) {
@@ -4564,10 +4571,6 @@ void func_80092148(void) {
     D_800B0078->pc += 7;
 }
 
-extern s32 D_800ADB8C;
-void func_80027D64(TextureScroll *scroll, s16 x, s16 y, s16 width, s16 height, s16 length, s16 a, s16 b,
-                   u8 *buffer);
-
 /* Add a texture scroll (80027d64) to the list at 800afea8 (at most 32, not
  * while 800adb8c is set): area operands 1, 3, 5, 7 (x, y, w, h), operand 9
  * bands, source x operand 11 and y operand 13, every band's speed byte set
@@ -4613,7 +4616,6 @@ void func_80092404(void) {
     D_800B0078->pc += 1;
 }
 
-
 /* Return byte `which` of collision attribute `index`. */
 s32 func_80092424(s32 index, s32 which) {
     switch (which) {
@@ -4650,7 +4652,6 @@ void func_800924D4(s32 index, s32 which, s32 value) {
     }
 }
 
-
 /* Set 800b217c to operand 1 and the text speed to 8, 6 or 4 for values 0,
  * 1 and 2 (others keep it). */
 void func_800925A0(void) {
@@ -4671,7 +4672,6 @@ void func_800925A0(void) {
     }
     D_800B0078->pc += 3;
 }
-
 
 /* Set the field input mask (800b217a; ANDed into the held, pressed and
  * repeated buttons each frame) to raw operand 1. */
@@ -4706,8 +4706,6 @@ void func_80092768(void) {
     func_800924D4(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2), value);
     D_800B0078->pc += 5;
 }
-
-extern FieldDescriptor *D_800B06B8;
 
 /* Offset the current actor's interaction point (+60/+64, added to its position
  * by the talk and touch triggers and the 80092894 walk goal) 36 units along the
@@ -4843,9 +4841,6 @@ void func_80092C20(void) {
     }
 }
 
-extern s32 D_800ADBE4;
-extern s32 D_800ADB2C;
-extern s32 D_800ADB90;
 s32 func_80092894(s32 a, s32 b, s32 c, s32 d);
 
 /* Once field control allows it (yielding until then), set flag 0x80 on the
@@ -4879,7 +4874,6 @@ void func_80092EA0(void) {
 }
 
 s32 func_8009744C(void);
-s32 func_8009A514(void);
 
 /* Publish the current field id and two values in variables 4, 6 and 8 and
  * count variable 0x12 up. */
@@ -4889,9 +4883,6 @@ void func_80092F44(void) {
     func_800A3074(8, func_8009A514() & 0xFFFF);
     func_800A3074(0x12, (s16)(func_800A3018(0x12) + 1));
 }
-
-extern s32 D_800ADBD8;
-extern s32 D_800B0064;
 
 /* Event: when 800adbd8 is set, inhibit encounters, clear it and set 800b0064 to
  * operand 1: the field loop then ends with kind 3, which starts game mode
@@ -4905,8 +4896,6 @@ void func_80092FB4(void) {
     }
     D_800B0078->pc += 3;
 }
-
-extern u8 D_800B02C8;
 
 /* Leave the field once field control allows it (yield otherwise): a last
  * play-record update (800a31e8), encounters inhibited, and the game state's
@@ -4942,8 +4931,6 @@ void func_80093014(void) {
 void func_800931F8(void) {
 }
 
-extern s32 D_800B0048;
-extern s32 D_800AFD14;
 void func_800932D0(void);
 
 /* Once field control allows it (yield otherwise), request a map change as 98
@@ -4963,10 +4950,6 @@ void func_80093200(void) {
         D_800B0078->pc += 4;
     }
 }
-
-extern s32 D_800ADB70;
-extern s32 D_800ADBEC;
-void func_80092F44(void);
 
 /* Request a change to field operand 1 at entry operand 3: once field
  * control allows it and no movie is requested, inhibit encounters and,
@@ -4996,10 +4979,6 @@ void func_800932D0(void) {
         D_800B0078->pc += 5;
     }
 }
-
-extern s32 D_800ADBE0;
-extern s32 D_800ADB88;
-extern s32 D_800ADB18;
 
 /* Event: once the field allows it (800adbdc, 800adbe4 and 800adbec set,
  * 800adb2c and 800adb90 clear, music result 8004f308 not -1; else pc-- back to
@@ -5066,7 +5045,6 @@ void func_80093664(void) {
     D_800B0078->pc += 5;
 }
 
-
 /* Event: wait (pc-- back to fe), yielding, until 8004f350 is zero: the menus
  * requested by ext 55-5a, cf and da (800adb64) have been run by 800799d4, which
  * clears it. */
@@ -5078,8 +5056,6 @@ void func_800936E4(void) {
     }
     D_800B00C0 = 1;
 }
-
-extern s32 D_800ADB64;
 
 /* Event fe 55: request menu kind 0 (800adb64, run by 800799d4) with the menu
  * parameter 800b236c (ext 99) in 80059171; count 8004f350 up and yield. */
@@ -5186,7 +5162,6 @@ void func_80093A98(void) {
     D_800AF880.flags |= 0x8000;
     D_800B0078->pc += 1;
 }
-
 
 /* Release script control: clear the encounter inhibition, both control
  * bytes and the camera hold flags. */
@@ -5460,7 +5435,6 @@ void func_800943AC(void) {
     }
     func_80072254(D_800AFD1C);
 }
-
 
 /* Set the play clock in variable 0x0a to operand 1 minutes : operand 3
  * seconds (low bytes), restart its frame count (8004f318) and stop it
@@ -6014,8 +5988,6 @@ void func_80095A7C(s32 *x, s32 *y) {
     *x = screen.xy.vx;
 }
 
-extern s32 D_800ADC18;
-
 /* Event fe 02: with 800adc18 set, advance at once. Otherwise yield and continue
  * when the origin of the actor selected by byte 1 (8009cd7c: the party leader
  * when none) projects inside the screen with a 32-pixel margin (x 33..287, y
@@ -6173,8 +6145,6 @@ void func_800960E4(s32 value) {
     }
 }
 
-extern u16 D_800AFE9C;
-extern u16 D_800AFC6C;
 void func_80096078(s32 bits);
 void func_800960E4(s32 value);
 
@@ -6251,7 +6221,6 @@ void func_8009631C(void) {
 }
 
 s32 func_800951B8(s32 item);
-
 
 /* Add one of `item` (list in the high byte) up to 99, or take a free slot.
  * Declared int without a return value, as the original's unfilled branch
@@ -6424,8 +6393,6 @@ void func_800969A8(s32 slot, s32 amount) {
     }
     D_8005A39C->characters[D_80062590[slot]].ep = ep;
 }
-
-extern s16 D_800AEA2C[4];
 
 /* Reduce the HP of the party members masked by entry byte 3 & 3 of 800aea2c (7
  * all, then slot 0, 1, 2) by selected operand 1 (bit 0x80 of byte 3), leaving
@@ -6606,9 +6573,6 @@ void func_800972F4(void) {
     D_800B0078->pc += 1;
 }
 
-void func_8007D93C(s32 a);
-void func_80071E58(s32 a);
-
 /* Reset fade channel 0 (8007d93c) and fade the screen back in from full over
  * operand-1 frames (80071e58: only while 800adc08 marks a fade-out, and
  * only in fade mode 2). */
@@ -6618,8 +6582,6 @@ void func_8009731C(void) {
     D_800B0078->pc += 3;
 }
 
-void func_80071DCC(s32 a);
-
 /* Fade the screen out on channel 0 over operand-1 frames (80071dcc: levels
  * rise from 0 to full with blend 2, unless 800adc08 already marks a
  * fade-out, and only in fade mode 2). */
@@ -6627,7 +6589,6 @@ void func_80097364(void) {
     func_80071DCC(func_800ACDEC(1));
     D_800B0078->pc += 3;
 }
-
 
 /* Start reading file 0xb8 + operand 2 of the current directory ahead as map
  * data (resident 8001b484, slot byte 1); retried without yielding until that
@@ -6767,8 +6728,6 @@ void func_800979F0(void) {
         D_800B0078->pc += 8;
     }
 }
-
-#include "field_motion.h"
 
 /* Walk the current actor toward its move target (move modes 0-3: operand
  * position, offset from the target, another actor's reach, or a point at an
@@ -7035,8 +6994,6 @@ void func_80098738(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, func_80099A04(x2 - x1, z2 - z1, y2 - y1));
     D_800B0078->pc += 16;
 }
-
-s32 func_80073930(s32 a, s32 b, s32 c);
 
 /* Event fe 72: store 80073930(op3, op5, op7) in variable operand 1: angle op3
  * turned toward op5 by step op7 the short way round, stopping at the goal
@@ -7799,8 +7756,6 @@ void func_8009AB08(u16 angle) {
     D_800B0078->pc += 3;
 }
 
-extern s16 D_800AEA34[8];
-
 /* Turn clockwise by operand-1 octants. */
 void func_8009AB5C(void) {
     s32 turn;
@@ -7978,8 +7933,6 @@ void func_8009B15C(void) {
     D_800B2078.forced_position = 1;
     D_800B0078->pc += 1;
 }
-
-void func_80081C54(s32 index);
 
 /* Event fe 44: release forced positioning and party processing, clear the three
  * movement-history indices and preserve_nonplayer_motion, and record the
@@ -8219,8 +8172,6 @@ void func_8009BA0C(void) {
     }
 }
 
-
-
 /* Set the camera at once: heading octant operand 1, elevation operand 3 and
  * projection operand 5 (SetGeomScreen). */
 void func_8009BA7C(void) {
@@ -8306,7 +8257,6 @@ s32 func_8009BE58(void) {
 }
 
 s32 func_8009CD18(s32 *window);
-
 
 /* With byte 1 zero close this actor's open dialogue window (if any);
  * otherwise clear its window overrides (+82, +83, +84, +88, +8a). Advances
@@ -8494,8 +8444,6 @@ s32 func_8009C538(s32 id) {
 }
 
 /* The window opener (8007f8dc), as this caller passes the message id. */
-s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
-                  s32 mode, s32 turned, s32 flags);
 
 /* Open this actor's dialogue window for message op1 above/below speaker
  * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
@@ -8866,7 +8814,6 @@ s32 func_8009D154(s32 offset, s32 flags) {
     return value;
 }
 
-
 /* Store a random number (rand) in variable operand 1. */
 void func_8009D198(void) {
     s32 reference;
@@ -9226,8 +9173,6 @@ void func_8009E040(void) {
     D_800B0078->pc += 1;
 }
 
-void func_80021BCC(Sprite *model, u16 value);
-
 /* Set the current actor's motion divisor (+76: walks and moves advance
  * 0x4000000 / it per step, 16.16) from operand 1 and pass it to its sprite as
  * the gravity divisor (80021bcc). */
@@ -9267,8 +9212,6 @@ void func_8009E10C(void) {
     D_800B0078->pc += 3;
 }
 
-#include "field_actor_events.h"
-
 /* Set the actor layer bits 0-2 from operand bits 0-2 and 3-5 from operand bits 4-6. */
 void func_8009E1A0(void) {
     FieldActor *actor = D_800B0078;
@@ -9294,7 +9237,7 @@ void func_8009E208(void) {
     actor->unk72 = y;
 }
 
-void func_8009E574(s32 x, s32 z);
+/* Defined below without a prototype (an s16 `y`), so callers pass a word. */
 void func_8009E810(s32 y);
 
 /* Place the current actor at x/z signed operands 1/3 on its layer's floor
@@ -9768,7 +9711,6 @@ s32 func_8009FA00(s32 id) {
 
 s16 func_8009E330(s32 offset);
 
-
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
  * variables 8 and 6). One angle variable holds the camera heading and then
@@ -9803,7 +9745,6 @@ s32 func_8009FA54(s32 entry) {
     return 0;
 }
 
-
 /* Event fe 1e: switch the party files to gears: set 0xc000 in the field id
  * (8004f34c), wait for the disc and its pending read (8001ad1c), make the party
  * files match (8001b044: the gear files with 0xc000 set) and unpack them into
@@ -9817,7 +9758,6 @@ void func_8009FB98(void) {
     D_800B2078.unk2268 = EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
-
 
 /* Party slot whose field actor is `index`, or 0xFF. */
 s32 func_8009FC10(s32 index) {
@@ -9884,8 +9824,6 @@ void func_8009FD10(s32 slot) {
     }
 }
 
-void func_800AD4D4(s32 slot);
-
 /* Event fe 1f: when the current actor is a party slot's field actor (8009fc10:
  * 8006f990) and that slot's stand-in flag (+22b1) is clear, stand it in for the
  * slot's member (800ad4d4: swap their models, set the flag, restart both
@@ -9899,8 +9837,6 @@ void func_8009FDD4(void) {
     }
     D_800B0078->pc += 1;
 }
-
-void func_800ACFD0(s32 slot);
 
 /* Event fe 20: when party slot byte 1 is occupied (80062590) and its stand-in
  * flag (+22b1) is set, return the slot to its member (800acfd0: swap the models
@@ -10052,10 +9988,6 @@ void func_800A0524(s32 to, s32 from) {
     D_800AF880.components.descriptors[to].model->z = D_800AF880.components.descriptors[from].actor->position[2];
 }
 
-extern s32 D_800AFFEC;
-s32 func_8009FA00(s32 character);
-extern s16 D_800AFD20;
-
 /* Give the current actor the sprite of party member operand 1, or hide it
  * (flag 1, layer flag 0x100000) and end its script when absent. */
 void func_800A06E8(void) {
@@ -10163,7 +10095,6 @@ void func_800A0C94(void) {
     D_800B0078->unk72 = model->ground = WHOLE(D_800B0078->position[1]);
 }
 
-
 /* Give the current actor the field's first sprite and show it. */
 void func_800A0D3C(void) {
     FieldActor *actor;
@@ -10185,7 +10116,6 @@ void func_800A0DC0(void) {
     D_800B0078->pc += 3;
 }
 
-
 /* Store the disc number (80028530: directory table word 0x3c) in variable
  * operand 1. */
 void func_800A0DFC(void) {
@@ -10195,7 +10125,6 @@ void func_800A0DFC(void) {
     func_800A3074(reference & 0xFFFF, func_80028530());
     D_800B0078->pc += 3;
 }
-
 
 /* Wait (pc-- back to fe), yielding, until the movie mode 800adb74 is clear
  * (800a7c58 clears it when the movie ends). */
@@ -10208,8 +10137,6 @@ void func_800A0E54(void) {
     D_800B00C0 = 1;
 }
 
-extern s32 D_800ADB84;
-
 /* Count 800adb84 up and yield: a nonzero 800adb84 ends a window movie (movie
  * mode 2, ext 67) in 800a7c58. */
 void func_800A0EB0(void) {
@@ -10217,7 +10144,6 @@ void func_800A0EB0(void) {
     D_800ADB84 += 1;
     D_800B0078->pc += 1;
 }
-
 
 /* Close the current actor's 801e layer (+12c bits 13-15), clearing its layer
  * flag 0x2000: byte 1 0 deactivates the layer object, 1 releases the layer's
@@ -10380,7 +10306,6 @@ void func_800A1624(void) {
     D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
 }
 
-
 /* Call the script at operand 1, pushing the return PC (after the 5-byte
  * instruction); with the four-entry call stack full, report and yield. */
 void func_800A1730(void) {
@@ -10417,8 +10342,6 @@ void func_800A17F4(void) {
         D_800B00C0 = 1;
     }
 }
-
-extern s32 D_800AFFEC;
 
 /* Return from a script call; with the call stack empty, report, end the
  * current script slot (priority 15, tag 0xff) and yield. */
@@ -10463,8 +10386,6 @@ void func_800A19B0(void) {
     D_800B0078->state.bits.depth = 0;
 }
 
-s32 func_800A3090(s32 actor, s32 event);
-
 /* Point every priority-7 script slot at the actor's script 1, end the
  * current slot and yield. */
 void func_800A1A8C(void) {
@@ -10479,8 +10400,6 @@ void func_800A1A8C(void) {
     D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
     D_800B00C0 = 1;
 }
-
-extern s32 D_800AFFEC;
 
 /* End the current script slot and yield. */
 void func_800A1B70(void) {
@@ -10607,9 +10526,6 @@ void func_800A1E9C(void) {
 }
 
 extern void (*D_800AE2A0[])(void); /* event instructions */
-extern s32 D_800ADBE0;
-extern s32 D_800ADBEC;
-extern s32 D_800AFFEC;
 
 /* Run the current actor's event instructions until one yields, its script
  * slot ends, the field starts a transition or `limit` (raised by some
@@ -10702,9 +10618,6 @@ s32 func_800A2030(void) {
     next:;
     }
 }
-
-s32 func_800A1EC8(s32 limit);
-extern s32 D_800AFFEC;
 
 /* Run event `event` of actor 0 immediately with fresh script slots, then
  * restore the actor's record. */
@@ -10958,7 +10871,6 @@ void func_800A30B4(void) {
 }
 
 s32 func_8009744C(void);
-s32 func_8009A514(void);
 
 /* Record the current map and camera in the game state and variables and
  * save the event variable bank. */

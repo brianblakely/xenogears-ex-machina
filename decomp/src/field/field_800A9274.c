@@ -7,14 +7,32 @@
  * takes 0x2d8 with the text from 800a9274, where the particle effect slots
  * start (see field_800A4748.c). */
 #include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
 #include "field.h"
-#include "field_gte.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
+#include "field_glyph.h"
+#include "field_layer.h"
+#include "field_mode.h"
 #include "field_motion.h"
-#include "field_script.h"
-#include "field_actor_events.h"
+#include "field_pad.h"
+#include "field_party.h"
+#include "field_picture.h"
 #include "field_screen.h"
-#include "field_movie.h"
-#include "field_panel.h"
 
 /* Particle spawn offset per view octant. */
 u8 D_800AF474[8] = {2, 3, 4, 5, 6, 7, 0, 1};
@@ -42,9 +60,6 @@ RECT D_800AF5C0[5] = {
     {0x70, 0x5C, 0x24, 0x20}, {0xBC, 0x32, 0x2C, 0x2C},
 };
 
-extern s16 D_800B0108[64]; /* effect slot owners, -1 free */
-extern u8 D_800B14B0[64];  /* effect slot states */
-
 /* Free all 64 effect slots. */
 void func_800A9274(void) {
     s32 i;
@@ -54,8 +69,6 @@ void func_800A9274(void) {
         D_800B0108[i] = -1;
     }
 }
-
-extern Record78 *D_800C3918[64]; /* effect slot emitters */
 
 /* Release effect slot `slot` and its particles. */
 void func_800A92AC(s32 slot) {
@@ -124,8 +137,6 @@ void func_800A9460(void) {
     func_800775F8();
 }
 
-extern s32 D_800B0044;
-
 /* Reset the eight particle emitters at 800b02cc with parameter `value`. */
 void func_800A94A4(s32 value) {
     s32 i;
@@ -165,8 +176,6 @@ void func_800A94A4(s32 value) {
         }
     }
 }
-
-#include "field_effect.h"
 
 /* Run the effect slots for a frame: count down emitter delays, spawn and
  * draw particles, count down emitter lifetimes (7fff lasts), and release
@@ -267,8 +276,6 @@ void func_800A98E8(s32 owner, s32 release) {
 typedef struct {
     Record78 emitters[8];
 } EmitterSet;
-extern s32 D_800ADB44; /* last effect owner */
-void func_800A8EAC(Particle *particle, s32 a, s32 b);
 
 /* Start an effect for `owner` in a free slot: copy the eight template
  * emitters and allocate and set up their particles. -1 when no slot. */
@@ -614,8 +621,6 @@ void func_800AA9DC(FieldInstance *instance) {
     instance->radius = size * 2 + 1;
 }
 
-extern MATRIX D_800B00E8; /* instance view: the rotation with its translation */
-
 /* 0 when an instance's bounding square (its radius around its centre) is
  * on screen, else -1. */
 s32 func_800AAA74(FieldInstance *instance) {
@@ -652,12 +657,6 @@ s32 func_800AAA74(FieldInstance *instance) {
     }
     return -1;
 }
-
-typedef struct FieldSprites {
-    DR_MODE modes[33][2];
-    SPRT sprites[33][2];
-} FieldSprites;
-extern FieldSprites *D_800AFC68;
 
 /* Release the sprite block. */
 void func_800AABD8(void) {
@@ -731,8 +730,6 @@ void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
     addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->sprites[index][D_800ADB08]);
     addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->modes[index][D_800ADB08]);
 }
-
-#include "field_picture.h"
 
 /* Set up the picture: four marker sprites (the first 16x16, the rest
  * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
@@ -1043,8 +1040,6 @@ void func_800ABEC8(void) {
     }
 }
 
-#include "field_glyph.h"
-
 /* The unit's own uninitialized variables, which only the text sequence
  * below reads: the field BSS 800af76c-800af858, after field_800854D0's and
  * ahead of the commons (field_common.c). */
@@ -1160,7 +1155,6 @@ u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
     return text + used;
 }
 
-
 /* Load files 0xab and 0xac. */
 void func_800AC308(void) {
     func_80028470(4, 0);
@@ -1260,6 +1254,8 @@ void func_800AC99C(void) {
     }
 }
 
+/* field.c's TIM upload, declared here: the call in 800aaf80 above passes it
+ * unnarrowed ints, as field_800854D0.c's do (no header declares it). */
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
 /* Upload file 0xac's image to (380, 100) with its CLUT at (0, 1ff), then
@@ -1300,7 +1296,6 @@ void func_800ACC58(void) {
     }
 }
 
-
 /* Release the sequence buffers when enabled. */
 void func_800ACCB0(void) {
     if (D_8004F300 != 0) {
@@ -1308,7 +1303,6 @@ void func_800ACCB0(void) {
         func_800320E8(D_800AF770);
     }
 }
-
 
 /* Advance the sequence one pass; every 16th pass, from the first, draw the
  * next line of file 0xab at x 0x300 into VRAM row D_800AF778 & 15 (from 15). */
@@ -1387,8 +1381,6 @@ void func_800ACE90(void) {
     }
     func_800AD978(1);
 }
-
-#include "field_party.h"
 
 #define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
 
