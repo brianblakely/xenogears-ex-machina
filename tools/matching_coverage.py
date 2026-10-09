@@ -18,18 +18,28 @@ included):
 * ``asm``          other assembly (remaining work)
 
 The .text bytes outside every function (alignment padding and data words of an
-included file, data a unit places in .text) count as bytes, not instructions,
-under their owner's class, attributed like data (below): an INCLUDE_ASM'd file's
-under its function's class, an INCLUDE_RODATA'd file's as ``included``, cc1's as
-``c``, a generated assembly unit's as ``asm``, an authored one's as
-``handwritten``; a classified range takes precedence. The report fails unless
-every function lies inside its input section and overlaps no other, so the
-classes add up to the .text input sections exactly (``text_bytes``).
+included file) count as bytes, not instructions, under their owner's class,
+attributed like data (below): an INCLUDE_ASM'd file's under its function's
+class, an INCLUDE_RODATA'd file's as ``included``, a generated assembly unit's
+as ``asm``, an authored one's as ``handwritten``; a classified range takes
+precedence. The bytes cc1 put there are data objects (placed by a section
+attribute, or emitted after an INCLUDE_RODATA left the assembler in .text) and
+never count as ``c``: machine words in such an array could replace an
+INCLUDE_ASM'd function and still match. They count as ``text_data`` (bytes, no
+instructions) only where objects the classification names tile them, each from
+its cc1 label to the next symbol; any other such byte fails the report, as does
+a data directive cc1 emits among a function's code (jump tables under
+``-membedded-pic``). The report fails unless every function lies inside its
+input section and overlaps no other, so the classes add up to the .text input
+sections exactly (``text_bytes``).
 
 The classification file lists ``START END CLASS NOTE...`` lines (hex VRAM,
-END exclusive): ``sdk``, ``handwritten`` and ``asset`` ranges, and
-``START END included NAME REASON...`` lines, the reviewed reasons of included
-objects (below). This tool never reads or asserts binary agreement; run the
+END exclusive; nonempty, disjoint ranges): ``sdk``, ``handwritten`` and
+``asset`` ranges; for each data object a C unit places in .text a
+``START END text_data NAME REASON...`` line, whose reason is the evidence that
+the original keeps it there; and ``START END included NAME REASON...`` lines,
+the reviewed reasons of included objects (below). Each text_data and included
+line must be used. This tool never reads or asserts binary agreement; run the
 exact comparison separately.
 
 Every loaded data byte counts in one class: each .rodata/.data/.sdata input
@@ -98,8 +108,9 @@ that function, and its code counts with the function. Any other asm statement
 fails the report, as does every byte the report cannot count: a function in a
 C unit that cc1 did not emit and no INCLUDE_ASM/INCLUDE_RODATA file defines, a
 compiled function holding a statement's other bytes, original bytes in .text,
-an input section other than .text and the data sections. Bytes outside every
-input section (alignment gaps, a packer's zero tail) are not counted.
+a function in a data section, an input section other than .text and the data
+sections. Bytes outside every input section (alignment gaps, a packer's zero
+tail) are not counted.
 
 ``--mark-asm`` also fails the coverage build on each string cc1 would copy into
 its output as it is, unless the string is a plain name: a declaration's asm name
@@ -146,6 +157,14 @@ BSS_SECTION = re.compile(r"\.s?bss\b")
 MARK = re.compile(r"^\s*Lcov([be])_(\d+):(?: # maspsx-keep)?\s*$")
 # maspsx names its division-check labels after the input line number.
 MASPSX_LINE_LABEL = re.compile(r"\.L_(NOT_DIV_BY_ZERO|DIV_BY_POSITIVE_SIGN)_(\d+)")
+# cc1's own section switches, data directives and labels. cc1 puts jump tables
+# and constants in .rdata; only -membedded-pic puts them in .text.
+CC1_SECTION = re.compile(r"\s*(?:\.section\s+([^\s,]+)|(\.(?:text|data|rdata|sdata|sbss|bss))\s*$)")
+CC1_DATA = re.compile(
+    r"\s*\.(?:word|half|hword|short|byte|int|long|dword|gpword|quad|[248]byte|ascii|asciiz"
+    r"|string|space|skip|zero|fill|float|single|double)\b"
+)
+CC1_LABEL = re.compile(r"([A-Za-z_.$][\w.$]*):\s*$")
 C_TOKEN = re.compile(
     r"""(?P<space>^[ \t]*\#[^\n]*|\s+)
       | (?P<string>L?"(?:\\.|[^"\\\n])*")
@@ -430,6 +449,8 @@ def relocations(
 
 
 def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
+    """The (START, END, CLASS, NOTE) lines of a classification file in address
+    order; their ranges are nonempty and disjoint."""
     if path is None:
         return []
     ranges = []
@@ -437,12 +458,23 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
         line = line.split("#", 1)[0].strip()
         if line:
             start, end, kind, *note = line.split()
-            if kind not in ("sdk", "handwritten", "asset", "included"):
+            if kind not in ("sdk", "handwritten", "asset", "text_data", "included"):
                 raise SystemExit(f"unknown classification {kind!r}")
+            if kind == "text_data" and len(note) < 2:
+                raise SystemExit(f"{line}: a text_data line names its object and the evidence"
+                                 " that the original keeps it in .text")
             if kind == "included" and len(note) < 2:
                 raise SystemExit(f"{line}: an included line names its object and the reason"
                                  " it stays original")
+            if int(end, 16) <= int(start, 16):
+                raise SystemExit(f"{line}: an empty range")
             ranges.append((int(start, 16), int(end, 16), kind, " ".join(note)))
+    ranges.sort()
+    for (_, end, kind, _), (start, _, other, _) in pairwise(ranges):
+        if start < end:
+            raise SystemExit(
+                f"classification: {other} at {start:08x} overlaps {kind} up to {end:08x}"
+            )
     return ranges
 
 
@@ -517,10 +549,14 @@ class Asm:
 @dataclass
 class Unit:
     """A C unit's attribution: per tracked section its (start, end, owner)
-    spans, owner None for cc1's own lines, and the functions cc1 emitted."""
+    spans, owner None for cc1's own lines, the functions cc1 emitted, the
+    labels cc1 defined outside them (its data objects) and the object's .text
+    symbols by offset."""
 
     spans: dict[str, list[tuple[int, int, Asm | None]]]
     compiled: set[str]
+    objects: set[str]
+    labels: dict[int, set[str]]
 
 
 def renumber(lines: list[str]) -> list[str]:
@@ -534,11 +570,15 @@ def renumber(lines: list[str]) -> list[str]:
     return [MASPSX_LINE_LABEL.sub(label, line) for line in lines]
 
 
-def asm_statements(path: str, text: str) -> tuple[list[Asm], set[str], list[tuple[str, int]]]:
+def asm_statements(
+    path: str, text: str
+) -> tuple[list[Asm], set[str], set[str], list[tuple[str, int]]]:
     """The asm statement texts of a marked cc1 output in order, the functions cc1
-    emitted outside them, and the labels in order."""
-    statements, compiled, labels = [], set(), []
-    current, function, opened = None, None, False
+    emitted outside them, the labels cc1 defined outside its functions, and the
+    statement labels in order. Fails on a data directive cc1 emits where it
+    places a function's code, in .text (a jump table under -membedded-pic)."""
+    statements, compiled, objects, labels = [], set(), set(), []
+    current, function, opened, in_text = None, None, False, True
     for line in text.splitlines():
         match = MARK.match(line)
         if opened and not (match and match.group(1) == "b"):
@@ -561,9 +601,16 @@ def asm_statements(path: str, text: str) -> tuple[list[Asm], set[str], list[tupl
             compiled.add(function)
         elif re.match(r"\s*\.end\s", line):
             function = None
+        elif switch := CC1_SECTION.match(line):
+            in_text = (switch.group(1) or switch.group(2)) == ".text"
+        elif function is not None and in_text and CC1_DATA.match(line):
+            raise SystemExit(f"{path}: cc1 emitted data in the .text of {function}"
+                             f" ({line.strip()}): a jump table or constant among its code")
+        elif function is None and (label := CC1_LABEL.match(line)):
+            objects.add(label.group(1))
     if current is not None:
         raise SystemExit(f"{path}: unbalanced asm statement labels at the end")
-    return statements, compiled, labels
+    return statements, compiled, objects, labels
 
 
 def original_pattern(template: str) -> re.Pattern[str]:
@@ -618,7 +665,7 @@ def coverage_build(obj: str) -> Unit:
     unmarked = [line for line in marked_gas.splitlines() if not MARK.match(line)]
     if renumber(unmarked) != renumber(gas.splitlines()):
         raise SystemExit(f"{side}.s: without its labels, not the unit's GAS input {obj}.s")
-    statements, compiled, labels = asm_statements(side + ".cc1.s", marked_cc1)
+    statements, compiled, objects, labels = asm_statements(side + ".cc1.s", marked_cc1)
     matches = [MARK.match(line) for line in marked_gas.splitlines()]
     if labels != [(match.group(1), int(match.group(2))) for match in matches if match]:
         raise SystemExit(f"{side}.s: its labels are not those of {side}.cc1.s")
@@ -690,7 +737,12 @@ def coverage_build(obj: str) -> Unit:
         if statement.kind == "original" and (statement.macros or emitted - {".text"}):
             raise SystemExit(f"{where}: an original-style macro expands a GAS macro or emits"
                              f" {', '.join(sorted(emitted))} bytes")
-    return Unit(spans, compiled)
+    text_index = next((i for i, section in enumerate(built[0]) if section.name == ".text"), None)
+    offsets: dict[int, set[str]] = {}
+    for symbol in built[1]:
+        if symbol.section == text_index and symbol.kind != STT_SECTION and symbol.name:
+            offsets.setdefault(symbol.value, set()).add(symbol.name)
+    return Unit(spans, compiled, objects, offsets)
 
 
 def main() -> None:
@@ -702,8 +754,8 @@ def main() -> None:
     parser.add_argument("--src", type=Path, action="append", default=[])
     parser.add_argument("--classification", type=Path)
     parser.add_argument("--list", choices=[
-        "c", "nonmatching", "sdk", "handwritten", "asm", "included", "asset", "bss",
-        "placeholder",
+        "c", "nonmatching", "sdk", "handwritten", "asm", "included", "asset", "text_data",
+        "bss", "placeholder",
     ], help="list the class's functions, its .text bytes outside every function and its"
             " data ranges (each with its section and object)")
     parser.add_argument("--mark-asm", action="store_true", help=(
@@ -721,9 +773,11 @@ def main() -> None:
 
     nonmatching = nonmatching_names(args.src)
     ranges = classification(args.classification)
+    # The data objects C units may place in .text: START: (END, NAME).
+    allowed = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "text_data"}
     # The reviewed reasons of included objects: START: (END, NAME).
     reasons = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "included"}
-    ranges = [entry for entry in ranges if entry[2] != "included"]
+    ranges = [entry for entry in ranges if entry[2] not in ("text_data", "included")]
 
     def ranged(address: int) -> str | None:
         return next((k for s, e, k, _ in ranges if s <= address < e), None)
@@ -787,7 +841,8 @@ def main() -> None:
             raise SystemExit(f"{what} ({lo:08x}-{hi:08x}): handwritten bytes outside every"
                              " handwritten range of the classification")
 
-    def count(cls: str, address: int, size: int, function: str | None) -> None:
+    def count(cls: str, address: int, size: int, function: str | None,
+              label: str = "(outside every function)") -> None:
         handwritten(cls, address, address + size, function or "text outside every function")
         entry = totals.setdefault(cls, [0, 0, 0])
         entry[1] += size
@@ -795,7 +850,7 @@ def main() -> None:
             entry[0] += 1
             entry[2] += size
         if cls == args.list:
-            listing.append((address, size, function or "(outside every function)"))
+            listing.append((address, size, function or label))
 
     functions: dict[int, list[tuple[int, int, str]]] = {}  # per .text input section
     owned: dict[int, dict[str, str]] = {}  # INCLUDE_ASM statement: its functions' classes
@@ -804,6 +859,10 @@ def main() -> None:
             continue
         text = next(((lo, hi, obj) for lo, hi, obj in texts if lo <= symbol.value < hi), None)
         if text is None:
+            section = next((f"{kind} of {obj}" for kind, lo, length, obj in inputs
+                            if lo <= symbol.value < lo + length), None)
+            if section:
+                raise SystemExit(f"{symbol.name} ({symbol.value:08x}): a function in {section}")
             continue
         address, size, name = symbol.value, symbol.size, symbol.name
         if address % 4 or size % 4:
@@ -842,10 +901,34 @@ def main() -> None:
 
     # Each included object: its bytes in one section, its unit.
     included: list[tuple[int, int, str]] = []
+    used: set[int] = set()
 
-    # The .text bytes outside every function count as their owner's: cc1's
-    # (data a unit places in .text) as c, an INCLUDE_ASM/INCLUDE_RODATA file's
-    # (padding, data words) as its statement's, an assembly unit's as its own.
+    def text_data(obj: str, unit: Unit, base: int, a: int, b: int) -> None:
+        """Count [a, b), bytes cc1 put in the .text of a C unit (at base)
+        outside every function, as the allowed data objects that tile it, each
+        from its cc1 label to the next symbol."""
+        while a < b:
+            if a not in allowed or allowed[a][0] > b:
+                raise SystemExit(
+                    f"{obj}: .text bytes {a:08x}-{b:08x} that cc1 emitted outside every function"
+                    " are a data object in .text, which counts only as a text_data line of the"
+                    " classification naming it with the evidence that the original keeps it there"
+                )
+            end, name = allowed[a]
+            if (name not in unit.objects or name not in unit.labels.get(a - base, ())
+                    or any(a - base < offset < end - base for offset in unit.labels)):
+                raise SystemExit(
+                    f"{obj}: text_data {name} ({a:08x}-{end:08x}) is not one data object cc1"
+                    " defined there"
+                )
+            count("text_data", a, end - a, None, name)
+            used.add(a)
+            a = end
+
+    # The .text bytes outside every function count as their owner's: an
+    # INCLUDE_ASM/INCLUDE_RODATA file's (padding, data words) as its
+    # statement's, an assembly unit's as its own; cc1's are data objects in
+    # .text, never C code, counted only as allowed text_data.
     for lo, hi, obj in texts:
         holes, cursor, before = [], lo, ""
         for start, end, name in sorted(functions.get(lo, [])):
@@ -863,21 +946,32 @@ def main() -> None:
         else:
             if hi - lo != sum(end - start for start, end, _owner in unit.spans[".text"]):
                 raise SystemExit(f"{obj}: input section .text is not the attributed one")
-            pieces = []
+            pieces, objects = [], []
             for start, end, owner in unit.spans[".text"]:
                 for a, b in holes:
                     a, b = max(a, lo + start), min(b, lo + end)
                     if a >= b:
                         continue
-                    if owner is not None and owner.kind not in ("asm", "rodata"):
+                    if owner is None:
+                        if objects and objects[-1][1] == a:
+                            a = objects.pop()[0]
+                        objects.append((a, b))
+                    elif owner.kind in ("asm", "rodata"):
+                        pieces.append((a, b, statement_class(owner)))
+                        if pieces[-1][2] == "included":
+                            included.append((a, b, obj))
+                    else:
                         raise SystemExit(f"{obj}: .text bytes {a:08x}-{b:08x} of an asm statement"
                                          " lie outside every function")
-                    pieces.append((a, b, "c" if owner is None else statement_class(owner)))
-                    if pieces[-1][2] == "included":
-                        included.append((a, b, obj))
+            for a, b in objects:
+                text_data(obj, unit, lo, a, b)
         for a, b, own in pieces:
             for start, end, cls in split(a, b, own):
                 count(cls, start, end - start, None)
+    unused = sorted(set(allowed) - used)
+    if unused:
+        raise SystemExit(f"text_data {allowed[unused[0]][1]} ({unused[0]:08x}): no data object"
+                         " cc1 placed in .text there")
 
     data: dict[str, int] = {}
     loaded = [(s.address, s.address + s.size) for s in elf_sections
@@ -923,7 +1017,7 @@ def main() -> None:
 
     # Every included object a classified range does not cover needs a reason:
     # a stray byte in its string's padding or a reviewed classification line.
-    used: set[int] = set()
+    reasoned: set[int] = set()
     for lo, hi, obj in included:
         if not any(cls == "included" for _, _, cls in split(lo, hi, "included")):
             continue
@@ -933,14 +1027,14 @@ def main() -> None:
             start = lo
         names = {label for value, label in named if value == start} or {"-"}
         if start in reasons and reasons[start][0] == hi and reasons[start][1] in names:
-            used.add(start)
+            reasoned.add(start)
         elif not (start % 4 == 0 and hi % 4 == 0 and stray_padding(image(start, hi))):
             raise SystemExit(
                 f"{obj}: included object {name or '(unnamed)'} ({start:08x}-{hi:08x}) has no"
                 " stray byte in a string's alignment padding and no `included` line of the"
                 " classification giving the reason it stays original"
             )
-    for start in sorted(set(reasons) - used):
+    for start in sorted(set(reasons) - reasoned):
         raise SystemExit(f"included line {reasons[start][1]} ({start:08x}-{reasons[start][0]:08x}):"
                          " no included object there")
 

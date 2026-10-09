@@ -505,13 +505,23 @@ made entirely of original assembly a completed decompilation.
 The coverage audit reports functions, bytes and static MIPS instructions per class.
 Every byte of every .text input section counts once: each function in its class, and
 the bytes outside every function (padding and data words of an INCLUDE_ASM'd or
-INCLUDE_RODATA'd file, data a unit places in .text such as menu6's D_80088BFC) as bytes,
-not instructions, of their owner's class, attributed like data below: an INCLUDE_ASM'd
-file's under its function's class, an INCLUDE_RODATA'd file's `included`, cc1's `c`, a
-generated assembly unit's `asm`, an authored one's `handwritten`, a classified range
-first. The report fails unless every function lies inside its input section and
-overlaps no other, so `text_bytes` is exactly the sum of the .text input sections; it
-also fails on an input section other than .text and the data sections.
+INCLUDE_RODATA'd file) as bytes, not instructions, of their owner's class, attributed
+like data below: an INCLUDE_ASM'd file's under its function's class, an
+INCLUDE_RODATA'd file's `included`, a generated assembly unit's `asm`, an authored
+one's `handwritten`, a classified range first. The bytes cc1 puts in .text outside its
+functions are data objects and never count as C: machine words in a
+`section(".text")` array could replace an INCLUDE_ASM'd function and still match.
+Such an object counts as `text_data` (bytes, no instructions) only where the target's
+classification has a `START END text_data NAME REASON` line for it: NAME is cc1's
+label at START, the range ends at the next symbol, and the reason is the evidence that
+the original keeps the object in .text (menu6's mode-task table D_80088BFC). Every other
+such byte fails the report, whatever placed it: the attribute in any spelling, a
+function's static under 2.7.2-cdk, or a definition cc1 emits while an INCLUDE_RODATA
+has left the assembler in .text. The report also fails on a data directive cc1 emits
+among a function's code (`-membedded-pic` jump tables), on a function in a data
+section and on an input section other than .text and the data sections, and unless
+every function lies inside its .text input section and overlaps no other, so
+`text_bytes` is exactly the sum of the .text input sections.
 From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
 input section and, where an image holds its uninitialized variables as zeros, each
 .bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
