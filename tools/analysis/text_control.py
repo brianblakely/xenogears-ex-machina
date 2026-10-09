@@ -29,6 +29,12 @@ number, an archive entry or a file as the sweep names them) to stdout; keep
 listings under .local/. Each entry shows its offset, (columns, rows) and
 tokens: one-byte glyphs as two hex digits, two-byte glyphs as four, controls
 by mnemonic in brackets; text no entry reaches follows as `unreached`.
+
+`--chars` prints the glyphs whose characters the disc's own data gives as
+those characters and every other glyph as {hex} (character_map): the digits,
+signs and blank of the number code, and the letters of the memory card title
+lines that recur as whole texts. There is no font map in this module; the
+limits are in docs/scripts/text-control.md.
 """
 
 from __future__ import annotations
@@ -42,6 +48,7 @@ from dataclasses import dataclass, field
 
 from tools.analysis.disc_index import Disc, discs
 from tools.analysis.packed import PackedError, decode_block
+from tools.extraction.overlays import OVERLAYS
 
 
 @dataclass(frozen=True)
@@ -428,6 +435,201 @@ def text_tables(disc: Disc):
         yield "world areas", file, area[struct.unpack_from("<I", area, 0x1C)[0] :]
 
 
+# Characters for --chars, read from each disc's own data.
+#
+# The number code: func_80033CF0 writes a number's digits as the character
+# codes palette * 16 + digit and its sign as palette * 16 + 10 (negative) or
+# + 11, and the window controls pass palettes 0 and 1 (0F 09, 0F 0A, 0F 0C).
+# The menus write the blank that replaces a number's leading zeros as code 0xC3
+# (slot39 func_801DC3D8, ovl2601 func_801CDD14, ovl2602 func_801D1304), which
+# the name entry also enters for an empty cell (ovl2600 func_801CB33C).
+# Resource 27 gives each code's glyph.
+NUMBER_PALETTES = (0, 1)
+SIGN_CODES = {10: "-", 11: "+"}
+BLANK_CODE = 0xC3
+# The memory card title lines (directory (0x10, 1) file 1): func_801C6400
+# skips D_8006EF64 lines, a byte of 0x80 or more taking the next byte with it,
+# and copies the next 30 bytes of two-byte Shift-JIS into the save header. The
+# menu's func_801E65E4 turns ASCII 0x20-0x7F into Shift-JIS through the
+# 96-entry table D_801EA610 of the slot-39 image; its inverse reads the titles.
+TITLE_FILE = (0x10, 1, 1)
+TITLE_BYTES = 30
+SJIS_TABLE = 0x801EA610 - 0x801C5000  # offset of D_801EA610 in the slot-39 image
+
+
+def number_glyphs(pairs: bytes, threshold: int) -> dict[int, str]:
+    """The one-byte glyphs of the number code's digit, sign and blank codes."""
+    codes = {BLANK_CODE: " "}
+    for palette in NUMBER_PALETTES:
+        codes.update({16 * palette + digit: str(digit) for digit in range(10)})
+        codes.update({16 * palette + code: sign for code, sign in SIGN_CODES.items()})
+    found: dict[int, set[str]] = {}
+    for code, char in codes.items():
+        first, second = pairs[2 * code], pairs[2 * code + 1]
+        if pair_kind(first, second, threshold) == "one-byte glyph":
+            found.setdefault(second, set()).add(char)
+    return {glyph: chars.pop() for glyph, chars in found.items() if len(chars) == 1}
+
+
+def save_titles(data: bytes, table: tuple[int, ...]) -> list[str]:
+    """The title lines as func_801C6400 reads them: 30 bytes from the start of
+    the file and after each newline, as text through the inverse of `table`
+    (entry n the Shift-JIS of ASCII 0x20 + n) up to the first byte below 0x80,
+    without trailing blanks. A line holding a code outside the table is left
+    out."""
+    ascii_of: dict[int, str] = {}
+    for n, code in enumerate(table):
+        ascii_of.setdefault(code, chr(0x20 + n))
+    starts, i = [0], 0
+    while i < len(data):
+        if data[i] >= 0x80:
+            i += 2
+            continue
+        if data[i] == 0x0A:
+            starts.append(i + 1)
+        i += 1
+    titles = []
+    for start in starts:
+        line = data[start : start + TITLE_BYTES]
+        chars = []
+        for k in range(0, len(line) - 1, 2):
+            if line[k] < 0x80:
+                break
+            chars.append(ascii_of.get(line[k] << 8 | line[k + 1]))
+        if None not in chars and "".join(chars).rstrip(" "):
+            titles.append("".join(chars).rstrip(" "))
+    return titles
+
+
+def fits(title: str, text: bytes, known: dict[int, str]) -> bool:
+    """Whether `text` (one-byte glyphs) can spell `title`: the same length,
+    each known glyph at its character, and the other characters at glyphs not
+    yet known, equal characters at equal glyphs and different ones apart."""
+    if len(title) != len(text):
+        return False
+    known_chars = set(known.values())
+    glyph_of: dict[str, int] = {}
+    char_of: dict[int, str] = {}
+    for char, glyph in zip(title, text, strict=True):
+        if glyph in known:
+            if known[glyph] != char:
+                return False
+        elif char in known_chars:
+            return False
+        elif glyph_of.setdefault(char, glyph) != glyph or char_of.setdefault(glyph, char) != char:
+            return False
+    return True
+
+
+def agreeing(proposals: dict[str, bytes], known: dict[int, str]) -> list[str]:
+    """The titles in every largest set of proposals that agree: no glyph they
+    add is read as two characters and no character gets two glyphs."""
+    names = sorted(proposals)
+    added = {
+        title: {(g, c) for g, c in zip(proposals[title], title, strict=True) if g not in known}
+        for title in names
+    }
+
+    def clash(a: str, b: str) -> bool:
+        pairs = added[a] | added[b]
+        return len({g for g, _ in pairs}) < len(pairs) or len({c for _, c in pairs}) < len(pairs)
+
+    best: list[frozenset[str]] = []
+
+    def grow(chosen: frozenset[str], rest: list[str]) -> None:
+        size = len(best[0]) if best else 0
+        if len(chosen) + len(rest) < size:
+            return
+        if not rest:
+            if len(chosen) > size:
+                best[:] = [chosen]
+            elif chosen:
+                best.append(chosen)
+            return
+        first, others = rest[0], rest[1:]
+        grow(chosen | {first}, [n for n in others if not clash(first, n)])
+        grow(chosen, others)
+
+    grow(frozenset(), names)
+    return sorted(frozenset.intersection(*best)) if best else []
+
+
+def align_titles(
+    titles: list[str], texts: set[bytes], known: dict[int, str]
+) -> tuple[dict[int, str], list[tuple[str, bytes]]]:
+    """Extend `known` (glyph -> character) from the titles that recur as whole
+    texts. In each round a title with known and unknown characters proposes the
+    text that fits it when exactly one does (fits); the proposals that agree
+    (agreeing) add their glyphs. Returns the glyphs and the (title, text) pairs
+    used."""
+    known = dict(known)
+    by_length: dict[int, list[bytes]] = {}
+    for text in texts:
+        by_length.setdefault(len(text), []).append(text)
+    aligned: list[tuple[str, bytes]] = []
+    while True:
+        chars = set(known.values())
+        proposals = {}
+        for title in sorted(set(titles)):
+            if not set(title) & chars or set(title) <= chars:
+                continue
+            found = [text for text in by_length.get(len(title), ()) if fits(title, text, known)]
+            if len(found) == 1:
+                proposals[title] = found[0]
+        accepted = agreeing(proposals, known)
+        if not accepted:
+            return known, aligned
+        for title in accepted:
+            known.update(zip(proposals[title], title, strict=True))
+            aligned.append((title, proposals[title]))
+
+
+@dataclass(frozen=True)
+class CharacterMap:
+    glyphs: dict[int, str]  # one-byte glyph -> character
+    numbers: int  # glyphs from the number code
+    titles: tuple[tuple[str, bytes], ...]  # (title, text) pairs that gave the others
+
+    def summary(self) -> str:
+        letters = "".join(sorted(c for c in self.glyphs.values() if c.isalpha()))
+        return (
+            f"{len(self.glyphs)} glyphs: {self.numbers} from the number code, "
+            f"{len(self.glyphs) - self.numbers} from {len(self.titles)} memory card titles "
+            f"({', '.join(title for title, _ in self.titles)}); letters {letters}"
+        )
+
+
+def whole_texts(disc: Disc, threshold: int) -> set[bytes]:
+    """Every entry's text that holds only one-byte glyphs, without its 00."""
+    texts = set()
+    for _, _, data in text_tables(disc):
+        if not isinstance(data, bytes):
+            continue
+        try:
+            offsets, _ = text_table(data)
+        except TextError:
+            continue
+        for offset in set(offsets):
+            try:
+                tokens = decode_text(data, offset, threshold)
+            except TextError:
+                continue
+            if all(t.mnemonic == "glyph" and t.length == 1 for t in tokens[:-1]):
+                texts.add(bytes(t.code for t in tokens[:-1]))
+    return texts
+
+
+def character_map(disc: Disc, threshold: int) -> CharacterMap:
+    """The glyphs whose characters `disc`'s own data gives (module notes)."""
+    known = number_glyphs(archive_entry(system_data(disc), 27), threshold)
+    slot, other, _ = OVERLAYS["slot39"]  # the unpacked image, directory (0x10, 0) file 5
+    image = disc.data((slot, other)[disc.number - 1])
+    table = struct.unpack_from("<96H", image, SJIS_TABLE)
+    titles = save_titles(disc.data(disc.slot(*TITLE_FILE)), table)
+    glyphs, aligned = align_titles(titles, whole_texts(disc, threshold), known)
+    return CharacterMap(glyphs, len(known), tuple(aligned))
+
+
 @dataclass
 class Sweep:
     tables: Counter = field(default_factory=Counter)
@@ -446,6 +648,7 @@ class Sweep:
     names: int = 0
     name_uses: Counter = field(default_factory=Counter)
     disc_codes: dict = field(default_factory=dict)  # disc -> controls its tables use
+    characters: dict = field(default_factory=dict)  # disc -> CharacterMap
 
     def add(self, where: str, data: bytes, threshold: int) -> set:
         """Decode the table's texts into the counts; returns the controls
@@ -523,22 +726,30 @@ def unreached_texts(
     return dead, texts
 
 
-def render(tokens: tuple[Token, ...]) -> str:
+def render(tokens: tuple[Token, ...], chars: dict[int, str] | None = None) -> str:
     """Glyphs as hex codes (two digits for one byte, four for two), controls
-    by mnemonic and operands in brackets."""
+    by mnemonic and operands in brackets. With `chars` (one-byte glyph ->
+    character) the tokens join without spaces: a glyph it holds prints as its
+    character (after a backslash when it is one of \\ { } [ ]), any other
+    glyph as its hex code in braces."""
     parts = []
     for token in tokens:
-        if token.mnemonic == "glyph":
-            parts.append(f"{token.code:0{2 * token.length}x}")
-        else:
+        if token.mnemonic != "glyph":
             operands = "".join(f" {name}={value}" for name, value in token.operands)
             parts.append(f"[{token.mnemonic}{operands}]")
-    return " ".join(parts)
+        elif chars is None:
+            parts.append(f"{token.code:0{2 * token.length}x}")
+        elif token.length == 1 and token.code in chars:
+            char = chars[token.code]
+            parts.append("\\" + char if char in "\\{}[]" else char)
+        else:
+            parts.append(f"{{{token.code:0{2 * token.length}x}}}")
+    return " ".join(parts) if chars is None else "".join(parts)
 
 
-def table_listing(data: bytes, threshold: int) -> list[str]:
+def table_listing(data: bytes, threshold: int, chars: dict[int, str] | None = None) -> list[str]:
     """Each entry of a text table: number, offset, (columns, rows) and its
-    tokens; then the texts in bytes no entry reaches."""
+    tokens (render); then the texts in bytes no entry reaches."""
     offsets, end = text_table(data)
     if not offsets:
         return ["  no messages (count 0xFFFF)"]
@@ -553,10 +764,10 @@ def table_listing(data: bytes, threshold: int) -> list[str]:
             continue
         last = tokens[-1].offset + tokens[-1].length
         covered[offset:last] = b"\1" * (last - offset)
-        lines.append(f"  {number:4d} +0x{offset:04x} {size}: {render(tokens)}")
+        lines.append(f"  {number:4d} +0x{offset:04x} {size}: {render(tokens, chars)}")
     _, texts = unreached_texts(data, covered, min(offsets), min(end, len(data)), threshold)
     for offset, tokens in texts:
-        text = f"undecodable, {tokens}" if isinstance(tokens, TextError) else render(tokens)
+        text = f"undecodable, {tokens}" if isinstance(tokens, TextError) else render(tokens, chars)
         lines.append(f"  unreached +0x{offset:04x}: {text}")
     return lines
 
@@ -577,10 +788,16 @@ GROUPS = {
 }
 
 
-def listing(disc: Disc, name: str, item: int | None = None) -> list[str]:
+def listing(disc: Disc, name: str, item: int | None = None, *, chars: bool = False) -> list[str]:
     """The tables of one group (GROUPS), or its table `item` (a field map's
-    number, an archive entry or a file, as the sweep names them)."""
+    number, an archive entry or a file, as the sweep names them); with `chars`
+    the glyphs of character_map print as characters, after a line naming them."""
     threshold = font_threshold(unpack(disc.sectors(disc.slot(0, 1, 6))))
+    glyphs, head_lines = None, []
+    if chars:
+        known = character_map(disc, threshold)
+        glyphs = known.glyphs
+        head_lines.append(f"disc {disc.number} characters: {known.summary()}")
     lines = []
     for group, number, data in text_tables(disc):
         if group not in GROUPS[name] or item is not None and number != item:
@@ -592,13 +809,13 @@ def listing(disc: Disc, name: str, item: int | None = None) -> list[str]:
             lines.append(f"{head}: {data}")
         else:
             try:
-                body = table_listing(data, threshold)
+                body = table_listing(data, threshold, glyphs)
             except TextError as error:
                 body = [f"  not a text table: {error}"]
             lines += [f"{head}: {len(data)} bytes", *body]
     if not lines:
         raise SystemExit(f"disc {disc.number} has no {name} table {item}")
-    return lines
+    return head_lines + lines
 
 
 def sweep() -> Sweep:
@@ -635,6 +852,7 @@ def sweep() -> Sweep:
                 continue
             result.names += 1
             result.name_uses.update(token.mnemonic for token in tokens)
+        result.characters[disc.number] = character_map(disc, threshold)
     return result
 
 
@@ -693,6 +911,8 @@ def report(result: Sweep) -> str:
         f"  initial names (directory 0x10 file 3 via the pairs): {result.names} decoded; "
         + ", ".join(f"{name} {count}" for name, count in sorted(result.name_uses.items()))
     )
+    for disc, known in sorted(result.characters.items()):
+        lines.append(f"  disc {disc} characters (--chars): {known.summary()}")
     return "\n".join(lines)
 
 
@@ -704,11 +924,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list", choices=sorted(GROUPS), help="print one group's tables")
     parser.add_argument("--item", type=int, help="only this table of --list (field: map number)")
     parser.add_argument("--disc", type=int, choices=(1, 2), default=1)
+    parser.add_argument(
+        "--chars",
+        action="store_true",
+        help="with --list: glyphs the disc's data names as characters, others as {hex}",
+    )
     args = parser.parse_args(argv)
     if not (args.sweep or args.list):
         parser.error("choose --sweep or --list GROUP")
+    if args.chars and not args.list:
+        parser.error("--chars needs --list GROUP")
     if args.list:
-        print("\n".join(listing(discs()[args.disc - 1], args.list, args.item)))
+        print("\n".join(listing(discs()[args.disc - 1], args.list, args.item, chars=args.chars)))
     if not args.sweep:
         return 0
     result = sweep()
