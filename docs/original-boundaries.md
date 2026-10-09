@@ -126,8 +126,8 @@ Outside the libraries the game itself uses:
   once with func_80040C3C(act0, 4, act1, 4) (func_8003611C). The vblank handler
   steps them (func_80036220/func_80036188): {1, 0x40, 1, 0} while the timer
   runs, {1, 0x40, 0, 0} once, then off. func_80036258(port, frames) starts one;
-  only the arena calls it (menu3.c func_800776A8, per side, gated by
-  D_80099D9B/D_80099D9C).
+  only the arena calls it (menu3.c func_800776A8, per side, gated by the
+  settings' port vibration options D_80099D98.option4/.option5).
 - Input is sampled once per vertical blank, not per game frame: the vblank
   handler queues held, pressed and repeat words for both ports in a 16-entry
   ring (func_80035C0C; overflow sets D_80050208); loops dequeue
