@@ -689,8 +689,8 @@ typedef struct {
     SVECTOR angle;
     MATRIX view;
     MATRIX rotation;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
 } SkyScratch;
 
 #define SKY_SCRATCH ((SkyScratch *)0x1F800000)
@@ -773,8 +773,8 @@ typedef struct {
     u8 pad8[0x10];
     MATRIX view;      /* 0x18 */
     MATRIX rotation;  /* 0x38 */
-    s32 p;            /* 0x58 */
-    s32 flag;         /* 0x5C */
+    long p;           /* 0x58 */
+    long flag;        /* 0x5C */
 } HorizonScratch;
 
 #define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
@@ -813,8 +813,9 @@ void func_80073B04(void) {
     corners = D_8009A300[0];
     for (i = 0; i < 2; i++, corners += 4) {
         quad = &D_8009C744[i][D_8009D7F0];
-        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (long *)&quad->x0,
+                            (long *)&quad->x1, (long *)&quad->x2, (long *)&quad->x3, &scratch->p,
+                            &scratch->flag);
     }
     if (scratch->flag >= 0) {
         ot = &D_8009BE3C->ot[otz >> D_80050100];
@@ -1158,7 +1159,8 @@ void func_80074F2C(void) {
                 anim->frame = 0;
                 anim->timer = anim->slot->frames[0].duration;
             }
-            LoadImage(&anim->slot->rect, anim->images + anim->slot->frames[anim->frame].image * 16);
+            LoadImage(&anim->slot->rect,
+                      (u_long *)(anim->images + anim->slot->frames[anim->frame].image * 16));
         }
     }
 }
@@ -1203,7 +1205,8 @@ void func_80075104(void) {
             }
             rect = &anim->slot->rect;
             size = rect->h * rect->w * 2;
-            LoadImage(rect, anim->images + anim->slot->frames[anim->frame].image * size);
+            LoadImage(rect,
+                      (u_long *)(anim->images + anim->slot->frames[anim->frame].image * size));
         }
     }
 }

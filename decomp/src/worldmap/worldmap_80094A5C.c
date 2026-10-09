@@ -1155,7 +1155,7 @@ void func_8009699C(DiscReadRequest *request) {
     D_8009CEB8 = request->bytes;
     D_8009C590 = request->destination;
     CdIntToPos(sector, &D_8009CEBC);
-    CdSyncCallback(func_80096A6C);
+    CdSyncCallback((CdlCB)func_80096A6C);
     CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
 }
 
@@ -1169,7 +1169,7 @@ void func_80096A6C(s32 status, u8 *result) {
             D_8009BCCC[2] = 0;
             D_8009BCCC[1] = 0;
             D_8009BCCC[0] = 0;
-            CdReadyCallback(func_80096C0C);
+            CdReadyCallback((CdlCB)func_80096C0C);
             CdControlF(0x1B, NULL);
             break;
         case 3:
@@ -1555,7 +1555,7 @@ void func_800979C8(void) {
     s32 y;
 
     cluts = func_80032E88(D_8009C59C, 1);
-    func_8002DD20(cluts);
+    func_8002DD20((u32 *)cluts);
     DrawSync(0);
     func_800320E8(cluts);
     func_800320E8(D_8009C59C);
@@ -1565,7 +1565,7 @@ void func_800979C8(void) {
     rect.y = 0x1E0;
     rect.w = 0x100;
     rect.h = 2;
-    StoreImage(&rect, cluts);
+    StoreImage(&rect, (u_long *)cluts);
     DrawSync(0);
     func_800931D8(cluts, faded, 0x20, D_8009BB48);
     func_800931D8(cluts + 0x100, faded + 0x2000, 0x20, D_8009BB48);
@@ -1573,7 +1573,7 @@ void func_800979C8(void) {
     rect.y = 0x1B0;
     rect.w = 0x100;
     rect.h = 0x40;
-    LoadImage(&rect, faded);
+    LoadImage(&rect, (u_long *)faded);
     DrawSync(0);
     for (i = 0; i < 0x40; i++) {
         D_8009CCB4[i] = GetClut(rect.x, rect.y);

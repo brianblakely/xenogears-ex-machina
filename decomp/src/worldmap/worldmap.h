@@ -215,13 +215,13 @@ void func_8002C6E0(s32 r, s32 g, s32 b);
 typedef struct PolyG4 {
     u32 tag;
     u32 rgb0;
-    s32 xy0;
+    long xy0;
     u32 rgb1;
-    s32 xy1;
+    long xy1;
     u32 rgb2;
-    s32 xy2;
+    long xy2;
     u32 rgb3;
-    s32 xy3;
+    long xy3;
 } PolyG4;
 
 /* The sky, the horizon, the map overlay and the footprints

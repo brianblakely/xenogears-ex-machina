@@ -540,8 +540,8 @@ void func_800848F4(void) {
             if (scratch->flag >= 0) {
                 gte_stsz(&scratch->sz);
                 if (scratch->sz < 0xD80) {
-                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0], D_8009BE3C->ot,
-                                  D_8009AD2C[(s16)D_8009C620[i].flags]);
+                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0],
+                                  (u32 *)D_8009BE3C->ot, D_8009AD2C[(s16)D_8009C620[i].flags]);
                 }
             }
         }
@@ -677,7 +677,7 @@ typedef struct {
  * the object-relative x/z, `normal` the face normal and offset->vy the
  * height of the face plane there. */
 void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face) {
-    s32 flag;
+    long flag;
     VECTOR *edge1;
     VECTOR *edge2;
     SceneObject *object;
@@ -724,7 +724,7 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
 /* Does the vertical segment from `position` down by `height` cross the plane
  * of face `face` of scene object `index`? Returns -1 if so, else 0. */
 s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
-    s32 flag;
+    long flag;
     SceneObject *object;
     MeshFace *corners;
     SVECTOR *vertices;
