@@ -41,6 +41,10 @@ segments:
     type: code
     start: 0x0
     vram: 0x8006faf0
+    # The uninitialized variables, not in the file: the resident's mode
+    # table (8001808c, mode 6) clears 80076f3c-80077458 for this overlay
+    # (80076f38 and 80077454 with its pre-increment loop, 80019560).
+    bss_size: 0x51C
     subsegments:
       # The overlay's number (8) ahead of the unit's rodata, from a unit of
       # its own: the unit's rodata starts at 0x4 (its 8-aligned jump tables
@@ -49,6 +53,12 @@ segments:
       - [0x4, .rodata, movie]
       - [0x9f8, c, movie]
       - [0x7358, .data, movie]
+      # The .bss (not loaded): the movie unit's variables, which only its
+      # code reads (tools/data_users.py), defined in movie.c in address
+      # order. Declaring it here keeps their names out of
+      # undefined_syms_auto.txt: the link places every one from its
+      # definition, and movie.bss.ld checks the bounds.
+      - { start: 0x744c, type: .bss, vram: 0x80076F3C, name: movie }
   - [0x744c]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (movie.mk), so the decoded image ends

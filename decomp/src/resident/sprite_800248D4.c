@@ -43,11 +43,12 @@ void (*D_8004FD40[16])(Task *) = {
 MATRIX D_8004FD80 = {{{0xC00, 0, 0}, {0xC00, 0, 0}, {0xC00, 0, 0}}, {0, 0, 0}};
 MATRIX D_8004FDA0 = {{{0x1000, 0x1000, 0x1000}, {0, 0, 0}, {0, 0, 0}}, {0, 0, 0}};
 
-/* The unit's own small globals ($gp-relative; the assembler knows them as
- * this unit's small commons). */
-s32 D_800592F8;               /* the queue being filled (0 or 1) */
-s32 D_800592FC;               /* bytes of the queue entry block / 2 */
-SpriteQueueEntry *D_80059300[2]; /* the two queues */
+/* The unit's own small variables, $gp-relative: its statics, which take
+ * the unit's .sbss (800592f8), and its small commons, which merge with
+ * commons/common_80059404.c's definitions. */
+static s32 D_800592F8;        /* the queue being filled (0 or 1) */
+static s32 D_800592FC;        /* bytes of the queue entry block / 2 */
+static SpriteQueueEntry *D_80059300[2]; /* the two queues */
 u8 *D_800594B4;               /* the first queue's entry block (the second's follows) */
 ImageUpload *D_800594C4;      /* the upload list of the first queue (the second follows) */
 SpriteQueueEntry *D_80059580; /* the next free queue entry */

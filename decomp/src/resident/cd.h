@@ -8,7 +8,7 @@
  * files and file lists, the CD command state and the PC file server. */
 
 /* A file-list entry for 80029afc: file index and destination. */
-typedef struct {
+typedef struct FileRequest {
     u16 file;
     void *destination;
 } FileRequest;
@@ -49,12 +49,6 @@ extern s32 D_8004FE4C;
 extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
 extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
 extern s32 D_8005A4DC;
-extern s32 D_80059EF8[3];   /* read status words */
-extern s32 D_80059F0C;      /* the file being read */
-extern CdlCB D_80059F08;    /* ready callback saved while retrying */
-extern CdlLOC D_80059F10;   /* CD position of the current read */
-extern CdlFILTER D_80059F14; /* CdlSetfilter parameter */
-extern u8 D_80059F1C[];     /* CD command result */
 
 void func_80028230(u8 *files, u16 *directories, u32 mode);
 void func_800283D4(void);

@@ -77,8 +77,6 @@ s32 func_8008FFEC(Actor *actor, struct Brain *brain);
 s32 func_80090258(Actor *actor, struct Brain *brain);
 s32 func_8008F720(Actor *actor, s32 eager);
 
-extern Brain D_80096F30; /* brain of the side-0 opponent */
-extern Brain D_80096F64; /* brain of the side-1 opponent */
 s32 func_8008F570(Actor *actor, struct Brain *brain);
 
 #endif

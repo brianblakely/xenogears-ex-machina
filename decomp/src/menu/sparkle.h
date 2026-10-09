@@ -58,15 +58,9 @@ typedef struct Sparkle {
 
 #define SPARKLE_COUNT 60
 
-extern Sparkle D_80092AD8[SPARKLE_COUNT];
-extern SparkleKind D_80092A74[5];
-
 /* Frame tables of the sparkle kinds: kind 0's are filled from its twelve
- * TIMs; kinds 1-4 use fixed tables whose rows are offset once by their
- * TIM's row. */
-extern u8 D_800947E8[12];
-extern u8 D_800947F4[12];
-extern u16 D_80094800[12]; /* kind 0's CLUT of each frame */
+ * TIMs (menu3's D_800947E8, D_800947F4 and D_80094800); kinds 1-4 use
+ * fixed tables whose rows are offset once by their TIM's row. */
 extern u8 D_800911D8[16];
 extern u8 D_800911E8[16];
 extern u8 D_800911F8[16];

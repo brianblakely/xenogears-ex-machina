@@ -1,1 +1,8 @@
 D_8006D8A0 = 0x8006D8A0; // size:0x13EC
+D_801D70E2 = 0x801D70E2; // defined:True
+D_801D70E6 = 0x801D70E6; // defined:True
+D_801D70EA = 0x801D70EA; // defined:True
+D_801D70EE = 0x801D70EE; // defined:True
+D_801D70F2 = 0x801D70F2; // defined:True
+D_801D70F4 = 0x801D70F4; // size:0x14
+D_801D9050 = 0x801D9050; // size:0x34

@@ -59,7 +59,7 @@ u8 D_800C34AD = 0;
 u8 D_800C34AE = 0;
 BattleWork *D_800C34B0 = &D_800CCCE8;
 /* The next combo step by step and AP paid (1-3); battle.c reads it from one
- * byte before, as D_800C34B3. */
+ * byte before, as D_800C34B3 (battle.data.ld). */
 u8 D_800C34B4[8][3] = {
     {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {4, 6, 7}, {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {1, 5, 7},
 };

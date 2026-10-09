@@ -14,6 +14,45 @@
 #include "heap.h"
 #include "mode.h"
 
+/* This unit's own variables: those of up to 8 bytes in its .sbss
+ * (8005934c), the larger window, text and controller queue buffers in its
+ * .bss (80059fd8), as the original assembler placed them (SBSS_main2 in
+ * slus_006.64.mk). */
+static s32 D_8005934C;  /* font: first byte of a two-byte character */
+static s32 D_80059350;
+static s32 D_80059354;
+static s32 D_80059358;
+static u8 *D_8005935C;  /* font glyph data */
+static u8 **D_80059360; /* system data: resource table */
+static s32 D_80059364;
+static u8 *D_80059368;  /* system data block */
+static u16 *D_8005936C; /* font block: halfword 1 glyph offset, 2 first
+                         * byte of a two-byte character */
+static u8 D_80059370;   /* play time frames */
+static u32 D_80059374;  /* held pad buttons of the last frame */
+static u32 D_80059378;
+static u32 D_8005937C;  /* queued controller states */
+static u32 D_80059380;  /* queue write index */
+static u32 D_80059384;  /* queue read index */
+static u8 D_80059388;   /* kind of the last read controller */
+static u8 D_8005938C;
+static s32 D_80059390;  /* the vertical-blank callback polls the host */
+/* The one-line layout window and its line. */
+static Window D_80059FD8;
+static WindowLine D_8005A068;
+/* Number character codes: color, 10 digits, 0xFFFF, and two that nothing
+ * addresses (a word of its own would be a small variable, in .sbss). */
+static u16 D_8005A0C8[14];
+static u8 D_8005A0E4[0x18]; /* decoded text */
+/* Queued controller states (16 entries of the six state words). */
+static u16 D_8005A0FC[16];
+static u16 D_8005A11C[16];
+static u16 D_8005A13C[16];
+static u16 D_8005A15C[16];
+static u16 D_8005A17C[16];
+static u16 D_8005A19C[16];
+static Actuator D_8005A1BC[2];
+
 /* The text palette: two 16-colour CLUTs. */
 u16 D_80050190[32] = {
     0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
@@ -607,13 +646,13 @@ void func_80033DF0(Window *window) {
                 }
                 break;
             /* 0F 05 insert_name(name), 3 bytes: insert character name `name`
-             * (0x80 and up through D_8006F2E8; slot 0xFF: resource 26 entry 0). */
+             * (0x80 and up: the party member's; slot 0xFF: resource 26 entry 0). */
             case 5:
                 first = window->text[2];
                 window->text += 2;
                 index = first;
                 if (first >= 0x80) {
-                    index = D_8006F2E8[first];
+                    index = D_8006D634.party[first - 0x80];
                     if (index == 0xFF) {
                         func_80033DD4(window, func_80033728(D_80059360[26], 0));
                     } else {
@@ -985,10 +1024,6 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
     AddPrim(ot, window->unk30);
 }
 
-/* The one-line layout window and its line. */
-extern Window D_80059FD8;
-extern WindowLine D_8005A068;
-
 /* Lay out one line of `text` into `image` in the layout window, `width`
  * made odd. Returns the laid-out width in pixels. */
 s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
@@ -1225,8 +1260,6 @@ extern u16 D_80059574;       /* held pad buttons, second port */
 extern u16 D_80059490;       /* pad buttons pressed, second port */
 extern u16 D_800594A8;       /* pad buttons repeated, second port */
 extern s32 D_80059488;       /* vertical blank count */
-extern u32 D_80059374;       /* held pad buttons of the last frame */
-extern u32 D_80059378;
 extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
 extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
 
@@ -1315,17 +1348,6 @@ void func_800358BC(void) {
     }
 }
 
-/* Queued controller states (16 entries of the six state words). */
-extern u32 D_8005937C; /* queued count */
-extern u32 D_80059380; /* write index */
-extern u32 D_80059384; /* read index */
-extern u16 D_8005A0FC[16];
-extern u16 D_8005A11C[16];
-extern u16 D_8005A13C[16];
-extern u16 D_8005A15C[16];
-extern u16 D_8005A17C[16];
-extern u16 D_8005A19C[16];
-
 /* Queue the current controller state (flag an overflow when full). */
 void func_80035C0C(void) {
     s32 i;
@@ -1399,8 +1421,6 @@ void func_80035DB0(void) {
     D_80059570 = 0;
 }
 
-extern u8 D_80059370; /* frames */
-
 /* Advance the play time by one frame. */
 void func_80035E44(void) {
     if (D_800501F8 == 0) {
@@ -1473,8 +1493,6 @@ s32 func_80035FF8(RECT *rect, char *name) {
     return 0;
 }
 
-extern Actuator D_8005A1BC[2];
-
 /* Stop both controllers' actuators and register their data with libpad. */
 void func_8003611C(void) {
     D_8005A1BC[0].act[0] = 0;
@@ -1521,8 +1539,6 @@ void func_80036258(s32 port, s16 frames) {
 void func_80036270(s32 port, u8 disabled) {
     D_8005A1BC[port].disabled = disabled;
 }
-
-extern s32 D_80059390;
 
 /* Start the controllers and reset the queue, actuators and assignment. */
 void func_80036288(void) {

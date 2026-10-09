@@ -1,8 +1,8 @@
-/* Heap report to a PC host file. This unit owns the report file handle
- * (a $gp small common) and, unlike the heap unit, addresses other units'
- * small globals absolutely: 80032E04 stores the report output hook
- * D_800592B8 with lui/sw, while the heap unit's 80032BDC loads it through
- * $gp. */
+/* Heap report to a PC host file. This unit owns the report file handle (a
+ * $gp-relative static in its .sbss) and, unlike the heap unit, addresses
+ * other units' small globals absolutely: 80032E04 stores the report output
+ * hook D_800592B8 with lui/sw, while the heap unit's 80032BDC loads it
+ * through $gp. */
 #include "common.h"
 
 #include "psyq/libc.h"
@@ -10,7 +10,7 @@
 #include "console.h"
 #include "heap.h"
 
-s32 D_80059348;
+static s32 D_80059348; /* host file of the heap report */
 
 /* Report output to the host file. */
 void func_80032DCC(char *line) {

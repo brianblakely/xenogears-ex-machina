@@ -50,8 +50,6 @@ typedef struct {
     Sprt sprite;
 } SceneSprite;
 
-extern SceneSprite D_800954D8[2];
-
 typedef struct {
     s16 unk0, unk2, unk4; /* position */
     s16 unk6;             /* remaining life */
@@ -92,7 +90,6 @@ extern GroundSquare *D_800928DC;
 
 void func_80074BA4(Actor *actor);
 
-extern SceneLine D_80094818[100];
 /* libgpu TILE_1 layout, colour and code written as one word. */
 typedef struct {
     u8 addr[3];
@@ -220,8 +217,6 @@ void func_8007D918(u32 *ot);
 void func_8007E020(u32 *ot);
 
 /* Menu overlay drawing. */
-extern DrTpage D_800954C8[2];
-extern DrMove D_80095498[2];
 void SetDrawMove(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
 void func_800811AC(void *ot);
 
@@ -242,8 +237,6 @@ typedef struct {
     u8 unk2C[4];
 } SpriteStrip;
 
-extern SpriteStrip D_80095510[2];
-extern DrTpage D_80095570[2];
 extern u16 D_800595D4;
 extern u16 D_80059414;
 void SetSprt(void *prim);           /* initialise a SPRT */
@@ -251,7 +244,7 @@ void SetShadeTex(void *prim, s32 semi); /* set semi-transparency */
 
 /* POLY_FT4 with its positions written as whole words and its texture
  * coordinates as halfwords. */
-typedef struct {
+typedef struct PolyFT4Words {
     u8 addr[3];
     u8 len;
     u32 rgbc;

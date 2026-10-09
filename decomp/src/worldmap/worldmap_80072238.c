@@ -424,10 +424,10 @@ void func_8007299C(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38[0]);
-    func_800320E8(D_8009BCB0[0]);
-    func_800320E8(D_8009BC38[1]);
-    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009BBC8[0].ot);
+    func_800320E8(D_8009BBC8[1].ot);
+    func_800320E8(D_8009BBC8[0].packets);
+    func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     for (i = 0; i < 3; i++) {
         if (D_8009CD34[i] != NULL) {
@@ -531,24 +531,24 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     i = level;
     for (frames--; frames != -1; frames--) {
         buffer = (buffer == D_8009BBC8) ? buffer + 1 : D_8009BBC8;
-        ClearOTagR((u32 *)buffer->unk70, 0x400);
-        addPrim((u32 *)buffer->unk70 + 1, &quads[0]);
-        addPrim((u32 *)buffer->unk70 + 1, &quads[1]);
-        addPrim((u32 *)buffer->unk70 + 1, &quads[2]);
+        ClearOTagR(buffer->ot, 0x400);
+        addPrim(buffer->ot + 1, &quads[0]);
+        addPrim(buffer->ot + 1, &quads[1]);
+        addPrim(buffer->ot + 1, &quads[2]);
         side ^= 1;
         shade = (PolyG4v *)(side * sizeof(PolyG4v) + (u32)shades);
         setRGB0(shade, i, i, i);
         setRGB1(shade, i, i, i);
         setRGB2(shade, i, i, i);
         setRGB3(shade, i, i, i);
-        addPrim((u32 *)buffer->unk70, shade);
-        addPrim((u32 *)buffer->unk70, mode);
+        addPrim(buffer->ot, shade);
+        addPrim(buffer->ot, mode);
         DrawSync(0);
         VSync(0);
         PutDispEnv(&buffer->disp);
         PutDrawEnv(&buffer->draw);
         i += step;
-        DrawOTag((u32 *)buffer->unk70 + 0x3FF);
+        DrawOTag(buffer->ot + 0x3FF);
     }
     DrawSync(0);
     VSync(0);
@@ -662,10 +662,10 @@ void func_80073530(void) {
     D_8009BD00[3] = (s32)block + table[3];
 }
 
-/* Allocate the two 4 KiB work buffers. */
+/* Allocate the two display buffers' ordering tables (4 KiB each). */
 void func_8007369C(void) {
-    D_8009BC38[0] = func_80031BDC(0x1000, 0);
-    D_8009BCB0[0] = func_80031BDC(0x1000, 0);
+    D_8009BBC8[0].ot = func_80031BDC(0x1000, 0);
+    D_8009BBC8[1].ot = func_80031BDC(0x1000, 0);
 }
 
 /* Initialise the sky gradient: four bands of Gouraud quads in both buffers. */
@@ -1277,8 +1277,8 @@ void func_800758C0(void) {
     func_80086124();
     func_800866C8();
     func_80089128();
-    func_800320E8(D_8009BC38[1]);
-    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009BBC8[0].packets);
+    func_800320E8(D_8009BBC8[1].packets);
     block = func_80031BDC(4, 1);
     func_800320E8(block);
     block = (void *)((u32)block & 0xFFFFFF);
@@ -1983,10 +1983,10 @@ void func_80077480(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38[0]);
-    func_800320E8(D_8009BCB0[0]);
-    func_800320E8(D_8009BC38[1]);
-    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009BBC8[0].ot);
+    func_800320E8(D_8009BBC8[1].ot);
+    func_800320E8(D_8009BBC8[0].packets);
+    func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
     D_8006F94E.scene = 0x11;
@@ -2162,10 +2162,10 @@ void func_80077CC0(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38[0]);
-    func_800320E8(D_8009BCB0[0]);
-    func_800320E8(D_8009BC38[1]);
-    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009BBC8[0].ot);
+    func_800320E8(D_8009BBC8[1].ot);
+    func_800320E8(D_8009BBC8[0].packets);
+    func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
     D_8006F94E.scene = 0x10E;

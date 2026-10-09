@@ -28,7 +28,8 @@ s32 func_80086028(u8 member, s32 index, s32 column, u8 id, u32 **pixels, u8 offs
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels);
 extern u8 D_800C4929;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
-/* The next combo step by step and AP paid, from one byte before D_800C34B4. */
+/* The next combo step by step and AP paid: D_800C34B4 from one byte before
+ * (battle.data.ld). */
 extern u8 D_800C34B3[8][3];
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
 

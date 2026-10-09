@@ -48,8 +48,6 @@ typedef struct {
     u8 texture_v;    /* font sheet row in its texture page */
 } Console;
 
-extern Console *D_80059394;
-extern s32 D_800593A0; /* the console block is not owned (not released) */
 
 /* A conversion's settings (defaults at D_8005A1CC). */
 typedef struct {
@@ -61,8 +59,6 @@ typedef struct {
     s32 precision;
     u32 base;
 } FormatSpec;
-
-extern FormatSpec D_8005A1CC;
 
 s32 func_80036718(s32 target, const char *format, va_list args); /* the console printf core */
 void func_8003700C(char *format, ...); /* printf to the console */

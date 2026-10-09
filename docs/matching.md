@@ -35,23 +35,29 @@ narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; otherwise a
 code unit's version is the one that alone reproduces some of its functions
 (resident main 8001a344 and main2 80032f54 only under 2.7.2; the ring reset
 80028aac builds the same under 2.6.3 and 2.7.2, though not under 2.8.1, which
-omits its empty 8-byte frame). Rebuilt under each pinned cc1, 80 of the 99 C
+omits its empty 8-byte frame). Rebuilt under each pinned cc1, 79 of the 106 C
 units match only under their own. Three small code units build identical objects
 under 2.6.3 and 2.7.2 and follow a neighbour (resident battle_mode and
-heap_80032DCC, debug2611 pages; their .mk comments say which). The 16 data-only
+heap_80032DCC, debug2611 pages; their .mk comments say which). The 24 data-only
 or INCLUDE_ASM-only units (overlay numbers, commons, the resident header, settings
 and SDK units) are identical under all three, so their setting is immaterial.
 Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
 positive `li` to `ori` as the original does (resident, movie library, most units:
 maspsx `--aspsx-version=2.34`, the default). The world map and the 2.7.2-cdk units
 below expand it to `addiu`, which shows only ASPSX >= 2.50; they are set as 2.79
-(world map, resident sprite units) or 2.56 (the others), and maspsx builds
-identical objects for every one of these 35 units under either setting. The small-data threshold is a
-property of each translation unit: most code is `-G0`, while units that address
-`.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
-`GP_<file> := 8` in the target fragment. ASPSX loads and stores small data through
-`$gp` but forms every address (`la`) with `lui`/`addiu`, also of the unit's own
-small string constants (resident heap report), so such units expand `la` before GNU as.
+(world map, resident sprite units) or 2.56 (the others), and maspsx's output is
+identical for every one of these 35 code units under either setting. Only the
+build's slot rule for uninitialized variables (Recovering data) tells the settings
+apart: battle's CDK statics need the size-aligned slots of 2.56, and the world map's
+commons unit the whole-word slots of its 2.79 (under 2.56 its link fails the mode
+table's BSS bounds). The small-data threshold is a property of each translation
+unit: most code is `-G0`, while units that address `.sdata`/`.sbss`
+(around `_gp = 0x80059170`) through `$gp` need `-G8`; set `GP_<file> := 8` in the
+target fragment. The assembler of some `-G0` units still put their variables of up
+to 8 bytes in `.sbss` (`SBSS_<file>`, Recovering data). ASPSX loads and stores small
+data through `$gp` but forms every address (`la`) with `lui`/`addiu`, also of the
+unit's own small string constants (resident heap report), so such units expand `la`
+before GNU as.
 
 The ABI, the same under all three cc1, is GCC's o32 convention for little-endian
 MIPS I (R3000) with soft float: the first four argument words in `$a0`-`$a3`, the
@@ -135,6 +141,32 @@ linked object defines it, so an object's own definition stands (GNU ld lets a pl
 script assignment win silently and makes the name absolute; 63 names were so bound
 before, the resident's D_800308D0 among them). The resident pads its file to the
 link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
+
+`verify` then fails on each name a linker script defines (a used `PROVIDE`, a
+`.data.ld` or any other `LINKER_EXTRA` fragment) inside the target's own image or
+uninitialized data (`matching_coverage.py --script-symbols`): an address copied from
+the original where the link should place an object, which the exact comparison
+cannot see move. Names of other images (the `*.resident.ld` fragments, an overlay's
+addresses in the resident) lie outside and pass; splat's main script, which also
+sets the ABI's `_gp`, is not among the checked scripts. `BSS_END` in a target gives
+the end of its uninitialized data past the image, the bound its loader clears (the
+resident's entry point, the mode table entries): the check covers the data up to it,
+a link placing any past it fails, and the coverage report counts what no linked
+object holds there. `LINK_VIEWS` names a script whose names there are views,
+expressions of linked symbols, with the reason beside it in the target; a number
+such a script assigns there still fails, and so does a views script that defines no
+view. Four scripts are allowed: battle's (`battle.data.ld`, 42 names: parts of its
+commons that the units, CDK ones too, address by names of their own, and the timer
+reload and combo step tables from before them), the resident's (`link.ld`, 8: the
+window colour's green and blue bytes, the CD mix bytes and request, a base for the
+name slots' second bytes, which compile differently as members, and the BSS's last
+word D_8006FAEC from the link's BSS end, for the entry point and the mode table),
+the menu's (`menu.bss.ld`: the opponent's command byte D_80099DA2, which
+func_8008F280 loads absolutely at each of its three reads) and the world map's
+(`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
+loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
+`SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
+and passes, for a probe.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
@@ -424,7 +456,8 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 
 ## Recovering data
 
-Data placeholders (`remaining_data_placeholder_bytes` in the coverage report) are
+Data placeholders (`remaining_data_placeholder_bytes` in the coverage report, and
+`remaining_bss_placeholder_bytes` for the uninitialized data past an image) are
 converted to C per unit. What converting the targets' `.data` established:
 
 - A unit emits each section in definition order and the original linker joined them
@@ -454,7 +487,30 @@ converted to C per unit. What converting the targets' `.data` established:
   names and views of their own (the battle area's slots, work and drawing state; the
   camera's matrix), hundreds of times and also from CDK units, where one symbol's
   members share a `%hi`: `battle.data.ld` defines those names from the objects'
-  linked addresses.
+  linked addresses. It also names two tables from before them (the timer reload
+  rows, the combo step table one byte before D_800C34B4): GCC 2.6.3 forms such a
+  base with `la` only for a declared array, and `D_800C34B4[step][paid - 1]` puts
+  the -1 in the load instead. Where the index form compiles alike, C indexes the
+  object (battle's party panel name glyphs, `D_800C3068[member * 24 + 7 + i]`).
+  The resident's `link.ld` (the window colour's last two bytes, the CD mix bytes,
+  the CD request, a base for the name slots' second bytes), `menu.bss.ld` (the
+  opponent's command byte) and `worldmap.data.ld` (the read list's first
+  destination) name parts of uninitialized objects the same way, each where the
+  member compiles differently. splat writes an interior address of a C object as an
+  offset from it, not as a name of its own in `undefined_syms_auto.txt`, once the
+  target's symbols.txt gives the object's `size:` (the world map's, the menu's and
+  the small overlays'), and leaves out a name a C unit itself defines at an
+  unaligned address that is marked `defined:True` there (debug2611, slot39, ovl2602,
+  mdec).
+- An address the code uses as an object of its own is one, also inside data that
+  stays generated: the resident passes the disc data ahead of its code to the disc
+  initialiser as its boot mode word, its sector-24 file index buffer and its sector-40
+  directory table, so these are three rodatabins (`disc_mode`, `disc_files`,
+  `disc_directories`), each name its own object. Generated data that points into a
+  block of strings is relocated against the block once spimdisasm knows its size: a
+  `size:` in symbol_addrs.txt (the resident's libcd command name tables and the
+  libraries' `$Id:` strings) makes each pointer word the block's symbol plus an
+  offset rather than a number.
 - GCC emits a function's string literals into `.rodata` ahead of its code, in the order
   of first use, and its jump tables after it; an initializer's literals in reverse
   order once the definition ends (menu6's gear list and heap tag names). A unit emits
@@ -470,10 +526,18 @@ converted to C per unit. What converting the targets' `.data` established:
   unit at its vram past the file keep its names out of `undefined_syms_auto.txt`,
   whose absolute values would otherwise override the C definitions without a
   warning, and the link asserts the bounds the resident's mode table clears.
-  Where it lies past the file (field) it is not loaded, and the yaml still lists each
-  `.bss` subsegment with its vram and the segment's `bss_size`: splat then leaves
-  their names out of `undefined_syms_auto.txt`, so the link places every variable
-  from its definition.
+  Where it lies past the file (field, the world map, the menu's larger variables,
+  movie, the resident) it is not loaded, and the yaml still lists each `.bss`
+  subsegment with its vram and the segment's `bss_size`: splat then leaves their
+  names out of `undefined_syms_auto.txt`, so the link places every variable from
+  its definition, and the target asserts the bounds its loader clears
+  (`field.bss.ld`, `movie.bss.ld`, `menu.bss.ld`, `worldmap.data.ld`,
+  `battle.data.ld`, the resident's `link.ld`). Each target owning such data also
+  sets `BSS_END`, that bound: coverage counts what generated assembly or only a
+  linker-script name places up to there as `bss_placeholder`, and `verify` fails on
+  such a name; none is left. The PsyQ libraries' uninitialized variables in the
+  resident stay generated (`psyq_*` subsegments) and count as `sdk` by their
+  classification lines, like the libraries' `.data`.
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
@@ -484,23 +548,30 @@ converted to C per unit. What converting the targets' `.data` established:
   slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
   801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
   map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
-  object whole words at a word boundary under ASPSX 2.34 and the world map's setting 2.79
-  (no 2.79 unit allocates any in C yet; it stands for an assembler evidenced only as
-  >= 2.50, above). ASPSX 2.56 keeps each `.lcomm` object's size and
-  aligns it by that size up to a word: battle 800B3F04's four s16 statics lie two bytes
-  apart at 800c3ca4-800c3cab (four symbols: the CDK compiler addresses one object's
-  members from a single `%hi`), its u8 is followed by a u8[3] at the next word, and
-  800B8098's SVECTORs lie at 4 mod 8. Any other version rejects a sub-word object
-  (decomp/Makefile); no target or unit setting selects a rule. Variables that share a word
-  are therefore one object, also in the resident's generated `.bss`: the sprite
-  position D_800592E8 is a DVECTOR. The window colour D_800594D4, the overlays'
-  `u8[3]`, is still a `u8` with extern +1/+2 bytes: ASPSX 2.34 addressed a common at
-  an offset absolutely (maspsx models it), but GNU as moves a small common's offset
-  accesses to `$gp`.
+  object whole words at a word boundary under ASPSX 2.34 and the world map's setting
+  2.79 (it stands for an assembler evidenced only as >= 2.50, above): the world map's
+  commons unit, worldmap_common.c, puts consecutive halfwords a word apart as the image
+  does (8009bd10-8009bd1c, 8009bd24/8009bd28, 8009cd4c/8009cd50), where the 2.56 rule
+  would pack them two bytes apart. PSYLINK placed those commons; no world map unit has
+  statics and those of the 2.79 resident sprite units are words, so the 2.79
+  assembler's own `.lcomm` rule shows nowhere. ASPSX 2.56 keeps each `.lcomm`
+  object's size and aligns it by that size up to a word: battle 800B3F04's four s16
+  statics lie two bytes apart at 800c3ca4-800c3cab (four symbols: the CDK compiler
+  addresses one object's members from a single `%hi`), its u8 is followed by a u8[3]
+  at the next word, and 800B8098's SVECTORs lie at 4 mod 8. Any other version
+  rejects a sub-word object (decomp/Makefile); no target or unit setting selects a
+  slot rule. Variables that share a word are therefore one object, also in the
+  resident's `.bss`: the sprite position D_800592E8 is a DVECTOR. The window colour
+  D_800594D4, the overlays' `u8[3]` (a common of common_80059404.c), is declared a
+  `u8` in main_8001B6C4.c, which writes the other two bytes through `link.ld` names:
+  ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it), but GNU
+  as moves a small common's offset accesses to `$gp`.
 - A unit's own variables come first, in unit order, as statics where the commons
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
   reports every FOREIGN reference, another unit's code forming an address in a unit's
-  own `.bss` (none in any target), and, with `--end`, the order of variables still
+  own `.bss` (in no target but the menu, whose one, 80092a30, menu2's func_80072170
+  only forms as the end of its loop over the embers D_800929F4[3]: it is the pad word
+  of menu3's D_80092A24 behind them), and, with `--end`, the order of variables still
   extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
   80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC and at or before
   801DBDB4 (an earlier one moves the `.bss` boundary with it), and battle 800B7870's
@@ -509,9 +580,13 @@ converted to C per unit. What converting the targets' `.data` established:
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
   (slot39_common.c, menu_common.c, ovl2602_common.c, battle_common.c,
-  field_common.c, mdec commons/), which reproduces the linker's placement rather than modelling it. It
+  field_common.c, worldmap_common.c, mdec commons/; the resident's commons/ units
+  lie between the PsyQ libraries' generated ranges), which reproduces the linker's
+  placement rather than modelling it. It
   defines them ahead of the headers that declare them, structures by their tag: GCC
   2.6.3 lays out such a tentative definition once a header completes the type.
+  Functions on both sides of a supposed unit boundary that read the same statics
+  are one unit: the resident's main_8002709C.c runs from 8002709C to 8002C3E8.
   Zeros a packer added past the program are file padding (Compressed containers).
 - Code shows where an object starts and how far it reaches. A member at a nonzero
   offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
@@ -527,14 +602,38 @@ converted to C per unit. What converting the targets' `.data` established:
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's
   own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
-  (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no FOREIGN
-  reference or INVERSION). The GCC 2.6.3 images keep one `.bss` in declaration order
-  (slot39_801DBE54's 2-, 200-, 200- and 1-byte statics at 801ea72c-801ea8c0; mdec's
-  64-byte movie_decoder among 4-byte statics), so the split is likely the original
-  assembler's 8-byte small-data threshold applied to the `.lcomm`/`.comm` GCC emits
-  after the code, with the linker's small commons. Until it is modelled the larger
-  variables stay extern (`undefined_syms_auto.txt`): defined in their units they
-  would be allocated among the small ones.
+  (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no
+  INVERSION, and the one FOREIGN address above). The GCC 2.6.3 images keep one
+  `.bss` in declaration order (slot39_801DBE54's 2-, 200-, 200- and 1-byte statics at
+  801ea72c-801ea8c0; mdec's 64-byte movie_decoder among 4-byte statics), so the split
+  is the assembler's own 8-byte small-data threshold, applied to the `.lcomm`/`.comm`
+  GCC emits after a `-G0` unit's code, with the linker's small commons. The code,
+  assembled before them, addresses every one absolutely (maspsx's own `-G8` would
+  move those accesses to `$gp`), so the build keeps `-G0` and `SBSS_<file> := 8`
+  (decomp/Makefile) moves each object of at most 8 bytes, by the size GCC declares,
+  from the `.bss` maspsx appends to a `.sbss`, the slot rule applying to both. menu.mk
+  sets it for every unit with variables, commons unit included; menu.yaml links each
+  unit's `.sbss` into the file (data entries with `linker_section: .sbss`) and its
+  `.bss` NOLOAD past it, one subsegment per unit with the segment's `bss_size`, and
+  menu.bss.ld asserts both bounds. The task scheduler's two words open menu7's larger
+  variables: an explicit `.bss` in its handwritten func_8008BB00.s, outside the
+  assembler's rule, classified `handwritten`.
+- The resident's BSS (800592bc-8006faf0, the span its entry point clears) has the
+  same four parts, the PsyQ libraries' statics after the game units' own and their
+  commons among the game's: every unit's variables of up to 8 bytes in link order
+  (800592bc-800593a4: the `-G8` units' `.sbss` and, by `SBSS_<file> := 8`, that of
+  the GCC 2.7.2 `-G0` units main, main_8002C3E8, main2 and main2_800366E0), the
+  libraries' small statics, the small commons (common_80059404.c), every unit's
+  larger variables (800595e8-8005a1fc; the GCC 2.6.3 unit main_8002709C keeps all
+  its statics there in declaration order), the libraries' other statics, and the
+  other commons (common_8005A39C.c to common_8006D634.c; GameData D_8006D634 with
+  its full 0x2358 bytes). Each unit defines its own as statics. Where nothing
+  addresses the end of a `-G0` unit's larger object, a word of its own would be
+  small and lie in the unit's `.sbss`, so the object reaches to the next one (the
+  number codes D_8005A0C8[14], the music file list D_8005A1DC[4]). The SPU malloc
+  table D_8006FAC8, 8 * (4 + 1) bytes, ends the BSS; link.ld names its last word
+  D_8006FAEC from the BSS end for the entry point and the mode table and asserts
+  the span.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
   definition placed after its use: `extern int late_var; int g(void) { return
   late_var; } int late_var = 2;` through `psx-cc1-<version> -O2 -G8` puts `late_var:`
@@ -553,8 +652,10 @@ converted to C per unit. What converting the targets' `.data` established:
   taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
-  80076f38, counters at 80076f3c; field's RECT ring). `field.bss.ld` fails the link
-  unless field's linked `.bss` is exactly that span.
+  80076f38, counters at 80076f3c; field's RECT ring). Each mode overlay's link fails
+  unless its linked `.bss` is exactly that span (`field.bss.ld`, `movie.bss.ld`,
+  `menu.bss.ld` with its `.sbss`, `worldmap.data.ld`, `battle.data.ld`), and the
+  resident's unless its own is the span the entry point clears (`link.ld`).
 - Embedded game data stays generated and is classified `asset` with its format
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
@@ -602,8 +703,17 @@ every function lies inside its .text input section and overlaps no other, so
 `text_bytes` is exactly the sum of the .text input sections.
 From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
 input section and, where an image holds its uninitialized variables as zeros, each
-.bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
-alignment gaps and a packer's tail belong to no input section). A function is `c` only
+.bss/.sbss input section of a loaded output section (alignment gaps and a packer's
+tail belong to no input section). The uninitialized data past the image, which the
+file does not hold, counts apart (`bss_noload_bytes`, `bss_noload_classes`): each
+no-load .bss/.sbss input section as `bss` from a C unit, as its classified range
+(`sdk`: the resident's generated PsyQ library statics and commons; `handwritten`:
+the menu scheduler's two words) or as `bss_placeholder` from generated assembly,
+and as `bss_placeholder` every byte up to the target's `BSS_END` that no input
+section holds, outside the no-load output sections or named by a symbol there (a
+variable only a linker-script name places; the fill between input sections is not
+counted). `remaining_bss_placeholder_bytes` totals that remaining work, 0 in every
+target. A function is `c` only
 where its unit's cc1 output emitted it (`.ent`); one an INCLUDE_ASM'd or
 INCLUDE_RODATA'd file defines is `sdk` or `handwritten` by range, `nonmatching` as the
 fallback of a NON_MATCHING candidate (the only source scan), else `asm`. A data byte is
@@ -624,7 +734,8 @@ authored `.s` unit's too, so the classification stays the record of every
 handwritten routine. `make coverage` passes these files as `CLASSIFICATION`, and
 `matching_coverage.py ... --list CLASS` prints a class's functions, its .text bytes
 outside every function and its data ranges with their section and object (`placeholder`,
-`included`, `asset`, `bss`, ...).
+`included`, `asset`, `bss`, ...); `bss_placeholder` ranges are split at each symbol, so
+each remaining variable shows with its extent.
 
 The report attributes a C unit's bytes by where GAS put them, not by how the source
 spells them. `make coverage` compiles each C unit again (`<unit>.cov.o` beside the

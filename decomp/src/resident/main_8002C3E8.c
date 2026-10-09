@@ -20,6 +20,16 @@
 #include "console.h"
 #include "sound.h"
 
+/* This unit's own variables: those of up to 8 bytes in its .sbss
+ * (80059308), the larger light matrices in its .bss (80059f64), as the
+ * original assembler placed them (SBSS_main_8002C3E8 in slus_006.64.mk). */
+static u16 D_80059308; /* the primitive's texture page, overridden */
+static u16 D_8005930C; /* the primitive's CLUT, overridden */
+static s32 D_80059310; /* the texture page override */
+static s32 D_80059314; /* the CLUT override */
+static MATRIX D_80059F64; /* light directions, one per row */
+static MATRIX D_80059F84; /* light colors, one per column */
+
 /* The handwritten renderers with their alternate entries (model_draw.s) and
  * the C routines that prepare one record's packets. */
 void func_8002E010(), func_8002E024(), func_8002E038(), func_8002E04C(),
@@ -228,14 +238,12 @@ s32 func_8002C68C(ModelBuffer *buffer) {
     return 0;
 }
 
-extern u8 D_80059598;
-extern u8 D_80059599;
-extern u8 D_8005959A;
+extern CVECTOR D_80059598; /* the model colour; the renderers load it into the GTE */
 
 void func_8002C6E0(u8 r, u8 g, u8 b) {
-    D_80059598 = r;
-    D_80059599 = g;
-    D_8005959A = b;
+    D_80059598.r = r;
+    D_80059598.g = g;
+    D_80059598.b = b;
 }
 
 /* Draw a sprite model's primitive groups into `ot` with the routines of
@@ -381,9 +389,6 @@ void func_8002CBBC(ModelBuffer *buffer) {
     }
 }
 
-extern s32 D_80059310;
-extern s32 D_80059314;
-
 /* Override model texture pages with the page at (x, y). */
 void func_8002CC10(u16 x, u16 y) {
     D_80059310 = GetTPage(0, 0, x, y) & 0x1F;
@@ -405,9 +410,6 @@ void func_8002CCAC(void) {
     D_80050108 = 0;
     D_8005010C = 1;
 }
-
-extern u16 D_80059308;
-extern u16 D_8005930C;
 
 /* Apply the texture page override to a primitive's page. */
 void func_8002CCC8(u16 *tpage) {

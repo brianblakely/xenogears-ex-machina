@@ -19,6 +19,21 @@
 #include "console.h"
 #include "sound.h"
 
+/* This unit's own variables. GCC emits them after the code, and the
+ * original assembler gave those of up to 8 bytes the unit's .sbss, ahead of
+ * every other unit's (800592bc), and the larger kernel menu buffers its .bss
+ * (800595e8; SBSS_main in slus_006.64.mk). */
+static void *D_800592BC;         /* the loaded mode block */
+static s32 D_800592C0;           /* the mode whose block is loaded, or -1 */
+static s32 D_800592C4;           /* kernel menu frame count */
+static s32 D_800592C8;           /* kernel menu buffer index */
+static KernelBuffer *D_800592CC; /* kernel menu current buffer */
+static s32 D_800592D0;           /* kernel menu running */
+static u8 *D_800592D4;
+static u8 *D_800592D8;
+static LifeTile *D_800592DC[2];  /* tile buffers per display buffer */
+static KernelBuffer D_800595E8[2]; /* kernel menu buffers */
+
 /* Each mode's overlay file in directory 1; the kernel menu (mode 0) has none. */
 s32 D_8004EAA0[] = {0, 0xE, 0x10, 0xF, 0xD, 0x11, 0x12};
 
@@ -696,7 +711,7 @@ void func_8001AADC(void) {
         D_8005A444[i] = 0;
         D_80062590[i] = 0;
     }
-    for (i = 3, last = &D_80062524; i >= 0; i--) {
+    for (i = 3, last = &D_80062518[3]; i >= 0; i--) {
         *last-- = 0;
     }
 }

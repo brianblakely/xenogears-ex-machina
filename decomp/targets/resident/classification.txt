@@ -4,10 +4,11 @@
 # identified with tools/psyq_signatures.py (PsyQ 3.x-4.x library signatures),
 # and the few unmatched members inside it were inspected by hand. Data ranges
 # (generated subsegments kept from the original image) are the embedded disc
-# data and TMD model (asset) and the libraries' data (sdk). included NAME:
+# data and TMD model (asset), the libraries' data and their uninitialized
+# variables (sdk; NOLOAD, so no image bytes). included NAME:
 # library strings that several SDK functions share, which splat therefore
 # leaves to INCLUDE_RODATA in their unit's rodata.
-80010000 80018080 asset Disc file data copied ahead of the code (rodatabin disc_index/disc2_index; it is the only part that differs between SLUS_006.64 and SLUS_006.69): s32 -1 at 80010000 (read through D_8005917C and by the kernel menu), the file index of disc sectors 24-38 at 80010004 (7-byte records: 24-bit start sector, signed 32-bit size, negative for a directory and its file count; the format tools/extraction/disc_files.py reads from sector 24), zero fill with one halfword at 80018002, and the 0x7c-byte directory table of disc sector 40 (u16 first file of each directory) at 80018004
+80010000 80018080 asset Disc file data copied ahead of the code (rodatabins disc_mode/disc_files/disc_directories, disc2_* on Disc 2; it is the only part that differs between SLUS_006.64 and SLUS_006.69): s32 -1 at 80010000 (read through D_8005917C and by the kernel menu), the file index of disc sectors 24-38 at 80010004 (7-byte records: 24-bit start sector, signed 32-bit size, negative for a directory and its file count; the format tools/extraction/disc_files.py reads from sector 24), zero fill with one halfword at 80018002, and the 0x7c-byte directory table of disc sector 40 (u16 first file of each directory) at 80018004
 80018ce4 80018e28 included D_80018CE4 libcd command and interrupt names ("none", "CdlReadS" ... "NoIntr"), read by CdComstr and CdIntstr and the libcd SYS name tables (800564d0-8005656c)
 80018e28 80018e38 included D_80018E28 libcd "CD timeout: ", read by CD_sync, CD_ready, CD_cw and CD_datasync
 80018e38 80018e54 included D_80018E38 libcd "%s:(%s) Sync=%s, Ready=%s\n", read by CD_sync, CD_ready, CD_cw and CD_datasync
@@ -29,3 +30,8 @@
 80050240 80050594 asset Packed built-in console font in main2_800366E0.c's data (INCLUDE_ASSET): unpacked size and LZSS stream decoded by 80032e88 for the debug console (800374e8)
 80050910 800509b0 asset Built-in error sound in sound.c's data (INCLUDE_ASSET): a "seds" effect bank used in place as SoundBank id 0x7f04 (0x30 bytes) and its "wds " wave bank with ADPCM samples (0x70 bytes), played by 8003f6b0
 800563f0 80059170 sdk PsyQ library .data in the libraries' link order, each block referenced only from the SDK range above: libc2 SPRINTF (800563f0), libapi COUNTER/PAD, libcd SYS/BIOS (command names and state, 80056420-800567c0), libc2 CTYPE (_ctype table 800567c0), libcd CDREAD, libgpu SYS (80056888-800569f0), libgte MSC00/MSC01 (square root table)/MSC02/MTX_006 (matrix stack)/RATAN (arctangent table 80057030), libetc VSYNC/INTR/INTR_VB/INTR_DMA/VMODE (8005783c-8005899c), libspu S_INI/SPU/S_M_INIT/S_CRWA and the reverb tables of S_SRMT (80058e70, 80058ec0-80059168); 80059168-80059170 is unreferenced
+800593a4 80059404 sdk PsyQ library small statics in the BSS (generated psyq_sbss, NOLOAD), after the game units' own: libapi's controller patch state of _patch_pad, EnablePAD, DesablePAD, _send_pad, _SendPAD and _remove_ChgclrPAD (800593a4-800593d4), libgte's _patch_gte and libcard's _patch_card, _patch_card2, StopCARD and _ExitCard (800593d4-80059404)
+8005a1fc 8005a39c sdk PsyQ library statics in the BSS (generated psyq_bss, NOLOAD), after the game units' larger ones: libc rand/srand (8005a1fc), libapi SetPatchPad/RemovePatchPad (8005a200-8005a210), libcd CD_cw/CD_sync/CD_ready/CD_datasync/getintr/callback (8005a210-8005a234), libc putchar (8005a234), libgpu _clr/_ctl/_getctl/_reset (8005a238-8005a37c), libgpu OpenTIM/ReadTIM/OpenTMD/ReadTMD (8005a37c-8005a39c)
+8005a4c8 8005a4dc sdk PsyQ libspu commons the linker placed among the game's (generated psyq_spu_commons, NOLOAD), read by _spu_init
+80062640 80062648 sdk PsyQ libds commons among the game's (generated psyq_ds_commons, NOLOAD): the callbacks DsSyncCallback and DsReadyCallback install
+8006be34 8006d634 sdk PsyQ libgpu commons among the game's (generated psyq_gpu_commons, NOLOAD): the command queue of _addque2, _exeque and _reset; nothing addresses its end

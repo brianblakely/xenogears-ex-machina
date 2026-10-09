@@ -41,6 +41,7 @@ segments:
     type: code
     start: 0x0
     vram: 0x8006faf0
+    bss_size: 0x1C5C
     # Translation units. ASPSX aligns jump tables (`.align 3`) relative to their
     # object's section, and the linker places sections 4-aligned, so a change in
     # jump-table phase (address mod 8) without padding starts a new unit's
@@ -84,9 +85,17 @@ segments:
       - [0x2b6bc, .data, worldmap_8008E190]
       - [0x2b724, .data, worldmap_80090A84]
       - [0x2ba74, .data, worldmap_80094A5C]
+      # The uninitialized variables follow the program, not loaded: the BSS
+      # the resident's mode table clears (8009bbb0 + 4 through the word at
+      # 8009d80c, bss_size above). No unit has statics; the commons, which
+      # the original linker allocated in an order of its own, fill it
+      # (worldmap_common.c). Declaring it here keeps their names out of
+      # undefined_syms_auto.txt: the link places every one from its
+      # definition.
+      - { type: .bss, vram: 0x8009BBB4, name: worldmap_common }
   - [0x2c0c4]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (worldmap.mk), so the decoded image ends
-  # two zero bytes after the data, inside the BSS (from the terrain origin
-  # D_8009BBB4).
+  # two zero bytes after the data, inside the BSS, where the terrain origin
+  # D_8009BBB4 lives.
   - [0x2c0c6]

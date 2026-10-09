@@ -46,15 +46,17 @@ MATRIX D_8004FBB8 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}
 extern u8 D_8004FBD8[];
 INCLUDE_ASSET(".data", D_8004FBD8, 0x8004FBD8, 0xE8);
 
-/* The unit's own small data and small commons, $gp-relative. */
+/* The unit's own small data, statics and small commons, all $gp-relative.
+ * The statics take the unit's .sbss (800592e4); the commons merge with
+ * commons/common_80059404.c's definitions. */
 u32 D_80059184 = 0;
 s32 D_80059188 = 0;
 s32 D_8005918C = 0;
 Sprite *D_80059190 = NULL;
 s16 D_80059194 = 0; /* texture area row (0-2) of the next image */
 s16 D_80059196 = 0; /* texture area column of the next image */
-s32 *D_800592E4;              /* image list for 8001fb30 */
-DVECTOR D_800592E8;           /* its position */
+static s32 *D_800592E4;       /* image list for 8001fb30 */
+static DVECTOR D_800592E8;    /* its position */
 Task *D_800594C0;
 Task *D_8005958C;
 Task *D_80059590;

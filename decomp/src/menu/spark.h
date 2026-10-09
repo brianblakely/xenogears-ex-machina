@@ -214,7 +214,6 @@ struct Emitter {
 extern SparkShape D_80091C74[];
 extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
 extern void (*D_80091CDC[1])(Spark *spark);
-extern Vector D_80092A24; /* glow emitter position */
 
 /* Sparks drawn as a line through their last positions, with one primitive
  * per draw buffer. */
@@ -261,9 +260,6 @@ typedef struct {
 #define setShadeTex(p, tge) \
     ((tge) ? setcode(p, getcode(p) | 0x01) : setcode(p, getcode(p) & ~0x01))
 
-extern PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
-extern TileRgb D_80096DE0[2];     /* full-screen shade tile per draw buffer */
-extern DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
 void SetDrawMode(DrawMode *p, s32 dfe, s32 dtd, s32 tpage, Rect *tw); /* SetDrawMode */
 
 int abs(int x);

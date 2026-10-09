@@ -73,13 +73,16 @@ void func_8001B94C(DRAWENV *env) {
 }
 
 extern u8 D_8006D635[]; /* the second byte of the saved name slots */
-extern u16 D_8005A3C6;  /* last of the twenty battle setup counters */
+/* The battle script variables. 8001b970 clears twenty halfwords back from
+ * [19]: the 16 variables and the first 8 bytes of the sound driver's SPU
+ * attributes D_8005A3C0 that follow them. */
+extern u16 D_8005A3A0[];
 u8 D_800594CC;
 u8 D_8005947C; /* pending scene + 1 */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
- * 31 twenty-byte name slots, and reset the battle setup counters. */
+ * 31 twenty-byte name slots, and clear the battle script variables. */
 void func_8001B970(void) {
     u16 codes[12]; /* 24-byte workspace; at most ten codes per name */
     u8 decoded[20];
@@ -112,7 +115,7 @@ void func_8001B970(void) {
             D_8006D634.names[slot][i] = decoded[i];
         }
     }
-    for (i = 19, counter = &D_8005A3C6; i >= 0; i--) {
+    for (i = 19, counter = &D_8005A3A0[19]; i >= 0; i--) {
         *counter-- = 0;
     }
     D_800594CC = 6;
@@ -121,7 +124,7 @@ void func_8001B970(void) {
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DE, 0, &D_80059470, &D_80059520, &D_8005949C);
+    func_800379D8(D_8006F9DC[2], 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 u8 D_800594F8;
@@ -130,8 +133,8 @@ u8 D_8005946C;
  * the slot rule no other variable shares its word. ASPSX 2.34 addressed a
  * common at an offset absolutely, so only [0] went through $gp (maspsx
  * models that), but GNU as moves a small common's offset accesses to $gp
- * as well, so the array cannot be declared and its last two bytes stay
- * extern until that is modelled. */
+ * as well, so the array cannot be declared here and its last two bytes are
+ * names of their own (link.ld). */
 u8 D_800594D4;
 extern u8 D_800594D5;
 extern u8 D_800594D6;
@@ -151,8 +154,8 @@ void func_8001BB50(void) {
     D_800595A0 = 2;
 }
 
-/* This unit's small commons merge with the original BSS labels and are
- * addressed through $gp. */
+/* This unit's small commons, addressed through $gp; they merge with
+ * commons/common_80059404.c's definitions. */
 void *D_80059480; /* heap marker for the high-memory reservation */
 void *D_800594AC; /* reservation below the heap marker */
 SoundBank *D_800595D0;
@@ -413,7 +416,7 @@ void func_8001C1A8(void) {
     }
     func_80028470(0x10, 0);
     if (D_80059178 != 0) {
-        D_8006EF58 = 999999999;
+        D_8006D634.gold = 999999999;
         func_80032498(2, 0);
         D_8005945C = func_80031BDC(func_800288EC(1), 0);
         func_800295D8(1, D_8005945C, 0, 0x80);

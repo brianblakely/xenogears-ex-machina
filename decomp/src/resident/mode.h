@@ -24,13 +24,6 @@ typedef struct {
     POLY_F3 cursor;
 } KernelBuffer;
 
-extern KernelBuffer D_800595E8[2];
-extern s32 D_800592C4;           /* kernel menu frame count */
-extern s32 D_800592C8;           /* kernel menu buffer index */
-extern KernelBuffer *D_800592CC; /* kernel menu current buffer */
-extern s32 D_800592D0;           /* kernel menu running */
-extern u8 *D_800592D4;
-extern u8 *D_800592D8;
 /* An 8x8 tile of the debug Game of Life screen (a TILE_8 primitive). */
 typedef struct {
     u32 tag;
@@ -38,10 +31,9 @@ typedef struct {
     u32 xy;
 } LifeTile;
 
-extern LifeTile *D_800592DC[2]; /* tile buffers per display buffer */
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
-extern u8 D_8006F9DE;
+extern u8 D_8006F9DC[0x20]; /* scene state: [2] the scene selector */
 extern u8 *D_80059470;  /* the scene music sequence */
 extern s32 D_80059520;
 extern u8 *D_8005949C;  /* the scene music instrument data */
@@ -57,7 +49,7 @@ extern s16 D_8004F384;
 extern u8 D_8005942C;
 extern u8 D_800594D0;
 extern s32 D_8005A444[3];
-extern s32 D_80062524;
+extern s32 D_80062518[4]; /* loaded wave bank per slot */
 extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
@@ -67,14 +59,22 @@ typedef struct {
     u8 rest[0xA3];
 } CharacterRecord;
 
-/* Game data 8006d634 (saved with the game). The record count is not
- * established; the party list follows at +0x1d34. */
-typedef struct {
+/* Game data 8006d634: the saved game, the 0x2358 bytes 8001b970 loads from
+ * directory 16 file 3. The record count is not established. 8001b970 reads
+ * the name slots' second bytes from a base of their own, D_8006D635
+ * (link.ld). */
+typedef struct GameData {
     u8 names[31][0x14]; /* text codes, two bytes per code */
     u8 unknown0[0x30C - 31 * 0x14];
     CharacterRecord characters[11];
-    u8 unknown1[0x1D34 - 0x30C - 11 * 0xA4];
-    u8 party[3]; /* character per slot, 0xff empty */
+    u8 unknown1[0x1924 - 0x30C - 11 * 0xA4];
+    u32 gold;            /* 1924: at most 999999999 */
+    u8 unknown2[0x1D34 - 0x1928];
+    u8 party[3];         /* 1d34: character per slot, 0xff empty */
+    u8 unknown3[0x231A - 0x1D37];
+    u16 map;             /* 231a: the saved map (scene) */
+    u16 entry[3];        /* 231c: its entry parameters */
+    u8 unknown4[0x2358 - 0x2322];
 } GameData;
 
 extern GameData D_8006D634;
@@ -95,8 +95,6 @@ extern u8 D_8006FAEC[];      /* the last word below the overlay area */
 extern s32 D_80018088;       /* next mode */
 extern ModeEntry D_8001808C[];
 extern s32 D_8004EAA0[];     /* each mode's overlay file in directory 1 */
-extern void *D_800592BC;     /* the loaded mode block */
-extern s32 D_800592C0;       /* the mode whose block is loaded, or -1 */
 extern struct SoundSequence *D_80059560; /* resident wave banks */
 extern struct SoundSequence *D_800595AC;
 extern s32 D_80010000;

@@ -289,6 +289,11 @@ decomp/src/ovl3387/burst.h
 decomp/src/ovl3387/ovl3387.c
 decomp/src/resident/battle_mode.c
 decomp/src/resident/cd.h
+decomp/src/resident/commons/common_80059404.c
+decomp/src/resident/commons/common_8005A39C.c
+decomp/src/resident/commons/common_8005A4DC.c
+decomp/src/resident/commons/common_80062648.c
+decomp/src/resident/commons/common_8006D634.c
 decomp/src/resident/console.h
 decomp/src/resident/func_80019524.s
 decomp/src/resident/func_80019548.s
@@ -353,7 +358,6 @@ decomp/src/resident/main2_800366E0.c
 decomp/src/resident/main3.c
 decomp/src/resident/main_8001B6C4.c
 decomp/src/resident/main_8002709C.c
-decomp/src/resident/main_8002A260.c
 decomp/src/resident/main_8002C3E8.c
 decomp/src/resident/menu.h
 decomp/src/resident/mode.h
@@ -396,6 +400,7 @@ decomp/src/worldmap/worldmap_8008C364.c
 decomp/src/worldmap/worldmap_8008E190.c
 decomp/src/worldmap/worldmap_80090A84.c
 decomp/src/worldmap/worldmap_80094A5C.c
+decomp/src/worldmap/worldmap_common.c
 decomp/targets/overlays/battle.classification.txt
 decomp/targets/overlays/battle.data.ld
 decomp/targets/overlays/battle.mk
@@ -418,10 +423,12 @@ decomp/targets/overlays/mdec.classification.txt
 decomp/targets/overlays/mdec.mk
 decomp/targets/overlays/mdec.symbols.txt
 decomp/targets/overlays/mdec.yaml
+decomp/targets/overlays/menu.bss.ld
 decomp/targets/overlays/menu.classification.txt
 decomp/targets/overlays/menu.mk
 decomp/targets/overlays/menu.symbols.txt
 decomp/targets/overlays/menu.yaml
+decomp/targets/overlays/movie.bss.ld
 decomp/targets/overlays/movie.mk
 decomp/targets/overlays/movie.symbols.txt
 decomp/targets/overlays/movie.yaml
@@ -479,6 +486,7 @@ decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml
 decomp/targets/overlays/worldmap.classification.txt
+decomp/targets/overlays/worldmap.data.ld
 decomp/targets/overlays/worldmap.mk
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml

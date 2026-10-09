@@ -1569,7 +1569,7 @@ s32 func_8003BB40(s32 index) {
 }
 
 /* One queued SPU transfer (the ring D_80059458 holds eight). */
-typedef struct {
+typedef struct SoundTransfer {
     u16 type;          /* 1: write, 2: read, 3/4: read decoded CD data */
     u16 unk2;
     u8 *data;

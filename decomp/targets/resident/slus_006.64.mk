@@ -5,10 +5,21 @@ CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/resident/slus_006.64.yaml
 ORIGINAL := .local/extract/disc1/SLUS_006.64
 ORIGINAL_SHA256 := dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119
+# Its uninitialized data ends at 8006faf0: the entry point (80019524) clears
+# the words after D_800592B8 through D_8006FAEC, the bounds of the mode
+# table's entries 0 and 5.
+BSS_END := 0x8006FAF0
 BUILD := .local/decomp/build/resident
 IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld
 LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/resident/undefined_funcs_auto.txt decomp/targets/resident/link.ld
+# link.ld names parts of uninitialized objects from the objects' linked
+# addresses where addressing the object itself compiles differently (the
+# window colour's green and blue bytes, the CD mix bytes and the CD request,
+# the base of the name slots' second bytes), and the BSS's last word, which
+# the entry point and the mode table name, from the link's BSS end. verify
+# accepts these names inside the BSS as views (decomp/Makefile).
+LINK_VIEWS := decomp/targets/resident/link.ld
 # The header (decomp/src/resident/header.c) declares t_size 0x49800 from the
 # link (link.ld), and the file is padded with zeros from the end of the small
 # data (0x800592bc) to the same 2048-byte boundary (file 0x4a000), which
@@ -65,8 +76,9 @@ CC_sprite_80025C04 := 2.7.2-cdk
 GP_sprite_80025C04 := 8
 MASPSX_sprite_80025C04 := --aspsx-version=2.79 --use-comm-section
 EXTERN_sprite_80025C04 := absolute
-# The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
-# 2.6.3 with inline division checks.
+# The texture-scroll, disc, CD read callback, stream and model buffer unit
+# (8002709C-8002C3E8) is compiled by GCC 2.6.3 with inline division checks
+# (its code from 8002A260 on has no division).
 CC_main_8002709C := 2.6.3
 MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
 # The battle-mode entry owns 8005959C, while its setup flags are owned by
@@ -85,9 +97,15 @@ CC_main_8001B6C4 := 2.6.3
 GP_main_8001B6C4 := 8
 MASPSX_main_8001B6C4 := --aspsx-version=2.34 --use-comm-section
 EXTERN_main_8001B6C4 := absolute
-# The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
-# is compiled by GCC 2.6.3.
-CC_main_8002A260 := 2.6.3
+# The assembler of the GCC 2.7.2 -G0 units placed each one's own variables of
+# up to 8 bytes in its .sbss and the larger ones in its .bss (decomp/Makefile):
+# all of them link among the units' small variables (800592bc-800593a4) or
+# their larger ones (800595e8-8005a1fc) in unit order, and the code addresses
+# every one absolutely.
+SBSS_main := 8
+SBSS_main_8002C3E8 := 8
+SBSS_main2 := 8
+SBSS_main2_800366E0 := 8
 # Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
 # whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800

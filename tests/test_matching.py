@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import shutil
 import struct
@@ -122,6 +123,7 @@ class MatchingTests(unittest.TestCase):
             ([], "CC=2.7.2"),
             (["MASPSX_cache=--aspsx-version=2.56"], "MASPSX_FLAGS=--aspsx-version=2.56"),
             (["EXTERN_cache=absolute"], "EXTERN=absolute"),
+            (["SBSS_cache=8"], "SBSS=8"),
             (["TARGET_CPPFLAGS=-DQUOTED='1'"], "-DQUOTED='1'"),
             (["CC1FLAGS=-quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O1"], "-O1"),
             (["ASFLAGS=-EL -march=r3000 -mtune=r3000 -msoft-float -G0"], "ASFLAGS=-EL"),
@@ -541,17 +543,21 @@ class MatchingTests(unittest.TestCase):
         return out.read_bytes()
 
     def cover_linked_fixture(self, image, settings=(), sections=(".data", ".bss"), arguments=(),
-                             root=None, extra=()):
+                             root=None, extra=(), noload=()):
         """Link the fixture unit's `sections` (loaded) at 0x80010000, then the
-        `extra` input sections, and build its coverage object with the target
-        Makefile; then run the coverage report on the ELF and map."""
+        `extra` input sections, and the `noload` input sections after them in
+        a NOLOAD section (4-byte aligned, as splat's scripts), and build its
+        coverage object with the target Makefile; then run the coverage
+        report on the ELF and map."""
         repo = Path(__file__).resolve().parents[1]
         root = root or self.root
         inputs = "".join(f"    build/decomp/src/t/unit.o({section})\n" for section in sections)
         inputs += "".join(f"    {line}\n" for line in extra)
+        unloaded = "".join(f"    {line}\n" for line in noload)
         (root / "fixture.ld").write_text(
-            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n" + inputs
-            + "  }\n  /DISCARD/ : { *(*) }\n}\n"
+            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n" + inputs + "  }\n"
+            + (f"  .fixture_bss (NOLOAD) : SUBALIGN(4) {{\n{unloaded}  }}\n" if noload else "")
+            + "  /DISCARD/ : { *(*) }\n}\n"
         )
         build = subprocess.run(
             ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
@@ -688,6 +694,165 @@ class MatchingTests(unittest.TestCase):
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn(message, result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test linker-script names inside the target",
+    )
+    def test_script_names_inside_the_target_are_reported_unless_views(self):
+        # The image is the unit's .data, 80010000-80010028: the table, then
+        # the pointers that make the link resolve each name. The declared
+        # uninitialized data follows up to 80010040.
+        self.build_fixture_unit(
+            "int table[4] = {1, 2, 3, 4};\n"
+            "extern int inner[], outside, late, view[], chained, fixed;\n"
+            "int *refs[] = {inner, &outside, &late, view, &chained, &fixed};\n")
+        auto = self.root / "auto/undefined_syms_auto.txt"
+        auto.parent.mkdir()
+        auto.write_text("table = 0x80010000;\ninner = 0x80010004;\noutside = 0x80030000;\n"
+                        "late = 0x80010030;\nunused = 0x80010008;\n")
+        (self.root / "views.ld").write_text(
+            "/* Views of the table. */\nview = table + 8;\nchained = view + 4;\n"
+            "fixed = 0x8001000C;\n")
+        (self.root / "other.ld").write_text("elsewhere = table + 0x10000;\n")
+        settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt views.ld other.ld"]
+        self.cover_linked_fixture("image.bin", settings, sections=(".data",))
+        tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
+        scripts = ["--script", "build/auto/undefined_syms_auto.ld", "--script", "views.ld",
+                   "--script", "other.ld"]
+
+        def check(*arguments):
+            return subprocess.run(
+                [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map", *scripts,
+                 *arguments], cwd=self.root, text=True, capture_output=True, check=False)
+
+        # Splat's PROVIDE of an object's own name is unused; a used one inside
+        # the image or the declared uninitialized data is reported, as is a
+        # number a views script assigns there. Views of linked symbols are not.
+        result = check("--script-symbols", "strict", "--views", "views.ld",
+                       "--bss-end", "0x80010040")
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(sorted(result.stderr.splitlines()), [
+            "error: image.bin.elf: 1 name(s) that build/auto/undefined_syms_auto.ld assigns lie"
+            " inside the target's own image (80010000-80010028): inner",
+            "error: image.bin.elf: 1 name(s) that build/auto/undefined_syms_auto.ld assigns lie"
+            " inside the target's own uninitialized data (80010028-80010040): late",
+            "error: image.bin.elf: 1 name(s) that views.ld assigns lie inside the target's own"
+            " image (80010000-80010028): fixed",
+        ])
+        warned = check("--script-symbols", "warn", "--views", "views.ld", "--bss-end",
+                       "0x80010040")
+        self.assertEqual(warned.returncode, 0)
+        self.assertEqual(warned.stderr.replace("warning:", "error:"), result.stderr)
+        # Without a declared end only the image counts; without the views
+        # allowance the views are names like any other.
+        result = check("--script-symbols", "strict", "--views", "views.ld")
+        self.assertNotIn("late", result.stderr)
+        result = check("--script-symbols", "strict")
+        self.assertIn("3 name(s) that views.ld assigns lie inside the target's own image"
+                      " (80010000-80010028): view, chained, fixed", result.stderr)
+        # An allowance must be one of the link's scripts and define a view.
+        result = check("--script-symbols", "warn", "--views", "views.ld", "--views", "other.ld")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("warning: image.bin.elf: views script other.ld defines no view inside the"
+                      " target's own image or uninitialized data", result.stderr)
+        result = check("--script-symbols", "warn", "--views", "missing.ld")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing.ld: a views script that is not among the link's scripts",
+                      result.stderr)
+        result = check("--script-symbols", "warn", "--bss-end", "0x80010020")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("up to 80010028, past its declared end 80010020", result.stderr)
+        # verify runs the check after the exact comparison: strict, the
+        # default, fails; warn reports and passes.
+        image = (self.root / "image.bin").read_bytes()
+        self.original.write_bytes(image)
+        fixture = self.root / "fixture.mk"
+        fixture.write_text(fixture.read_text().replace(
+            self.digest, hashlib.sha256(image).hexdigest()))
+        repo = Path(__file__).resolve().parents[1]
+        environment = {k: v for k, v in os.environ.items() if k != "SCRIPT_SYMBOLS"}
+        for mode, status in ((None, 2), ("strict", 2), ("warn", 0)):
+            with self.subTest(mode):
+                result = subprocess.run(
+                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                     "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=image.bin",
+                     "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings,
+                     "LINK_VIEWS=views.ld", "BSS_END=0x80010040",
+                     *(["SCRIPT_SYMBOLS=" + mode] if mode else []), "verify"],
+                    cwd=self.root, env=environment, text=True, capture_output=True,
+                    check=False)
+                self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+                self.assertIn('"matched": true', result.stdout)
+                self.assertIn(f"{'error' if status else 'warning'}: image.bin.elf: 1 name(s)"
+                              " that views.ld assigns", result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test the uninitialized data past the image",
+    )
+    def test_uninitialized_data_past_the_image_counts_apart(self):
+        # The image is the unit's word at 80010000. Past it, not loaded: the
+        # unit's 8-byte static, a generated unit's two labelled variables (6
+        # bytes), alignment fill, another generated unit's word and, up to the
+        # declared end, bytes no object holds, one variable named only by a
+        # linker script.
+        self.build_fixture_unit("int c_data = 0x11111111;\nstatic int counter[2];\n"
+                                "int *count(void) { return counter; }\n")
+        (self.root / "asm/data").mkdir(parents=True)
+        (self.root / "asm/data/generated.bss.s").write_text(
+            ".section .bss\n.globl D_8001000C\nD_8001000C:\n.space 4\n"
+            ".globl D_80010010\nD_80010010:\n.space 2\n")
+        (self.root / "asm/data/tail.bss.s").write_text(".section .bss\n.space 4\n")
+        names = self.root / "names.ld"
+        names.write_text("D_8001001C = 0x8001001C;\n")
+        noload = ("build/decomp/src/t/unit.o(.bss)", "build/asm/data/generated.bss.o(.bss)",
+                  "build/asm/data/tail.bss.o(.bss)")
+
+        def cover(*arguments):
+            result = self.cover_linked_fixture("image.bin", ["LINKER_EXTRA=names.ld"],
+                                               sections=(".data",), noload=noload,
+                                               arguments=arguments)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return result
+
+        report = json.loads(cover().stdout)
+        self.assertEqual(report["data_classes"], {"c": 4})
+        self.assertEqual((report["bss_noload_bytes"], report["bss_noload_classes"]),
+                         (18, {"bss": 8, "bss_placeholder": 10}))
+        report = json.loads(cover("--bss-end", "0x80010020").stdout)
+        self.assertEqual((report["bss_noload_bytes"], report["bss_noload_classes"],
+                          report["remaining_bss_placeholder_bytes"]),
+                         (26, {"bss": 8, "bss_placeholder": 18}, 18))
+        self.assertEqual(report["remaining_data_placeholder_bytes"], 0)
+        # Each placeholder range shows with the symbol at its start.
+        listing = cover("--bss-end", "0x80010020", "--list", "bss_placeholder")
+        self.assertEqual(listing.stdout.splitlines(), [
+            "8001000c      4 D_8001000C (.bss generated.bss.o)",
+            "80010010      2 D_80010010 (.bss generated.bss.o)",
+            "80010014      4 (.bss tail.bss.o)",
+            "80010018      4 (no object)",
+            "8001001c      4 D_8001001C (no object)",
+        ])
+        listing = cover("--bss-end", "0x80010020", "--list", "bss")
+        self.assertEqual(listing.stdout.splitlines(), ["80010004      8 (.bss unit.o)"])
+        # The fill between input sections counts once a name places a variable there.
+        names.write_text("D_8001001C = 0x8001001C;\nD_80010012 = 0x80010012;\n")
+        report = json.loads(cover("--bss-end", "0x80010020").stdout)
+        self.assertEqual(report["bss_noload_classes"], {"bss": 8, "bss_placeholder": 20})
+        # A declared end short of what the link places fails.
+        result = self.cover_linked_fixture("image.bin", ["LINKER_EXTRA=names.ld"],
+                                           sections=(".data",), noload=noload,
+                                           arguments=["--bss-end", "0x80010010"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("the link places the target up to 80010018, past its declared end"
+                      " 80010010 (BSS_END)", result.stderr)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -1228,6 +1393,59 @@ class MatchingTests(unittest.TestCase):
         _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.86"])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no slot rule", result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test the small-data split",
+    )
+    def test_sbss_divides_a_g0_units_variables_by_declared_size(self):
+        source = (
+            '#include "include_asm.h"\n'
+            "static unsigned char flag;\n"
+            "static unsigned char pairs[3][2];\n"
+            "static int big[3];\n"
+            "static short half;\n"
+            "static int word;\n"
+            "int use(void) { return flag + pairs[1][1] + big[2] + half + word; }\n"
+        )
+
+        def layout(settings):
+            obj = self.build_fixture_unit(source, settings)
+            symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                     capture_output=True, text=True).stdout
+            sections = subprocess.run(["psx-readelf", "-SW", str(obj)], check=True,
+                                      capture_output=True, text=True).stdout
+            index = {number: name for number, name in re.findall(r"\[\s*(\d+)\] (\S+)", sections)}
+            placed = {}
+            for value, number, name in re.findall(
+                    r"\d+: ([0-9a-f]{8})\s+\d+ \w+\s+\w+\s+\w+\s+(\d+) (\w+)\n", symbols):
+                if name in ("flag", "pairs", "big", "half", "word"):
+                    placed.setdefault(index[number], {})[name] = int(value, 16)
+            relocations = subprocess.run(["psx-readelf", "-rW", str(obj)], check=True,
+                                         capture_output=True, text=True).stdout
+            # The code addresses every variable absolutely, as at -G0.
+            self.assertNotIn("GPREL", relocations)
+            return placed
+
+        # Without the setting maspsx keeps one .bss in declaration order.
+        self.assertEqual(layout([]), {".bss": {"flag": 0, "pairs": 4, "big": 12, "half": 24,
+                                               "word": 28}})
+        # Objects of up to SBSS_<unit> bytes move to .sbss and the others stay,
+        # each group in declaration order and in whole-word slots.
+        self.assertEqual(layout(["SBSS_unit=8"]), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 12, "word": 16}, ".bss": {"big": 0}})
+        # The threshold compares the size GCC declares, not the slot: the
+        # 6-byte array moves at 6 although its slot takes 8 bytes, not at 5.
+        self.assertEqual(layout(["SBSS_unit=6"]), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 12, "word": 16}, ".bss": {"big": 0}})
+        self.assertEqual(layout(["SBSS_unit=5"]), {
+            ".sbss": {"flag": 0, "half": 4, "word": 8}, ".bss": {"pairs": 0, "big": 8}})
+        # The slot rule of the unit's ASPSX applies to both sections.
+        sized = ["MASPSX_FLAGS=--aspsx-version=2.56", "SBSS_unit=8"]
+        self.assertEqual(layout(sized), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 10, "word": 12}, ".bss": {"big": 0}})
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in ("make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as")),

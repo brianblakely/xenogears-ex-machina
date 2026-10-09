@@ -1,11 +1,14 @@
-/* The menu overlay's common (uninitialized global) variables of up to eight
- * bytes. The original linker allocated them after every unit's small
- * variables, in an order of its own, at the end of the file (zero there), so
- * this unit, linked last, defines them, each in a slot of whole words
- * (decomp/Makefile, uninitialized variables). GCC emits tentative
- * definitions in the order of their first declaration, so they are defined
- * ahead of the headers that declare them; the headers then check their
- * types. */
+/* The menu overlay's common (uninitialized global) variables. The menu's
+ * assembler put those of up to eight bytes in .sbss and the larger ones in
+ * .bss (menu.mk), and the original linker allocated each group's commons
+ * after every unit's own, in an order of its own: the small ones at the end
+ * of the file (zero there), the larger ones past it up to the end of the BSS
+ * the resident's mode table clears (menu.bss.ld). This unit, linked last,
+ * defines them in that order, each in a slot of whole words (decomp/Makefile,
+ * uninitialized variables). GCC emits tentative definitions in the order of
+ * their first declaration, so they are defined ahead of the headers that
+ * declare them, structures by their tags; the headers then complete and
+ * check the types. */
 #include "common.h"
 
 s32 D_8009284C; /* horizontal distance between the actors */
@@ -71,6 +74,25 @@ s32 D_80092944;
 s32 D_80092948;
 s32 D_8009294C;
 s32 D_80092950;
+
+struct Vector D_80096FA8; /* last eye position: the scene origin */
+struct SideHits D_80096FB8[2];
+struct Matrix D_80096FE0; /* screen scale */
+struct Vector D_80097000; /* look-at work: third axis */
+struct Actor D_80097010; /* scene actor */
+struct Vector D_8009867C; /* camera eye */
+struct MenuWindow D_8009868C; /* message window */
+struct Vector D_8009871C; /* camera look-at point */
+struct Actor D_8009872C; /* scene actor */
+struct Settings D_80099D98; /* current option settings */
+struct PolyFT4Words D_80099DA8[2][10];
+struct Vector D_8009A0C8; /* look-at work: forward */
+struct Window D_8009A0D8[2]; /* the display buffers */
+struct Vector D_8009A2C8; /* mesh light direction */
+struct Matrix D_8009A2D8;
+struct OverlayBuffer D_8009A2F8[2];
+struct Vector D_8009A918; /* look-at work: up */
+struct PathPoint D_8009A928[30]; /* recorded path points */
 
 #include "menu.h"
 #include "sparkle.h"

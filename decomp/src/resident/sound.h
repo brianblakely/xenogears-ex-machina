@@ -45,7 +45,7 @@ typedef struct {
 
 /* A channel's claim on a hardware SPU voice and its staged register
  * values (D_8006252C holds the owner of each hardware voice). */
-typedef struct {
+typedef struct SoundChannel {
     u16 voice;         /* hardware voice */
     u16 mode;          /* 0x10 pitch modulation, 0x20 noise, 0x40 reverb */
     s16 priority;
@@ -203,7 +203,7 @@ typedef struct {
 
 /* The driver's SPU common attributes and the volumes they are built from
  * (D_8005A3C0). */
-typedef struct {
+typedef struct SoundVolumes {
     SpuCommonAttr attr;
     s16 master;
     s16 cd;
@@ -214,6 +214,17 @@ typedef struct {
 } SoundVolumes;
 
 extern SoundVolumes D_8005A3C0;
+
+/* The reverb settings (D_80059408): type (0xff none), delay and feedback;
+ * nothing addresses the first byte. */
+typedef struct SoundReverb {
+    u8 unk0;
+    u8 type;
+    u8 delay;
+    u8 feedback;
+} SoundReverb;
+
+extern SoundReverb D_80059408;
 
 /* A sequence being played: header, then its channels. Sequences are
  * listed through `next` (D_80059564). */
@@ -344,7 +355,7 @@ typedef struct SoundBlock {
 
 /* An entry of the SPU memory map (12 entries, chained by index from the
  * first). */
-typedef struct {
+typedef struct SpuMemBlock {
     u8 flags;          /* 0: unused */
     u8 unk1;
     s16 next;          /* index of the next entry, 0 at the end */
