@@ -4,7 +4,6 @@
 #include "common.h"
 #include "gpu.h"
 #include "cd.h"
-#include "gamedata.h"
 #include "formation.h"
 
 /* Resident startup and the mode dispatcher (0x80019524-0x80019d48). */
