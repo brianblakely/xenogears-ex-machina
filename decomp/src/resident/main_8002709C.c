@@ -20,7 +20,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
-#include "own_prototypes.h"
+#include "own_declarations.h"
 
 /* The texture-scroll, disc, CD read callback, stream and model buffer unit
  * (8002709C-8002C3E8; GCC 2.6.3 with inline division checks, which its code

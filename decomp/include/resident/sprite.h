@@ -363,7 +363,6 @@ void func_8001E3D8(Sprite *sprite, u_long *ot);
 void func_8001E9BC(Sprite *sprite, u_long *ot);
 void func_8001EE88(Sprite *sprite, u_long *ot, s32 height);
 void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height);
-void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stage floor */
 void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
@@ -401,18 +400,9 @@ typedef struct {
 } SpriteVoice;
 
 /* Positions of other modes the script can place a sprite at. */
-typedef struct {
-    u8 unknown0[0xE];
-    s16 x, z;              /* +0xe */
-    u8 unknown12[0xA];
-} SpriteAnchor;
-
 extern SpriteVoice *D_8005919C;
 extern VECTOR D_8006F99C;       /* positions (16.16) of two field points */
 extern VECTOR D_8006F9AC;
-extern Sprite *D_800C3E1C;      /* battle overlay: the acting sprite */
-extern SpriteAnchor D_800C3EB0[]; /* battle overlay: formation places by side and slot */
-extern Sprite *D_800D363C[];    /* battle overlay: the sprites of a group, NULL-terminated */
 
 void func_80023290(Sprite *sprite, s32 rate);
 Sprite *func_80023B84(Sprite *sprite, u16 *animation, SpriteSource *image);
@@ -450,13 +440,10 @@ s32 func_80023440(u16 *entry);
 s32 func_80023468(s32 kind, s32 fallback);
 SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
 void func_80024730(SpriteTask *task);
-void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marker */
 void func_80022E8C(Task *task);
 void func_80025224(Task *task, s32 kind);
-void func_800C11CC(Sprite *sprite); /* battle overlay: run a sprite's script */
 s32 func_80021C6C(Sprite *sprite);
 void func_8001E298(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
-extern u8 D_800C3664;
 /* The scratchpad work area of the pixel colour scaling (80025c04). */
 typedef struct {
     u16 colour;     /* +0x0: the scaled pixel */
@@ -468,7 +455,4 @@ typedef struct {
 extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
-struct ScriptEntry;
-/* Battle overlay: draw an effect-script entry with its packet buffer. */
-void func_800B1F6C(struct ScriptEntry *entry, u8 *packets, u32 *ot, s32 unused, s32 depth, s32 blend);
 #endif

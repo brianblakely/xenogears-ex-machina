@@ -19,7 +19,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
-#include "own_prototypes.h"
+#include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (80059308), the larger light matrices in its .bss (80059f64), as the

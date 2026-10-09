@@ -21,7 +21,7 @@
 #include "resident/pad.h"
 #include "resident/console.h"
 #include "resident/sound.h"
-#include "own_prototypes.h"
+#include "own_declarations.h"
 
 /* Lengths in bytes of the frame script commands 0x80-0xff, including the
  * command byte. */
