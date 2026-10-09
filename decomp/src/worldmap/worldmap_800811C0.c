@@ -1,3 +1,14 @@
+/* World map unit 800811C0-80083A00 (rodata 800702E4-80070490, data
+ * 8009A6C0-8009AD2C): the director of scene mode 16 and its actors (the
+ * zooming camera, the fading objects and the heat haze), and modes 17 and 18:
+ * their set-up and leave handlers, mode 17's camera and pulsing effects, the
+ * actor scripts of both and the start of mode 18's camera.
+ *
+ * func_80080370's 65-entry table ends at 800702e4 and func_800811C0's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_80080370, at or before
+ * func_800811C0. Its data opens with mode 16's cue sequence, which
+ * func_80081174, left in the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

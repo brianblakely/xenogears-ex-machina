@@ -1,3 +1,13 @@
+/* World map unit 80080370-800811C0 (rodata 800701E0-800702E4, data
+ * 8009A698-8009A6C0): the director of scene mode 13 and its actors (the
+ * camera, the effects and the growing objects), the set-up and leave
+ * handlers of mode 16 and the sequence start of its director.
+ *
+ * func_8007F968's five-entry table ends at 800701e0 and func_80080370's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8007F968, at or before
+ * func_80080370. Its data opens with the cue sequence that func_8008032C,
+ * left in the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

@@ -1,3 +1,11 @@
+/* World map unit 80070CFC-80072238 (rodata 8006FAF0-8006FAF4): the overlay
+ * entry, the frame loop with its pause, menu, encounter and gear-boarding
+ * checks, the open map's frame step, the area file sets and their loaders.
+ *
+ * The overlay's number opens the image as this unit's rodata, the first
+ * word of each mode overlay (docs/matching.md). None of these functions
+ * owns rodata, so where the next unit's text starts is not measured; the
+ * split starts it at that unit's first rodata owner, func_80072238. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libcd.h"

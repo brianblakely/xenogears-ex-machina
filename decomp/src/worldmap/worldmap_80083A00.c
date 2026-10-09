@@ -1,3 +1,15 @@
+/* World map unit 80083A00-8008C364 (rodata 80070490-800707AC, data
+ * 8009AD2C-8009B1AC): mode 18's actors, the scene objects (build, link,
+ * draw, collision probes), the actors' model sprites, the terrain
+ * billboards, the clouds, the areas' own actors (spinning objects, the
+ * ferry, the airship), the particle effects and the party on foot (leader
+ * and followers, placements).
+ *
+ * func_80083264's five-entry table ends at 80070490 and func_80083A00's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_80083264, at or before
+ * func_80083A00. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
+ * text and relocations as the build's cc1 (docs/matching.md). */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"
@@ -1005,49 +1017,50 @@ void func_80085FE0(void) {
     *(QuadBlock512 *)D_8009D7E8[1] = *(QuadBlock512 *)D_8009D7E8[0];
 }
 
-/* Free two work buffers. */
+/* Free the two billboard quad buffers. */
 void func_80086124(void) {
     func_800320E8(D_8009D7E8[1]);
     func_800320E8(D_8009D7E8[0]);
 }
 
-/* Scratchpad work area of the terrain pass. */
+/* Scratchpad work area of the billboard pass. */
 typedef struct {
-    SVECTOR corner[4]; /* block quad */
+    SVECTOR corner[4]; /* the billboard quad */
     u8 pad20[8];
     MATRIX view;       /* 0x28 */
     MATRIX roll;       /* 0x48 */
     u16 clut[16];      /* 0x68 */
-} TerrainPassScratch;
+} BillboardScratch;
 
-#define TERRAIN_PASS_SCRATCH ((TerrainPassScratch *)0x1F800000)
+#define BILLBOARD_SCRATCH ((BillboardScratch *)0x1F800000)
 
-/* Draw the 5x5 terrain blocks around the cursor: set up the scratchpad quad,
- * camera and roll matrices and CLUTs, then submit each present block's
- * texture list into the current quad buffer. */
+/* Draw the billboards of the 5x5 visible terrain blocks: set up the
+ * scratchpad quad (upright, 48x72), the camera and roll matrices and the
+ * CLUTs, then submit each visible block's billboard list (func_80099BFC)
+ * into this display buffer's quads. */
 void func_8008615C(void) {
     TerrainTexture *textures;
     s32 index;
     s32 i;
     s32 row;
 
-    TERRAIN_PASS_SCRATCH->corner[0].vx = -0x18;
-    TERRAIN_PASS_SCRATCH->corner[0].vy = -0x48;
-    TERRAIN_PASS_SCRATCH->corner[0].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[1].vx = 0x18;
-    TERRAIN_PASS_SCRATCH->corner[1].vy = -0x48;
-    TERRAIN_PASS_SCRATCH->corner[1].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[2].vx = -0x18;
-    TERRAIN_PASS_SCRATCH->corner[2].vy = 0;
-    TERRAIN_PASS_SCRATCH->corner[2].vz = 0;
-    TERRAIN_PASS_SCRATCH->corner[3].vx = 0x18;
-    TERRAIN_PASS_SCRATCH->corner[3].vy = 0;
-    TERRAIN_PASS_SCRATCH->corner[3].vz = 0;
-    TERRAIN_PASS_SCRATCH->view = D_8009C808;
-    TERRAIN_PASS_SCRATCH->roll = *(MATRIX *)&D_8009A180;
-    RotMatrixZ(-D_8009BD38.vz, &TERRAIN_PASS_SCRATCH->roll);
+    BILLBOARD_SCRATCH->corner[0].vx = -0x18;
+    BILLBOARD_SCRATCH->corner[0].vy = -0x48;
+    BILLBOARD_SCRATCH->corner[0].vz = 0;
+    BILLBOARD_SCRATCH->corner[1].vx = 0x18;
+    BILLBOARD_SCRATCH->corner[1].vy = -0x48;
+    BILLBOARD_SCRATCH->corner[1].vz = 0;
+    BILLBOARD_SCRATCH->corner[2].vx = -0x18;
+    BILLBOARD_SCRATCH->corner[2].vy = 0;
+    BILLBOARD_SCRATCH->corner[2].vz = 0;
+    BILLBOARD_SCRATCH->corner[3].vx = 0x18;
+    BILLBOARD_SCRATCH->corner[3].vy = 0;
+    BILLBOARD_SCRATCH->corner[3].vz = 0;
+    BILLBOARD_SCRATCH->view = D_8009C808;
+    BILLBOARD_SCRATCH->roll = *(MATRIX *)&D_8009A180;
+    RotMatrixZ(-D_8009BD38.vz, &BILLBOARD_SCRATCH->roll);
     for (i = 0; i < 0x10; i++) {
-        TERRAIN_PASS_SCRATCH->clut[i] = D_8009D478[i];
+        BILLBOARD_SCRATCH->clut[i] = D_8009D478[i];
     }
     textures = D_8009C7EC;
     D_8009BE04 = 0;
@@ -1095,7 +1108,7 @@ void func_800863E0(void) {
     }
 }
 
-/* Free two work buffers. */
+/* Free the clouds' positions and velocities. */
 void func_80086568(void) {
     func_800320E8(D_8009CEB4);
     func_800320E8(D_8009D150);
@@ -1132,7 +1145,7 @@ void func_800865A0(void) {
     *(QuadBlock288 *)D_8009D7F8[1] = *(QuadBlock288 *)D_8009D7F8[0];
 }
 
-/* Free two work buffers. */
+/* Free the two cloud quad buffers. */
 void func_800866C8(void) {
     func_800320E8(D_8009D7F8[1]);
     func_800320E8(D_8009D7F8[0]);
@@ -2150,7 +2163,7 @@ void func_8008901C(void) {
     *(EffectQuads *)D_8009BE1C[1] = *(EffectQuads *)D_8009BE1C[0];
 }
 
-/* Free two effect buffers. */
+/* Free the two particle quad buffers. */
 void func_80089128(void) {
     func_800320E8(D_8009BE1C[0]);
     func_800320E8(D_8009BE1C[1]);

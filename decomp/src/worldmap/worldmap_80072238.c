@@ -1,3 +1,16 @@
+/* World map unit 80072238-80077E68 (rodata 8006FAF4-8006FB40, data
+ * 80099E8C-8009A3F0): the open map's start and leave handlers with its actor
+ * lists and the mode table, the display set-up and screen fade, the player's
+ * placement, the area data's sections, the sky, the horizon, the map overlay,
+ * the footprints, the texture animations, the encounters, the state saved
+ * across another scene, the pause screens, the actor script interpreter,
+ * the scripted camera helpers and the set-up of scene modes 8, 9 and 11.
+ *
+ * GCC aligns jump tables to 8 within a unit's rodata (docs/matching.md).
+ * func_80072238's table sits at 8006faf4, 4 mod 8, right after the overlay
+ * number, where one unit holding both would have aligned it to 8006faf8;
+ * so this unit's rodata starts there and its text no later than
+ * func_80072238. */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libapi.h"
@@ -965,7 +978,7 @@ void func_80074594(void) {
     D_8009BE38 = 0;
 }
 
-/* Free the position ring and two work buffers. */
+/* Free the footprint ring and its two quad buffers. */
 void func_8007474C(void) {
     func_800320E8(D_8009BE18);
     func_800320E8(D_8009BE14);

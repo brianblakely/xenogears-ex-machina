@@ -1,3 +1,12 @@
+/* World map unit 8008E190-80090A84 (rodata 800709F8-80070B54, data
+ * 8009B1AC-8009B214): the flying vehicle (start, boarding, flight, landing
+ * and the scripted take-offs), its rotors and the two-button combination
+ * latch.
+ *
+ * func_8008D678's 65-entry table ends at 800709f8 and func_8008E190's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008D678, at or before
+ * func_8008E190. */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/gamedata.h"

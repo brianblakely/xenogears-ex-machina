@@ -1,3 +1,12 @@
+/* World map unit 8008C364-8008E190 (rodata 800707AC-800709F8): the party's
+ * vehicles: placing them, the player's vehicle and the members' parked
+ * ones, the saved vehicle position, the path table choice and a probe for a
+ * clear heading.
+ *
+ * func_8008BB40's 13-entry table ends at 800707ac and func_8008C364's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008BB40, at or before
+ * func_8008C364. The unit has no data. */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/gamedata.h"

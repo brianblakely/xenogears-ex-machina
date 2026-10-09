@@ -1,3 +1,13 @@
+/* World map unit 80077E68-8007A9F8 (rodata 8006FB40-8006FBC4, data
+ * 8009A3F0-8009A450): the actors of scene modes 9 (the camera flight and the
+ * rig) and 10 (its script, the landing rig and the growing sprites), the
+ * frame step of most scene modes, the set-up and leave handlers of modes 10
+ * and 14 and the sequence start of mode 14's director.
+ *
+ * func_80073398's seven-entry table ends at 8006fb40 and func_80077E68's
+ * follows at once, 0 mod 8: within one unit an odd-length table followed by
+ * another keeps its phase with a pad word, so this unit's rodata starts at
+ * 8006fb40 and its text after func_80073398, at or before func_80077E68. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

@@ -1,3 +1,15 @@
+/* World map unit 8007DE98-80080370 (rodata 8006FD8C-800701E0, data
+ * 8009A5A0-8009A698): the director of scene mode 15 and its actors (the
+ * camera director, the flying vehicle, the falling objects, the exhaust
+ * flames and the growing objects), the set-up and leave handlers of mode 13
+ * and the sequence start of its director.
+ *
+ * func_8007C7D8's seven-entry table ends at 8006fd8c and func_8007DE98's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8007C7D8, at or before
+ * func_8007DE98. Its data opens with the tables of mode 15's set-up and leave
+ * handlers and sequence start (func_8007D918, func_8007DCE0, func_8007DE14),
+ * which the text split leaves in the preceding unit. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

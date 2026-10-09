@@ -1,3 +1,13 @@
+/* World map unit 80094A5C-80099E8C (rodata 80070C50-80070CFC, data
+ * 8009B564-8009BBB4): movement over the terrain and the solid scene objects,
+ * the stream reader, the camera matrices, the actor slots, the terrain
+ * loader, its visibility and drawing (two routines handwritten), and the
+ * world tables of the whole overlay in its data.
+ *
+ * func_800914D0's 17-entry table ends at 80070c50 and func_80094A5C's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_800914D0, at or before
+ * func_80094A5C. Its text and data end the program. */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libcd.h"
@@ -865,7 +875,7 @@ void func_80095F78(void) {
     }
 }
 
-/* Free the effect command buffers. */
+/* Free the stream queue's request buffers. */
 void func_800960BC(void) {
     s32 first;
     s32 second;

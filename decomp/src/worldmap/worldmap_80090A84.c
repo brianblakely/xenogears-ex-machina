@@ -1,3 +1,14 @@
+/* World map unit 80090A84-80094A5C (rodata 80070B54-80070C50, data
+ * 8009B214-8009B564): the pad steering of each movement mode, the camera
+ * actors, the screen fade, the path and destination name windows, the
+ * palette fades and the terrain queries (cells, heights, normals, slopes,
+ * wrapping, path regions, cell boundary steps).
+ *
+ * func_8008E76C's 65-entry table ends at 80070b54 and func_80090A84's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008E76C, at or before
+ * func_80090A84. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
+ * text and relocations as the build's cc1 (docs/matching.md). */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
@@ -773,7 +784,9 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     return i;
 }
 
-/* Choose the actor's speed for the movement mode; vehicles also get state 1. */
+/* Start the view centre's height: the screen y of the view's centre
+ * (D_8009BE0C) is 0x8C in movement modes 1-5 and 0x78 when flying (6-7),
+ * where the actor also takes state 1. */
 s32 func_80092234(s32 index) {
     WorldmapActor *actor;
 
@@ -796,7 +809,8 @@ s32 func_80092234(s32 index) {
     return 1;
 }
 
-/* Ease the movement speed to 0x78 (command 9) or 0x8C (command 10); ends the step when settled. */
+/* Ease the screen y of the view's centre down to 0x78 (command 9) or up to
+ * 0x8C (command 10); 3 once it rests. */
 s32 func_800922AC(s32 index) {
     WorldmapActor *actor;
     s32 result;
@@ -937,7 +951,7 @@ end:
     return result;
 }
 
-/* Open the text window. */
+/* Open the path name window. */
 s32 func_80092BE4(void) {
     D_8009BD24 = -1;
     func_80032F54(&D_8009D498, 0x3C0, 0x180, 0xA0, 0x78, 0x20, 1);
@@ -976,7 +990,7 @@ s32 func_80092C70(s32 index) {
     return 1;
 }
 
-/* Release a resident object. */
+/* Close the path name window. */
 void func_80092DD0(void) {
     func_800346D4(&D_8009D498);
 }
@@ -1039,7 +1053,7 @@ s32 func_80092FD8(s32 index) {
     return 1;
 }
 
-/* Release a resident object. */
+/* Close the destination name window. */
 void func_800931B0(void) {
     func_800346D4(&D_8009BD64);
 }
@@ -1387,7 +1401,8 @@ s32 func_80094028(VECTOR *position) {
     return (func_80093660(position->vx, position->vz)[3] >> 2) & 0xF;
 }
 
-/* Look up the table entry for (row, column). */
+/* Whether movement mode `row` may enter terrain layer `column` (nonzero:
+ * D_8009BAC8, 8 columns per row). */
 s16 func_80094060(s16 row, s16 column) {
     return *(s16 *)((u8 *)D_8009BAC8 + row * 16 + column * 2);
 }
@@ -1489,6 +1504,7 @@ s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
     return 0;
 }
 
+/* An empty function, called by nothing. */
 void func_80094434(void) {
 }
 

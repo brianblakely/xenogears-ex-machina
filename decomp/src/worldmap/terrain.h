@@ -52,7 +52,7 @@ s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 
-extern s16 D_8009BAC8[]; /* 8 columns per row */
+extern s16 D_8009BAC8[]; /* passable terrain layers per movement mode (func_80094060) */
 extern s32 D_8009C5BC, D_8009C618; /* water wave phases: x, z */
 
 /* Movement over the terrain and the solid scene objects (worldmap_80094A5C). */
