@@ -122,7 +122,7 @@ with reproducible byte-identical builds of the supported resident executables an
 all executable overlays on both discs. This is not a first-slice milestone and
 not a native C++ reimplementation.
 
-- [ ] Establish an original-compatible compiler/assembler/linker configuration.
+- [x] Establish an original-compatible compiler/assembler/linker configuration.
   Match representative arithmetic, globals, structures, loops, switches and larger
   callers across resident and overlay code. Record exact versions, flags, ABI,
   small-data/GP assumptions and layout in the build configuration. A modern MIPS
@@ -135,7 +135,7 @@ not a native C++ reimplementation.
   original-compatible C, small shared types and narrowly scoped headers. Replace
   placeholders continuously. Reuse existing analysis, recovered algorithms and
   types; do not require porting each function into Program or a new ownership model.
-- [ ] Cover every executable region on both discs, including world map, Gear and
+- [x] Cover every executable region on both discs, including world map, Gear and
   on-foot battles, field/event systems, menus/saves, audio/media, optional content,
   minigames, shared libraries, startup and hardware interfaces. Classify genuine
   handwritten assembly and SDK/library code explicitly; reconstruct/link their
@@ -155,7 +155,7 @@ not a native C++ reimplementation.
   original visual and Mono/Stereo/Wide behavior. Use targeted original observation
   for uncertainty, formats and integration, not a new capture/evidence ceremony
   for each function that already has a qualified binary match.
-- [ ] Verify clean builds from user-supplied sources and run original-environment
+- [x] Verify clean builds from user-supplied sources and run original-environment
   smoke/integration routes, including the existing forest/encounter/menu/media
   route. Reconcile all targets and source coverage before declaring completion.
 
