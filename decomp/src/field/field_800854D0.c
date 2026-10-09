@@ -6783,8 +6783,8 @@ s32 func_80097A50(s32 speed) {
         if (func_8009CDB4(1) == 0xFF) {
             return 0;
         }
-        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.s.whole +
-                              (u16)D_800B0078->gravity.s.whole);
+        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.part.whole +
+                              (u16)D_800B0078->gravity.part.whole);
         x = D_800B0078->target[0];
         z = D_800B0078->target[2];
         y = func_8009CF78(2, EVENT_OPERAND_BYTE(4));
@@ -7417,7 +7417,7 @@ s32 func_80099AC0(s32 speed) {
         model = (Sprite *)D_800AF880.components.descriptors;
         other = ((FieldDescriptor *)model)[index].actor;
         MOVE_TRACE_TARGET(other);
-        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)((FieldActor *)value)->gravity.s.whole);
+        extra = func_80099A8C((u16)other->gravity.part.whole + (u16)((FieldActor *)value)->gravity.part.whole);
         x = WHOLE(other->position[0]);
         z = WHOLE(other->position[2]);
         if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
@@ -9378,13 +9378,13 @@ void func_8009E83C(void) {
         D_800B0078->unk18 = EVENT_OPERAND_BYTE(1) * 2;
     }
     if (EVENT_OPERAND_BYTE(2) != 0) {
-        D_800B0078->gravity.s.fraction = EVENT_OPERAND_BYTE(2) * 2;
+        D_800B0078->gravity.part.fraction = EVENT_OPERAND_BYTE(2) * 2;
     }
     if (EVENT_OPERAND_BYTE(3) != 0) {
         D_800B0078->height = EVENT_OPERAND_BYTE(3) * 2;
     }
     if (EVENT_OPERAND_BYTE(4) != 0) {
-        D_800B0078->gravity.s.whole = EVENT_OPERAND_BYTE(4) * 2;
+        D_800B0078->gravity.part.whole = EVENT_OPERAND_BYTE(4) * 2;
     }
     D_800B0078->pc += 5;
 }

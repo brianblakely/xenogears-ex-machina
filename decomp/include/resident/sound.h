@@ -93,15 +93,6 @@ typedef union {
     } part;
 } SoundEffectId;
 
-/* A 16.16 value whose whole part is also read on its own. */
-typedef union {
-    s32 value;
-    struct {
-        u16 fraction;
-        s16 whole;
-    } part;
-} SoundFixed;
-
 /* A per-channel low-frequency modulator (four per channel; the first
  * modulates the pitch). */
 typedef struct SoundModulator {
@@ -162,14 +153,14 @@ typedef struct {
     u8 previous_note;
     u8 current_note;
     s16 transpose;     /* in semitones */
-    SoundFixed note;   /* 8.8 semitones in the high half */
+    Fixed note;   /* 8.8 semitones in the high half */
     s16 unk6C;
     s16 detune;
     u16 unk70;
     u16 loop_depth;    /* innermost entry of `loops`, 0xFFFF when none */
     s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
-    SoundFixed level;  /* its whole part scales the volume */
+    Fixed level;  /* its whole part scales the volume */
     s32 unk7C;
     s16 unk80;
     s16 unk82;
@@ -195,7 +186,7 @@ typedef struct {
 
 /* A linear slide of a 16.16 value. */
 typedef struct {
-    SoundFixed value;
+    Fixed value;
     s32 step;
     s16 frames;
     s16 target;
@@ -266,23 +257,23 @@ typedef struct SoundSeq {
     u32 muted;         /* mask of the muted channels */
     s32 unk50;
     s32 tick_step;     /* rate * tempo */
-    SoundFixed rate;   /* 16.16 ticks per frame at tempo 1 */
+    Fixed rate;   /* 16.16 ticks per frame at tempo 1 */
     s32 rate_step;
     u16 rate_frames;
     u16 rate_target;
-    SoundFixed tempo;  /* 16.16, 1.0 = 0x100 */
+    Fixed tempo;  /* 16.16, 1.0 = 0x100 */
     s32 tempo_step;
     s16 tempo_frames;
     s16 tempo_target;
-    SoundFixed fade;   /* 8.24 level scaling every voice */
+    Fixed fade;   /* 8.24 level scaling every voice */
     s32 fade_step;
     s16 fade_frames;
     s16 fade_target;
-    SoundFixed pitch;  /* 8.24 semitones added to every voice */
+    Fixed pitch;  /* 8.24 semitones added to every voice */
     s32 pitch_step;
     s16 pitch_frames;
     s16 pitch_target;
-    SoundFixed pan;    /* 8.24 added to every voice's pan */
+    Fixed pan;    /* 8.24 added to every voice's pan */
     s32 pan_step;
     s16 pan_frames;
     s16 pan_target;

@@ -114,15 +114,6 @@ void func_802846CC(s32 axis, u32 item);
 
 /* The monitor's view of the field (80281b90). */
 
-/* A 16.16 fixed-point coordinate. */
-typedef union {
-    s32 raw;
-    struct {
-        u16 frac;
-        s16 whole;
-    } part;
-} Fixed;
-
 /* An event actor record; the members the monitor prints. */
 typedef struct {
     u32 flags;         /* 00: MFflag; bits 8..10 the actor type */

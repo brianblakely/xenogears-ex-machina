@@ -1675,7 +1675,7 @@ void func_8007E1C0(u_long *ot, s32 buffer, s32 w) {
         D_800C2698[w].slide[0].value += D_800C2698[w].slide_step[0];
         D_800C2698[w].slide[1].value += D_800C2698[w].slide_step[1];
         y += D_800C2698[w].slide[1].value >> 16;
-        x += D_800C2698[w].slide[0].s.whole;
+        x += D_800C2698[w].slide[0].part.whole;
     }
     if (D_800C2698[w].prompt.status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
         && !(D_800C2698[w].style & 0x40) && D_800C2698[w].choice.status != 0) {
@@ -2281,7 +2281,7 @@ void func_80080A74(s32 index) {
     actor->flags = 0xB0;
     actor->unk18 = 0x10;
     actor->layer_flags = 0x800;
-    actor->gravity.s.fraction = 0x10;
+    actor->gravity.part.fraction = 0x10;
     actor->height = 0x60;
     actor->unk074 = 0xFF;
     actor->unk40[0] = 0;
@@ -2304,7 +2304,7 @@ void func_80080A74(s32 index) {
     actor->stuck = 0;
     actor->state.bits.unk5 = 0;
     actor->unk11E = 0x200;
-    actor->gravity.s.whole = actor->unk18;
+    actor->gravity.part.whole = actor->unk18;
     actor->state.bits.mode = 0;
     actor->color1[2] = 0x80;
     actor->color1[1] = 0x80;
@@ -3335,8 +3335,8 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
     priority = 7;
     py = WHOLE(player->position[1]);
     head = py - (u16)player->height;
-    touch = (u16)player->gravity.s.whole + 8;
-    talk = (u16)player->gravity.s.whole + 0x20;
+    touch = (u16)player->gravity.part.whole + 8;
+    talk = (u16)player->gravity.part.whole + 0x20;
     facing = player->heading_goal & 0xFFF;
     px = WHOLE(player->position[0]);
     pz = WHOLE(player->position[2]);
@@ -3416,7 +3416,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
         } else {
             offset.vx = WHOLE(other->position[0]) - px + other->unk60;
             offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
-            offset.vy = talk + (u16)other->gravity.s.whole;
+            offset.vy = talk + (u16)other->gravity.part.whole;
             gte_ldlvl(&offset);
             gte_sqr0();
             gte_stlvnl(&square);
@@ -3426,9 +3426,9 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
             offset.vx = WHOLE(other->position[0]) - px + other->unk60;
             offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
             func_8004A414(&offset, &square);
-            reach.vx = touch + (u16)other->gravity.s.whole;
+            reach.vx = touch + (u16)other->gravity.part.whole;
             distance = square.vx + square.vz;
-            reach.vz = talk + (u16)other->gravity.s.whole;
+            reach.vz = talk + (u16)other->gravity.part.whole;
             func_8004A414(&reach, &reach_square);
             if (distance < reach_square.vz && (D_800C2694 & 0x20) && talked == 0
                 && !(other->layer_flags & 0x4000000)) {
@@ -3554,7 +3554,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             } else {
                 scratch[0] = ((other->position[0] + other->unk030[0]) >> 16) - x;
                 scratch[2] = ((other->position[2] + other->unk030[2]) >> 16) - z;
-                scratch[1] = (u16)actor->gravity.s.whole + (u16)other->gravity.s.whole;
+                scratch[1] = (u16)actor->gravity.part.whole + (u16)other->gravity.part.whole;
                 func_8004A414((VECTOR *)scratch, (VECTOR *)(scratch + 4));
                 if (scratch[4] + scratch[6] >= scratch[5]) {
                     other->layer_flags &= 0xFF3FFFFF;

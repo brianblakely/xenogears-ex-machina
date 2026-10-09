@@ -12,16 +12,8 @@
 #include "resident/model.h"
 #include "resident/sprite.h"
 
-/* A 16.16 fixed-point value; code also reads its whole part alone. */
-typedef union {
-    s32 value;
-    struct {
-        u16 fraction;
-        s16 whole;
-    } s;
-} Fixed;
-
-#define WHOLE(value) (((Fixed *)&(value))->s.whole)
+/* The whole part of a 16.16 value (common.h's Fixed) held in an s32. */
+#define WHOLE(value) (((Fixed *)&(value))->part.whole)
 
 /* One of the two draw-buffer blocks (800b249c, 800ba590). */
 typedef struct FieldDrawBlock {
