@@ -1795,7 +1795,12 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(flags(table)[0], ("tail", 1, "35", ["text", "outlier"]))
         table["access"] = [(15, "exact", "lbu", "f")]  # a constant-offset read dismisses it
         self.assertTrue(all("read" in f[3] for f in flags(table)))
-        table.update(size=16, access=[], pointers=1)  # a struct object: no element boundary
+        # A struct object's last members count by their directive widths: its
+        # trailing bytes are tails, its trailing words are not.
+        table.update(size=16, access=[], pointers=1)
+        self.assertEqual(flags(table), [("tail", 1, "35", ["text"]), ("tail", 2, "0e 35", []),
+                                        ("tail", 3, "0d 0e 35", [])])
+        table.update(elements=[4] * 4)
         self.assertEqual(flags(table), [])
         byte = {"bytes": b"\x08", "elements": [1], "strings": [], "size": 1, "start": 0x801E96A6,
                 "next": 0x801E96A8, "pointers": 0, "access": []}

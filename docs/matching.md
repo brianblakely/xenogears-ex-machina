@@ -557,23 +557,40 @@ converted to C per unit. What converting the targets' `.data` established:
   2e) and battle's combo flags D_800C34CC (15 u8: func_80086B88, func_80086C88 and
   func_80086F98 index at most 14 from combo steps 0-2, or 0xff at attack level 4;
   fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
-  object whose last elements, narrower than a word by its definition, would be
-  alignment fill before the next object and hold a non-zero byte that no
-  constant-offset access reads (`tail`, noted `text` or `outlier` where they look
-  stray), that nothing references (`unref`), that is declared wider than every access
-  with a byte none touches (`wide`), or whose string holds bytes after its terminator
-  (`string`). After the four it reports `2312 C data objects, 194 to review; objects
-  per flag: tail 157, tail read 6, unref 44` (175 distinct, 146 with a tail and 35
-  unreferenced; the second executable repeats the resident's; the resident's zero
-  byte D_80050622 is an object in each executable and is not flagged), each reviewed
-  against its readers. None other spells stray fill: the tails are read (masks `& 7` and
-  `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
-  and 16-entry glyph label loops of ovl2596 and battle) or complete their structure
-  (single-bit masks, permutations of the eight facings, a CLUT LoadImage'd 16 wide,
-  the round map's 128th row continuing both column curves, frame rates 60/n for
-  n = 2-60 dividing 60, the party panels' per-member pattern, a pilot per gear of the
-  20, lamp frames, per-character and per-gear tables), or are the sentinels their
-  loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
+  object whose last 1-3 bytes, whole byte or halfword elements as cc1 emitted them
+  whatever the declared shape (a flat table's last elements, the end of a 2-D table's
+  last row, a structure's last members), would be alignment fill before the next
+  object and hold a non-zero byte that no constant-offset access reads (`tail`, noted
+  `text` or `outlier` where they look stray), that nothing references (`unref`), that
+  is declared wider than every access with a byte none touches (`wide`), or whose
+  string holds bytes after its terminator (`string`). After the four it reports
+  `2312 C data objects, 251 to review; objects per flag: tail 215, tail read 8,
+  unref 44` (229 distinct, 201 with a tail and 35 unreferenced; the second executable
+  repeats the resident's; the resident's zero byte D_80050622 is an object in each
+  executable and is not flagged), each reviewed against its readers. None other
+  spells stray fill: the tails are read (masks `& 7` and `& 3`, the frame counts 0x10,
+  the count passed with each label list, the 18-, 7- and 16-entry glyph label loops
+  of ovl2596 and battle) or complete their structure (single-bit masks, permutations
+  of the eight facings, a CLUT LoadImage'd 16 wide, the round map's 128th row
+  continuing both column curves, frame rates 60/n for n = 2-60 dividing 60, the party
+  panels' per-member pattern, a pilot per gear of the 20, lamp frames, per-character
+  and per-gear tables; the last rows of 2-D tables, battle's timer reloads and list
+  separators by AP and list size (D_800C31EC, D_800C3214: each row holds one value
+  more than the row before), the field compass grid's (rows 4-8 alike or stepping
+  on), the menu wheel's offsets (the second row's slide -0x24 mirrors the first's)
+  and the resident's sound programs per battle mode (D_8004F388, 0xff absent as for
+  modes 0 and 4); and the last members of whole records, battle's 26 command panel
+  pages D_800C2F98-D_800C2FFC (the lists each fills, 0xff none, and their glyph
+  sets, read through D_800C3000) and sound banks D_800C35DC, the field's panel
+  frames, particle sprites (the last corner closes the quad), portrait and text
+  places (palette rows e0-e7), icon and strip origins, image pieces and style pages,
+  the menu's shot kinds, animation rules (the last's next -1, as for the 17 before
+  it), font glyphs and arena frame points, the world map's area file sets (each
+  area's last parameter 2), the resident's texture positions and the last cosine
+  4096 of its sine table), or are the sentinels their loops stop at (-1, 0xffff,
+  also the world map's texture animation frames and camera path pad); a stray byte
+  that continued its structure's pattern would pass this review too. The
+  unreferenced ones are words, structures, strings,
   documented unread tables and copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). Two stay open. slot39's D_801E96A6 is a byte 08, then 00, between
