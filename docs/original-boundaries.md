@@ -87,7 +87,7 @@ The libgte entries without a signature name, by their code:
 | func_8004A70C | NCLIP of three screen points (NormalClip) |
 | func_8004A83C | RTPT, NCLIP, then RTPS, AVSZ4, depth cue and FLAG out (RotAverageNclip4's arguments) |
 | func_8004A8EC | copy a matrix's rotation transposed (TransposeMatrix form) |
-| func_8004A92C, func_8004ABBC | rotation matrix from three angles through the sin/cos table D_800523F0 (RotMatrixYXZ and RotMatrix in battle/psyq.h) |
+| func_8004A92C, func_8004ABBC | rotation matrix from three angles through the sin/cos table D_800523F0 (RotMatrixYXZ and RotMatrix in psyq/libgte.h) |
 | func_8004AE4C, func_8004AFEC | single-axis rotation matrix (RotMatrixX, RotMatrixY in psyq/libgte.h) |
 
 Outside the libraries the game itself uses:
