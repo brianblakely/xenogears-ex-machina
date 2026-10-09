@@ -201,7 +201,11 @@ python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 
 lists those resident in it. Across the ten retained routes (forest/encounter/
 menu on both discs, the two painting-room smokes, the movie and Mono/Stereo/Wide
 routes) the resident images, field, slot39 and the ovl3384 battle module are
-loaded exactly as rebuilt, apart from the guard and SDK variables above.
+loaded exactly as rebuilt, apart from the guard and SDK variables above. Their
+155 RAM snapshots add the battle overlay, ovl2596 and ovl2615, exact in the
+forest/encounter routes, and mdec's first 6,760 bytes (801d30c4-801d4b2c, the
+rest overwritten) in the movie routes. The other 17 targets are resident in no
+retained capture; the image comparison and the census stand for them.
 
 ```sh
 python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --targets
