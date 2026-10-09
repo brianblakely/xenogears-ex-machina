@@ -1319,7 +1319,7 @@ void func_8008151C(Menu *menu) {
  * with a value it never returns, as the unfilled final delay slot shows. */
 s32 func_8008162C(Menu *menu, s32 port) {
     MenuItem *item;
-    void (*handler)(s32);
+    void (*handler)();
     s32 type;
     s32 x;
     s32 y;
