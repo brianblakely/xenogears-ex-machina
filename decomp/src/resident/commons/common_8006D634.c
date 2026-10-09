@@ -20,3 +20,4 @@ u8 D_8006FAC8[0x28]; /* the SPU memory management table (SpuInitMalloc, 4 blocks
 #include "resident/mode.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
+#include "../sound_driver.h"

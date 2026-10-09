@@ -25,3 +25,4 @@ s16 D_8006BE2C[3]; /* field */
 #include "resident/mode.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
+#include "../sound_driver.h"

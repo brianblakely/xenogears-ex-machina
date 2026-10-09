@@ -14,6 +14,7 @@
 #include "psyq/libspu.h"
 #include "resident/sound.h"
 #include "own_declarations.h"
+#include "sound_driver.h"
 
 /* The sequence opcode handlers (8003cd00-8003e54c): each takes the position
  * after the opcode and returns the position after its arguments. */

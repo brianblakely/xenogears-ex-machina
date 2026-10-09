@@ -377,6 +377,7 @@ decomp/src/resident/ot_link.s
 decomp/src/resident/own_declarations.h
 decomp/src/resident/psyq_tail_80048BC4.c
 decomp/src/resident/sound.c
+decomp/src/resident/sound_driver.h
 decomp/src/resident/sprite.c
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c

@@ -19,6 +19,7 @@
 #include "resident/sound.h"
 #include "resident/text.h"
 #include "own_declarations.h"
+#include "sound_driver.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (80059394), the larger format defaults and music file list in its .bss

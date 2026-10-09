@@ -145,3 +145,4 @@ u32 D_800595E4; /* end of the sound driver's pool */
 #include "resident/task.h"
 #include "resident/text.h"
 #include "resident/window.h"
+#include "../sound_driver.h"
