@@ -2592,27 +2592,19 @@ void func_800A4CF8(s32 index) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the stage sky seen from eye towards target: the horizon bands at the
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
- * each front-facing tile textured from the scroll position (the u and v
- * corners only use their low byte). Differs in one word: before the rows
- * the original copies the masked u0 (addu t8, t0, zero) where (u8)u0 here
- * zero-extends it (andi t8, t0, 0xff). The cast is what makes the u0 term a
- * two-insn invariant (a QImode lowpart copy and its extension) like the
- * original's: loop.c moves it out of the tile loop and then the row loop
- * with the half extension, and each of those four moved_once insns doubles
- * the row loop's insn count, so (u8)half for the + half - 1 corners and
- * the addPrim masks stay in the row body. A plain s32 u0 needs no
- * conversion and those three move out too; an s16 u0 is sign-extended
- * (sll/sra, one word longer). combine cannot drop the andi: the masked
- * value's nonzero bits are unbounded (size - 1 may be -1). Also measured
- * without effect: u/v/u0/half/col types, u0 first, row-level v, setUV4 and
- * setUVWH corners, two-step and in-loop masks, statement macros around the
- * corners. addPrim is not wrapped in a statement macro: in 2.6.3 the insn
- * after a loop note is a scheduling barrier, and the original loads the
- * tile tag before the last UV stores. */
+ * each front-facing tile textured from the scroll position. Each visible
+ * tile takes a short copy of u0 for its u corners: the copy and its u8
+ * lowpart are the two-insn invariant that loop.c hoists out of both loops
+ * (with half's two-insn extension, four moved insns double the row loop's
+ * count, so (u8)half and the addPrim masks stay in the row body) and that
+ * combine folds into the original's plain copy of u0 before the rows.
+ * Measured otherwise: u0 used directly leaves no invariant, (u8)u0 leaves an
+ * andi, a short u0 set before the loops a one-insn copy too short-lived to
+ * move, a u8 u an extra insn that costs u0's term t8, and a short copy of v0
+ * as well a fifth moved insn that keeps u's copy in the row body. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2632,7 +2624,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s16 half;
     s32 u0;
     s32 v0;
-    s32 u;
+    s16 u;
     s32 v;
     s32 row;
     s32 col;
@@ -2742,14 +2734,11 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 gte_rtps();
                 gte_stsxy(&sky->tiles[n].x3);
                 v = (row & 1) * half + v0;
-                u = (col & 1) * half + (u8)u0;
-                sky->tiles[n].v0 = v;
-                sky->tiles[n].v1 = v;
-                sky->tiles[n].v2 = v + half - 1;
-                sky->tiles[n].v3 = v + half - 1;
-                sky->tiles[n].u0 = u;
-                sky->tiles[n].u2 = u;
-                sky->tiles[n].u3 = sky->tiles[n].u1 = u + half - 1;
+                u = u0;
+                setUV4(&sky->tiles[n], (col & 1) * half + u, v,
+                       (col & 1) * half + u + half - 1, v,
+                       (col & 1) * half + u, v + half - 1,
+                       (col & 1) * half + u + half - 1, v + half - 1);
                 addPrim(ot, &sky->tiles[n]);
             }
         }
@@ -2763,9 +2752,6 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     }
     addPrim(ot, &sky->modes[buffer]);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
-#endif
 
 /* The scene's points. */
 SVECTOR *func_800A577C(void) {
