@@ -1,10 +1,31 @@
 /* Overlay 2598 (Disc 1 slot 2598, Disc 2 slot 2593; loaded at 0x801c5000):
  * the party member selection screen. It lists the three party slots and the
- * characters that may join (flags 8006f364 & 8006f366), lets the player swap
- * members between the two lists, and writes the chosen party back to
- * 8006f368. It shares the menu state (*D_800625A0) with the other menu
- * overlays. */
+ * characters that may join (game data joined & available), lets the player
+ * swap members between the two lists, and writes the chosen party back
+ * (party). It shares the menu state (*D_800625A0) and its blocks with the
+ * other menu screens. The image is this one unit: rodata 801c5000-801c5018,
+ * text to 801cb180 and data to the file's end at 801cb59c; no jump table
+ * phase change or second data block marks another. */
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 #include "party_menu.h"
 
 /* The four cursor markers' home positions. */

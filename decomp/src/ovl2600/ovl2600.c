@@ -1,10 +1,32 @@
-/* Overlay 2600 (Disc 1 slot 2600; loaded at 0x801c5000): the character name
- * entry screen. A character grid (D_801CBEC0) is walked with the cursor, the
- * name is built as text codes and decoded for display, and the result is
- * stored in the character name table at 8006d634 + id * 0x14. The three
- * party portraits are loaded for the screen. Much of the drawing/list code is
- * the same as overlay 2598 (the party screen) but compiled into this image. */
+/* Overlay 2600 (Disc 1 slot 2600, Disc 2 slot 2595; loaded at 0x801c5000):
+ * the character name entry screen. A character grid (D_801CBEC0) is walked
+ * with the cursor, the name is built as text codes and decoded for display,
+ * and the result is stored in the game data's name table (names[id]). The
+ * three party portraits are loaded for the screen. Much of the drawing and
+ * list code is the same as overlay 2598's (the party screen), compiled into
+ * this image. The image is this one unit: rodata 801c5000-801c5040, text to
+ * 801cbea0 and data to the file's end at 801cc134; no jump table phase
+ * change or second data block marks another. */
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 #include "name_entry.h"
 
 /* The four cursor markers' home positions. */
