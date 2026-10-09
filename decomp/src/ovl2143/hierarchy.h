@@ -9,6 +9,7 @@
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/model.h"
+#include "battle/effect.h"
 
 /* Scratchpad matrix used as a temporary. */
 #define SCRATCH_MATRIX ((MATRIX *)0x1F800000)
@@ -76,25 +77,6 @@ typedef struct {
     u16 next;
     u16 capacity;
 } SlotPool;
-
-/* A node's tracks of a keyframe (read through a u16 cursor): byte offsets
- * of its rotation and position tracks (0xffff none) and their kinds. */
-typedef struct {
-    u16 offset[2];          /* rotation, position */
-    u8 kind[2];
-} TrackEntry;
-
-/* A keyframe: rotations then positions of the nodes after the root. */
-typedef struct {
-    u8 pad0[2];
-    u16 duration;           /* +2 */
-    u16 flags;              /* +4: bit 0 no rotations, bit 1 no positions */
-    u16 packed;             /* +6: 0: rotations follow a skipped block */
-    u8 pad8[4];
-    u16 rot_count;          /* +c */
-    u16 pos_count;          /* +e */
-    u8 pad10[8];
-} Keyframe; /* followed by the track entries or packed values */
 
 GroupModels *func_801DC22C(u8 *group, GroupModels *list);
 ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32 configure,

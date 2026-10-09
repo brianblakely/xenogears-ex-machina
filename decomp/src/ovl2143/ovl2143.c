@@ -64,7 +64,7 @@ Anchor D_801E8648[2];
 Actor *D_801E8670[10];
 s16 D_801E8698;
 s16 D_801E869C;
-ParticlePool D_801E86A0;
+SpritePool D_801E86A0;
 SlotPool D_801E86A8;
 u16 D_801E86B0;
 
@@ -464,10 +464,10 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     s32 i;
     s32 k, side;
     s32 shade;
-    Record24 *record;
-    Record24Entry *entry;
+    Surface *record;
+    SurfaceEntry *entry;
     ImageAnim *anim;
-    Channel *ch;
+    ColorFade *ch;
     VECTOR *end0, *end1;
     VECTOR *start0, *start1;
     s32 oldest;
@@ -603,12 +603,12 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             gte_ldv0(&record->centres[k]);
             gte_rtv0tr();
             gte_stlvnl(&out);
-            record->block1C[k]->pos[0] = out.vx;
-            record->block1C[k]->pos[1] = out.vy;
-            record->block1C[k]->pos[2] = out.vz;
+            record->strands[k]->pos[0] = out.vx;
+            record->strands[k]->pos[1] = out.vy;
+            record->strands[k]->pos[2] = out.vz;
         }
-        entry = record->block18;
-        for (k = 0; k < record->entry_count; k++, entry++) {
+        entry = record->entries;
+        for (k = 0; k < record->entryCount; k++, entry++) {
             CompMatrix(&parts->local, &parts[entry->h6].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
@@ -631,49 +631,49 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             ch++;
             continue;
         }
-        ch->frame = (ch->frame - 1) & 7;
+        ch->time = (ch->time - 1) & 7;
         if (!ch->solid) {
             CompMatrix(view, &parts[ch->id].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
             gte_ldv0(&ch->ends[0]);
             gte_rtps();
-            gte_stsxy(&ch->trail.sxy[0][ch->frame]);
+            gte_stsxy(&ch->history.screen.first[ch->time]);
             gte_ldv0(&ch->ends[1]);
             gte_rtps();
-            gte_stsxy(&ch->trail.sxy[1][ch->frame]);
+            gte_stsxy(&ch->history.screen.second[ch->time]);
             if (++ch->count == 0) {
                 continue;
             }
-            if (ch->max < ch->count || ch->particle == NULL) {
+            if (ch->max < ch->count || ch->sprite == NULL) {
                 ch->count = 1;
-                ch->particle = func_801E0248(ch->pool, ch->semi_trans);
-                ch->particle->projected = 0;
-                ch->particle->age = 0;
-                ch->particle->lifetime = ch->lifetime;
-                ch->particle->color[0] = ch->color[0];
-                ch->particle->color[1] = ch->color[1];
-                ch->particle->color[2] = ch->color[2];
-                ch->particle->fade[0] = ch->fade[0];
-                ch->particle->fade[1] = ch->fade[1];
-                ch->particle->fade[2] = ch->fade[2];
-                oldest = (ch->frame + ch->count) & 7;
-                ch->particle->x0 = (ch->trail.sxy[0] + oldest)->x;
-                ch->particle->y0 = (ch->trail.sxy[0] + oldest)->y;
-                ch->particle->x2 = (ch->trail.sxy[1] + oldest)->x;
-                ch->particle->y2 = (ch->trail.sxy[1] + oldest)->y;
+                ch->sprite = func_801E0248(ch->pool, ch->semiTrans);
+                ch->sprite->projected = 0;
+                ch->sprite->age = 0;
+                ch->sprite->lifetime = ch->duration;
+                ch->sprite->color[0] = ch->color[0];
+                ch->sprite->color[1] = ch->color[1];
+                ch->sprite->color[2] = ch->color[2];
+                ch->sprite->fade[0] = ch->step[0];
+                ch->sprite->fade[1] = ch->step[1];
+                ch->sprite->fade[2] = ch->step[2];
+                oldest = (ch->time + ch->count) & 7;
+                ch->sprite->x0 = (ch->history.screen.first + oldest)->vx;
+                ch->sprite->y0 = (ch->history.screen.first + oldest)->vy;
+                ch->sprite->x2 = (ch->history.screen.second + oldest)->vx;
+                ch->sprite->y2 = (ch->history.screen.second + oldest)->vy;
             }
-            ch->particle->x1 = (ch->trail.sxy[0] + ch->frame)->x;
-            ch->particle->y1 = (ch->trail.sxy[0] + ch->frame)->y;
-            ch->particle->x3 = (ch->trail.sxy[1] + ch->frame)->x;
-            ch->particle->y3 = (ch->trail.sxy[1] + ch->frame)->y;
+            ch->sprite->x1 = (ch->history.screen.first + ch->time)->vx;
+            ch->sprite->y1 = (ch->history.screen.first + ch->time)->vy;
+            ch->sprite->x3 = (ch->history.screen.second + ch->time)->vx;
+            ch->sprite->y3 = (ch->history.screen.second + ch->time)->vy;
         } else {
             CompMatrix(&parts->local, &parts[ch->id].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
-            side = ch->frame & 1;
-            end0 = &ch->trail.pos[0][side];
-            end1 = &ch->trail.pos[1][side];
+            side = ch->time & 1;
+            end0 = &ch->history.world.first[side];
+            end1 = &ch->history.world.second[side];
             gte_ldv0(&ch->ends[0]);
             gte_rtv0tr();
             gte_stlvnl(end0);
@@ -683,33 +683,33 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             if (++ch->count == 0) {
                 continue;
             }
-            if (ch->max < ch->count || ch->particle == NULL) {
+            if (ch->max < ch->count || ch->sprite == NULL) {
                 ch->count = 1;
-                ch->particle = func_801E0248(ch->pool, ch->semi_trans);
-                ch->particle->projected = 1;
-                ch->particle->age = 0;
-                ch->particle->lifetime = ch->lifetime;
-                ch->particle->color[0] = ch->color[0];
-                ch->particle->color[1] = ch->color[1];
-                ch->particle->color[2] = ch->color[2];
-                ch->particle->fade[0] = ch->fade[0];
-                ch->particle->fade[1] = ch->fade[1];
-                ch->particle->fade[2] = ch->fade[2];
-                start0 = &ch->trail.pos[0][1 - side];
-                ch->particle->x0 = start0->vx;
-                ch->particle->y0 = start0->vy;
-                ch->particle->z0 = start0->vz;
-                start1 = &ch->trail.pos[1][1 - side];
-                ch->particle->x2 = start1->vx;
-                ch->particle->y2 = start1->vy;
-                ch->particle->z2 = start1->vz;
+                ch->sprite = func_801E0248(ch->pool, ch->semiTrans);
+                ch->sprite->projected = 1;
+                ch->sprite->age = 0;
+                ch->sprite->lifetime = ch->duration;
+                ch->sprite->color[0] = ch->color[0];
+                ch->sprite->color[1] = ch->color[1];
+                ch->sprite->color[2] = ch->color[2];
+                ch->sprite->fade[0] = ch->step[0];
+                ch->sprite->fade[1] = ch->step[1];
+                ch->sprite->fade[2] = ch->step[2];
+                start0 = &ch->history.world.first[1 - side];
+                ch->sprite->x0 = start0->vx;
+                ch->sprite->y0 = start0->vy;
+                ch->sprite->z0 = start0->vz;
+                start1 = &ch->history.world.second[1 - side];
+                ch->sprite->x2 = start1->vx;
+                ch->sprite->y2 = start1->vy;
+                ch->sprite->z2 = start1->vz;
             }
-            ch->particle->x1 = end0->vx;
-            ch->particle->y1 = end0->vy;
-            ch->particle->z1 = end0->vz;
-            ch->particle->x3 = end1->vx;
-            ch->particle->y3 = end1->vy;
-            ch->particle->z3 = end1->vz;
+            ch->sprite->x1 = end0->vx;
+            ch->sprite->y1 = end0->vy;
+            ch->sprite->z1 = end0->vz;
+            ch->sprite->x3 = end1->vx;
+            ch->sprite->y3 = end1->vy;
+            ch->sprite->z3 = end1->vz;
         }
         ch++;
     }
@@ -1137,10 +1137,10 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
     rotations = 0;
     positions = 0;
     i = data[3];
-    rot_count = ((Keyframe *)data)->rot_count;
-    pos_count = ((Keyframe *)data)->pos_count;
-    flags = ((Keyframe *)data)->flags;
-    data += sizeof(Keyframe) / sizeof(s16);
+    rot_count = ((AnimationFrame *)data)->rotationCount;
+    pos_count = ((AnimationFrame *)data)->translationCount;
+    flags = ((AnimationFrame *)data)->flags;
+    data += sizeof(AnimationFrame) / sizeof(s16);
     if (i == 0) {
         data += (rot_count + 1) * 3;
     }
@@ -1203,12 +1203,12 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
     rotations = 0;
     positions = 0;
     smooth &= 1;
-    rot_count = ((Keyframe *)data)->rot_count;
+    rot_count = ((AnimationFrame *)data)->rotationCount;
     i = data[3];
-    pos_count = ((Keyframe *)data)->pos_count;
+    pos_count = ((AnimationFrame *)data)->translationCount;
     mode &= 1;
-    flags = ((Keyframe *)data)->flags;
-    data += sizeof(Keyframe) / sizeof(s16);
+    flags = ((AnimationFrame *)data)->flags;
+    data += sizeof(AnimationFrame) / sizeof(s16);
     if (i == 0) {
         data += (rot_count + 1) * 3;
     }
@@ -1412,7 +1412,7 @@ s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot) {
  * a kept one), a node without one loses its tween. The keyframe is walked
  * with a u16 cursor. */
 s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
-    Keyframe *key;
+    AnimationFrame *key;
     u8 *kind;
     PoolSlot *tween;
     u8 *values;
@@ -1423,15 +1423,15 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     u16 flags;
     s32 i;
 
-    key = (Keyframe *)data;
+    key = (AnimationFrame *)data;
     if (key->packed != 0) {
         func_801DFE8C(pool, parts);
         func_801DEF10(parts, (s16 *)key);
         return 1;
     }
-    rot_count = key->rot_count;
+    rot_count = key->rotationCount;
     count = parts->count;
-    pos_count = key->pos_count;
+    pos_count = key->translationCount;
     if (rot_count + 1 < count) {
         count = rot_count + 1;
     }
@@ -1513,7 +1513,7 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
 /* Like func_801DF7F4, but each node after the root first takes the
  * keyframe's start values for the tracks that are started. */
 s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
-    Keyframe *key;
+    AnimationFrame *key;
     u8 *kind;
     PoolSlot *tween;
     s16 *values;
@@ -1527,7 +1527,7 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     u16 flags;
     s32 i;
 
-    key = (Keyframe *)data;
+    key = (AnimationFrame *)data;
     if (key->packed != 0) {
         func_801DFE8C(pool, parts);
         func_801DEF10(parts, (s16 *)key);
@@ -1535,10 +1535,10 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     }
     mode &= 1;
     rotations = 0;
-    rot_count = key->rot_count;
+    rot_count = key->rotationCount;
     count = parts->count;
     positions = 0;
-    pos_count = key->pos_count;
+    pos_count = key->translationCount;
     if (rot_count + 1 < count) {
         count = rot_count + 1;
     }
@@ -1676,14 +1676,14 @@ void func_801DFF78(SlotPool *pool, ModelPart *parts, u8 tag) {
     }
 }
 
-/* Allocate a particle pool of `capacity` particles plus a spare one returned
- * when the pool is full, and initialise them. */
-ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity) {
+/* Allocate a particle pool of `capacity` effect sprites plus a spare one
+ * returned when the pool is full, and initialise them. */
+SpritePool *func_801E0064(SpritePool *pool, s32 capacity) {
     func_80032498(4, 0);
-    pool->capacity = capacity;
+    pool->count = capacity;
     pool->next = 0;
-    pool->items = func_80031BDC((capacity + 1) * sizeof(Particle), 0);
-    if (pool->items != NULL) {
+    pool->records = func_80031BDC((capacity + 1) * sizeof(EffectSprite), 0);
+    if (pool->records != NULL) {
         func_801E011C(pool);
         return pool;
     }
@@ -1691,41 +1691,41 @@ ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity) {
 }
 
 /* Release a particle pool. */
-void func_801E00DC(ParticlePool *pool) {
-    pool->capacity = 0;
+void func_801E00DC(SpritePool *pool) {
+    pool->count = 0;
     pool->next = 0;
-    if (pool->items != NULL) {
-        func_800320E8(pool->items);
+    if (pool->records != NULL) {
+        func_800320E8(pool->records);
     }
-    pool->items = NULL;
+    pool->records = NULL;
 }
 
 /* Mark every particle free and set up both buffers' semi-transparent textured
  * quads (a 16x1 texel strip at v=0xbd of page (0x340, 0x100), clut (0, 0x1cd)). */
-void func_801E011C(ParticlePool *pool) {
-    Particle *particle;
+void func_801E011C(SpritePool *pool) {
+    EffectSprite *particle;
     POLY_FT4 *poly;
     s32 i;
     s32 j;
 
-    particle = pool->items;
-    for (i = 0; i < pool->capacity + 1; i++) {
+    particle = pool->records;
+    for (i = 0; i < pool->count + 1; i++) {
         particle->age = -1;
         particle->lifetime = 0;
         for (j = 0; j < 2; j++) {
-            poly = &particle->poly[j];
+            poly = &particle->packets[j];
             SetPolyFT4(poly);
             SetSemiTrans(poly, 1);
-            particle->poly[j].clut = GetClut(0, 0x1CD);
-            particle->poly[j].tpage = GetTPage(0, 1, 0x340, 0x100);
-            particle->poly[j].u0 = 0;
-            particle->poly[j].v0 = 0xBD;
-            particle->poly[j].u1 = 0;
-            particle->poly[j].v1 = 0xBD;
-            particle->poly[j].u2 = 0xF;
-            particle->poly[j].v2 = 0xBD;
-            particle->poly[j].u3 = 0xF;
-            particle->poly[j].v3 = 0xBD;
+            particle->packets[j].clut = GetClut(0, 0x1CD);
+            particle->packets[j].tpage = GetTPage(0, 1, 0x340, 0x100);
+            particle->packets[j].u0 = 0;
+            particle->packets[j].v0 = 0xBD;
+            particle->packets[j].u1 = 0;
+            particle->packets[j].v1 = 0xBD;
+            particle->packets[j].u2 = 0xF;
+            particle->packets[j].v2 = 0xBD;
+            particle->packets[j].u3 = 0xF;
+            particle->packets[j].v3 = 0xBD;
         }
         particle++;
     }
@@ -1733,32 +1733,32 @@ void func_801E011C(ParticlePool *pool) {
 
 /* Take the next free particle, setting both quads' semi-transparency; when the
  * pool is full, the spare particle past its end. */
-Particle *func_801E0248(ParticlePool *pool, s16 semi_trans) {
-    Particle *particle;
+EffectSprite *func_801E0248(SpritePool *pool, s16 semi_trans) {
+    EffectSprite *particle;
 
-    if (pool->next < pool->capacity) {
-        particle = &pool->items[pool->next];
+    if (pool->next < pool->count) {
+        particle = &pool->records[pool->next];
         if (particle->age == -1) {
             pool->next++;
-            while (pool->next < pool->capacity) {
-                if (pool->items[pool->next].age == -1) {
+            while (pool->next < pool->count) {
+                if (pool->records[pool->next].age == -1) {
                     break;
                 }
                 pool->next++;
             }
-            SetSemiTrans(&particle->poly[0], semi_trans);
-            SetSemiTrans(&particle->poly[1], semi_trans);
+            SetSemiTrans(&particle->packets[0], semi_trans);
+            SetSemiTrans(&particle->packets[1], semi_trans);
             return particle;
         }
     }
-    return &pool->items[pool->capacity];
+    return &pool->records[pool->count];
 }
 
 /* Free a particle, moving the search position back to it; returns its index. */
-s32 func_801E0354(ParticlePool *pool, Particle *particle) {
+s32 func_801E0354(SpritePool *pool, EffectSprite *particle) {
     s32 index;
 
-    index = ((u32)particle - (u32)pool->items) / sizeof(Particle);
+    index = ((u32)particle - (u32)pool->records) / sizeof(EffectSprite);
     if (pool->next >= index) {
         pool->next = index;
     }
@@ -1769,15 +1769,15 @@ s32 func_801E0354(ParticlePool *pool, Particle *particle) {
 /* Draw the live particles into the ordering table (3D ones projected with
  * the GTE at their depth, 2D ones at the front), free the expired ones and
  * fade the rest by `steps` ticks. */
-void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
-    Particle *particle;
+void func_801E0398(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
+    EffectSprite *particle;
     s32 otz;
     s32 i;
 
     SetRotMatrix(m);
     SetTransMatrix(m);
-    particle = pool->items;
-    for (i = 0; i < pool->capacity; i++, particle++) {
+    particle = pool->records;
+    for (i = 0; i < pool->count; i++, particle++) {
         if (particle->age == -1) {
             continue;
         }
@@ -1785,29 +1785,29 @@ void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer
             func_801E0354(pool, particle);
             continue;
         }
-        particle->poly[buffer].r0 = particle->color[0] >> 6;
-        particle->poly[buffer].g0 = particle->color[1] >> 6;
-        particle->poly[buffer].b0 = particle->color[2] >> 6;
+        particle->packets[buffer].r0 = particle->color[0] >> 6;
+        particle->packets[buffer].g0 = particle->color[1] >> 6;
+        particle->packets[buffer].b0 = particle->color[2] >> 6;
         if (particle->projected == 0) {
-            particle->poly[buffer].x0 = particle->x0;
-            particle->poly[buffer].y0 = particle->y0;
-            particle->poly[buffer].x1 = particle->x1;
-            particle->poly[buffer].y1 = particle->y1;
-            particle->poly[buffer].x2 = particle->x2;
-            particle->poly[buffer].y2 = particle->y2;
-            particle->poly[buffer].x3 = particle->x3;
-            particle->poly[buffer].y3 = particle->y3;
-            addPrim(ot, &particle->poly[buffer]);
+            particle->packets[buffer].x0 = particle->x0;
+            particle->packets[buffer].y0 = particle->y0;
+            particle->packets[buffer].x1 = particle->x1;
+            particle->packets[buffer].y1 = particle->y1;
+            particle->packets[buffer].x2 = particle->x2;
+            particle->packets[buffer].y2 = particle->y2;
+            particle->packets[buffer].x3 = particle->x3;
+            particle->packets[buffer].y3 = particle->y3;
+            addPrim(ot, &particle->packets[buffer]);
         } else {
             gte_ldv3(&particle->x0, &particle->x1, &particle->x2);
             gte_rtpt();
-            gte_stsxy3(&particle->poly[buffer].x0, &particle->poly[buffer].x1, &particle->poly[buffer].x2);
+            gte_stsxy3(&particle->packets[buffer].x0, &particle->packets[buffer].x1, &particle->packets[buffer].x2);
             gte_stszotz(&otz);
             otz >>= D_80050100;
             gte_ldv0(&particle->x3);
             gte_rtps();
-            gte_stsxy(&particle->poly[buffer].x3);
-            addPrim(ot + otz, &particle->poly[buffer]);
+            gte_stsxy(&particle->packets[buffer].x3);
+            addPrim(ot + otz, &particle->packets[buffer]);
         }
         particle->age += steps;
         particle->color[0] -= particle->fade[0] * steps;
@@ -1818,32 +1818,32 @@ void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer
 
 /* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over `duration`
  * ticks. */
-s32 func_801E0698(ColorFade *fade, s32 w4, s16 h0, u8 b2, s16 h60, s16 duration, u8 r0, u8 g0,
-                  u8 b0, u8 r1, u8 g1, u8 b1, u16 hC, u16 hE, u16 h10, u16 h14, u16 h16, u16 h18,
-                  u16 b3) {
+s32 func_801E0698(ColorFade *fade, s32 pool, s16 id, u8 solid, s16 max, s16 duration, u8 r0, u8 g0,
+                  u8 b0, u8 r1, u8 g1, u8 b1, u16 x0, u16 y0, u16 z0, u16 x1, u16 y1, u16 z1,
+                  u16 semiTrans) {
     if (fade != NULL) {
-        fade->b3 = b3;
-        fade->h5E = -1;
-        fade->h0 = h0;
-        fade->b2 = b2;
-        fade->w4 = w4;
-        fade->hC = hC;
-        fade->hE = hE;
-        fade->h10 = h10;
-        fade->h14 = h14;
-        fade->h16 = h16;
-        fade->h18 = h18;
+        fade->semiTrans = semiTrans;
+        fade->count = -1;
+        fade->id = id;
+        fade->solid = solid;
+        fade->pool = (SpritePool *)pool;
+        fade->ends[0].vx = x0;
+        fade->ends[0].vy = y0;
+        fade->ends[0].vz = z0;
+        fade->ends[1].vx = x1;
+        fade->ends[1].vy = y1;
+        fade->ends[1].vz = z1;
         fade->time = 0;
-        if (h60 < 7) {
-            fade->h60 = h60;
+        if (max < 7) {
+            fade->max = max;
         } else {
-            fade->h60 = 7;
+            fade->max = 7;
         }
         fade->color[0] = r0 << 6;
         fade->color[1] = g0 << 6;
         fade->color[2] = b0 << 6;
         fade->duration = duration;
-        fade->w8 = 0;
+        fade->sprite = NULL;
         fade->step[0] = (fade->color[0] - (r1 << 6)) / duration;
         fade->step[1] = (fade->color[1] - (g1 << 6)) / duration;
         fade->step[2] = (fade->color[2] - (b1 << 6)) / duration;
@@ -1851,9 +1851,9 @@ s32 func_801E0698(ColorFade *fade, s32 w4, s16 h0, u8 b2, s16 h60, s16 duration,
     }
 }
 
-/* Mark a particle or channel record free. */
-void func_801E0844(s16 *id, s32 unused) {
-    *id = -1;
+/* Mark a colour fade idle. */
+void func_801E0844(ColorFade *fade, s32 unused) {
+    fade->id = -1;
 }
 
 /* base + (cos(angle) + 1.0) / divisor. */
@@ -1936,7 +1936,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
         anim->rect.y = y3;
         anim->rect.w = w;
         anim->rect.h = h;
-        anim->h12 = w * h;
+        anim->size = w * h;
         if (flags & 0x100) {
             anim->work = func_80031BDC((s16)(half * 2) * h * 2, 0);
         }
@@ -1985,7 +1985,7 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
         anim->rect.y = y3;
         anim->rect.w = w;
         anim->rect.h = h;
-        anim->h12 = w * h;
+        anim->size = w * h;
         if (flags & 0x100) {
             anim->work = func_80031BDC(w * h * 2, 0);
         }
@@ -2073,7 +2073,10 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    frame = anim->curve(anim->time, anim->divisor, anim->base);
+    /* This copy calls the curve as returning a halfword (the curves are
+     * s16 functions); with the shared FrameCurve's word result one register
+     * of the call's result differs (the battle's 800A3E98 takes the word). */
+    frame = ((s16 (*)())anim->curve)(anim->time, anim->divisor, anim->base);
     if (frame < 0) {
         func_801E165C(anim);
         return frame;
@@ -2082,13 +2085,13 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
         anim->frame = frame;
         switch (anim->mode) {
         case 0:
-            func_80026F44(anim->h12, frame, anim->work, anim->pixels);
+            func_80026F44(anim->size, frame, anim->work, anim->pixels);
             if (anim->target == NULL) {
                 LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 1:
-            func_80026FE8(anim->h12, frame, anim->work, anim->pixels2, anim->pixels);
+            func_80026FE8(anim->size, frame, anim->work, anim->pixels2, anim->pixels);
             if (anim->target == NULL) {
                 LoadImage(&anim->rect, (u_long *)anim->work);
             }
@@ -2245,18 +2248,18 @@ void func_801E1880(Actor **actors) {
  * halfwords, and the cells between two strands use the smaller of their
  * point counts. On an allocation failure the record is left empty. The same
  * code as the battle overlay's func_800A7064. */
-void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void func_801E1A14(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
-    RingPoint **rings;
-    RingPoint *points_base;
-    RingPoint *point;
-    RingPoly *polys;
+    SurfacePoint **rings;
+    SurfacePoint *points_base;
+    SurfacePoint *point;
+    SurfacePoly *polys;
     u16 *counts;
     u16 *radii;
     u8 *angles;
-    Record24Entry *entry;
+    SurfaceEntry *entry;
     s32 start;
     u16 tpage, clut;
     s16 page_x, page_y;
@@ -2286,21 +2289,21 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
     }
     total = table[record->rings];
     record->points = total + record->rings;
-    rings = func_80031BDC(record->rings * sizeof(RingPoint *), 0);
+    rings = func_80031BDC(record->rings * sizeof(SurfacePoint *), 0);
     if (rings == NULL) {
         record->centres = NULL;
         func_800320E8(NULL);
         return;
     }
-    record->block1C = rings;
+    record->strands = rings;
     counts = table;
     radii = table + record->rings + 1;
     angles = (u8 *)(radii + total);
-    point = func_80031BDC((total + record->rings) * sizeof(RingPoint), 0);
+    point = func_80031BDC((total + record->rings) * sizeof(SurfacePoint), 0);
     if (point == NULL) {
         record->centres = NULL;
         func_800320E8(NULL);
-        func_800320E8(record->block1C);
+        func_800320E8(record->strands);
         return;
     }
     centre = record->centres;
@@ -2323,15 +2326,15 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
         point++;
     }
     counts = table;
-    polys = func_80031BDC(record->polys * sizeof(RingPoly), 0);
+    polys = func_80031BDC(record->polys * sizeof(SurfacePoly), 0);
     if (polys == NULL) {
         record->centres = NULL;
         func_800320E8(NULL);
-        func_800320E8(record->block1C);
+        func_800320E8(record->strands);
         func_800320E8(points_base);
         return;
     }
-    record->block20 = polys;
+    record->polyList = polys;
     page_x = tx / 64 * 64;
     page_y = ty / 256 * 256;
     tpage = GetTPage(0, 1, page_x, page_y);
@@ -2388,14 +2391,14 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
     record->b[3] = b3;
     record->b[4] = b4;
     record->b[5] = b5;
-    record->entry_count = count;
+    record->entryCount = count;
     if ((s16)count > 0) {
-        entry = func_80031BDC((s16)count * sizeof(Record24Entry), 0);
+        entry = func_80031BDC((s16)count * sizeof(SurfaceEntry), 0);
         if (entry == NULL) {
-            record->entry_count = 0;
+            record->entryCount = 0;
         }
-        record->block18 = entry;
-        for (i = 0; i < record->entry_count; i++) {
+        record->entries = entry;
+        for (i = 0; i < record->entryCount; i++) {
             entry->h0 = 0;
             entry->h2 = 0;
             entry->h4 = 0;
@@ -2407,11 +2410,11 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
             entry++;
         }
     } else {
-        record->block18 = NULL;
+        record->entries = NULL;
     }
 }
 
-/* Simulate and draw a records24 surface (hair or cloth): each strand's
+/* Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
  * keep their length, stay above `floor` and are pushed out of the record's
  * collision spheres; then the points' normals are averaged from their
@@ -2419,7 +2422,7 @@ void func_801E1A14(Record24 *record, u16 *table, s32 angle_base, s32 scale, s16 
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer, and one variable is both the collision
  * loop's counter and the GTE flag store. */
-void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
+void func_801E22F8(Surface *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
     SVECTOR normal;
@@ -2428,18 +2431,18 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     u8 rgb[4];
     s32 k; /* the collision loop's counter, then the GTE flag */
     s32 opz, otz;
-    RingPoint *p;
-    RingPoly *poly;
-    Record24Entry *entry;
+    SurfacePoint *p;
+    SurfacePoly *poly;
+    SurfaceEntry *entry;
     s32 len, radius;
     s32 i;
 
     if (record->centres == NULL) {
         return;
     }
-    rgb[3] = record->block20->prim[0].code;
+    rgb[3] = record->polyList->prim[0].code;
     for (i = 0; i < record->rings; i++) {
-        p = record->block1C[i];
+        p = record->strands[i];
         while (p->length != 0) {
             d.vx = p[1].pos[0] - p->pos[0] + wind->vx;
             d.vy = p[1].pos[1] - p->pos[1] + wind->vy + p->sag;
@@ -2460,8 +2463,8 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             if (floor < p[1].pos[1]) {
                 p[1].pos[1] = floor;
             }
-            entry = record->block18;
-            for (k = 0; k < record->entry_count; k++, entry++) {
+            entry = record->entries;
+            for (k = 0; k < record->entryCount; k++, entry++) {
                 d.vx = p[1].pos[0] - entry->h8;
                 d.vy = p[1].pos[1] - entry->hA;
                 d.vz = p[1].pos[2] - entry->hC;
@@ -2498,16 +2501,16 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             p++;
         }
     }
-    p = *record->block1C;
+    p = *record->strands;
     for (i = 0; i < record->points; i++) {
-        p->normal_count = 0;
+        p->normalCount = 0;
         p->normal[0] = 0;
         p->normal[1] = 0;
         p->normal[2] = 0;
         p++;
     }
-    poly = record->block20;
-    p = *record->block1C;
+    poly = record->polyList;
+    p = *record->strands;
     for (i = 0; i < record->polys; i++, poly++) {
         e1.vx = p[poly->index[0]].pos[0] - p[poly->index[1]].pos[0];
         e1.vy = p[poly->index[0]].pos[1] - p[poly->index[1]].pos[1];
@@ -2526,27 +2529,27 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         p[poly->index[0]].normal[0] += e1.vx;
         p[poly->index[0]].normal[1] += e1.vy;
         p[poly->index[0]].normal[2] += e1.vz;
-        p[poly->index[0]].normal_count++;
+        p[poly->index[0]].normalCount++;
         p[poly->index[1]].normal[0] += e1.vx;
         p[poly->index[1]].normal[1] += e1.vy;
         p[poly->index[1]].normal[2] += e1.vz;
-        p[poly->index[1]].normal_count++;
+        p[poly->index[1]].normalCount++;
         p[poly->index[2]].normal[0] += e1.vx;
         p[poly->index[2]].normal[1] += e1.vy;
         p[poly->index[2]].normal[2] += e1.vz;
-        p[poly->index[2]].normal_count++;
+        p[poly->index[2]].normalCount++;
     }
-    p = *record->block1C;
+    p = *record->strands;
     for (i = 0; i < record->points; i++) {
-        p->normal[0] /= (s16)p->normal_count;
-        p->normal[1] /= (s16)p->normal_count;
-        p->normal[2] /= (s16)p->normal_count;
+        p->normal[0] /= (s16)p->normalCount;
+        p->normal[1] /= (s16)p->normalCount;
+        p->normal[2] /= (s16)p->normalCount;
         p++;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
-    poly = record->block20;
-    p = *record->block1C;
+    poly = record->polyList;
+    p = *record->strands;
     for (i = 0; i < record->polys; i++) {
         gte_ldv3(p[poly->index[0]].pos, p[poly->index[1]].pos, p[poly->index[2]].pos);
         gte_rtpt();
@@ -2610,14 +2613,14 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
 }
 
 /* Release a record's heap blocks. */
-void func_801E3438(Record24 *record) {
+void func_801E3438(Surface *record) {
     if (record->centres != NULL) {
         func_800320E8(record->centres);
-        func_800320E8(*record->block1C);
-        func_800320E8(record->block1C);
-        func_800320E8(record->block20);
-        if (record->block18 != NULL) {
-            func_800320E8(record->block18);
+        func_800320E8(*record->strands);
+        func_800320E8(record->strands);
+        func_800320E8(record->polyList);
+        if (record->entries != NULL) {
+            func_800320E8(record->entries);
         }
         record->centres = NULL;
     }
@@ -3867,7 +3870,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             break;
         case 3:
         case 4: /* stop a channel (the battle's colour fade events) */
-            func_801E0844(&actor->channels[event->index].id, arg2);
+            func_801E0844(&actor->channels[event->index], arg2);
             if (event->u.more) {
                 actor->anim_pos += 0x1C;
             } else {
@@ -4455,7 +4458,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     u8 *compact;
     s32 i, k;
     s32 count;
-    Record24 *record;
+    Surface *record;
     POLY_FT4 *prim;
 
     func_80032498(4, 0);
@@ -4574,7 +4577,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     actor->count10D = desc.header->count24;
     if (actor->count10D != 0) {
         desc.p = desc.header->records;
-        record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
+        record = func_80031BDC(actor->count10D * sizeof(Surface), 0);
         actor->records24 = record;
         for (i = 0; i < actor->count10D; i++, record++) {
             count = desc.p[17];
@@ -4586,11 +4589,11 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
                           *desc.p++, *desc.p);
             desc.p += 2; /* past the last parameter and the entry count read above */
             for (k = 0; k < count; k++) {
-                record->block18[k].h6 = *desc.p++;
-                record->block18[k].hE = *desc.p++;
-                record->block18[k].h0 = *desc.p++;
-                record->block18[k].h2 = *desc.p++;
-                record->block18[k].h4 = *desc.p++;
+                record->entries[k].h6 = *desc.p++;
+                record->entries[k].hE = *desc.p++;
+                record->entries[k].h0 = *desc.p++;
+                record->entries[k].h2 = *desc.p++;
+                record->entries[k].h4 = *desc.p++;
             }
         }
     }
@@ -4787,14 +4790,14 @@ s32 func_801E8480(s32 index) {
 
 /* Allocate an actor's 0x70-byte channel records, each marked unused. */
 void func_801E8510(Actor *actor) {
-    Channel *channels;
+    ColorFade *channels;
     s32 i;
 
     if (actor->channel_count != 0) {
-        channels = func_80031BDC(actor->channel_count * sizeof(Channel), 0);
+        channels = func_80031BDC(actor->channel_count * sizeof(ColorFade), 0);
         for (i = 0; i < actor->channel_count; i++) {
             channels[i].id = -1;
-            channels[i].particle = NULL;
+            channels[i].sprite = NULL;
         }
         actor->channels = channels;
     }

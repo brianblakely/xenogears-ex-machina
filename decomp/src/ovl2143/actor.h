@@ -34,29 +34,6 @@ typedef struct {
     void *end;              /* +c */
 } SoundOwner;
 
-/* A colour fade record. */
-typedef struct {
-    s16 h0;
-    u8 b2;
-    u8 b3;
-    s32 w4;
-    s32 w8;
-    s16 hC;
-    s16 hE;
-    s16 h10;
-    u8 pad12[2];
-    s16 h14;
-    s16 h16;
-    s16 h18;
-    u8 pad1A[0x42];
-    s16 time;               /* +5c */
-    s16 h5E;                /* +5e */
-    s16 h60;                /* +60: at most 7 */
-    s16 duration;           /* +62 */
-    s16 color[3];           /* +64: 10.6 fixed point */
-    s16 step[3];            /* +6a */
-} ColorFade;
-
 /* An animation event (at `frame` of its animation). */
 typedef struct {
     s16 frame;
@@ -188,8 +165,8 @@ typedef struct Actor {
     u8 count10D;            /* +10d: 0x24-byte records at +114 */
     u8 count10E;            /* +10e: 0x30-byte records at +118 */
     u8 pad10F;
-    Channel *channels;      /* +110 */
-    Record24 *records24;    /* +114 */
+    ColorFade *channels;    /* +110 */
+    Surface *records24;     /* +114 */
     ImageAnim *records30;   /* +118 */
     s32 previous[3];        /* +11c: root position before the step */
     s32 moved[3];           /* +128: root movement of the step */

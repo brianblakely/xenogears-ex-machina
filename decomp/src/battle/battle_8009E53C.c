@@ -884,25 +884,25 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         }
         channel = object->channels;
         for (i = 0; i < object->channelCount; i++) {
-            if (channel->field0 >= 0) {
+            if (channel->id >= 0) {
                 channel->time = (channel->time - 1) & 7;
-                if (channel->field2 == 0) {
-                    CompMatrix(camera, &root[channel->field0].world, scratch);
+                if (channel->solid == 0) {
+                    CompMatrix(camera, &root[channel->id].world, scratch);
                     SetRotMatrix(scratch);
                     SetTransMatrix(scratch);
-                    gte_ldv0(&channel->fieldC);
+                    gte_ldv0(&channel->ends[0]);
                     gte_rtps();
                     gte_stsxy(&channel->history.screen.first[channel->time]);
-                    gte_ldv0(&channel->field14);
+                    gte_ldv0(&channel->ends[1]);
                     gte_rtps();
                     gte_stsxy(&channel->history.screen.second[channel->time]);
-                    channel->field5E++;
-                    if (channel->field5E == 0) {
+                    channel->count++;
+                    if (channel->count == 0) {
                         continue;
                     }
-                    if (channel->field5E > channel->field60 || channel->sprite == NULL) {
-                        channel->field5E = 1;
-                        channel->sprite = func_800A2E88(channel->pool, channel->field3);
+                    if (channel->count > channel->max || channel->sprite == NULL) {
+                        channel->count = 1;
+                        channel->sprite = func_800A2E88(channel->pool, channel->semiTrans);
                         channel->sprite->projected = 0;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -912,7 +912,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                         channel->sprite->fade[0] = channel->step[0];
                         channel->sprite->fade[1] = channel->step[1];
                         channel->sprite->fade[2] = channel->step[2];
-                        index = (channel->time + channel->field5E) & 7;
+                        index = (channel->time + channel->count) & 7;
                         channel->sprite->x0 = (channel->history.screen.first + index)->vx;
                         channel->sprite->y0 = (channel->history.screen.first + index)->vy;
                         channel->sprite->x2 = (channel->history.screen.second + index)->vx;
@@ -923,25 +923,25 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     channel->sprite->x3 = (channel->history.screen.second + channel->time)->vx;
                     channel->sprite->y3 = (channel->history.screen.second + channel->time)->vy;
                 } else {
-                    CompMatrix(&root->transform, &root[channel->field0].world, scratch);
+                    CompMatrix(&root->transform, &root[channel->id].world, scratch);
                     SetRotMatrix(scratch);
                     SetTransMatrix(scratch);
                     slot = channel->time & 1;
                     world0 = &channel->history.world.first[slot];
                     world1 = &channel->history.world.second[slot];
-                    gte_ldv0(&channel->fieldC);
+                    gte_ldv0(&channel->ends[0]);
                     gte_rtv0tr();
                     gte_stlvnl(world0);
-                    gte_ldv0(&channel->field14);
+                    gte_ldv0(&channel->ends[1]);
                     gte_rtv0tr();
                     gte_stlvnl(world1);
-                    channel->field5E++;
-                    if (channel->field5E == 0) {
+                    channel->count++;
+                    if (channel->count == 0) {
                         continue;
                     }
-                    if (channel->field5E > channel->field60 || channel->sprite == NULL) {
-                        channel->field5E = 1;
-                        channel->sprite = func_800A2E88(channel->pool, channel->field3);
+                    if (channel->count > channel->max || channel->sprite == NULL) {
+                        channel->count = 1;
+                        channel->sprite = func_800A2E88(channel->pool, channel->semiTrans);
                         channel->sprite->projected = 1;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -2090,33 +2090,33 @@ void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
 /* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
  * ticks. Original calls use default argument promotion for the channel bytes
  * and signed event halfwords. */
-s32 func_800A32D8(fade, field4, field0, field2, field60, duration, r0, g0, b0, r1, g1, b1, fieldC, fieldE,
-                  field10, field14, field16, field18, field3)
+s32 func_800A32D8(fade, pool, id, solid, max, duration, r0, g0, b0, r1, g1, b1, x0, y0, z0, x1, y1, z1,
+                  semiTrans)
     ColorFade *fade;
-    s32 field4;
-    s16 field0;
-    u8 field2;
-    s16 field60, duration;
+    s32 pool;
+    s16 id;
+    u8 solid;
+    s16 max, duration;
     u8 r0, g0, b0, r1, g1, b1;
-    u16 fieldC, fieldE, field10, field14, field16, field18, field3;
+    u16 x0, y0, z0, x1, y1, z1, semiTrans;
 {
     if (fade != NULL) {
-        fade->field3 = field3;
-        fade->field5E = -1;
-        fade->field0 = field0;
-        fade->field2 = field2;
-        fade->pool = (SpritePool *)field4;
-        fade->fieldC = fieldC;
-        fade->fieldE = fieldE;
-        fade->field10 = field10;
-        fade->field14 = field14;
-        fade->field16 = field16;
-        fade->field18 = field18;
+        fade->semiTrans = semiTrans;
+        fade->count = -1;
+        fade->id = id;
+        fade->solid = solid;
+        fade->pool = (SpritePool *)pool;
+        fade->ends[0].vx = x0;
+        fade->ends[0].vy = y0;
+        fade->ends[0].vz = z0;
+        fade->ends[1].vx = x1;
+        fade->ends[1].vy = y1;
+        fade->ends[1].vz = z1;
         fade->time = 0;
-        if (field60 < 7) {
-            fade->field60 = field60;
+        if (max < 7) {
+            fade->max = max;
         } else {
-            fade->field60 = 7;
+            fade->max = 7;
         }
         fade->color[0] = r0 << 6;
         fade->color[1] = g0 << 6;
@@ -2132,7 +2132,7 @@ s32 func_800A32D8(fade, field4, field0, field2, field60, duration, r0, g0, b0, r
 
 /* Mark a colour fade idle. */
 void func_800A3484(ColorFade *fade, s32 arg1) {
-    fade->field0 = -1;
+    fade->id = -1;
 }
 
 /* A frame curve: base + (cos(angle) + 1.0) / divisor. */
@@ -4392,7 +4392,7 @@ void func_800AA6E0(BattleObject *object) {
     if (object->channelCount != 0) {
         channels = func_80031BDC(object->channelCount * sizeof(ColorFade), 0);
         for (i = 0; i < object->channelCount; i++) {
-            channels[i].field0 = -1;
+            channels[i].id = -1;
             channels[i].sprite = NULL;
         }
         object->channels = channels;

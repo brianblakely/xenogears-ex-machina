@@ -77,19 +77,12 @@ typedef struct SpritePool {
  * model part, with fading colours. Screen-space trails retain eight projected
  * positions per endpoint; world-space trails retain two full vectors. */
 typedef struct ColorFade {
-    s16 field0; /* model part; negative when idle */
-    u8 field2;  /* 0 screen-space history, otherwise world-space */
-    u8 field3;  /* sprite semi-transparency */
+    s16 id;           /* the model part it follows; negative when idle */
+    u8 solid;         /* 0x02: 0 screen-space history, otherwise world-space */
+    u8 semiTrans;     /* 0x03: the sprites' semi-transparency */
     SpritePool *pool; /* 0x04 */
     EffectSprite *sprite; /* 0x08: the currently extended quad */
-    s16 fieldC;
-    s16 fieldE;
-    s16 field10;
-    u8 pad12[2];
-    s16 field14;
-    s16 field16;
-    s16 field18;
-    u8 pad1A[2];
+    SVECTOR ends[2];  /* 0x0C: the two points, in the part's space */
     union {
         struct {
             DVECTOR first[8];
@@ -101,8 +94,8 @@ typedef struct ColorFade {
         } world;
     } history; /* 0x1C-0x5B */
     s16 time;     /* 0x5C: history cursor, decremented modulo 8 */
-    s16 field5E;  /* 0x5E: age of the current quad, -1 before the first tick */
-    s16 field60;  /* 0x60: quad extension interval, at most 7 */
+    s16 count;    /* 0x5E: age of the current quad, -1 before the first tick */
+    s16 max;      /* 0x60: quad extension interval, at most 7 */
     s16 duration; /* 0x62 */
     s16 color[3]; /* 0x64: 10.6 fixed point */
     s16 step[3];  /* 0x6A */
