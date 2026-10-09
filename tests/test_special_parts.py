@@ -162,6 +162,18 @@ class FieldTests(unittest.TestCase):
         self.assertIsNone(item_codes(ins[4], writes))  # v0016 is saved, set elsewhere too
         self.assertIsNone(item_codes(ins[5], writes))  # v0512 never written
 
+    def test_bit_operands_and_camera_stores_write_variables(self):
+        set_local = bytes([0x35, 0x10, 0x05]) + struct.pack("<H", 0x135) + b"\x40"
+        set_bit = bytes([0xFE, 0x0A]) + struct.pack("<H", 0x510 << 4 | 3)
+        store_heading = bytes([0xAF, 0x12, 0x05, 0x00])
+        set_heading = bytes([0xAF, 0x14, 0x05, 0x01])  # a raw heading, no variable
+        set_other = bytes([0x35, 0x14, 0x05]) + struct.pack("<H", 0x135) + b"\x40"
+        ins = self.decode(set_local + set_bit + store_heading + set_heading + set_other)
+        writes = written(ins)
+        self.assertEqual(writes[0x510], [0x135, None])
+        self.assertEqual(writes[0x512], [None])
+        self.assertEqual(writes[0x514], [0x135])
+
 
 class ReportTests(unittest.TestCase):
     def test_report_names_the_word_an_id_past_the_arrays_reaches(self):

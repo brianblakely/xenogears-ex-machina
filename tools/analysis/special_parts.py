@@ -87,6 +87,7 @@ SHOPS, SHOP, SHOP_WEAPONS = 6, 0x5C, 30  # ovl2601: files[6], kind 0 (ids 0-29) 
 GEAR_SHOPS, GEAR_SHOP, GEAR_PARTS = 7, 0x64, (0x3C, 0x50)  # ovl2602: files[7], stock[4]
 OPEN_SHOP, OPEN_GEAR_SHOP = "fe 59", "fe 5a"  # field func_800939A0, func_80093A04
 GIVE_ITEM, SET_VARIABLE = "8c", "35"
+CAMERA_STORES = ("af", "b0", "b1")  # u16@1 a variable when u8@3 is 0
 WEAPON_LIST, GEAR_PART_LIST = 1, 3  # field item code lists
 LOCAL_VARIABLES = 0x400  # byte offsets of D_800C3A68[0x200..0x3ff]
 RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 func_801E4870
@@ -168,14 +169,21 @@ class Census:
 
 
 def written(instructions) -> dict[int, list[int | None]]:
-    """variable -> what each instruction naming it as a `var` operand stores:
-    set_variable's immediate, else None (unknown)."""
+    """variable -> what each instruction that may write it stores: set_variable's
+    immediate, else None (unknown). Writers are the `var` operands, the
+    variable of a `bit` operand (operand >> 4: fe 0a/fe 0b, field func_8008D684,
+    func_8008D700) and af/b0/b1's operand 1 when byte 3 is 0 (func_80090C20,
+    func_80090CB8, func_80090D50); reads among them only leave a value unknown."""
     writes = defaultdict(list)
     for ins in instructions:
         for operand, value in zip(ins.spec.operands, ins.operands, strict=True):
             if operand.kind == "var":
                 immediate = ins.key == SET_VARIABLE and ins.immediate[1]
                 writes[value].append(ins.operands[1] & 0xFFFF if immediate else None)
+            elif operand.kind == "bit":
+                writes[value >> 4].append(None)
+        if ins.key in CAMERA_STORES and ins.operands[1] == 0:
+            writes[ins.operands[0]].append(None)
     return writes
 
 
