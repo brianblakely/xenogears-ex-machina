@@ -256,12 +256,13 @@ the audit; they are never counted as matches. This diagnostic does not replace
   them (worldmap 800987AC was plain C). In authored `.s` the GTE command macros emit
   `.word`, so GAS cannot fold label differences across them; a code patcher addresses
   its targets by literal offsets (resident 80030988).
-- Media and bytecode embedded in a unit's data (packed images, fonts, sound banks)
-  stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in place
-  from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in the
-  .mk), and an `asset` line in the classification names the format and its reader.
-  Never commit their bytes as C initializers; numeric program tables (sine, pitch,
-  note encodings, opcode lengths) are source.
+- Media and bytecode embedded in a unit's data (packed images, fonts, sound banks,
+  scripts such as the world map actor scripts and cue sequences and the arena scene
+  scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them
+  in place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE`
+  set in the .mk), and an `asset` line in the classification names the format and
+  its reader. Never commit their bytes as C initializers; numeric program tables
+  (sine, pitch, note encodings, opcode lengths) are source.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per unit; compiling every remaining draft under

@@ -15,6 +15,9 @@ CONTAINERS := 1:37 2:32
 # Every division carries inline zero/overflow checks (all 24 div, e.g. 800935dc).
 MASPSX_FLAGS := --aspsx-version=2.79 --expand-div
 CLASSIFICATION := decomp/targets/overlays/worldmap.classification.txt
+# INCLUDE_ASSET reads the embedded scripts from ORIGINAL, whose file offset 0
+# is VRAM 0x8006FAF0.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0
 # The program ends at 0x8009bbb4 (file 0x2c0c4), where the resident's mode
 # table starts the BSS. The original packer appended zero literal tokens
 # until its last group held eight and recorded the padded length: the plain

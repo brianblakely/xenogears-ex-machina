@@ -13,6 +13,12 @@
   | `func_80080370` | 13 (`func_8007FF70`) | `func_8008032C`, no step | `D_8009A698` / `D_8009A6AC`, 9 |
   | `func_800811C0` | 16 (`func_80080D00`) | `func_80081174` | `D_8009A6C0` / `D_8009A70C`, 37 |
 
+- **Tables:** each director's unit opens its data with its u16 state and wait
+  tables. They stay user-supplied: the units link them from the user's image
+  (`INCLUDE_ASSET`; `asset` lines in
+  `decomp/targets/overlays/worldmap.classification.txt`). The wait tables of
+  `func_80080370` and `func_800811C0` end with a stray halfword in their alignment
+  padding (0x7542, 0x2E07), which no entry reaches.
 - **Dispatch:** `switch (actor->state)`, 65 cases in all (12, 10, 20, 10, 13), each
   commented with its effect. Case 1 decrements the s16 wait and, once it drops below
   0, loads the state and wait of entry `u.step` from the two u16 tables and steps.

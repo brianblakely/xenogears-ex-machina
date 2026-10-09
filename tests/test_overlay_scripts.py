@@ -343,6 +343,49 @@ def code(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
 
 
+def asset_size(text: str, address: int) -> int:
+    """The size of the INCLUDE_ASSET that links D_<address> from the user's image."""
+    pattern = rf'INCLUDE_ASSET\("\.data", D_{address:08X}, 0x{address:08X}, (0x[0-9A-F]+)\);'
+    return int(re.search(pattern, code(text)).group(1), 16)
+
+
+def asset_ranges(overlay: str) -> list[tuple[int, int]]:
+    """The `asset` ranges of an overlay's classification file."""
+    lines = (ROOT / f"decomp/targets/overlays/{overlay}.classification.txt").read_text()
+    return [
+        (int(start, 16), int(end, 16))
+        for start, end, kind in re.findall(r"^(\w+) (\w+) (\w+) ", lines, re.M)
+        if kind == "asset"
+    ]
+
+
+class AssetTests(unittest.TestCase):
+    """The scripts the decoders read stay user-supplied: each is linked from the
+    user's image with INCLUDE_ASSET inside an `asset` range, never written as a
+    C initializer (docs/matching.md)."""
+
+    def check(self, overlay: str, addresses: list[int]) -> None:
+        sources = "".join(
+            path.read_text() for path in sorted((ROOT / f"decomp/src/{overlay}").glob("*.c"))
+        )
+        ranges = asset_ranges(overlay)
+        for address in addresses:
+            with self.subTest(overlay=overlay, address=f"{address:08x}"):
+                size = asset_size(sources, address)
+                self.assertTrue(any(s <= address and address + size <= e for s, e in ranges))
+                self.assertNotRegex(code(sources), rf"\bD_{address:08X}\[\w*\] = ")
+
+    def test_world_map_scripts_and_cue_tables(self):
+        tables = [a for d in DIRECTORS for s in d.sequences for a in (s.states, s.durations)]
+        self.check("worldmap", [0x8009A758, 0x8009AC60, *tables])
+
+    def test_arena_scripts(self):
+        text = code((ROOT / "decomp/src/menu/menu2.c").read_text())
+        table = re.search(r"u8 \*D_8009105C\[\] = \{(.*?)\};", text, re.S).group(1)
+        scenes = [int(name, 16) for name in re.findall(r"D_([0-9A-F]{8})", table)]
+        self.check("menu", [0x80090F38, 0x800910C4, 0x80091050, *scenes])
+
+
 def function(text: str, name: str) -> str:
     """The definition of `name`, without comments."""
     text = code(text)
@@ -442,10 +485,12 @@ class SceneSourceTests(unittest.TestCase):
                     names = [(f"D_{s.states:08X}", f"D_{s.durations:08X}") for s in each.sequences]
                     self.assertEqual(re.findall(r"\{(\w+), (\w+)\}", pairs.group(1)), names)
                 for sequence in each.sequences:
-                    states = re.search(rf"[us]16 D_{sequence.states:08X}\[(\d+)\] = ", sources)
-                    durations = re.search(rf"u16 D_{sequence.durations:08X}\[(\d+)\] = ", sources)
-                    self.assertEqual(int(states.group(1)), sequence.entries)
-                    self.assertGreaterEqual(int(durations.group(1)), sequence.entries)
+                    # u16 entries linked from the user's image (INCLUDE_ASSET sizes);
+                    # a wait table may end with its padding's stray halfword
+                    states = asset_size(sources, sequence.states)
+                    durations = asset_size(sources, sequence.durations)
+                    self.assertEqual(states, 2 * sequence.entries)
+                    self.assertIn(durations - 2 * sequence.entries, (0, 2))
                 self.assertEqual(modes[each.mode][1], each.setup)
                 setup = function(sources, each.setup)
                 calls = re.findall(r"func_80097718\(\(s32\)(\w+), \(s32\)(\w+)\);", setup)

@@ -21,8 +21,8 @@ data:
   func_8007C3B8, func_8007DE98, func_80080370 and func_800811C0 of the
   scripted world-map modes 14, 12, 15, 13 and 16. Each switches on its
   actor's state. Case 1 counts the actor's wait down and, once it drops below
-  0, loads the next state and wait from two parallel u16 tables compiled into
-  the overlay (the step index is the instruction pointer); every other case
+  0, loads the next state and wait from two parallel u16 tables embedded in
+  the overlay's data (the step index is the instruction pointer); every other case
   runs one cue and stores state 1 (or 0). A cue that clears D_8009D554 ends
   the world-map loop (func_800712D0) after that frame, so the director never
   runs again.
@@ -32,7 +32,10 @@ data:
   range holds the frame runs the HitSpec at header + spec through a switch on
   its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
 
-None of the machines has jumps: a script runs straight to its stop.
+None of the machines has jumps: a script runs straight to its stop. The
+scripts and cue tables embedded in the overlays stay user-supplied: the units
+link them from the user's image (INCLUDE_ASSET, `asset` ranges in the
+targets' classification files), so the decoders read them from each disc.
 Sizes and flow follow each handler's advance; the C comments of the handlers
 give each opcode's effect. `--sweep` decodes every script of every machine
 from each disc's own files (the packed overlays and model files) and prints
@@ -437,7 +440,7 @@ class Sequence:
     name: str
     states: int  # u16 state table (the starter reads entry 0 too)
     durations: int  # u16 wait table, same index
-    entries: int  # the state table's length in its C definition
+    entries: int  # the state table's length (its INCLUDE_ASSET size / 2)
 
 
 @dataclass(frozen=True)

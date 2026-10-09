@@ -1,40 +1,17 @@
 #include "worldmap.h"
 
-/* The director's timed sequence: the state of each step and its duration
- * (started by func_80081174). The original object keeps a stray halfword
- * (0x2E07) in the durations' alignment padding. */
-u16 D_8009A6C0[37] = {
-    1, 8, 2, 3, 2, 3, 2, 4, 16, 5, 7, 5, 17, 17, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5,
-    2, 5, 2, 6, 2, 6, 2, 63, 64,
-};
-u16 D_8009A70C[38] = {
-    10, 170, 2, 60, 6, 30, 12, 60, 120, 1, 4, 2, 1, 1, 4, 15, 2, 1, 4, 2, 4, 1, 4, 2,
-    4, 15, 2, 8, 1, 8, 30, 8, 8, 4, 30, 128, 1, 0x2E07,
-};
+/* The director's cue sequence, user-supplied script data (an asset in
+ * worldmap.classification.txt): 37 u16 states and 37 u16 waits (started by
+ * func_80081174; tools/analysis/overlay_scripts.py decodes it). The waits'
+ * 0x4C bytes end with the stray halfword (0x2E07) the original object keeps
+ * in its alignment padding. */
+INCLUDE_ASSET(".data", D_8009A6C0, 0x8009A6C0, 0x4A);
+INCLUDE_ASSET(".data", D_8009A70C, 0x8009A70C, 0x4C);
 
-/* Actor script (func_80076B34 commands) given by func_800827C8. */
-s16 D_8009A758[434] = {
-    1, 10,  9, 40,  9, 41,  9, 42,  1, 60,  2, 2, 5, 0,  1, 60,  2, 2, 1, 0,  1, 175,
-    4, 30009, -256, 16362,  5, 44,  5, 45,  5, 46,  5, 47,  5, 48,  1, 30,  2, 2, 2, 0,  1, 15,
-    2, 2, 3, 0,  1, 90,  2, 2, 4, 0,  1, 90,  2, 0, 13, 0,  11, 2, 8, 0,  1, 34,
-    3, 4985, -288, 19242,  2, 8, 1, 0,  2, 2, 6, 0,  1, 2,  2, 0, 12, 0,  2, 3, 1, 0,
-    2, 4, 1, 0,  2, 5, 1, 0,  2, 6, 1, 0,  2, 7, 1, 0,  9, 43,  9, 44,  9, 45,
-    4, 4985, -288, 19242,  5, 49,  1, 180,  2, 2, 7, 0,  1, 210,  2, 0, 13, 0,  8, 0, 240, 0,
-    10, 43, 0, 240,  10, 44, 0, 240,  10, 45, 0, 240,  1, 34,  3, 29993, -396, 10810,
-    2, 8, 1, 0,  6, 49,  2, 2, 8, 0,  1, 2,  2, 0, 12, 0,  8, 127, 240, 0,  10, 43, 127, 240,
-    10, 44, 127, 240,  10, 45, 127, 240,  2, 3, 2, 0,  2, 4, 2, 0,  2, 5, 2, 0,  2, 6, 2, 0,
-    2, 7, 2, 0,  4, 29993, -396, 10810,  5, 50,  5, 51,  1, 180,  2, 2, 9, 0,  1, 210,
-    2, 0, 13, 0,  8, 0, 240, 0,  10, 43, 0, 240,  10, 44, 0, 240,  10, 45, 0, 240,  1, 34,
-    3, 9817, -272, 28042,  2, 8, 1, 0,  6, 50,  6, 51,  2, 2, 10, 0,  1, 2,  2, 0, 12, 0,
-    8, 127, 240, 0,  10, 43, 127, 240,  10, 44, 127, 240,  10, 45, 127, 240,  2, 3, 3, 0,
-    2, 4, 3, 0,  2, 5, 3, 0,  2, 6, 3, 0,  2, 7, 3, 0,  4, 9817, -272, 28042,  5, 52,  5, 53,
-    1, 270,  2, 0, 13, 0,  8, 0, 240, 0,  10, 43, 0, 240,  10, 44, 0, 240,  10, 45, 0, 240,
-    1, 34,  3, 19369, -648, 7642,  2, 8, 1, 0,  6, 52,  6, 53,  2, 2, 11, 0,  1, 2,
-    2, 0, 12, 0,  8, 127, 240, 0,  10, 43, 127, 240,  10, 44, 127, 240,  10, 45, 127, 240,
-    4, 19369, -392, 7642,  5, 54,  5, 55,  5, 56,  1, 270,  2, 2, 12, 0,  2, 3, 4, 0,
-    2, 4, 4, 0,  2, 5, 4, 0,  2, 6, 4, 0,  2, 7, 4, 0,  1, 240,  2, 0, 13, 0,  11, 2, 4, 0,
-    8, 0, 240, 0,  10, 43, 0, 240,  10, 44, 0, 240,  10, 45, 0, 240,  1, 64,  0, 0,
-};
+/* Actor script (func_80076B34 commands) given by func_800827C8: 434 signed
+ * halfwords, user-supplied (an asset in worldmap.classification.txt;
+ * tools/analysis/overlay_scripts.py decodes it). */
+INCLUDE_ASSET(".data", D_8009A758, 0x8009A758, 0x364);
 
 /* The pulsing effect's settings for its commands 1, 2 and 4 (func_80083264):
  * five slots of 14, the position and then the actor's parameters. */
@@ -60,14 +37,9 @@ s16 D_8009ABD4[5 * 14] = {
     20344, -760, 6794, 64, 128, 255, 2, 1, 0, 64, 1536, 0, 16, 0,
 };
 
-/* Actor script (func_80076B34 commands) given by func_800838E8. */
-s16 D_8009AC60[102] = {
-    1, 60,  2, 2, 1, 0,  9, 49,  9, 50,  9, 51,  1, 128,  4, 6144, -128, 6656,  5, 0,  1, 320,
-    6, 0,  7, 0,  2, 2, 2, 0,  2, 3, 1, 0,  9, 52,  9, 53,  9, 54,  1, 510,  2, 3, 2, 0,  1, 32,
-    2, 2, 4, 0,  1, 300,  2, 3, 3, 0,  1, 16,  2, 2, 5, 0,  9, 55,  9, 56,  9, 57,  1, 480,
-    2, 3, 4, 0,  1, 24,  2, 2, 6, 0,  9, 58,  9, 59,  9, 60,  1, 300,  2, 0, 13, 0,
-    11, 2, 4, 0,  1, 64,  0, 0,
-};
+/* Actor script (func_80076B34 commands) given by func_800838E8: 102 signed
+ * halfwords, user-supplied like D_8009A758. */
+INCLUDE_ASSET(".data", D_8009AC60, 0x8009AC60, 0xCC);
 
 /* Heat-haze scene director (mode 16): func_8007A9F8's cue sequencer on
  * D_8009A6C0/D_8009A70C. Actor slots (func_80080D00): 0 the screen fade, 2

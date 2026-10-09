@@ -20,13 +20,17 @@ u16 D_8009A5A0[3][3] = {{0x25, 0x26, 0x27}, {0x1F, 0x20, 0x21}, {0x22, 0x23, 0x2
 SVECTOR D_8009A5B4[3] = {{14976, -640, 11690}, {15412, -640, 11957}, {14976, -640, 11690}};
 u16 D_8009A5CC[3] = {2, 3, 4};
 
-/* The director's timed sequences per entry: states and durations. */
-s16 D_8009A5D4[14] = {1, 62, 2, 3, 61, 4, 5, 6, 7, 8, 9, 10, 63, 64};
-u16 D_8009A5F0[14] = {90, 60, 60, 44, 6, 4, 100, 4, 8, 184, 2, 135, 128, 0};
-s16 D_8009A60C[9] = {1, 62, 2, 3, 61, 24, 25, 63, 64};
-u16 D_8009A620[9] = {90, 60, 60, 44, 6, 4, 160, 128, 0};
-s16 D_8009A634[9] = {1, 62, 2, 3, 61, 16, 17, 63, 64};
-u16 D_8009A648[9] = {90, 60, 60, 44, 6, 4, 205, 128, 0};
+/* The director's cue sequences per entry, user-supplied script data (an
+ * asset in worldmap.classification.txt): s16 states and u16 waits, 14, 9
+ * and 9 entries (tools/analysis/overlay_scripts.py decodes them). */
+extern s16 D_8009A5D4[], D_8009A60C[], D_8009A634[];
+extern u16 D_8009A5F0[], D_8009A620[], D_8009A648[];
+INCLUDE_ASSET(".data", D_8009A5D4, 0x8009A5D4, 0x1C);
+INCLUDE_ASSET(".data", D_8009A5F0, 0x8009A5F0, 0x1C);
+INCLUDE_ASSET(".data", D_8009A60C, 0x8009A60C, 0x12);
+INCLUDE_ASSET(".data", D_8009A620, 0x8009A620, 0x12);
+INCLUDE_ASSET(".data", D_8009A634, 0x8009A634, 0x12);
+INCLUDE_ASSET(".data", D_8009A648, 0x8009A648, 0x12);
 Sequence D_8009A65C[3] = {
     {D_8009A5D4, D_8009A5F0}, {D_8009A60C, D_8009A620}, {D_8009A634, D_8009A648},
 };

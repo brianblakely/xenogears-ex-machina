@@ -1,9 +1,10 @@
 #include "worldmap.h"
 
-/* The director's timed sequence: the state of each step and its duration
- * (started by func_8007A9B4). */
-u16 D_8009A450[14] = {1, 2, 3, 8, 4, 5, 6, 8, 9, 7, 10, 11, 0, 0};
-u16 D_8009A46C[14] = {30, 160, 8, 30, 20, 60, 8, 30, 120, 76, 72, 1, 0, 0};
+/* The director's cue sequence, user-supplied script data (an asset in
+ * worldmap.classification.txt): 14 u16 states and 14 u16 waits (started by
+ * func_8007A9B4; tools/analysis/overlay_scripts.py decodes it). */
+INCLUDE_ASSET(".data", D_8009A450, 0x8009A450, 0x1C);
+INCLUDE_ASSET(".data", D_8009A46C, 0x8009A46C, 0x1C);
 
 /* Exhaust effect angle. */
 SVECTOR D_8009A488 = {0, 128, 0};
