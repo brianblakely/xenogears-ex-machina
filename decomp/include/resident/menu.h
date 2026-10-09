@@ -65,5 +65,6 @@ void func_8001C1A8(void);
 void func_8001BF38(void);
 void func_8001C074(void);
 
+/* More of the menu screens' resident state. */
 
 #endif

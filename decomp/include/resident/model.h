@@ -181,4 +181,21 @@ void func_8002C59C(SpriteModel *model);
 /* Old-style definition: callers pass the mode as an int. */
 s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
 
+/* More of the model services. */
+s32 func_8002C4BC(ModelGroup *group);
+s32 func_8002C644(ModelGroup *group);
+void func_8002CBBC(ModelBuffer *buffer);
+void func_8002CC54(u16 tpage);
+s32 func_8002DC9C(s32 x, s32 y, s32 z);
+void func_8002DD20(u32 *list);
+void func_8002DFF0(s32 a, s32 b);
+MorphState *func_800303C8(SpriteModel *model, s32 mode);
+void func_800305D8(MorphState *state);
+void func_800306D0(MorphState *state);
+void func_80030B14(MATRIX *rotation);
+
+/* Set the environment-map texture mapping of func_80030750 by rewriting its
+ * code: the u and v shifts and offsets (handwritten). */
+void func_80030988(s32 u_shift, s32 v_shift, s32 u_offset, s32 v_offset);
+
 #endif

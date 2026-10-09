@@ -48,4 +48,18 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
 
 MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* Rx * Ry * Rz of three angles */
 
+/* More of the display services. */
+void func_80027D40(void *block);
+void func_80027EAC(TextureScroll *scroll);
+void func_8002800C(TextureScroll *scroll);
+
+/* Link a primitive at the head of an ordering table entry (handwritten,
+ * func_80031678.s and its kin: the word count after the tag is the
+ * primitive's). */
+void func_80031678(u_long *ot, POLY_G4 *prim);
+void func_800316C0(u_long *ot, LINE_F2 *prim);
+void func_80031708(u_long *ot, LINE_F3 *prim);
+void func_80031750(u_long *ot, LINE_F4 *prim);
+void func_80031870(u_long *ot, TILE_1 *prim);
+
 #endif

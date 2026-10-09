@@ -455,4 +455,59 @@ typedef struct {
 extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
+
+/* More of the task and sprite services and their state. */
+void func_8001C8DC(void);
+void func_8001C944(void);
+void func_8001C964(void);
+void func_8001C9F8(void);
+Task *func_8001CD08(Task *owner, s32 size);
+void *func_8001CD7C(Task *task);
+Task *func_8001D0A4(Task *owner, void (*update)(Task *));
+Task *func_8001D164(void (*update)(Task *));
+void func_8001D19C(Task *task);
+Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *), void (*destroy)(Task *));
+void func_8001D468(void);
+void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height);
+void func_8001E368(Sprite *sprite, u_long *ot, s32 height);
+s32 func_8001EE68(u8 *frame);
+void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth);
+void func_8001FAB4(s32 x, s32 y);
+void func_80021B24(SVECTOR *to, SVECTOR *from);
+void func_80021BF0(Sprite *sprite, s32 resource);
+void func_80021BF8(Sprite *sprite, void *callback);
+void func_80021C00(Sprite *sprite, s32 group);
+void func_80021D50(Sprite *sprite, SpriteState *state);
+void func_80021EBC(Sprite *sprite, SpriteState *state);
+void func_80021FC0(Sprite *sprite, s32 speed);
+s32 func_80022A00(s32 *word);
+void func_8002303C(Sprite *sprite, s32 count, s32 mode);
+void func_800230A8(Sprite *sprite);
+void func_80023340(Sprite *sprite, s32 count);
+SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra);
+void func_80024F64(s32 size, s32 mode);
+void func_80024FB8(void);
+void func_80024FE4(s32 value);
+void func_80024FF4(MATRIX *view);
+void func_80025044(void);
+void func_800250E0(s32 queue);
+void func_80025A88(Task *task);
+void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode, s32 factor);
+void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y);
+void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot);
+extern u8 D_800591B1;
+extern u8 D_800591B2;
+extern u16 D_800591B4;
+extern u8 D_80059468[3];
+extern void *D_800594BC;
+extern u8 D_800594CC;
+extern s32 D_800595A0;
+extern void *D_800595A8;
+
+/* Darken `count` RGB555 pixels of `source` into `out` by level / 32, and
+ * blend them from `base` towards `target` by level / 32, through the GTE
+ * (handwritten). */
+void func_80026F44(s32 count, s32 level, u16 *out, u16 *source);
+void func_80026FE8(s32 count, s32 level, u16 *out, u16 *base, u16 *target);
+
 #endif

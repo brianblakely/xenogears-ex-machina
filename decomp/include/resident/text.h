@@ -31,5 +31,13 @@ s32 func_80033BAC(u8 first, u8 second);
 s32 func_80034F98(u16 first, u16 second);
 void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane);
 
+/* More of the text services. */
+u32 func_8003342C(void *data);
+u8 *func_800338D8(s32 index);
+u8 *func_80033908(s32 index);
+u8 *func_800339C8(s32 table, s32 index);
+u8 *func_800339FC(s32 index);
+u8 *func_80033A8C(s32 index);
+s32 func_80033C20(u8 *text, u16 *codes);
 
 #endif

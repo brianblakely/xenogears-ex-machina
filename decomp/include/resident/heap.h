@@ -68,5 +68,7 @@ void func_80032CB8(void);
 void func_80032D60(void);
 void func_80032DCC(char *line);
 void func_80032E04(char *name);
+extern void *D_800594AC; /* the reservation below the heap marker */
+extern void *D_80059480; /* the heap marker for the high-memory reservation */
 
 #endif

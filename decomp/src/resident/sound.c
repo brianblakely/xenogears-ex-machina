@@ -3980,8 +3980,6 @@ s32 func_8003F684(u32 *data) {
     return sum;
 }
 
-extern void func_80038428(void *bank);
-
 /* Report a driver error once (until cleared): remember the code, load the
  * built-in error bank and play its beep. */
 void func_8003F6B0(s32 error) {

@@ -107,4 +107,34 @@ s32 func_8001ACF0(s32 index);
 void func_8001BB50(void);
 void func_80024F20(void);
 
+/* More of the mode dispatcher's calls and state. */
+void func_80019964(void);
+void func_80019CA0(void);
+void func_8001AC94(void);
+void func_8001ACA4(void);
+void func_8001B044(void);
+s32 func_8001B484(s32 map, s32 slot);
+void func_8001B66C(void);
+void func_8001B970(void);
+void func_8001BB0C(void);
+void func_8001BBAC(void);
+extern u8 D_80059430;
+extern u8 D_80059434;
+extern u8 D_80059438;
+extern u8 D_8005943C;
+extern s32 *D_800594F0;
+extern u8 D_800594F8;
+extern u8 D_8005959C;
+extern void *D_8005A420[4];
+extern void *D_8005A450[4];
+extern s32 D_80065B08;
+extern u8 D_80062648[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
+extern s32 D_80065848[5];
+extern u8 D_8005947C; /* the pending scene + 1 */
+extern u8 D_80059508;
+extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) */
+extern u8 D_80065ADC[16];
+extern s16 D_8006BE2C[3]; /* per party slot (the field) */
+extern u8 D_80059180; /* battle music playing */
+
 #endif

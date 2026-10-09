@@ -2181,7 +2181,6 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 
 /* The rotation matrix whose second row is `axis`: the first row is the unit
  * vector perpendicular to world up and `axis`, the third completes the basis. */

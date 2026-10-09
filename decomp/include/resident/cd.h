@@ -74,4 +74,11 @@ void func_8002A498(s32 reason);
 void func_8002A524(FileEntry *table);
 FileEntry *func_8002A57C(s32 first, FileEntry *table);
 
+/* More of the disc and file services. */
+void *func_80028570(char *name, s32 *size);
+s32 func_800286BC(void);
+u8 *func_80028B14(void);
+u16 func_8002945C(u8 *chunk);
+u16 func_800294B4(u8 *chunk);
+
 #endif
