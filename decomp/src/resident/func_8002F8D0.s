@@ -4,8 +4,8 @@
 # primitive type 8. func_8002CF58 recorded twelve bytes per face at
 # D_80059498 (colour word, then face normal); this consumes one record
 # per face, culled or not, and stores the advanced pointer at the end.
-# Quads are projected and culled as in func_8002E010 (RTPT flags, NCLIP
-# of the first three points, RTPS flags, bounds test of four points). A
+# Quads are projected and culled as in func_8002E010 (error test, NCLIP
+# of the first three points, error test, bounds test of four points). A
 # quad passing them is counted and, unless its AVSZ4 OTZ is 0, lit by
 # NCCS (RGBC = the cached colour, V0 = the cached normal), written (four
 # SXY words, the lit RGB with the cached code byte) and linked.
@@ -53,7 +53,7 @@ glabel func_8002F8D0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
     addiu   $a2, $a2, 12        # this face's cache record ends here
-    mfc2    $t0, $31            # RTPT flags
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     nclip
     bltz    $t0, .Llit_f4
      and    $s3, $s3, $s6
@@ -68,7 +68,7 @@ glabel func_8002F8D0
     lwc2    $1, 4($t0)
     mfc2    $t3, $14
     rtps
-    mfc2    $t0, $31
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t4, $14
     bltz    $t0, .Llit_f4
      avsz4

@@ -70,7 +70,7 @@ alabel \ft3
     model_vertex2 $t0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .L\gt3\()_next
      sltu   $t0, $t1, $v0
@@ -169,7 +169,7 @@ alabel \ft4
     model_vertex2 $t0
     lwc2    $4, 0($t0)
     lwc2    $5, 4($t0)
-    mfc2    $t0, $31            # RTPT flags
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .L\gt4\()_next
      mfc2   $t2, $13
@@ -183,7 +183,7 @@ alabel \ft4
     lwc2    $0, 0($t0)          # the fourth point
     lwc2    $1, 4($t0)
     rtps
-    mfc2    $t0, $31
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t4, $14
     bltz    $t0, .L\gt4\()_next
      sltu   $t0, $t1, $v0

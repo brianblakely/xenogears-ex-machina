@@ -13,8 +13,10 @@
 # Each loop starts projecting the face it is about to test, then loads the
 # next record and its vertices while the GTE works: the record after the
 # last face is read and projected too, and a count of 0 still projects
-# the first face. Faces whose RTPT/RTPS FLAG has the error bit (31) set,
-# where some result overflowed or saturated, are culled.
+# the first face. The error test after RTPT/RTPS reads GTE data register
+# 31 (`mfc2 $31`: LZCR, the leading-bit count), not the FLAG control
+# register (`cfc2 $31`); LZCR never has bit 31 set, so the test culls
+# nothing and faces whose projection overflowed still reach the OT.
 #
 # Register use common to the renderers (variants are noted per routine):
 #   a0 = face record, a1 = faces left, a3 = packet size in bytes,

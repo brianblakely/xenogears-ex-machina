@@ -5,7 +5,7 @@
 # D_80059498 when the packets were built: the colour word, then the face
 # normal (SVECTOR). This consumes one record per face, culled or not, and
 # stores the advanced cache pointer at the end.
-# Faces are projected and culled as in func_8002E010 (flag error bit,
+# Faces are projected and culled as in func_8002E010 (error test,
 # bounds test, NCLIP); the three SXY words are written before the NCLIP
 # test. A front-facing face is counted, lit with NCCS (RGBC = the cached
 # colour, V0 = the cached normal) and always linked at its AVSZ3 OTZ,
@@ -52,7 +52,7 @@ glabel func_8002ED20
     model_vertex2 $t1
     lwc2    $4, 0($t1)
     lwc2    $5, 4($t1)
-    mfc2    $t0, $31            # FLAG
+    mfc2    $t0, $31            # LZCR (data register 31), not FLAG
     mfc2    $t1, $12
     bltz    $t0, .Llit_f3
      sltu   $t0, $t1, $v0
