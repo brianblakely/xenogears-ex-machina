@@ -111,8 +111,8 @@ void func_80088C28(void) {
 void func_80088CBC(s32 index) {
     Window *window = &D_8009A0D8[index];
 
-    window->sprite.len = 3;
-    window->sprite.code = 0x7D;
+    setlen(&window->sprite, 3);
+    setcode(&window->sprite, 0x7D);
     *(u16 *)&window->sprite.u0 = 0x3000;
     window->sprite.clut = GetClut(0x3F0, 0xC0);
 }

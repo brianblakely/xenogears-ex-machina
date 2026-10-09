@@ -8,3 +8,18 @@ D_800705F0 = 0x800705F0; // size:0x8 force_not_migration:True
 D_800705F8 = 0x800705F8; // type:asciz
 // The rate format, with stray bytes after its terminator.
 D_800706D4 = 0x800706D4; // size:0x14 force_not_migration:True
+// The extents of the objects the code addresses inside, so that splat takes
+// those addresses as offsets into them rather than as names of their own.
+D_80091130 = 0x80091130; // size:0x46
+D_80091178 = 0x80091178; // size:0x1E
+D_800912E0 = 0x800912E0; // size:0x10
+D_80091368 = 0x80091368; // size:0x28
+D_80091390 = 0x80091390; // size:0x28
+D_800915AC = 0x800915AC; // size:0x1E0
+D_80091934 = 0x80091934; // size:0x30
+D_800925A4 = 0x800925A4; // size:0x2D
+D_80092630 = 0x80092630; // size:0x8
+D_8009264C = 0x8009264C; // size:0x4
+D_800926A8 = 0x800926A8; // size:0x8
+D_800926B8 = 0x800926B8; // size:0x4
+D_80092768 = 0x80092768; // size:0x8

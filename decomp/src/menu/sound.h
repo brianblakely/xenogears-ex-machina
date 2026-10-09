@@ -17,8 +17,6 @@ typedef struct {
     Vector *follow; /* 0x20 */
 } SoundVoice;
 
-extern SoundVoice D_80096EA0[4];
-
 extern u8 D_80091F60[];
 extern u8 D_80091F70[];
 extern u8 D_80091F80[];

@@ -1,3 +1,18 @@
+# The scheduler's two words, which only these routines address: the
+# suspended caller's sp while a task runs (D_80096D88) and the running
+# Task * (D_80096D8C). Handwritten storage in an explicit .bss, not a
+# compiler .lcomm, so the menu assembler's small-data rule (menu.mk)
+# left these 8 bytes in .bss, where they open menu7's larger variables
+# ahead of its compiled ones.
+    .section .bss
+dlabel D_80096D88
+    .space 4
+enddlabel D_80096D88
+dlabel D_80096D8C
+    .space 4
+enddlabel D_80096D8C
+    .text
+
 # Save the scheduler's current caller stack and task so a nested scheduler
 # can restore them. a0 points to two words: caller sp, then Task *.
 # This is authored assembly for the original handwritten context interface.

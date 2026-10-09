@@ -28,6 +28,19 @@ static s16 *D_80092840;
 static u8 *D_80092844;
 static u8 D_80092848; /* the command the brain last started */
 
+/* Its larger ones, past the program's end (not in the file), each unit's
+ * after every unit's small ones (menu.mk), behind the task scheduler's
+ * two words (func_8008BB00.s). Nothing addresses the words marked
+ * unreferenced. */
+static PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
+static TileRgb D_80096DE0[2];  /* full-screen shade tile per draw buffer */
+static DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
+static s32 D_80096E18[34];     /* unreferenced */
+static SoundVoice D_80096EA0[4];
+static Brain D_80096F30; /* brain of the side-0 opponent */
+static Brain D_80096F64; /* brain of the side-1 opponent */
+static Vector D_80096F98; /* look-at work: side */
+
 Matrix D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
 
 s32 D_80091C2C = 0;
@@ -203,8 +216,8 @@ void func_80089330(s32 width, s32 height) {
     D_8009285C = width;
     D_8009286C = height;
     func_80089210(D_8009285C, D_8009286C);
-    D_8009A0D8[0].background.len = 3;
-    D_8009A0D8[0].background.colour = 0x60000000;
+    setlen(&D_8009A0D8[0].background, 3);
+    *(u32 *)&D_8009A0D8[0].background.r0 = 0x60000000; /* black, TILE */
     D_8009A0D8[0].background.x0 = 0;
     D_8009A0D8[0].background.y0 = 0;
     D_8009A0D8[0].background.w = width;
@@ -2498,7 +2511,7 @@ void func_8008F260(Actor *actor, Brain *brain, u8 arg) {
  * changes, count down to the next decision (some commands decide every
  * frame), run the command and then steer and accelerate. */
 void func_8008F280(Actor *actor) {
-    extern u8 D_80099DA2; /* D_80099D98.command, the byte at +0x0A. */
+    extern u8 D_80099DA2; /* D_80099D98.command, the byte at +0x0A (menu.bss.ld). */
     Brain *brain = actor->brain;
     s32 command = D_80099DA2;
 

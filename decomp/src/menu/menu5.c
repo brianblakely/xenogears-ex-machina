@@ -39,6 +39,19 @@ static u8 D_800927E0; /* backdrop texel v */
 static s32 D_800927E4[2]; /* unreferenced */
 static u8 D_800927EC;
 
+/* Its larger ones, past the program's end (not in the file), each unit's
+ * after every unit's small ones (menu.mk). Nothing addresses the words
+ * marked unreferenced; each is the size of one more per-buffer pair of the
+ * array before it. */
+static PolyG4 D_80095580[2]; /* sky gradient, one per buffer */
+static DrawTPage D_800955C8[4]; /* backdrop texture pages: two, one per buffer each */
+static s32 D_800955E8[4]; /* unreferenced */
+static Sprite D_800955F8[6]; /* backdrop sprites: three parts, one per buffer each */
+static s32 D_80095670[10]; /* unreferenced */
+static Hud D_80095698;
+static DrawTPage D_80095918[4]; /* HUD texture page modes, two per buffer */
+static Line3D D_80095938[100];
+
 /* Stage colours, read by func_80082A70 alone. */
 Environment D_8009178C[] = {
     { { 0x10, 0x60, 0x80 }, 0, 0x38, 0x38, 0x38, 0, { 0x70, 0x70, 0x70 }, 0, { 0x80, 0x80, 0x80 }, 0, 1 },
@@ -402,12 +415,12 @@ void func_80082A70(void) {
     D_80095580[0].b3 = bottom_b;
     *(u16 *)&D_80095580[1].r3 = bottom_r | (bottom_g << 8);
     D_80095580[1].b3 = bottom_b;
-    D_8009A1C0.r0 = bottom_r;
-    D_8009A1C0.g0 = bottom_g;
-    D_8009A1C0.b0 = bottom_b;
-    D_8009A2B8.r0 = bottom_r;
-    D_8009A2B8.g0 = bottom_g;
-    D_8009A2B8.b0 = bottom_b;
+    D_8009A0D8[0].background.r0 = bottom_r;
+    D_8009A0D8[0].background.g0 = bottom_g;
+    D_8009A0D8[0].background.b0 = bottom_b;
+    D_8009A0D8[1].background.r0 = bottom_r;
+    D_8009A0D8[1].background.g0 = bottom_g;
+    D_8009A0D8[1].background.b0 = bottom_b;
     SetFogNearFar(0x800, 0x1800, 0xC0);
     D_80059598 = (D_80059598 & 0xFFFFFF) | 0x28000000;
     gte_ldrgb(&D_80059598);
@@ -1118,15 +1131,15 @@ void func_80085014(void) {
     D_80092920 &= ~1;
     func_80083BB4(0);
     func_80083C0C(5);
-    D_80099D9E = 1;
-    D_80099D9D = 1;
+    D_80099D98.driven = 1;
+    D_80099D98.com1 = 1;
     D_800928C8 = 6;
 }
 
 /* Return from scene mode 5 to the menu screen. */
 void func_80085070(void) {
-    D_80099D9E = 0;
-    D_80099D9D = 0;
+    D_80099D98.driven = 0;
+    D_80099D98.com1 = 0;
     D_80092920 |= 1;
 }
 
@@ -1286,12 +1299,12 @@ restart:
         D_80099D98.level = D_80050621;
         D_80099D98.option6 = D_80050620;
         func_80080A58();
-        D_80099D9D = 0;
+        D_80099D98.com1 = 0;
         D_80092798 = D_8005061E;
         D_8009279C = D_8005061F;
         switch (D_8005061D) {
         case 0:
-            D_80099D9E = 1;
+            D_80099D98.driven = 1;
             func_80083C0C(1);
             D_800928C8 = 1;
             func_80080644(D_80092798, D_8009279C);
@@ -1300,12 +1313,12 @@ restart:
             }
             break;
         case 1:
-            D_80099D9E = 1;
+            D_80099D98.driven = 1;
             func_80083C0C(1);
             D_800928C8 = 4;
             break;
         case 2:
-            D_80099D9E = 0;
+            D_80099D98.driven = 0;
             func_80083C0C(7);
             D_800928C8 = 5;
             func_800719F0();

@@ -419,7 +419,9 @@ decomp/targets/overlays/mdec.classification.txt
 decomp/targets/overlays/mdec.mk
 decomp/targets/overlays/mdec.symbols.txt
 decomp/targets/overlays/mdec.yaml
+decomp/targets/overlays/menu.bss.ld
 decomp/targets/overlays/menu.classification.txt
+decomp/targets/overlays/menu.maspsx.py
 decomp/targets/overlays/menu.mk
 decomp/targets/overlays/menu.symbols.txt
 decomp/targets/overlays/menu.yaml
