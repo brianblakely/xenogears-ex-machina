@@ -29,6 +29,11 @@
 #include "stream.h"
 #include "terrain.h"
 
+/* The frame loop and the area's file set choice, which the overlay entry
+ * calls ahead of their definitions. */
+void func_800712D0(void);
+void func_80071B9C(s32 index, s32 position);
+
 /* The overlay's number, the first word of each mode overlay (field 4, world
  * map 5, battle 6, menu 7, movie 8). */
 const s32 D_8006FAF0 = 5;
