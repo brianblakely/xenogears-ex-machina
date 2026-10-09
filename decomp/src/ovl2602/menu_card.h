@@ -11,6 +11,7 @@
 #include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
+#include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/pad.h"
 #include "resident/sound.h"
@@ -455,8 +456,6 @@ extern s32 D_801D6C20[]; /* cursor y per position */
 /* Resident services. */
 extern MenuResources *D_8005945C;        /* the menu resources block */
 extern u8 D_80059171;                    /* shop number */
-extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
-void func_80019CA0(void);                /* soft reset combination */
 void func_80039DB8(s32 effect);          /* play a sound effect */
 extern u8 D_80059178;                    /* menu sound effects loaded */
 extern s32 D_80059488;                   /* sound state saved while paused */

@@ -14,6 +14,7 @@
 #include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
+#include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/pad.h"
 #include "resident/sound.h"
@@ -908,10 +909,8 @@ extern u16 D_8005A3A0[16];
  * GameData leaves unsettled (gearAccessoryIds, flags). */
 extern u8 D_8006F8BA[];
 #define GEAR_PART_DURABILITY ((u8 *)&D_8006D634.flags)
-extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
 extern s32 D_80059488;         /* play time in frames */
-extern s32 *D_8005917C;       /* stack guard word, -1 while intact */
 
 /* Overlay statics. */
 extern u8 D_801E96A4;    /* the file screen saves (nonzero) or loads */
@@ -1051,7 +1050,6 @@ extern s32 D_801E9F68[2];     /* label x (mode 6) */
 extern s32 D_801E9F70[];      /* label y (mode 6) */
 extern u8 D_801E97AC[];       /* 801e1544 screen: five sheet images per row, ff none */
 extern s32 D_801E9F48[];      /* status command label x offsets (page 0 and 6) */
-extern u8 D_80059179;         /* forbids the status command toggle */
 extern u8 D_801E9808[20];      /* pilot character of each gear */
 extern s32 D_801EA494[18];    /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
@@ -1073,7 +1071,6 @@ extern s32 D_801EA900[2];     /* per port */
 extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */
-void func_8001B970(void);
 
 /* Menu resource loading (801c65f4). */
 typedef struct MenuResources {
@@ -1083,7 +1080,6 @@ typedef struct MenuResources {
 
 extern MenuResources *D_8005945C; /* the menu resources */
 void func_8002A428(s32 arg0);
-void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
 void func_800263E4(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
 s32 func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);

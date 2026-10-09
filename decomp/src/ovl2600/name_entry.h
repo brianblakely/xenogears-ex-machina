@@ -11,6 +11,7 @@
 #include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
+#include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/pad.h"
 #include "resident/sound.h"
@@ -255,10 +256,8 @@ extern MenuArchive *D_8005945C;
 extern u8 D_80059178;    /* sound effects enabled */
 extern u8 D_80059171;    /* character being named */
 
-extern void func_80019CA0(void);               /* reset combination check */
 extern void func_80039DB8(s32 sound);          /* play a sound */
 extern s32 D_80059488;                         /* vsync count */
-extern s32 *D_8005917C;                        /* stack guard word (-1 intact) */
 extern void func_80033B34(void *codes, u8 *text, s32 count); /* decode text codes */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                          s32 scale);
