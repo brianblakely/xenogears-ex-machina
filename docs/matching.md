@@ -562,4 +562,8 @@ service or integration question. Do not rewrite expectations or hide uncertainty
 Existing original findings, captures and the host reconstruction remain valid only
 within their recorded scope. They are especially useful for the later native port,
 where pointer widths, arithmetic, memory layout and platform services change.
-Use docs/executable-reconstruction.md only when working on that reference harness.
+[original-boundaries.md](original-boundaries.md) records the services, timing,
+control-flow, display and sound-mode boundaries the recovered source shows, with
+the scan that inventories them (`tools/service_calls.py`) and each observation's
+limits. Use docs/executable-reconstruction.md only when working on that reference
+harness.
