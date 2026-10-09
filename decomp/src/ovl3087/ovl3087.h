@@ -72,7 +72,6 @@ void func_8007FF14(s32 arg);
 void func_800800E8(s32 arg);
 void func_800883AC(s32 arg);
 u16 func_80089C08(u8 id);
-void func_8008AB70(void);
 void *func_8008ABB8(s32 size, s32 top);
 void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6);
 void func_8008FA60(s32 id);

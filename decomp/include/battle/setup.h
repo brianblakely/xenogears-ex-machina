@@ -42,6 +42,7 @@ void func_8009892C(void);              /* the party's adjustments at battle star
 
 /* The battle heap and the disc. */
 void func_8008AB4C(void);              /* heap mode 0x20/0 */
+void func_8008AB70(void);              /* heap mode 0x20/2 */
 void func_8008AB94(void);              /* heap mode 0x20/3 */
 void func_8008AC50(void);              /* wait until the disc reads finish */
 
