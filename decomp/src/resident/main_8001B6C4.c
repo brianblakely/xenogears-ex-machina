@@ -124,7 +124,7 @@ void func_8001B970(void) {
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DC[2], 0, &D_80059470, &D_80059520, &D_8005949C);
+    func_800379D8(D_8006F9DC.stage, 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 u8 D_800594F8;

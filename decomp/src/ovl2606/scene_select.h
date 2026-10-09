@@ -2,6 +2,7 @@
 #define OVL2606_SCENE_SELECT_H
 
 #include "common.h"
+#include "resident/formation.h"
 
 /* libgpu (resident) */
 typedef struct {
@@ -81,7 +82,6 @@ extern PartyState D_8006F364;
 extern u8 D_80059508;  /* battle selector: enemy set */
 extern u8 D_8005947C;
 extern u8 D_8005954C;  /* battle mode */
-extern u8 D_800658DC[]; /* field formation table */
 extern u8 D_80062648[]; /* event data */
 extern void *D_800D39D8;
 

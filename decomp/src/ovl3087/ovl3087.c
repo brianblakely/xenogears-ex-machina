@@ -71,8 +71,8 @@ void func_801E5160(void) {
     func_8008AC50();
     func_8003342C(archive);
     func_8003342C(D_801E9C38);
-    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->script, 0);
-    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->data, 0);
+    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->script, 0);
+    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->data, 0);
     func_800320E8(archive);
     D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
     bzero(D_800D3278, sizeof(ScriptState));
@@ -832,8 +832,9 @@ s32 func_801E7684(s32 thread, u8 *insn) {
     return 3;
 }
 
-/* Opcode 24 (5 bytes; signed operands a, b): the pending scene (8005947c) =
- * a + 1 and the battle kind (8005954c) = b, for the next battle start. */
+/* Opcode 24 (5 bytes; signed operands a, b): the pending formation (8005947c)
+ * = a + 1 and the battle kind (8005954c) = b: the next battle (resident
+ * 8001b6c4) takes formation a of the same encounter set (80070f40). */
 s32 func_801E7700(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     D_8005947C = D_800D3278->operands[0] + 1;

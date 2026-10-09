@@ -893,7 +893,6 @@ extern FieldBundle *D_8005A4E0;
 #define BUNDLE_SIZE(k) (*(s32 *)((u8 *)D_8005A4E0 + 0x10C + (k) * 4))
 #define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)D_8005A4E0 + 0x130 + (k) * 4) + (s32)D_8005A4E0))
 extern SpriteSlotTable D_800B1F78;
-extern u8 D_800658DC[];      /* messages */
 extern s32 D_800AFD10;       /* attributes before the first triangle */
 extern s32 D_8004F330;
 extern s32 D_8004F334;

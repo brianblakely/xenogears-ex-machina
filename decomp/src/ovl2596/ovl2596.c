@@ -1181,7 +1181,7 @@ void func_801E2280(void) {
         D_800C3EB6[1].id = D_800C3EB6[2].id = 0x7F;
     }
     func_801E2794();
-    if (D_800D2D50 == 0 && !(D_8006F9DD & 8)) {
+    if (D_800D2D50 == 0 && !(D_8006F9DC.flags & 8)) {
         func_801E1FB8(gold);
     }
 }

@@ -8,6 +8,7 @@
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_music.h"
+#include "resident/formation.h"
 
 /* The overlay's number, ahead of this unit's other rodata (the field is
  * mode overlay 4). */
@@ -594,7 +595,7 @@ void func_80070CC8(void) {
     }
 
     func_8007008C(BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10,
-                  BUNDLE_COMPONENT(BUNDLE_MESSAGES), D_800658DC);
+                  BUNDLE_COMPONENT(BUNDLE_MESSAGES), &D_800658DC);
 
     size = BUNDLE_SIZE(BUNDLE_EVENTS) + 0x10;
     D_800ADBF8 = func_80031BDC(size, 0);

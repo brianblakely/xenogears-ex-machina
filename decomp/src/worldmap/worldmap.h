@@ -9,6 +9,7 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
+#include "resident/formation.h"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
@@ -993,14 +994,8 @@ void func_80075D4C(void);
 
 #define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
 
-/* Encounter tables of a terrain kind: 0x200 bytes of formations, then per level
- * bracket 16 formation weights. */
-typedef struct {
-    u8 data[0x200];
-} EncounterSet;
-
-extern EncounterSet D_800658DC; /* encounter set of the next battle */
-extern u8 D_80059508;           /* chosen formation */
+/* A terrain kind's encounter table (D_8009D73C) is its EncounterSet
+ * (resident/formation.h), then 16 formation weights per level bracket. */
 extern s16 D_8009A3A0[];        /* terrain kind substitutes */
 extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
 
