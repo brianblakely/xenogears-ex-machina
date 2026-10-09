@@ -47,7 +47,10 @@ void func_80097244(void *);                    /* look-at camera matrix */
 void func_80097440(void *);                    /* camera matrix by angle */
 void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out);
 
-/* Scripted camera easing (worldmap_80072238). */
+/* Scripted camera easing (worldmap_80072238): an eighth of the way to the
+ * actor's target angle, distance or position at a time. Declared without
+ * parameters: the callers pass each the actor and their work vectors,
+ * func_80076F54 too, which takes the actor alone. */
 void func_80076DA4(), func_80076F54(), func_80076FA8();
 s32 func_800771D8(s32 value, s32 target, s32 delta);
 

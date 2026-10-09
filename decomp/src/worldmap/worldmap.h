@@ -182,12 +182,12 @@ void func_80073300(void); /* choose the movement mode */
 void func_80075228(void); /* reset the movement state */
 void func_80075D4C(void); /* apply the party's riding changes */
 
-/* Pad buttons gathered per frame from the queued input events, and the
- * resident's vertical blank count. */
-extern u16 D_8009CD4C; /* held */
-extern u16 D_8009CD50;
-extern u16 D_8009BD10; /* pressed */
-extern u16 D_8009BD14, D_8009BD18, D_8009BD1C;
+/* Pad buttons gathered per frame from the queued input events (resident/pad.h
+ * words OR-ed together): held, pressed and repeated, each with the word that
+ * follows it in the resident; and the resident's vertical blank count. */
+extern u16 D_8009CD4C, D_8009CD50; /* held */
+extern u16 D_8009BD10, D_8009BD14; /* pressed */
+extern u16 D_8009BD18, D_8009BD1C; /* repeated */
 extern s32 D_80059488;
 
 /* Per display buffer: its environments, its ordering table (0x400 entries)

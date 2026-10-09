@@ -40,7 +40,8 @@
 #include "stream.h"
 #include "terrain.h"
 
-/* Actor script commands (dispatched by func_80076B34). */
+/* Actor script commands (dispatched by func_80076B34), declared for their
+ * table D_8009A3C0 in this unit's data, ahead of their code. */
 s32 func_80076BC4(void);
 s32 func_80076BDC(WorldmapActor *actor, s16 frames);
 s32 func_80076C18(WorldmapActor *actor, s32 a, s32 b);
