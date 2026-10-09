@@ -55,9 +55,10 @@ typedef struct Combatant {
     u8 field148;
     u8 field149;
     u8 pad14A[0x14C - 0x14A];
-    s32 field14C;
-    u8 field150[6];
-    u16 field156;
+    s32 field14C;       /* 0x14C: an enemy's experience (the results module totals it) */
+    u8 field150[6];     /* 0x150: an enemy's two drops: chances [0..1] (percent), item
+                         * ids [2..3], inventory lists [4..5] */
+    u16 field156;       /* 0x156: an enemy's gold */
     u8 expWeightA; /* 0x158: experience share weights */
     u8 expWeightB;
     u8 flags15A; /* bit 0x80: fighting in a gear */
@@ -120,32 +121,41 @@ typedef struct {
                             * battle start and counted up on the result screen */
     s32 toCount[3][2];     /* 0x0FE8: result values still to count */
     u16 savedMax[3][2]; /* 0x1000: each member's maximum HP and EP */
-    u8 pad100C[0x1028 - 0x100C];
+    u8 dropCategories[8]; /* 0x100C: the drop rolled per enemy (the results module):
+                           * its inventory list */
+    u8 dropIds[8];        /* 0x1014: and its item id, 0 none */
+    u8 learntCounter[3];  /* 0x101C: the counter skill each member learnt */
+    u8 learntLevel[3];    /* 0x101F: the level skill each member learnt */
+    u8 levelGains[3][2];  /* 0x1022: the levels A and B each member gained */
     u8 savedStats[3][8]; /* 0x1028: each member's base stats */
-    u8 pad1040[0x1058 - 0x1040];
+    u8 resultStats[3][8]; /* 0x1040: and after the battle's growth (the results screen) */
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */
     CommandDescriptor enemyCommands[199];   /* 0x35D8 */
     u8 pad54F0[0x54F8 - 0x54F0];
     BattleItemLists lists; /* 0x54F8 */
-    u8 pad5B74[0x5F24 - 0x5B74];
+    u8 pad5B74[0x5F20 - 0x5B74];
+    struct GrowthFile *growth; /* 0x5F20: the growth data file (the results module) */
     GearHud gearHud; /* 0x5F24 */
     s32 field5F54[3]; /* 0x5F54: per party member */
     s32 field5F60[3]; /* 0x5F60: per party member, in a gear */
     u32 damage[12]; /* 0x5F6C */
-    u8 pad5F9C[0x5FA0 - 0x5F9C];
+    u32 experience; /* 0x5F9C: the experience won */
     u8 resultCode[12]; /* 0x5FA0: 0xFF untouched */
     u16 targetMask;    /* 0x5FAC: effect target mask */
     u16 targetMask2;   /* 0x5FAE */
     u16 shownCommand;  /* 0x5FB0 */
-    u8 pad5FB2[0x5FB6 - 0x5FB2];
+    u8 pad5FB2[0x5FB4 - 0x5FB2];
+    u16 defeated;      /* 0x5FB4: the enemies defeated, a bit per enemy */
     u16 revived;       /* 0x5FB6: slots an item revived */
     u8 pad5FB8[0x5FBC - 0x5FB8];
     u8 commandAttributes[4]; /* 0x5FBC */
     u8 commandIndexCopy;     /* 0x5FC0 */
     u8 attackerIndex;        /* 0x5FC1 */
     u8 commandIndex;         /* 0x5FC2 */
-    u8 pad5FC3[0x5FC7 - 0x5FC3];
+    u8 pad5FC3;
+    s8 penalty;              /* 0x5FC4: experience lost, in quarters */
+    u8 pad5FC5[0x5FC7 - 0x5FC5];
     u8 message; /* 0x5FC7: battle message code */
 } BattleWork;
 
@@ -156,6 +166,13 @@ LAYOUT_CHECK(BattleWorkLayout, sizeof(Combatant) == 0x170 && sizeof(CommandDescr
                                    OFFSET_OF(Combatant, statusTimers) == 0x15C &&
                                    OFFSET_OF(CommandDescriptor, weight) == 0x27 &&
                                    OFFSET_OF(BattleWork, field5F54) == 0x5F54);
+LAYOUT_CHECK(BattleWorkResults, OFFSET_OF(BattleWork, dropCategories) == 0x100C &&
+                                    OFFSET_OF(BattleWork, levelGains) == 0x1022 &&
+                                    OFFSET_OF(BattleWork, resultStats) == 0x1040 &&
+                                    OFFSET_OF(BattleWork, growth) == 0x5F20 &&
+                                    OFFSET_OF(BattleWork, experience) == 0x5F9C &&
+                                    OFFSET_OF(BattleWork, defeated) == 0x5FB4 &&
+                                    OFFSET_OF(BattleWork, penalty) == 0x5FC4);
 
 extern BattleWork D_800CCCE8;
 
