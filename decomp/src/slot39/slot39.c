@@ -764,7 +764,7 @@ void func_801C62A8(void) {
             func_801C8694(0);
             break;
         case 2:
-            func_801C8694(D_8006F008);
+            func_801C8694(D_8006D634.vars[82]);
             break;
         }
         break;
@@ -797,7 +797,7 @@ void func_801C6400(void) {
         D_800625A0->card->files[i].state = 0;
         D_800625A0->card->fileSlots[i] = 0xff;
     }
-    line = D_8006EF64;
+    line = D_8006D634.vars[0];
     i = 0;
     func_80028470(0x10, 1);
     file = func_80031BDC(func_800288EC(1), 1);
@@ -916,7 +916,7 @@ void func_801C6AA0(MenuState *state) {
     D_800625A0->cardsPresent = 0;
     D_800625A0->unk335 = 0;
     D_800625A0->partyCount = 0;
-    members = D_8006F364 & D_8006F366 & 0x7ff;
+    members = D_8006D634.joined & D_8006D634.available & 0x7ff;
     for (i = 0; i < 16; i++) {
         if (func_801C865C(members, i)) {
             D_800625A0->present[i] = 1;
@@ -926,11 +926,11 @@ void func_801C6AA0(MenuState *state) {
     }
     for (i = 0; i < 3; i++) {
         D_800625A0->party->ready[i] = 0;
-        id = D_8006F368[i];
+        id = D_8006D634.party[i];
         if (id != 0xff && D_800625A0->present[id]) {
             D_800625A0->party->ids[i] = id;
             D_800625A0->partyCount++;
-            if (D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff) {
+            if (D_8006D634.characters[D_800625A0->party->ids[i]].gearId != 0xff) {
                 D_800625A0->party->ready[i] = 1;
                 D_800625A0->fighters++;
             }
@@ -1089,11 +1089,11 @@ void func_801C72BC(u8 code) {
         for (i = 0; i < 3; i++) {
             id = D_800625A0->party->ids[i];
             if (id != 0xff) {
-                gear = D_8006D8A0[id].gear;
+                gear = D_8006D634.characters[id].gearId;
                 if (gear != 0xff) {
-                    (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[i]].gear] =
+                    (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[i]].gearId] =
                         func_80032E88(archive->gears[gear], 0);
-                    func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[i]].gear);
+                    func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D634.characters[D_800625A0->party->ids[i]].gearId);
                 }
             }
         }
@@ -1148,7 +1148,7 @@ void func_801C72BC(u8 code) {
         for (i = 0; i < 3; i++) {
             id = D_800625A0->party->ids[i];
             if (id != 0xff) {
-                gear = D_8006D8A0[id].gear;
+                gear = D_8006D634.characters[id].gearId;
                 if (gear != 0xff) {
                     func_800320E8((D_800625A0->tables->effects + 11)[gear]);
                 }
@@ -2489,7 +2489,7 @@ void func_801CB28C(s32 *save) {
     func_801E4D10(save, D_800625A0->tables);
     D_80059488 = *save;
     for (i = 0; i < 16; i++) {
-        D_8005A3A0[i] = D_8006F958[i];
+        D_8005A3A0[i] = D_8006D634.flagWords[i + 1];
     }
     func_801CB184();
 }
@@ -2710,17 +2710,17 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 *names;
 
     for (j = 0; j < 16; j++) {
-        D_8006F958[j] = D_8005A3A0[j];
+        D_8006D634.flagWords[j + 1] = D_8005A3A0[j];
     }
     for (i = 0; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             payload->ids[i] = D_800625A0->party->ids[i];
-            payload->hp[i] = D_8006D8A0[D_800625A0->party->ids[i]].hp;
-            payload->hpMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
-            payload->ep[i] = D_8006D8A0[D_800625A0->party->ids[i]].ep;
-            payload->epMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].epMax;
-            payload->unk16[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk62;
-            payload->unk19[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk63;
+            payload->hp[i] = D_8006D634.characters[D_800625A0->party->ids[i]].hp;
+            payload->hpMax[i] = D_8006D634.characters[D_800625A0->party->ids[i]].maxHp;
+            payload->ep[i] = D_8006D634.characters[D_800625A0->party->ids[i]].ep;
+            payload->epMax[i] = D_8006D634.characters[D_800625A0->party->ids[i]].maxEp;
+            payload->unk16[i] = D_8006D634.characters[D_800625A0->party->ids[i]].level;
+            payload->unk19[i] = D_8006D634.characters[D_800625A0->party->ids[i]].level2;
         } else {
             payload->ids[i] = 0xff;
         }
@@ -2741,9 +2741,9 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
         }
     }
     if (!D_801E96A5) {
-        D_8006F008 = func_80028530() - 1;
+        D_8006D634.vars[82] = func_80028530() - 1;
     } else {
-        D_8006F008 = 1;
+        D_8006D634.vars[82] = 1;
     }
     func_801E4A28((SaveData *)payload);
     func_801CB184();
@@ -3432,7 +3432,7 @@ void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     if (layout == 0) {
         panel->frameB[D_800625A0->bufferIndex].clut = (ch & 1) ? D_80059414 : D_800595D4;
     } else {
-        panel->frameB[D_800625A0->bufferIndex].clut = (D_8006D8A0[ch].gear & 1) ? D_800595D4 : D_80059414;
+        panel->frameB[D_800625A0->bufferIndex].clut = (D_8006D634.characters[ch].gearId & 1) ? D_800595D4 : D_80059414;
     }
     func_801E920C(&panel->frameB[D_800625A0->bufferIndex], (u16)x->label, (u16)(y->label + row * 56),
                   (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
@@ -3445,7 +3445,7 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[ch].unk62);
+    func_801C80B8(D_8006D634.characters[ch].level);
     panel->counts[0] = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -3455,7 +3455,7 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
                                               0x1000);
         }
     }
-    func_801C80B8(D_8006D8A0[ch].unk63);
+    func_801C80B8(D_8006D634.characters[ch].level2);
     panel->counts[1] = 0;
 }
 
@@ -3471,12 +3471,12 @@ void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     u8 digit;
 
     if (layout == 0) {
-        func_801C80B8(D_8006D8A0[ch].hp);
+        func_801C80B8(D_8006D634.characters[ch].hp);
         digits = 3;
         first = 6;
     } else {
         digits = 5;
-        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk60);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[ch].gearId].hp);
         first = 4;
     }
     panel->counts[2] = 0;
@@ -3488,9 +3488,9 @@ void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
         }
     }
     if (layout == 0) {
-        func_801C80B8(D_8006D8A0[ch].hpMax);
+        func_801C80B8(D_8006D634.characters[ch].maxHp);
     } else {
-        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk64);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[ch].gearId].maxHp);
     }
     panel->counts[3] = 0;
     for (i = 0, n = 0; i < digits; i++) {
@@ -3502,7 +3502,7 @@ void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
         }
     }
     if (layout == 0) {
-        func_801C80B8(D_8006D8A0[ch].ep);
+        func_801C80B8(D_8006D634.characters[ch].ep);
         panel->counts[4] = 0;
         for (i = 0; i < 2; i++) {
             digit = D_800625A0->digits[7 + i];
@@ -3511,7 +3511,7 @@ void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
                                                   D_800625A0->bufferIndex, i * 8 + x->ep, row * 56 + y->ep, 0x1000);
             }
         }
-        func_801C80B8(D_8006D8A0[ch].epMax);
+        func_801C80B8(D_8006D634.characters[ch].maxEp);
         panel->counts[5] = 0;
         for (i = 0, n = 0; i < 2; i++) {
             digit = D_800625A0->digits[7 + i];
@@ -4772,7 +4772,7 @@ void func_801D2D38(void) {
     for (i = 0; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             func_801E8DA8(D_800625A0->party->ids[i], i * 2);
-            gear = D_8006D8A0[D_800625A0->party->ids[i]].gear;
+            gear = D_8006D634.characters[D_800625A0->party->ids[i]].gearId;
             if (gear != 0xff) {
                 func_801E8DA8(gear + 11, (i + 3) * 2);
             } else {
@@ -4788,7 +4788,7 @@ void func_801D2D38(void) {
 /* Refresh the item/status panels of `slot` for `mode` over two frames. */
 void func_801D2EC0(u8 slot, u8 mode) {
     func_801D7C3C(slot, mode);
-    func_801D7CFC(slot, mode, D_8006F8E5[slot]);
+    func_801D7CFC(slot, mode, D_8006D634.inGear[slot]);
     func_801C7BF4();
     func_801D8DE4(slot, 0, 0, mode);
     func_801C7BF4();
@@ -4948,7 +4948,7 @@ void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode) {
     } else {
         w = 0x60;
         label->polys[D_800625A0->bufferIndex].clut =
-            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+            ((D_8006D634.characters[D_800625A0->party->ids[slot]].gearId + 11) & 1) ? D_80059414 : D_800595D4;
         x = D_801EA17C[mode] - 0x30;
         func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
                       (u8)(D_801EA578[slot + 3] * 4), (u8)D_801EA5C4[slot + 3], w, 13);
@@ -5255,7 +5255,7 @@ void func_801D51EC(u8 index, u8 ch, s32 x, s32 y) {
     s32 n;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[ch].hp);
+    func_801C80B8(D_8006D634.characters[ch].hp);
     block->count1 = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5264,7 +5264,7 @@ void func_801D51EC(u8 index, u8 ch, s32 x, s32 y) {
                                            D_800625A0->bufferIndex, x + D_801E9B28 + i * 8, y + D_801E9B2C, 0x1000);
         }
     }
-    func_801C80B8(D_8006D8A0[ch].hpMax);
+    func_801C80B8(D_8006D634.characters[ch].maxHp);
     block->count2 = 0;
     for (i = 0, n = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5284,7 +5284,7 @@ void func_801D53D0(u8 index, u8 ch, s32 x, s32 y) {
     s32 n;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[ch].ep);
+    func_801C80B8(D_8006D634.characters[ch].ep);
     block->count3 = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[7 + i];
@@ -5293,7 +5293,7 @@ void func_801D53D0(u8 index, u8 ch, s32 x, s32 y) {
                                            D_800625A0->bufferIndex, x + D_801E9B38 + i * 8, y + D_801E9B3C, 0x1000);
         }
     }
-    func_801C80B8(D_8006D8A0[ch].epMax);
+    func_801C80B8(D_8006D634.characters[ch].maxEp);
     block->count4 = 0;
     for (i = 0, n = 0; i < 2; i++) {
         digit = D_800625A0->digits[7 + i];
@@ -5312,7 +5312,7 @@ void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[ch].exp);
+    func_801C80B8(D_8006D634.characters[ch].expNextA);
     block->count5 = 0;
     for (i = 0; i < 7; i++) {
         digit = D_800625A0->digits[2 + i];
@@ -5321,7 +5321,7 @@ void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
                                            D_800625A0->bufferIndex, x + D_801E9B48 + i * 8, y + D_801E9B4C, 0x1000);
         }
     }
-    func_801C80B8(D_8006D8A0[ch].expNext);
+    func_801C80B8(D_8006D634.characters[ch].expNextB);
     block->count7 = 0;
     for (i = 0; i < 7; i++) {
         digit = D_800625A0->digits[2 + i];
@@ -5339,7 +5339,7 @@ void func_801D5794(u8 index, u8 ch, s32 x, s32 y) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[ch].unk62);
+    func_801C80B8(D_8006D634.characters[ch].level);
     block->count6 = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5348,7 +5348,7 @@ void func_801D5794(u8 index, u8 ch, s32 x, s32 y) {
                                            D_800625A0->bufferIndex, x + D_801E9B18 + i * 8, y + D_801E9B1C, 0x1000);
         }
     }
-    func_801C80B8(D_8006D8A0[ch].unk63);
+    func_801C80B8(D_8006D634.characters[ch].level2);
     block->count8 = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5387,13 +5387,13 @@ void func_801D5A50(u8 index, u8 mode) {
     }
 }
 
-/* Lay out the money (D_8006EF58) digits at (x, y) and its unit mark. */
+/* Lay out the money (D_8006D634.gold) digits at (x, y) and its unit mark. */
 void func_801D5BA4(s32 x, s32 y) {
     s32 i;
     s32 dx;
     u8 digit;
 
-    func_801C80B8(D_8006EF58);
+    func_801C80B8(D_8006D634.gold);
     i = 0;
     dx = x;
     D_800625A0->fieldMenu->count = 0;
@@ -5454,7 +5454,7 @@ void func_801D5ED4(u8 slot, u8 gear) {
             (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
     } else {
         D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
-            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+            ((D_8006D634.characters[D_800625A0->party->ids[slot]].gearId + 11) & 1) ? D_80059414 : D_800595D4;
     }
     w = gear * 0x18 + 0x48;
     func_801E920C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex], 0, 0,
@@ -5501,12 +5501,12 @@ void func_801D6338(u8 slot, u8 gear) {
         digits = 3;
         first = 6;
         x = D_801E9CF0;
-        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hp);
+        func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].hp);
     } else {
         digits = 5;
         first = 4;
         x = D_801E9CF0 + 8;
-        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk60);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].hp);
     }
     D_800625A0->block358->hpCount = 0;
     for (i = 0; i < digits; i++) {
@@ -5527,10 +5527,10 @@ void func_801D6338(u8 slot, u8 gear) {
                           D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y0);
     }
     if (!gear) {
-        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hpMax);
+        func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].maxHp);
         x = D_801E9CF8;
     } else {
-        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk64);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].maxHp);
         x = D_801E9CF8 - 0x20;
     }
     D_800625A0->block358->hpMaxCount = 0;
@@ -5571,13 +5571,13 @@ void func_801D680C(u8 slot, u8 gear) {
         first = 7;
         x = D_801E9D00;
         y = D_801E9D04;
-        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].ep);
+        func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].ep);
     } else {
         digits = 4;
         first = 5;
         x = D_801E9D00;
         y = D_801E9D04 + 8;
-        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].fuel);
     }
     D_800625A0->block358->epCount = 0;
     for (i = 0; i < digits; i++) {
@@ -5598,11 +5598,11 @@ void func_801D680C(u8 slot, u8 gear) {
                           D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y0);
     }
     if (!gear) {
-        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].epMax);
+        func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].maxEp);
         x = D_801E9D08;
         y = D_801E9D0C;
     } else {
-        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk3A);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].maxFuel);
         x = D_801E9D08 - 0x20;
         y = D_801E9D0C + 0x10;
     }
@@ -5635,7 +5635,7 @@ void func_801D6CF4(u8 slot, u8 gear) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk62);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].level);
     D_800625A0->block358->levelCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5655,7 +5655,7 @@ void func_801D6CF4(u8 slot, u8 gear) {
                       D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y3 -
                           D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y0);
     }
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk63);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].level2);
     D_800625A0->block358->level2Count = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[6 + i];
@@ -5687,7 +5687,7 @@ void func_801D7154(u8 slot, u8 gear) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk3C);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].expTotalA);
     D_800625A0->block358->value3CCount = 0;
     for (i = 0; i < 8; i++) {
         digit = D_800625A0->digits[1 + i];
@@ -5707,7 +5707,7 @@ void func_801D7154(u8 slot, u8 gear) {
                       D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y3 -
                           D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0);
     }
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk40);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].expTotalB);
     D_800625A0->block358->value40Count = 0;
     for (i = 0; i < 8; i++) {
         digit = D_800625A0->digits[1 + i];
@@ -5736,7 +5736,7 @@ void func_801D74EC(u8 slot, u8 gear) {
     s32 i;
     u8 digit;
 
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].exp);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].expNextA);
     D_800625A0->block358->expCount = 0;
     for (i = 0; i < 7; i++) {
         digit = D_800625A0->digits[2 + i];
@@ -5756,7 +5756,7 @@ void func_801D74EC(u8 slot, u8 gear) {
                       D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y3 -
                           D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0);
     }
-    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].expNext);
+    func_801C80B8(D_8006D634.characters[D_800625A0->party->ids[slot]].expNextB);
     D_800625A0->block358->expNextCount = 0;
     for (i = 0; i < 7; i++) {
         digit = D_800625A0->digits[2 + i];
@@ -5792,9 +5792,9 @@ void func_801D7884(u8 slot, u8 gear) {
     s32 tenth;
 
     if (!gear) {
-        value = ((D_8006D8A0[D_800625A0->party->ids[slot]].accessories[4] + D_8006D8A0[D_800625A0->party->ids[slot]].accessories[3]) *
+        value = ((D_8006D634.characters[D_800625A0->party->ids[slot]].field78 + D_8006D634.characters[D_800625A0->party->ids[slot]].field77) *
                      10 +
-                 D_8006D8A0[D_800625A0->party->ids[slot]].unk79) *
+                 D_8006D634.characters[D_800625A0->party->ids[slot]].field79) *
                 22;
         whole = value / 100;
         digits = 3;
@@ -5805,7 +5805,7 @@ void func_801D7884(u8 slot, u8 gear) {
         x = D_801E9D30;
     } else {
         digits = 5;
-        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk68);
+        func_801C80B8(D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].field68);
         first = 4;
         x = D_801E9D30 + 8;
     }
@@ -6170,9 +6170,9 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
     rows = 5;
     column = 0xd0;
     base = 0;
-    weapons = D_8006D8A0[D_800625A0->party->ids[slot]].weapons;
-    specials = D_8006D8A0[D_800625A0->party->ids[slot]].specials;
-    accessories = D_8006D8A0[D_800625A0->party->ids[slot]].accessories;
+    weapons = D_8006D634.characters[D_800625A0->party->ids[slot]].weapons;
+    specials = D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems;
+    accessories = D_8006D634.characters[D_800625A0->party->ids[slot]].accessories;
     if (mode) {
         rows = 4;
         column = 0x28;
@@ -6183,9 +6183,9 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
         D_800625A0->labels360->visible[4] = 0;
     }
     if (gear) {
-        weapons = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC;
-        specials = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4;
-        accessories = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9;
+        weapons = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].weapons;
+        specials = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems;
+        accessories = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts;
     }
     if (kept) {
         weapons = D_800625A0->labels360->parts[0];
@@ -6264,7 +6264,7 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
                 s32 packetOffset = D_800625A0->bufferIndex * sizeof(POLY_FT4) +
                     4 * sizeof(MenuLabelSlot);
                 ((POLY_FT4 *)((u8 *)D_800625A0->labels360 + packetOffset))->clut =
-                    ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+                    ((D_8006D634.characters[D_800625A0->party->ids[slot]].gearId + 11) & 1) ? D_80059414 : D_800595D4;
             }
             (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u0 = D_801EA578[slot + 3] * 4;
             (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v0 = D_801EA5C4[slot + 3];
@@ -6659,7 +6659,7 @@ void func_801DA518(void) {
  * entry without an id or count is emptied; otherwise the count is capped at
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
-/* The counts are addressed from the ids (D_8006F65A - 150), as the original
+/* The counts are addressed from the ids (D_8006D634.itemIds - 150), as the original
  * does. */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
@@ -6678,19 +6678,19 @@ void func_801DA5BC(s32 row) {
     codes[1] = 0;
     codes[3] = 0;
     for (i = 0; i < 16; i++) {
-        if (D_8006F65A[row * 2 + i] != 0) {
-            if ((D_8006F65A - 150)[row * 2 + i] != 0) {
-                if ((D_8006F65A - 150)[row * 2 + i] >= 100) {
-                    (D_8006F65A - 150)[row * 2 + i] = 99;
+        if (D_8006D634.itemIds[row * 2 + i] != 0) {
+            if ((D_8006D634.itemIds - 150)[row * 2 + i] != 0) {
+                if ((D_8006D634.itemIds - 150)[row * 2 + i] >= 100) {
+                    (D_8006D634.itemIds - 150)[row * 2 + i] = 99;
                 }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(D_8006F65A[row * 2 + i]), image, 0x24, 0);
-                tens = (D_8006F65A - 150)[row * 2 + i] / 10;
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(D_8006D634.itemIds[row * 2 + i]), image, 0x24, 0);
+                tens = (D_8006D634.itemIds - 150)[row * 2 + i] / 10;
                 if (tens != 0) {
                     codes[0] = tens + 0x10;
                 } else {
                     codes[0] = 0xc3;
                 }
-                codes[2] = (D_8006F65A - 150)[row * 2 + i] % 10 + 0x10;
+                codes[2] = (D_8006D634.itemIds - 150)[row * 2 + i] % 10 + 0x10;
                 func_80033B34(codes, text, 2);
                 D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
                 rect.x = (i & 1) * 0x18 + 0x180;
@@ -6699,7 +6699,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[D_8006F65A[row * 2 + i]].use;
+                kind = D_800625A0->tables->items[D_8006D634.itemIds[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -6721,11 +6721,11 @@ void func_801DA5BC(s32 row) {
                 D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->shown[i] = 1;
             } else {
-                D_8006F65A[row * 2 + i] = 0;
+                D_8006D634.itemIds[row * 2 + i] = 0;
                 D_800625A0->block42C->shown[i] = 0;
             }
         } else {
-            (D_8006F65A - 150)[row * 2 + i] = 0;
+            (D_8006D634.itemIds - 150)[row * 2 + i] = 0;
             D_800625A0->block42C->shown[i] = 0;
         }
     }
@@ -6747,7 +6747,7 @@ void func_801DA9A8(s32 entry, s32 row) {
     u16 target;
     MenuItem *item;
 
-    ids = D_8006F65A;
+    ids = D_8006D634.itemIds;
     id = &ids[row * 2 + entry];
     if (*id != 0) {
         image = func_80031BDC(0x618, 0);
@@ -6950,7 +6950,7 @@ void func_801DB5E4(u8 mode) {
         ok = 1;
         if (id != 0xff) {
             if (mode) {
-                ok = D_8006D8A0[id].gear != 0xff;
+                ok = D_8006D634.characters[id].gearId != 0xff;
             }
             if (ok) {
                 func_801CE0CC(panel, id, i, xs, ys, mode);
@@ -6993,7 +6993,7 @@ u8 func_801DB920(s32 row, s32 entry) {
     running = 1;
     slot = D_800625A0->firstMember;
     D_801E9785 = 0;
-    ids = INVENTORY->ids;
+    ids = D_8006D634.itemIds;
     item = &D_800625A0->tables->items[ids[row * 2 + entry]];
     redraw = 1;
     if (item->use & 0x80) {
@@ -7028,7 +7028,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 D_800625A0->markers->visible[slot] = 1;
             }
             D_800625A0->party->unk2F = 1;
-            if (INVENTORY->counts[row * 2 + entry] == 0) {
+            if (D_8006D634.itemCounts[row * 2 + entry] == 0) {
                 running = 0;
             }
             if (!running) {
@@ -7039,15 +7039,15 @@ u8 func_801DB920(s32 row, s32 entry) {
                 used = 0;
                 for (i = 0; i < 3; i++) {
                     if (func_801C865C(marks, i) &&
-                        func_801E31C0(D_800625A0->tables, D_800625A0->party->ids[i], D_8006F65A[row * 2 + entry]) == 0) {
+                        func_801E31C0(D_800625A0->tables, D_800625A0->party->ids[i], D_8006D634.itemIds[row * 2 + entry]) == 0) {
                         used |= 1;
                     }
                 }
                 if (used) {
                     func_801C8574(0x37);
                     redraw = 1;
-                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        ids = INVENTORY->ids;
+                    if (--D_8006D634.itemCounts[row * 2 + entry] == 0) {
+                        ids = D_8006D634.itemIds;
                         ids[row * 2 + entry] = 0;
                     }
                 } else {
@@ -7084,10 +7084,10 @@ u8 func_801DB920(s32 row, s32 entry) {
 void func_801DBD4C(s32 a, s32 b) {
     u8 tmp;
 
-    tmp = D_8006F65A[a];
-    D_8006F65A[a] = D_8006F65A[b];
-    D_8006F65A[b] = tmp;
-    tmp = D_8006F5C4[a];
-    D_8006F5C4[a] = D_8006F5C4[b];
-    D_8006F5C4[b] = tmp;
+    tmp = D_8006D634.itemIds[a];
+    D_8006D634.itemIds[a] = D_8006D634.itemIds[b];
+    D_8006D634.itemIds[b] = tmp;
+    tmp = D_8006D634.itemCounts[a];
+    D_8006D634.itemCounts[a] = D_8006D634.itemCounts[b];
+    D_8006D634.itemCounts[b] = tmp;
 }

@@ -218,8 +218,8 @@ void func_801E8DA8(u8 image, u8 row) {
     pixels = func_80031BDC(0x3f6, 0);
     bzero(pixels, 0x3f6);
     if (image != 0xff) {
-        func_80034EAC(D_8006D634.names[image >> 1][0], pixels, 0x24, 0);
-        func_80034EAC(D_8006D634.names[image >> 1][1], pixels, 0x24, 1);
+        func_80034EAC(D_8006D634.names[(image >> 1) * 2], pixels, 0x24, 0);
+        func_80034EAC(D_8006D634.names[(image >> 1) * 2 + 1], pixels, 0x24, 1);
     }
     rect.x = D_801EA578[row >> 1] + 0x180;
     rect.y = D_801EA5C4[row >> 1];

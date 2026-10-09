@@ -11,6 +11,7 @@
 #include "psyq/libsn.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
 #include "resident/model.h"
@@ -232,76 +233,6 @@ typedef struct MenuEffect {
     u8 pad26[0x2];
 } MenuEffect;
 
-/* A character record of the game data (D_8006D8A0; gears follow from 11). */
-typedef struct CharRecord {
-    u16 weaponValue; /* 0: from the weapon record (+8) */
-    u8 weaponA; /* 2 */
-    u8 weaponB; /* 3: 100 adds the value to +8e */
-    u8 level; /* 4: from the weapon record (+c) */
-    u8 pad5[0x13];
-    u16 weapon2Value; /* 18: kind 4: the second weapon's values */
-    u8 weapon2A; /* 1A */
-    u8 weapon2B; /* 1B */
-    u8 unk1C; /* 1C */
-    u8 pad1D[0xB];
-    u8 bonus[8]; /* 28: equipment bonuses of the base values (58) */
-    u8 unk30; /* 30: accessory kinds 8, 9 */
-    u8 unk31; /* 31 */
-    u16 unk32; /* 32: accessory kind 5 bits */
-    u8 pad34[0x8];
-    u32 unk3C; /* 3C */
-    u32 unk40; /* 40 */
-    u32 exp; /* 44 */
-    u32 expNext; /* 48 */
-    u16 hp; /* 4C */
-    u16 hpMax; /* 4E */
-    u16 ep; /* 50 */
-    u16 epMax; /* 52 */
-    u8 pad54[0x2];
-    u8 unk56; /* 56 */
-    u8 pad57[0x1];
-    u8 unk58; /* 58 */
-    u8 unk59; /* 59 */
-    u8 unk5A; /* 5A */
-    u8 unk5B; /* 5B */
-    u8 unk5C; /* 5C */
-    u8 pad5D[0x1];
-    u8 unk5E; /* 5E */
-    u8 unk5F; /* 5F */
-    u8 pad60[0x2];
-    u8 unk62; /* 62 */
-    u8 unk63; /* 63 */
-    u8 pad64[0x6];
-    u8 weapons[5]; /* 6A: [0] the weapon */
-    u8 specials[5]; /* 6F: special parts; [0] inventory list 1 entry (801e0434), kind 4: first weapon; [3] kind 4: second weapon */
-    u8 accessories[5]; /* 74: accessory records */
-    u8 unk79; /* 79 */
-    u8 pad7A[0x4];
-    u16 unk7E; /* 7E: accessory kind 1 bits */
-    u8 pad80[0x2];
-    u16 unk82; /* 82: kind 2 */
-    u8 pad84[0x2];
-    u16 unk86; /* 86: kind 3 */
-    u8 pad88[0x2];
-    u16 unk8A; /* 8A: kind 4 */
-    u8 pad8C[0x2];
-    u16 unk8E; /* 8E: kind 7 */
-    u16 unk90[7]; /* 90: progress values (801e1418) */
-    u8 pad9E[0x2];
-    u8 gear; /* A0: gear record (+11), ff none */
-    u8 unkA1; /* A1: accessory kind 10 */
-    u8 padA2[0x2];
-} CharRecord;
-
-/* A weapon slot of a gear record. */
-typedef struct GearSlot {
-    u16 value; /* 0 */
-    u8 unk2; /* 2 */
-    u8 unk3; /* 3 */
-    u8 unk4; /* 4 */
-    u8 pad5[0x3];
-} GearSlot;
-
 /* A gear weapon (or special part) record of the data tables (+18). */
 typedef struct GearWeapon {
     u8 attrs[4]; /* 0 */
@@ -401,65 +332,13 @@ typedef struct MenuTables {
     u8 padCA[0x2];
 } MenuTables;
 
-/* A gear record of the game data (D_8006DFAC). */
-typedef struct GearRecord {
-    u8 pad0[0x2];
-    u8 engine; /* 2: record of table +8 */
-    u8 unk3; /* 3: record of table +c */
-    u8 unk4[0x4]; /* 4: part ids; [0] inventory list 4 entry (801e0434), first slot weapon of gears 5, d */
-    u8 frame; /* 8 */
-    u8 unk9[3]; /* 9: part ids (801df5d0 keeps four from here); copied to the gear's other form (801e3ecc) */
-    u8 unkC[4]; /* C: [0] weapon record of table +18 */
-    GearSlot slots[3]; /* 10 */
-    u8 pad28[0x10];
-    u16 unk38; /* 38 */
-    u16 unk3A; /* 3A */
-    u8 unk3C; /* 3C */
-    u8 unk3D; /* 3D */
-    u8 unk3E; /* 3E */
-    u8 unk3F; /* 3F */
-    u16 unk40; /* 40 */
-    u16 unk42; /* 42 */
-    u16 unk44; /* 44 */
-    u8 pad46[0x2];
-    u16 unk48; /* 48: part kind 9 bits */
-    u8 unk4A; /* 4A: level (801e4928) */
-    u8 pad4B[0x1];
-    u8 unk4C; /* 4C */
-    u8 unk4D; /* 4D */
-    u8 unk4E; /* 4E */
-    u8 unk4F; /* 4F: part kind 5 amount; nonzero sets the pilot's flag 8000 */
-    u8 unk50[4]; /* 50 */
-    u8 unk54; /* 54 */
-    u8 unk55[3]; /* 55: part kinds 9/10 and 11 amounts at [1], [2] */
-    u8 pad58[0x4];
-    u8 attrs[4]; /* 5C */
-    u32 unk60; /* 60 */
-    u32 unk64; /* 64 */
-    u16 unk68; /* 68 */
-    u16 unk6A; /* 6A */
-    u8 pad6C[0x2];
-    u16 unk6E; /* 6E: part kind 4 bits */
-    u16 unk70; /* 70 */
-    u16 unk72; /* 72 */
-    u8 unk74; /* 74 */
-    u8 unk75; /* 75 */
-    u8 pad76[0x8];
-    u16 unk7E; /* 7E: part kind 1 bits */
-    u8 pad80[0x2];
-    u16 unk82; /* 82: part kind 2 bits */
-    u8 pad84[0x2];
-    u16 unk86; /* 86: part kind 3 bits (low 12), weapon value */
-    u8 unk88[16]; /* 88: per kind 4 bit, part amounts */
-    u8 unk98; /* 98 */
-    u8 unk99; /* 99 */
-    u8 pad9A[0x2];
-    u8 unk9C; /* 9C */
-    u8 unk9D; /* 9D */
-    u8 unk9E; /* 9E */
-    u8 unk9F; /* 9F */
-    u8 padA0[0x4];
-} GearRecord;
+/* The gear record's bytes 0x55-0x57 (pad55, equipAttackScale, chargeRate)
+ * as the stat rebuild clears them: one array indexed from the record, which
+ * the separate members of GearRecord do not compile alike. */
+typedef struct {
+    u8 pad[0x55];
+    u8 bytes55[3];
+} GearRecordBytes55;
 
 /* A laid-out label: its quads and sprite list. */
 typedef struct MenuLabelSlot {
@@ -896,16 +775,6 @@ typedef struct DiscLabel {
     u8 unk8[8];
 } DiscLabel;
 
-/* A 20-byte game data record at D_8006ECF4 (801e5178 resets eleven). */
-typedef struct GameRecordECF4 {
-    u16 values[4]; /* 0 */
-    u8 pad8[0xF];
-    u8 flag; /* 17 */
-    u8 pad18[0x2];
-    u16 unk1A; /* 1A */
-    u8 pad1C[0x4];
-} GameRecordECF4;
-
 /* Word views of the game data blocks a save file copies whole. */
 typedef struct SaveWords10 { s32 w[0x10 / 4]; } SaveWords10;
 typedef struct SaveWords18 { s32 w[0x18 / 4]; } SaveWords18;
@@ -918,16 +787,16 @@ typedef struct SaveWords190 { s32 w[0x190 / 4]; } SaveWords190;
 
 /* A gear as a save file keeps it (3c bytes). */
 typedef struct SaveGear {
-    SaveWords10 head; /* 0: the gear record's first 10 bytes */
-    SaveWords18 slots; /* 10: its slots */
-    s32 attrs; /* 28: attrs (5c) */
-    u32 unk60; /* 2C */
+    SaveWords10 head;     /* 0: the gear record's first 0x10 bytes */
+    SaveWords18 entries;  /* 10: its part entries (0x10) */
+    s32 variants;         /* 28: fileVariant and spriteVariants (0x5c) */
+    u32 hp;               /* 2C */
     u8 pad30[0x4];
-    u16 unk38; /* 34 */
+    u16 fuel;             /* 34 */
     u8 pad36[0x2];
-    u8 unk99; /* 38 */
-    u8 unk74; /* 39 */
-    u8 unk75; /* 3A */
+    u8 defense;           /* 38 */
+    u8 field74;           /* 39 */
+    u8 field75;           /* 3A */
     u8 pad3B[0x1];
 } SaveGear;
 
@@ -944,32 +813,6 @@ typedef struct SaveData {
     SaveWords100 unk1024; /* 1024: game data 1820 */
     u8 unk1124[0xA38]; /* 1124: game data 1920 */
 } SaveData;
-
-/* The game data from 8006d634 to the flags at 8006f8ea: the code addresses
- * its tables relative to one another, so they are one object. */
-typedef struct GameData {
-    u8 names[5][2][0x14]; /* 0 (8006d634): name line pairs */
-    u8 names10[0x14]; /* C8 */
-    u8 unkDC[0x190]; /* DC (8006d710) */
-    CharRecord chars[11]; /* 26C (8006d8a0, D_8006D8A0) */
-    GearRecord gears[20]; /* 978 (8006dfac, D_8006DFAC) */
-    u8 unk1648[0x78]; /* 1648 (8006ec7c) */
-    GameRecordECF4 records[11]; /* 16C0 (8006ecf4, D_8006ECF4) */
-    u8 unk1820[0x100]; /* 1820 (8006ee54) */
-    u8 unk1920[0x418]; /* 1920 (8006ef54) */
-    u8 weaponCounts[100]; /* 1D38 (8006f36c, D_8006F36C): equipment lists, counts then ids */
-    u8 weaponIds[100]; /* 1D9C (8006f3d0, D_8006F3D0) */
-    u8 accessoryCounts[200]; /* 1E00 (8006f434, D_8006F434) */
-    u8 accessoryIds[200]; /* 1EC8 (8006f4fc, D_8006F4FC) */
-    u8 itemCounts[150]; /* 1F90 (8006f5c4, D_8006F5C4) */
-    u8 itemIds[150]; /* 2026 (8006f65a, D_8006F65A) */
-    u8 gearPartCounts[100]; /* 20BC (8006f6f0, D_8006F6F0) */
-    u8 gearPartIds[100]; /* 2120 (8006f754, D_8006F754) */
-    u8 gearAccessoryCounts[150]; /* 2184 (8006f7b8, D_8006F7B8) */
-    u8 gearAccessoryIds[150]; /* 221A (8006f84e, D_8006F84E) */
-    u8 unk22B0[6]; /* 22B0 (8006f8e4) */
-    u16 flags; /* 22B6 (8006f8ea, D_8006F8EA) */
-} GameData;
 
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
@@ -1056,42 +899,15 @@ extern MenuState *D_800625A0; /* the menu state */
 extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6 other */
 extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
-extern CharRecord D_8006D8A0[]; /* game data: character records, then gears from 11 */
-extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
-extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
-extern u8 D_8006F65A[150];    /* game data: inventory item ids */
-/* The inventory at D_8006F5C4 as one record: item counts, then item ids. */
-typedef struct Inventory {
-    u8 counts[150];
-    u8 ids[150];
-} Inventory;
-#define INVENTORY ((Inventory *)D_8006F5C4)
-extern u16 D_8006F958[16];    /* game data */
+/* The battle script variables (a resident common): the save keeps them
+ * in its flag words. No shared header declares them; battle reads them
+ * signed. */
 extern u16 D_8005A3A0[16];
-extern u8 D_8006F8E5[];       /* game data */
-extern GameRecordECF4 D_8006ECF4[11];
-extern u16 D_8006F364;
-extern GameData D_8006D634;    /* game data (also named at its tables below) */
-extern u16 D_8006F8EA;        /* game data: flags */
-extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
-extern u8 D_8006F3D0[];
-extern u8 D_8006F434[];
-extern u8 D_8006F4FC[];
-extern u8 D_8006F5C6[];
-extern u8 D_8006F65C[];
-extern u8 D_8006F6F0[];
-extern u8 D_8006F754[];
-extern u8 D_8006F7B8[];
-extern u8 D_8006F84E[];
-extern u8 D_8006F368[3];      /* game data: character of each party slot, ff empty */
-extern u16 D_8006F364;        /* game data: party member bits */
-extern u16 D_8006F366;
-extern u16 D_8006F008;        /* game data: disc of the saved file (0 based) */
-extern u8 D_8006F8BA[];       /* game data: special part durability per id */
-/* Gear special part durability per id, from the game data flags word on. */
-#define GEAR_PART_DURABILITY ((u8 *)&D_8006F8EA)
-extern u16 D_8006EF64;
-extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
+/* Gear special part durability per part id: two views into the game data,
+ * from +0x2286 and from its flags word at +0x22b6, whose extents the shared
+ * GameData leaves unsettled (gearAccessoryIds, flags). */
+extern u8 D_8006F8BA[];
+#define GEAR_PART_DURABILITY ((u8 *)&D_8006D634.flags)
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
 extern s32 D_80059488;         /* play time in frames */
@@ -1156,9 +972,6 @@ extern s32 D_801E9D88[];
 extern s32 D_801E9DDC[];  /* arts list cost x positions */
 extern s32 D_801E9E14[];  /* arts list cost y positions */
 extern u16 D_801E97F0[];
-extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
-extern u16 D_8006ECFA[];
-extern u16 D_8006ED0E[];  /* part panel row y positions */
 extern s32 D_801E9B18;   /* field block number offsets (x, y): +62 */
 extern s32 D_801E9B1C;
 extern s32 D_801E9B20;   /* +63 */
