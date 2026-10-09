@@ -501,15 +501,37 @@ class MatchingTests(unittest.TestCase):
         subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)], check=True)
         return out.read_bytes()
 
+    def cover_linked_fixture(self, image, settings=()):
+        """Link the fixture unit's .data and .bss (loaded) at 0x80010000 with the
+        target Makefile, then run the coverage report on its ELF and map."""
+        repo = Path(__file__).resolve().parents[1]
+        (self.root / "fixture.ld").write_text(
+            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n"
+            "    build/decomp/src/t/unit.o(.data)\n    build/decomp/src/t/unit.o(.bss)\n"
+            "  }\n  /DISCARD/ : { *(*) }\n}\n"
+        )
+        build = subprocess.run(
+            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+             "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=" + image,
+             "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings, str(self.root / image)],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
+        return subprocess.run(
+            [sys.executable, str(repo / "tools/matching_coverage.py"), image + ".elf",
+             "--map", image + ".map", "--src", "decomp/src"],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
-            "psx-objcopy", "psx-readelf",
+            "psx-ld", "psx-objcopy", "psx-readelf",
         )),
         "enter the matching Nix shell to test original data objects",
     )
     def test_original_object_links_in_place_and_counts_as_included(self):
-        from tools.matching_coverage import data_coverage, source_names
+        from tools.matching_coverage import source_names
 
         self.original.write_bytes(bytes(range(16)))
         self.digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
@@ -518,7 +540,9 @@ class MatchingTests(unittest.TestCase):
             "int before = 0x11111111;\n"
             '/* a byte object whose padding holds 05 06 07 */\n'
             'INCLUDE_ORIGINAL(".data", D_80010004, 0x80010004, 4);\n'
-            "int after = 0x22222222;\n",
+            "int after = 0x22222222;\n"
+            "static int counter;\n"
+            "int *count(void) { return &counter; }\n",
             ["TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000"],
         )
         self.assertEqual(
@@ -528,11 +552,48 @@ class MatchingTests(unittest.TestCase):
         symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                  capture_output=True, text=True).stdout
         self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
-        _asm, _nonmatching, included = source_names([self.root / "decomp/src"])
-        self.assertEqual(included, {"D_80010004"})
-        sections = [(".data", 0x80010000, 12, "build/decomp/src/t/unit.o")]
-        totals = data_coverage(sections, [(0x80010004, 0x80010008)], [], self.root)
-        self.assertEqual(totals, {"c": 8, "included": 4})
+        _asm, _nonmatching, included, assets = source_names([self.root / "decomp/src"])
+        self.assertEqual((included, assets), ({"D_80010004"}, set()))
+        # The report on the link resolves the name through the ELF and counts
+        # every loaded byte, the loaded .bss included.
+        result = self.cover_linked_fixture("image.bin")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["data_classes"], {"bss": 4, "c": 8, "included": 4})
+        self.assertEqual(report["remaining_data_placeholder_bytes"], 0)
+        # A linker-script assignment shadowing the object would leave its
+        # original bytes counted as C: the report fails instead.
+        (self.root / "shadow.ld").write_text("D_80010004 = 0x80010004;\n")
+        result = self.cover_linked_fixture("shadow.bin", ["LINKER_EXTRA=shadow.ld"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("D_80010004: an absolute symbol", result.stderr)
+
+    def test_original_objects_must_resolve_to_one_sized_symbol(self):
+        from tools.matching_coverage import original_objects, source_names
+
+        table = [
+            (0x80010004, 4, "NOTYPE", "1", "D_ok"),
+            (0x80010010, 0, "NOTYPE", "1", "D_empty"),
+            (0x80010014, 4, "NOTYPE", "ABS", "D_shadowed"),
+            (0x80010018, 4, "OBJECT", "1", "D_twice"),
+            (0x8001001C, 4, "OBJECT", "2", "D_twice"),
+            (0x80010020, 8, "NOTYPE", "1", "D_asset"),
+        ]
+        assets = [(0x80010020, 0x80010028, "asset", "a packed image")]
+        self.assertEqual(original_objects(table, {"D_ok"}, {"D_asset"}, assets),
+                         [(0x80010004, 0x80010008)])
+        for name, message in (("D_missing", "no ELF symbols"), ("D_empty", "no size"),
+                              ("D_shadowed", "absolute"), ("D_twice", "2 ELF symbols")):
+            with self.assertRaisesRegex(SystemExit, message):
+                original_objects(table, {name}, set(), assets)
+        with self.assertRaisesRegex(SystemExit, "outside every asset range"):
+            original_objects(table, set(), {"D_ok"}, assets)
+        # A wrapper macro would hide its names from the scan.
+        header = self.root / "decomp/src/t/wrap.h"
+        header.parent.mkdir(parents=True, exist_ok=True)
+        header.write_text('#define PALETTE(name) \\\n    INCLUDE_ASSET(".data", name, 0x80010020, 8)\n')
+        with self.assertRaisesRegex(SystemExit, "wrap.h: a macro wrapping"):
+            source_names([self.root / "decomp/src"])
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (

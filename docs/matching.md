@@ -463,12 +463,19 @@ Measure source coverage and exact matching independently. Do not call a baseline
 made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
-From the link map it also attributes every loaded .rodata/.data/.sdata input
-section to compiled C, original bytes INCLUDE_RODATA'd or INCLUDE_ORIGINAL'd in C
-(`included`),
-authored assembly, a classified `sdk`/`asset` range, or a generated
-`placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
-game data or bytecode that is parsed and documented rather than rewritten as source.
+From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
+input section and, where an image holds its uninitialized variables as zeros, each
+.bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
+alignment gaps and a packer's tail belong to no input section). A byte is compiled C
+(`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
+INCLUDE_ORIGINAL'd in C (`included`), authored assembly, a classified `sdk`/`asset`
+range, or a generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss
+included). Every INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name in a target's C
+units and headers must resolve to one sized, section-relative ELF symbol, an
+INCLUDE_ASSET object must lie in an `asset` range, and no macro may wrap them;
+otherwise the report fails rather than count original bytes as C. `asset` marks
+user-supplied game data or bytecode that is parsed and documented rather than
+rewritten as source.
 GCC emits a static initializer's string literals last to first once the initializer
 ends, so a pointer table whose strings lie in reverse address order was written with
 its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
