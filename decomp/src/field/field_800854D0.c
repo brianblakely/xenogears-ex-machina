@@ -1769,6 +1769,7 @@ void func_8008A4E8(void) {
 void func_8008A4F0(void) {
 }
 
+/* Empty; neither instruction table nor any call reaches it. */
 void func_8008A4F8(void) {
 }
 
@@ -4928,6 +4929,7 @@ void func_80093014(void) {
     D_800B0078->pc += 10;
 }
 
+/* Empty; the map-change events call it before they leave. */
 void func_800931F8(void) {
 }
 
@@ -8347,6 +8349,9 @@ void func_8009C12C(void) {
     func_8009C5A8(D_800AFD1C, 3);
 }
 
+#define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
+#define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
+
 /* Show the dialogue portrait of `character`: finish a pending slot first
  * (upload loaded images, or release shown ones) and return -1; a slot
  * already holding it is selected (bits 2-4 of the actor state) and 0
@@ -8356,8 +8361,6 @@ void func_8009C12C(void) {
  * original does. One `file` variable serves both images: set in two blocks
  * it is allocated globally, and the second file's address, which dies where
  * it is loaded into `file`, takes the argument register `file` prefers. */
-#define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
-#define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
     s32 i;
     s32 found;

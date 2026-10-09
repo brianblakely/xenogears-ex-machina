@@ -58,6 +58,7 @@ s32 func_80078BC8(void);       /* 0 when nothing keeps the field from leaving */
 void func_800799D4(void);      /* run a menu over the field */
 void func_8007954C(s32 kind);  /* leave the field for another mode */
 void func_800A2714(void);      /* reload the actors' extra blocks after a return */
+void func_800931F8(void);      /* empty; the map-change events call it */
 void func_800A24C4(void);      /* after a return to the field */
 void func_800A28D4(void);      /* rebuild the actors after a return (D_8004F30C set) */
 
@@ -85,7 +86,6 @@ typedef struct {
 /* The play record (800a31e8). */
 extern u8 D_800B02C8;          /* 1 stops the record */
 extern u16 D_800AFC6C;         /* buttons held since the last record */
-extern s32 D_800ADB28;         /* latched jump setting */
 void func_800A31E8(void);      /* update the play record */
 void func_800A30FC(void);      /* record the map and camera, save the event variables */
 

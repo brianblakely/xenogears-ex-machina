@@ -3482,6 +3482,7 @@ void func_8007954C(s32 kind) {
     func_80019ACC(0);
 }
 
+/* Empty; nothing calls it. */
 void func_800796F4(void) {
 }
 

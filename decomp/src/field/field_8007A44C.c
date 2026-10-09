@@ -3301,6 +3301,7 @@ s32 func_80083288(s32 index, SpriteModel *model, s32 x, s32 z, s32 *height, VECT
     return 0;
 }
 
+/* Empty; nothing calls it. */
 void func_80083994(void) {
 }
 

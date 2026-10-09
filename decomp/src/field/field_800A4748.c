@@ -1638,6 +1638,11 @@ void func_800A84C0(void) {
     }
 }
 
+#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
+enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
+#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
+
 /* Build the status panel: load its image, allocate the quads of both
  * buffers and texture each piece from its frame (flip in flags bits 0-3;
  * bits 4-7 pick semi-transparency rate 1 or 2 on a 4-bit page, other values
@@ -1654,10 +1659,6 @@ void func_800A84C0(void) {
  * is worth 1 against the add's cost of 2, so three is the minimum (one:
  * -6107 vs 171; two: 0 vs 172), and which read uses which copy cannot be
  * recovered. */
-#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
-enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
-#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
-enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;

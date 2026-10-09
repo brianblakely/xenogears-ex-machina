@@ -19,7 +19,6 @@ s32 func_8008DBF0(s32 member, s32 amount); /* take from a member's points */
 void func_800A30B4(void);                 /* store the members in variables 3e-42 */
 void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c); /* a slot's variable triple */
 s32 func_8009FEE4(s32 slot);              /* record a slot's map and position */
-void func_800931F8(void);
 
 /* Gathering the party at the controlled actor. */
 extern s16 D_800AEA34[8];      /* heading per direction (8009aee0) */
