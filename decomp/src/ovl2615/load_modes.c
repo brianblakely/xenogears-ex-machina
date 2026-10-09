@@ -51,7 +51,7 @@ void func_801E80B4(TaskNode *node) {
     ShatterTask *task = node->object;
     ShatterCell *cell;
     POLY_FT3 *prim;
-    s32 ofx, ofy;
+    long ofx, ofy;
     s32 screen;
     s32 half, row, col;
 
@@ -67,7 +67,7 @@ void func_801E80B4(TaskNode *node) {
                 if (cell->trans.vz >= 0x40) {
                     SVECTOR *triangle;
                     MATRIX m;
-                    s32 p, flag;
+                    long p, flag;
                     s32 otz;
 
                     func_8003F738(&cell->rot, &m);
@@ -76,7 +76,7 @@ void func_801E80B4(TaskNode *node) {
                     SetTransMatrix(&m);
                     triangle = half == 0 ? D_801E9640 : D_801E9658;
                     otz = RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
-                                        (s32 *)&prim->x0, (s32 *)&prim->x1, (s32 *)&prim->x2,
+                                        (long *)&prim->x0, (long *)&prim->x1, (long *)&prim->x2,
                                         &p, &flag) >> 6;
                     AddPrim(D_801E96B8 + otz, prim);
                 }
@@ -203,7 +203,7 @@ void func_801E8588(void) {
     rect.x = 0;
     rect.y = 0;
     rect.h = 0xE0;
-    StoreImage(&rect, screen);
+    StoreImage(&rect, (u_long *)screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
         *pixel++ |= 0x8000;
@@ -212,7 +212,7 @@ void func_801E8588(void) {
     rect.y = 0x100;
     rect.w = 0x140;
     rect.h = 0xE0;
-    LoadImage(&rect, screen);
+    LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
@@ -222,7 +222,7 @@ void func_801E8588(void) {
     }
     work->current = next;
     work->ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
+    ClearOTagR((u_long *)next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
@@ -277,7 +277,7 @@ void func_801E8588(void) {
             func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0, -12);
         PutDispEnv(&D_800C3EB0.current->disp);
         PutDrawEnv(&D_800C3EB0.current->draw);
-        DrawOTag(&D_800C3EB0.current->ot[0xFFF]);
+        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     func_801E827C(shatter);
     SetDispMask(0);

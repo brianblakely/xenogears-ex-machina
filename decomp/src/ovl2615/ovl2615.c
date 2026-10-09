@@ -182,7 +182,7 @@ void func_801E4870(void) {
                 D_800D3400[i - 3].bvars[j] = 0;
             }
         } else {
-            bzero(&D_800CCCE8.record[i], sizeof(CombatantRecord));
+            bzero((u8 *)&D_800CCCE8.record[i], sizeof(CombatantRecord));
             D_800C3D0C.enemy[i - 3].script_armed = 0;
             D_800C3D0C.enemy[i - 3].reaction_armed = 0;
         }

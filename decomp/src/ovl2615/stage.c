@@ -183,7 +183,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     D_800D2FD0 = first_motion + 2;
     D_800D2FC8 = motion_count;
     D_800D2FC0 = colours;
-    SetColorMatrix(colours);
+    SetColorMatrix((MATRIX *)colours);
     SetBackColor(data->back[0], data->back[1], data->back[2]);
     for (i = 0; i < 6; i++) {
         object = &info->objects[i];

@@ -2,6 +2,10 @@
 #define OVL2615_BATTLE_SETUP_H
 
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
 /* Combatant slots: 0-2 party members, 3-10 enemies. */
 #define SLOT_COUNT 11
@@ -73,7 +77,6 @@ extern u8 D_800D2F64;
 extern void *D_800C3E24; /* direction arrow state (0xEC bytes) */
 
 void *func_8008ABB8(s32 size, s32 flags); /* heap allocation */
-void bzero(void *dest, s32 size);  /* clear memory */
 
 void func_801E4048(void);
 void func_801E4160(void);
@@ -178,75 +181,6 @@ extern u8 D_800D2CAA;
 
 void func_80078508(u8 *drawn); /* initial turn timers; clears the drawn flags */
 s32 func_8001BD40(s32 low, s32 high); /* random number in [low, high] */
-
-/* libgpu primitives. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-} POLY_F4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-} LINE_F2;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} POLY_G4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    u8 r1, g1, b1, p1;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    u8 r2, g2, b2, p2;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad2;
-    u8 r3, g3, b3, p3;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad3;
-} POLY_GT4;
-
-typedef struct {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
-
-void SetPolyGT4(POLY_GT4 *poly);                 /* SetPolyGT4 */
-void SetPolyG4(POLY_G4 *poly);                  /* SetPolyG4 */
-void SetLineF2(LINE_F2 *line);                  /* SetLineF2 */
-void SetShadeTex(void *prim, s32 tge);            /* SetShadeTex */
-u16 GetClut(s32 x, s32 y);                    /* GetClut */
-
-void SetPolyF4(POLY_F4 *poly);                  /* SetPolyF4 */
-void SetSemiTrans(void *prim, s32 semi);           /* SetSemiTrans */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
-void SetDrawMode(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 
 /* A glyph's primitives, double-buffered (0x28 bytes per buffer). */
 typedef struct {
@@ -358,7 +292,6 @@ extern u8 *D_800C3DD0;
 extern u8 *D_800C3DDC;
 extern s16 D_800D39E0;
 
-void memmove(void *dest, void *src, s32 size); /* memmove */
 
 /* The battle formation record (resident game data at 0x8006F9DC). Its
  * per-combatant bytes are laid out relative to the slot number. */
@@ -523,69 +456,9 @@ s32 func_80076A10(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* glyph; returns 
 void func_80076C34(GlyphPrim *prim);                          /* dim a glyph part */
 
 /* Stage setup (stage.c). */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct {
-    u8 r, g, b, cd;
-} CVECTOR;
-
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-/* PsyQ libgte. */
-#define copyVector(v0, v1) (v0)->vx = (v1)->vx, (v0)->vy = (v1)->vy, (v0)->vz = (v1)->vz
-
-/* PsyQ libgpu. */
-#define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
-#define setRGB1(p, _r1, _g1, _b1) ((p)->r1 = _r1, (p)->g1 = _g1, (p)->b1 = _b1)
-#define setRGB2(p, _r2, _g2, _b2) ((p)->r2 = _r2, (p)->g2 = _g2, (p)->b2 = _b2)
-
-typedef struct {
-    u32 tag;
-    u32 code[15];
-} DR_ENV;
-
-typedef struct {
-    RECT clip;
-    s16 ofs[2];
-    RECT tw;
-    u16 tpage;
-    u8 dtd;
-    u8 dfe;
-    u8 isbg;
-    u8 r0, g0, b0;
-    DR_ENV dr_env;
-} DRAWENV;
-
-void SetPolyFT4(POLY_FT4 *poly);                /* SetPolyFT4 */
-DRAWENV *GetDrawEnv(DRAWENV *env);              /* GetDrawEnv */
 void func_80032498(s32 tag, s32 arg1);          /* select the heap tag */
 void *func_80031BDC(s32 size, s32 top);         /* heap allocation */
 void func_800320B8(void *block);                /* drop a block's keep flag */
-void *memcpy(void *dest, const void *src, u32 size);
-void DrawSync(s32 mode);
-void SetColorMatrix(s16 *m);
-void SetBackColor(s32 r, s32 g, s32 b);
 
 /* A model part (0x7c bytes); the first part heads the model and holds the
  * part count. */
@@ -680,47 +553,6 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
 void func_801E7EC4(void *actors, StageLight *lights, s32 count);
 
 /* The later-compiler units (battle_loader.c, load_modes.c, burst_modes.c). */
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
-
-typedef struct {
-    RECT disp;
-    RECT screen;
-    u8 isinter, isrgb24, pad0, pad1;
-} DISPENV;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-} POLY_FT3;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad3;
-} POLY_GT3;
-
 /* Resident task system: a task node (update) followed by its drawing node;
  * both callbacks receive their node, whose +4 names the task's object. */
 typedef struct TaskNode {
@@ -927,30 +759,8 @@ void func_8001C944(void);
 void func_8001BB0C(void);
 void func_80019CA0(void);                                  /* soft reset check */
 s32 func_80028A60(s32 mode);                               /* wait for the disc */
-void SetDispMask(s32 mask);
 u8 func_80021AD8(u8 value, s32 delta);                     /* add, clamped to 0..255 */
-s32 VSync(s32 mode);
-s32 ClearOTagR(u32 *ot, s32 n);
-void DrawOTag(u32 *ot);
-DRAWENV *PutDrawEnv(DRAWENV *env);
-DISPENV *PutDispEnv(DISPENV *env);
-s32 StoreImage(RECT *rect, void *p);
-s32 LoadImage(RECT *rect, void *p);
-void SetPolyFT3(POLY_FT3 *p);
-void SetPolyGT3(POLY_GT3 *p);
-void AddPrim(void *ot, void *p);
-void ReadGeomOffset(s32 *ofx, s32 *ofy);
-s32 ReadGeomScreen(void);
-void SetGeomOffset(s32 ofx, s32 ofy);
-void SetGeomScreen(s32 h);
-void SetRotMatrix(MATRIX *m);
-void SetTransMatrix(MATRIX *m);
-MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
-s32 RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2,
-                  s32 *p, s32 *flag);
-s32 SquareRoot0(s32 a);
 MATRIX *func_8003F738(SVECTOR *rotation, MATRIX *m); /* RotMatrix */
-void func_8004A414(VECTOR *v0, VECTOR *v1);         /* Square0 */
 s32 func_8003F8B0(s32 angle);                       /* sine (4096 = 1.0) */
 s32 func_8003F8CC(s32 angle);                       /* cosine (4096 = 1.0) */
 void func_801E5840(u8 phase);
@@ -993,7 +803,7 @@ static inline void swap_buffers(void) {
     }
     work->current = next;
     work->ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
+    ClearOTagR((u_long *)next->ot, 0x1000);
 }
 
 #endif

@@ -71,8 +71,9 @@ void func_801E8A64(TaskNode *node) {
     BurstCell *cell;
     POLY_GT3 *prim;
     SVECTOR *corner;
-    s32 ofx, ofy, screen;
-    s32 p, flag;
+    long ofx, ofy;
+    s32 screen;
+    long p, flag;
     s32 row, half, col, k;
     s32 wave, light, otz;
     s32 twist;
@@ -125,8 +126,8 @@ void func_801E8A64(TaskNode *node) {
                         break;
                     }
                 }
-                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
-                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (long *)&prim->x0,
+                                    (long *)&prim->x1, (long *)&prim->x2, &p, &flag);
                 otz >>= 6;
                 if (!(flag & 0x8000)) {
                     AddPrim(D_801E96BC + otz, prim);
@@ -277,7 +278,7 @@ void func_801E91E8(void) {
     rect.x = 0;
     rect.y = 0;
     rect.h = 0xE0;
-    StoreImage(&rect, screen);
+    StoreImage(&rect, (u_long *)screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
         *pixel++ |= 0x8000;
@@ -286,7 +287,7 @@ void func_801E91E8(void) {
     rect.y = 0x100;
     rect.w = 0x140;
     rect.h = 0xE0;
-    LoadImage(&rect, screen);
+    LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
@@ -297,7 +298,7 @@ void func_801E91E8(void) {
     }
     work->current = next;
     work->ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
+    ClearOTagR((u_long *)next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
@@ -352,7 +353,7 @@ void func_801E91E8(void) {
         VSync(2);
         PutDispEnv(&D_800C3EB0.current->disp);
         PutDrawEnv(&D_800C3EB0.current->draw);
-        DrawOTag(&D_800C3EB0.current->ot[0xFFF]);
+        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     func_801E8D48(burst);
     SetDispMask(0);
