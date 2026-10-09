@@ -32,8 +32,11 @@ nix --extra-experimental-features 'nix-command flakes' develop path:./nix
 python3 tools/repository/check.py --preset debug
 ```
 
-[Development](docs/development.md) covers focused commands. Source profiles live
-in `analysis/reference-profiles.json`; detailed findings are read on demand.
+[Development](docs/development.md) covers focused commands. The
+[later-phases handbook](docs/later-phases.md) collects what the decomp gives
+Phases 2-5: the oracle, the program's structure, the boundaries a port replaces
+and the hazards it must keep in view. Source profiles live in
+`analysis/reference-profiles.json`; detailed findings are read on demand.
 Original images stay in ignored `discs/`, and extracted bytes/captures/saves in
 ignored `.local/`. The [source allowlist](packaging/source-files.txt) is audited.
 The Nix path inputs contain tool configuration only, never original data.
