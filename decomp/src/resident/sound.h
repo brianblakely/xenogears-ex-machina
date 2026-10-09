@@ -215,6 +215,17 @@ typedef struct SoundVolumes {
 
 extern SoundVolumes D_8005A3C0;
 
+/* The reverb settings (D_80059408): type (0xff none), delay and feedback;
+ * nothing addresses the first byte. */
+typedef struct SoundReverb {
+    u8 unk0;
+    u8 type;
+    u8 delay;
+    u8 feedback;
+} SoundReverb;
+
+extern SoundReverb D_80059408;
+
 /* A sequence being played: header, then its channels. Sequences are
  * listed through `next` (D_80059564). */
 typedef struct SoundSeq {

@@ -34,7 +34,7 @@ typedef struct {
 
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
-extern u8 D_8006F9DE;
+extern u8 D_8006F9DC[0x20]; /* scene state: [2] the scene selector */
 extern u8 *D_80059470;  /* the scene music sequence */
 extern s32 D_80059520;
 extern u8 *D_8005949C;  /* the scene music instrument data */
@@ -50,7 +50,7 @@ extern s16 D_8004F384;
 extern u8 D_8005942C;
 extern u8 D_800594D0;
 extern s32 D_8005A444[3];
-extern s32 D_80062524;
+extern s32 D_80062518[4]; /* loaded wave bank per slot */
 extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
@@ -61,18 +61,16 @@ typedef struct {
 } CharacterRecord;
 
 /* Game data 8006d634: the saved game, the 0x2358 bytes 8001b970 loads from
- * directory 16 file 3. The record count is not established. The resident
- * also addresses some members by names of their own (link.ld): the second
- * name byte D_8006D635, the gold D_8006EF58, the name slot map D_8006F2E8
- * and the saved map and its entry D_8006F94E-D_8006F954. */
+ * directory 16 file 3. The record count is not established. 8001b970 reads
+ * the name slots' second bytes from a base of their own, D_8006D635
+ * (link.ld). */
 typedef struct GameData {
     u8 names[31][0x14]; /* text codes, two bytes per code */
     u8 unknown0[0x30C - 31 * 0x14];
     CharacterRecord characters[11];
     u8 unknown1[0x1924 - 0x30C - 11 * 0xA4];
     u32 gold;            /* 1924: at most 999999999 */
-    u8 unknown2[0x1CB4 - 0x1928];
-    u8 nameSlots[0x80];  /* 1cb4: the 20-byte name slot of each indirect name index */
+    u8 unknown2[0x1D34 - 0x1928];
     u8 party[3];         /* 1d34: character per slot, 0xff empty */
     u8 unknown3[0x231A - 0x1D37];
     u16 map;             /* 231a: the saved map (scene) */

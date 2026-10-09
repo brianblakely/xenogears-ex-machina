@@ -72,7 +72,7 @@ segments:
       - [0x90CC, .rodata, sprite_80025C04]
       - [0x90EC, .rodata, main_8002709C]
       # Model unit (GCC 2.7.2): 8002C700's jump table at 0 mod 8 follows
-      # the CD/stream unit's tables at 4 mod 8.
+      # main_8002709C's CD and stream tables at 4 mod 8.
       - [0x9180, .rodata, main_8002C3E8]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
@@ -129,7 +129,7 @@ segments:
       - [0x1789C, c, main_8002709C]
       # Model unit (GCC 2.7.2): 8002C700's jump table (0x80018980, 0 mod 8)
       # follows 8002A68C's tables at 4 mod 8, so a unit starts after
-      # 8002C310, the last user of the CD/stream unit's rodata (its report
+      # 8002C310, the last user of main_8002709C's rodata (its report
       # strings end at 0x80018980). 8002C700 matches only under 2.7.2 (mflo
       # into $t0), as do 8002CCC8, 8002CD24 and 8002CD64; 8002C3E8, 8002C4BC
       # and 8002C59C add the relocation base second, as 2.7.2 does and 2.6.3

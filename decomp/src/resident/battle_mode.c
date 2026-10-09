@@ -10,10 +10,6 @@ extern u8 D_8005947C;
 extern u8 D_800594F8;
 extern u8 D_800C48EA;
 extern u8 D_800D3338;
-extern u16 D_8006F94E;
-extern u16 D_8006F950;
-extern u16 D_8006F952;
-extern u16 D_8006F954;
 void func_8001B844(void);
 void func_80070F40(void);
 void func_8001AC94(void);
@@ -39,7 +35,7 @@ void func_8001B6C4(void) {
         if (D_800D3338 != 0) {
             mode = 6;
         } else if (D_8005947C == 0) {
-            if ((D_8006F94E & 0x7FF) < 0x400) {
+            if ((D_8006D634.map & 0x7FF) < 0x400) {
                 mode = 1;
             } else {
                 mode = 3;
@@ -50,10 +46,10 @@ void func_8001B6C4(void) {
         func_8001996C(mode);
     } else if (outcome == 0x81) {
         func_8001AC94();
-        D_8006F94E = 0x1EA;
-        D_8006F950 = 0;
-        D_8006F952 = 0;
-        D_8006F954 = 0;
+        D_8006D634.map = 0x1EA;
+        D_8006D634.entry[0] = 0;
+        D_8006D634.entry[1] = 0;
+        D_8006D634.entry[2] = 0;
         func_8001996C(1);
     }
     if (D_8005947C == 0) {

@@ -17,7 +17,7 @@
 #include "psyq/libspu.h"
 
 s32 D_80059404;
-u8 D_80059408[4]; /* reverb: [1] type, [2] delay, [3] feedback */
+struct SoundReverb D_80059408; /* reverb type, delay and feedback */
 SpuVolume D_8005940C; /* reverb depth */
 struct SoundBlock *D_80059410; /* the sound driver's pool head */
 u16 D_80059414; /* text CLUTs */

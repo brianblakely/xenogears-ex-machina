@@ -73,10 +73,10 @@ void func_8001B94C(DRAWENV *env) {
 }
 
 extern u8 D_8006D635[]; /* the second byte of the saved name slots */
-/* The twenty halfwords 8001b970 clears back from D_8005A3C6 are the 16
- * battle script variables D_8005A3A0 and the first 8 bytes of the sound
- * driver's SPU attributes D_8005A3C0 that follow them (link.ld). */
-extern u16 D_8005A3C6;
+/* The battle script variables. 8001b970 clears twenty halfwords back from
+ * [19]: the 16 variables and the first 8 bytes of the sound driver's SPU
+ * attributes D_8005A3C0 that follow them. */
+extern u16 D_8005A3A0[];
 u8 D_800594CC;
 u8 D_8005947C; /* pending scene + 1 */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
@@ -115,7 +115,7 @@ void func_8001B970(void) {
             D_8006D634.names[slot][i] = decoded[i];
         }
     }
-    for (i = 19, counter = &D_8005A3C6; i >= 0; i--) {
+    for (i = 19, counter = &D_8005A3A0[19]; i >= 0; i--) {
         *counter-- = 0;
     }
     D_800594CC = 6;
@@ -124,7 +124,7 @@ void func_8001B970(void) {
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DE, 0, &D_80059470, &D_80059520, &D_8005949C);
+    func_800379D8(D_8006F9DC[2], 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 u8 D_800594F8;
@@ -416,7 +416,7 @@ void func_8001C1A8(void) {
     }
     func_80028470(0x10, 0);
     if (D_80059178 != 0) {
-        D_8006EF58 = 999999999;
+        D_8006D634.gold = 999999999;
         func_80032498(2, 0);
         D_8005945C = func_80031BDC(func_800288EC(1), 0);
         func_800295D8(1, D_8005945C, 0, 0x80);

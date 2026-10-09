@@ -236,14 +236,12 @@ s32 func_8002C68C(ModelBuffer *buffer) {
     return 0;
 }
 
-extern u8 D_80059598;
-extern u8 D_80059599;
-extern u8 D_8005959A;
+extern CVECTOR D_80059598; /* the model colour; the renderers load it into the GTE */
 
 void func_8002C6E0(u8 r, u8 g, u8 b) {
-    D_80059598 = r;
-    D_80059599 = g;
-    D_8005959A = b;
+    D_80059598.r = r;
+    D_80059598.g = g;
+    D_80059598.b = b;
 }
 
 /* Draw a sprite model's primitive groups into `ot` with the routines of

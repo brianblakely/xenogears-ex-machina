@@ -744,10 +744,9 @@ typedef struct SoundModeVoice {
 } SoundModeVoice;
 
 extern SoundModeVoice *D_80059518;
-extern u8 D_8005940A, D_8005940B; /* reverb delay and feedback */
 extern SpuVolume D_8005940C;                   /* reverb depth */
 extern SoundTrack *D_80059564;
-extern s16 D_8005A3EE;
+extern s16 D_8005A3EE; /* the CD request of D_8005A3C0 (link.ld) */
 s32 func_80038824(void);
 void func_8003885C(s32 volume);
 void func_80038DF4(void);
@@ -764,7 +763,6 @@ extern u8 D_80065B0C[0x6300]; /* the driver memory pool */
 extern u8 D_8006FAC8[];      /* the SPU memory management table */
 extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
 extern s32 D_800595A4;       /* the zeroed transfer buffer */
-extern u8 D_80059409;        /* reverb type */
 s32 func_8003C020(void);    /* the driver tick */
 void func_8003BB64(void);    /* SPU transfer callback */
 void func_8003BFA0(void);    /* SPU interrupt callback */
@@ -828,7 +826,7 @@ void func_80037B88(s32 flags) {
     D_80059544 = 8;
     D_800594D8 = -1;
     D_800595A4 = 0;
-    D_80059409 = 0xFF;
+    D_80059408.type = 0xFF;
     func_80038934(4, 0, 0, 0);
     SpuSetReverb(1);
     D_80059500 = 0;
@@ -1236,7 +1234,8 @@ s32 func_80038824(void) {
     return mode;
 }
 
-/* These fixed, contiguous attenuation bytes form CdMix's CdlATV argument. */
+/* These fixed, contiguous attenuation bytes form CdMix's CdlATV argument
+ * (one object; the names of its last three are in link.ld). */
 extern u8 D_80059530, D_80059531, D_80059532, D_80059533;
 
 /* Remember CD volume; Mono halves it into both channels, while stereo
@@ -1299,7 +1298,7 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         delay = 0;
         depth = 0;
     } else if (type == -1) {
-        type = D_80059409;
+        type = D_80059408.type;
     }
     SpuGetReverbModeType(&current);
     if (current != type || type == 0) {
@@ -1319,10 +1318,10 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
             depth = 0;
         }
     }
-    D_80059409 = type;
+    D_80059408.type = type;
     D_8005A3C0.unk2C = depth;
-    D_8005940A = delay;
-    D_8005940B = feedback;
+    D_80059408.delay = delay;
+    D_80059408.feedback = feedback;
     func_80038DF4();
     if (changed) {
         SpuSetReverbModeDepth(0, 0);
@@ -1365,8 +1364,8 @@ void func_80038B4C(void) {
         func_80039144((void *)D_800595A4);
         D_800595A4 = 0;
         SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
-        SpuSetReverbModeDelayTime(D_8005940A);
-        SpuSetReverbModeFeedback(D_8005940B);
+        SpuSetReverbModeDelayTime(D_80059408.delay);
+        SpuSetReverbModeFeedback(D_80059408.feedback);
         D_8005957C &= ~0x20;
         return;
     }

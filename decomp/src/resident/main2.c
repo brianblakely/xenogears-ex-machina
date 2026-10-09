@@ -630,13 +630,13 @@ void func_80033DF0(Window *window) {
                 }
                 break;
             /* 0F 05 insert_name(name), 3 bytes: insert character name `name`
-             * (0x80 and up through D_8006F2E8; slot 0xFF: resource 26 entry 0). */
+             * (0x80 and up: the party member's; slot 0xFF: resource 26 entry 0). */
             case 5:
                 first = window->text[2];
                 window->text += 2;
                 index = first;
                 if (first >= 0x80) {
-                    index = D_8006F2E8[first];
+                    index = D_8006D634.party[first - 0x80];
                     if (index == 0xFF) {
                         func_80033DD4(window, func_80033728(D_80059360[26], 0));
                     } else {
