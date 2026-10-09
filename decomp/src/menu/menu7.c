@@ -1263,7 +1263,7 @@ Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
         task->regs[i] = 0;
     }
     task->stack = stack;
-    task->regs[28] = func_800405E4();
+    task->regs[28] = GetGp();
     task->regs[31] = (u32)entry;
     task->regs[4] = arg;
     task->regs[30] = task->regs[29] = (u32)(task->stack + words);

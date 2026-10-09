@@ -751,9 +751,21 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", write);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", close);
 
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", format);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", firstfile);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", nextfile);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", rename);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", delete);
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", Krom2RawAdd);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ChangeClearPAD);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetGp);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetRCnt);
 

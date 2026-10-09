@@ -42,9 +42,9 @@ glyphs as hex codes and controls by mnemonic, then the texts no entry reaches.
 Listings stay under `.local/`.
 
 `--chars` prints the glyphs whose characters the disc's own data gives as those
-characters and every other glyph as its hex code in braces (`{25}ei`). A line at the
-top names the characters. The tool holds no font map; `character_map` reads it
-from two sources:
+characters and every other glyph as its hex code in braces (`{58}Whoa{57}`). A line
+at the top names the characters. The tool holds no font map; `character_map` reads
+it from three sources:
 
 - The number code. `func_80033CF0` writes a number's digits as the codes
   palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
@@ -66,19 +66,31 @@ from two sources:
   characters, no character with two glyphs) and repeats with the glyphs they add.
   Agreement matters: in the first round "Night Purge" fits exactly one whole text
   (entry 10 of enemy data file 110), and the largest agreeing set is the round's
-  three other titles, so it adds nothing.
+  three other titles, so it adds nothing. Five titles align, all as world area
+  names (Lahan Village, Mountain Path, Road to Nisan, Babel Tower, Dazil), and
+  give 25 letters: B D L M N P R T V and a b d e g h i l n o r s t u w z. Night
+  Purge is the only other title that ever fits exactly one whole text.
+- The name entry grid (ovl2600 `D_801CBEC0`): `func_801CA558` shows its 36
+  entries of five codes in four columns of nine, so screen row r shows entries
+  r, r + 9, r + 18 and r + 27. In that order it holds two runs of 26 ascending
+  codes, 0x20-0x39 across the first two rows and 0x3D-0x56 across the next two,
+  and resource 27 gives those codes the one-byte glyphs of the same numbers.
+  Every letter the titles give sits at its own place in the alphabet within one
+  of them, the nine capitals in the first (B at 0x21, V at 0x35) and the sixteen
+  small letters in the second (a at 0x3D, z at 0x56), so `grid_letters` reads
+  each run as an alphabet and names the 27 glyphs left (17 capitals, 10 small
+  letters). That is an inference
+  from the grid's order, which the 25 placed letters confirm; a run adds nothing
+  where a known letter is out of place, the known letters are fewer than two or
+  of both cases, or a letter it would add has a glyph already.
 
-On both discs this gives 50 glyphs. Five titles align, all as world area names
-(Lahan Village, Mountain Path, Road to Nisan, Babel Tower, Dazil), and give 25
-letters: B D L M N P R T V and a b d e g h i l n o r s t u w z. Every other glyph
-stays hex: the other 27 letters, all punctuation and every two-byte glyph. Night
-Purge is the only other title that ever fits exactly one whole text.
+On both discs this gives 77 glyphs: the number code's 25, the titles' 25 letters
+and the grid's other 27. The listings spell words (`Fei[newline]{58}Whoa{57}`),
+while every punctuation glyph and every two-byte glyph stays hex.
 
-Open: the other letters. The name entry grid (ovl2600 `D_801CBEC0`) shows the
-codes 0x20-0x39 and 0x3D-0x56 in ascending order, each a run of 26 across two of
-its rows, and resource 27 gives those codes the glyphs of the same number. Each
-aligned letter sits at its place in the alphabet within one of these runs. The
-grid's order alone names none of the other glyphs, so they stay hex.
+Open: punctuation and the two-byte glyphs. The grid's other codes, besides its
+digits 0x10-0x19, have no order that names their characters, and no data maps a
+two-byte glyph to one.
 
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files
 skipped), 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D
@@ -86,7 +98,7 @@ occurs only on disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F
 0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The sweep
 decodes them too, outside the counts: they form 37 whole texts ending in 00
 (messages no entry shows). The 62 initial names decode as 392 glyphs. The
-sweep also reports each disc's `--chars` glyphs (above: 50 on each disc).
+sweep also reports each disc's `--chars` glyphs (above: 77 on each disc).
 
 Notes from the handler:
 

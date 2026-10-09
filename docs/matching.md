@@ -168,7 +168,77 @@ func_8008F280 loads absolutely at each of its three reads) and the world map's
 (`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
 loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
 `SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
-and passes, for a probe.
+and passes a single target's `verify`, for a probe, which then prints `NOT
+ACCEPTANCE: SCRIPT_SYMBOLS=warn`. `all-verify` gives every target
+`SCRIPT_SYMBOLS=strict` on its command line, which neither the environment nor
+all-verify's own command line overrides.
+
+`verify` also fails on each address of the target's own image or uninitialized data
+that the link did not produce (`matching_coverage.py --relocations`): an aligned word
+holding one without an `R_MIPS_32` relocation in its input section, in a loaded data
+section or in .text outside every function; in .text, a `lui` whose immediate is the
+`%hi` of one without `R_MIPS_HI16`, and any `j`/`jal` without `R_MIPS_26`. Bytes
+classified asset or included, original data the build copies, are exempt by class;
+any other, the authored (handwritten) assembly's too, only by a
+`START END unrelocated REASON` line of the target's classification, which may lie in
+a class's range and must cover a reported word. No target needs one. Each resident's
+21 such words lie in its asset ranges (its disc file index, the packed boot logo and
+console font), and the mode table's overlay entries and BSS bounds (main.c
+D_8001808C) are other images' addresses, past the resident's BSS end 8006faf0; its
+own entries there carry relocations. The one such address in the 26 links was mdec's:
+splat had emitted DecDCTvlcSize2 (801d5030, VLC_C.OBJ) as raw words after its
+object's leading decode-call limit, so its `lui`/`addiu` of that word carried none.
+The PsyQ signatures place each VLC object's `text_0` word before
+DecDCTvlcSize/DecDCTvlcSize2 at +4; mdec.symbols.txt makes the two words data labels
+(D_801D4C94, D_801D502C, counted `sdk` bytes outside every function) and
+DecDCTvlcSize2 a function, relocated against D_801D502C.
+
+After every target links, `all-verify` runs `make -C decomp cross-image`
+(`tools/cross_image.py` over every configuration). Each name a target's linker
+scripts assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them,
+and the fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another
+target's image or uninitialized data is an address copied from the original. A name
+that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
+address, and each must agree with the rebuilt targets by their own symbols: every
+other target that defines the name defines it there, each that exports it wherever
+the copied value points and one holding the value also by a local symbol (2298 of
+2510 at present); where none does, a fragment may give it as a view, another name
+plus a constant that agrees by name, and the value must lie in the object holding
+that name in its definer (10: members of the game data D_8006D634, the battle area
+D_800C3EB0 and its work D_800CCCE8, and the field view D_800AF880's camera vectors,
+`D_8006D8A0 = D_8006D634 + 0x26C`); otherwise a target holding the value has a
+symbol there (19: the movie library's functions and variables that field and movie
+address by number, battle functions whose addresses ovl3087 uses, two resident
+symbols the world map names differently); otherwise the address must lie inside an
+input section that target's link places (183 members or parts of objects that no
+symbol names, such as game data members, all from splat's lists). For these last
+two groups the check ties a value only to the address its name gives,
+not to a particular object or, where targets overlap (debug595's field names also
+lie in battle), to a particular target; naming them as their definers do needs the
+importing C to use those names (left open). Values outside every target (the
+resident's sizes, a constant) are not checked, nor is an address the C spells as a
+number, which neither this check nor the relocation scan (a target's own range only)
+sees. `tools/cross_image.py --numbers` lists those (each other target's address a
+link holds without a relocation, outside asset and included bytes and the mode
+table); in the 26 links they are battle's three reads of the boot word D_80010000
+(battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45, battle_800BFE48.c
+func_800C0FAC), a number in the original too: its CDK units load it with one
+register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they compile
+`lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link fails its
+BSS bounds; and the load addresses of overlays and the heap's end (resident
+main.c:79, main_8001B6C4.c:180/428/436; battle_80070E2C.c:287/350/363/464,
+battle_800BD3AC.c:723; field.c:2940), which no check ties to the images loaded
+there. In data the only such words are the mode table's, compared below, and five
+in each resident's packed boot logo and console font, asset bytes that merely look
+like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the
+mode overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6;
+battle's mode 2 enters resident code and declares only `MODE`): the entry must be the
+overlay's entry symbol, and the words after bss_start through bss_end, which the
+dispatcher clears (func_80019560), must be the overlay's linked .sbss/.bss. The check
+found one resident byte that other images use outside every object: the arena bout's
+outcome at 80050622, which the menu writes and a field event reads, lay in the
+alignment fill after D_8005061C[6]; main2_800366E0.c now defines it (D_80050622),
+whether apart or as part of D_8005061C left open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
@@ -561,23 +631,41 @@ converted to C per unit. What converting the targets' `.data` established:
   2e) and battle's combo flags D_800C34CC (15 u8: func_80086B88, func_80086C88 and
   func_80086F98 index at most 14 from combo steps 0-2, or 0xff at attack level 4;
   fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
-  object whose last elements, narrower than a word by its definition, would be
-  alignment fill before the next object and hold a non-zero byte that no
-  constant-offset access reads (`tail`, noted `text` or `outlier` where they look
-  stray), that nothing references (`unref`), that is declared wider than every access
-  with a byte none touches (`wide`), or whose string holds bytes after its terminator
-  (`string`). It reports `2307 C data objects, 192 to review; objects
-  per flag: tail 156, tail read 6, unref 42` (173 distinct, 145 with a tail and 33
-  unreferenced; the second executable repeats the resident's), each reviewed against
-  its readers. None other spells stray fill: the tails are read (masks `& 7` and
-  `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
-  and 16-entry glyph label loops of ovl2596 and battle) or complete their structure
-  (single-bit masks, permutations of the eight facings, a CLUT LoadImage'd 16 wide,
-  the round map's 128th row continuing both column curves, frame rates 60/n for
-  n = 2-60 dividing 60, the party panels' per-member pattern, a pilot per gear of the
-  20, lamp frames, per-character and per-gear tables), or are the sentinels their
-  loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
-  documented unread tables and copies, or tables read through a base formed before
+  object whose last 1-3 bytes, whole byte or halfword elements as cc1 emitted them
+  whatever the declared shape (a flat table's last elements, the end of a 2-D table's
+  last row, a structure's last members), would be alignment fill before the next
+  object and hold a non-zero byte that no constant-offset access reads (`tail`, noted
+  `text` or `outlier` where they look stray), that nothing references (`unref`), that
+  is declared wider than every access with a byte none touches (`wide`), or whose
+  string holds bytes after its terminator (`string`). It reports
+  `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8,
+  unref 42` (222 distinct, 195 with a tail and 33 unreferenced; the second executable
+  repeats the resident's; the resident's zero byte D_80050622 is an object in each
+  executable and is not flagged), each reviewed against its readers. None other
+  spells stray fill: the tails are read (masks `& 7` and `& 3`, the frame counts 0x10,
+  the count passed with each label list, the 18-, 7- and 16-entry glyph label loops
+  of ovl2596 and battle) or complete their structure (single-bit masks, permutations
+  of the eight facings, a CLUT LoadImage'd 16 wide, the round map's 128th row
+  continuing both column curves, frame rates 60/n for n = 2-60 dividing 60, the party
+  panels' per-member pattern, a pilot per gear of the 20, lamp frames, per-character
+  and per-gear tables; the last rows of 2-D tables, battle's timer reloads and list
+  separators by AP and list size (D_800C31EC, D_800C3214: each row holds one value
+  more than the row before), the field compass grid's (rows 4-8 alike or stepping
+  on), the menu wheel's offsets (the second row's slide -0x24 mirrors the first's)
+  and the resident's sound programs per battle mode (D_8004F388, 0xff absent as for
+  modes 0 and 4); and the last members of whole records, battle's 26 command panel
+  pages D_800C2F98-D_800C2FFC (the lists each fills, 0xff none, and their glyph
+  sets, read through D_800C3000) and sound banks D_800C35DC, the field's panel
+  frames, particle sprites (the last corner closes the quad), portrait and text
+  places (palette rows e0-e7), icon and strip origins, image pieces and style pages,
+  the menu's shot kinds, animation rules (the last's next -1, as for the 17 before
+  it), font glyphs and arena frame points, the world map's area file sets (each
+  area's last parameter 2), the resident's texture positions and the last cosine
+  4096 of its sine table), or are the sentinels their loops stop at (-1, 0xffff,
+  also the world map's camera path pad); a stray byte
+  that continued its structure's pattern would pass this review too. The
+  unreferenced ones are words, structures, strings, documented unread tables and
+  copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
   D_801E96A4 and D_801E96A5 and the u16 masks D_801E96A8 (GCC 2.6.3 emits consecutive

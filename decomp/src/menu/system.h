@@ -401,7 +401,7 @@ void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
 Node *func_8008C188(Node *source, Node *parent);
 Node *func_8008C298(Node *source);
-u32 func_800405E4(void);
+u32 GetGp(void);
 Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words);
 void func_8008BB3C(Task *task);
 /* Project toward D_8009A2C8 onto y=0; writes work.vx/vz, preserving vy/pad.

@@ -17,8 +17,9 @@ could hide them, for review against its readers:
   after a label give the object's declared bytes and elements (the labels of
   INCLUDE_* statements are not C and are skipped);
 * the object's definition in its unit's source folder gives the size R of its
-  outermost elements: one more initializer element adds R bytes (a scalar or
-  struct object has none; without a definition, the directive width);
+  outermost elements, printed and used for the ``outlier`` note: one more
+  initializer element adds R bytes (a scalar or struct object has none;
+  without a definition, the directive width);
 * the code of every target that can be resident beside the object's own is
   scanned for the addresses its instructions form (``lui`` bases resolved by
   ``addiu``/``ori`` or a load/store offset): an access is ``exact`` at a
@@ -28,14 +29,17 @@ could hide them, for review against its readers:
 
 Flags (an object can carry several):
 
-  tail    its last 1-3 bytes, whole outermost elements, would be alignment
-          fill if the object ended before them (the next object or input
-          section starts at the first address at or after them aligned as it
-          is) and hold a non-zero byte. Notes: ``read`` (an exact access reads
-          them: not listed, counted as ``tail read``), ``unread`` (every access
-          is exact and none reaches them), ``text`` (every non-zero byte is
-          printable ASCII), ``outlier`` (a value outside the range of the
-          object's other elements).
+  tail    its last 1-3 bytes, whole byte or halfword elements as cc1 emitted
+          them, whatever the declared shape (the last elements of a flat
+          table, the end of a 2-D table's last row, a structure's last
+          members), would be alignment fill if the object ended before them
+          (the next object or input section starts at the first address at
+          or after them aligned as it is) and hold a non-zero byte. Notes:
+          ``read`` (an exact access reads them: not listed, counted as
+          ``tail read``), ``unread`` (every access is exact and none reaches
+          them), ``text`` (every non-zero byte is printable ASCII),
+          ``outlier`` (a value outside the range of the object's other
+          elements).
   unread  every access is exact and the unread rest of the object lies in an
           alignment slot with a non-zero byte (also for word elements).
   wide    every load or store is narrower than the declared elements and a
@@ -282,9 +286,14 @@ def flags(o: dict) -> list[tuple[str, int, str, list[str]]]:
     reach = max((a[0] + WIDTH.get(a[2], 4) for a in exact), default=0)
     result = []
     align = min(nxt & -nxt, 4) if nxt else 4
+    widths, at = {}, 0  # each directive element's offset: its width (0: a .space byte)
+    for w in o["elements"]:
+        widths[at] = w
+        at += w or 1
     for k in (1, 2, 3) if not o["strings"] else ():
         off = n - k
-        if off <= 0 or off % size or not (end - k < nxt and -(-(end - k) // align) * align == nxt):
+        whole = off in widths and all(w < 4 for a, w in widths.items() if a >= off)
+        if off <= 0 or not whole or not (end - k < nxt and -(-(end - k) // align) * align == nxt):
             continue
         tail = data[off:]
         if not any(tail):

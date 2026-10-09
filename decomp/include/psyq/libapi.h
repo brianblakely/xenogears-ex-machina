@@ -34,15 +34,16 @@ void _bu_init(void);
  * symbol file does not name yet: registers the two actuator buffers. */
 void func_80040C3C(unsigned char *data0, long size0, unsigned char *data1, long size1);
 
-/* BIOS file calls the symbol file does not name yet (the memory card's
- * file system), and the start of a card check. */
+/* BIOS file calls (the memory card's file system), GetGp and the start of a
+ * card check: stubs the resident folded into neighbouring objects, each its
+ * own object by the pinned signatures and named in the symbol file. */
 struct DIRENTRY;
-long func_80040574(char *device);                                 /* format */
-struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
-struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
-long func_800405A4(char *from, char *to);                         /* rename */
-long func_800405B4(char *name);                                   /* erase */
-unsigned long func_800405E4(void);
-long func_8004E784(long channel);                                 /* start a card check */
+long format(char *device);                                    /* B(41h) */
+struct DIRENTRY *firstfile(char *name, struct DIRENTRY *dir); /* B(42h) */
+struct DIRENTRY *nextfile(struct DIRENTRY *dir);              /* B(43h) */
+long rename(char *from, char *to);                            /* B(44h) */
+long delete(char *name);                                      /* B(45h): erase */
+unsigned long GetGp(void);
+long _card_info(long channel);                                /* A(ABh): start a card check */
 
 #endif
