@@ -44,7 +44,7 @@ struct DIRENTRY { /* a directory entry (LIBAPI.H) */
     long head;
     char system[4];
 };
-long func_80040574(char *device);                                /* format */
+long func_80040574(char *device);                                 /* format */
 struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
 struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
 long func_800405A4(char *from, char *to);                         /* rename */
