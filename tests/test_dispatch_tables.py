@@ -19,6 +19,7 @@ from tools.analysis.dispatch_tables import (
     archive_entries,
     area_files,
     descriptors,
+    enemy_table,
     family_census,
     formula_tables,
     function_body,
@@ -154,13 +155,21 @@ class FormulaTests(unittest.TestCase):
             archive_entries(struct.pack("<I", 0))
 
     def test_family_census_counts_ids_past_the_table(self):
-        family = FormulaFamily()
-        entries = [b"", descriptor(0) + descriptor(7) + descriptor(8), descriptor(2, 0x10)]
-        family_census(family, entries, 1, 0x78, 3, 8, "set")
-        self.assertEqual((family.sets, family.records, family.short), (2, 4, 2))
-        self.assertEqual(family.formulas, {0: 1, 7: 1, 8: 1})
-        self.assertEqual(family.gear_descriptors, 1)  # dispatched through another descriptor
-        self.assertEqual(family.outside, ["set 0 #2: formula 8"])
+        entries = [b"", descriptor(0) + descriptor(7) + descriptor(8), descriptor(9, 0x10)]
+        party = FormulaFamily()  # a flagged party descriptor hands over to its gear's
+        family_census(party, entries, 1, 0x78, 3, 8, "set", redirect=True)
+        self.assertEqual((party.sets, party.records, party.short), (2, 4, 2))
+        self.assertEqual((party.formulas, party.gear_descriptors), ({0: 1, 7: 1, 8: 1}, 1))
+        self.assertEqual(party.outside, ["set 0 #2: formula 8"])
+        enemy = FormulaFamily()  # a flagged enemy descriptor keeps its own formula
+        family_census(enemy, entries, 1, 0x78, 3, 8, "set")
+        self.assertEqual((enemy.formulas[9], enemy.gear_descriptors), (1, 1))
+        self.assertEqual(enemy.outside, ["set 0 #2: formula 8", "set 1 #0: formula 9"])
+
+    def test_enemy_table_follows_func_800941a4(self):
+        self.assertEqual(enemy_table((8, 0), in_gear=False), 0)
+        self.assertEqual(enemy_table((8, 0), in_gear=True), 1)
+        self.assertEqual(enemy_table((8, 0x10), in_gear=False), 1)
 
     def test_act_commands_follow_the_list_writes(self):
         words = [

@@ -271,7 +271,7 @@ class FormulaCensus:
     party: FormulaFamily = field(default_factory=FormulaFamily)
     gear: FormulaFamily = field(default_factory=FormulaFamily)
     enemy: FormulaFamily = field(default_factory=FormulaFamily)
-    enemy_formulas: list[int] = field(default_factory=list)  # by command index
+    enemy_descriptors: list[tuple[int, int]] = field(default_factory=list)  # by command
     commands: EnemyCommands = field(default_factory=EnemyCommands)
     selected_outside: list[str] = field(default_factory=list)
 
@@ -284,7 +284,11 @@ def family_census(
     end: int,
     limit: int,
     label: str,
+    redirect: bool = False,
 ) -> None:
+    """Count one family's formula ids against `limit`; with `redirect` (the
+    party), a descriptor with flagsA 0x10 is not dispatched: 8009c198 takes
+    the gear descriptor at its index instead."""
     for index in range(first, end):
         block = entries[index]
         family.sets += 1
@@ -293,11 +297,18 @@ def family_census(
         for number, (formula, flags) in enumerate(records):
             family.records += 1
             if flags & GEAR_DESCRIPTOR:
-                family.gear_descriptors += 1  # dispatched through another descriptor
-                continue
+                family.gear_descriptors += 1
+                if redirect:
+                    continue
             family.formulas[formula] += 1
             if formula >= limit:
                 family.outside.append(f"{label} {index - first} #{number}: formula {formula}")
+
+
+def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
+    """0 for D_800C348C, 1 for D_800C34DC: an enemy in a gear, or a descriptor
+    with flagsA 0x10, goes through func_8009C198 with its own descriptor."""
+    return int(in_gear or bool(descriptor[1] & GEAR_DESCRIPTOR))
 
 
 VARIABLE = -1  # an arg1 taken from an AI variable
@@ -351,27 +362,27 @@ def formula_census(disc: Disc, root: Path = ROOT) -> FormulaCensus:
     census.slot = disc.slot(*SETUP_ARCHIVE)
     census.archive = disc.sectors(census.slot)
     entries = archive_entries(census.archive)
-    foot, gear = (len(table.handlers) for table in formula_tables(root))
-    for family, (first, copied, end), limit, label in (
-        (census.party, PARTY_COMMANDS, foot, "character"),
-        (census.gear, GEAR_COMMANDS, gear, "gear"),
-        (census.enemy, ENEMY_COMMANDS, gear, "enemy commands"),
+    limits = [len(table.handlers) for table in formula_tables(root)]
+    for family, (first, copied, end), limit, label, redirect in (
+        (census.party, PARTY_COMMANDS, limits[0], "character", True),
+        (census.gear, GEAR_COMMANDS, limits[1], "gear", False),
+        (census.enemy, ENEMY_COMMANDS, limits[1], "enemy commands", False),
     ):
-        family_census(family, entries, first, copied, end, limit, label)
+        family_census(family, entries, first, copied, end, limit, label, redirect)
     first, copied, _ = ENEMY_COMMANDS
-    census.enemy_formulas = [formula for formula, _ in descriptors(entries[first], copied)]
+    census.enemy_descriptors = descriptors(entries[first], copied)
     enemy_commands(census, root, disc.number)
-    for kind, uses, limit in (
-        ("on foot", census.commands.on_foot, foot),
-        ("in a gear", census.commands.in_gear, gear),
+    for kind, uses, in_gear in (
+        ("on foot", census.commands.on_foot, False),
+        ("in a gear", census.commands.in_gear, True),
     ):
         for command in sorted(uses):
-            if command >= len(census.enemy_formulas):
+            if command >= len(census.enemy_descriptors):
                 census.selected_outside.append(f"{kind}: command {command} past the unpacked block")
-            elif census.enemy_formulas[command] >= limit:
-                census.selected_outside.append(
-                    f"{kind}: command {command} formula {census.enemy_formulas[command]}"
-                )
+                continue
+            descriptor = census.enemy_descriptors[command]
+            if descriptor[0] >= limits[enemy_table(descriptor, in_gear)]:
+                census.selected_outside.append(f"{kind}: command {command} formula {descriptor[0]}")
     return census
 
 
@@ -665,12 +676,13 @@ def _uses(counter: Counter) -> str:
 def dispatched(result: FormulaCensus) -> tuple[Counter, Counter]:
     """Formula ids per table: the party's and gears' own descriptors and each
     distinct enemy command an on-foot or a gear enemy selects."""
-    foot, gear = Counter(result.party.formulas), Counter(result.gear.formulas)
-    for uses, counter in ((result.commands.on_foot, foot), (result.commands.in_gear, gear)):
+    counters = (Counter(result.party.formulas), Counter(result.gear.formulas))
+    for uses, in_gear in ((result.commands.on_foot, False), (result.commands.in_gear, True)):
         for command in uses:
-            if command < len(result.enemy_formulas):
-                counter[result.enemy_formulas[command]] += 1
-    return foot, gear
+            if command < len(result.enemy_descriptors):
+                descriptor = result.enemy_descriptors[command]
+                counters[enemy_table(descriptor, in_gear)][descriptor[0]] += 1
+    return counters
 
 
 def formula_report(results: list[FormulaCensus]) -> list[str]:
@@ -702,26 +714,23 @@ def formula_report(results: list[FormulaCensus]) -> list[str]:
             f"    enemy AI act entries ({commands.files} files): {commands.acts}, "
             f"{commands.dynamic} with a variable command, {commands.unwritten} with none written"
         )
+        enemies = result.enemy_descriptors
         for kind, uses, table in (
             ("on foot", commands.on_foot, foot),
             ("in a gear", commands.in_gear, gear),
         ):
-            formulas = Counter(
-                result.enemy_formulas[c] for c in uses if c < len(result.enemy_formulas)
-            )
+            formulas = Counter(enemies[c][0] for c in uses if c < len(enemies))
             out.append(
                 f"      {kind} ({table.name}): {len(uses)} commands, {sum(uses.values())} entries; "
                 f"formulas {_uses(formulas)}"
             )
         unselected = [
             c
-            for c in range(len(result.enemy_formulas))
+            for c in range(len(enemies))
             if c not in commands.on_foot and c not in commands.in_gear
         ]
         high = [
-            f"#{c} ({result.enemy_formulas[c]})"
-            for c in unselected
-            if result.enemy_formulas[c] >= len(foot.handlers)
+            f"#{c} ({enemies[c][0]})" for c in unselected if enemies[c][0] >= len(foot.handlers)
         ]
         out.append(
             f"      descriptors no act entry selects: {len(unselected)}, of them with a "
