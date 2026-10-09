@@ -78,12 +78,13 @@ menu declares its GetGp in menu/system.h). func_80040C3C (unattributed) is the
 pad send registration: it calls `_SendPAD` with its four arguments
 (Controllers).
 
-The libgte entries without a signature name, by their code:
+The libgte entries without a signature name, by their code (psyq/libgte.h declares
+all 16 under these names):
 
 | Entry | What it computes |
 | --- | --- |
 | func_80048E94 | an orthonormal matrix from a matrix's first two rows: two outer products (OP), each row normalised by 80048DD8 (MatrixNormal form) |
-| func_8004901C | weighted sum of two SVECTORs, GPF then GPL (LoadAverageShort12, menu.h) |
+| func_8004901C | weighted sum of two SVECTORs, GPF then GPL (LoadAverageShort12) |
 | func_800495DC | SVECTOR times the rotation matrix, MVMVA sf=1 without translation, to a VECTOR |
 | func_8004998C | a 32-bit VECTOR times the rotation matrix, split into 15-bit halves (two MVMVAs) |
 | func_80049ACC | m0 = m0 x m1 through the rotation registers (MulMatrix form) |
@@ -94,8 +95,8 @@ The libgte entries without a signature name, by their code:
 | func_8004A70C | NCLIP of three screen points (NormalClip) |
 | func_8004A83C | RTPT, NCLIP, then RTPS, AVSZ4, depth cue and FLAG out (RotAverageNclip4's arguments) |
 | func_8004A8EC | copy a matrix's rotation transposed (TransposeMatrix form) |
-| func_8004A92C, func_8004ABBC | rotation matrix from three angles through the sin/cos table D_800523F0 (RotMatrixYXZ and RotMatrix in battle/psyq.h) |
-| func_8004AE4C, func_8004AFEC | single-axis rotation matrix (RotMatrixX, RotMatrixY in worldmap.h) |
+| func_8004A92C, func_8004ABBC | rotation matrix from three angles through the sin/cos table D_800523F0 (RotMatrixYXZ and RotMatrix) |
+| func_8004AE4C, func_8004AFEC | single-axis rotation matrix (RotMatrixX, RotMatrixY) |
 
 Outside the libraries the game itself uses:
 
@@ -523,7 +524,7 @@ The next frame consumes them:
   (while D_800CCC58 is set). The ATB therefore advances once per blank of the
   previous frame, up to five times a frame. func_8001C964 zeroes D_80059494
   when its pause count D_80059428 runs out.
-- Stage steps (battle_8009E53C.c func_800A9A50, 4057-4065). D_800C3E88 += 1 +
+- Stage steps (battle_8009E53C.c func_800A9A50, 4060-4068). D_800C3E88 += 1 +
   frameTicks, capped at 6, yields up to three steps of two blanks, and the
   remainder carries over. The steps advance:
   - the wave phase (D_800C3CF0 += 56 each);
