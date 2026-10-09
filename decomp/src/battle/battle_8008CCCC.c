@@ -1500,13 +1500,13 @@ void func_80093B08(u8 member) {
         if (D_800D32A0[member].unk1 == 0) {
             slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
             slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
-            values[0] = D_8006F8BA[slots[0]];
-            values[1] = D_8006F8BA[slots[1]];
+            values[0] = D_8006D634.specialDurability[slots[0] - 50];
+            values[1] = D_8006D634.specialDurability[slots[1] - 50];
         } else {
             slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
             slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
-            values[0] = D_8006F8EA[slots[0]];
-            values[1] = D_8006F8EA[slots[1]];
+            values[0] = D_8006D634.gearSpecialDurability[slots[0] - 50];
+            values[1] = D_8006D634.gearSpecialDurability[slots[1] - 50];
         }
         func_80077610();
         func_80076EA4();
@@ -2422,11 +2422,11 @@ s32 func_80096AB8(void) {
         return 3;
     }
     if (D_800C3E00->pilot.characterId == 4) {
-        if ((D_800C3DFC->itemKinds & 0x80) && D_8006F8BA[D_800C3E00->pilot.entryItems[0]] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x80) && D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] == 0) {
             D_800C34AE = 1;
             return 3;
         }
-        if ((D_800C3DFC->itemKinds & 0x10) && D_8006F8BA[D_800C3E00->pilot.entryItems[3]] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x10) && D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] == 0) {
             D_800C34AE = 1;
             return 3;
         }
@@ -3667,7 +3667,7 @@ u8 func_8009A258(u8 member, u8 command) {
 
 /* Fill the gear HUD for member: its first commands' states, charge rate,
  * attack, defense, the chance of a boost (from the gear's damage, when the
- * boost flag of D_8006F8EA is on), warning bits and overheat; count down an
+ * game data's boost flag 0x4000 is on), warning bits and overheat; count down an
  * active boost (level 4) or, at level 3, try to start one. */
 void func_8009A2D4(u8 member) {
     Combatant *record = &D_800CCCE8.records[member];
@@ -3713,7 +3713,7 @@ void func_8009A2D4(u8 member) {
         chance++; /* uninitialised in the original */
     }
     chance *= record->pilot.field54 + 5;
-    if (!(*(u16 *)D_8006F8EA & 0x4000)) {
+    if (!(D_8006D634.flags & 0x4000)) {
         chance = 0;
     }
     if (record->pilot.level < 50) {
@@ -3765,7 +3765,7 @@ void func_8009A2D4(u8 member) {
         }
     } else {
         hud->level = *level;
-        if (*level == 3 && (*(u16 *)D_8006F8EA & 0x4000) && rand() % 100 < chance) {
+        if (*level == 3 && (D_8006D634.flags & 0x4000) && rand() % 100 < chance) {
             gear->status80 |= 0x4000;
             D_800CCCE8.records[member].statusTimers[6] = 3;
             if (D_800CCCE8.records[member].pilot.flags32 & 0x40) {
@@ -3817,7 +3817,7 @@ void func_8009A854(u8 index, u8 k) {
     D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
     D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
     D_8006D8A0.characters[4].entryItems[k] = index;
-    D_8006F8BA[index] = item->durability;
+    D_8006D634.specialDurability[index - 50] = item->durability;
     D_8006D8A0.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
@@ -4010,8 +4010,8 @@ void func_8009AFD8(void) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
-            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
+            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] += -1;
         }
         break;
     case 7:
@@ -4027,13 +4027,13 @@ void func_8009AFD8(void) {
     case 17:
     case 18:
     case 19:
-        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
-            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
+            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] += -1;
         }
         /* fallthrough */
     case 6:
-        if (D_8006F8BA[D_800C3E00->pilot.entryItems[3]] != 0) {
-            D_8006F8BA[D_800C3E00->pilot.entryItems[3]] += -1;
+        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] != 0) {
+            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] += -1;
         }
         break;
     }
@@ -4868,7 +4868,7 @@ s8 func_8009D3A0(void) {
         return 1;
     }
     evasion = D_800C3E34->pilot.field5F;
-    durability = D_8006F8EA[D_800D2D6C->partItems[0]];
+    durability = D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50];
     accuracy = D_800C3E00->pilot.field5E;
     if (durability == 0) {
         accuracy += D_800D2D6C->hitBonus;
@@ -4880,7 +4880,7 @@ s8 func_8009D3A0(void) {
         if ((D_800C3DFC->itemKinds & 0x80) && durability == 0) {
             return 3;
         }
-        if ((D_800C3DFC->itemKinds & 0x20) && D_8006F8EA[D_800D2D6C->partItems[3]] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x20) && D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] == 0) {
             return 3;
         }
     }

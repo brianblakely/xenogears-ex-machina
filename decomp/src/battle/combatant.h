@@ -11,8 +11,6 @@ typedef struct {
 } UnitRecords;
 
 extern UnitRecords D_8006D8A0;
-extern u8 D_8006F8BA[]; /* item durability by slot */
-extern u8 D_8006F8EA[]; /* gear part durability by slot */
 extern u8 D_8006F5C4[]; /* inventory counts */
 extern u8 D_8006F65A[]; /* inventory items */
 

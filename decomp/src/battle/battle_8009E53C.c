@@ -90,7 +90,7 @@ void func_8009E5C8(u8 index, u8 k) {
     D_8006D8A0.gears[gearId].entries[k].value10 = part->value10;
     D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
     D_8006D8A0.gears[gearId].partItems[k] = index;
-    D_8006F8BA[index] = part->durability;
+    D_8006D634.specialDurability[index - 50] = part->durability;
     for (i = 0; i < 3; i++) {
         if ((D_800C34B0->records + i)->pilot.characterId == 4) {
             D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;
@@ -107,8 +107,8 @@ void func_8009E5C8(u8 index, u8 k) {
 void func_8009E788(void) {
     switch (D_800C34B0->commandIndex) {
     case 0:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 3:
@@ -123,22 +123,22 @@ void func_8009E788(void) {
     case 12:
     case 13:
     case 14:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
-        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     case 15:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 2:
     case 17:
-        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     }
