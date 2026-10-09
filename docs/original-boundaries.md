@@ -32,14 +32,17 @@ census of the forest route, EVID-REF-044), the script machines in
   The signatures are the pinned `psx_psyq_signatures` input of nix/ghidra, at
   `lib/ghidra/Ghidra/Extensions/ghidra_psx_ldr/data/psyq` in the loader package
   (`nix build --print-out-paths path:./nix/ghidra#psx-loader`).
-- Original observations ran on the PCSX-ReARMed libretro core with its HLE BIOS
+- Original observations ran on the PCSX-ReARMed libretro core (core sha256
+  e61a8d4ac1f5…) with its HLE BIOS
   (`.local/scenarios/p1-original-route-review-20261002.json`: "timing and
   compatibility require corroboration"), never on hardware. Sound and movie
   schedules were recorded on Disc 1 only; the forest-slice rendering census is
   Disc 1 field 22/23, battle and menus. Both discs run the same code (the
   resident images differ only in the embedded disc index, the overlays are
   byte-identical), so the Disc 1 observations cover the code paths, not Disc 2
-  data or timing. Captures stay local under `.local/scenarios`.
+  data or timing. No packets of the world map, Gear battles or the arena have
+  been observed; their display facts below are static. Captures stay local
+  under `.local/scenarios`.
 
 ## Services
 
@@ -395,8 +398,10 @@ GTE with H 0x1000 (sprite_80025C04.c).
   program the CD-to-SPU attenuation with libcd CdMix (Mono: all four at half
   volume; stereo modes: same side full, cross 0), but both its callers
   (func_80037B88, func_800386C4) require flag 0x4000, which boot's 0xB801 does
-  not set and no store ever ORs in: CdMix is never called. The capture agrees:
-  in the opening movie Mono is sample-identical to Stereo on both channels.
+  not set and no store ever ORs in: CdMix is never called. Mono therefore
+  changes only the voice pan law; the master and CD pairs and the stereo
+  reverb return are as in Stereo. The capture agrees: in the opening movie
+  Mono is sample-identical to Stereo on both channels.
 - **Mixer order the port must reproduce**: a negative volume inverts phase
   (psx-spx), and in the recordings the main volume applies after CD input and
   the reverb return are summed (Wide right is exactly Stereo right inverted,
