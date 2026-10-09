@@ -2,66 +2,21 @@
 #define MENU_H
 
 #include "common.h"
-#include "gpu.h"
-
-/* libgte-layout vector: three 32-bit components and padding. */
-typedef struct Vector {
-    s32 vx;
-    s32 vy;
-    s32 vz;
-    s32 pad;
-} Vector;
-
-/* libgpu types (PsyQ). */
-typedef struct {
-    s16 x, y;
-    s16 w, h;
-} Rect;
-
-typedef struct {
-    u32 mode;
-    Rect *crect;
-    s16 *caddr;
-    Rect *prect;
-    u32 *paddr;
-} TimImage;
-
-typedef struct {
-    u32 tag;
-    u32 code[1];
-} DrTpage;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-} Sprt16;
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVector;
-
-/* libgpu CVECTOR layout. */
-typedef struct {
-    u8 r, g, b, cd;
-} Color;
-
-/* libgte matrix. */
-typedef struct Matrix {
-    s16 m[3][3];
-    s32 t[3];
-} Matrix;
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libapi.h"
+#include "psyq/libetc.h"
+#include "psyq/libgte.h"
+#include "packets.h"
 
 #include "system.h"
 
 /* A projectile fired by an actor. */
 typedef struct {
-    Vector pos;      /* 0x00 */
-    Vector prev;     /* 0x10 */
-    SVector velocity; /* 0x20 */
-    SVector dir;     /* 0x28: unit direction */
+    VECTOR pos;      /* 0x00 */
+    VECTOR prev;     /* 0x10 */
+    SVECTOR velocity; /* 0x20 */
+    SVECTOR dir;     /* 0x28: unit direction */
     u8 active;       /* 0x30 */
     u8 speed;
     u8 look;         /* 0x32: trail/impact style */
@@ -87,10 +42,10 @@ typedef struct {
 
 /* A trail segment: two end points with their previous positions. */
 typedef struct {
-    Vector a;          /* 0x00 */
-    Vector a_prev;     /* 0x10 */
-    Vector b;          /* 0x20 */
-    Vector b_prev;     /* 0x30 */
+    VECTOR a;          /* 0x00 */
+    VECTOR a_prev;     /* 0x10 */
+    VECTOR b;          /* 0x20 */
+    VECTOR b_prev;     /* 0x30 */
     s16 effect;        /* 0x40: hit effect */
     u8 unk42;
     u8 unk43;
@@ -184,12 +139,6 @@ typedef struct {
     u8 *image;         /* 0x20: palette and emblem pixels */
 } ModelData;
 
-/* Screen point (libgte DVECTOR). */
-typedef struct {
-    s16 vx;
-    s16 vy;
-} DVector;
-
 /* A node of a loaded model hierarchy. */
 typedef struct ModelNode {
     u8 unk0[4];
@@ -201,17 +150,17 @@ typedef struct ModelNode {
 /* A placed scene object. */
 typedef struct {
     u8 unk0[0x44];
-    SVector rotation;  /* 0x44 */
+    SVECTOR rotation;  /* 0x44 */
 } SceneObject;
 
 typedef struct MoveList ModelRecord;
 
 /* A character moved in the menu scene. */
 typedef struct Actor {
-    Vector pos;          /* 0x00 */
-    Vector velocity;     /* 0x10: vy is the vertical speed */
-    Vector push;         /* 0x20: horizontal push (vx, vz) */
-    Vector unk30;        /* 0x30: bounce step */
+    VECTOR pos;          /* 0x00 */
+    VECTOR velocity;     /* 0x10: vy is the vertical speed */
+    VECTOR push;         /* 0x20: horizontal push (vx, vz) */
+    VECTOR unk30;        /* 0x30: bounce step */
     s32 unk40;           /* 0x40: forward speed */
     s32 unk44;           /* 0x44: bounce speed */
     s32 state;           /* 0x48: stick speed, up to 0x100 */
@@ -227,7 +176,7 @@ typedef struct Actor {
     Node *node;          /* 0x5C: model set node */
     void *object;        /* 0x60 */
     u8 unk64[0x8];
-    Vector start;        /* 0x6C: position at the round start */
+    VECTOR start;        /* 0x6C: position at the round start */
     s32 unk7C;
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
@@ -296,15 +245,15 @@ typedef struct Actor {
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
     u8 unk919[0x3];
-    Vector hit_point;    /* 0x91C: where the last hit landed */
-    Vector unk92C;       /* 0x92C: a second anchor point; with home, spans the actor */
-    Vector home;         /* 0x93C */
-    Vector core;         /* 0x94C: where shots home in */
-    Vector start_home;   /* 0x95C: home at the round start */
+    VECTOR hit_point;    /* 0x91C: where the last hit landed */
+    VECTOR unk92C;       /* 0x92C: a second anchor point; with home, spans the actor */
+    VECTOR home;         /* 0x93C */
+    VECTOR core;         /* 0x94C: where shots home in */
+    VECTOR start_home;   /* 0x95C: home at the round start */
     s16 foot_b_y;        /* 0x96C: last foot heights */
     s16 foot_a_y;
     s32 unk970;
-    Vector hit_from;     /* 0x974: where the last hit came from */
+    VECTOR hit_from;     /* 0x974: where the last hit came from */
     u8 unk984[0x14];
     s16 unk998;
     s16 unk99A;
@@ -319,7 +268,7 @@ typedef struct Actor {
     u8 unk9CC[0xC00];    /* 0x9CC: own pose block */
     Pose *pose;          /* 0x15CC */
     Move *move;          /* 0x15D0 */
-    Color colour;        /* 0x15D4: effect colour */
+    CVECTOR colour;        /* 0x15D4: effect colour */
     u8 unk15D8[0x10];
     s16 unk15E8;
     s16 unk15EA;
@@ -333,7 +282,7 @@ typedef struct Actor {
     u8 unk15FA[0x2];
     struct Brain *brain; /* 0x15FC: the computer opponent's state */
     struct MoveList *moves; /* 0x1600 */
-    PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
+    POLY_FT4 backdrop[2]; /* 0x1604: one per buffer */
     s32 unk1654;
     s32 unk1658;
     s32 unk165C;
@@ -409,8 +358,8 @@ typedef struct {
  * (D_8009871C). */
 extern Actor D_80097010;
 extern Actor D_8009872C;
-extern Vector D_8009867C;
-extern Vector D_8009871C;
+extern VECTOR D_8009867C;
+extern VECTOR D_8009871C;
 
 extern MenuWindow D_8009868C; /* message window */
 
@@ -436,9 +385,9 @@ extern s32 D_80092918;
 extern s32 D_80092944;
 extern s32 D_80092950;
 extern s32 D_800911D4; /* debug: camera tuning with the pad */
-void func_80070808(Vector *target, s32 steps);
-void func_800708C4(Vector *target, s32 steps);
-s32 func_800887A4(Vector *from, Vector *to);
+void func_80070808(VECTOR *target, s32 steps);
+void func_800708C4(VECTOR *target, s32 steps);
+s32 func_800887A4(VECTOR *from, VECTOR *to);
 extern s32 D_800928AC;
 extern u8 D_800928C0;
 void func_8007A768(Actor *actor);
@@ -450,7 +399,7 @@ extern u8 D_800928F4;
 extern s32 D_8009290C;
 extern s32 D_8009294C;
 extern LightRig *D_800910F0; /* the scene's lights */
-extern Vector D_80096FA8;    /* scene origin (last eye position) */
+extern VECTOR D_80096FA8;    /* scene origin (last eye position) */
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
@@ -458,23 +407,6 @@ extern s32 D_80091198[];
 extern u8 D_80091178[]; /* pairs: next combo number after each button */
 extern s32 D_8009292C;
 extern u8 D_80050622; /* resident: result of the last menu battle */
-
-/* PsyQ SDK (resident). */
-void AddPrim(u32 *ot, void *prim);                    /* AddPrim */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);           /* GetTPage */
-s16 GetClut(s32 x, s32 y);                            /* GetClut */
-void SetDrawTPage(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* SetDrawTPage */
-void LoadImage(Rect *rect, void *data);                 /* LoadImage */
-void OpenTIM(u32 *tim);                               /* OpenTIM */
-TimImage *ReadTIM(TimImage *image);                   /* ReadTIM */
-s32 ratan2(s32 x, s32 z);                            /* ratan2 */
-Matrix *CompMatrix(Matrix *m0, Matrix *m1, Matrix *m2);  /* CompMatrix */
-s32 rand(void);                                    /* rand */
-void func_8004A414(Vector *v, Vector *squares);             /* Square0 */
-s32 SquareRoot0(s32 x);                                   /* SquareRoot0 */
-void VectorNormalS(Vector *v, SVector *unit);               /* VectorNormalS */
-void func_8004901C(SVector *a, SVector *b, s32 pa, s32 pb, SVector *out); /* LoadAverageShort12 */
-void SetGeomScreen(s32 h);                                  /* SetGeomScreen */
 
 /* Resident game code. */
 void func_80030988(s32 a0, s32 a1, s32 a2, s32 a3);
@@ -502,16 +434,16 @@ void func_80071724(u32 *ot);
 /* Forward word copy, with a positive count divisible by four. */
 void func_800732AC(void *dst, void *src, s32 size);
 /* GTE scaling; all three write x/y/z and preserve out->pad. */
-void func_80073064(SVector *dir, SVector *out, s32 scale); /* GPF, sf=1 */
-void func_800730AC(SVector *dir, SVector *out, s32 scale); /* GPF, sf=0 */
-void func_800730F4(Vector *dir, SVector *out, s32 scale);  /* low signed halfwords, sf=1 */
-void func_8008859C(Vector *vector, void *out);
-s32 func_800886FC(Vector *v);
-s32 func_80088754(Vector *v);
-void func_8007E31C(Vector *from, Vector *to, Color *color);
-void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode);
-void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
-void func_8007C100(Color *color);
+void func_80073064(SVECTOR *dir, SVECTOR *out, s32 scale); /* GPF, sf=1 */
+void func_800730AC(SVECTOR *dir, SVECTOR *out, s32 scale); /* GPF, sf=0 */
+void func_800730F4(VECTOR *dir, SVECTOR *out, s32 scale);  /* low signed halfwords, sf=1 */
+void func_8008859C(VECTOR *vector, void *out);
+s32 func_800886FC(VECTOR *v);
+s32 func_80088754(VECTOR *v);
+void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color);
+void func_8008EBD0(Actor *owner, s32 index, VECTOR *pos, s32 mode);
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out);
+void func_8007C100(CVECTOR *color);
 void func_80076424(Actor *actor);
 void func_80090CC0(Actor *actor);
 void func_80087AB0(Actor *actor);
@@ -519,29 +451,29 @@ void func_80078ED4(s16 *params);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s16 frame, s16 count);
-void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
+void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
-void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
-void func_8007D7A8(Vector *pos, s32 count);
+void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key);
+void func_8007D7A8(VECTOR *pos, s32 count);
 s32 func_8008ED6C(Actor *owner, s32 index);
 void func_8007E528(s32 state);
-s32 func_8007D190(Vector *pos, u32 kind);
+s32 func_8007D190(VECTOR *pos, u32 kind);
 s32 func_8007D25C(s32 type);
-void func_8007D65C(Vector *from, Vector *to, s32 code);
+void func_8007D65C(VECTOR *from, VECTOR *to, s32 code);
 void func_80079DF0(Actor *actor, Actor *other);
 void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
-s32 func_80082488(Vector *position, s32 arg);
+s32 func_80082488(VECTOR *position, s32 arg);
 /* Per animation: how it ends (0 stop, 1 chain, 2 hold, 3 loop) and the next one. */
 typedef struct {
     u8 kind;
     s8 next;
 } AnimRule;
 extern AnimRule D_80091130[];
-void func_80082458(SVector *out);
-void func_8002DB84(SVector *a, SVector *b, SVector *c, SVector *normal); /* plane normal of a triangle */
-void func_800828F8(Vector *position, Vector *step, s32 limit);
+void func_80082458(SVECTOR *out);
+void func_8002DB84(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *normal); /* plane normal of a triangle */
+void func_800828F8(VECTOR *position, VECTOR *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
 s32 func_80083CD8(void);

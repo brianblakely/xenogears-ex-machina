@@ -9,7 +9,7 @@
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
-static PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
+static POLY_FT4 *D_800926D4[2]; /* text quads, per draw buffer */
 static s32 D_800926DC;
 static u16 D_800926E0; /* text texture page */
 static u16 D_800926E4; /* text CLUT */
@@ -48,13 +48,13 @@ static u8 D_80092764; /* stick is deflected */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static DrMove D_80095498[2];
-static DrTpage D_800954C8[2];
+static DR_MOVE D_80095498[2];
+static DR_TPAGE D_800954C8[2];
 static SceneSprite D_800954D8[2];
 /* The upper and lower captions, which share one pixel buffer
  * (func_80080F04). */
 static Caption D_80095510[2];
-static DrTpage D_80095570[2];
+static DR_TPAGE D_80095570[2];
 
 /* Menu font glyphs (func_8007E8AC maps characters to these). */
 Glyph D_80091230[] = {
@@ -130,7 +130,7 @@ s32 func_8007E624(void) {
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
  * and 3 replaced) and the banner image, and build the banner sprite. */
 void func_8007E634(MenuFiles *files) {
-    TimImage image;
+    TIM_IMAGE image;
     SceneSprite *banner;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *palette;
@@ -144,7 +144,7 @@ void func_8007E634(MenuFiles *files) {
     }
     OpenTIM(files->font);
     ReadTIM(&image);
-    palette = image.caddr;
+    palette = (s16 *)image.caddr;
     palette[2] = -0x6F9D;
     palette[0] = 0;
     palette[3] = -1;
@@ -155,7 +155,7 @@ void func_8007E634(MenuFiles *files) {
     D_800926DC = 0;
     OpenTIM(files->banner);
     ReadTIM(&image);
-    palette = image.caddr;
+    palette = (s16 *)image.caddr;
     palette[0] = 0;
     LoadImage(image.crect, image.caddr);
     LoadImage(image.prect, image.paddr);
@@ -226,7 +226,7 @@ void func_8007E954(s32 value) {
  * fields (not struct member stores), so no global load moves above them;
  * the texture page/CLUT and the length are member stores. */
 s32 func_8007E964(s32 ch) {
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     Glyph *glyph;
     s32 right;
 
@@ -383,14 +383,14 @@ void func_8007EFB4(void) {
         for (col = 0; col < 7; col++) {
             s16 left = col << 6;
 
-            cell->clut_x = 0x200;
-            cell->clut_y = id--;
-            cell->clut_w = 0x80;
-            cell->clut_h = 1;
-            cell->image_x = top;
-            cell->image_y = left;
-            cell->image_w = 0x1E;
-            cell->image_h = 0x40;
+            cell->clut.x = 0x200;
+            cell->clut.y = id--;
+            cell->clut.w = 0x80;
+            cell->clut.h = 1;
+            cell->image.x = top;
+            cell->image.y = left;
+            cell->image.w = 0x1E;
+            cell->image.h = 0x40;
             cell++;
         }
     }
@@ -447,13 +447,13 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
         quad->xy2 = left | (bottom << 16);
         quad->xy3 = (left + width + fade * 2) | (bottom << 16);
     }
-    u = cell->image_x * 2;
-    quad->uv0 = u | (cell->image_y << 8);
-    quad->uv1 = (u + 0x3B) | (cell->image_y << 8);
-    quad->uv2 = u | ((cell->image_y + 0x3F) << 8);
-    quad->uv3 = (u + 0x3B) | ((cell->image_y + 0x3F) << 8);
-    quad->clut = GetClut(cell->clut_x, cell->clut_y);
-    quad->tpage = GetTPage(1, 0, cell->image_x & 0xFF80, cell->image_y);
+    u = cell->image.x * 2;
+    quad->uv0 = u | (cell->image.y << 8);
+    quad->uv1 = (u + 0x3B) | (cell->image.y << 8);
+    quad->uv2 = u | ((cell->image.y + 0x3F) << 8);
+    quad->uv3 = (u + 0x3B) | ((cell->image.y + 0x3F) << 8);
+    quad->clut = GetClut(cell->clut.x, cell->clut.y);
+    quad->tpage = GetTPage(1, 0, cell->image.x & 0xFF80, cell->image.y);
     AddPrim(D_80092938, quad);
 }
 
@@ -461,7 +461,7 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
  * previous one (the long way round wraps), with its neighbours when the
  * side is available, then "VS" and both names. The arguments are unused. */
 void func_8007F258(void *packets, s32 arg) {
-    Vector unused[2]; /* the original frame has 32 unused bytes */
+    VECTOR unused[2]; /* the original frame has 32 unused bytes */
     PolyFT4Words *quad = D_80099DA8[D_800928A0];
     s32 step;
     s32 row;
@@ -904,11 +904,11 @@ void func_80080644(s32 first, s32 second) {
     D_80092710 = 3;
     func_80028A60(0);
     cell = &D_8009270C[first];
-    LoadImage(&cell->clut_x, data);
-    LoadImage(&cell->image_x, data + 0x100);
+    LoadImage(&cell->clut, (u_long *)data);
+    LoadImage(&cell->image, (u_long *)(data + 0x100));
     cell = &D_8009270C[second];
-    LoadImage(&cell->clut_x, other);
-    LoadImage(&cell->image_x, data + 0x1100);
+    LoadImage(&cell->clut, (u_long *)other);
+    LoadImage(&cell->image, (u_long *)(data + 0x1100));
     func_80032C18(data, 2);
 }
 
@@ -922,8 +922,8 @@ void func_80080780(s32 mode) {
         func_80028A60(0);
         cell = D_8009270C;
         for (i = 0; i < 49; i++, cell++) {
-            LoadImage(&cell->clut_x, D_800928D8 + (i << 12));
-            LoadImage(&cell->image_x, D_800928D8 + (i << 12) + 0x100);
+            LoadImage(&cell->clut, (u_long *)(D_800928D8 + (i << 12)));
+            LoadImage(&cell->image, (u_long *)(D_800928D8 + (i << 12) + 0x100));
         }
         func_800320E8(D_800928D8);
         D_80092940 = 1;
@@ -1029,14 +1029,14 @@ void func_80080AE8(void) {
         rect[2] = 0x140;
         rect[3] = 0xDA;
         func_8007313C(D_80092760, (u8 *)D_80092760 + 0x21E80);
-        LoadImage(rect, D_80092760);
+        LoadImage((RECT *)rect, D_80092760);
     }
 }
 
 /* Keep a copy of the shown screen: allocate the image buffer once, copy
  * the displayed buffer's area to (320,256) and read it back. */
 void func_80080B58(void) {
-    Rect area;
+    RECT area;
 
     if (D_80092760 == NULL) {
         func_80031BB4(1);
@@ -1086,8 +1086,8 @@ void func_80080D10(void) {
  * with its texture page and, while a page or the copy request is active, a
  * move of the kept screen copy into the draw buffer. */
 void func_80080D20(void *ot) {
-    PolyFT4 *quad = D_800926D4[D_800928A0];
-    Rect area;
+    POLY_FT4 *quad = D_800926D4[D_800928A0];
+    RECT area;
     s32 i;
 
     for (i = 0; i < D_800926DC; i++, quad++) {
@@ -1148,7 +1148,7 @@ void func_80081094(Caption *caption, s32 text, s32 arg) {
 /* Show a text in the upper (0) or lower (1) caption; re-render only when
  * the text changes. */
 void func_80081100(s32 text, s32 lower) {
-    Rect rect;
+    RECT rect;
 
     if (lower == 0) {
         if (text == D_8009273C) {
@@ -1194,7 +1194,7 @@ void func_800811AC(void *ot) {
 /* Measure a menu's lines and size its panel around the widest one. */
 void func_800812BC(Menu *menu) {
     MenuItem *item;
-    TileRgb *panel;
+    TILE *panel;
     s32 i;
     s32 widest;
 
@@ -1205,7 +1205,7 @@ void func_800812BC(Menu *menu) {
         widest = (widest < item->half_width) ? item->half_width : widest;
     }
     panel = &menu->panel[0];
-    ((PacketTag *)panel)->len = 3;
+    setlen(panel, 3);
     panel->w = widest * 2 + 0x14;
     panel->x0 = 0x96 - widest;
     menu->cursor = 0;

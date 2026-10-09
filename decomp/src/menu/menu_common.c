@@ -8,12 +8,14 @@
  * uninitialized variables). GCC emits tentative definitions in the order of
  * their first declaration, so they are defined ahead of the headers that
  * declare them, structures by their tags; the headers then complete and
- * check the types. */
+ * check the types. The SDK headers ahead of them declare none of them. */
 #include "common.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
 s32 D_8009284C; /* horizontal distance between the actors */
 s32 D_80092850;
-struct PolyFT3 *D_80092854[2]; /* map triangle pool per draw buffer */
+POLY_FT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 s16 D_8009285C; /* display width */
 u8 D_80092860; /* left bar texel row */
 u8 D_80092864; /* right bar texel row */
@@ -75,23 +77,23 @@ s32 D_80092948;
 s32 D_8009294C;
 s32 D_80092950;
 
-struct Vector D_80096FA8; /* last eye position: the scene origin */
+VECTOR D_80096FA8; /* last eye position: the scene origin */
 struct SideHits D_80096FB8[2];
-struct Matrix D_80096FE0; /* screen scale */
-struct Vector D_80097000; /* look-at work: third axis */
+MATRIX D_80096FE0; /* screen scale */
+VECTOR D_80097000; /* look-at work: third axis */
 struct Actor D_80097010; /* scene actor */
-struct Vector D_8009867C; /* camera eye */
+VECTOR D_8009867C; /* camera eye */
 struct MenuWindow D_8009868C; /* message window */
-struct Vector D_8009871C; /* camera look-at point */
+VECTOR D_8009871C; /* camera look-at point */
 struct Actor D_8009872C; /* scene actor */
 struct Settings D_80099D98; /* current option settings */
 struct PolyFT4Words D_80099DA8[2][10];
-struct Vector D_8009A0C8; /* look-at work: forward */
+VECTOR D_8009A0C8; /* look-at work: forward */
 struct Window D_8009A0D8[2]; /* the display buffers */
-struct Vector D_8009A2C8; /* mesh light direction */
-struct Matrix D_8009A2D8;
+VECTOR D_8009A2C8; /* mesh light direction */
+MATRIX D_8009A2D8;
 struct OverlayBuffer D_8009A2F8[2];
-struct Vector D_8009A918; /* look-at work: up */
+VECTOR D_8009A918; /* look-at work: up */
 struct PathPoint D_8009A928[30]; /* recorded path points */
 
 #include "menu.h"

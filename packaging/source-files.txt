@@ -240,7 +240,6 @@ decomp/src/menu/func_8008C4B0.s
 decomp/src/menu/func_8008C620.s
 decomp/src/menu/func_8008DDFC.s
 decomp/src/menu/func_8008DE54.s
-decomp/src/menu/gpu.h
 decomp/src/menu/ground_packet.s
 decomp/src/menu/gte.h
 decomp/src/menu/menu.c
@@ -253,6 +252,7 @@ decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
 decomp/src/menu/menu_common.c
 decomp/src/menu/mesh_packet.s
+decomp/src/menu/packets.h
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h
 decomp/src/menu/spark.h

@@ -39,16 +39,16 @@ static s32 D_800926A4; /* frame counter */
 static u16 D_800926A8[4];
 static s32 D_800926B0; /* scene lines added this frame */
 static s32 D_800926B4;
-static Color D_800926B8; /* colour of kind-2 sparkles */
+static CVECTOR D_800926B8; /* colour of kind-2 sparkles */
 static SceneCell10 *D_800926BC;
-static Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
+static Tile1Words *D_800926C0[2]; /* ground particle tiles per draw buffer */
 static SceneCell12 *D_800926C8;
 static TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static Vector D_80092A24; /* glow emitter position */
-static Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
+static VECTOR D_80092A24; /* glow emitter position */
+static VECTOR D_80092A34[4]; /* saved positions: both actors, then both homes */
 static SparkleKind D_80092A74[5];
 static Sparkle D_80092AD8[SPARKLE_COUNT];
 static u8 D_800947E8[12]; /* sparkle kind 0: texture column of each frame */
@@ -84,7 +84,7 @@ void func_800732CC(void) {
 }
 
 /* Place the glow emitter, launch this frame's sparks and draw them in view. */
-void func_8007334C(u32 *ot, Matrix *view) {
+void func_8007334C(u32 *ot, MATRIX *view) {
     Emitter *emitter = D_80092644;
 
     emitter->base.vx = D_80092A24.vx;
@@ -101,10 +101,10 @@ void func_8007334C(u32 *ot, Matrix *view) {
 
 /* Fire a projectile of the given kind from a point toward the actor's
  * target (or away from origin when given), in the first free slot. */
-void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
-    Vector toward;
-    Vector aim;
-    SVector unused; /* unused in the original; reserves 8 bytes */
+void func_80073424(VECTOR *from, VECTOR *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
+    VECTOR toward;
+    VECTOR aim;
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     Actor *opponent;
     ShotKind *info;
     Shot *shot;
@@ -151,10 +151,10 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
 /* Move an actor's shots: expire, hit the floor, home in on the opponent's
  * core, draw the trail for their look and update speed and homing. */
 s32 func_80073644(Actor *actor) {
-    SVector half;
-    Vector toward;
-    SVector dir;
-    Color colour;
+    SVECTOR half;
+    VECTOR toward;
+    SVECTOR dir;
+    CVECTOR colour;
     Actor *opponent;
     Shot *shot;
     s32 dist;
@@ -266,13 +266,13 @@ s32 func_80073644(Actor *actor) {
 
 /* World position of a model part's vertex (1-based; 0 or a non-model part
  * gives the part's origin), relative to the actor's position. */
-void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out) {
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out) {
     Node *node = ((ModelSet *)actor->node->data)->nodes[part];
 
     if (vertex != 0 && node->type == 1) {
         gte_SetRotMatrix(&node->unk4C);
         gte_SetTransMatrix(&node->unk4C);
-        gte_ldv0(&((SVector *)((Mesh *)((Model *)node->data)->file)->data)[vertex - 1]);
+        gte_ldv0(&((SVECTOR *)((Mesh *)((Model *)node->data)->file)->data)[vertex - 1]);
         gte_rt();
         gte_stlvnl(out);
         out->vx += actor->pos.vx;
@@ -301,7 +301,7 @@ void func_80073CA4(Actor *actor) {
 }
 
 /* Record a new trail segment between two points. */
-void func_80073CEC(Vector *a, Vector *b, s32 flip, HitSpec *hit, Trail *trail, s32 arg5, Actor *owner) {
+void func_80073CEC(VECTOR *a, VECTOR *b, s32 flip, HitSpec *hit, Trail *trail, s32 arg5, Actor *owner) {
     trail->a_prev = trail->a;
     trail->b_prev = trail->b;
     trail->a = *a;
@@ -375,8 +375,8 @@ s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
  * D_80091228[type - 0x20] (func_8007C880), 0-4 a sparkle of that kind and
  * 8-12 the same jittered (func_8007D190; other types nothing). */
 void func_80073F34(Actor *actor, HitSpec *hit) {
-    Vector a;
-    Vector b;
+    VECTOR a;
+    VECTOR b;
     s32 style;
 
     style = func_8007CD14((actor->flags >> 27) & 1, hit->part_a, hit->vertex_a, 1);
@@ -413,9 +413,9 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
  * b when the points differ; any other type a trail segment from a to b
  * (func_80073CEC), which func_80075B50 tests against the opponent. */
 void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
-    Vector a;
-    Vector b;
-    Vector unused; /* unused in the original; reserves 16 bytes */
+    VECTOR a;
+    VECTOR b;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     s32 style;
     s32 power;
     s32 single;
@@ -537,7 +537,7 @@ u8 D_80091178[] = {
  * unknown kind stalls the loop, as in the original. tools/analysis/
  * overlay_scripts.py decodes the lists of the arena model files. */
 void func_80074678(Actor *actor, s16 frame, s16 count) {
-    Vector unused; /* unused in the original; reserves 16 bytes */
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     HitSpec *trails[20];
     u8 sounded;
     FrameEvent *events;
@@ -948,8 +948,8 @@ void func_80075748(void) {
 /* Whether point (px, pz) lies within radius of the segment from (x0, z0)
  * to (x1, z1), on its forward side. */
 s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
-    Vector d;
-    Vector sq;
+    VECTOR d;
+    VECTOR sq;
     s32 rx;
     s32 rz;
     s32 len;
@@ -983,8 +983,8 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
 /* Like func_80075750, and on a hit store where the segment enters the
  * circle around the point in D_80092654/D_80092658. */
 s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
-    Vector d;
-    Vector sq;
+    VECTOR d;
+    VECTOR sq;
     s32 rx;
     s32 rz;
     s32 len;
@@ -1030,7 +1030,7 @@ s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
 
 /* Whether a point comes within radius of any edge of a quad given as four
  * corner vectors; clears the crossing point to the point first. */
-s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
+s32 func_80075A4C(VECTOR *quad, s32 px, s32 pz, s32 radius) {
     D_80092654 = px;
     D_80092658 = pz;
     if (func_80075750(quad[1].vx, quad[1].vz, quad[0].vx, quad[0].vz, px, pz, radius)
@@ -1054,10 +1054,10 @@ s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
  * reaction. Returns 0. One variable serves as the damage and as the
  * scratch value before it (the axis fraction, the distance to the top). */
 s32 func_80075B50(Actor *actor) {
-    Vector home;
-    Vector top;
-    Vector point;
-    Vector from;
+    VECTOR home;
+    VECTOR top;
+    VECTOR point;
+    VECTOR from;
     Shot *shot;
     Trail *trail;
     s32 hits = 0;
@@ -1149,7 +1149,7 @@ s32 func_80075B50(Actor *actor) {
             damage = (trail->a.vy + trail->a_prev.vy + trail->b.vy + trail->b_prev.vy) / 4;
             if (top.vy < damage && damage < home.vy) {
                 AXIS_POINT(point, home, top, damage, damage);
-                hit = func_80075A4C((Vector *)trail, point.vx, point.vz, actor->header->unk13);
+                hit = func_80075A4C((VECTOR *)trail, point.vx, point.vz, actor->header->unk13);
             }
         }
         if (!hit) {
@@ -2002,7 +2002,7 @@ void func_80078154(Actor *actor) {
  * late round) a pull toward the opponent into this frame's velocity, and
  * add the push scaled by the stance. */
 void func_80078194(Actor *actor) {
-    Vector pull;
+    VECTOR pull;
     s32 facing;
     s32 speed;
     s32 scale;
@@ -2114,7 +2114,7 @@ void func_80078194(Actor *actor) {
  * side of the line from `a` to `b` than its round start position: 0 both
  * (choosing 0x92c when home is nearer to `a`), 1 or 2 only that one, 3
  * neither (choosing the nearer); the choice goes to *anchor. */
-s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
+s32 func_80078704(VECTOR *a, VECTOR *b, Actor *actor, VECTOR **anchor) {
     s32 dz = a->vz - b->vz;
     s32 dx = b->vx - a->vx;
     s32 start = dz * actor->start.vx + dx * actor->start.vz + a->vx * b->vz - b->vx * a->vz;
@@ -2140,9 +2140,9 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
     second *= start;
     if (first < 0) {
         if (second < 0) {
-            Vector *p1 = &actor->unk92C;
+            VECTOR *p1 = &actor->unk92C;
             s32 d1 = func_80088838(p1, a);
-            Vector *p2 = &actor->home;
+            VECTOR *p2 = &actor->home;
             s32 d2 = func_80088838(p2, a);
             *anchor = d2 < d1 ? p1 : p2;
             return 0;
@@ -2155,9 +2155,9 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
         return 2;
     }
     {
-        Vector *p1 = &actor->unk92C;
+        VECTOR *p1 = &actor->unk92C;
         s32 d1 = func_80088838(p1, a);
-        Vector *p2 = &actor->home;
+        VECTOR *p2 = &actor->home;
         s32 d2 = func_80088838(p2, a);
         *anchor = d1 < d2 ? p1 : p2;
     }
@@ -2171,13 +2171,13 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
  * Declared int without a return value, as the original's unfilled delay
  * slot in the last height test shows. */
 s32 func_80078920(Actor *first, Actor *second) {
-    Vector unused; /* unused in the original; reserves 16 bytes */
-    Vector point_a;
-    Vector point_b;
-    Vector mid;
-    Vector across;
-    Vector *anchor_a;
-    Vector *anchor_b;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
+    VECTOR point_a;
+    VECTOR point_b;
+    VECTOR mid;
+    VECTOR across;
+    VECTOR *anchor_a;
+    VECTOR *anchor_b;
     s32 radius_a;
     s32 radius_b;
     s32 dist;
@@ -2245,7 +2245,7 @@ s32 func_80078920(Actor *first, Actor *second) {
  * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
  * the floor (a mode-4 landing bounces once, with a sound and effect). */
 void func_80078D20(Actor *actor) {
-    Vector unused; /* keeps the original's 16-byte frame slot */
+    VECTOR unused; /* keeps the original's 16-byte frame slot */
 
     actor->floor_y = func_80082488(&actor->pos, 1);
     actor->flags = (actor->flags & ~0x60000000) |
@@ -2382,9 +2382,9 @@ void func_80078F00(Actor *actor) {
  * (7 and 9) when the stance changes. The stance state and last frame's
  * flag 15 are stored through bit-fields. */
 void func_8007920C(Actor *actor) {
-    Vector foot_a;
-    Vector foot_b;
-    Vector unused; /* keeps the original's 16-byte frame slot */
+    VECTOR foot_a;
+    VECTOR foot_b;
+    VECTOR unused; /* keeps the original's 16-byte frame slot */
     SceneHeader *header = actor->header;
     s32 state;
 
@@ -2469,8 +2469,8 @@ void func_8007920C(Actor *actor) {
  * the current one (the comparison reads the heights uninitialised, as the
  * original does), and ease the eye there, above the ground. */
 void func_800796B8(Actor *first, Actor *second) {
-    Vector eye;
-    Vector step;
+    VECTOR eye;
+    VECTOR step;
     s32 angle;
     s32 dist;
     s32 radius;
@@ -2893,7 +2893,7 @@ void func_8007A884(void) {
  * (tunable with the pad in debug), and back the look-at point off until it
  * is at least 0x200 away. */
 void func_8007A958(Actor *actor) {
-    Vector target;
+    VECTOR target;
     u16 held;
 
     if (D_800911D4 != 0) {
@@ -3116,15 +3116,15 @@ void func_8007B270(u8 *first, u8 *second) {
     D_800926A8[1] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
     D_800926A8[2] = 0;
     D_800926A8[3] = 0x1111;
-    D_800926A0 = LoadClut2(D_800926A8, D_80092698, D_8009269C);
+    D_800926A0 = LoadClut2((u_long *)D_800926A8, D_80092698, D_8009269C);
 }
 
 /* Load the effect textures from the scene file table: the twelve frames
  * of sparkle kind 0, the textures of kinds 1-4 (kind 3 is kind 1 drawn
  * additively), the sparkle packets, and the two other effect textures. */
-void func_8007B388(u32 **files) {
-    TimImage tim;
-    Rect unused; /* the original frame has 8 unused bytes */
+void func_8007B388(u_long **files) {
+    TIM_IMAGE tim;
+    RECT unused; /* the original frame has 8 unused bytes */
     s16 *clut;
     Sparkle *sparkle;
     u8 first = D_800911E8[0] == 0;
@@ -3151,7 +3151,7 @@ void func_8007B388(u32 **files) {
 
     OpenTIM(files[13]);
     ReadTIM(&tim);
-    clut = tim.caddr;
+    clut = (s16 *)tim.caddr;
     clut[0] = 0;
     for (i = 1; i < 16; i++) {
         clut[i] |= 0x8000;
@@ -3175,7 +3175,7 @@ void func_8007B388(u32 **files) {
 
     OpenTIM(files[16]);
     ReadTIM(&tim);
-    clut = tim.caddr;
+    clut = (s16 *)tim.caddr;
     clut[0] = 0;
     for (i = 1; i < 16; i++) {
         clut[i] |= 0x8000;
@@ -3221,7 +3221,7 @@ void func_8007B388(u32 **files) {
 
     sparkle = D_80092AD8;
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
-        ((PacketTag *)&sparkle->prim[0])->len = 9;
+        setlen(&sparkle->prim[0], 9);
         *(u32 *)&sparkle->prim[0].r0 = 0x2C808080;
         sparkle->prim[0].code |= 2;
         sparkle->prim[1] = sparkle->prim[0];
@@ -3240,7 +3240,7 @@ void func_8007B388(u32 **files) {
 
     OpenTIM(files[17]);
     ReadTIM(&tim);
-    clut = tim.caddr;
+    clut = (s16 *)tim.caddr;
     clut[0] = 0;
     for (i = 1; i < 16; i++) {
         clut[i] |= 0x8000;
@@ -3308,11 +3308,11 @@ void func_8007BB7C(void) {
 /* Draw the falling sparkles as camera-facing quads: rotate the corner
  * offsets of the three sprite sizes by the local matrix once, then project
  * each type-0 sparkle's position plus the offsets of its size. */
-void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot) {
+void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
     SparkleKind *kind;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
     u32 prev;
     u32 addr;
@@ -3408,15 +3408,15 @@ void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot) {
 }
 
 /* Set the colour of kind-2 sparkles. */
-void func_8007C100(Color *color) {
+void func_8007C100(CVECTOR *color) {
     D_800926B8 = *color;
 }
 
 /* Start a sparkle of the given kind at a position, in the first free slot. */
-void func_8007C124(SVector *pos, s32 kind) {
+void func_8007C124(SVECTOR *pos, s32 kind) {
     Sparkle *sparkle = D_80092AD8;
     SparkleKind *info;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
 
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
@@ -3455,11 +3455,11 @@ void func_8007C124(SVector *pos, s32 kind) {
 /* Draw the trail sparkles as quads from the previous segment's edge to an
  * edge across the direction of travel on screen (vertical for the first
  * segment), sized by the trail and shaded by age. */
-void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
+void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
     SparkleTrail *prev;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
     s32 dx;
     s32 dy;
@@ -3573,10 +3573,10 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
 /* Start a trail segment of a key at a position for the current owner
  * (once per key and owner), with the given texture column and size, linked
  * to the segment started on the previous frame. */
-void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
+void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size) {
     Sparkle *sparkle;
     Sparkle *other;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
 
     for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
@@ -3622,10 +3622,10 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
 
 /* Draw the line sparkles that continue last frame's segment as quads
  * joining both segments, fading with their age. */
-void func_8007CAA4(Matrix *view, Matrix *unused, u32 *ot) {
+void func_8007CAA4(MATRIX *view, MATRIX *unused, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
     u32 prev;
     u32 addr;
@@ -3652,7 +3652,7 @@ void func_8007CAA4(Matrix *view, Matrix *unused, u32 *ot) {
         gte_ldv3(&scratch->point, &scratch->from, &scratch->to);
         gte_rtpt();
         gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
-        gte_stsz3(&scratch->depth);
+        gte_stsz(&scratch->depth);
         gte_ldv0(&scratch->extra);
         gte_rtps();
         gte_stsxy(&prim->x3);
@@ -3674,10 +3674,10 @@ u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
 /* Start a line segment of a key between two positions for the current
  * owner (once per key and owner), with the given texture column, linked to
  * the segment started on the previous frame. */
-void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
+void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key) {
     Sparkle *sparkle;
     Sparkle *other;
-    PolyFT4 *prim;
+    POLY_FT4 *prim;
     s32 i;
 
     for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
@@ -3725,8 +3725,8 @@ void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
 
 /* Draw the scene effects: the passes that need the view and its derived
  * matrix, then the screen-space passes under the view matrix. */
-void func_8007CF78(Matrix *view, u32 *ot) {
-    Matrix local;
+void func_8007CF78(MATRIX *view, u32 *ot) {
+    MATRIX local;
 
     SCENE_SCRATCH->camera = D_80096FA8;
     func_8004A8EC(view, &local);
@@ -3747,7 +3747,7 @@ void func_8007D068(void *arg) {
 }
 
 /* Jitter a short position by -24..23 on each axis. */
-void func_8007D0B4(SVector *pos) {
+void func_8007D0B4(SVECTOR *pos) {
     pos->vx += rand() % 48 - 24;
     pos->vy += rand() % 48 - 24;
     pos->vz += rand() % 48 - 24;
@@ -3756,8 +3756,8 @@ void func_8007D0B4(SVector *pos) {
 /* Start a sparkle of kind 0..4 at a position; kinds 8..12 are the same
  * sparkles with the position jittered first. Declared int without a return
  * value, as the original's unfilled branch delay slot shows. */
-s32 func_8007D190(Vector *pos, u32 kind) {
-    SVector at;
+s32 func_8007D190(VECTOR *pos, u32 kind) {
+    SVECTOR at;
 
     at.vx = pos->vx;
     at.vy = pos->vy;
@@ -3800,7 +3800,7 @@ s32 func_8007D25C(s32 code) {
 }
 
 /* Jitter a position by -32..31 on each axis. */
-void func_8007D274(Vector *from, Vector *to) {
+void func_8007D274(VECTOR *from, VECTOR *to) {
     to->vx = from->vx + rand() % 64 - 32;
     to->vy = from->vy + rand() % 64 - 32;
     to->vz = from->vz + rand() % 64 - 32;
@@ -3809,12 +3809,12 @@ void func_8007D274(Vector *from, Vector *to) {
 /* Queue a three-strand bolt of jittered 7-segment lines between two points,
  * coloured by kind: 0 green-blue flicker, 1 random grey-yellow, 2
  * alternating white and red segments. */
-void func_8007D334(Vector *from, Vector *to, s32 kind) {
-    Vector point;
-    Vector step;
-    Vector prev;
-    Vector next;
-    Color color;
+void func_8007D334(VECTOR *from, VECTOR *to, s32 kind) {
+    VECTOR point;
+    VECTOR step;
+    VECTOR prev;
+    VECTOR next;
+    CVECTOR color;
     s32 strand;
     s32 i;
     s32 value;
@@ -3874,7 +3874,7 @@ void func_8007D334(Vector *from, Vector *to, s32 kind) {
 }
 
 /* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
-void func_8007D65C(Vector *from, Vector *to, s32 code) {
+void func_8007D65C(VECTOR *from, VECTOR *to, s32 code) {
     switch (code) {
     case 0x11:
         func_8007D334(from, to, 0);
@@ -3910,7 +3910,7 @@ void func_8007D6B8(void) {
 
 /* Spawn up to count ground particles in free cells around a position: on
  * the ground below a random point within 32 units, rising for 20 frames. */
-void func_8007D7A8(Vector *pos, s32 count) {
+void func_8007D7A8(VECTOR *pos, s32 count) {
     SceneCell10 *cell = D_800926BC;
     s32 i;
     s32 x;
@@ -3940,7 +3940,7 @@ void func_8007D7A8(Vector *pos, s32 count) {
  * until it reaches its ground height. */
 void func_8007D918(u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
-    Tile1 *tile = D_800926C0[D_800928A0];
+    Tile1Words *tile = D_800926C0[D_800928A0];
     SceneCell10 *cell = &D_800926BC[D_800928A0];
     s32 cx = scratch->camera.vx;
     s32 cy = scratch->camera.vy;
@@ -3972,7 +3972,7 @@ void func_8007D918(u32 *ot) {
             LINK_PRIM(ot, scratch, &tile[0], 0x02000000);
             gte_stsz2(&scratch->depth);
             LINK_PRIM(ot, scratch, &tile[1], 0x02000000);
-            gte_stsz3(&scratch->depth);
+            gte_stsz(&scratch->depth);
             LINK_PRIM(ot, scratch, &tile[2], 0x02000000);
             tile += 3;
         }
@@ -4011,8 +4011,8 @@ void func_8007DB28(void) {
  * per six units of its length, starting around `from` below the floor and
  * drifting across the segment (randomly to either side) or at random, with
  * a rise and life that grow with its height difference. */
-void func_8007DC74(Vector *from, Vector *to) {
-    Vector across;
+void func_8007DC74(VECTOR *from, VECTOR *to) {
+    VECTOR across;
     s32 nx;
     s32 nz;
     s32 life;
@@ -4124,7 +4124,7 @@ void func_8007E020(u32 *ot) {
             LINK_PRIM(ot, scratch, &tile[0], 0x03000000);
             gte_stsz2(&scratch->depth);
             LINK_PRIM(ot, scratch, &tile[1], 0x03000000);
-            gte_stsz3(&scratch->depth);
+            gte_stsz(&scratch->depth);
             LINK_PRIM(ot, scratch, &tile[2], 0x03000000);
             tile += 3;
         }
@@ -4164,7 +4164,7 @@ void func_8007E2D8(void) {
 
     for (i = 0; i < 100; i++) {
         line = &D_80094818[i];
-        line->line.len = 3;
+        setlen(&line->line, 3);
         line->line.code = 0x40;
     }
     D_800926B0 = 0;
@@ -4172,7 +4172,7 @@ void func_8007E2D8(void) {
 }
 
 /* Queue a coloured 3D line segment for this frame (at most 100). */
-void func_8007E31C(Vector *from, Vector *to, Color *color) {
+void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color) {
     SceneLine *line;
 
     if (D_800926B0 < 100) {

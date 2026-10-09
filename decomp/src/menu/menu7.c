@@ -15,12 +15,12 @@ static s16 D_80092808; /* model CLUT x (-1: none) */
 static s16 D_8009280C; /* model CLUT y */
 static s32 D_80092810;
 static s32 D_80092814; /* unreferenced */
-static CVector D_80092818[2]; /* current colour per display buffer */
+static CVECTOR D_80092818[2]; /* current colour per display buffer */
 static s32 D_80092820; /* root counter at the frame start */
 static s32 D_80092824; /* nodes instanced by the last copy */
 static Node *D_80092828; /* root being instanced */
-static SVector *D_8009282C; /* scratch vectors for GTE loads */
-static SVector *D_80092830; /* view origin subtracted before projection */
+static SVECTOR *D_8009282C; /* scratch vectors for GTE loads */
+static SVECTOR *D_80092830; /* view origin subtracted before projection */
 static Emitter *D_80092834; /* the menu's spark emitter */
 static s32 D_80092838; /* spark burst strength, fading by 4 per frame */
 static s16 *D_8009283C;
@@ -32,23 +32,23 @@ static u8 D_80092848; /* the command the brain last started */
  * after every unit's small ones (menu.mk), behind the task scheduler's
  * two words (func_8008BB00.s). Nothing addresses the words marked
  * unreferenced. */
-static PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
-static TileRgb D_80096DE0[2];  /* full-screen shade tile per draw buffer */
-static DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
+static POLY_FT4 D_80096D90[2];  /* glow field quad per draw buffer */
+static TILE D_80096DE0[2];  /* full-screen shade tile per draw buffer */
+static DR_MODE D_80096E00[2]; /* its blend mode per draw buffer */
 static s32 D_80096E18[34];     /* unreferenced */
 static SoundVoice D_80096EA0[4];
 static Brain D_80096F30; /* brain of the side-0 opponent */
 static Brain D_80096F64; /* brain of the side-1 opponent */
-static Vector D_80096F98; /* look-at work: side */
+static VECTOR D_80096F98; /* look-at work: side */
 
-Matrix D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
+MATRIX D_80091C0C = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } };
 
 s32 D_80091C2C = 0;
 
 OtPair *D_80091C30 = NULL;
 
 /* Unused: the corners of a cube. */
-SVector D_80091C34[8] = {
+SVECTOR D_80091C34[8] = {
     { -0x1000, -0x1000, -0x1000, 0 }, { 0x1000, -0x1000, -0x1000, 0 },
     { 0x1000, 0x1000, -0x1000, 0 }, { -0x1000, 0x1000, -0x1000, 0 },
     { -0x1000, -0x1000, 0x1000, 0 }, { 0x1000, -0x1000, 0x1000, 0 },
@@ -80,13 +80,13 @@ SparkShape D_80091C74[] = {
 };
 
 /* Spark placement rules. */
-void func_8008CF9C(Emitter *source, SVector *pos);
-void func_8008CFC4(Emitter *source, SVector *pos);
-void func_8008D0A4(Emitter *source, SVector *pos);
-void func_8008D14C(Emitter *source, SVector *pos);
-void func_8008D208(Emitter *source, SVector *pos);
-void func_8008D304(Emitter *source, SVector *pos);
-void (*D_80091CC4[])(Emitter *emitter, SVector *pos) = {
+void func_8008CF9C(Emitter *source, SVECTOR *pos);
+void func_8008CFC4(Emitter *source, SVECTOR *pos);
+void func_8008D0A4(Emitter *source, SVECTOR *pos);
+void func_8008D14C(Emitter *source, SVECTOR *pos);
+void func_8008D208(Emitter *source, SVECTOR *pos);
+void func_8008D304(Emitter *source, SVECTOR *pos);
+void (*D_80091CC4[])(Emitter *emitter, SVECTOR *pos) = {
     func_8008CF9C, func_8008D14C, func_8008CFC4, func_8008D208, func_8008D304, func_8008D0A4,
 };
 
@@ -243,12 +243,12 @@ void func_80089534(s32 width, s32 height) {
     D_8009A0D8[0].draw.dtd = D_8009A0D8[1].draw.dtd = 1;
     D_8009A0D8[0].draw.isbg = D_8009A0D8[1].draw.isbg = 0;
     D_8009A0D8[0].draw.tpage = D_8009A0D8[1].draw.tpage = GetTPage(0, 2, 0x280, 0);
-    SetDrawEnv(D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
-    SetDrawEnv(D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
-    SetDrawArea(D_8009A0D8[0].modeD0, &D_8009A0D8[0].draw.clip);
-    SetDrawArea(D_8009A0D8[1].modeD0, &D_8009A0D8[1].draw.clip);
-    SetDrawOffset(D_8009A0D8[0].modeDC, D_8009A0D8[0].draw.ofs);
-    SetDrawOffset(D_8009A0D8[1].modeDC, D_8009A0D8[1].draw.ofs);
+    SetDrawEnv(&D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
+    SetDrawEnv(&D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
+    SetDrawArea(&D_8009A0D8[0].area, &D_8009A0D8[0].draw.clip);
+    SetDrawArea(&D_8009A0D8[1].area, &D_8009A0D8[1].draw.clip);
+    SetDrawOffset(&D_8009A0D8[0].offset, D_8009A0D8[0].draw.ofs);
+    SetDrawOffset(&D_8009A0D8[1].offset, D_8009A0D8[1].draw.ofs);
 }
 
 /* Set up geometry, screen and scale for a width x height display. */
@@ -273,23 +273,23 @@ void func_8008976C(s32 width, s32 height) {
 /* Set a layer's drawing areas and offsets for both buffers (the second
  * buffer lies `second` lines lower) and its black background tiles. */
 void func_800897AC(OtPair *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
-    Rect area;
+    RECT area;
     s16 offset[2];
 
     area.x = x;
     area.y = y;
     area.w = w;
     area.h = h;
-    SetDrawArea(layer->area[0], &area);
+    SetDrawArea(&layer->area[0], &area);
     area.y = y + second;
-    SetDrawArea(layer->area[1], &area);
+    SetDrawArea(&layer->area[1], &area);
     offset[0] = x;
     offset[1] = y;
-    SetDrawOffset(layer->offset[0], offset);
+    SetDrawOffset(&layer->offset[0], offset);
     offset[1] = y + second;
-    SetDrawOffset(layer->offset[1], offset);
+    SetDrawOffset(&layer->offset[1], offset);
     layer->tile[0].len = 3;
-    layer->tile[0].colour = 0x60000000;
+    layer->tile[0].rgbc = 0x60000000;
     layer->tile[0].x0 = 0;
     layer->tile[0].y0 = 0;
     layer->tile[0].w = w;
@@ -299,7 +299,7 @@ void func_800897AC(OtPair *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
 }
 
 /* Build a view matrix looking from eye to at with the given up vector. */
-void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
+void func_800898BC(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up) {
     D_8009A0C8.vx = at->vx - eye->vx;
     D_8009A0C8.vy = at->vy - eye->vy;
     D_8009A0C8.vz = at->vz - eye->vz;
@@ -329,10 +329,10 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(LightRig *view, Vector *target, Vector *eye) {
-    SVector up;
-    SVector from;
-    SVector origin;
+void func_80089A98(LightRig *view, VECTOR *target, VECTOR *eye) {
+    SVECTOR up;
+    SVECTOR from;
+    SVECTOR origin;
 
     up.vy = 0x1000;
     up.vz = 0;
@@ -731,8 +731,8 @@ void func_8008A63C(Model *model) {
 }
 
 /* Set the current buffer's colour, noting whether it changed. */
-void func_8008A6F8(CVector *colour) {
-    CVector *current = &D_80092818[D_800928A0];
+void func_8008A6F8(CVECTOR *colour) {
+    CVECTOR *current = &D_80092818[D_800928A0];
 
     if (colour->r == current->r && colour->g == current->g && colour->b == current->b) {
         D_80092914 = 0;
@@ -828,7 +828,7 @@ void func_8008ABAC(Node **lights) {
 /* Clear the current buffer's ordering table of a pair and make it the one
  * primitives are added to. */
 void func_8008AC0C(OtPair *pair) {
-    ClearOTagR(pair->ot[D_800928A0], pair->length);
+    ClearOTagR((u_long *)pair->ot[D_800928A0], pair->length);
     D_800928E4 = pair->ot[D_800928A0];
     D_80050100 = pair->shift;
 }
@@ -894,16 +894,16 @@ void func_8008AE1C(OtPair *layer) {
     func_8008AC7C(layer);
     AddPrims(D_80092938, layer->last[D_800928A0], layer->ot[D_800928A0]);
     if (!(layer->flags & 4)) {
-        SetDrawArea(layer->area[D_800928A0], &D_80092868->draw.clip);
+        SetDrawArea(&layer->area[D_800928A0], &D_80092868->draw.clip);
     }
     if (!(layer->flags & 8)) {
-        SetDrawOffset(layer->offset[D_800928A0], D_80092868->draw.ofs);
+        SetDrawOffset(&layer->offset[D_800928A0], D_80092868->draw.ofs);
     }
     if (layer->flags & 0x10) {
         AddPrim(D_80092938, &layer->tile[D_800928A0]);
     }
-    AddPrim(D_80092938, layer->offset[D_800928A0]);
-    AddPrim(D_80092938, layer->area[D_800928A0]);
+    AddPrim(D_80092938, &layer->offset[D_800928A0]);
+    AddPrim(D_80092938, &layer->area[D_800928A0]);
 }
 
 /* Relocate a scene file's pointers to where it was loaded. */
@@ -1287,8 +1287,8 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
 void func_8008BCC8(Mesh *mesh, u8 *work) {
-    Vector direction;
-    Vector unused; /* unused in the original; reserves 16 bytes */
+    VECTOR direction;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1488,7 +1488,7 @@ INCLUDE_ASM("decomp/src/menu", func_8008C4B0);
 INCLUDE_ASM("decomp/src/menu", func_8008C620);
 
 /* Shift a vector history: entries 4, 3 and 2 all take entry 0. */
-void func_8008C7C0(SVector *history) {
+void func_8008C7C0(SVECTOR *history) {
     history[4] = history[0];
     history[3] = history[4];
     history[2] = history[3];
@@ -1497,7 +1497,7 @@ void func_8008C7C0(SVector *history) {
 /* Set up a four-point spark line: semi-transparent, in the source colour,
  * the same in both draw buffers. */
 void func_8008C828(SparkLine4 *spark, Emitter *source) {
-    LineF4 *line = &spark->line[0];
+    LINE_F4 *line = &spark->line[0];
 
     setlen(line, 6), setcode(line, 0x4C), line->pad = 0x55555555;
     setSemiTrans(line, 1);
@@ -1508,12 +1508,12 @@ void func_8008C828(SparkLine4 *spark, Emitter *source) {
 /* Project a four-point spark line through its trail, age the trail and add
  * the line to the ordering table. */
 void func_8008C8B4(SparkLine4 *spark, u32 *ot) {
-    LineF4 *line = &spark->line[D_800928A0];
-    s32 depth;
+    LINE_F4 *line = &spark->line[D_800928A0];
+    long depth;
     s32 otz;
 
     otz = RotTransPers4(&spark->pos, &spark->trail[0], &spark->trail[1], &spark->trail[2],
-                        (s32 *)&line->x0, (s32 *)&line->x1, (s32 *)&line->x2, (s32 *)&line->x3,
+                        (long *)&line->x0, (long *)&line->x1, (long *)&line->x2, (long *)&line->x3,
                         &depth, &depth);
     spark->trail[2] = spark->trail[1];
     spark->trail[1] = spark->trail[0];
@@ -1529,7 +1529,7 @@ void func_8008C9B8(SparkLine3 *spark) {
 
 /* Set up a three-point spark line. */
 void func_8008CA00(SparkLine3 *spark, Emitter *source) {
-    LineF3 *line = &spark->line[0];
+    LINE_F3 *line = &spark->line[0];
 
     setlen(line, 5), setcode(line, 0x48), line->pad = 0x55555555;
     setSemiTrans(line, 1);
@@ -1540,9 +1540,9 @@ void func_8008CA00(SparkLine3 *spark, Emitter *source) {
 /* Project a three-point spark line relative to the view origin with the
  * GTE, age its trail and add it. */
 void func_8008CA84(SparkLine3 *spark, u32 *ot) {
-    SVector *origin = D_80092830;
-    SVector *work = D_8009282C;
-    LineF3 *line;
+    SVECTOR *origin = D_80092830;
+    SVECTOR *work = D_8009282C;
+    LINE_F3 *line;
     s32 otz;
 
     work[0].vx = spark->pos.vx - origin->vx;
@@ -1571,7 +1571,7 @@ void func_8008CC2C(SparkLine2 *spark) {
 
 /* Set up a two-point spark line. */
 void func_8008CC54(SparkLine2 *spark, Emitter *source) {
-    LineF2Tag *line = &spark->line[0];
+    LINE_F2 *line = &spark->line[0];
 
     setlen(line, 3), setcode(line, 0x40);
     setSemiTrans(line, 1);
@@ -1581,12 +1581,14 @@ void func_8008CC54(SparkLine2 *spark, Emitter *source) {
 
 /* Project a two-point spark line, age its trail and add it. */
 void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
-    LineF2Tag *line = &spark->line[D_800928A0];
-    s32 depth;
+    LINE_F2 *line = &spark->line[D_800928A0];
+    long depth;
     s32 otz;
 
-    otz = RotTransPers3(&spark->pos, &spark->trail[0], &depth, (s32 *)&line->x0,
-                        (s32 *)&line->x1, &depth, &depth, &depth);
+    /* A LINE_F2 keeps two points: the third vertex and its results are the
+     * depth word. */
+    otz = RotTransPers3(&spark->pos, &spark->trail[0], (SVECTOR *)&depth, (long *)&line->x0,
+                        (long *)&line->x1, &depth, &depth, &depth);
     spark->trail[0] = spark->pos;
     func_800316C0(ot + (otz >> 2), line);
 }
@@ -1596,7 +1598,7 @@ void func_8008CD54(void) {
 
 /* Set up a spark drawn as a small semi-transparent tile of random size. */
 void func_8008CD5C(SparkTile *spark, Emitter *source) {
-    TileRgb *tile = &spark->tile[0];
+    TILE *tile = &spark->tile[0];
 
     setlen(tile, 3), setcode(tile, 0x62);
     tile->h = rand() % 2 + 2;
@@ -1607,9 +1609,9 @@ void func_8008CD5C(SparkTile *spark, Emitter *source) {
 
 /* Project a tile spark relative to the view origin and add it. */
 void func_8008CE0C(SparkTile *spark, u32 *ot) {
-    SVector *origin = D_80092830;
-    SVector v;
-    TileRgb *tile;
+    SVECTOR *origin = D_80092830;
+    SVECTOR v;
+    TILE *tile;
     s32 otz;
 
     v.vx = spark->pos.vx - origin->vx;
@@ -1628,7 +1630,7 @@ void func_8008CED4(void) {
 
 /* Set up a spark drawn as a single semi-transparent dot. */
 void func_8008CEDC(SparkDot *spark, Emitter *source) {
-    Tile1Tag *dot = &spark->dot[0];
+    TILE_1 *dot = &spark->dot[0];
 
     setlen(dot, 2), setcode(dot, 0x6A);
     setRGB0(dot, source->r, source->g, source->b);
@@ -1637,22 +1639,22 @@ void func_8008CEDC(SparkDot *spark, Emitter *source) {
 
 /* Project a dot spark and add it. */
 void func_8008CF30(SparkDot *spark, u32 *ot) {
-    Tile1Tag *dot = &spark->dot[D_800928A0];
-    s32 depth;
+    TILE_1 *dot = &spark->dot[D_800928A0];
+    long depth;
 
-    func_80031870(ot + (RotTransPers(&spark->pos, (s32 *)&dot->x0, &depth, &depth) >> 2), dot);
+    func_80031870(ot + (RotTransPers(&spark->pos, (long *)&dot->x0, &depth, &depth) >> 2), dot);
 }
 
 /* Place a spark at its source's origin. */
-void func_8008CF9C(Emitter *source, SVector *pos) {
+void func_8008CF9C(Emitter *source, SVECTOR *pos) {
     *pos = source->origin;
 }
 
 /* Place a spark at a random point of its source's box, rotated with the
  * source. */
-void func_8008CFC4(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008CFC4(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
 
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = rand() % source->range.vy - source->offset.vy;
@@ -1664,7 +1666,7 @@ void func_8008CFC4(Emitter *source, SVector *pos) {
 }
 
 /* Place a spark at a random point of its source's box. */
-void func_8008D0A4(Emitter *source, SVector *pos) {
+void func_8008D0A4(Emitter *source, SVECTOR *pos) {
     pos->vx = source->origin.vx + rand() % source->range.vx - source->offset.vx;
     pos->vy = source->origin.vy + rand() % source->range.vy - source->offset.vy;
     pos->vz = source->origin.vz + rand() % source->range.vz - source->offset.vz;
@@ -1672,9 +1674,9 @@ void func_8008D0A4(Emitter *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal rectangle,
  * rotated with the source. */
-void func_8008D14C(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D14C(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
 
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = 0;
@@ -1687,9 +1689,9 @@ void func_8008D14C(Emitter *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal ellipse,
  * rotated with the source. */
-void func_8008D208(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D208(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
     s32 angle = rand();
     s32 radius = rand();
 
@@ -1704,9 +1706,9 @@ void func_8008D208(Emitter *source, SVector *pos) {
 
 /* Place a spark on its source's ring at a random height, rotated with the
  * source. The ring angle is never initialised in the original. */
-void func_8008D304(Emitter *source, SVector *pos) {
-    SVector v;
-    Vector r;
+void func_8008D304(Emitter *source, SVECTOR *pos) {
+    SVECTOR v;
+    VECTOR r;
     s32 angle;
 
     v.vx = (func_8003F8B0(angle) * source->range.vx) >> 12;
@@ -1774,7 +1776,7 @@ void func_8008D580(Emitter *emitter) {
     s32 i;
 
     for (i = 0; i < emitter->count; i++) {
-        ((SVector *)spark)->pad = 0;
+        ((SVECTOR *)spark)->pad = 0;
         spark += emitter->size;
     }
 }
@@ -1795,7 +1797,7 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
     setup = emitter->setup;
     for (i = 0; i < emitter->count; i++) {
         setup(spark, emitter);
-        ((SVector *)spark)->pad = 0;
+        ((SVECTOR *)spark)->pad = 0;
         spark += emitter->size;
     }
 }
@@ -1803,14 +1805,14 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
 /* Launch up to count idle sparks: each gets a random direction inside the
  * emitter's spread cone and a random speed, both rotated into place, then a
  * position from the placement rule, the emitter's life and a fresh shape. */
-void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
-    SVector dir;
-    SVector unit;
-    Matrix local;
-    Matrix world;
-    Matrix turned;
+void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count) {
+    SVECTOR dir;
+    SVECTOR unit;
+    MATRIX local;
+    MATRIX world;
+    MATRIX turned;
     u8 *spark;
-    void (*place)(Emitter *, SVector *);
+    void (*place)(Emitter *, SVECTOR *);
     void (*reset)(void *);
     s32 left;
     s32 i;
@@ -1860,7 +1862,7 @@ void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
             if (--left == -1) {
                 break;
             }
-            place(emitter, (SVector *)spark);
+            place(emitter, (SVECTOR *)spark);
             ((Spark *)spark)->pos.pad = emitter->life;
             reset(spark);
         }
@@ -1871,7 +1873,7 @@ void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
 /* Bounce a falling spark off the floor under it, losing half its speed.
  * The floor query reads the spark position as a 32-bit vector. */
 void func_8008D980(Spark *spark) {
-    if (spark->vel.vy > 0 && spark->pos.vy > func_80082488((Vector *)spark, 0)) {
+    if (spark->vel.vy > 0 && spark->pos.vy > func_80082488((VECTOR *)spark, 0)) {
         spark->vel.vy = -spark->vel.vy / 2;
     }
 }
@@ -1889,17 +1891,17 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
-void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
-    SVector unused[5]; /* unused in the original; reserves 40 bytes */
+void func_8008DA48(Emitter *emitter, u32 *ot, MATRIX *view) {
+    SVECTOR unused[5]; /* unused in the original; reserves 40 bytes */
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
 
-    D_8009282C = (SVector *)0x1F800000;
-    D_80092830 = (SVector *)0x1F800030;
-    ((SVector *)0x1F800030)->vx = D_80096FA8.vx;
-    ((SVector *)0x1F800030)->vy = D_80096FA8.vy;
-    ((SVector *)0x1F800030)->vz = D_80096FA8.vz;
+    D_8009282C = (SVECTOR *)0x1F800000;
+    D_80092830 = (SVECTOR *)0x1F800030;
+    ((SVECTOR *)0x1F800030)->vx = D_80096FA8.vx;
+    ((SVECTOR *)0x1F800030)->vy = D_80096FA8.vy;
+    ((SVECTOR *)0x1F800030)->vz = D_80096FA8.vz;
     spark = (Spark *)emitter->sparks;
     draw = emitter->draw;
     for (i = 0; i < emitter->count; i++) {
@@ -1922,8 +1924,8 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
 }
 
 /* Copy one model part's local transform. */
-void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
-    Matrix unused; /* unused in the original; reserves 32 bytes */
+void func_8008DBC0(SparkModel *model, s16 part, MATRIX *out) {
+    MATRIX unused; /* unused in the original; reserves 32 bytes */
 
     *out = model->list->parts[part]->matrix;
 }
@@ -1952,10 +1954,10 @@ void func_8008DCA8(s32 strength) {
 
 /* Emit a burst from a model part while the burst lasts, then move and draw
  * the menu's sparks under the given view. */
-void func_8008DCB8(u32 *ot, SparkModel *model, Matrix *view, Vector *pos) {
+void func_8008DCB8(u32 *ot, SparkModel *model, MATRIX *view, VECTOR *pos) {
     Emitter *emitter = D_80092834;
-    Matrix rotation;
-    Matrix part;
+    MATRIX rotation;
+    MATRIX part;
 
     if (D_80092838 >= 0x10) {
         func_8008DBC0(model, 0x27, &part);
@@ -1992,7 +1994,7 @@ void func_8008DF30(void) {
 /* Allocate the glow buffers once, clear them, and upload the glow palette
  * with every entry marked semi-transparent. */
 void func_8008DF50(void) {
-    Rect rect;
+    RECT rect;
     s32 i;
 
     if (D_80092844 == NULL) {
@@ -2014,7 +2016,7 @@ void func_8008DF50(void) {
     rect.w = 0xFF;
     rect.x = 0;
     rect.h = 1;
-    LoadImage(&rect, (u32 *)D_80091CE0);
+    LoadImage(&rect, (u_long *)D_80091CE0);
 }
 
 /* Release the glow buffers. */
@@ -2106,7 +2108,7 @@ void func_8008E120(void) {
 /* Draw a full-screen grey tile of the given level, additive or subtractive,
  * with the draw mode that selects the blend. */
 void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
-    TileRgb *tile = &D_80096DE0[D_800928A0];
+    TILE *tile = &D_80096DE0[D_800928A0];
 
     *(u32 *)&tile->r0 = level | (level << 8) | (level << 16) | 0x60000000;
     setlen(tile, 3);
@@ -2126,9 +2128,9 @@ void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
  * screen as a semi-transparent textured quad at two thirds of the level
  * (plain texture at full level); optionally add a brightening tile. */
 void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
-    PolyFT4 *quad = &D_80096D90[D_800928A0];
-    TileRgb *tile;
-    Rect rect;
+    POLY_FT4 *quad = &D_80096D90[D_800928A0];
+    TILE *tile;
+    RECT rect;
     s32 shade;
 
     setlen(quad, 9);
@@ -2151,7 +2153,7 @@ void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
     rect.y = 0x100;
     rect.w = 0x38;
     rect.h = 0x2B;
-    LoadImage(&rect, (u32 *)D_80092844);
+    LoadImage(&rect, (u_long *)D_80092844);
     if (brighten) {
         tile = &D_80096DE0[D_800928A0];
         if (level > 0x80) {
@@ -2224,7 +2226,7 @@ void func_8008E6F8(Actor *owner) {
 
 /* Start a sound on a free positional voice (or a matching unpositioned
  * one, else the oldest); positioned sounds follow pos or its snapshot. */
-void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
+void func_8008E78C(s32 sound, s32 mode, VECTOR *pos, s32 arg3) {
     s32 oldest = 0;
     SoundVoice *chosen = &D_80096EA0[3];
     SoundVoice *voice;
@@ -2264,8 +2266,8 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
 /* Pan and attenuate every positioned voice from its screen position and
  * depth; a voice just started is keyed on with those values. */
 void func_8008E8B0(void) {
-    SVector v;
-    SVector screen;
+    SVECTOR v;
+    SVECTOR screen;
     s32 sz;
     SoundVoice *voice;
     s32 volume;
@@ -2340,7 +2342,7 @@ void func_8008EB4C(s32 id) {
 }
 
 /* Play a character's sound effect, tagged with its id and side. */
-void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
+void func_8008EB88(Actor *owner, s32 id, VECTOR *pos, s32 mode) {
     if (id != 0) {
         func_8008E78C(id + 0x60000, mode, pos, (id & 0x7F) | ((owner->flags >> 20) & 0x80));
     }
@@ -2348,7 +2350,7 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
 
 /* Play one of a character's command sounds (random 1-6 when index is 0):
  * up to two effects from the shared pair table. */
-void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
+void func_8008EBD0(Actor *owner, s32 index, VECTOR *pos, s32 mode) {
     s32 entry;
 
     if (index == 0) {
@@ -2700,7 +2702,7 @@ void func_8008F900(Actor *actor) {
 /* Whether an actor stands in the far quadrant of the scene or on a floor
  * of kind 1. */
 s32 func_8008F9B0(Actor *actor) {
-    Vector pos = actor->pos;
+    VECTOR pos = actor->pos;
 
     pos.vx -= 0x3F80;
     pos.vz -= 0x3F80;
@@ -2713,7 +2715,7 @@ s32 func_8008F9B0(Actor *actor) {
 /* Steer the opponent toward one of two headings depending on which side
  * of the scene centre it stands, at full speed. */
 s32 func_8008FA2C(Actor *actor, Brain *brain) {
-    Vector pos = actor->pos;
+    VECTOR pos = actor->pos;
 
     pos.vx -= 0x3F80;
     pos.vz -= 0x3F80;

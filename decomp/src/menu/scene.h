@@ -5,49 +5,29 @@
 
 /* Scratchpad work area of the scene drawing. */
 typedef struct {
-    Vector camera; /* 0x00: camera position of this frame */
-    SVector point; /* 0x10: particle position relative to the camera */
-    SVector from;  /* 0x18: line end points relative to the camera */
-    SVector to;    /* 0x20 */
-    SVector extra; /* 0x28: fourth corner of a projected quad */
-    Vector corner[6]; /* 0x30: view-rotated sprite corner offsets */
+    VECTOR camera; /* 0x00: camera position of this frame */
+    SVECTOR point; /* 0x10: particle position relative to the camera */
+    SVECTOR from;  /* 0x18: line end points relative to the camera */
+    SVECTOR to;    /* 0x20 */
+    SVECTOR extra; /* 0x28: fourth corner of a projected quad */
+    VECTOR corner[6]; /* 0x30: view-rotated sprite corner offsets */
     u8 unk90[0x20];
     s32 depth;     /* 0xB0: projected depth */
 } SceneScratch;
 
 #define SCENE_SCRATCH ((SceneScratch *)0x1F800000)
 
-/* libgpu LINE_F2 layout. */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-} LineF2;
-
 /* A 3D line segment of the scene, projected into its LINE_F2 each frame. */
 typedef struct {
-    LineF2 line;
-    SVector from; /* 0x10 */
-    SVector to;   /* 0x18 */
+    LINE_F2 line;
+    SVECTOR from; /* 0x10 */
+    SVECTOR to;   /* 0x18 */
 } SceneLine;
-
-/* libgpu SPRT layout. */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 w, h;
-} Sprt;
 
 /* A sprite with its texture page, one per draw buffer. */
 typedef struct {
-    DrTpage tpage;
-    Sprt sprite;
+    DR_TPAGE tpage;
+    SPRT sprite;
 } SceneSprite;
 
 typedef struct {
@@ -57,15 +37,6 @@ typedef struct {
     s8 unk9;              /* z speed */
     s16 unkA;             /* vertical speed */
 } SceneCell12;
-
-/* TILE with its colour and code as one word (16 bytes). */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u32 rgbc;
-    s16 x0, y0;
-    s16 w, h;
-} TileWords;
 
 void func_800732AC(void *dst, void *src, s32 size); /* copy memory */
 
@@ -90,14 +61,6 @@ extern GroundSquare *D_800928DC;
 
 void func_80074BA4(Actor *actor);
 
-/* libgpu TILE_1 layout, colour and code written as one word. */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u32 rgbc;
-    s16 x0, y0;
-} Tile1;
-
 extern s32 D_800912DC;
 
 /* Glyph of the menu font. */
@@ -113,12 +76,6 @@ extern char *D_800912F4[];
 
 extern s32 D_800912F0;
 /* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
-/* libgpu DR_MOVE layout. */
-typedef struct {
-    u32 tag;
-    u32 code[5];
-} DrMove;
-
 /* An entry block of a page; +0x14 bit 2 hides it. */
 typedef struct {
     u8 unk0[0x14];
@@ -134,7 +91,7 @@ typedef struct {
     s16 cursor; /* 0x12 */
     s16 y;      /* 0x14: first text line */
     u8 unk16[6];
-    TileRgb frame[2]; /* 0x1C: the page's box, per draw buffer */
+    TILE frame[2]; /* 0x1C: the page's box, per draw buffer */
 } MenuPage;
 
 s32 func_80035734(s32 port); /* controller type */
@@ -147,7 +104,6 @@ extern u8 D_80091300[];  /* frame rate of each rate setting */
 char *func_8007F97C(void);
 void func_8007ECF0(u8 *text);
 void func_8007F948(MenuPage *page, s32 entry);
-s32 sprintf(char *out, char *format, ...); /* sprintf */
 
 /* D_800915AC, D_80092734 and D_80092738 are declared as Menu (window.h);
  * the settings pages view them as MenuPage. */
@@ -160,8 +116,6 @@ void func_80080964(s32 page);
 void func_80080B58(void);
 void func_8007F8B4(void);
 void func_80031BB4(s32 high); /* choose the heap end to allocate from */
-void MoveImage(Rect *rect, s32 x, s32 y); /* copy a VRAM area */
-void StoreImage(Rect *rect, void *pixels);  /* read a VRAM area */
 void func_80080AA0(s32 forget);
 void func_8008509C(s32 a, s32 b);
 void *func_800891C0(s32 arg);
@@ -178,14 +132,8 @@ typedef struct ListEntry {
 /* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
  * its palette row and its 30x64 image. */
 typedef struct {
-    s16 clut_x;
-    s16 clut_y;
-    s16 clut_w;
-    s16 clut_h;
-    s16 image_x;
-    s16 image_y;
-    s16 image_w;
-    s16 image_h;
+    RECT clut;
+    RECT image;
     u8 unk10[4];
 } GridCell;
 
@@ -208,42 +156,18 @@ s32 func_8007EB6C(u8 *text);
 void func_8007EE08(s32 highlight);
 s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080C48(s32 arg);
-void func_8007D334(Vector *from, Vector *to, s32 kind);
-void func_8004A8EC(Matrix *m, Matrix *out);
-void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot);
-void func_8007C280(Matrix *view, Matrix *local, u32 *ot);
-void func_8007CAA4(Matrix *view, Matrix *local, u32 *ot);
+void func_8007D334(VECTOR *from, VECTOR *to, s32 kind);
+void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot);
+void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot);
+void func_8007CAA4(MATRIX *view, MATRIX *local, u32 *ot);
 void func_8007D918(u32 *ot);
 void func_8007E020(u32 *ot);
 
 /* Menu overlay drawing. */
-void SetDrawMove(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
 void func_800811AC(void *ot);
 
 extern u16 D_800595D4;
 extern u16 D_80059414;
-void SetSprt(void *prim);           /* initialise a SPRT */
-void SetShadeTex(void *prim, s32 semi); /* set semi-transparency */
-
-/* POLY_FT4 with its positions written as whole words and its texture
- * coordinates as halfwords. */
-typedef struct PolyFT4Words {
-    u8 addr[3];
-    u8 len;
-    u32 rgbc;
-    u32 xy0;
-    u16 uv0;
-    u16 clut;
-    u32 xy1;
-    u16 uv1;
-    u16 tpage;
-    u32 xy2;
-    u16 uv2;
-    u16 pad1;
-    u32 xy3;
-    u16 uv3;
-    u16 pad2;
-} PolyFT4Words;
 
 /* Two-player selection wheels: each side's portraits per buffer, and the
  * neighbour offsets and slide of the portraits beside the pick (row 1
@@ -253,14 +177,14 @@ extern s16 D_800912E0[2][4];
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
 void func_8007EE68(s32 highlight);
 
-void func_8007D274(Vector *from, Vector *to);
+void func_8007D274(VECTOR *from, VECTOR *to);
 
 /* Image data of the menu (+0x3C: the font TIM, +0x64: the banner TIM). */
 typedef struct {
     u8 unk0[0x3C];
-    u32 *font;
+    u_long *font;
     u8 unk40[0x24];
-    u32 *banner;
+    u_long *banner;
 } MenuFiles;
 
 #endif

@@ -2,6 +2,7 @@
 #define MENU_SPARKLE_H
 
 #include "common.h"
+#include "psyq/libgpu.h"
 
 /* Kind of sparkle (20-byte records at D_80092A74). */
 typedef struct {
@@ -31,7 +32,7 @@ typedef struct {
  * falls; types 1 and 2 are trail and line segments linked to the previous
  * frame's segment of the same key and owner. */
 typedef struct Sparkle {
-    PolyFT4 prim[2];     /* 0x00 */
+    POLY_FT4 prim[2];     /* 0x00 */
     u8 active;           /* 0x50 */
     s8 frame;            /* 0x51 */
     u8 frame_count;      /* 0x52 */
@@ -66,8 +67,6 @@ extern u8 D_800911E8[16];
 extern u8 D_800911F8[16];
 extern u8 D_80091208[16]; /* 12 used */
 extern u8 D_80091218[16];
-
-u16 LoadClut2(u16 *clut, s32 x, s32 y); /* load a CLUT, return its id */
 
 /* Texture of the trail and line sprites. */
 extern s32 D_800928E8;   /* owner of the segments started now */

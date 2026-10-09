@@ -162,7 +162,7 @@ extern char D_800706D4[]; /* "RATE   : %3dfps\n" */
  * shown, debug meters). The original reads the tick counter at entry but
  * leaves `last` uninitialized until the first frame's rate calculation. */
 void func_80088E90(void) {
-    DispEnv disp;
+    DISPENV disp;
     Task *task;
     s32 last;
     s32 fps;
@@ -215,7 +215,7 @@ frame:
     func_8008AC8C();
     DrawSync(0);
     PutDispEnv(&disp);
-    DrawOTagEnv(D_80092938, D_80092868);
+    DrawOTagEnv((u_long *)D_80092938, &D_80092868->draw);
     goto frame;
 }
 

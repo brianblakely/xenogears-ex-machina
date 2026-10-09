@@ -7,7 +7,7 @@
 /* A centred one-line caption: its text image and one sprite per buffer. */
 typedef struct {
     u8 *image;         /* 0x00 */
-    Sprite sprite[2];  /* 0x04 */
+    SPRT sprite[2];  /* 0x04 */
     s16 width;         /* 0x2C */
     s16 x;             /* 0x2E */
 } Caption;
@@ -40,7 +40,7 @@ struct Menu {
     s16 y;             /* 0x14 */
     s16 x;             /* 0x16 */
     u8 unk18[4];
-    TileRgb panel[2];  /* 0x1C: one per buffer */
+    TILE panel[2];  /* 0x1C: one per buffer */
 };
 
 extern s32 D_800911D4; /* second actor also posed by func_8007661C */
@@ -67,27 +67,20 @@ void func_800345E0(MenuWindow *window);
 void func_800707A8(void);
 s32 func_8008F9B0(Actor *actor);
 
-/* libgpu DR_TPAGE. */
-typedef struct {
-    u32 tag;
-    u32 code[1];
-} DrawTPage;
-
 /* Per-buffer overlay packets (map screen, 0x310 bytes). */
 typedef struct OverlayBuffer {
-    DrawTPage tpage[2];   /* 0x000 */
-    LineF4 frame[4];      /* 0x010: map frame outline, both sides */
-    PolyF4 bars[6];       /* 0x080: gauge backgrounds */
-    DrawTPage bar_tpage;  /* 0x110 */
-    PolyF4 bars_dim[6];   /* 0x118 */
-    PolyF4 bars_lit[6];   /* 0x1A8 */
-    PolyF3 arrows[2][3];  /* 0x238: three per side */
-    PolyF4 marks[4];      /* 0x2B0 */
+    DR_TPAGE tpage[2];   /* 0x000 */
+    LINE_F4 frame[4];      /* 0x010: map frame outline, both sides */
+    POLY_F4 bars[6];       /* 0x080: gauge backgrounds */
+    DR_TPAGE bar_tpage;  /* 0x110 */
+    POLY_F4 bars_dim[6];   /* 0x118 */
+    POLY_F4 bars_lit[6];   /* 0x1A8 */
+    POLY_F3 arrows[2][3];  /* 0x238: three per side */
+    POLY_F4 marks[4];      /* 0x2B0 */
 } OverlayBuffer;
 
 extern OverlayBuffer D_8009A2F8[2];
-extern DVector D_800917F4[8]; /* map frame corner layout */
-void MargePrim(void *packet, void *next); /* chain two packets */
+extern DVECTOR D_800917F4[8]; /* map frame corner layout */
 extern u8 D_80091834[]; /* per map row: leftmost allowed column */
 extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
 
@@ -96,21 +89,21 @@ s32 func_8008F530(Actor *actor, s32 which);
 
 /* A 3D debug line with its packets (one per buffer). */
 typedef struct {
-    LineF2Tag packets[2]; /* 0x00 */
-    SVector from;      /* 0x20 */
-    SVector to;        /* 0x28 */
+    LINE_F2 packets[2]; /* 0x00 */
+    SVECTOR from;      /* 0x20 */
+    SVECTOR to;        /* 0x28 */
     s16 timer;         /* 0x30: frames left, 0 = free */
     s16 pad;
 } Line3D;
 
-extern Vector D_80096FA8; /* view origin */
+extern VECTOR D_80096FA8; /* view origin */
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 
 /* A recorded path position and its debug marker: three axis lines (red
  * x, green y, blue z) per buffer. */
 typedef struct PathPoint {
-    LineF2Tag axes[2][3]; /* 0x00 */
+    LINE_F2 axes[2][3]; /* 0x00 */
     s16 x, y, z;          /* 0x60 */
     u8 pad[2];
 } PathPoint;
@@ -119,7 +112,7 @@ typedef struct PathPoint {
  * func_80087E38 records up to 31, the last over the heap that follows. */
 extern PathPoint D_8009A928[30];
 extern s32 D_800928F8; /* recorded path points */
-extern PolyFT3 *D_80092854[2]; /* map triangle pool per draw buffer */
+extern POLY_FT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 
 void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
@@ -149,8 +142,6 @@ extern s32 D_8009291C;
 extern s32 D_80092910;
 extern s32 D_80092908;
 void func_8002C6E0(s32 r, s32 g, s32 b); /* back colour */
-void func_8004A10C(s32 r, s32 g, s32 b); /* far colour */
-void SetFogNearFar(s32 near, s32 far, s32 arg);
 
 /* Stage floor. */
 typedef struct {
@@ -173,11 +164,9 @@ typedef struct {
 
 extern MapTable D_80091934;
 
-u16 GetTPage(s32 mode, s32 rate, s32 x, s32 y); /* texture page id */
-
 /* A three-part gauge bar. */
 typedef struct {
-    PolyF4 parts[3];
+    POLY_F4 parts[3];
 } GaugeBar;
 
 void func_80085E90(s32 mirrored, s16 *out, s32 x);
@@ -189,23 +178,23 @@ void func_80087830(void);
 
 /* HUD packets (D_80095698, 0x280 bytes). */
 typedef struct {
-    Sprite s[2];
+    SPRT s[2];
 } SpritePair;
 
 typedef struct {
-    PolyFT4 name_l[2];    /* 0x000 */
-    PolyFT4 name_r[2];    /* 0x050 */
+    POLY_FT4 name_l[2];    /* 0x000 */
+    POLY_FT4 name_r[2];    /* 0x050 */
     SpritePair icon[4];   /* 0x0A0 */
     SpritePair gauge[4];  /* 0x140 */
-    PolyFT4 bar_l[2];     /* 0x1E0 */
-    PolyFT4 bar_r[2];     /* 0x230 */
+    POLY_FT4 bar_l[2];     /* 0x1E0 */
+    POLY_FT4 bar_r[2];     /* 0x230 */
 } Hud;
 
 extern u8 D_80092860; /* left bar texel row */
 extern u8 D_80092864; /* right bar texel row */
 extern u16 D_80091814[16]; /* gauge palette */
-void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
-void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
+void func_800864B4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
+void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
 
 /* Fading overlay. */
 extern s32 D_80092948;
@@ -228,8 +217,6 @@ void func_80080AE8(void);
 void func_80036420(void);
 void func_80081A44(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
-void ClearImage(Rect *rect, s32 r, s32 g, s32 b); /* clear a VRAM area */
-void DrawSync(s32 mode); /* wait for drawing */
 void func_80080D20(void *packets);
 void func_80086E24(void);
 void func_8008E120(void);
@@ -239,7 +226,6 @@ void func_8003A838(s32 arg0, s32 arg1, s32 arg2);
 void func_8008E064(void);
 s32 func_80033728(s32 table, s32 index); /* text string of an index */
 s32 func_80034EAC(s32 string, u8 *image, s32 colour, s32 arg); /* returns width */
-void LoadImage(Rect *rect, void *pixels); /* load pixels into VRAM */
 void func_8007EE08(s32 arg);
 void func_80080F04(void);
 void func_8007E894(s32 x, s32 y);
