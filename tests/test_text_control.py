@@ -5,16 +5,24 @@ import struct
 import unittest
 
 from tools.analysis.text_control import (
+    BLANK_CODE,
     CONTROLS,
     PAIR_CODES,
+    TITLE_BYTES,
     Sweep,
     TextError,
+    agreeing,
+    align_titles,
     archive_entry,
     code_text,
     decode_text,
     decode_token,
+    fits,
     initial_names,
+    number_glyphs,
     pair_kind,
+    render,
+    save_titles,
     table_listing,
     text_table,
     unpack_logical,
@@ -207,6 +215,87 @@ class CharacterCodeTests(unittest.TestCase):
                 "end",
             ],
         )
+
+
+# An invented cipher: glyph 0x10 + n spells the letter n places after "A"
+# (0x10 itself the blank); the bytes describe no original font.
+def spell(text: str) -> bytes:
+    return bytes(0x10 if c == " " else 0x10 + ord(c) - 0x40 for c in text)
+
+
+class CharacterTests(unittest.TestCase):
+    def test_number_codes_name_their_one_byte_glyphs(self):
+        pairs = bytearray(2 * PAIR_CODES)
+        for digit in range(10):
+            pairs[2 * digit + 1] = 0x80 + digit  # palette 0
+            pairs[2 * (0x10 + digit) + 1] = 0x90 + digit  # palette 1
+        pairs[2 * 10 + 1], pairs[2 * 11 + 1] = 0x8A, 0x8B  # palette 0 signs
+        pairs[2 * 0x1A : 2 * 0x1A + 2] = b"\xfe\x01"  # a two-byte glyph is left out
+        pairs[2 * BLANK_CODE + 1] = 0x10
+        glyphs = number_glyphs(bytes(pairs), THRESHOLD)
+        self.assertEqual(glyphs[0x83], "3")
+        self.assertEqual(glyphs[0x99], "9")
+        self.assertEqual((glyphs[0x8A], glyphs[0x8B], glyphs[0x10]), ("-", "+", " "))
+        self.assertEqual(len(glyphs), 23)  # code 0x1b's empty pair is no glyph either
+        pairs[2 * 0x1B + 1] = 0x83  # one glyph read as two characters names neither
+        self.assertNotIn(0x83, number_glyphs(bytes(pairs), THRESHOLD))
+
+    def test_title_lines_read_through_the_inverted_table(self):
+        table = tuple(0x8200 + n for n in range(96))  # invented: ASCII 0x20 + n
+
+        def line(text: str) -> bytes:
+            codes = b"".join(struct.pack(">H", 0x8200 + ord(c) - 0x20) for c in text)
+            return codes + struct.pack(">H", 0x8200) * (TITLE_BYTES // 2 - len(text)) + b"\r\n"
+
+        outside = b"\x81\x00" + line("Bc")[2:]  # a code the table lacks
+        newline_inside = line("A*")  # '*' is 0x820a: its second byte is no newline
+        data = line("Ab Cd") + outside + newline_inside + line("Ef")
+        self.assertEqual(save_titles(data, table), ["Ab Cd", "A*", "Ef"])
+
+    def test_a_title_fits_only_its_pattern(self):
+        known = {0x10: " "}
+        self.assertTrue(fits("Ab A", spell("Ab A"), known))
+        self.assertFalse(fits("Ab A", spell("Ab C"), known))  # equal letters, equal glyphs
+        self.assertFalse(fits("Ab C", spell("Ab A"), known))  # different letters apart
+        self.assertFalse(fits("Ab", spell("A "), known))  # the blank is known
+        self.assertFalse(fits("A ", spell("Ab"), known))  # a known character at another glyph
+        self.assertFalse(fits("Ab", spell("Abc"), known))
+
+    def test_titles_spell_whole_texts_and_extend_each_other(self):
+        known = {0x10: " "}
+        texts = {spell(t) for t in ("Ab Cd", "Ce Cb", "Bad", "Xy", "Xz")}
+        glyphs, aligned = align_titles(["Ab Cd", "Bad", "Xy", "Qq"], texts, known)
+        # Round one: only "Ab Cd" has a known character (the blank), and only
+        # its own text fits it. Its "d" then lets "Bad" add "B" and "a". "Xy"
+        # never has a known character and "Qq" has no text.
+        self.assertEqual([title for title, _ in aligned], ["Ab Cd", "Bad"])
+        self.assertEqual(glyphs, {**known, **{spell(c)[0]: c for c in "AbCdBa"}})
+
+    def test_ambiguous_titles_add_nothing(self):
+        texts = {spell("Ab Cd"), spell("Ef Gh")}
+        glyphs, aligned = align_titles(["Ab Cd"], texts, {0x10: " "})
+        self.assertEqual((glyphs, aligned), ({0x10: " "}, []))
+
+    def test_the_largest_agreeing_set_wins_and_ties_add_nothing(self):
+        known = {0x10: " "}
+        # "Ab Cd" and "Ab Ce" agree; the third text puts "A" elsewhere.
+        proposals = {
+            "Ab Cd": spell("Ab Cd"),
+            "Ab Ce": spell("Ab Ce"),
+            "Af Gh": spell("Ib Jk"),
+        }
+        self.assertEqual(agreeing(proposals, known), ["Ab Cd", "Ab Ce"])
+        tie = {"Ab Cd": spell("Ab Cd"), "Af Gh": spell("Ib Jk")}
+        self.assertEqual(agreeing(tie, known), [])
+
+    def test_render_prints_known_glyphs_as_characters(self):
+        data = b"\x41\x10\x42\xfe\x41\x01\x5b\x00"
+        tokens = decode_text(data, 0, THRESHOLD)
+        self.assertEqual(render(tokens), "41 10 42 fe41 [newline] 5b [end]")
+        chars = {0x41: "A", 0x10: " ", 0x5B: "{"}
+        self.assertEqual(render(tokens, chars), "A {42}{fe41}[newline]\\{[end]")
+        listing = table_listing(table([data]), THRESHOLD, chars)
+        self.assertEqual(listing, ["     0 +0x000c 32x3: A {42}{fe41}[newline]\\{[end]"])
 
 
 if __name__ == "__main__":
