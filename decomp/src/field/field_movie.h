@@ -7,7 +7,6 @@
  * blocks 1 and 2 (8005a414) hold the 320x256 area at (200, 0) while a
  * movie plays. */
 
-extern void *D_8005A41C; /* resident: party sprite block 2 (8005a414[2]), addressed alone */
 
 extern s32 D_801E89E0; /* movie library: 1 lets it present frames itself */
 

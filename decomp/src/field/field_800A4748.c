@@ -1172,20 +1172,20 @@ void func_800A73E8(void) {
 
     if (D_800ADB74 == 2) {
         func_800320B8(D_8005A414[1]);
-        func_800320B8(D_8005A41C);
+        func_800320B8(D_8005A414[2]);
         func_800320E8(D_8005A414[1]);
-        func_800320E8(D_8005A41C);
+        func_800320E8(D_8005A414[2]);
     } else {
         setRECT(&rect, 0x200, 0, 0x140, 0x80);
         LoadImage(&rect, D_8005A414[1]);
         DrawSync(0);
         setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
-        LoadImage(&rect, D_8005A41C);
+        LoadImage(&rect, D_8005A414[2]);
         DrawSync(0);
         func_800320B8(D_8005A414[1]);
-        func_800320B8(D_8005A41C);
+        func_800320B8(D_8005A414[2]);
         func_800320E8(D_8005A414[1]);
-        func_800320E8(D_8005A41C);
+        func_800320E8(D_8005A414[2]);
     }
 }
 

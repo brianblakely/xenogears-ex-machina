@@ -361,7 +361,7 @@ s32 func_80085F30(void) {
         return -1;
     }
     bank = (s32)func_80037FD8(D_800B00E0, 0);
-    D_8006251C = bank;
+    D_80062518[1] = bank;
     D_80059560 = (SoundSequence *)bank;
     func_8003BDFC(0x10);
     func_800320E8(D_800B00E0);
@@ -386,7 +386,7 @@ void func_80085FB8(void) {
 void func_80086024(void) {
     if (D_8004F368 == 0) {
         D_8004F384 = 1;
-        func_80038310((SoundSequence *)D_8006251C);
+        func_80038310((SoundSequence *)D_80062518[1]);
         D_8004F368 = 1;
     }
     D_8004F364 = 0;
@@ -1950,7 +1950,7 @@ void func_8008AACC(void) {
             func_8003BDFC(0x10);
             func_800320E8(D_800AFD08);
             if (D_800AFD18 == 3) {
-                D_800595AC = (SoundSequence *)D_80062524;
+                D_800595AC = (SoundSequence *)D_80062518[3];
             }
             D_800B00C0 = 1;
             D_800B0078->pc += 2;

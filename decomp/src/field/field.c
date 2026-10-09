@@ -128,33 +128,33 @@ void func_8006FDEC(s16 *record) {
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
 
-    D_800AF880.lights[0].direction[0] = *record++;
-    D_800AF880.lights[0].direction[1] = *record++;
-    D_800AF880.lights[0].direction[2] = *record;
+    D_800AF880.lights[0].vx = *record++;
+    D_800AF880.lights[0].vy = *record++;
+    D_800AF880.lights[0].vz = *record;
     record += 2;
-    D_800AF880.lights[0].color[0] = *record++ << 3;
-    D_800AF880.lights[0].color[1] = *record++ << 3;
-    D_800AF880.lights[0].color[2] = *record << 3;
+    D_800AF880.lights[0].r = *record++ << 3;
+    D_800AF880.lights[0].g = *record++ << 3;
+    D_800AF880.lights[0].b = *record << 3;
     record += 2;
     func_80030A30(0, &D_800AF880.lights[0]);
 
-    D_800AF880.lights[1].direction[0] = *record++;
-    D_800AF880.lights[1].direction[1] = *record++;
-    D_800AF880.lights[1].direction[2] = *record;
+    D_800AF880.lights[1].vx = *record++;
+    D_800AF880.lights[1].vy = *record++;
+    D_800AF880.lights[1].vz = *record;
     record += 2;
-    D_800AF880.lights[1].color[0] = *record++ << 3;
-    D_800AF880.lights[1].color[1] = *record++ << 3;
-    D_800AF880.lights[1].color[2] = *record << 3;
+    D_800AF880.lights[1].r = *record++ << 3;
+    D_800AF880.lights[1].g = *record++ << 3;
+    D_800AF880.lights[1].b = *record << 3;
     record += 2;
     func_80030A30(1, &D_800AF880.lights[1]);
 
-    D_800AF880.lights[2].direction[0] = *record++;
-    D_800AF880.lights[2].direction[1] = *record++;
-    D_800AF880.lights[2].direction[2] = *record;
+    D_800AF880.lights[2].vx = *record++;
+    D_800AF880.lights[2].vy = *record++;
+    D_800AF880.lights[2].vz = *record;
     record += 2;
-    D_800AF880.lights[2].color[0] = *record++ << 3;
-    D_800AF880.lights[2].color[1] = *record++ << 3;
-    D_800AF880.lights[2].color[2] = *record << 3;
+    D_800AF880.lights[2].r = *record++ << 3;
+    D_800AF880.lights[2].g = *record++ << 3;
+    D_800AF880.lights[2].b = *record << 3;
     D_800AF880.lights[1] = D_800AF880.lights[0];
     D_800AF880.lights[2] = D_800AF880.lights[0];
     record += 2;
@@ -2850,8 +2850,6 @@ s32 func_80077E10(void) {
     return 0;
 }
 
-extern s32 D_8006251C;
-extern s32 D_80062524;
 extern s32 D_800AFC78;
 extern s32 D_80059488;
 extern u16 D_800C3900;      /* pad buttons held */
@@ -2899,8 +2897,8 @@ void func_80077E88(void) {
     if (D_800C268C == 0) {
         DrawSyncCallback(func_8007781C);
     }
-    D_8006251C = (s32)D_80059560;
-    D_80062524 = (s32)D_800595AC;
+    D_80062518[1] = (s32)D_80059560;
+    D_80062518[3] = (s32)D_800595AC;
     func_80032498(8, 0);
     if (D_800C268C == 0 && D_8004F370 == 0) {
         func_80028470(4, 0);
