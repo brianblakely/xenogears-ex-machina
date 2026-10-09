@@ -1290,22 +1290,15 @@ typedef struct {
 
 #define ORBIT_SCRATCH ((OrbitScratch *)0x1F800000)
 
-/* Camera placement: eye, target and up direction. */
-typedef struct {
-    SVECTOR eye;
-    SVECTOR target;
-    VECTOR up;
-} LookAt;
-
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
 void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
-    LookAt *view = (LookAt *)buffer;
+    ViewSetup *view = (ViewSetup *)buffer;
     SVECTOR *rotation;
 
-    view->target.vx = 0;
-    view->target.vy = camera->target.vy >> 12;
-    view->target.vz = 0;
+    view->at.vx = 0;
+    view->at.vy = camera->target.vy >> 12;
+    view->at.vz = 0;
     ORBIT_SCRATCH->angle.vx = angle->vx;
     rotation = &ORBIT_SCRATCH->angle;
     ORBIT_SCRATCH->angle.vy = angle->vy;
@@ -1316,7 +1309,7 @@ void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
     ORBIT_SCRATCH->offset.vz = -(distance >> 12);
     ApplyMatrixLV(&ORBIT_SCRATCH->rotation, &ORBIT_SCRATCH->offset, &ORBIT_SCRATCH->eye);
     view->eye.vx = ORBIT_SCRATCH->eye.vx;
-    view->eye.vy = view->target.vy + ORBIT_SCRATCH->eye.vy;
+    view->eye.vy = view->at.vy + ORBIT_SCRATCH->eye.vy;
     view->eye.vz = ORBIT_SCRATCH->eye.vz;
     rotation->vx = 0;
     rotation->vy = angle->vy;
@@ -1358,12 +1351,12 @@ typedef struct {
 
 /* Build the camera matrix looking from the eye to the target. */
 void func_80097244(void *arg) {
-    LookAt *view;
+    ViewSetup *view;
 
     view = arg;
-    LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->target.vx;
-    LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->target.vy;
-    LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->target.vz;
+    LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->at.vx;
+    LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->at.vy;
+    LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->at.vz;
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
     func_8004A480(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);

@@ -21,8 +21,9 @@ extern s32 D_8009BE0C;    /* screen y of the view's centre (SetGeomOffset) */
 extern s32 D_8009D144;    /* view kind: 0 by angle, 1 look-at */
 extern MATRIX D_8009C808; /* camera matrix */
 
-/* The view setup at D_8009BD40: eye and look-at points and the up vector;
- * the orbit placement writes its two view vectors there, swapped per
+/* The view setup at D_8009BD40: eye and look-at points and the up vector,
+ * which the orbit placement (func_80096F18) writes and the look-at camera
+ * (func_80097244) reads; some camera actors swap its two view vectors per
  * frame. */
 typedef struct {
     SVECTOR eye;
