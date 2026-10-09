@@ -239,7 +239,9 @@ s32 func_8002C68C(ModelBuffer *buffer) {
     return 0;
 }
 
-extern CVECTOR D_80059598; /* the model colour; the renderers load it into the GTE */
+/* The model colour; the handwritten renderers load it into the GTE. The
+ * menu reads it as one word, so the shared headers leave it out. */
+extern CVECTOR D_80059598;
 
 void func_8002C6E0(u8 r, u8 g, u8 b) {
     D_80059598.r = r;

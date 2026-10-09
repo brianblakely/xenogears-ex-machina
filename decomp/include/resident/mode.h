@@ -55,6 +55,7 @@ extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
 extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
+extern FileRequest D_8006F9BC[4]; /* the battle mode's sound files (8001bbac) */
 extern void *D_80065AFC[3];       /* party character file blocks */
 extern void *D_8005A4A0;          /* file 0xa7 block */
 extern void *D_8005A4BC;          /* file 0xa8 block */
@@ -86,6 +87,7 @@ void func_80019560(u8 *start, u8 *end); /* zero the words after start through en
 
 void func_8001A4B4(void); /* mode 0, the kernel menu */
 void func_8001B6C4(void); /* mode 2 */
+void func_8001B844(void); /* the battle's display buffers and projection */
 void func_8001C634(void); /* mode 5 */
 void func_8001996C(s32 mode);
 void *func_800199CC(s32 mode);
@@ -136,5 +138,11 @@ extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) 
 extern u8 D_80065ADC[16];
 extern s16 D_8006BE2C[3]; /* per party slot (the field) */
 extern u8 D_80059180; /* battle music playing */
+
+/* The battle overlay's entry, which mode 2 runs, and its flag that the
+ * battle script sets with a movie request (ovl3087 opcode 27): the battle
+ * then continues in the movie mode (6). */
+void func_80070F40(void);
+extern u8 D_800D3338;
 
 #endif

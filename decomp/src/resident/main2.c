@@ -1257,12 +1257,9 @@ u8 func_800358A0(s32 buttons) {
     return D_8005021C[(buttons >> 12) & 0xF];
 }
 
-extern u16 D_80059574;       /* held pad buttons, second port */
-extern u16 D_80059490;       /* pad buttons pressed, second port */
-extern u16 D_800594A8;       /* pad buttons repeated, second port */
-extern s32 D_80059488;       /* vertical blank count */
-extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
-extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
+/* The vertical blank count: the menu declares it volatile, so the shared
+ * headers leave it out. */
+extern s32 D_80059488;
 
 /* Read both controllers: held buttons (remapped; an analog stick's layout
  * swapped), the stick positions (the directional buttons' on a digital
@@ -1393,13 +1390,6 @@ u32 func_80035CDC(void) {
 u32 func_80035DA0(void) {
     return D_8005937C;
 }
-
-extern u16 D_800594DC;
-extern u16 D_800594E0;
-extern u16 D_800594E8;
-extern u16 D_800594EC;
-extern u16 D_800595C8;
-extern u16 D_800595CC;
 
 /* Clear the controller queue and states. */
 void func_80035DB0(void) {

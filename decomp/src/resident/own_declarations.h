@@ -34,6 +34,7 @@ void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second);
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2); /* upload an image list */
 
 /* sound.h */
+SoundSequence *func_800383EC(s32 key); /* the loaded wave bank with `key` */
 SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames); /* start a sequence */
 s32 func_8003BDFC(s32 wait);
 
@@ -57,17 +58,8 @@ void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
 
 /* The battle overlay's objects and calls the resident's sprite code uses, by
  * its own views (the battle overlay declares them with its types): the
- * acting sprite, the slots' formation places read from the battle area
- * D_800C3EB0 in strides of a slot, a group's sprites. 800b2aec has a K&R
- * definition there. */
-typedef struct {
-    u8 unknown0[0xE];
-    s16 x, z;              /* +0xe */
-    u8 unknown12[0xA];
-} SpriteAnchor;
-
+ * acting sprite and a group's sprites. 800b2aec has a K&R definition there. */
 extern Sprite *D_800C3E1C;        /* the acting sprite */
-extern SpriteAnchor D_800C3EB0[]; /* formation places by side and slot */
 extern Sprite *D_800D363C[];      /* the sprites of a group, NULL-terminated */
 extern u8 D_800C3664;
 struct ScriptEntry;

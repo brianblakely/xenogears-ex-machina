@@ -1,4 +1,5 @@
 #include "common.h"
+#include "battle/area.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
 #include "psyq/libcd.h"
@@ -33,14 +34,16 @@ char *D_8004FA9C[7] = {
     D_8004F39C[4], D_8004F39C[5], D_8004F39C[6],
 };
 
-extern DISPENV D_800C4A7C;
 /* Stripped debug hooks share this no-op entry. Their old argument lists
- * and forwarded return register remain part of the calling sequence. */
+ * and forwarded return register remain part of the calling sequence, so the
+ * calls here are K&R ones of an s32 function (its definition in
+ * main2_800366E0.c is void (void)). */
 s32 func_800379D0();
 void func_8001B94C(DRAWENV *env);
 
-/* Initialize the battle's 320x224 double buffer and GTE projection. The
- * display environments are 0x4070 bytes apart, after their draw environments. */
+/* Initialize the battle's 320x224 double buffer (the battle area's two
+ * frame buffers) and GTE projection. Each draw environment is reached from
+ * the display environment after it. */
 void func_8001B844(void) {
     DISPENV *disp;
     DRAWENV *draw;
@@ -52,12 +55,12 @@ void func_8001B844(void) {
     InitGeom();
     SetGeomOffset(0xA0, 0xB4);
     SetGeomScreen(0x200);
-    disp = &D_800C4A7C;
+    disp = &D_800C3EB0.buffers[0].dispEnv;
     SetDefDispEnv(disp, 0, 0xE0, 0x140, 0xE0);
     draw = (DRAWENV *)((u8 *)disp - sizeof(DRAWENV));
     SetDefDrawEnv(draw, 0, 0, 0x140, 0xE0);
-    SetDefDispEnv((DISPENV *)((u8 *)disp + 0x4070), 0, 0, 0x140, 0xE0);
-    otherDraw = (DRAWENV *)((u8 *)disp + 0x4070 - sizeof(DRAWENV));
+    SetDefDispEnv((DISPENV *)((u8 *)disp + sizeof(FrameBuffer)), 0, 0, 0x140, 0xE0);
+    otherDraw = (DRAWENV *)((u8 *)disp + sizeof(FrameBuffer) - sizeof(DRAWENV));
     SetDefDrawEnv(otherDraw, 0, 0xE0, 0x140, 0xE0);
     func_8001B94C(draw);
     func_8001B94C(otherDraw);
@@ -72,14 +75,21 @@ void func_8001B94C(DRAWENV *env) {
     env->b0 = 0x78;
 }
 
-extern u8 D_8006D635[]; /* the second byte of the saved name slots */
+/* The second byte of the saved name slots: 8001b970 reads them from a base
+ * of their own, which D_8006D634.names does not compile to (link.ld). */
+extern u8 D_8006D635[];
 /* The battle script variables. 8001b970 clears twenty halfwords back from
  * [19]: the 16 variables and the first 8 bytes of the sound driver's SPU
- * attributes D_8005A3C0 that follow them. */
+ * attributes D_8005A3C0 that follow them. The battle reads them signed, so
+ * the shared headers leave them out. */
 extern u16 D_8005A3A0[];
 u8 D_800594CC;
 u8 D_8005947C; /* pending scene + 1 */
+/* Callers in other targets declare these two differently. The resident's
+ * own prototypes (own_declarations.h) are not included here: its window.h
+ * declares the window colour as the array this unit cannot. */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
+void func_80039DB8(s32 program);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
  * 31 twenty-byte name slots, and clear the battle script variables. */
@@ -160,10 +170,7 @@ void *D_80059480; /* heap marker for the high-memory reservation */
 void *D_800594AC; /* reservation below the heap marker */
 SoundBank *D_800595D0;
 void *D_800595A8;
-extern FileRequest D_8006F9BC[4];
 u8 D_8005954C;
-void func_80038428(SoundBank *bank);
-void func_80039DB8(s32 program);
 
 /* Reserve high memory, load a sound bank and files 3 and 4, then request
  * the mode's three optional sound programs. */

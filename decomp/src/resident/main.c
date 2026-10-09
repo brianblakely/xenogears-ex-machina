@@ -40,7 +40,6 @@ s32 D_8004EAA0[] = {0, 0xE, 0x10, 0xF, 0xD, 0x11, 0x12};
 
 /* The packed boot logo (80019d48): its unpacked size, a 6209-byte 16-colour
  * TIM, and the LZSS stream 80032e88 decodes. */
-extern u8 D_8004EABC[];
 INCLUDE_ASSET(".data", D_8004EABC, 0x8004EABC, 0x800);
 
 INCLUDE_ASM("decomp/src/resident", func_80019524);

@@ -2,6 +2,7 @@
  * sprite motion and the animation script interpreter. Compiled by the CDK
  * GCC at -G8; positive `li` are assembled as `addiu` (ASPSX 2.50+). */
 #include "common.h"
+#include "battle/area.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
 #include "psyq/libcd.h"
@@ -44,7 +45,6 @@ SVECTOR D_8004FB98[4] = {0};
 MATRIX D_8004FBB8 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
 /* The packed image 8001fab4 uploads: its unpacked size (664 bytes) and the
  * LZSS stream 80032e88 decodes. */
-extern u8 D_8004FBD8[];
 INCLUDE_ASSET(".data", D_8004FBD8, 0x8004FBD8, 0xE8);
 
 /* The unit's own small data, statics and small commons, all $gp-relative.
@@ -1847,16 +1847,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (arg & 0x80) {
             transform = sprite->render.bits.no_view;
             switch (index) {
-            /* 38: the formation place (800c3eb0) of its side and slot, y 0. */
+            /* 38: the formation place of its side and slot, y 0. */
             case 38: {
                 u32 slot, side;
 
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vx = D_800C3EB0[(side << 2) | slot].x;
+                vector.vx = D_800C3EB0.slots[(side << 2) | slot].x;
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vz = D_800C3EB0[(side << 2) | slot].z;
+                vector.vz = D_800C3EB0.slots[(side << 2) | slot].z;
                 vector.vy = 0;
                 break;
             }
