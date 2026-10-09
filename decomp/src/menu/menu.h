@@ -534,22 +534,6 @@ void func_80076424(Actor *actor);
 void func_80090CC0(Actor *actor);
 void func_80087AB0(Actor *actor);
 void func_80078ED4(s16 *params);
-extern char D_8006FC74[]; /* "" */
-extern char D_8006FC10[]; /* "ETHER" */
-extern char D_8006FCCC[]; /* combo names "BBB", "BBA", ... "A", four bytes each */
-/* Bout captions (shared with other functions, so kept as their own rodata). */
-extern char D_8006FC3C[]; /* "DRAW GAME" */
-extern char D_8006FC48[]; /* "KNOCK OUT!!" */
-extern char D_8006FC54[]; /* "00" */
-extern char D_8006FC58[]; /* "11" */
-extern char D_8006FC5C[]; /* " ctrl\n" */
-extern char D_8006FC64[]; /* "FIGHT!!" */
-extern char D_8006FC6C[]; /* "START" */
-extern char D_8006FC78[]; /* "RUBBER BAND MODE" */
-extern char D_8006FC8C[]; /* "READY" */
-extern char D_8006FC94[]; /* "RUBBER BAND BATTLE" */
-extern char D_8006FCA8[]; /* "PRACTICE" */
-extern char D_8006FCB4[]; /* "ROUND %d" */
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s16 frame, s16 count);

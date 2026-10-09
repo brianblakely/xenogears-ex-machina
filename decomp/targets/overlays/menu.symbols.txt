@@ -1,6 +1,10 @@
 D_80088BFC = 0x80088BFC; // type:label
 func_80088C00 = 0x80088C00; // type:func
-D_8006FCCC = 0x8006FCCC; // type:asciz
 // Preserve the last result string's nonzero bytes after its terminator as data.
 D_8006FDD8 = 0x8006FDD8; // force_not_migration:True
-D_8006FE8C = 0x8006FE8C; // type:asciz
+// The gear list's last string, "ply_01", with the stray byte after its
+// terminator; the heap tag names follow.
+D_800705F0 = 0x800705F0; // size:0x8 force_not_migration:True
+D_800705F8 = 0x800705F8; // type:asciz
+// The rate format, with stray bytes after its terminator.
+D_800706D4 = 0x800706D4; // size:0x14 force_not_migration:True

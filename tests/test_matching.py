@@ -401,6 +401,22 @@ class MatchingTests(unittest.TestCase):
             (".text", 0x80010028, 0x40, unit), (".data", 0x80010070, 0x30, data),
         ])
 
+    def test_only_a_string_with_a_stray_padding_byte_needs_no_reason(self):
+        from tools.matching_coverage import stray_padding
+
+        for data, stray in (
+            (b"ply_01\0o", True),  # menu6's gear list: a stray 'o'
+            (b"Size%9d\n\0\0\x94\x08", True),
+            (b"ab\0\0", False),  # zero padding, as C emits it
+            (b"abc\0", False),  # no padding
+            (b"ab\0\0c\0\0\0", False),  # two strings
+            (b"\x01\0\x04\0", False),  # a data object: its size is not in its bytes
+            (b"\0\x04\0\0", False),
+            (b"abcd", False),  # no terminator
+        ):
+            with self.subTest(data):
+                self.assertEqual(stray_padding(data), stray)
+
     def test_mark_asm_labels_the_text_of_each_asm_statement(self):
         from tools.matching_coverage import mark_asm
 
@@ -577,20 +593,101 @@ class MatchingTests(unittest.TestCase):
         symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                  capture_output=True, text=True).stdout
         self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
+        # An included object that is not a string with a stray byte in its
+        # padding stays original only with a reviewed reason: an `included`
+        # line of the classification naming its range and label.
+        result = self.cover_linked_fixture("image.bin")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("D_80010004 (80010004-80010008) has no stray byte", result.stderr)
+        classification = self.root / "classification.txt"
+        reviewed = ["--classification", "classification.txt"]
+        for line, message in (
+            ("80010004 80010008 included D_80010005 a byte flag\n", "has no stray byte"),
+            ("80010004 8001000c included D_80010004 a byte flag\n", "has no stray byte"),
+            ("80010004 80010008 included D_80010004\n", "names its object and the reason"),
+        ):
+            with self.subTest(line):
+                classification.write_text(line)
+                result = self.cover_linked_fixture("image.bin", arguments=reviewed)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+        classification.write_text(
+            "80010004 80010008 included D_80010004 a byte object whose padding holds 05 06 07\n")
         # The report counts every loaded byte by where GAS put it, the loaded
         # .bss included.
-        result = self.cover_linked_fixture("image.bin")
+        result = self.cover_linked_fixture("image.bin", arguments=reviewed)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["data_classes"], {"bss": 4, "c": 8, "included": 4})
         self.assertEqual(report["remaining_data_placeholder_bytes"], 0)
-        # It looks no object up by name, so a linker-script assignment
-        # shadowing the name changes nothing.
+        # A data class lists its ranges with their section and object.
+        for cls, ranges in (("included", ["80010004      4 D_80010004 (.data unit.o)"]),
+                            ("c", ["80010000      4 (.data unit.o)",
+                                   "80010008      4 (.data unit.o)"]),
+                            ("bss", ["80010010      4 (.bss unit.o)"])):
+            listing = self.cover_linked_fixture("image.bin", arguments=reviewed + ["--list", cls])
+            self.assertEqual(listing.stdout.splitlines(), ranges, listing.stderr)
+        # A linker-script assignment shadowing the name changes nothing.
         (self.root / "shadow.ld").write_text("D_80010004 = 0x80010004;\n")
-        result = self.cover_linked_fixture("shadow.bin", ["LINKER_EXTRA=shadow.ld"])
+        result = self.cover_linked_fixture("shadow.bin", ["LINKER_EXTRA=shadow.ld"],
+                                           arguments=reviewed)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["data_classes"],
                          {"bss": 4, "c": 8, "included": 4})
+        # A line must name an included object.
+        classification.write_text(classification.read_text()
+                                  + "80010008 8001000c included after not original\n")
+        result = self.cover_linked_fixture("image.bin", arguments=reviewed)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("included line after (80010008-8001000c): no included object there",
+                      result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf", "psx-nm",
+        )),
+        "enter the matching Nix shell to test the link's symbol files",
+    )
+    def test_splat_symbol_files_never_override_a_definition(self):
+        # splat assigns an address to every name its assembly used; the link
+        # reads its files as PROVIDE, so the unit's own definition stands and
+        # only a name that no object defines takes the file's address.
+        self.build_fixture_unit("int defined = 1;\nextern int elsewhere;\n"
+                                "int *use(void) { return &elsewhere; }\n")
+        auto = self.root / "auto/undefined_syms_auto.txt"
+        auto.parent.mkdir()
+        auto.write_text("defined = 0x80020000;\nelsewhere = 0x80030000;\nunused = 0x80040000;\n")
+        (self.root / "pad.ld").write_text("__file_end = 0x40;\n")
+        settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt pad.ld", "PAD_TO_SYMBOL=__file_end"]
+        self.cover_linked_fixture("image.bin", settings, sections=(".text", ".data"))
+        symbols = {
+            fields[2]: (int(fields[0], 16), fields[1])
+            for fields in map(str.split, subprocess.run(
+                ["psx-nm", str(self.root / "image.bin.elf")], check=True, capture_output=True,
+                text=True).stdout.splitlines())
+            if len(fields) == 3
+        }
+        self.assertNotEqual(symbols["defined"][1], "A")  # the unit's, in the image
+        self.assertNotEqual(symbols["defined"][0], 0x80020000)
+        self.assertEqual(symbols["elsewhere"], (0x80030000, "A"))
+        self.assertNotIn("unused", symbols)
+        # PAD_TO_SYMBOL pads the file to that symbol of the link.
+        self.assertEqual((self.root / "image.bin").stat().st_size, 0x40)
+        repo = Path(__file__).resolve().parents[1]
+        for setting, message in (("PAD_TO_SYMBOL=__missing", "--pad-to"),
+                                 ("LINKER_EXTRA=auto/undefined_syms_auto.txt", "not a symbol")):
+            with self.subTest(setting):
+                if setting.startswith("LINKER_EXTRA"):
+                    auto.write_text("INCLUDE other.ld\n")
+                result = subprocess.run(
+                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                     "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=bad.bin", *settings,
+                     setting, str(self.root / "bad.bin")],
+                    cwd=self.root, text=True, capture_output=True, check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -635,9 +732,11 @@ class MatchingTests(unittest.TestCase):
             'INCLUDE_RODATA("asm", D_shared);\n'
         )
         # .text is linked first: func_sdk is at 0x80010000, func_hand follows.
+        # The string several functions share stays original with a reason.
         (self.root / "classification.txt").write_text(
             "80010000 80010008 sdk a library function\n"
             "80010008 80010010 handwritten an authored routine\n"
+            "80010054 8001005c included D_shared a string two library functions share\n"
         )
         result = self.cover_linked_fixture(
             "image.bin", sections=(".text", ".rodata"),
@@ -689,18 +788,29 @@ class MatchingTests(unittest.TestCase):
         (self.root / "asm/data").mkdir(parents=True)
         (self.root / "asm/data/generated.s").write_text(".section .data\n.word 1, 2, 3, 4\n")
         (self.root / "decomp/src/t/authored.s").write_text(".section .data\n.word 5\n")
-        (self.root / "classification.txt").write_text(
-            "80010000 80010002 sdk half the C word\n80010014 80010018 asset a generated word\n"
-        )
-        result = self.cover_linked_fixture(
-            "image.bin", sections=(".data",), arguments=["--classification", "classification.txt"],
-            extra=("build/asm/data/generated.o(.data)", "build/decomp/src/t/authored.o(.data)"),
-        )
+        ranges = "80010000 80010002 sdk half the C word\n80010014 80010018 asset a generated word\n"
+        classification = self.root / "classification.txt"
+        classification.write_text(ranges)
+        arguments = ["--classification", "classification.txt"]
+        extra = ("build/asm/data/generated.o(.data)", "build/decomp/src/t/authored.o(.data)")
+        # Handwritten bytes count only inside a handwritten range.
+        result = self.cover_linked_fixture("image.bin", sections=(".data",), arguments=arguments,
+                                           extra=extra)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("(80010020-80010024): handwritten bytes outside every handwritten range",
+                      result.stderr)
+        classification.write_text(ranges + "80010020 80010024 handwritten an authored word\n")
+        result = self.cover_linked_fixture("image.bin", sections=(".data",), arguments=arguments,
+                                           extra=extra)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["data_classes"],
                          {"c": 2, "sdk": 2, "placeholder": 12, "asset": 4, "handwritten": 4})
         self.assertEqual(report["remaining_data_placeholder_bytes"], 12)
+        listing = self.cover_linked_fixture("image.bin", sections=(".data",), extra=extra,
+                                            arguments=arguments + ["--list", "placeholder"])
+        self.assertEqual(listing.stdout.splitlines(), ["80010010      4 (.data generated.o)",
+                                                       "80010018      8 (.data generated.o)"])
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -736,15 +846,31 @@ class MatchingTests(unittest.TestCase):
                 "glabel {0}\n    jr $ra\n    nop\nendlabel {0}\n    .word 0\n")
         (asm / "gen.s").write_text(unit.format("func_gen"))
         (self.root / "decomp/src/t/authored.s").write_text(unit.format("func_auth"))
-        (self.root / "classification.txt").write_text(
-            "80010000 80010008 sdk a library tag\n"
-            "8001001c 80010020 text_data table the original keeps it among the code\n"
-        )
+        # The INCLUDE_RODATA'd words (in .text, unlabelled, and in .rodata)
+        # stay original with a reviewed reason; the authored unit's function
+        # and padding are handwritten only inside a handwritten range.
+        ranges = ("80010000 80010008 sdk a library tag\n"
+                  "80010018 8001001c included - a word in .text\n"
+                  "8001001c 80010020 text_data table the original keeps it among the code\n"
+                  "80010030 80010034 included D_words a word\n")
+        classification = self.root / "classification.txt"
+        classification.write_text(ranges)
         arguments = ["--classification", "classification.txt"]
+        extra = ("build/asm/gen.o(.text)", "build/decomp/src/t/authored.o(.text)")
         result = self.cover_linked_fixture(
-            "image.bin", sections=(".text", ".rodata"), arguments=arguments,
-            extra=("build/asm/gen.o(.text)", "build/decomp/src/t/authored.o(.text)"),
-        )
+            "image.bin", sections=(".text", ".rodata"), arguments=arguments, extra=extra)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("func_auth (80010050-80010058): handwritten bytes outside every"
+                      " handwritten range", result.stderr)
+        classification.write_text(ranges + "80010050 80010058 handwritten an authored routine\n")
+        result = self.cover_linked_fixture(
+            "image.bin", sections=(".text", ".rodata"), arguments=arguments, extra=extra)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("text outside every function (80010058-8001005c): handwritten bytes",
+                      result.stderr)
+        classification.write_text(ranges + "80010050 8001005c handwritten an authored routine\n")
+        result = self.cover_linked_fixture(
+            "image.bin", sections=(".text", ".rodata"), arguments=arguments, extra=extra)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         # Functions, bytes and instructions per class: the tag by its range,
@@ -779,6 +905,14 @@ class MatchingTests(unittest.TestCase):
             cwd=self.root, text=True, capture_output=True, check=True,
         ).stdout
         self.assertEqual(listing.splitlines(), ["8001001c      4 table"])
+        listing = subprocess.run(
+            [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map", *arguments,
+             "--list", "included"],
+            cwd=self.root, text=True, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(listing.splitlines(), [
+            "80010018      4 (outside every function)", "80010030      4 D_words (.rodata unit.o)",
+        ])
 
     def cover_probe(self, name, source, files, headers, original, settings=(), arguments=()):
         """cover_linked_fixture on a unit of its own (.text, .rodata, .data)."""
@@ -820,6 +954,9 @@ class MatchingTests(unittest.TestCase):
         place = 'INCLUDE_ORIGINAL(".data", D_80010004, 0x80010004, 4);'
         c_func = "int c_func(int x) { return x + 1; }\n"
         in_data = ({}, {"c": 8, "included": 4})
+        # The original object at 0x80010004: "ab", its terminator and a stray
+        # byte in its padding, which needs no reviewed reason.
+        stray = bytes(range(4)) + b"ab\0\x07" + bytes(range(8, 16))
         in_text = "original bytes into .text"
         other = "neither one of include_asm.h's statements nor an original-style macro"
         ldv0 = ("int f(int *p) {\n"  # psyq/inline_c.h's gte_ldv0
@@ -922,7 +1059,7 @@ class MatchingTests(unittest.TestCase):
         for name, source, files, expected, *headers in cases:
             with self.subTest(name):
                 result = self.cover_probe(name, source, files, headers[0] if headers else {},
-                                          bytes(range(16)) if expected is in_data else original)
+                                          stray if expected is in_data else original)
                 if isinstance(expected, str):
                     self.assertNotEqual(result.returncode, 0, result.stdout)
                     self.assertIn(expected, result.stderr)

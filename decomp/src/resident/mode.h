@@ -91,6 +91,7 @@ extern struct SoundSequence *D_8006258C; /* the transferred wave bank */
 
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
+extern u8 D_8006FAEC[];      /* the last word below the overlay area */
 extern s32 D_80018088;       /* next mode */
 extern ModeEntry D_8001808C[];
 extern s32 D_8004EAA0[];     /* each mode's overlay file in directory 1 */
@@ -110,6 +111,9 @@ void func_80019524(void);               /* entry: clear the BSS, reset the stack
 void func_80019548(void);               /* sp = fp = 0x80200000, gp = _gp */
 void func_80019560(u8 *start, u8 *end); /* zero the words after start through end */
 
+void func_8001A4B4(void); /* mode 0, the kernel menu */
+void func_8001B6C4(void); /* mode 2 */
+void func_8001C634(void); /* mode 5 */
 void func_8001996C(s32 mode);
 void *func_800199CC(s32 mode);
 void func_80019ACC(s32 error) __attribute__((noreturn));

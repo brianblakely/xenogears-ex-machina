@@ -8,6 +8,8 @@ IMAGE := .local/decomp/build/ovl2596.bin
 LINKER_SCRIPT := .local/decomp/ovl2596/ovl2596.ld
 LINKER_EXTRA := .local/decomp/ovl2596/undefined_syms_auto.txt .local/decomp/ovl2596/undefined_funcs_auto.txt decomp/targets/overlays/ovl2596.resident.ld
 SOURCE_DIRS := decomp/src/ovl2596
+# The reasons its included objects stay original (coverage class included).
+CLASSIFICATION := decomp/targets/overlays/ovl2596.classification.txt
 # INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
 # VRAM 0x801DE000.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x801DE000

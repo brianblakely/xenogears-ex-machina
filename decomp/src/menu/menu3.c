@@ -55,57 +55,6 @@ ShotKind D_800910F4[] = {
     { 0x0000, 5, 0x20, 0x80, 2, 0x00, 0 },
 };
 
-/* Attack name shown for an ether attack (the combos' are D_80091198). */
-s32 D_8009112C = (s32)D_8006FC10; /* "ETHER" */
-
-/* Per animation: kind and next animation (-1: none). Rules 10 and 16 are
- * set at run time. */
-AnimRule D_80091130[] = {
-    { 1, -1 }, { 1, -1 }, { 2, -1 }, { 0, -1 }, { 0, -1 }, { 3, -1 },
-    { 3, -1 }, { 0, -1 }, { 0, 9 }, { 2, 0xA }, { 0, 0 }, { 0, -1 },
-    { 0, 9 }, { 0, 0xE }, { 0, -1 }, { 2, -1 }, { 2, -1 }, { 0, -1 },
-    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
-    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
-    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
-};
-
-/* Per combo number: the combo reached by button A, then by button B. */
-u8 D_80091178[] = {
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-};
-
-/* Name of each combo number (the strings of D_8006FCCC, four bytes each). */
-s32 D_80091198[] = {
-    (s32)D_8006FC74,
-    (s32)&D_8006FCCC[0x34], (s32)&D_8006FCCC[0x30], (s32)&D_8006FCCC[0x2C],
-    (s32)&D_8006FCCC[0x28], (s32)&D_8006FCCC[0x24], (s32)&D_8006FCCC[0x20],
-    (s32)&D_8006FCCC[0x1C], (s32)&D_8006FCCC[0x18], (s32)&D_8006FCCC[0x14],
-    (s32)&D_8006FCCC[0x10], (s32)&D_8006FCCC[0xC], (s32)&D_8006FCCC[8],
-    (s32)&D_8006FCCC[4], (s32)D_8006FCCC,
-};
-
-s32 D_800911D4 = 0;
-
-/* Sparkle frame texel positions (u, v); the v tables get the image's y
- * added once. */
-u8 D_800911D8[16] = {
-    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
-    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
-};
-u8 D_800911E8[16] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-};
-u8 D_800911F8[16] = {
-    0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
-    0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0,
-};
-u8 D_80091208[16] = { 0 };
-u8 D_80091218[16] = { 0 };
-
-s16 D_80091228[] = { 0x18, 0x30, 0x10 };
-
 /* Create the menu's glow emitter: 96 bluish tile sparks. */
 void func_800732CC(void) {
     Emitter *emitter = func_8008D3F4(3, 0);
@@ -549,7 +498,26 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     }
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
+/* Attack name shown for an ether attack (the combos' are D_80091198). Its
+ * literal follows the code before it. */
+s32 D_8009112C = (s32)"ETHER";
+
+/* Per animation: kind and next animation (-1: none). Rules 10 and 16 are
+ * set at run time. */
+AnimRule D_80091130[] = {
+    { 1, -1 }, { 1, -1 }, { 2, -1 }, { 0, -1 }, { 0, -1 }, { 3, -1 },
+    { 3, -1 }, { 0, -1 }, { 0, 9 }, { 2, 0xA }, { 0, 0 }, { 0, -1 },
+    { 0, 9 }, { 0, 0xE }, { 0, -1 }, { 2, -1 }, { 2, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+    { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 }, { 0, -1 },
+};
+
+/* Per combo number: the combo reached by button A, then by button B. */
+u8 D_80091178[] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
 
 /* Run the frame events of an actor's current animation for count frames
  * from frame (once per frame): its list (header + unk900[anim], 0 for none)
@@ -868,9 +836,9 @@ void func_800751C8(Actor *first, Actor *second) {
             func_80019964(" fin\n");
         }
         if (D_80092890 == 2) {
-            func_8007EC54(D_8006FC3C);
+            func_8007EC54("DRAW GAME");
         } else {
-            func_8007EC54(D_8006FC48);
+            func_8007EC54("KNOCK OUT!!");
         }
     } else if (first->flags & 0x800000) {
         if (second->flags & 0x800000) {
@@ -898,50 +866,50 @@ void func_800751C8(Actor *first, Actor *second) {
         D_800928FC = 0;
         func_80075060(1);
         if ((second->flags & 0x40) && D_800928C8 != 3) {
-            func_80019964(D_8006FC54);
+            func_80019964("00");
             func_80031BDC(1, 2);
             func_80019964(" fin\n");
             func_80088BD4(second->model_id);
-            func_80019964(D_8006FC58);
+            func_80019964("11");
             func_80031BDC(1, 2);
-            func_80019964(D_8006FC5C);
+            func_80019964(" ctrl\n");
         }
     }
     if (D_8009263C != 0) {
         if (D_8009263C < 0x1E) {
             if (func_80083CD8() != 7 && D_800928C8 != 4) {
-                func_8007EC54(D_8006FC64);
+                func_8007EC54("FIGHT!!");
             }
             D_800928D4 = 1;
         } else if (D_8009263C < 0x3C) {
             if (func_80083CD8() != 7) {
                 if (D_800928C8 == 4) {
-                    func_8007EC54(D_8006FC6C);
+                    func_8007EC54("START");
                     if (D_80092884 != 0) {
-                        func_8007EC54(D_8006FC74);
-                        func_8007EC54(D_8006FC78);
+                        func_8007EC54("");
+                        func_8007EC54("RUBBER BAND MODE");
                     }
                 } else {
-                    func_8007EC54(D_8006FC8C);
+                    func_8007EC54("READY");
                     if (D_80092884 != 0) {
-                        func_8007EC54(D_8006FC74);
-                        func_8007EC54(D_8006FC94);
+                        func_8007EC54("");
+                        func_8007EC54("RUBBER BAND BATTLE");
                     }
                 }
             }
         } else if (func_80083CD8() != 7) {
             if (D_800928C8 == 4) {
-                func_8007EC54(D_8006FCA8);
+                func_8007EC54("PRACTICE");
                 if (D_80092884 != 0) {
-                    func_8007EC54(D_8006FC74);
-                    func_8007EC54(D_8006FC78);
+                    func_8007EC54("");
+                    func_8007EC54("RUBBER BAND MODE");
                 }
             } else {
-                sprintf(text, D_8006FCB4, D_80092950);
+                sprintf(text, "ROUND %d", D_80092950);
                 func_8007EC54(text);
                 if (D_80092884 != 0) {
-                    func_8007EC54(D_8006FC74);
-                    func_8007EC54(D_8006FC94);
+                    func_8007EC54("");
+                    func_8007EC54("RUBBER BAND BATTLE");
                 }
             }
         }
@@ -1249,32 +1217,6 @@ void func_80076424(Actor *actor) {
     actor->unk9C3 = 0;
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC3C);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC48);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC54);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC58);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC5C);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC64);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC6C);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC74);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC78);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC8C);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC94);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCA8);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCB4);
-
 /* Debug: print an actor's queued inputs, oldest first. The name argument of
  * the leading "%s:" is missing in the original. */
 void func_80076438(Actor *actor) {
@@ -1288,7 +1230,36 @@ void func_80076438(Actor *actor) {
     func_800379C8("\n");
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCCC);
+/* Name of each combo number. GCC emits an initializer's string literals last
+ * to first, after those of the code before it ("" is func_800751C8's). */
+s32 D_80091198[] = {
+    (s32)"",
+    (s32)"A", (s32)"B",
+    (s32)"AA", (s32)"AB", (s32)"BA", (s32)"BB",
+    (s32)"AAA", (s32)"AAB", (s32)"ABA", (s32)"ABB",
+    (s32)"BAA", (s32)"BAB", (s32)"BBA", (s32)"BBB",
+};
+
+s32 D_800911D4 = 0;
+
+/* Sparkle frame texel positions (u, v); the v tables get the image's y
+ * added once. */
+u8 D_800911D8[16] = {
+    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
+    0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
+};
+u8 D_800911E8[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+};
+u8 D_800911F8[16] = {
+    0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
+    0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0,
+};
+u8 D_80091208[16] = { 0 };
+u8 D_80091218[16] = { 0 };
+
+s16 D_80091228[] = { 0x18, 0x30, 0x10 };
 
 /* Start an actor's turn: clear its per-turn state and flags, set its
  * gauge, place its gauge at its side and record the pending combo. */
@@ -2381,7 +2352,7 @@ void func_80078F00(Actor *actor) {
     actor->unkD4 &= ~0x10;
     actor->unk84 = D_8009264C;
     D_8009264C[2] = 1;
-    D_80096FB8[ACTOR_SIDE(actor)].unk0 = (s32)D_8006FC74;
+    D_80096FB8[ACTOR_SIDE(actor)].unk0 = (s32)"";
     D_80096FB8[ACTOR_SIDE(actor)].unk8 = 0;
     D_80096FB8[ACTOR_SIDE(actor)].unk4 = 0;
     D_80096FB8[ACTOR_SIDE(actor)].unkC = 0;
@@ -3050,7 +3021,7 @@ void func_8007AE10(Actor *first, Actor *second) {
         }
         break;
     case 2:
-        func_8007EC54(D_8006FC3C);
+        func_8007EC54("DRAW GAME");
         break;
     }
     ground = func_80082488(&D_8009871C, 0) - D_80092670;

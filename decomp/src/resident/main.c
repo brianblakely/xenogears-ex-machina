@@ -168,12 +168,13 @@ void *func_800199CC(s32 mode) {
     return D_800592BC;
 }
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018080);
+/* Unreferenced. */
+const s32 D_80018080 = 0;
 
-/* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
 /* Where a mode's overlay block is decoded. */
 u8 *const D_80018084 = D_8006FAF0;
 
+/* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
 void func_80019ACC(s32 error) {
     ModeEntry *mode;
     void *block;
@@ -214,9 +215,26 @@ void func_80019ACC(s32 error) {
     func_80019ACC(0);
 }
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018088);
+/* The next mode: func_8001996C writes it and the dispatcher reads it, yet the
+ * original keeps it among this unit's read-only data, between the decode
+ * destination and the mode table. */
+s32 D_80018088 __attribute__((section(".rodata"))) = 0;
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_8001808C);
+/* Each mode's entry, the BSS the dispatcher clears before it (the words
+ * after bss_start through bss_end) and whether its overlay file
+ * (D_8004EAA0) is first decoded to 0x8006faf0. Modes 0 (the kernel menu),
+ * 2 and 5 enter resident code; 0 and 5 name the resident's own BSS bounds,
+ * those the entry point clears. The others enter their overlay image,
+ * linked apart: field, world map, menu and movie. */
+ModeEntry D_8001808C[] __attribute__((section(".rodata"))) = {
+    { func_8001A4B4, (u8 *)&D_800592B8, D_8006FAEC, 0 },
+    { (void (*)(void))0x80077E88, (u8 *)0x800AF5E4, (u8 *)0x800C426C, 1 },
+    { func_8001B6C4, (u8 *)0x800C3A6C, (u8 *)0x800D39F0, 1 },
+    { (void (*)(void))0x80070CFC, (u8 *)0x8009BBB0, (u8 *)0x8009D80C, 1 },
+    { (void (*)(void))0x80088E90, (u8 *)0x800925D0, (u8 *)0x8009B554, 1 },
+    { func_8001C634, (u8 *)&D_800592B8, D_8006FAEC, 0 },
+    { (void (*)(void))0x800737EC, (u8 *)0x80076F38, (u8 *)0x80077454, 1 },
+};
 
 /* Write main RAM (2 MiB) to the development PC as c:\core. */
 void func_80019C2C(void) {

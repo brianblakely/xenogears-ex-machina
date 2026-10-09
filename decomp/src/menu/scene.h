@@ -140,12 +140,6 @@ typedef struct {
     TileRgb frame[2]; /* 0x1C: the page's box, per draw buffer */
 } MenuPage;
 
-/* Formats shared by the settings pages ("%d", "%dFPS"). */
-extern char D_8006FF5C[];
-extern char D_8006FF60[];
-extern char D_8006FF7C[]; /* "" */
-extern char D_8006FE8C[]; /* level and computer command names */
-extern char D_8007008C[]; /* menu line texts */
 s32 func_80035734(s32 port); /* controller type */
 void func_8007EC54(u8 *text);
 void func_8007F258(void *ot, s32 flag);
@@ -183,8 +177,6 @@ typedef struct ListEntry {
     char *model; /* 0x04: model file name */
     u8 *name;    /* 0x08 */
 } ListEntry;
-
-extern char D_80070284[]; /* the gears' model files and names, heap tag names */
 
 /* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
  * its palette row and its 30x64 image. */

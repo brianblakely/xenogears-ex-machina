@@ -12,7 +12,9 @@ included):
                    only source scan; does not satisfy the exit)
 * ``sdk``          other assembly inside a range classified as PsyQ SDK code
 * ``handwritten``  other assembly inside a range classified as original
-                   hand-written asm, or in an authored .s unit under decomp/src
+                   hand-written asm; the report fails on a handwritten byte
+                   outside such a range, also of an authored .s unit under
+                   decomp/src
 * ``asm``          other assembly (remaining work)
 
 The .text bytes outside every function (alignment padding and data words of an
@@ -33,10 +35,12 @@ sections exactly (``text_bytes``).
 
 The classification file lists ``START END CLASS NOTE...`` lines (hex VRAM,
 END exclusive; nonempty, disjoint ranges): ``sdk``, ``handwritten`` and
-``asset`` ranges, and for each data object a C unit places in .text a
+``asset`` ranges; for each data object a C unit places in .text a
 ``START END text_data NAME REASON...`` line, whose reason is the evidence that
-the original keeps it there; each such line must be used. This tool never
-reads or asserts binary agreement; run the exact comparison separately.
+the original keeps it there; and ``START END included NAME REASON...`` lines,
+the reviewed reasons of included objects (below). Each text_data and included
+line must be used. This tool never reads or asserts binary agreement; run the
+exact comparison separately.
 
 Every loaded data byte counts in one class: each .rodata/.data/.sdata input
 section of the GNU ld map, and the .bss/.sbss that lies in a loaded (PROGBITS)
@@ -55,6 +59,21 @@ NOLOAD .bss is not in the image and not counted.
                    precedence (``asset``: user-supplied game data/bytecode)
 * ``placeholder``  generated data or loaded .bss from the original image
                    (remaining work)
+
+Each included object (one INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET
+statement's bytes in one section, from its label; GAS may put alignment fill
+ahead of it) that a classified range does not cover needs a reason, or the
+report fails. Either its bytes are one text string whose terminator is
+followed by 1-3 bytes of alignment padding to a word boundary, one of them
+non-zero: a stray byte the original assembler left, which C cannot emit. Or
+an ``included`` line of the classification names it (its range and label,
+``-`` for none) with the reviewed reason, as for strings that several SDK
+library functions share or a data object whose padding holds stray bytes.
+Each such line must name an included object.
+
+``--list CLASS`` prints the class's ranges instead of the report: its
+functions, its .text bytes outside every function and its data ranges, each
+data range with its section and object (an included one with its label).
 
 A C unit's bytes are attributed by where GAS put them, not by source
 spellings. ``make coverage`` compiles each C unit again with a label line at
@@ -110,6 +129,7 @@ import json
 import re
 import struct
 import sys
+from bisect import bisect_left
 from dataclasses import dataclass
 from itertools import pairwise
 from pathlib import Path
@@ -286,7 +306,7 @@ LINE_MARKER = re.compile(r'[ \t]*#[ \t]*\d+(?:[ \t]+"[^"\\\x00-\x1f]*"(?:[ \t]+\
 
 SHT_PROGBITS, SHT_SYMTAB, SHT_NOBITS, SHT_REL = 1, 2, 8, 9
 SHF_ALLOC = 2
-STT_FUNC, STT_SECTION = 2, 3
+STT_FUNC, STT_SECTION, STT_FILE = 2, 3, 4
 
 
 def mark_asm(text: str) -> str:
@@ -438,11 +458,14 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
         line = line.split("#", 1)[0].strip()
         if line:
             start, end, kind, *note = line.split()
-            if kind not in ("sdk", "handwritten", "asset", "text_data"):
+            if kind not in ("sdk", "handwritten", "asset", "text_data", "included"):
                 raise SystemExit(f"unknown classification {kind!r}")
             if kind == "text_data" and len(note) < 2:
                 raise SystemExit(f"{line}: a text_data line names its object and the evidence"
                                  " that the original keeps it in .text")
+            if kind == "included" and len(note) < 2:
+                raise SystemExit(f"{line}: an included line names its object and the reason"
+                                 " it stays original")
             if int(end, 16) <= int(start, 16):
                 raise SystemExit(f"{line}: an empty range")
             ranges.append((int(start, 16), int(end, 16), kind, " ".join(note)))
@@ -453,6 +476,17 @@ def classification(path: Path | None) -> list[tuple[int, int, str, str]]:
                 f"classification: {other} at {start:08x} overlaps {kind} up to {end:08x}"
             )
     return ranges
+
+
+TEXT = set(range(0x20, 0x7F)) | {0x09, 0x0A, 0x0D}
+
+
+def stray_padding(data: bytes) -> bool:
+    """Whether data is one text string, its terminator and 1-3 bytes of
+    alignment padding, one of them non-zero: a stray byte C cannot emit."""
+    end = data.find(b"\0")
+    padding = data[end + 1:]
+    return end > 0 and set(data[:end]) <= TEXT and 0 < len(padding) < 4 and any(padding)
 
 
 def map_sections(path: Path) -> list[tuple[str, int, int, str]]:
@@ -721,7 +755,9 @@ def main() -> None:
     parser.add_argument("--classification", type=Path)
     parser.add_argument("--list", choices=[
         "c", "nonmatching", "sdk", "handwritten", "asm", "included", "asset", "text_data",
-    ], help="list the class's functions and its .text bytes outside every function")
+        "bss", "placeholder",
+    ], help="list the class's functions, its .text bytes outside every function and its"
+            " data ranges (each with its section and object)")
     parser.add_argument("--mark-asm", action="store_true", help=(
         "coverage build: label each asm statement of preprocessed C (stdin to stdout)"))
     parser.add_argument("--mark-gas", action="store_true", help=(
@@ -739,14 +775,38 @@ def main() -> None:
     ranges = classification(args.classification)
     # The data objects C units may place in .text: START: (END, NAME).
     allowed = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "text_data"}
-    ranges = [entry for entry in ranges if entry[2] != "text_data"]
+    # The reviewed reasons of included objects: START: (END, NAME).
+    reasons = {s: (e, note.split()[0]) for s, e, kind, note in ranges if kind == "included"}
+    ranges = [entry for entry in ranges if entry[2] not in ("text_data", "included")]
 
     def ranged(address: int) -> str | None:
         return next((k for s, e, k, _ in ranges if s <= address < e), None)
 
+    def covered(lo: int, hi: int, kind: str) -> bool:
+        """Whether ranges classified kind cover [lo, hi)."""
+        for s, e, k, _note in sorted(ranges):
+            if k == kind and s <= lo < e:
+                lo = e
+        return lo >= hi
+
     elf_sections, elf_symbols = read_elf(args.elf)
     inputs = map_sections(args.map)
     units: dict[str, Unit] = {}
+    # The defined symbols by address (an absolute one too: a linker script
+    # assignment may shadow an object's label).
+    defined = sorted((s.value, s.name) for s in elf_symbols
+                     if s.name and s.kind not in (STT_SECTION, STT_FILE) and s.section)
+
+    def labels(lo: int, hi: int) -> list[tuple[int, str]]:
+        return defined[bisect_left(defined, (lo, "")):bisect_left(defined, (hi, ""))]
+
+    def image(lo: int, hi: int) -> bytes:
+        """The loaded bytes [lo, hi), of one section."""
+        for s in elf_sections:
+            if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC and s.address <= lo <= hi <= (
+                    s.address + s.size):
+                return s.data[lo - s.address:hi - s.address]
+        raise SystemExit(f"{lo:08x}-{hi:08x}: not the loaded bytes of one section")
 
     def unit_of(obj: str) -> tuple[str, Unit | None]:
         """("c", attribution) for a C unit; ("handwritten", None) for an authored
@@ -776,8 +836,14 @@ def main() -> None:
     totals: dict[str, list[int]] = {}  # class: functions, bytes, bytes in functions
     listing: list[tuple[int, int, str]] = []
 
+    def handwritten(cls: str, lo: int, hi: int, what: str) -> None:
+        if cls == "handwritten" and not covered(lo, hi, "handwritten"):
+            raise SystemExit(f"{what} ({lo:08x}-{hi:08x}): handwritten bytes outside every"
+                             " handwritten range of the classification")
+
     def count(cls: str, address: int, size: int, function: str | None,
               label: str = "(outside every function)") -> None:
+        handwritten(cls, address, address + size, function or "text outside every function")
         entry = totals.setdefault(cls, [0, 0, 0])
         entry[1] += size
         if function is not None:
@@ -833,6 +899,8 @@ def main() -> None:
         fallback = "nonmatching" if statement.name in nonmatching else "asm"
         return owned.get(id(statement), {}).get(statement.name, fallback)
 
+    # Each included object: its bytes in one section, its unit.
+    included: list[tuple[int, int, str]] = []
     used: set[int] = set()
 
     def text_data(obj: str, unit: Unit, base: int, a: int, b: int) -> None:
@@ -890,6 +958,8 @@ def main() -> None:
                         objects.append((a, b))
                     elif owner.kind in ("asm", "rodata"):
                         pieces.append((a, b, statement_class(owner)))
+                        if pieces[-1][2] == "included":
+                            included.append((a, b, obj))
                     else:
                         raise SystemExit(f"{obj}: .text bytes {a:08x}-{b:08x} of an asm statement"
                                          " lie outside every function")
@@ -906,6 +976,19 @@ def main() -> None:
     data: dict[str, int] = {}
     loaded = [(s.address, s.address + s.size) for s in elf_sections
               if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC]
+
+    def tally(cls: str, lo: int, hi: int, section: str, obj: str) -> None:
+        handwritten(cls, lo, hi, f"{section} of {obj}")
+        data[cls] = data.get(cls, 0) + hi - lo
+        if cls == args.list:
+            label = f"({section} {Path(obj).name})"
+            named = labels(lo, hi) if cls == "included" else []
+            label = f"{named[0][1]} {label}" if named else label
+            if listing and listing[-1][0] + listing[-1][1] == lo and listing[-1][2] == label:
+                listing[-1] = (listing[-1][0], hi - listing[-1][0], label)
+            else:
+                listing.append((lo, hi - lo, label))
+
     for name, address, size, obj in inputs:
         if name == ".text":
             continue
@@ -922,15 +1005,38 @@ def main() -> None:
             rows = unit.spans.get(name)
             if rows is None or size != sum(end - start for start, end, _owner in rows):
                 raise SystemExit(f"{obj}: input section {name} is not the attributed one")
-            pieces = [
-                piece for start, end, owner in rows for piece in split(
-                    address + start, address + end,
-                    statement_class(owner) if owner is not None
-                    else "bss" if BSS_SECTION.match(name) else "c",
-                )
-            ]
+            pieces = []
+            for start, end, owner in rows:
+                own = (statement_class(owner) if owner is not None
+                       else "bss" if BSS_SECTION.match(name) else "c")
+                if own == "included":
+                    included.append((address + start, address + end, obj))
+                pieces += split(address + start, address + end, own)
         for start, end, cls in pieces:
-            data[cls] = data.get(cls, 0) + end - start
+            tally(cls, start, end, name, obj)
+
+    # Every included object a classified range does not cover needs a reason:
+    # a stray byte in its string's padding or a reviewed classification line.
+    reasoned: set[int] = set()
+    for lo, hi, obj in included:
+        if not any(cls == "included" for _, _, cls in split(lo, hi, "included")):
+            continue
+        named = labels(lo, hi)
+        start, name = named[0] if named else (lo, "")
+        if any(image(lo, start)):
+            start = lo
+        names = {label for value, label in named if value == start} or {"-"}
+        if start in reasons and reasons[start][0] == hi and reasons[start][1] in names:
+            reasoned.add(start)
+        elif not (start % 4 == 0 and hi % 4 == 0 and stray_padding(image(start, hi))):
+            raise SystemExit(
+                f"{obj}: included object {name or '(unnamed)'} ({start:08x}-{hi:08x}) has no"
+                " stray byte in a string's alignment padding and no `included` line of the"
+                " classification giving the reason it stays original"
+            )
+    for start in sorted(set(reasons) - reasoned):
+        raise SystemExit(f"included line {reasons[start][1]} ({start:08x}-{reasons[start][0]:08x}):"
+                         " no included object there")
 
     if args.list:
         print("\n".join(f"{address:08x} {size:6d} {name}" for address, size, name

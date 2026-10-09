@@ -1693,9 +1693,9 @@ u8 func_801C8D78(u8 port) {
         D_801EA6D0[port][i] = 0;
     }
     if (port == 0) {
-        __builtin_memcpy(device, D_801C50A8, 6);
+        __builtin_memcpy(device, "bu00:", 6);
     } else {
-        __builtin_memcpy(device, D_801C50B0, 6);
+        __builtin_memcpy(device, "bu10:", 6);
     }
     while (--retry != 0) {
         count = 0;
@@ -1769,9 +1769,9 @@ void func_801C90B0(u8 port, u8 file) {
 
     retry = 1;
     if (port == 0) {
-        __builtin_memcpy(device, D_801C50A8, 6);
+        __builtin_memcpy(device, "bu00:", 6);
     } else {
-        __builtin_memcpy(device, D_801C50B0, 6);
+        __builtin_memcpy(device, "bu10:", 6);
     }
     strcpy(name, device);
     strcat(name, D_800625A0->card->files[port * 16 + file].name);
@@ -1889,11 +1889,11 @@ u8 func_801C93A8(void) {
                     D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
                 }
                 if (port == 0) {
-                    __builtin_memcpy(path, D_801C50A8, 6);
+                    __builtin_memcpy(path, "bu00:", 6);
                 } else {
-                    __builtin_memcpy(path, D_801C50B0, 6);
+                    __builtin_memcpy(path, "bu10:", 6);
                 }
-                strcat(path, D_801C50B8);
+                strcat(path, "__tmp_file");
                 func_800405B4(path);
                 D_800625A0->card->fileCount = 0;
                 D_801EA900[port] = 0;
@@ -2268,15 +2268,8 @@ void func_801CA5F0(s32 mode, s32 slot) {
     }
 }
 
-INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50A8);
-
-INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50AC);
-
-INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B0);
-
-INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B4);
-
-INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B8);
+/* Unreferenced; it follows the card file strings, which are literals. */
+const char D_801C50C4[] = "";
 
 /* The file screen's cursor input for `mode` (801c9bcc): move the cursor
  * (down, right, up, left), confirm (1) or cancel (2); a new cursor slot shows
@@ -2597,9 +2590,9 @@ u8 func_801CB304(void) {
             D_800625A0->card->mode = 0;
             port = 0;
             if (D_800625A0->card->cursor < 15) {
-                __builtin_memcpy(path, D_801C50A8, 6);
+                __builtin_memcpy(path, "bu00:", 6);
             } else {
-                __builtin_memcpy(path, D_801C50B0, 6);
+                __builtin_memcpy(path, "bu10:", 6);
                 port = 1;
             }
             strcat(path,
@@ -2813,10 +2806,10 @@ u8 func_801CBD90(u8 kind) {
             D_800625A0->card->mode = 0;
             proceed = 1;
             if (D_800625A0->card->cursor < 15) {
-                __builtin_memcpy(device, D_801C50A8, 6);
+                __builtin_memcpy(device, "bu00:", 6);
                 port = 0;
             } else {
-                __builtin_memcpy(device, D_801C50B0, 6);
+                __builtin_memcpy(device, "bu10:", 6);
                 port = 1;
             }
             if (D_800625A0->card->result[port] == -2) {
@@ -2872,7 +2865,7 @@ u8 func_801CBD90(u8 kind) {
                 strcpy(tempName, device);
                 strcat(finalName, D_800625A0->card->prefix);
                 strcat(finalName, digitText);
-                strcat(tempName, D_801C50B8);
+                strcat(tempName, "__tmp_file");
                 func_801D2F4C(0x32);
                 D_800625A0->sounds = 0;
                 func_800405B4(tempName);
@@ -2938,7 +2931,7 @@ u8 func_801CBD90(u8 kind) {
                             if (fd == 0) {
                                 close(created);
                                 strcpy(tempName, device);
-                                strcat(tempName, D_801C50B8);
+                                strcat(tempName, "__tmp_file");
                                 func_800405B4(tempName);
                                 goto release;
                             }
@@ -2947,7 +2940,7 @@ u8 func_801CBD90(u8 kind) {
                         } while (written < D_800625A0->card->saveBlocks << 13);
                         close(fd);
                         strcpy(tempName, device);
-                        strcat(tempName, D_801C50B8);
+                        strcat(tempName, "__tmp_file");
                         retry = 3;
                         do {
                             if (!func_800405A4(tempName, finalName)) {
@@ -3093,12 +3086,12 @@ u8 func_801CC6D8(void) {
             if (proceed) {
                 dest = D_800625A0->card->cursor / 15 == 0;
                 if (dest) {
-                    __builtin_memcpy(device, D_801C50A8, 6);
-                    __builtin_memcpy(other, D_801C50B0, 6);
+                    __builtin_memcpy(device, "bu00:", 6);
+                    __builtin_memcpy(other, "bu10:", 6);
                     src = 0;
                 } else {
-                    __builtin_memcpy(device, D_801C50B0, 6);
-                    __builtin_memcpy(other, D_801C50A8, 6);
+                    __builtin_memcpy(device, "bu10:", 6);
+                    __builtin_memcpy(other, "bu00:", 6);
                     src = 1;
                 }
                 if (D_800625A0->card->result[dest] == -2) {
@@ -3143,7 +3136,7 @@ u8 func_801CC6D8(void) {
                 strcpy(tempName, other);
                 strcat(srcName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
                 strcat(destName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
-                strcat(tempName, D_801C50B8);
+                strcat(tempName, "__tmp_file");
                 retry = 3;
                 do {
                     fd = open(srcName, 1);
@@ -3220,7 +3213,7 @@ u8 func_801CC6D8(void) {
                                             close(srcFd);
                                             close(destFd);
                                             strcpy(tempName, other);
-                                            strcat(tempName, D_801C50B8);
+                                            strcat(tempName, "__tmp_file");
                                             func_800405B4(tempName);
                                             break;
                                         }
@@ -3237,7 +3230,7 @@ u8 func_801CC6D8(void) {
                                             close(srcFd);
                                             close(destFd);
                                             strcpy(tempName, other);
-                                            strcat(tempName, D_801C50B8);
+                                            strcat(tempName, "__tmp_file");
                                             func_800405B4(tempName);
                                             break;
                                         }
@@ -3247,7 +3240,7 @@ u8 func_801CC6D8(void) {
                                             close(destFd);
                                             close(fd);
                                             strcpy(tempName, other);
-                                            strcat(tempName, D_801C50B8);
+                                            strcat(tempName, "__tmp_file");
                                             func_800405A4(tempName, destName);
                                             break;
                                         }
@@ -3339,9 +3332,9 @@ u8 func_801CD2AC(void) {
                 D_800625A0->party->unkB = 0;
                 D_800625A0->card->unk4F80 = 0xff;
                 if (D_800625A0->card->cursor < 15) {
-                    __builtin_memcpy(path, D_801C50A8, 6);
+                    __builtin_memcpy(path, "bu00:", 6);
                 } else {
-                    __builtin_memcpy(path, D_801C50B0, 6);
+                    __builtin_memcpy(path, "bu10:", 6);
                 }
                 strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
                                  .name);

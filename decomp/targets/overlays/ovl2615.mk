@@ -8,6 +8,8 @@ IMAGE := .local/decomp/build/ovl2615.bin
 LINKER_SCRIPT := .local/decomp/ovl2615/ovl2615.ld
 LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2615/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/ovl2615
+# The reasons its included objects stay original (coverage class included).
+CLASSIFICATION := decomp/targets/overlays/ovl2615.classification.txt
 # Division checks are expanded inline (break 7 / break 6) in this image.
 MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
 # battle_loader (801e62e0-801e70e8), load_modes (801e7f4c-801e8964) and

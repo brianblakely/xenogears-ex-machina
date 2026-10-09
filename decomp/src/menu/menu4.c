@@ -72,24 +72,8 @@ s16 D_800912E0[2][4] = { { 1, -1, 2, 0x24 }, { -1, -2, 1, -0x24 } };
 
 s32 D_800912F0 = 0;
 
-/* Names of the game levels (strings of D_8006FE8C). */
-char *D_800912F4[] = { &D_8006FE8C[0x10], &D_8006FE8C[8], D_8006FE8C };
-
-u8 D_80091300[] = { 0x1E, 0x14, 0xF, 0xC, 0xA, 6, 5, 4, 3, 2, 1 };
-
-s32 D_8009130C[] = { 0x60, 0x80, 0xBB, 0x100, 0x180, 0x200, 0x300, 0x400 };
-
-char *D_8009132C[] = {
-    &D_8006FE8C[0xC4], &D_8006FE8C[0xB8], &D_8006FE8C[0xAC], &D_8006FE8C[0x9C],
-    &D_8006FE8C[0x90], &D_8006FE8C[0x80], &D_8006FE8C[0x70], &D_8006FE8C[0x64],
-    &D_8006FE8C[0x58], &D_8006FE8C[0x4C], &D_8006FE8C[0x40], &D_8006FE8C[0x34],
-    &D_8006FE8C[0x24], &D_8006FE8C[0x18],
-};
-
-s32 D_80091364 = 0;
-
-/* Lines of the eight menus (D_800915AC); texts are strings of D_8007008C.
- * The handlers defined below take no argument or the menu index. */
+/* Handlers of the menu lines (D_800915AC, defined below): they take no
+ * argument or the menu index. */
 void func_800802A4();
 void func_80080108();
 void func_8008040C();
@@ -109,66 +93,6 @@ void func_80080268();
 void func_8007F9A0();
 void func_8007FE48();
 void func_8007FB0C();
-
-/* Vibration choices per port; the selected one's caption is set at run
- * time. */
-MenuItem D_80091368[2] = {
-    { 1, 0x25, { 0 }, (s32)D_8006FF7C, func_800802A4 },
-    { 1, 0x29, { 0 }, (s32)D_8006FF7C, func_80080108 },
-};
-MenuItem D_80091390[2] = {
-    { 1, 0x26, { 0 }, (s32)D_8006FF7C, func_8008040C },
-    { 1, 0x29, { 0 }, (s32)D_8006FF7C, func_80080144 },
-};
-MenuItem D_800913B8[] = {
-    { 0, 1, { 0 }, (s32)&D_8007008C[0x20], func_80080964, 4 },
-    { 4, 0, { 0 }, (s32)D_8006FF7C },
-    { 0, 2, { 0 }, (s32)&D_8007008C[0x14], func_80080780, 4 },
-    { 0, 3, { 0 }, (s32)&D_8007008C[8], func_80080920 },
-    { 0, 5, { 0 }, (s32)D_8007008C, (void (*)(s32))func_800851D4 },
-};
-MenuItem D_8009141C[] = {
-    { 0, 7, { 0 }, (s32)&D_8007008C[0x78], func_80080780, 1 },
-    { 0, 8, { 0 }, (s32)&D_8007008C[0x64], func_80080780, 2 },
-    { 0, 9, { 0 }, (s32)&D_8007008C[0x58], func_80080780, 3 },
-    { 4, 0, { 0 }, (s32)D_8006FF7C },
-    { 3, 0xA, { 0 }, (s32)&D_8007008C[0x48], func_800801F8 },
-    { 3, 0xB, { 0 }, (s32)&D_8007008C[0x3C], func_80080054 },
-    { 3, 0xC, { 0 }, (s32)&D_8007008C[0x30], func_80080234 },
-};
-MenuItem D_800914A8[] = {
-    { 0, 0xD, { 0 }, (s32)&D_8007008C[0x90], func_8007F854 },
-    { 0, 0xE, { 0 }, (s32)&D_8007008C[0x88], func_80080964, 2 },
-};
-MenuItem D_800914D0[] = {
-    { 1, 0xB, { 0 }, (s32)&D_8007008C[0xCC], func_80080054 },
-    { 1, 0x13, { 0 }, (s32)&D_8007008C[0xBC], func_80080090 },
-    { 1, 0x14, { 0 }, (s32)&D_8007008C[0xB0], func_800800CC },
-    { 1, 0x23, { 0 }, (s32)&D_8007008C[0xA8], func_80080180 },
-    { 1, 0x24, { 0 }, (s32)&D_8007008C[0xA0], func_800801BC },
-};
-MenuItem D_80091534[] = {
-    { 0, 0x2A, { 0 }, (s32)&D_8007008C[0xDC], func_8007F8E4 },
-    { 0, 0x2A, { 0 }, (s32)&D_8007008C[0xD8], func_80080964 },
-};
-MenuItem D_8009155C[] = {
-    { 0, 0x10, { 0 }, (s32)&D_8007008C[0xF8], func_8007F854 },
-    { 1, 0x12, { 0 }, (s32)&D_8007008C[0xF4], func_80080268 },
-    { 1, 0x14, { 0 }, (s32)&D_8007008C[0xB0], func_800800CC },
-    { 0, 0x11, { 0 }, (s32)&D_8007008C[0xE0], func_8007F8E4 },
-};
-
-/* The menus: lines, line count, menu returned to on cancel, extra drawing. */
-Menu D_800915AC[8] = {
-    { 0, { 0 }, D_800914A8, 2, 0 },
-    { 0x20, { 0 }, D_800914D0, 5, 0, func_8007F9A0 },
-    { 0, { 0 }, D_80091534, 2, 0 },
-    { 0, { 0 }, D_800913B8, 5, 3 },
-    { 0, { 0 }, D_8009141C, 7, 3, func_8007FE48 },
-    { 0, { 0 }, D_80091368, 2, 3 },
-    { 0, { 0 }, D_80091390, 2, 3 },
-    { 1, { 0 }, D_8009155C, 4, 7, func_8007FB0C },
-};
 
 /* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
 void func_8007E528(s32 state) {
@@ -597,7 +521,23 @@ void func_8007F258(void *packets, s32 arg) {
     func_8007EE08(0);
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FE8C);
+/* Names of the game levels, then (after the frame rates and speeds) of the
+ * entries of setting 10. GCC emits an initializer's string literals last to
+ * first, after those of the code before it. */
+char *D_800912F4[] = { "EASY", "NORMAL", "HARD" };
+
+u8 D_80091300[] = { 0x1E, 0x14, 0xF, 0xC, 0xA, 6, 5, 4, 3, 2, 1 };
+
+s32 D_8009130C[] = { 0x60, 0x80, 0xBB, 0x100, 0x180, 0x200, 0x300, 0x400 };
+
+char *D_8009132C[] = {
+    "BYSTANDER", "ON GUARD", "CONTROLLER2", "UP AND AT'EM",
+    "SLOWPOKE", "MAGIC FIRER ", "MAGIC JUMPER", "KANGAROO",
+    "GIVE CHASE", "RUN AWAY", "BACK DASH", "EASY BATTLE",
+    "NORMAL BATTLE", "HARD BATTLE",
+};
+
+s32 D_80091364 = 0;
 
 void func_8007F834(void) {
     D_80092740 = 0;
@@ -650,10 +590,6 @@ char *func_8007F97C(void) {
     return D_800912F4[D_80099D98.level];
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FF5C);
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FF60);
-
 /* Draw the values column of the settings page, right-aligned, applying the
  * chosen speed as it is shown. */
 void func_8007F9A0(MenuPage *page) {
@@ -664,11 +600,11 @@ void func_8007F9A0(MenuPage *page) {
     func_8007F948(page, 0);
     func_8007ECF0(func_8007F97C());
     func_8007F948(page, 1);
-    sprintf(text, D_8006FF5C, D_80099D98.speed + 1);
+    sprintf(text, "%d", D_80099D98.speed + 1);
     D_80099DA4 = D_8009292C = D_8009130C[D_80099D98.speed];
     func_8007ECF0(text);
     func_8007F948(page, 2);
-    sprintf(text, D_8006FF60, D_80091300[D_80099D98.rate]);
+    sprintf(text, "%dFPS", D_80091300[D_80099D98.rate]);
     func_8007ECF0(text);
     func_8007F948(page, 3);
     func_8007ECF0(D_80099D98.com1 ? "COM" : "USER1");
@@ -684,17 +620,15 @@ void func_8007FB0C(MenuPage *page) {
 
     func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
     func_8007EE08(0);
-    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0("");
     func_8007F948(page, 1);
     func_8007ECF0(D_8009132C[D_80099D98.command]);
     func_80081100(D_80099D98.command + 0x15, 1);
     func_8007F948(page, 2);
-    sprintf(text, D_8006FF60, D_80091300[D_80099D98.rate]);
+    sprintf(text, "%dFPS", D_80091300[D_80099D98.rate]);
     func_8007ECF0(text);
     func_8007EE08(0);
 }
-
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FF7C);
 
 /* Draw the vibration page: per controller port, the vibration setting when
  * a type-4 controller without the "COM" setting is connected (the entry is
@@ -758,13 +692,13 @@ void func_8007FE48(MenuPage *page) {
 
     func_8007EE08(0);
     func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
-    func_8007ECF0(D_8006FF7C);
-    func_8007ECF0(D_8006FF7C);
-    func_8007ECF0(D_8006FF7C);
-    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0("");
+    func_8007ECF0("");
+    func_8007ECF0("");
+    func_8007ECF0("");
     func_8007F948(page, 4);
     if (D_80099D98.option6 != 0) {
-        sprintf(text, D_8006FF5C, D_80099D98.option6);
+        sprintf(text, "%d", D_80099D98.option6);
         value = text;
     } else {
         value = "#";
@@ -1416,7 +1350,71 @@ stick_done:
     }
 }
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8007008C);
+/* The lines of the menus; their texts are the literals of each table, emitted
+ * last to first after the code before it ("" is func_8007FB0C's). */
+
+/* Vibration choices per port; the selected one's caption is set at run
+ * time. */
+MenuItem D_80091368[2] = {
+    { 1, 0x25, { 0 }, (s32)"", func_800802A4 },
+    { 1, 0x29, { 0 }, (s32)"", func_80080108 },
+};
+MenuItem D_80091390[2] = {
+    { 1, 0x26, { 0 }, (s32)"", func_8008040C },
+    { 1, 0x29, { 0 }, (s32)"", func_80080144 },
+};
+MenuItem D_800913B8[] = {
+    { 0, 1, { 0 }, (s32)"BONUS BATTLING", func_80080964, 4 },
+    { 4, 0, { 0 }, (s32)"" },
+    { 0, 2, { 0 }, (s32)"PRACTICE", func_80080780, 4 },
+    { 0, 3, { 0 }, (s32)"TUTORIAL", func_80080920 },
+    { 0, 5, { 0 }, (s32)"EXIT", (void (*)(s32))func_800851D4 },
+};
+MenuItem D_8009141C[] = {
+    { 0, 7, { 0 }, (s32)"PLAYER1 VS COM", func_80080780, 1 },
+    { 0, 8, { 0 }, (s32)"PLAYER1 VS PLAYER2", func_80080780, 2 },
+    { 0, 9, { 0 }, (s32)"COM VS COM", func_80080780, 3 },
+    { 4, 0, { 0 }, (s32)"" },
+    { 3, 0xA, { 0 }, (s32)"NUM OF MATCHES", func_800801F8 },
+    { 3, 0xB, { 0 }, (s32)"COM LEVEL", func_80080054 },
+    { 3, 0xC, { 0 }, (s32)"RUBBER BAND", func_80080234 },
+};
+MenuItem D_800914A8[] = {
+    { 0, 0xD, { 0 }, (s32)"CONTINUE BOUT", func_8007F854 },
+    { 0, 0xE, { 0 }, (s32)"GIVE UP", func_80080964, 2 },
+};
+MenuItem D_800914D0[] = {
+    { 1, 0xB, { 0 }, (s32)"GAME LEVEL", func_80080054 },
+    { 1, 0x13, { 0 }, (s32)"MOTION SPEED", func_80080090 },
+    { 1, 0x14, { 0 }, (s32)"FRAME RATE", func_800800CC },
+    { 1, 0x23, { 0 }, (s32)"GEAR 1", func_80080180 },
+    { 1, 0x24, { 0 }, (s32)"GEAR 2", func_800801BC },
+};
+MenuItem D_80091534[] = {
+    { 0, 0x2A, { 0 }, (s32)"YES", func_8007F8E4 },
+    { 0, 0x2A, { 0 }, (s32)"NO", func_80080964 },
+};
+MenuItem D_8009155C[] = {
+    { 0, 0x10, { 0 }, (s32)"RETURN TO PRACTICE", func_8007F854 },
+    { 1, 0x12, { 0 }, (s32)"AI", func_80080268 },
+    { 1, 0x14, { 0 }, (s32)"FRAME RATE", func_800800CC },
+    { 0, 0x11, { 0 }, (s32)"EXIT PRACTICE MODE", func_8007F8E4 },
+};
+
+/* The menus: lines, line count, menu returned to on cancel, extra drawing. */
+Menu D_800915AC[8] = {
+    { 0, { 0 }, D_800914A8, 2, 0 },
+    { 0x20, { 0 }, D_800914D0, 5, 0, func_8007F9A0 },
+    { 0, { 0 }, D_80091534, 2, 0 },
+    { 0, { 0 }, D_800913B8, 5, 3 },
+    { 0, { 0 }, D_8009141C, 7, 3, func_8007FE48 },
+    { 0, { 0 }, D_80091368, 2, 3 },
+    { 0, { 0 }, D_80091390, 2, 3 },
+    { 1, { 0 }, D_8009155C, 4, 7, func_8007FB0C },
+};
+
+/* Unreferenced. */
+const char D_80070198[] = "";
 
 /* The controller menu pair (menus 5 and 6) for the current mode: run the
  * menu of the available port (both in mode 2, where an unavailable port's

@@ -10415,7 +10415,6 @@ void func_800A1624(void) {
     D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
 }
 
-extern char D_8006FD44[]; /* "STACKERR ACT=%d\n" */
 extern void func_800379C8(char *format, ...);
 
 /* Call the script at operand 1, pushing the return PC (after the 5-byte
@@ -10430,7 +10429,7 @@ void func_800A1730(void) {
         D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
-            func_800379C8(D_8006FD44, D_800AFD1C);
+            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B00C0 = 1;
     }
@@ -10449,7 +10448,7 @@ void func_800A17F4(void) {
         D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
-            func_800379C8(D_8006FD44, D_800AFD1C);
+            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B00C0 = 1;
     }
@@ -10465,7 +10464,7 @@ void func_800A18B8(void) {
     actor = D_800B0078;
     if ((actor->state.word & 0x1C0) == 0) {
         if (D_800C268C == 0) {
-            func_800379C8(D_8006FD44, D_800AFD1C);
+            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B0078->slots[D_800B0078->slot].priority = 15;
         D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
@@ -10526,8 +10525,6 @@ void func_800A1B70(void) {
     D_800AFFEC = 1;
     D_800B00C0 = 1;
 }
-
-INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field_800854D0", D_8006FD44);
 
 /* Event 02: compare two halfword operands (bits 7/6 of operand byte 5
  * select an event variable or a signed immediate; variables compare

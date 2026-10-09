@@ -10,9 +10,11 @@ IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld
 LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/resident/undefined_funcs_auto.txt decomp/targets/resident/link.ld
 # The header (decomp/src/resident/header.c) declares t_size 0x49800 from the
-# link (link.ld): the file is padded with zeros from the end of the small
-# data (0x800592bc) to the next 2048-byte boundary (file 0x4a000).
-OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
+# link (link.ld), and the file is padded with zeros from the end of the small
+# data (0x800592bc) to the same 2048-byte boundary (file 0x4a000), which
+# the link gives as __exe_file_size.
+OBJCOPY_FLAGS := --gap-fill 0
+PAD_TO_SYMBOL := __exe_file_size
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
 # Disc 2 shares this assembly directory; a fresh split regenerates both.

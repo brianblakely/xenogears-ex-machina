@@ -1379,10 +1379,6 @@ struct DIRENTRY {
 };
 struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
 struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
-/* The card device names ("bu00:", "bu10:"), shared with assembly still. */
-extern char D_801C50A8[] __attribute__((aligned(4)));
-extern char D_801C50B0[] __attribute__((aligned(4)));
-extern char D_801C50B8[];         /* "__tmp_file" */
 s32 func_800405B4(char *name);    /* erase */
 void func_801D9B08(void);
 void func_801C9EF4(s32 mode, s32 slot);
