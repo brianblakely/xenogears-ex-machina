@@ -5,12 +5,8 @@
  * 800BE6E8): sprite tasks spinning and shrinking over their lifetime. */
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "battle_core.h"
-#include "screen.h"
-#include "sprite_effect.h"
+#include "resident/sprite.h"
 
 /* A number popup (a 0x130-byte task). */
 typedef struct NumberPopup {
@@ -77,14 +73,6 @@ extern DamagePopup *D_800C3750; /* the damage popups */
 extern TotalPopup D_800D30EC;
 extern s32 D_800C3D38;          /* the running total */
 extern s32 D_800D3680;          /* the total shown, -1 none */
-void func_800BE330(s32 value);
-void func_800BD974(SVECTOR *point, VECTOR *out);
-void func_800BDF1C(void);
-void func_800BDB74(Task *task);
-void func_800BDC14(DamagePopup *popup);
-void func_800BDCF8(TotalPopup *total);
-void func_800BDD34(void);
-void func_800BDD3C(Task *draw);
 
 /* The task drawing a popup. */
 typedef struct {
@@ -100,15 +88,8 @@ extern s32 D_800D3630;    /* the popup colour kind */
 extern u8 D_800C3784[];   /* hexadecimal digit glyphs */
 extern u32 D_800C37A4[];  /* powers of ten */
 
-/* Resident services. */
-s32 func_80026DCC(void *font, s32 character, SpritePart *out, s16 x, s32 y); /* glyphs added */
-
-void func_800BD810(SpritePart *glyph, s32 colour);
-void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
-void func_800BD7A0(Task *task);
-void func_800BDA1C(Task *draw);
-void func_800BDB08(DamagePopup *popup);
-void func_800BDC78(DamagePopup *popup);
-void func_800BDE58(void);
+void func_800BD3AC(Sprite *sprite, s32 command, s32 kind);
+void func_800BE0DC(void);
+void func_800BE108(void);
 
 #endif

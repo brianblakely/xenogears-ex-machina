@@ -6,8 +6,9 @@
  * overlay 2143 at +0x13D3C0/+0x13D684). */
 
 #include "common.h"
-#include "model.h"
-#include "scene.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "battle/scene.h"
 
 /* An animation frame header (0x18 bytes; read as halfwords by 800A1B50). */
 typedef struct {
@@ -115,12 +116,6 @@ typedef struct ImageAnim {
 
 /* Resident image decoders. */
 
-/* Original calls promote the event halfwords before the callee narrows them. */
-ImageAnim *func_800A3640();
-s16 func_800A3E98(ImageAnim *anim, s32 ticks);
-void func_800A429C(ImageAnim *anim);
-void func_800A4348(ImageAnim *anim, s16 level);
-void func_800A43F8(ImageAnim *anim, s16 level);
 
 /* A collision sphere of a surface (0x10 bytes). */
 typedef struct {
@@ -163,14 +158,6 @@ typedef struct Surface {
     SurfacePoly *polyList;  /* 0x20 */
 } Surface;
 
-
-
-u16 func_800A1B50(ModelPart *root, s16 *data);
-void func_800A2ACC(EffectPool *pool, ModelPart *part);
-
-/* Build a surface from its point/primitive description (800A7064). */
-void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
-                   s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
-                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
+extern ImageAnim D_800D3600;  /* the stage's image animation */
 
 #endif

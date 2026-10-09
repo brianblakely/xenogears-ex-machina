@@ -4,21 +4,36 @@
  * to 800C1140 have no rodata, and the boundary is placed at the first
  * function that has. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
+#include "psyq/libc.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/effect_script.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/highlight.h"
+#include "battle/item_command.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/screen.h"
+#include "battle/sprite.h"
+#include "battle/sprite_script.h"
+#include "resident_views.h"
 #include "sprite_effect.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "item_command.h"
-#include "sprite_vm.h"
+
+/* A little-endian s16 at index i of a command's arguments, as the VM
+ * forms it (the high byte shifted, then narrowed). */
+#define VM_S16(p, i) ((s16)((p)[(i) + 1] << 8) | (p)[i])
+
+
+/* The screen fade's blend mode (800B3B6C): a u8, taken as int. */
+s32 func_800B3B6C();
+
 
 /* Run a sprite's animation script until it waits: commands below 80 show a
  * frame (00-0F the next, 10-1F the next of the facing, 20-2F the previous,

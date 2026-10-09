@@ -2,23 +2,36 @@
  * after 800793F0's odd-length table at 0 mod 8 (docs/matching.md); the text
  * boundary lies after 800793F0. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
 #include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
-#include "battle/area.h"
+#include "resident_views.h"
+
+/* Callers convert arguments differently from the definition (800BAF40, in
+ * 800B8098's unit, takes none): they pass a slot and a mode it ignores. */
+void func_800BAF40(u8 slot, s32 mode);
 
 /* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
  * `read` is 0, else return it. */
@@ -2573,7 +2586,7 @@ void func_80080BD0(void) {
 
 /* Set the 0x38-byte entry `index` of *800d3278 active (+0x34). */
 void func_80080C6C(u8 index) {
-    D_800D3278->entries[index].active = 1;
+    D_800D3278->threads[index].memberState = 1;
 }
 
 /* Take an automatic turn for party member `member` (8009bac4 chooses):

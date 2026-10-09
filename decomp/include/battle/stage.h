@@ -5,9 +5,9 @@
  * frame (800A4654-800A7948). */
 
 #include "common.h"
-#include "model.h"
-#include "scene.h"
-#include "effect.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "battle/model.h"
 
 /* Run the calls between the two on a stack at the top of the scratchpad. */
 #define SPAD_STACK_ENTER()                                                                         \
@@ -58,7 +58,6 @@ typedef struct {
 
 extern ModelTable *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
 extern s32 D_800CCC5C;        /* frame steps */
-extern ImageAnim D_800D3600;  /* the stage's image animation */
 extern s16 D_800D2D2C;          /* stage image width */
 extern s16 D_800D2D30;          /* stage image x */
 extern s16 D_800D2D34;          /* stage image y */
@@ -66,11 +65,11 @@ extern s16 D_800C3EA8;          /* stage image height */
 
 /* Resident services. */
 
-void func_800A48EC(ModelTable *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth);
-void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
-void func_800A64E4(void);
-void func_800A6884(u8 *out, s32 index, u8 *color);
-void func_800A6AE8(void);
+void func_800A5EB4(void);
+void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5);
+void func_800A6F98(void);
+void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer);
 
 #endif

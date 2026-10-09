@@ -2,6 +2,7 @@
 #define BATTLE_COMBATANT_H
 
 #include "common.h"
+#include "resident/gamedata.h"
 #include "battle/work.h"
 
 /* Views of the game data D_8006D634 (resident/gamedata.h) the battle indexes
@@ -28,21 +29,9 @@ extern GearRecord *D_800D2DC8;        /* target's gear record */
 extern u8 D_800D2C34;
 extern u8 D_800D2D24[3]; /* party character ids, 0x7F none */
 
-
-void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
-void func_8009B104(u8 slot, Combatant *chuchu);
-void func_8009BE0C(void);
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read);
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read);
 s32 func_8009C050(u8 slot);
-void func_80096824(void);
-void func_8009AC48(u8 member, u8 checked);
-void func_8009C4B4(void);
-void func_8009C9C4(void);
-void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount);
-void func_8009CA90(void);
-void func_8009CB68(u8 slot);
 void func_8009E788(void);
-s8 func_8009DBFC(u8 fromGear);
-s16 func_80096FBC(void);
-s16 func_80097610(void);
 
 #endif

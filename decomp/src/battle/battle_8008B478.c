@@ -4,22 +4,30 @@
  * tables: this unit starts after 800861D0 and ends before 80094EE4; these
  * files take the tables' owners. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "resident/gamedata.h"
+#include "resident/sprite.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
+#include "battle/command.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/menu_pages.h"
+#include "battle/scene.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
+
+/* Callers convert arguments differently from the definition (800BAF40, in
+ * 800B8098's unit, takes none): they pass a slot and a mode it ignores. */
+void func_800BAF40(u8 slot, s32 mode);
+
+/* This unit's functions, declared before their first use. */
+u8 func_8008C81C(u8 member);          /* run the combo menu */
 
 /* Run the member's technique menu: four windows, a two-column list of
  * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the

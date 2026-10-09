@@ -2,23 +2,71 @@
  * (80094EE4's jump table), back at 0 mod 8 after the previous unit's tables
  * at 4 mod 8 (docs/matching.md); the text boundary lies after 8008C81C. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/text.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/resolver.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
 #include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
 #include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
-#include "battle/area.h"
+#include "resident_views.h"
+
+/* This unit's functions, declared before their first use. */
+/* The gear command menu (8008cde4-8008d598). */
+void func_800930AC(u8 member, u8 *ids, u16 *costs); /* build its list */
+void func_800939CC(u8 member, u8 kind);
+void func_800946F4(void);
+void func_80094C78(void);
+void func_800958D8(void);
+void func_80095A78(void);
+void func_80095B44(void);
+void func_80096494(u16 *attack, u16 *defense, s8 *hit);
+void func_80096824(void);
+void func_800968C0(void);
+s32 func_80096AB8(void);
+s16 func_80096FBC(void);
+s16 func_80097610(void);
+s8 func_80097964(u8 a, u8 b, u16 c);
+void func_80097D08(void);
+void func_80098D2C(u8 slot, u8 param);
+s32 func_80099498(void);
+void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount);
+void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
+void func_80099FB0(void);
+u8 func_8009A258(u8 member, u8 command);
+void func_8009AB38(u8 member); /* enable the member's deathblow commands */
+void func_8009AC48(u8 member, u8 checked);
+void func_8009AFD8(void);
+void func_8009B104(u8 slot, Combatant *chuchu);
+void func_8009B46C(u16 *damage);
+void func_8009B684(u8 kind, u16 flag);
+void func_8009BE0C(void);
+void func_8009C198(void);
+void func_8009C4B4(void);
+void func_8009C9C4(void);
+void func_8009CA90(void);
+void func_8009CB68(u8 slot);
+s8 func_8009D3A0(void);
+u16 func_8009D948(void);
+u16 func_8009DA04(void);
+s32 func_8009DB54(s32 damage);
+s8 func_8009DBFC(u8 fromGear);
 
 /* The unit's own uninitialized variable (its .bss, after battle.c's). */
 static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */

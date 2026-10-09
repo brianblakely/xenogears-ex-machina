@@ -1,23 +1,55 @@
 /* Battle unit from 80070E2C: its rodata starts at 8006FAF4, after the
  * overlay's number, with 800745EC's jump table at 4 mod 8 (docs/matching.md). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/area.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/resolver.h"
+#include "battle/scene.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
+#include "gear_menu.h"
+#include "overlays.h"
+#include "resident_views.h"
+#include "settle.h"
+
+/* This unit's functions, declared before their first use. */
+void func_80072270(void);
+void func_800723E0(void);
+void func_8007252C(void);
+void func_800765C4(s32 member);
+void func_80076710(s32 member);
+void func_80077990(void);
+void func_8007819C(void);
 
 /* The battle's shared tables and state, which open .data (800c2048-800c348c).
  * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488
@@ -431,7 +463,7 @@ void func_80070F40(void) {
             if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
                 u8 *battleOutcome = &D_800C48EA;
 
-                D_800D3278->unk800 = 0;
+                D_800D3278->halted = 0;
                 outcome = *battleOutcome;
                 *battleOutcome = 0;
                 for (i = 0; i < 3; i++) {
@@ -1446,7 +1478,7 @@ void func_80074EEC(void) {
  * (UI +0xc9). */
 void func_80074F70(void) {
     if (D_800D2D28->unkC8 != 0) {
-        AddPrim(D_800CCB04.ot + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
+        AddPrim(D_800CCB04.ot + 1, &D_800D3278->quads[D_800D3278->portraitBuffer]);
     }
     if (D_800D2D28->unkC9 != 0) {
         func_80034888(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);

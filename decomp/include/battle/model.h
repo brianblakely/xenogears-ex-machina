@@ -51,18 +51,6 @@ typedef struct ModelPart {
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
-/* Callers convert arguments/result differently from the resident definition:
- * allocate a model's packets for both buffers; the image offsets of the
- * packets built next (s16 coordinates). */
-void func_8002CB54(SpriteModel *model, void **packets0, void **packets1);
-void func_8002CC10(s16 x, s16 y);
-void func_8002CC74(s16 x, s16 y);
-
-void func_8009F708(ModelPart *root);
 u16 func_8009EF3C(ModelPart *part, s32 scale);
-u16 func_8009F1C4(ModelPart *part, s32 scale);
-void func_800A22E8(EffectPool *pool);
-s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
-EffectEntry *func_800A2330(EffectPool *pool);
 
 #endif

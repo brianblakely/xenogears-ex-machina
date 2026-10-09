@@ -5,20 +5,55 @@
  * own 11 entries are followed directly by 800BFE48's at 0x80070B08 (0 mod 8),
  * so the unit ends before 800BFE48. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "actor.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/command.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/highlight.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
+#include "battle/ui.h"
+#include "overlays.h"
 #include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "battle_command.h"
+#include "resident_views.h"
+#include "sprite_effect.h"
+
+/* Functions of other units declared as this unit calls them, which differs
+ * from their definitions. */
+void func_8008A9C0(s32 skipped);                     /* the result-screen step (a u8 member there) */
+void func_800AA320(u16 index, u16 mask, s32 arg2);  /* start a stage object's effect (an s16 mask there) */
+
+/* This unit's functions, declared before their first use. */
+void func_800BD7A0(Task *task);
+void func_800BDA1C(Task *draw);
+void func_800BDB08(DamagePopup *popup);
+void func_800BDC78(DamagePopup *popup);
+void func_800BDE58(void);
+void func_800BDF1C(void);
+void func_800BE330(s32 value);
+void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
+void func_800BEBC4(void);
+void func_800BEC18(void);
+void func_800BF1EC(Sprite *sprite, s32 mode);
 
 /* The unit's own uninitialized variable (its .bss, after
  * battle_800B8098.c's); the commons follow (battle_common.c). */

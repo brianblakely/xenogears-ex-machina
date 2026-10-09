@@ -8,20 +8,34 @@
  * Its own 5-entry table is followed directly by 800B8098's at 0x80070A10
  * (0 mod 8). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
+#include "overlays.h"
+#include "resident_views.h"
 #include "sprite_effect.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "action_file.h"
+
+/* This unit's functions, declared before their first use. */
+void func_800B7160(Task *draw);
+ScreenShatter *func_800B7424(ScreenShatter *shatter);
 
 /* The unit's own uninitialized variable (its .bss, after
  * battle_800B3F04.c's). */

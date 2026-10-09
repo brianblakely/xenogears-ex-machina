@@ -19,8 +19,6 @@ extern s32 D_800C3404[16];   /* their y */
 
 extern u8 D_800C3DE0[8];     /* the entered combo steps' buttons */
 
-u8 *func_80033818(s32 id);   /* item name */
-u8 *func_80033848(s32 id);   /* equipment name */
 void func_80076EA4(void);
 void func_8008FE18(u8 column, u8 row, u8 open);
 

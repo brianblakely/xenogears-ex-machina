@@ -8,20 +8,23 @@
  * Its one table (800B1F6C's, 29 entries at 4 mod 8) is followed directly by
  * 800B3F04's at 0x80070850 (0 mod 8), so the unit ends before 800B3F04. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
+#include "psyq/inline_c.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "battle/effect_script.h"
+#include "battle/screen.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
 #include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "effect_script.h"
+#include "resident_views.h"
+
+/* A command's u16 at offset, and the vertex (or normal) its index at offset
+ * names. */
+#define SCRIPT_CMD_U16(cmd, offset) (*(u16 *)((cmd) + (offset)))
+#define SCRIPT_CMD_VERTEX(list, cmd, offset) ((SVECTOR *)(SCRIPT_CMD_U16(cmd, offset) * 8 + (s32)(list)))
 
 /* The unit's own uninitialized variables (its .bss, after
  * battle_8009E53C.c's; ASPSX 2.56 aligns each by its size up to a word:
@@ -52,8 +55,8 @@ s32 func_800B15D8(ScriptFile *file, s32 index) {
 
     D_800C3BD0 = *entry;
     if (!(file->flags & 1)) {
-        D_800C3BD0.data0 += (u32)entry;
-        D_800C3BD0.data8 += (u32)entry;
+        D_800C3BD0.vertices += (u32)entry;
+        D_800C3BD0.normals += (u32)entry;
         D_800C3BD0.commands += (u32)entry;
     }
     D_800C3BF0 = 0;
@@ -390,9 +393,9 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
     }
     prims = packets;
     cmd = entry->commands + (u32)entry;
-    vertices = (SVECTOR *)(entry->data0 + (u32)entry);
+    vertices = (SVECTOR *)(entry->vertices + (u32)entry);
     count = entry->count;
-    normals = (SVECTOR *)(entry->data8 + (u32)entry);
+    normals = (SVECTOR *)(entry->normals + (u32)entry);
     for (i = 0; i != count; i++) {
         kind = cmd[3] & 0x1C;
         kind |= ((cmd[2] ^ 1) & 1) << 8; /* lit from normals */

@@ -4,7 +4,7 @@
 /* The battle's GTE instruction macros beyond psyq/inline_c.h's, as the PsyQ
  * library's inline_c.h expands them. */
 
-#include "psyq/inline_c.h"
+#include "common.h"
 
 /* Rotate and translate vector 0 (MVMVA 1, 0, 0, 0, 0). */
 #define gte_rtv0tr()                                                                               \

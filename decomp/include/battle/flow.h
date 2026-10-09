@@ -6,9 +6,8 @@
  * sprite's walks run through the battle menu (D_800C3610). */
 
 #include "common.h"
-#include "scene.h"
-#include "battle_core.h"
-#include "frame.h"
+#include "battle/area.h"
+#include "battle/frame.h"
 
 /* A sound of the battle's table (4 bytes): its sound bank (the wave bank
  * follows it) and its sound number in the bank. */
@@ -24,7 +23,6 @@ extern void *D_800D39C8; /* the enemy set data copy */
 
 /* The acting slot's turn (800B89FC-800B9F78). */
 extern u8 D_800C3624;
-extern s16 D_800C3DF0;
 
 /* D_800C4928 (set when the actor acts with its partner, 8008B478), as the
  * late unit addresses it inside the area. */
@@ -33,36 +31,24 @@ extern s16 D_800C3DF0;
 /* D_800C4923, after the acting slot, as the late unit addresses it. */
 #define AREA_BYTE_A73 (((u8 *)&BATTLE_AREA)[0xA73])
 
-extern s16 D_800D39E4;
+extern u16 D_800D39E4; /* the single action to request (effect VM 71, 73) */
+
 extern s32 D_800C3660; /* the battle menu update is running */
-extern u8 D_800C35D4; /* a sound to fade at the turn's end */
 extern s16 D_800C3614; /* frames before the next event */
 extern u8 D_800C3623;
-extern s16 D_800C3626;
+extern u16 D_800C3626; /* slots whose gear sound played */
 extern s16 D_800C3630[]; /* per target code: its first command */
 extern s16 D_800C3648[]; /* per target code: its commands from here play motion 0x11 */
 
-void func_80080BD0(void);
-void func_800B9508(Sprite *sprite);
-void func_800B9B30(); /* also called with the sprite (800B9508) */
-void func_800BA8F4(Sprite *sprite);
-void func_800B8048(Sprite *sprite);
-void func_800BF600(s32 command, Sprite *sprite);
-void func_800BF730(s32 value);
-void func_80021FB8(Sprite *sprite, s32 mode); /* set the idle mode */
-s32 func_800BF354(void);
-void func_800BAEB8(s32 slot);
-void func_800AA760(s32 index, s32 value); /* set stage object index's byte 0x2A */
-void func_800AA79C(s32 a, s32 b);         /* swap two stage objects */
-s32 func_800C0314(void);
-void func_800BEDE8(void);
-void func_800BFA9C(void);
-void func_800C0564(void);
-void func_800BC3F8(s32 value);
-BattleMenu *func_800BED4C(void);
-/* Defined without a return value: 800B89FC takes what it leaves in v0, the
- * new acting sprite. */
-Sprite *func_800BEFF4(s32 slot);
-void func_800BF3E8(Sprite *sprite);
+void func_800B8098(s32 kind);
+void func_800B81BC(s32 a);
+void func_800B8354(void);
+void func_800B853C(s32 mode);
+void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3);
+void func_800B8D04(void);
+void func_800B8D7C(void);
+void func_800B9258(void);
+void func_800B9C00(); /* unprototyped (sprite, other) */
+void func_800B9F78(BattleMenu *menu);
 
 #endif

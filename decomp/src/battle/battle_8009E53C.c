@@ -11,16 +11,97 @@
  * the part bookkeeping (8009E53C-8009E788) starts. The unit ends before
  * 800B15D8, where the code generation changes (see battle_800B15D8.c). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/combatant.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/model.h"
+#include "battle/objects.h"
+#include "battle/resolver.h"
+#include "battle/scene.h"
+#include "battle/stage.h"
+#include "battle/turn.h"
+#include "battle/work.h"
 #include "effect.h"
-#include "stage.h"
-#include "files.h"
-#include "objects.h"
 #include "effect_vm.h"
+#include "files.h"
+#include "gte.h"
+#include "resident_views.h"
+
+/* This unit's functions, declared before their first use. */
+void func_8009F708(ModelPart *root);
+void func_800A22E8(EffectPool *pool);
+EffectEntry *func_800A2330(EffectPool *pool);
+s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
+void func_800A2ACC(EffectPool *pool, ModelPart *part);
+void func_800A2D5C(SpritePool *pool);
+s16 func_800A3E98(ImageAnim *anim, s32 ticks);
+void func_800A429C(ImageAnim *anim);
+void func_800A4348(ImageAnim *anim, s16 level);
+void func_800A43F8(ImageAnim *anim, s16 level);
+void func_800A48EC(ModelTable *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+                   s32 depth);
+void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
+s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
+void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal);
+s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth);
+void func_800A6AE8(void);
+u8 func_800AA514(s16 a, s16 b, s32 c);
+s32 func_800AA650(s32 index);
+void func_800AA6E0(BattleObject *object);
+s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
+void func_800AAB34(BattleObject *object);
+void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
+void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z);
+void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x, s32 y,
+                   s32 z);
+void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop);
+s32 func_800AE220(BattleObject *object, s32 source);
+void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2);
+void func_800AEEEC(BattleObject *object);
+s32 func_800AEEF8(BattleObject *object);
+void func_800AEF68(BattleObject *object);
+void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
+void func_800AF270(ModelPart *from, ModelPart *to);
+s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale);
+s32 func_800AF400(void);
+u8 func_800AF438(BattleObject *object, u8 slot, u16 *mask); /* the slot of a target code */
+u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag);
+void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 kind, u8 field1,
+                   s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration);
+void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
+void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
+                   BattleObject *object);
+void func_800AFC68(Task *node);
+void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z);
+void func_800AFF9C(BattleObject *object);
+void func_800B0060(BattleObject *object);
+void func_800B00D0(void);
+void func_800B00F4(EffectPool *pool);
+/* Called unprototyped by the VM (its halfwords passed sign-extended). */
+void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+                   u16 p5, u16 field12);
+void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
+s16 func_800B0B14(s32 key);
+s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
+void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
+s32 func_800B12D0(s32 slot, u8 mask);
 
 /* The unit's own uninitialized variables (its .bss, after
  * battle_8008CCCC.c's), each in a slot of whole words (decomp/Makefile). */

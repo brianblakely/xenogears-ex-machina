@@ -5,17 +5,10 @@
  * their tasks, as the late battle unit (800B15D8-) uses them. */
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "scene.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "frame.h"
+#include "resident/sprite.h"
 
 
-/* Resident sprite engine. */
-void func_800242F4(Sprite *sprite, s32 a, s16 b, s16 c, s32 d, s32 e, s32 f, s32 g);
 
 
 extern u8 D_800C3664;  /* sprite updates paused */
@@ -56,26 +49,23 @@ extern Sprite *D_800D39EC; /* the sprite the camera circles */
 extern s32 D_800C3738;           /* its distance from it */
 extern s16 D_800C373C;           /* its angle round it */
 
-/* This unit. */
-void func_800BB13C(Task *task);
-void func_800BB314(Task *task);
-void func_800BB760(s32 slot);
-void func_800BAB0C(Task *task);
-void func_800BABDC(Task *task);
-void func_800BAC50(Task *task);
+void func_800BA4E0(s32 value);
+void func_800BA614(Sprite *sprite);
+void func_800BA768(Sprite *sprite);
+void func_800BA8F4(Sprite *sprite);
+void func_800BAEB8(s32 slot);
+void func_800BAF48(s32 slot);
 void func_800BB350(u32 slot);
-void func_800BA59C(Sprite *sprite, s16 direction);
-void func_800BF2B8(Sprite *sprite);
-void func_800BFBA0(void);
-void func_800BC454(s16 value);
+void func_800BB760(s32 slot);
+void func_800BB9D4(void);
+void func_800BBAB8(void);
 void func_800BC2F0(s32 mode);
-void func_800BC460(u32 mask);
+void func_800BC3F8(s32 value);
+void func_800BC404(s32 mask);
+void func_800BCAA4(void);
+void func_800BCAD0(void);
 
-/* Other battle units. */
-void func_800B136C(void);
-void func_800B14CC(s32 keep);
-void func_800A9540(s32 slot);
-void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
-                   s32 depth);
+extern SVECTOR D_800D30B0; /* the camera's angles */
+extern s32 D_800D30B8;     /* the camera's distance */
 
 #endif

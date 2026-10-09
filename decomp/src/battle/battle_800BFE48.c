@@ -5,21 +5,28 @@
  * that has. 800C0564's 25-entry table at 0x80070BB0 is followed directly by
  * 800C11CC's at 0x80070C14 (4 mod 8), so the unit ends before 800C11CC. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "settle.h"
+#include "psyq/libgte.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/frame.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/sprite.h"
+#include "battle/turn.h"
 #include "curve.h"
+#include "gte.h"
+#include "resident_views.h"
+#include "settle.h"
+#include "sprite_effect.h"
+
+/* This unit's functions, declared before their first use. */
+/* Called unprototyped here (their slot argument is a u8). */
+s32 func_8009A0DC(); /* the condition shown for a slot */
+s32 func_8009A1AC(); /* the status bits shown for a slot (a u16, taken as int) */
+void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out);
 
 /* The idle motion of each shown condition, opening the unit's data: its
  * padding holds stray assembler bytes, so it stays original data. */

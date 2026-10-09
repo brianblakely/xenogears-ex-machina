@@ -2,8 +2,12 @@
 #define BATTLE_SCENE_H
 
 #include "common.h"
-#include "model.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/sound.h"
 #include "battle/area.h"
+#include "battle/model.h"
 
 
 /* A battle object's extra file: more effect scripts and animations. */
@@ -229,39 +233,15 @@ extern s32 D_800C360C;
 extern u8 D_800C4000[]; /* per slot */
 extern BattleSlot D_800C3EB4[11];
 
-void func_800BF85C(s32 index, s32 slot);
-void func_800BE790(void);
-s32 func_800BF6F8(void);
-void func_800B0060(BattleObject *object);
 
 /* Resident services. */
 
-void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
-void func_800B00D0(void);
-void func_800AFF9C(BattleObject *object);
-s32 func_800A0838(EffectPool *pool, ModelPart *root, s32 tag, s32 scale);
-void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2);
-void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
-void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
-EffectPool *func_800A2234(EffectPool *pool, s32 count);
-SpritePool *func_800A2CA4(SpritePool *pool, s32 count);
-void func_800A9FF0(s32 index);
-void func_800A22A8(EffectPool *pool);
-void func_800A2D1C(SpritePool *pool);
-s32 func_800AF400(void);
-void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal);
-s32 func_800A5870(SVECTOR *point, s32 index, void *out);
+void func_800A4820(void);
 s32 func_800A579C(SVECTOR *point);
-s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
+s32 func_800A5870(SVECTOR *point, s32 index, void *out);
 s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth);
-s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth);
-s32 func_800AA650(s32 index);
-void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
-void func_800A2D5C(SpritePool *pool);
-s16 func_800A3490(s16 angle, s16 divisor, s32 base);
-s16 func_800A3514(s16 value, s16 divisor, s16 base);
-s16 func_800A3578(s16 value, s16 divisor, s32 base);
-s16 func_800A35C8(s16 value, s16 divisor, s16 minimum);
+void func_800A8B0C(void);
+void func_800A9F94(void);
+void func_800A9FF0(s32 index);
 
 #endif

@@ -6,12 +6,8 @@
  * views of them). */
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
-#include "battle/sprite.h"
-#include "screen.h"
 
 /* A task with a slot argument after it. */
 typedef struct {
@@ -74,40 +70,18 @@ extern s16 D_800C3E9C;   /* its colour count */
 extern s16 D_800C3D4C;   /* its blend */
 extern s16 D_800D3334;
 
-void func_800C08CC(s32 count, SVECTOR *points, void (*draw)());
-void func_800B50D4(Sprite *sprite, SVECTOR *out);
-void func_800B51B0();
-void func_800B5DF4();
-void func_800B5854(Task *task);
-SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume);
-void func_800B5588(Task *task);
 
-/* A point on the ground passed by value. */
-typedef struct {
-    s16 x;
-    s16 z;
-} GroundPoint;
 
-s16 func_80023124(GroundPoint to, GroundPoint from); /* the direction between points */
 
 
 /* Sprite script commands (800B3F04). */
 extern Sprite *D_800C3E1C;
 extern s16 D_800D36BC;
-void func_800A96B4(s32 set);
-void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y);
-void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
-void func_800BEE2C(s32 index, s32 mask, s32 mode);
-void func_800B6004();
-void func_80021B04(SVECTOR *v, s32 x, s32 y, s32 z);
-/* The entries of the battle modules at 0x801fc000: break a model into pieces
- * (ovl3384: the model bound at a model sprite's renderer +0x34, its packets and
- * matrix), start an effect circling a sprite (ovl3383). */
-void func_801FC4C4(void *model, void *prims, MATRIX *m, s32 a, s32 b, s32 c, s32 d, s32 e);
-void func_801FC53C(Sprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
 
 /* Sprite streaks and sprite effects (800B5DF4-800B7424). */
 extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
-extern s32 D_800D2FCC;     /* the trail segment being drawn */
+
+s32 func_800B57E4(Sprite *sprite);
+SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume);
 
 #endif

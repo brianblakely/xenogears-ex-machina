@@ -6,17 +6,19 @@
  * and its sound bank starts; its stream (0x23 + 2 * index) plays. */
 
 #include "common.h"
-#include "frame.h"
+#include "resident/sprite.h"
 
 extern u8 D_800C3CEC;    /* a command file is loaded */
-extern u8 D_800C3624;
 extern u8 D_800C35D4;    /* the command file's sound bank is started */
 extern s16 D_800C3DF0;   /* the acting sprite's command motion */
 
+void func_800B7870(void);
+void func_800B7C28(void);
+void func_800B7C34(s32 command);
+u8 func_800B7E94(void); /* start the loaded single action file; 1 when the acting sprite runs it itself */
+void func_800B8048(Sprite *sprite);
+void func_800B8054(s32 action); /* request single action `action` (800b8068 runs it) */
+void func_800B8068(s32 action);
 void func_800BB080(s32 keep);
-void func_801E5840(u8 phase);                    /* the battle module's set-up phase */
-ScreenShatter *func_800B73EC(void);
-void func_800B7330(void *block);
-void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9);
 
 #endif

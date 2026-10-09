@@ -11,8 +11,6 @@
  * battle.data.ld. Variables no battle code addresses are marked
  * unreferenced, or with the battle-time modules that use them. */
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 
 u8 D_800C3CEC;    /* a command file is loaded */
@@ -138,7 +136,7 @@ s32 D_800D30E8; /* unreferenced */
 struct TotalPopup D_800D30EC;
 s32 D_800D316C[66]; /* unreferenced */
 u8 D_800D3274;      /* candidate count */
-struct BattleEventState *D_800D3278;
+struct ScriptState *D_800D3278;
 s32 D_800D327C; /* unreferenced */
 u8 D_800D3280;  /* party panel layout */
 s32 D_800D3284;
@@ -195,7 +193,7 @@ s32 D_800D36C4; /* unreferenced */
 struct BattleMessage D_800D36C8[8];
 void *D_800D39C8; /* the enemy set data copy */
 struct SceneTriangle *D_800D39CC; /* scene triangles */
-void *D_800D39D0; /* (ovl3087) */
+struct EventScriptFile *D_800D39D0; /* (ovl3087) */
 u8 D_800D39D4;
 void *D_800D39D8; /* (ovl2606) */
 u16 D_800D39DC;   /* alive mask */
@@ -205,18 +203,34 @@ s16 D_800D39E8;   /* a slow wave (4..9) */
 struct Sprite *D_800D39EC; /* the sprite the camera circles */
 void *D_800D39F0; /* battle message table */
 
-#include "battle_core.h"
+#include "battle/action_file.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/area.h"
-#include "action_file.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/objects.h"
+#include "battle/resolver.h"
+#include "battle/scene.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/stage.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
 #include "action_resolve.h"
-#include "actor.h"
 #include "curve.h"
-#include "effect_vm.h"
-#include "frame.h"
-#include "hud_draw.h"
-#include "item_command.h"
-#include "menu_pages.h"
-#include "objects.h"
+#include "effect.h"
+#include "overlays.h"
 #include "popup.h"
-#include "resolver.h"
-#include "stage.h"
+#include "sprite_effect.h"

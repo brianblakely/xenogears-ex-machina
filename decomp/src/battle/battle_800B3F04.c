@@ -9,20 +9,64 @@
  * own variable D_800C3CB4 (a unit's .bss is read by its own code only,
  * docs/matching.md). */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/highlight.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/sprite.h"
+#include "battle/sprite_script.h"
+#include "curve.h"
+#include "files.h"
+#include "overlays.h"
+#include "resident_views.h"
 #include "sprite_effect.h"
-#include "actor.h"
-#include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "sprite_script.h"
+
+/* This unit's functions, declared before their first use. */
+void func_800B4EDC(Sprite *sprite);
+void func_800B5588(Task *task);
+void func_800B572C(Sprite *sprite, u8 *colours);
+void func_800B5B3C();
+SpriteLink *func_800B5C18();
+void func_800B5DC4(Sprite *sprite);
+void func_800B5FBC();
+void func_800B61B0();
+void func_800B61F8();
+void func_800B626C();
+void func_800B62C8();
+void func_800B639C();
+void func_800B63F0();
+void func_800B6438();
+void func_800B6464();
+void func_800B64D4();
+void func_800B6518();
+void func_800B65B0();
+void func_800B6808();
+void func_800B6930();
+void func_800B6990();
+void func_800B69E4();
+void func_800B6A50();
+void func_800B6A7C();
+void func_800B6B98();
+void func_800B6BFC();
+void func_800B6C44();
+void func_800B6C98();
+void func_800B6CEC();
+void func_800B6DC0();
+void func_800B6E84();
 
 /* The unit's own uninitialized variables (its .bss, after
  * battle_800B15D8.c's): ASPSX 2.56 keeps the halfwords two bytes apart and

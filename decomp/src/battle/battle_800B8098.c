@@ -6,21 +6,68 @@
  * Its last table (800B9F78's, 9 entries at 0x80070AB8) is followed directly
  * by 800BD3AC's at 0x80070ADC (4 mod 8), so the unit ends before 800BD3AC. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "battle/action_file.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/command.h"
+#include "battle/effect_script.h"
+#include "battle/flow.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/screen.h"
+#include "battle/setup.h"
+#include "battle/sprite.h"
+#include "battle/stage.h"
+#include "battle/turn.h"
+#include "battle/windows.h"
+#include "files.h"
 #include "gte.h"
-#include "effect.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "actor.h"
+#include "overlays.h"
 #include "popup.h"
-#include "frame.h"
-#include "stage.h"
-#include "highlight.h"
-#include "battle_flow.h"
+#include "resident_views.h"
+#include "settle.h"
+#include "sprite_effect.h"
+
+/* Functions of other units declared as this unit calls them, which differs
+ * from their definitions. */
+void func_800A5E9C(u8 *first, u8 *second); /* the two buffers' background colours (two words there) */
+void func_800AA760(s32 index, s32 value);  /* set stage object index's byte 0x2A (a u8 there) */
+/* Defined without a return value: 800B89FC takes what it leaves in v0, the
+ * new acting sprite. */
+Sprite *func_800BEFF4(s32 slot);
+
+/* This unit's functions, declared before their first use. */
+void func_800B8284(void);
+void func_800B8840(void);
+void func_800B88C4(void);
+void func_800B89F4(void);
+void func_800B9508(Sprite *sprite);
+void func_800B9B30(); /* also called with the sprite (800B9508) */
+void func_800B9B54(Sprite *sprite, Sprite *other);
+void func_800BAB0C(Task *task);
+void func_800BABDC(Task *task);
+void func_800BAC50(Task *task);
+void func_800BADD4(s32 slot);
+void func_800BB7F8(void);
+void func_800BC454(s16 value);
+void func_800BC460(u32 mask);
+void func_800BCD8C(void);
+void func_800BCFAC(Task *task);
+void func_800BD098(SpriteTask *owner);
 
 /* The unit's own uninitialized variables (its .bss, after
  * battle_800B7134.c's; ASPSX 2.56 aligns each by its size up to a word:
@@ -51,7 +98,7 @@ u8 D_800C3621 = 0;
 u8 D_800C3622 = 0;
 u8 D_800C3623 = 0;
 u8 D_800C3624 = 0;
-s16 D_800C3626 = 0;
+u16 D_800C3626 = 0;
 s32 D_800C3628 = 0;
 u8 D_800C362C = 0;
 s16 D_800C3630[] = {0, 0x16, 0x2F, 0x4A, 0x5E, 0x71, 0x7C, 0x8F, 0x97, 0x2F, 0x7C};

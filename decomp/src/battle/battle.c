@@ -3,23 +3,52 @@
  * 0 mod 8 right after 80080160's (docs/matching.md); the text boundary lies
  * after 80080160. The next unit's tables start at 80070314 at 4 mod 8. */
 #include "common.h"
-#include "battle_core.h"
-#include "combatant.h"
-#include "model.h"
-#include "scene.h"
-#include "gte.h"
-#include "menu_pages.h"
-#include "resolver.h"
-#include "action_resolve.h"
-#include "hud_draw.h"
-#include "battle_command.h"
-#include "window_draw.h"
-#include "formation_route.h"
-#include "gear_menu.h"
-#include "glyph_lists.h"
-#include "item_command.h"
-#include "result_input.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
 #include "battle/area.h"
+#include "battle/combatant.h"
+#include "battle/command.h"
+#include "battle/enemy_ai.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/highlight.h"
+#include "battle/input.h"
+#include "battle/item_command.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/resolver.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/work.h"
+#include "action_resolve.h"
+#include "overlays.h"
+#include "resident_views.h"
+
+/* This unit's functions, declared before their first use. */
+u8 func_80084854(u8 origin, u8 direction);
+void func_80084A7C(u8 member);
+void func_80085D34(void);
+u8 func_80085EB4(u8 mode, u8 member);
+void func_800861D0(u8 code, u8 member);
+s32 func_80086B88(s32 step, u8 member); /* the member can use combo step `step` now */
+u8 func_80086F98(u8 step, u8 member);
+void func_8008AA40(u8 id); /* play a sound effect */
 
 /* The unit's own uninitialized variables, each in a slot of whole words
  * (decomp/Makefile). Its .bss opens the overlay's at 800c3a70, where the
@@ -3537,9 +3566,11 @@ void func_8008A3EC(u8 member) {
     func_8008A144();
     if (D_800D2D28->unkCA != 0) {
         for (i = 0; i < 16; i++) {
-            if (D_800D3278->entries[i].unk28 != 0) {
-                if (--D_800D3278->entries[i].unk26 < 0) {
-                    D_800D3278->entries[i].unk26 = 0;
+            if (D_800D3278->threads[i].waiting != 0) {
+                if (--D_800D3278->threads[i].waitTimer
+ < 0) {
+                    D_800D3278->threads[i].waitTimer
+ = 0;
                 }
             }
         }

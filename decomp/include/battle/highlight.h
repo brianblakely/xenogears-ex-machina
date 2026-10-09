@@ -6,13 +6,9 @@
  * ring above their sprite. */
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "objects.h"
-#include "screen.h"
-#include "sprite_effect.h"
-#include "frame.h"
+#include "resident/sprite.h"
+#include "battle/area.h"
 
 /* The acting slot's pulse (D_800C3748), a child task of its actor task. */
 typedef struct {
@@ -45,17 +41,8 @@ typedef struct {
 
 extern u8 D_8001C76C[];  /* resident TMD model (objects.h's effect script file format) */
 
-u8 *func_800B168C(u8 *table, s32 index);
-s32 func_800B16A4(ScriptEntry *entry);
-void func_800B1720();
-void func_800B1F6C();
-
-void func_800BCB54(Task *task); /* also the pulse destroy; ends D_800C3748 */
-void func_800BCBB4(Task *task);
-void func_800BCC60(void);
-void func_800BCEAC(Task *draw);
-void func_800BCFAC(Task *task);
-void func_800BD024(Task *task);
-void func_800BD098(SpriteTask *owner);
+void func_800BCD98(u16 mask);
+void func_800BD1FC(s32 slot);
+void func_800BD2E4(void);
 
 #endif

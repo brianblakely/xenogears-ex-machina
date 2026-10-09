@@ -5,7 +5,6 @@
  * and the stage light fade (800B3358-800B3E04). */
 
 #include "common.h"
-#include "psyq/libc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
@@ -53,14 +52,6 @@ typedef struct {
     s16 field4E;     /* 0x4E */
 } LightFade;
 
-/* A list of points (the points at offset, count of them; flags bit 15 once
- * scaled). */
-typedef struct {
-    s32 offset; /* 0x00: from the list */
-    s32 count;  /* 0x04 */
-    u8 pad8[0x18 - 0x8];
-    u32 flags;  /* 0x18 */
-} VertexList;
 
 /* An 8-byte primitive (tag and one command word). */
 typedef struct {
@@ -100,29 +91,18 @@ extern u8 D_800D3638;
 
 /* Resident tasks. */
 
-void func_800B3358(Quake *quake);
-void func_800B3588(Quake *quake);
-void func_800B36BC(Task *task);
-void func_800B3878(Task *draw);
-void func_800B383C(ScreenFade *fade);
-void func_800B3B94(Task *task);
-void func_800B3C74(Task *draw);
-void func_800B3C2C(LightFade *fade);
 
 extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
 extern SVECTOR D_800C35AC[3];
-u8 func_80021AD8(u8 value, s32 delta); /* add, clamped to 0-255 */
-void func_800B6F0C(Task *task);
-void func_800B7134(Task *draw);
-void func_800B7160(Task *draw);
-void func_800B7364(ScreenShatter *shatter);
-void func_800B73A0(void);
-ScreenShatter *func_800B7424(ScreenShatter *shatter);
-void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5);
-void func_800A6F98(void);
-void func_800A5EB4(void);
 
 /* The shattered screen's set-up (800B7424). */
 extern VECTOR D_800C35C4; /* a shard's launch velocity before turning */
+
+void func_800B3658(SVECTOR *amplitude, s32 frames); /* quake the view towards amplitude */
+void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
+void func_800B3E04(void);
+void func_800B6F0C(Task *task);
+void func_800B73A0(void);
 
 #endif

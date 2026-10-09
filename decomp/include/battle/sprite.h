@@ -37,4 +37,10 @@ typedef struct {
 
 extern ImagePlace D_800C3668[3];
 
+/* A point on the ground passed by value. */
+typedef struct {
+    s16 x;
+    s16 z;
+} GroundPoint;
+
 #endif
