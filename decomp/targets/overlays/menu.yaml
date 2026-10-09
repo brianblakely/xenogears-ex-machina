@@ -79,7 +79,7 @@ segments:
       # menu5's data opens with the stage colours (D_8009178C), which only
       # its func_80082A70 reads.
       - [0x21C9C, .data, menu5]
-      # menu6's gear list: its strings open menu6's rodata (D_80070284).
+      # menu6's gear list: its strings open menu6's rodata (80070284).
       - [0x21E74, .data, menu6]
       # menu7's .data ends with the embedded sprite model D_80091FB0 (asset,
       # menu.classification.txt) and D_800925A4, whose padding holds three

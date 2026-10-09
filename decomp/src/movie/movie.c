@@ -304,21 +304,17 @@ void func_80070DCC(void) {
     }
 }
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC6C);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC70);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC8C);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC98);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCA4);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCAC);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCB4);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCD8);
+/* func_800704E8's other strings, after its literals. The unit's literal "\n"
+ * is func_800737EC's, so this "\n" is an array, and the strings after it
+ * are too. */
+const char D_8006FC6C[] = "\n";
+const char D_8006FC70[] = "%08x %08x %08x %08x %08x\n";
+const char D_8006FC8C[] = "Cancel%8d\n";
+const char D_8006FC98[] = "CT%1x   %8d";
+const char D_8006FCA4[] = " NOW";
+const char D_8006FCAC[] = " BEFORE";
+const char D_8006FCB4[] = "\nTOTAL %8d : Time %3d:%02d:%02d\n";
+const char D_8006FCD8[] = "\nPUSH START BUTTON TO MENU.";
 
 /* Fill `size` bytes of `words` with `value`, counting in `n`. */
 #define FILL_WORDS(words, size, n, value)  \
@@ -2009,9 +2005,10 @@ void func_80075534(void) {
     D_80077124[1].disp.screen.h = 216;
 }
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
+/* Strings of the monitor (func_80075534) and the FAT check (func_80075D8C):
+ * arrays, the "\n" a copy of D_8006FC6C's. */
+const char D_8007042C[] = "\n";
+const char D_80070430[] = "\nPUSH CIRCLE BUTTON TO MENU.";
 
 /* The first sector of directory record `index` (bytes 3..6). */
 u32 func_80075D4C(s32 index) {
@@ -2451,4 +2448,4 @@ void func_80076CA4(void) {
     CompMatrix(&D_800770D8, &D_800770B8, &D_80077050);
 }
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_800704E0);
+const RECT D_800704E0 = {0, 0, 640, 512};

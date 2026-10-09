@@ -247,7 +247,7 @@ s32 func_80074AF0(void);
 /* FAT check. */
 extern s32 D_8007744C;                           /* buffer index */
 void func_800284B4(s32 *directory, s32 *offset); /* current directory */
-void func_8003700C(char *format, ...);           /* debug font print */
+void func_8003700C(const char *format, ...);     /* debug font print */
 void func_8003278C(s32 a, s32 value, s32 c, s32 d);
 void func_80037324(u32 *ot);                     /* draw the debug font */
 void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
@@ -255,8 +255,8 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
 s32 func_800747AC(s32 first, s32 last, s32 *button);
 void func_80074B58(void);
 u32 func_80075D4C(s32 index);
-extern char D_8007042C[]; /* "\n", shared with the asm-backed FAT check */
-extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
+extern const char D_8007042C[]; /* "\n" */
+extern const char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 s32 func_80039850(void *sequence); /* load a music sequence */
 
 /* CD-ROM monitor screen. */
@@ -267,8 +267,8 @@ extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49
 extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4; /* resident CD event counters */
 extern s32 D_8004FDE4, D_8004FDE8, D_8004FDEC;
 extern u16 D_8004FE26, D_8004FE28;
-extern char D_8006FC70[], D_8006FC8C[], D_8006FC98[], D_8006FCA4[], D_8006FCAC[];
-extern char D_8006FCB4[], D_8006FCD8[]; /* strings shared with the asm-backed functions */
+extern const char D_8006FC70[], D_8006FC8C[], D_8006FC98[], D_8006FCA4[], D_8006FCAC[];
+extern const char D_8006FCB4[], D_8006FCD8[];
 void *func_80028A94(void *ring); /* replace the stream ring */
 s32 func_800286CC(void);         /* files left to read */
 s32 func_800286BC(void);         /* bytes left to read */
@@ -308,7 +308,7 @@ void func_800704E8(void);
 void func_80072480(void);
 
 /* Disc change test. */
-extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
+extern const char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
 s32 func_80028530(void);  /* the disc in the drive */
 void func_8007293C(void);
 s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done);
