@@ -2,13 +2,8 @@
 #define OVL3384_DEBRIS_H
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "resident/gpu.h"
-#include "resident/heap.h"
 #include "resident/sprite.h"
-#include "battle/area.h"
 #include "battle/effect_script.h"
 
 /* One flying piece of the broken model (0x54 bytes). */
@@ -37,11 +32,6 @@ typedef struct {
     ScriptEntry *model; /* +6c */
     Piece *pieces;      /* +70 */
 } DebrisTask;
-
-/* Battle overlay services. */
-s32 func_800B16A4(ScriptEntry *model);  /* size of the model's primitives */
-void func_800B1720(ScriptEntry *model, void *prims, s32 arg2, s32 arg3); /* build the model's primitives */
-void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles); /* direction angles */
 
 extern SVECTOR D_801FCE14; /* origin */
 

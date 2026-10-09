@@ -2,6 +2,7 @@
 #define BATTLE_FRAME_H
 
 #include "common.h"
+#include "psyq/libgte.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
 #include "battle/sprite.h"
@@ -126,6 +127,7 @@ void func_800BFDA8(Sprite *sprite, s32 mode);
 
 /* Distances and command file parts (800BFE48's unit). */
 s32 func_800C07CC(GroundPoint from, GroundPoint to); /* the distance between two points */
+void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles); /* the direction angles between points */
 void func_800C0F70(void);        /* release the transferred sound bank */
 SoundBank *func_800C0FAC(s32 *file); /* set up a command file's parts */
 void func_800C1140(s32 *file);   /* free a command file's sound bank */

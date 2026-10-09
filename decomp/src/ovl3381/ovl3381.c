@@ -11,7 +11,13 @@
  *
  * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
  * (see ovl3381.mk). */
+#include "common.h"
 #include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "battle/area.h"
 #include "tiles.h"
 
 #define ABS(x) ((x) >= 0 ? (x) : -(x))

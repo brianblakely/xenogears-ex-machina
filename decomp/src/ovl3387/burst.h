@@ -2,14 +2,9 @@
 #define OVL3387_BURST_H
 
 #include "common.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "resident/gpu.h"
-#include "resident/heap.h"
 #include "resident/sprite.h"
-#include "battle/area.h"
-#include "battle/sprite.h"
 
 /* Callers convert arguments/result differently from the resident definition:
  * add, clamped to 0..255 (the module passes and takes a byte). */

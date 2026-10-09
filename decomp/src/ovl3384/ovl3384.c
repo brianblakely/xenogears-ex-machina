@@ -9,6 +9,16 @@
  *
  * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
  * (see ovl3384.mk). */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/sprite.h"
+#include "battle/area.h"
+#include "battle/effect_script.h"
+#include "battle/frame.h"
 #include "debris.h"
 
 SVECTOR D_801FCE14 = {0, 0, 0};

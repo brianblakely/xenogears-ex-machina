@@ -4,9 +4,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "resident/model.h"
 #include "resident/sprite.h"
-#include "battle/area.h"
 
 /* One half (a triangle) of an 8x8 cell of the captured screen: its primitive
  * for each display buffer and its three corners. */

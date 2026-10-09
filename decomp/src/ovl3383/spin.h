@@ -2,11 +2,7 @@
 #define OVL3383_SPIN_H
 
 #include "common.h"
-#include "psyq/libgpu.h"
-#include "psyq/libgte.h"
-#include "resident/model.h"
 #include "resident/sprite.h"
-#include "battle/sprite.h"
 
 /* The effect task func_801FC53C creates (0x54 bytes; resident tasks: the
  * update node, then the drawing node, both with the task as their data). */

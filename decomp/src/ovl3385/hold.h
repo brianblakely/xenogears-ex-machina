@@ -2,10 +2,6 @@
 #define OVL3385_HOLD_H
 
 #include "common.h"
-#include "psyq/libc.h"
-#include "psyq/libgpu.h"
-#include "psyq/libgte.h"
-#include "resident/model.h"
 #include "resident/sprite.h"
 #include "battle/sprite.h"
 
