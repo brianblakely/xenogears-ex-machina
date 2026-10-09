@@ -102,7 +102,9 @@ void func_802846CC(s32 axis, u32 item);
  * s16; the work block's members build the same either way. It reads the
  * current draw block as its ordering table words (FieldDrawBlock +0xcc),
  * names the emitter templates (the field's Record78) from its editor's
- * labels and takes the actors and their descriptors as below (80281b90). */
+ * labels, reading their flags as bit-fields and their colour offsets as one
+ * s8 array (the field reads +0x70 as u8), and takes the actors and their
+ * descriptors as below (80281b90). */
 extern u_long *D_800C426C;     /* the current draw block */
 extern ParticleEmitter D_800B02CC[8]; /* the eight template emitters */
 
