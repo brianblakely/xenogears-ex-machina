@@ -29,8 +29,8 @@ void func_802815B0(void);
 void func_80284EA4(void);      /* move the camera by the pad (L2 and the debug button) */
 
 /* This frame's held and repeated buttons per port, which the monitor reads
- * (80074700; the field's field_pad.h has the newly pressed ones and port 1's
- * mask). */
+ * (80074700 drains them; the field's field_pad.h has the newly pressed ones
+ * and port 1's mask). */
 extern u16 D_800AFE9C;         /* port 1 held */
 extern u16 D_800C3900;         /* port 1 repeated (they move a window's choice) */
 extern u16 D_800AFEA0;         /* port 2 held */
