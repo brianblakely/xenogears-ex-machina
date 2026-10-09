@@ -896,6 +896,82 @@ class MatchingTests(unittest.TestCase):
                 self.assertIn(message, result.stderr)
 
     @unittest.skipUnless(
+        shutil.which("psx-as") and shutil.which("psx-ld")
+        and importlib.util.find_spec("rabbitizer"),
+        "enter the matching Nix shell to test the cross-image check")
+    def test_cross_image_names_and_mode_table_agree_with_the_other_links(self):
+        # A resident r (80010000-80010028: res_func, fill, the mode table,
+        # res_var) and an overlay o (80020000-80020018, its .bss to 80020028)
+        # that takes res_func from a PROVIDE list and other names from a
+        # fragment: by name, by address (alias: the table) and inside an
+        # object (inner: res_var's second word).
+        def resident(entry=0x80020000, bss=(0x80020014, 0x80020024)):
+            self.link_assembly("r", (
+                ".set noreorder\n.text\n.globl res_func\n.type res_func, @function\n"
+                "res_func:\njr $31\nnop\n.size res_func, . - res_func\n"
+                f".section .rodata\n.globl table\ntable:\n.word {entry}, {bss[0]}, {bss[1]}, 1\n"
+                ".data\n.globl res_var\nres_var:\n.word 0, 0\n"),
+                "SECTIONS {\n  .r 0x80010000 : SUBALIGN(4) { r.o(.text) . = ALIGN(16); r.o(.rodata)"
+                " r.o(.data) }\n  /DISCARD/ : { *(*) }\n}\n")
+
+        def overlay(names):
+            (self.root / "o.resident.ld").write_text(names)
+            self.link_assembly("o", (
+                ".set noreorder\n.text\n.globl ov_entry\n.type ov_entry, @function\n"
+                "ov_entry:\nlui $8, %hi(res_var)\nlw $8, %lo(res_var)($8)\njal res_func\nnop\n"
+                "jr $31\nnop\n.size ov_entry, . - ov_entry\n"
+                ".bss\n.globl ov_bss\nov_bss:\n.space 0x10\n"),
+                "SECTIONS {\n  .o 0x80020000 : SUBALIGN(4) { o.o(.text) }\n"
+                "  .o_bss (NOLOAD) : SUBALIGN(4) { o.o(.bss) }\n  /DISCARD/ : { *(*) }\n}\n",
+                ["build/o/auto/undefined_funcs_auto.ld", "o.resident.ld"])
+
+        provide = self.root / "build/o/auto/undefined_funcs_auto.ld"
+        provide.parent.mkdir(parents=True)
+        provide.write_text("PROVIDE(res_func = 0x80010000);\nPROVIDE(unused = 0x80010004);\n")
+        (self.root / "r.mk").write_text(
+            "IMAGE := r.bin\nBUILD := build/r\nLINKER_SCRIPT := r.ld\nMODE_TABLE := table\n")
+        (self.root / "o.mk").write_text(
+            "IMAGE := o.bin\nBUILD := build/o\nLINKER_SCRIPT := o.ld\n"
+            "LINKER_EXTRA := auto/undefined_funcs_auto.txt o.resident.ld\n"
+            "MODE := 0\nMODE_ENTRY := ov_entry\n")
+        names = ("res_var = 0x80010020;\nalias = 0x80010010;\ninner = 0x80010024;\n"
+                 "timer = 0x1F801100;\n")
+        resident()
+        overlay(names)
+        tool = Path(__file__).resolve().parents[1] / "tools/cross_image.py"
+
+        def check():
+            return subprocess.run([sys.executable, str(tool), "r.mk", "o.mk"], cwd=self.root,
+                                  text=True, capture_output=True, check=False)
+
+        result = check()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {
+            "claim": "cross_image_agreement", "targets": 2, "names": 4, "by_name": 2,
+            "by_address": 1, "inside_object": 1, "mode_entries": 1})
+        # A name another link places elsewhere, one in no object (the fill
+        # after res_func) and a mode table that does not hold the overlay's
+        # entry and uninitialized data all fail.
+        for change, message in (
+            (lambda: overlay(names.replace("0x80010020", "0x80010024")),
+             "o: res_var = 80010024 (o.resident.ld), but r defines res_var at 80010020"),
+            (lambda: overlay(names + "gap = 0x8001000C;\n"),
+             "o: gap = 8001000c (o.resident.ld) lies in r but in no input section they place"),
+            (lambda: resident(entry=0x80020004),
+             "r: table[0] enters 80020004, not o's ov_entry (80020000)"),
+            (lambda: resident(bss=(0x80020014, 0x80020020)),
+             "r: table[0] clears 80020018-80020024, but o links its uninitialized data at"
+             " 80020018-80020028"),
+        ):
+            with self.subTest(message):
+                change()
+                result = check()
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertEqual(result.stderr, f"error: {message}\n")
+                resident()
+                overlay(names)
+
+    @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
             "psx-ld", "psx-objcopy", "psx-readelf",

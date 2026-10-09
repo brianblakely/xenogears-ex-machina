@@ -17,7 +17,7 @@ MAKEFLAGS += --no-builtin-rules
 # maspsx into the filters) fails its rule instead of leaving a partial object.
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
-.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container
+.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container cross-image
 TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
 
 # Every supported executable image: split, exact comparison, source coverage.
@@ -29,12 +29,21 @@ all-split all-coverage all-audit all-container:
 
 # The acceptance run: each target's verify with SCRIPT_SYMBOLS=strict on its
 # command line, which neither the environment nor this make's command line
-# can weaken.
+# can weaken, then the links against each other.
 all-verify:
 	@for config in $(TARGET_CONFIGS); do \
 		echo "== $$config"; \
 		$(MAKE) --no-print-directory CONFIG=$$config SCRIPT_SYMBOLS=strict verify || exit 1; \
 	done
+	@$(MAKE) --no-print-directory cross-image
+
+# After every target links: each address a link takes from another target
+# (its linker scripts' names there) must be that target's rebuilt symbol, by
+# name or else by address, or lie inside an object it places, and the
+# resident's mode table (MODE_TABLE) must hold each mode overlay's (MODE)
+# entry symbol and linked BSS bounds (tools/cross_image.py).
+cross-image:
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/cross_image.py $(abspath $(TARGET_CONFIGS))
 
 smoke:
 	@command -v psx-as >/dev/null && command -v psx-ld >/dev/null && command -v psx-objcopy >/dev/null || { echo "Enter the matching Nix shell first." >&2; exit 2; }

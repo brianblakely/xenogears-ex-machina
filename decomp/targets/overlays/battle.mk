@@ -7,6 +7,10 @@ ORIGINAL_SHA256 := 1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e
 # (800180ac) clears the words after 800c3a6c through 800d39f0 (80019560).
 # battle.data.ld asserts that the linked .bss is this span.
 BSS_END := 0x800D39F4
+# Mode 2 (main.c D_8001808C) enters resident code (func_8001B6C4) and clears
+# this BSS; after every target links, tools/cross_image.py compares the
+# bounds with this link.
+MODE := 2
 BUILD := .local/decomp/build/battle
 IMAGE := .local/decomp/build/battle.bin
 LINKER_SCRIPT := .local/decomp/battle/battle.ld
