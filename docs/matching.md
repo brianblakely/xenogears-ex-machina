@@ -377,6 +377,73 @@ draft has no measured candidate difference. Compilation or linking failures fail
 the audit; they are never counted as matches. This diagnostic does not replace
 `all-verify` or measure data/layout differences outside the selected draft functions.
 
+## Names
+
+splat's placeholders (`func_`/`D_`/`jtbl_` names, units and `.s` files named by an
+address or by their image number, parameters named `argN` or `aN`) give way to names
+from which a reader, often an agent, knows what a symbol is and which module owns
+it, and finds it with one grep:
+
+- Game code and data are lower snake_case. PsyQ functions and library variables
+  keep the SDK's spelling (`LoadImage`, `CdRead`, `_card_info`); a placeholder in an
+  `sdk` range gets its PsyQ name only where its comment or decomp/include/psyq says
+  the code is that routine, else its library as prefix (`libgte_`, `libcd_`).
+- Every game name starts with its module's prefix, each image's its own: in the
+  resident the subsystem of the header declaring it (decomp/include/resident: `cd_`,
+  `console_`, `gpu_`, `heap_`, `menu_state_`, `mode_`, `model_`, `pad_`, `sound_`,
+  `sprite_`, `stream_`, `text_`, `window_`, `game_` for GameData, `formation_`,
+  `task_`; `boot_` and `mode_` for the boot code and dispatcher), in each overlay one
+  from its role (`field_`, `battle_`, `worldmap_`, `menu_`, `field_debug_` for
+  debug595, `battle_debug_` for debug2611, `movie_mode_`, `movie_` for the mdec
+  library, `battle_mod_<role>_` for each 0x801fc000 module). The longest declared
+  prefix a name starts with must be its own image's (`menu_state_` is the resident's,
+  `menu_` the menu's); a subsystem word may follow (`field_event_`).
+- Functions: prefix and verb phrase (`field_update_camera`), predicates `is_`/`has_`/
+  `can_`, a script VM's handlers prefix, VM and the mnemonic its decoder prints
+  (tools/analysis, docs/scripts). Data: prefix and noun phrase; tables plural or
+  `_table`, counters `_count`, timers `_timer`, flag words `_flags`, pointers to the
+  current object `current_*`. Parameters are named from their use.
+- A name states what the code does, from the code, its reviewed comments, the docs
+  and the decoders; a game-level meaning only where established, else the mechanics
+  (`battle_scale_vectors_by_table`); never unknown, unk, maybe, misc, stuff, helper
+  or a bare do/handle/process. Names are unique (the resident counts once), collide
+  with no SDK name, macro, typedef, tag, keyword or other identifier, and stay under
+  about 48 characters.
+- A unit named by an address or its image number becomes `<prefix>_<subsystem>.c`
+  (descriptive names stay; its overview comment keeps its address range); an
+  INCLUDE_ASM'd `.s` file takes its function's name.
+
+`tools/names.py` (module docstring) applies a mapping in the matching shell once
+every target links:
+
+```sh
+python3 tools/names.py inventory               # .local/names/<image>.tsv
+python3 tools/names.py check names.tsv         # the rules above; what stays unnamed
+python3 tools/names.py apply names.tsv --dry-run [--overrides overrides.tsv]
+python3 tools/names.py apply names.tsv [--overrides overrides.tsv]
+make -C decomp all-split && make -j8 -C decomp all-verify && make -C decomp all-coverage
+```
+
+A mapping row is `image kind old new unit confidence evidence`: kind func, data,
+jtbl, unit, asm, param (old `FUNCTION.argN`) or prefix (each image's declared
+prefixes; a resident subsystem's row names its header as unit). `apply` maps a token
+in a file the build reads to what every target reading it binds it to (as
+cross_image.py binds imports; where they differ it stops), and elsewhere (docs,
+tools, tests) only where one image holds the name or a path names the image; it
+lists each other occurrence with file:line for an overrides file (`file line old
+image`, line `*` for the file, image `-` to keep it). It writes each renamed
+definition's address into its comment and each new name into the symbol file the
+split reads it from, moves units and `.s` files with git mv together with their .mk
+settings, yaml subsegments and INCLUDE_ASM folders, never touches prompt.md or
+plan.md, and changes nothing more when run again; `.local/names/apply.tsv` lists
+every change. `check` refuses two names a split could not keep: a label splat writes
+inside another symbol's generated file (`alabel`: twelve SDK words in text), which a
+name of its own would split out of the file INCLUDE_ASM includes, and an alias given
+its definer's name where one unit sees both (worldmap.h's `D_80062648_sequence`). A
+41-row trial over 170 files passed all-split, all-verify (26/26 and cross-image),
+all-coverage, the unit tests and `source_archive.py --check`; a mechanical name for
+every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and coverage.
+
 ## What counts as recovered source
 
 - An unused aggregate local (`RECT unused; /* unused in the original; reserves 8
