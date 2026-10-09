@@ -50,7 +50,6 @@ extern void (*D_8009CD40)(void); /* per-frame hook */
 extern MATRIX D_8009BE4C; /* set to the identity by each mode's set-up */
 extern MATRIX D_8009A180; /* identity matrix */
 extern s32 D_8009BD0C;    /* the saved map at entry less 0x400 (event variable 2 on leaving) */
-extern u8 D_8003634C[];   /* resident VSync callback */
 
 /* The world map's game data words, by names of their own where the entry
  * and the frame loop address them so: the world map's first flag word

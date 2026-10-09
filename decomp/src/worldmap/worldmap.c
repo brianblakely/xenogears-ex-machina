@@ -46,7 +46,7 @@ void func_80070CFC(void) {
     func_800762FC();
     DrawSync(0);
     VSync(0);
-    VSyncCallback(D_8003634C);
+    VSyncCallback(func_8003634C);
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
