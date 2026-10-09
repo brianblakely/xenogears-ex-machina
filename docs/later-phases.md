@@ -63,9 +63,9 @@ It does not prove:
 ### Keeping the reference while porting
 
 - `make -C decomp all-verify` must stay at 26/26 after any change to
-  `decomp/src` or `decomp/include`. Public CI runs only the toolchain smoke test
-  (`.github/workflows/ci.yml`), because the comparison needs the user's discs,
-  so the gate is local.
+  `decomp/src` or `decomp/include`. Public CI runs the host build checks and the
+  toolchain smoke test, not `all-verify` (`.github/workflows/ci.yml`), because
+  the comparison needs the user's discs, so the gate is local.
 - A cheap guard that needs no discs: the build pipes `psx-cpp` into `psx-cc1`
   with per-unit flags recorded in `<unit>.cflags` (`cc1_of`, decomp/Makefile).
   No source uses `__LINE__`, `__FILE__`, `__DATE__`, `__TIME__` or `__COUNTER__`.
@@ -554,9 +554,12 @@ place.
 draw environments per mode, projection settings, ordering tables, dithering,
 semi-transparency, texture windows, framebuffer feedback, the mask bit, 24-bit
 movie display and the renderers' culling. That includes the LZCR quirk a port's
-GTE must keep. [rendering-behavior](../analysis/formats/rendering-behavior.md)
-records the observed packets of the Disc 1 forest slice. These facts constrain
-a renderer as well:
+GTE must keep. In short, video is NTSC only. Most modes double-buffer 320x224;
+the world map uses 320x216, one field map 640x224, arena scenes 640x218, and
+movies 320x240 with 24-bit MDEC frames.
+[rendering-behavior](../analysis/formats/rendering-behavior.md) records the
+observed packets of the Disc 1 forest slice. These facts constrain a renderer as
+well:
 
 - **There is no draw-free update.** Drawing passes advance state. In the field
   frame (field.c `func_8007554C`) these are the sprite task lists inside the
@@ -602,6 +605,14 @@ a renderer as well:
   split parts (`func_80075B44`, sprite.c `func_8001E3D8`). Model types sort by
   average, farthest or nearest vertex (`model_depth.s`). A plain depth buffer
   breaks these intentional masks.
+- **Primitives.** 3D models use the 17 types of `D_8004FE50` (main_8002C3E8.c):
+  POLY_F3, FT3, G3, GT3, flat quads, FT4, G4, GT4 and the environment-mapped FT3
+  of type 16. Shipped models use 13 of them
+  ([dispatch-tables.md](scripts/dispatch-tables.md)). Their packets are built
+  once at load (`func_8002C8CC`). Each frame the renderers rewrite only screen
+  coordinates and some colours or UVs, and link the packets (`model_draw.s`).
+  Other code builds SPRT, TILE, LINE and the DR_* environment packets inline,
+  with the libgpu setters and the OT helpers (`ot_link.s`, resident/gpu.h).
 
 | Pre-projection seam | Where | Captures |
 | --- | --- | --- |
@@ -716,7 +727,7 @@ in replays.
 | How often battle frames overrun on hardware | `D_80059494` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `D_80059494` from captures, or an accepted lag-free definition for Phase 3 parity |
 | Formation and encounter-set layout | worldmap/worldmap.h keeps `EncounterSet` opaque; field component 6 decodes into `D_800658DC`, which field.h names "messages" and battle_core.h "scene settings"; the battle AI census does not cross-check formations ([battle-ai.md](scripts/battle-ai.md)) | one layout from the readers (field, world map, battle, ovl2615, ovl3087) and a decoder |
 | Conflicting shared views | `D_8006F8EA` is a u16 flags word in ovl2596.c (and in `func_8009A2D4`) but a u8 per-part durability array in battle/combatant.h (battle_80079ED8.c, battle_8008CCCC.c); targets still keep partial views of the game data beside resident/gamedata.h | reconcile from the readers, then one canonical type per address |
-| The disc and stream boundary | summarised above from the code; no capture records disc 2 media, swap timing or CD callback order | a disc-swap and streaming capture on both discs |
+| The disc and stream boundary | summarised above from the code; no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
 | Missing media decoders | no IDCT, colour conversion, XA ADPCM or SPU ADPCM in the repository | implementations in Phase 2, tested against captured frames and audio |
