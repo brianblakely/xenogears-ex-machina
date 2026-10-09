@@ -1629,6 +1629,38 @@ class MatchingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "baseline image does not match"):
                 nonmatching_score.audit_drafts(config, nonmatching_score.config(config), [])
 
+    def test_compiler_warnings_count_each_place_once_by_kind_and_callee(self):
+        from tools.compiler_warnings import parse, summary
+
+        builtin = "conflicting types for built-in function `memcpy'"
+        load = "passing arg 2 of `LoadImage' from incompatible pointer type"
+        project = "passing arg 10 of `RotTransPers4' from incompatible pointer type"
+        integer = "assignment makes integer from pointer without a cast"
+        log = [
+            "== targets/overlays/menu.mk",
+            f"/tree/decomp/include/psyq/libc.h:11: warning: {builtin}",
+            "/tree/decomp/src/a.c: In function `f':",
+            f"/tree/decomp/src/a.c:7: warning: {load}",
+            f"/tree/decomp/src/a.c:9: warning: {project}",
+            # the header again from another unit, and the same unit in a second target
+            f"/tree/decomp/include/psyq/libc.h:11: warning: {builtin}",
+            f"/tree/decomp/src/a.c:7: warning: {load}",
+            f"/elsewhere/b.c:3: warning: {integer}",
+            "make: Leaving directory",
+        ]
+        found = parse([line + "\n" for line in log], "/tree")
+        self.assertIn(("decomp/src/a.c", 7, load), found)
+        self.assertIn(("/elsewhere/b.c", 3, integer), found)
+        counts = summary(found)
+        self.assertEqual(counts["unique"], 4)
+        self.assertEqual(counts["kinds"], {
+            "passing arg N of `_' from incompatible pointer type": 2,
+            "conflicting types for built-in function `_'": 1,
+            "assignment makes integer from pointer without a cast": 1,
+        })
+        self.assertEqual(counts["callees"], {"LoadImage": 1, "RotTransPers4": 1})
+        self.assertEqual(counts["arguments"], {"LoadImage arg 2": 1, "RotTransPers4 arg 10": 1})
+
 
 if __name__ == "__main__":
     unittest.main()

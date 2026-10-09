@@ -961,6 +961,7 @@ tools/authoring/package.json
 tools/authoring/qualification.ts
 tools/authoring/qualify.py
 tools/authoring/tsconfig.json
+tools/compiler_warnings.py
 tools/data_users.py
 tools/decomp_rename.py
 tools/extraction/README.md

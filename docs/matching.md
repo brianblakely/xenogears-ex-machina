@@ -282,6 +282,21 @@ understood but does not yet match stays linked as assembly inside
 `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report counts
 it separately.
 
+Callers pass the types of the shared prototypes, which in `psyq/` are the SDK's.
+Data the SDK names has its type (VRAM words and ordering tables `u_long`, the GTE's
+depth, flag and screen outputs `long`, a `CdlLOC`, a `CdlCB`); otherwise the call
+casts as the SDK's samples do (`(long *)&poly->x0`, `(u_long *)` for image data
+built bytewise, `(u_char *)` for bzero). `psyq/libc.h` declares memcpy and memset
+unprototyped, as PsyQ 4.6's MEMORY.H does "to avoid conflicting" with GCC's
+built-ins, which they keep: field 800AB808's copy needs the built-in memcpy. The
+original slot39_801DBE54 did not have it (its two 0xa38-byte save copies call
+memcpy, which the built-in moves inline), so that unit declares a prototype, and
+cc1's "conflicting types for built-in function" warning there is inherent. Every
+other unit builds the same under either declaration; memset's changes none. To
+count the warnings, rebuild every unit and read the log:
+`make -B -j8 -O -C decomp all-verify > .local/build.log 2>&1`, then
+`python3 tools/compiler_warnings.py .local/build.log` (`--list` prints each one).
+
 A new file (a split or data-only unit, an overlay-number unit, a `.data.ld` alias
 script, authored `.s`) also goes into packaging/source-files.txt, which lists every
 tracked file. `source_archive.py --check` validates only the listed paths, so
