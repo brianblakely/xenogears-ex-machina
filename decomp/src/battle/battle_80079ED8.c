@@ -2339,8 +2339,8 @@ void func_800800E8(u8 member) {
 /* Run party member `member`'s command menu: reset the turn state's menu
  * fields, take the AP (800d32a0 +4) as spent and available, wait for its
  * panel to open, mark the unavailable menu items (status +0x7a bits; with
- * character 7 in a gear two more, with character 4 the items whose
- * equipment slots are broken), open the first page (1 attack, 2 when the
+ * character 7 in a gear two more, with character 4 items 0/2 while its
+ * first/fourth ammo is spent), open the first page (1 attack, 2 when the
  * status bars it, 4 with item 9 blocked; 0x10/0x13 in a gear) and frame the
  * member and its target. Then, until the menu is done, the battle ends or
  * an event runs, redraw a changed page (8008d598) and run the page's
@@ -2380,17 +2380,17 @@ void func_80080160(u8 member) {
     }
     if (D_800D2D24[member] == 4) {
         if (D_800D32A0[member].unk1 == 0) {
-            if (D_8006F8BA[D_8006D634.characters[4].entryItems[0]] == 0) {
+            if (D_8006D634.ammo[D_8006D634.characters[4].entryItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006F8BA[D_8006D634.characters[4].entryItems[3]] == 0) {
+            if (D_8006D634.ammo[D_8006D634.characters[4].entryItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         } else {
-            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0]] == 0) {
+            if (D_8006D634.gearAmmo[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]] == 0) {
+            if (D_8006D634.gearAmmo[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         }

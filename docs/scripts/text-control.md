@@ -31,6 +31,7 @@
 ```sh
 python3 -m tools.analysis.text_control --sweep    # aggregate, both discs
 python3 -m tools.analysis.text_control --list field --item 2 --disc 1 > .local/text-field-2.txt
+python3 -m tools.analysis.text_control --list field --item 2 --disc 1 --chars > .local/text-field-2-chars.txt
 ```
 
 `--list GROUP` (system, field, menu-labels, worldmap-labels, menu-data, menu-mode,
@@ -40,12 +41,52 @@ file, as the sweep names them): each entry's offset, (columns, rows) and tokens,
 glyphs as hex codes and controls by mnemonic, then the texts no entry reaches.
 Listings stay under `.local/`.
 
+`--chars` prints the glyphs whose characters the disc's own data gives as those
+characters and every other glyph as its hex code in braces (`{25}ei`). A line at the
+top names the characters. The tool holds no font map; `character_map` reads it
+from two sources:
+
+- The number code. `func_80033CF0` writes a number's digits as the codes
+  palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
+  window controls pass palettes 0 and 1. The menus write the blank of a number's
+  leading zeros as code 0xC3 (slot39 `func_801DC3D8`, ovl2601 `func_801CDD14`,
+  ovl2602 `func_801D1304`), which the name entry also enters for an empty cell
+  (ovl2600 `func_801CB33C`). Resource 27 gives these codes 25 one-byte glyphs on
+  both discs: 0x61-0x6A and 0x16-0x1F the digits, 0x7E and 0x13 the minus sign,
+  0x7D and 0x11 the plus sign, 0x10 the blank.
+- The memory card titles, directory (0x10, 1) file 1. `func_801C6400` copies line
+  `D_8006EF64` (30 bytes of two-byte Shift-JIS) into the save header. The menu
+  turns ASCII into Shift-JIS through its table `D_801EA610` (`func_801E65E4`), so
+  the inverse of that table reads the titles as text: 68 distinct ones. A title
+  with known and unknown characters names the glyphs of the one whole text that
+  fits it, if exactly one does. Such a text has the same length, the known glyphs
+  at their characters, and the other characters at glyphs not yet known, equal
+  characters at equal glyphs and different ones apart. Each round keeps the
+  titles found in every largest set of findings that agree (no glyph read as two
+  characters, no character with two glyphs) and repeats with the glyphs they add.
+  Agreement matters: in the first round "Night Purge" fits exactly one whole text
+  (entry 10 of enemy data file 110), and the largest agreeing set is the round's
+  three other titles, so it adds nothing.
+
+On both discs this gives 50 glyphs. Five titles align, all as world area names
+(Lahan Village, Mountain Path, Road to Nisan, Babel Tower, Dazil), and give 25
+letters: B D L M N P R T V and a b d e g h i l n o r s t u w z. Every other glyph
+stays hex: the other 27 letters, all punctuation and every two-byte glyph. Night
+Purge is the only other title that ever fits exactly one whole text.
+
+Open: the other letters. The name entry grid (ovl2600 `D_801CBEC0`) shows the
+codes 0x20-0x39 and 0x3D-0x56 in ascending order, each a run of 26 across two of
+its rows, and resource 27 gives those codes the glyphs of the same number. Each
+aligned letter sits at its place in the alphabet within one of these runs. The
+grid's order alone names none of the other glyphs, so they stay hex.
+
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files
 skipped), 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D
 occurs only on disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08, 0F 09, 0F 0B,
 0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The sweep
 decodes them too, outside the counts: they form 37 whole texts ending in 00
-(messages no entry shows). The 62 initial names decode as 392 glyphs.
+(messages no entry shows). The 62 initial names decode as 392 glyphs. The
+sweep also reports each disc's `--chars` glyphs (above: 50 on each disc).
 
 Notes from the handler:
 
