@@ -388,7 +388,8 @@ _PRIMARY = """
 70 face_party_member func_8009A1E4 2 next u8@1
     face the actor of party slot byte 1
 71 request_battle func_80093568 3 wait iv@1
-    once field control allows, leave the field for module operand 1; yields
+    once field control allows, request a battle with formation operand 1 of
+    the map's encounter set (80059508); yields
 72 select_music func_8008F724 3 wait iv@1
     select field music operand 1 (8008f7b8, 8004f340 = 0) once music can change
 73/1=00 emitter_skip func_80086C34 2 next u8@1
@@ -691,7 +692,8 @@ f6 heading_lock func_8008E8C8 2 next u8@1
     by byte 1 clear (0) or set (1) flag 0x8000, or set layer flag 0x80000 (2)
 f7 draw_random_picks func_8008E85C 5 next iv@1 iv@3
     draw operand-3 (at most 32) distinct random numbers 1..operand 1
-    + 1 into 800b22a0 (8008e718)
+    + 1 into 800b22a0 (8008e718): the random encounter draw's countdowns
+    (80079288 draws only while operand 1 and operand 3 are nonzero)
 f8 set_flag_bits func_8008E59C 4 next u8@1 u16@2
     by byte 1 set (0-3) or clear (4-7) operand 2 in the low or high half of the
     actor's flags or layer flags
@@ -1025,7 +1027,7 @@ _EXTENDED = """
     when 800adbd8 is set, clear it and end the field with kind 3 into
     game mode operand 1
 84 request_battle_field func_800933F8 9 wait iv@1 iv@5 iv@7
-    once field control allows request battle operand 1 as 71, also
+    once field control allows request battle formation operand 1 as 71, also
     setting map operand 5 at entry operand 7 unless it is 7fff
 85 store_movie_frame func_8008A2A0 3 next var@1
     store the current movie frame (800b06a0) in a variable

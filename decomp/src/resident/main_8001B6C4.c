@@ -78,7 +78,7 @@ extern u8 D_8006D635[]; /* the second byte of the saved name slots */
  * attributes D_8005A3C0 that follow them. */
 extern u16 D_8005A3A0[];
 u8 D_800594CC;
-u8 D_8005947C; /* pending scene + 1 */
+u8 D_8005947C; /* the next battle's formation + 1 (resident/mode.h) */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
@@ -122,9 +122,9 @@ void func_8001B970(void) {
     D_8005947C = 0;
 }
 
-/* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
+/* Load the battle stage that the formation's byte 2 (8006f9de) names (800379d8). */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DC[2], 0, &D_80059470, &D_80059520, &D_8005949C);
+    func_800379D8(D_8006F9DC.stage, 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 u8 D_800594F8;

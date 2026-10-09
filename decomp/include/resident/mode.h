@@ -5,6 +5,7 @@
 #include "gpu.h"
 #include "cd.h"
 #include "gamedata.h"
+#include "formation.h"
 
 /* Resident startup and the mode dispatcher (0x80019524-0x80019d48). */
 
@@ -34,10 +35,9 @@ typedef struct {
 
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
-extern u8 D_8006F9DC[0x20]; /* scene state: [2] the scene selector */
-extern u8 *D_80059470;  /* the scene music sequence */
+extern u8 *D_80059470;  /* the battle stage file (func_800379D8; ovl2615 func_801E7210) */
 extern s32 D_80059520;
-extern u8 *D_8005949C;  /* the scene music instrument data */
+extern u8 *D_8005949C;  /* the battle scene data (func_800379D8; ovl2615 func_801E7210) */
 
 /* Game state reset by 8001aadc. */
 extern s32 D_8004F2F4, D_8004F2F8, D_8004F2FC, D_8004F300, D_8004F304, D_8004F308;
@@ -130,10 +130,8 @@ extern void *D_8005A450[4];
 extern s32 D_80065B08;
 extern u8 D_80062648[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
 extern s32 D_80065848[5];
-extern u8 D_8005947C; /* the pending scene + 1 */
-extern u8 D_80059508;
+extern u8 D_8005947C; /* the next battle's formation + 1 (formation.h) */
 extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) */
-extern u8 D_80065ADC[16];
 extern s16 D_8006BE2C[3]; /* per party slot (the field) */
 extern u8 D_80059180; /* battle music playing */
 

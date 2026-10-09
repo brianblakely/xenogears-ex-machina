@@ -705,7 +705,7 @@ converted to C per unit. What converting the targets' `.data` established:
   its full 0x2358 bytes). Each unit defines its own as statics. Where nothing
   addresses the end of a `-G0` unit's larger object, a word of its own would be
   small and lie in the unit's `.sbss`, so the object reaches to the next one (the
-  number codes D_8005A0C8[14], the music file list D_8005A1DC[4]). The SPU malloc
+  number codes D_8005A0C8[14], the stage file list D_8005A1DC[4]). The SPU malloc
   table D_8006FAC8, 8 * (4 + 1) bytes, ends the BSS; link.ld names its last word
   D_8006FAEC from the BSS end for the entry point and the mode table and asserts
   the span.

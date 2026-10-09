@@ -68,7 +68,7 @@ Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u
                        s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font); /* open */
 void func_800379B4(s32 task); /* set D_80050618, the menu overlay's task index */
 void func_800379C8(char *format, ...); /* report printf */
-s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank); /* load scene music */
+s32 func_800379D8(s32 stage, s32 variant, u8 **stage_file, s32 *unused, u8 **scene); /* load a battle stage */
 void func_80037B88(s32 a0);
 
 /* Hand-written ordering table link helpers (800315a0-80031894). */

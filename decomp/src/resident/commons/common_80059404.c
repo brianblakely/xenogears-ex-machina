@@ -43,10 +43,10 @@ u8 D_80059460; /* menu screen */
 s32 D_80059464; /* active main-list tasks */
 u8 D_80059468[3]; /* battle */
 u8 D_8005946C;
-u8 *D_80059470; /* the scene music sequence */
+u8 *D_80059470; /* the battle stage file (func_800379D8; ovl2615 func_801E7210) */
 s32 D_80059474; /* unreferenced */
 s32 D_80059478; /* voice count of the effect channels */
-u8 D_8005947C; /* pending scene + 1 */
+u8 D_8005947C; /* the next battle's formation + 1 (resident/mode.h) */
 void *D_80059480; /* heap marker for the high-memory reservation */
 u8 D_80059484; /* play time hours */
 s32 D_80059488; /* vertical blank count */
@@ -54,7 +54,7 @@ u16 D_8005948C; /* pad buttons pressed */
 u16 D_80059490; /* pad buttons pressed, second port */
 s16 D_80059494;
 s32 *D_80059498; /* lit-color cache */
-u8 *D_8005949C; /* the scene music instrument data */
+u8 *D_8005949C; /* the battle scene data (func_800379D8; ovl2615 func_801E7210) */
 s32 D_800594A0; /* unreferenced */
 u16 D_800594A4; /* pad buttons repeated */
 u16 D_800594A8; /* pad buttons repeated, second port */

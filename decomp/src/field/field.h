@@ -598,7 +598,7 @@ typedef struct FieldWork {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    u16 encounter_music[16];   /* 2270: per encounter kind */
+    u16 encounter_music[16];   /* 2270: per formation of the map's set */
     s16 battle_music;          /* 2290: the chosen encounter's battle music */
     u8 unk2292[2];
     s32 unk2294;               /* 2294 */
@@ -870,7 +870,7 @@ enum {
     BUNDLE_SPRITES,
     BUNDLE_IMAGES,
     BUNDLE_EVENTS,
-    BUNDLE_MESSAGES,
+    BUNDLE_ENCOUNTERS, /* the encounter set and its weights (resident/formation.h) */
     BUNDLE_8,
     BUNDLE_ZONES
 };
@@ -893,7 +893,6 @@ extern FieldBundle *D_8005A4E0;
 #define BUNDLE_SIZE(k) (*(s32 *)((u8 *)D_8005A4E0 + 0x10C + (k) * 4))
 #define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)D_8005A4E0 + 0x130 + (k) * 4) + (s32)D_8005A4E0))
 extern SpriteSlotTable D_800B1F78;
-extern u8 D_800658DC[];      /* messages */
 extern s32 D_800AFD10;       /* attributes before the first triangle */
 extern s32 D_8004F330;
 extern s32 D_8004F334;

@@ -652,7 +652,7 @@ void func_80073530(void) {
     D_8009D77C = base + area->off20;
     D_8009D7C8 = base + area->off24;
     for (i = 0; i < 16; i++) {
-        D_8009D73C[i] = D_8009C180 + area->models[i];
+        D_8009D73C[i] = D_8009C180 + area->encounters[i];
     }
     D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
     D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
@@ -1415,10 +1415,11 @@ void func_80075D4C(void) {
     }
 }
 
-/* Roll an encounter for the terrain at a position and a party level: pick a
- * formation by the bracket's weights and copy the terrain's encounter set.
- * Returns 0 when the bracket has no formations. */
-s32 func_80075E7C(VECTOR *position, s32 level) {
+/* Roll an encounter for the terrain at a position and the scene id (event
+ * variable 0, D_8006EF64): pick a formation by the weights of the scene id's
+ * bracket and copy the terrain's encounter set. Returns 0 when the bracket
+ * has no formations. */
+s32 func_80075E7C(VECTOR *position, s32 scene) {
     u8 weights[16];
     s32 kind;
     s32 bracket;
@@ -1434,7 +1435,7 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
         kind = D_8009A3A0[kind];
     }
     bracket = 1;
-    while (level >= D_8009B578[bracket]) {
+    while (scene >= D_8009B578[bracket]) {
         bracket++;
     }
     bracket--;

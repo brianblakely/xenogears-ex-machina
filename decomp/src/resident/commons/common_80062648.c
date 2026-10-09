@@ -9,7 +9,7 @@ s32 D_8006585C[27]; /* unreferenced */
 u8 *D_800658C8; /* battle scene data */
 void *D_800658CC;
 s32 D_800658D0[3]; /* unreferenced */
-u8 D_800658DC[16][0x20]; /* encounter sets: battle, field, world map */
+struct EncounterSet D_800658DC; /* battle, field, world map, ovl2606 */
 u8 D_80065ADC[16]; /* field, debug595 */
 s32 D_80065AEC[4]; /* unreferenced */
 void *D_80065AFC[3]; /* party character file blocks */

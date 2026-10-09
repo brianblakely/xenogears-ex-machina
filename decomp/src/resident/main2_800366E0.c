@@ -19,16 +19,17 @@
 #include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
- * (80059394), the larger format defaults and music file list in its .bss
+ * (80059394), the larger format defaults and stage file list in its .bss
  * (8005a1cc), as the original assembler placed them (SBSS_main2_800366E0 in
  * slus_006.64.mk). */
 static Console *D_80059394;
 static RECT D_80059398;   /* the console font CLUTs' VRAM rectangle */
 static s32 D_800593A0;    /* the console block is not owned (not released) */
 static FormatSpec D_8005A1CC; /* the format defaults */
-/* The music file list (func_800379D8): sequence, wave bank and the zero
- * entry ending it, and a fourth entry that nothing addresses (an 8-byte
- * object of its own would be a small variable, in .sbss). */
+/* The battle stage file list (func_800379D8): the stage file, the scene
+ * data and the zero entry ending it, and a fourth entry that nothing
+ * addresses (an 8-byte object of its own would be a small variable, in
+ * .sbss). */
 static FileRequest D_8005A1DC[4];
 
 void func_800370DC(s32 c);
@@ -687,17 +688,17 @@ INCLUDE_ASM("decomp/src/resident", func_800379C8);
 void func_800379D0(void) {
 }
 
-extern u8 *D_800658C8;            /* the loaded music's instrument data */
-
-/* Load the music of `scene` from directory 12/3: its sequence (file
- * 6 + 2 * scene) and wave bank (file 7 + 2 * scene + `variant`). Returns 0
- * with the sequence, 0 and the bank data after its first word, or -1 with
- * zeros when the directory has no such scene. */
-s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank) {
+/* Load battle stage `stage` from directory 12/3: its stage file (file
+ * 6 + 2 * stage) and its scene data (file 7 + 2 * stage + `variant`, whose
+ * first word is its size), which ovl2615 func_801E7210 sets up as its
+ * `stage` and `scene`. Returns 0 with the stage file, 0 and the scene data
+ * after its first word (also in D_800658C8), or -1 with zeros when the
+ * directory has no such stage. */
+s32 func_800379D8(s32 stage, s32 variant, u8 **stage_file, s32 *unused, u8 **scene) {
     s32 group;
     s32 index;
     s32 result = 0;
-    u8 *samples;
+    u8 *scene_file;
     u8 *data;
     s32 file;
     s32 base;
@@ -705,15 +706,15 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
     func_800284B4(&group, &index);
     func_80028470(12, 3);
     func_80032498(4, 0);
-    if (scene >= func_80028928(5) / 2) {
+    if (stage >= func_80028928(5) / 2) {
         result = -1;
-        *sequence = NULL;
+        *stage_file = NULL;
         *unused = 0;
-        *bank = NULL;
+        *scene = NULL;
     } else {
-        base = scene * 2;
-        samples = func_80031BDC(func_800288EC(base + 7 + variant), 1);
-        func_800320A4(samples);
+        base = stage * 2;
+        scene_file = func_80031BDC(func_800288EC(base + 7 + variant), 1);
+        func_800320A4(scene_file);
         file = base + 6;
         data = func_80031BDC(func_800288EC(file), 1);
         func_800320A4(data);
@@ -721,13 +722,13 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
         D_8005A1DC[0].destination = data;
         base += variant + 7;
         D_8005A1DC[1].file = base;
-        D_8005A1DC[1].destination = samples;
+        D_8005A1DC[1].destination = scene_file;
         D_8005A1DC[2].file = 0;
         D_8005A1DC[2].destination = NULL;
         func_80029AFC(D_8005A1DC, 0, 0);
-        *sequence = data;
+        *stage_file = data;
         *unused = 0;
-        *bank = (u8 *)D_8005A1DC[1].destination + 4;
+        *scene = (u8 *)D_8005A1DC[1].destination + 4;
         D_800658C8 = (u8 *)D_8005A1DC[1].destination + 4;
     }
     func_80028470(group, index);
