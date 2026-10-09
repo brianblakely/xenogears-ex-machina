@@ -136,6 +136,24 @@ script assignment win silently and makes the name absolute; 63 names were so bou
 before, the resident's D_800308D0 among them). The resident pads its file to the
 link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 
+`verify` then reports each name a linker script defines (a used `PROVIDE`, a
+`.data.ld` or any other `LINKER_EXTRA` fragment) inside the target's own image
+or uninitialized data (`matching_coverage.py --script-symbols`): an address
+copied from the original where the link should place an object, which the exact
+comparison cannot see move. Names of other images (the `*.resident.ld` fragments,
+an overlay's addresses in the resident) lie outside and pass. `BSS_END` in a
+target gives the end of its uninitialized data past the image, the bound its
+loader clears (the resident's entry point, the mode table entries), so the check
+and the coverage report also see the variables the link does not place yet.
+`LINK_VIEWS` names a script whose names there are views, expressions of linked
+symbols (`battle.data.ld`), with the reason beside it; a number such a script
+assigns there is still reported, and so is a views script that defines no view.
+While the world map, menu, movie and resident uninitialized data is converted,
+`SCRIPT_SYMBOLS=warn` (the default) prints the remaining names and passes;
+`make -C decomp all-verify SCRIPT_SYMBOLS=strict` (or `SCRIPT_SYMBOLS=strict` in
+the environment) fails on any, and once none is left the default in
+decomp/Makefile becomes `strict`.
+
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis -c \
@@ -454,7 +472,20 @@ converted to C per unit. What converting the targets' `.data` established:
   names and views of their own (the battle area's slots, work and drawing state; the
   camera's matrix), hundreds of times and also from CDK units, where one symbol's
   members share a `%hi`: `battle.data.ld` defines those names from the objects'
-  linked addresses.
+  linked addresses. It also names two tables from before them (the timer reload
+  rows, the combo step table one byte before D_800C34B4): GCC 2.6.3 forms such a
+  base with `la` only for a declared array, and `D_800C34B4[step][paid - 1]` puts
+  the -1 in the load instead. Where the index form compiles alike, C indexes the
+  object (battle's party panel name glyphs, `D_800C3068[member * 24 + 7 + i]`).
+- An address the code uses as an object of its own is one, also inside data that
+  stays generated: the resident passes the disc data ahead of its code to the disc
+  initialiser as its boot mode word, its sector-24 file index buffer and its sector-40
+  directory table, so these are three rodatabins (`disc_mode`, `disc_files`,
+  `disc_directories`), each name its own object. Generated data that points into a
+  block of strings is relocated against the block once spimdisasm knows its size: a
+  `size:` in symbol_addrs.txt (the resident's libcd command name tables and the
+  libraries' `$Id:` strings) makes each pointer word the block's symbol plus an
+  offset rather than a number.
 - GCC emits a function's string literals into `.rodata` ahead of its code, in the order
   of first use, and its jump tables after it; an initializer's literals in reverse
   order once the definition ends (menu6's gear list and heap tag names). A unit emits
@@ -473,7 +504,12 @@ converted to C per unit. What converting the targets' `.data` established:
   Where it lies past the file (field) it is not loaded, and the yaml still lists each
   `.bss` subsegment with its vram and the segment's `bss_size`: splat then leaves
   their names out of `undefined_syms_auto.txt`, so the link places every variable
-  from its definition.
+  from its definition. Each target owning such data sets `BSS_END`, the bound its
+  loader clears: coverage counts what generated assembly or only a linker-script
+  name still places up to there as `bss_placeholder` (the resident's 49ABC.bss.s and
+  its last word D_8006FAEC, which the entry point clears but `bss_size` leaves out;
+  menu's larger variables, the world map, movie), and `verify` reports each such
+  name.
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
@@ -602,8 +638,15 @@ every function lies inside its .text input section and overlaps no other, so
 `text_bytes` is exactly the sum of the .text input sections.
 From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
 input section and, where an image holds its uninitialized variables as zeros, each
-.bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
-alignment gaps and a packer's tail belong to no input section). A function is `c` only
+.bss/.sbss input section of a loaded output section (alignment gaps and a packer's
+tail belong to no input section). The uninitialized data past the image, which the
+file does not hold, counts apart (`bss_noload_bytes`, `bss_noload_classes`): each
+no-load .bss/.sbss input section as `bss` from a C unit or `bss_placeholder` from
+generated assembly, and as `bss_placeholder` every byte up to the target's
+`BSS_END` that no input section holds, outside the no-load output sections or named
+by a symbol there (a variable only a linker-script name places; the fill between
+input sections is not counted). `remaining_bss_placeholder_bytes` totals that
+remaining work. A function is `c` only
 where its unit's cc1 output emitted it (`.ent`); one an INCLUDE_ASM'd or
 INCLUDE_RODATA'd file defines is `sdk` or `handwritten` by range, `nonmatching` as the
 fallback of a NON_MATCHING candidate (the only source scan), else `asm`. A data byte is
@@ -624,7 +667,8 @@ authored `.s` unit's too, so the classification stays the record of every
 handwritten routine. `make coverage` passes these files as `CLASSIFICATION`, and
 `matching_coverage.py ... --list CLASS` prints a class's functions, its .text bytes
 outside every function and its data ranges with their section and object (`placeholder`,
-`included`, `asset`, `bss`, ...).
+`included`, `asset`, `bss`, ...); `bss_placeholder` ranges are split at each symbol, so
+each remaining variable shows with its extent.
 
 The report attributes a C unit's bytes by where GAS put them, not by how the source
 spells them. `make coverage` compiles each C unit again (`<unit>.cov.o` beside the

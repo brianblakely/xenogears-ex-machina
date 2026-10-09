@@ -3,6 +3,9 @@ CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/worldmap.yaml
 ORIGINAL := .local/extract/overlays/worldmap.bin
 ORIGINAL_SHA256 := 4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70
+# Its uninitialized data ends at 8009d810: the resident's mode table entry 3
+# (800180bc) clears the words after 8009bbb0 through 8009d80c (80019560).
+BSS_END := 0x8009D810
 BUILD := .local/decomp/build/worldmap
 IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
