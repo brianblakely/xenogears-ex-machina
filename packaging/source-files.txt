@@ -138,6 +138,7 @@ decomp/include/resident/pad.h
 decomp/include/resident/sound.h
 decomp/include/resident/sprite.h
 decomp/include/resident/stream.h
+decomp/include/resident/task.h
 decomp/include/resident/text.h
 decomp/include/resident/window.h
 decomp/src/battle/action_file.h
