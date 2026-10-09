@@ -109,7 +109,7 @@ void func_80088C28(void) {
 
 /* Set up the given window record's defaults. */
 void func_80088CBC(s32 index) {
-    Window *window = &D_8009A0D8[index];
+    DisplayBuffer *window = &D_8009A0D8[index];
 
     setlen(&window->sprite, 3);
     setcode(&window->sprite, 0x7D);
@@ -163,7 +163,7 @@ extern char D_800706D4[]; /* "RATE   : %3dfps\n" */
  * leaves `last` uninitialized until the first frame's rate calculation. */
 void func_80088E90(void) {
     DISPENV disp;
-    Task *task;
+    TaskContext *task;
     s32 last;
     s32 fps;
     s32 load;

@@ -12,6 +12,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/window.h"
 
 s32 D_8009284C; /* horizontal distance between the actors */
 s32 D_80092850;
@@ -19,9 +20,9 @@ POLY_FT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 s16 D_8009285C; /* display width */
 u8 D_80092860; /* left bar texel row */
 u8 D_80092864; /* right bar texel row */
-struct Window *D_80092868;
+struct DisplayBuffer *D_80092868;
 s16 D_8009286C; /* display height */
-struct Window *D_80092870;
+struct DisplayBuffer *D_80092870;
 struct MoveList *D_80092874; /* per model id */
 s32 D_80092878; /* unreferenced */
 u8 D_8009287C;
@@ -83,18 +84,18 @@ MATRIX D_80096FE0; /* screen scale */
 VECTOR D_80097000; /* look-at work: third axis */
 struct Actor D_80097010; /* scene actor */
 VECTOR D_8009867C; /* camera eye */
-struct MenuWindow D_8009868C; /* message window */
+Window D_8009868C; /* message window */
 VECTOR D_8009871C; /* camera look-at point */
 struct Actor D_8009872C; /* scene actor */
 struct Settings D_80099D98; /* current option settings */
 struct PolyFT4Words D_80099DA8[2][10];
 VECTOR D_8009A0C8; /* look-at work: forward */
-struct Window D_8009A0D8[2]; /* the display buffers */
+struct DisplayBuffer D_8009A0D8[2]; /* the display buffers */
 VECTOR D_8009A2C8; /* mesh light direction */
 MATRIX D_8009A2D8;
 struct OverlayBuffer D_8009A2F8[2];
 VECTOR D_8009A918; /* look-at work: up */
-struct PathPoint D_8009A928[30]; /* recorded path points */
+struct PathMarker D_8009A928[30]; /* recorded path points */
 
 #include "menu.h"
 #include "sparkle.h"

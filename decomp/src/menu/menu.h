@@ -7,6 +7,18 @@
 #include "psyq/libapi.h"
 #include "psyq/libetc.h"
 #include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
 #include "packets.h"
 
 #include "system.h"
@@ -336,18 +348,6 @@ typedef struct {
 
 #define ACTOR_SIDE(actor) (((actor)->flags >> 27) & 1)
 
-/* Menu window: the resident's 0x90-byte message window record (its window
- * code at 80032f54); the menu names the members it uses. */
-typedef struct MenuWindow {
-    s16 unk0[3];
-    s16 unk6;
-    s16 unk8[2];
-    s16 unkC;
-    u8 unkE[0x5A];
-    u8 unk68;
-    u8 unk69[0x27];
-} MenuWindow;
-
 /* A step in one of eight directions on the floor plane. */
 typedef struct {
     s32 x;
@@ -361,7 +361,7 @@ extern Actor D_8009872C;
 extern VECTOR D_8009867C;
 extern VECTOR D_8009871C;
 
-extern MenuWindow D_8009868C; /* message window */
+extern Window D_8009868C; /* message window */
 
 extern u8 *D_8009105C[]; /* scene scripts */
 extern u8 D_80090F38[];
@@ -378,8 +378,6 @@ extern s32 D_80092934;
 extern u8 D_8009293C;
 extern s32 D_80092948;
 extern FloorStep D_80091084[8];
-extern u16 D_8005948C; /* pad buttons newly pressed */
-extern u16 D_800594A4; /* pad buttons repeating */
 extern u8 D_800928FC;
 extern s32 D_80092918;
 extern s32 D_80092944;
@@ -391,7 +389,6 @@ s32 func_800887A4(VECTOR *from, VECTOR *to);
 extern s32 D_800928AC;
 extern u8 D_800928C0;
 void func_8007A768(Actor *actor);
-void func_800379C8(const char *format, ...); /* debug text print */
 extern s32 D_80092890;
 extern u8 D_800928B4;
 extern u8 D_800928F0;
@@ -406,24 +403,13 @@ extern s32 D_8009112C;
 extern s32 D_80091198[];
 extern u8 D_80091178[]; /* pairs: next combo number after each button */
 extern s32 D_8009292C;
-extern u8 D_80050622; /* resident: result of the last menu battle */
 
 /* Resident game code. */
-void func_80030988(s32 a0, s32 a1, s32 a2, s32 a3);
-void func_80032F54(MenuWindow *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
+void func_80032F54(Window *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
 s32 func_80033728(s32 table, s32 index);
-void func_800346D4(MenuWindow *window);
-void func_80034714(MenuWindow *window, s32 text);
-void func_80039C4C(s32 arg);
-void func_80039FF8(void);
 void func_80036258(s32 port, s32 arg);
-void func_800346A4(MenuWindow *window);
-void func_80034800(MenuWindow *window, s32 colour, s32 a2, s32 a3);
-void func_80034874(MenuWindow *window, s32 cursor);
-void func_80034888(MenuWindow *window, u32 *ot, s32 frame);
-void func_80036420(void);
-s32 func_8003F8B0(s32 angle); /* sine, 4096 = 1.0 */
-s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
+void func_80034800(Window *window, s32 colour, s32 a2, s32 a3);
+void func_80034874(Window *window, s32 cursor);
 
 /* This overlay. */
 s32 func_800707D8(s32 target, s32 current, s32 steps);
@@ -472,7 +458,6 @@ typedef struct {
 } AnimRule;
 extern AnimRule D_80091130[];
 void func_80082458(SVECTOR *out);
-void func_8002DB84(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *normal); /* plane normal of a triangle */
 void func_800828F8(VECTOR *position, VECTOR *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
@@ -505,30 +490,18 @@ void func_8007A21C(s32 arg);
 void func_8007AC3C(void);
 
 /* Scene actor models. */
-typedef struct {
-    u16 file;
-    void *data;
-} Resource;
-
 void *func_800891C0(s32 id);
-s32 func_800288EC(s32 file);
 void func_80083BB4(s32 both);
 
 /* Menu mode exit. */
 extern s32 D_800917F0;
-void func_8003852C(s32 arg);
-void func_800399D4(s32 arg);
-void func_8001996C(s32 arg);
-void func_80019ACC(s32 arg); /* resident mode dispatcher */
 
-/* Resident flags. */
-extern s32 D_8006F980;
 
 /* Actor setup. */
 Node *func_8008B38C(ModelSetFile *file);
 void func_8008A168(void);
 void func_80084BEC(Actor *actor);
 void func_8008E6F8(Actor *actor);
-extern u8 D_80091FB0[];
+extern SpriteModel D_80091FB0; /* the extra object attached to the actors */
 
 #endif

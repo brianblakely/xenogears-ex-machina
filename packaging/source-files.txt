@@ -430,6 +430,7 @@ decomp/targets/overlays/mdec.yaml
 decomp/targets/overlays/menu.bss.ld
 decomp/targets/overlays/menu.classification.txt
 decomp/targets/overlays/menu.mk
+decomp/targets/overlays/menu.resident.ld
 decomp/targets/overlays/menu.symbols.txt
 decomp/targets/overlays/menu.yaml
 decomp/targets/overlays/movie.bss.ld

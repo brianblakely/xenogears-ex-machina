@@ -25,12 +25,7 @@ extern u8 D_80091FA0[];
 extern u8 D_80091EE0[]; /* command sounds: two effect ids (0: none) per entry */
 extern volatile s32 D_80059488; /* vertical blanks counted */
 
-void func_80039FF8(void);                                      /* sound driver reset */
 void func_80039F9C(s32 sound, s32 voice, s16 volume, s16 pan); /* key on */
-void func_8003A55C(s32 voice, s32 pan);
-void func_8003A344(s32 voice, s32 volume);
-s32 func_8003A5D0(s32 sound);  /* mask of the voices still playing */
-void func_8003A20C(s32 voice); /* key off */
 void func_8008E78C(s32 sound, s32 mode, VECTOR *pos, s32 tag);
 
 #endif

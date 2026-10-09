@@ -3,26 +3,17 @@
 
 /* Included from menu.h after the generic libgpu/libgte types. */
 
-/* Saved system options word (resident, 0x8006f980). */
-typedef struct {
-    u32 version : 4;   /* 1 once written */
-    u32 option4 : 1;   /* mirrors D_80099D98.option4 */
-    u32 option5 : 1;   /* mirrors D_80099D98.option5 */
-    u32 option6 : 7;   /* mirrors D_80099D98.option6 */
-    u32 option13 : 3;  /* mirrors D_80099D98.level */
-    u32 complete : 1;  /* every tracked flag was set */
-    u32 unused : 15;
-} SystemOptions;
-
-/* Resident save block at 0x8006f978: 64 progress flags, one bit each,
- * then the options word. */
-typedef struct {
-    u8 flags[8];
-    SystemOptions options;
-} SystemSave;
-
-extern SystemSave D_8006F978;
-extern u8 D_8005061C;    /* nonzero keeps the options in D_8006F980 */
+/* The resident's option bytes of the field and the menu (its u8[6] at
+ * 8005061c) and the byte after them, each by its own name: indexed from the
+ * array, func_800852C4 keeps the array's address in a register where the
+ * original loads each byte absolutely. */
+extern u8 D_8005061C; /* nonzero keeps the options in D_8006D634.options */
+extern u8 D_8005061D; /* entry kind (0 bout, 1 bout mode 4, 2 scene) */
+extern u8 D_8005061E; /* first actor's model id */
+extern u8 D_8005061F; /* second actor's model id */
+extern u8 D_80050620; /* option 6 */
+extern u8 D_80050621; /* level */
+extern u8 D_80050622; /* result of the last menu battle */
 /* Current option settings (0x80099d98). */
 typedef struct Settings {
     u8 level;     /* 0x00: saved as option13 */
@@ -43,7 +34,7 @@ typedef struct Settings {
 extern Settings D_80099D98;
 
 /* One of the two display buffers (table at 0x8009a0d8, 0xF8 bytes each). */
-typedef struct Window {
+typedef struct DisplayBuffer {
     DRAWENV draw;      /* 0x00 */
     DISPENV disp;      /* 0x5C */
     u32 ot;            /* 0x70: one-entry ordering table */
@@ -52,9 +43,9 @@ typedef struct Window {
     DR_AREA area;      /* 0xD0 */
     DR_OFFSET offset;  /* 0xDC */
     TILE background;   /* 0xE8: also the screen fade */
-} Window;
+} DisplayBuffer;
 
-extern Window D_8009A0D8[2];
+extern DisplayBuffer D_8009A0D8[2];
 
 /* Scene node (0x9C bytes): a typed payload with its own transform, linked
  * into a tree of children. */
@@ -74,12 +65,6 @@ typedef struct Node {
     s32 unk98;
 } Node;
 
-/* Loaded model file header. */
-typedef struct {
-    u8 unk0[0x34];
-    s32 unk34;
-} ModelFile;
-
 /* Primitive record of a model's packet buffers (0x14 bytes). */
 typedef struct {
     u32 tag;
@@ -87,38 +72,29 @@ typedef struct {
     u8 unk8[0xC];
 } ModelPrim;
 
-/* Mesh of a model: vertices and primitive groups. */
-typedef struct {
-    s16 unk0;
-    u16 count;         /* 0x02: vertices */
-    u16 prims;         /* 0x04 */
-    u16 groups;        /* 0x06 */
-    void *data;        /* 0x08: vertices */
-    s32 unkC;
-    u8 *groupData;     /* 0x10: per group a flag byte, a count, count x 8 bytes */
-} Mesh;
-
-/* Packet buffers built for a model's mesh. */
+/* Packet buffers built for a model's mesh (a resident sprite model's
+ * vertices and primitive groups). */
 typedef struct {
     s16 vertices;      /* 0x00 */
     s16 count;         /* 0x02: primitives */
     void *vertexData;  /* 0x04 */
     u8 *work;          /* 0x08: 8 bytes per vertex */
-    Mesh *mesh;        /* 0x0C */
+    SpriteModel *mesh; /* 0x0C */
     ModelPrim *prims[2]; /* 0x10: per display buffer */
 } ModelPrims;
 
-/* Model payload (0x20 bytes). */
+/* Model payload (type 1, 0x20 bytes): a loaded sprite model, its morph
+ * state and its packets. */
 typedef struct {
     u32 flags;
     s32 unk4;
     void *packets[2];  /* 0x08: per display buffer (one block) */
-    s32 unk10;
-    ModelFile *file;   /* 0x14 */
+    MorphState *morph; /* 0x10 */
+    SpriteModel *file; /* 0x14 */
     u8 r, g, b;        /* 0x18 */
     u8 unk1B;
     s32 unk1C;
-} Model;
+} NodeModel;
 
 /* Instance payload (type 5, 0x10 bytes): draws another node's model. */
 typedef struct {
@@ -217,7 +193,7 @@ typedef struct {
     s16 offset[3];     /* 0x0A: initial 0x2C components */
 } HierarchyRecord;
 
-/* Model set payload (type 2, 0x1C bytes): a node per hierarchy record and
+/* NodeModel set payload (type 2, 0x1C bytes): a node per hierarchy record and
  * an animation player per animation. */
 typedef struct {
     s16 nodeCount;
@@ -230,7 +206,7 @@ typedef struct {
     HierarchyRecord *records; /* 0x18 */
 } ModelSet;
 
-/* Model set file: hierarchy (count, records), models, animations
+/* NodeModel set file: hierarchy (count, records), models, animations
  * (count, then that many animation data pointers or null). */
 typedef struct {
     u32 *hierarchy;
@@ -254,29 +230,24 @@ typedef struct {
 typedef struct {
     u32 regs[32];      /* 2 v0 .. 31 ra; 28 gp, 29 sp, 30 fp */
     u32 *stack;        /* 0x80 */
-} Task;
+} TaskContext;
 
 /* The caller state pair saved/restored around a nested task scheduler. */
 typedef struct {
     u32 *caller_stack;
-    Task *task;
+    TaskContext *task;
 } TaskCallerContext;
 
 void func_8008BB00(TaskCallerContext *context);
 void func_8008BB1C(TaskCallerContext *context);
 
 extern VECTOR D_8009A2C8;     /* mesh light direction */
-extern s32 D_80059424;
-extern s32 D_80059568;
-extern s32 D_8005953C;
-extern u8 *D_80059528;        /* primitive group being drawn */
 
 /* Word count of a primitive, from its tag (libgpu P_TAG len). */
 #define TAG_LEN(tag) (((u8 *)(tag))[3])
 
 extern OtPair *D_80091C30;    /* table to compact at the end of the frame */
 extern u32 *D_800928E4;       /* ordering table primitives are added to */
-extern s32 D_80050100;        /* its depth shift */
 extern s32 D_80092914;        /* colour changed this frame */
 
 extern s32 D_80091C2C;   /* nonzero: model set players do not own their keys */
@@ -290,13 +261,11 @@ extern MATRIX D_8009A2D8;
 extern MATRIX D_80096FE0; /* screen scale */
 extern s16 D_8009285C;    /* display width */
 extern s16 D_8009286C;    /* display height */
-extern u16 D_80059570;   /* pad buttons held this frame */
 
-extern s32 D_80010000;   /* boot word: -1, 0 or other start state */
 extern char *D_80091BB0[]; /* names of the menu's heap block kinds */
 extern s32 D_800928CC;
-extern Window *D_80092868;
-extern Window *D_80092870;
+extern DisplayBuffer *D_80092868;
+extern DisplayBuffer *D_80092870;
 extern s16 D_80092898;
 extern s32 D_8009289C;
 extern s32 D_800928E8;
@@ -305,56 +274,40 @@ extern u8 D_80092920;
 extern u16 D_800928D0;   /* debug display switches */
 extern u32 *D_80092938; /* ordering table of the buffer being built */
 extern void (*D_80092930)(void *block);
-extern s32 D_80050618;
 extern volatile s32 D_80059488; /* vertical blanks counted */
-extern s32 D_80059578;   /* primitives drawn this frame */
-extern s32 D_800595C0;   /* primitive count this frame */
 
 void func_800852C4(s32 arg); /* the menu task */
 extern void (*D_80088BFC[])(s32); /* mode tasks, by D_80050618 */
 void func_80088C00(void);
-void func_80032498(s32 kind, void *data);
-void func_80028470(s32 a, s32 b);
-void func_800374E8(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 g, s32 h, s32 i, s32 j, s32 k);
 void func_80088CBC(s32 index);
 void func_8008A110(s16 x, s16 y);
 void func_8008A128(s16 x, s16 y);
 void func_8008E620(void);
-s32 func_80028738(s32 file);
-void *func_80031BDC(s32 size, s32 mode);
-void func_800295D8(s32 file, void *buffer, s32 a, s32 b);
 void func_800898BC(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up);
 void func_800324B8(s32 kind);
-void func_800320E8(void *p);
-void func_80032C18(void *p, s32 mode);
-void func_8002CBBC(ModelFile *file);
-s32 func_800303C8(ModelFile *file, s32 mode);
-void func_8002CB54(ModelFile *file, void **first, void **second);
-void func_8002CC54(u16 tpage);
+void func_8002CB54(SpriteModel *model, void **first, void **second);
 void func_8002CC74(s32 x, s32 y);
-void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
 void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 Node *func_80089B44(Node *node);
 void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
-void func_80089FF8(Model *model);
+void func_80089FF8(NodeModel *model);
 void func_8008C120(Instance *instance);
-void func_8002C3E8(u8 *models);
 ModelSet *func_80089E74(void);
 Node *func_80089C54(void);
-Model *func_80089FC4(void);
-void func_80089E2C(Node *node, Model *model);
+NodeModel *func_80089FC4(void);
+void func_80089E2C(Node *node, NodeModel *model);
 void func_80089E54(Node *node, ModelSet *set);
 void func_80089C88(Node *parent, Node *child);
-void func_8008A184(Model *model, ModelFile *file);
+void func_8008A184(NodeModel *model, SpriteModel *file);
 void func_8008B13C(AnimRecord *record, Player *player, Node *root);
 void func_8008B0D8(Player *player);
-void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
-void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
+void func_8008BE4C(ModelPrims *prims, SpriteModel *mesh);
+void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work);
 Node *func_8008C188(Node *source, Node *parent);
 Node *func_8008C298(Node *source);
-Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words);
-void func_8008BB3C(Task *task);
+TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words);
+void func_8008BB3C(TaskContext *task);
 /* Project toward D_8009A2C8 onto y=0; writes work.vx/vz, preserving vy/pad.
  * count must be positive. Reads the next vertex even on the last iteration. */
 void func_8008C3A8(void *vertices, u8 *work, s32 count);
@@ -362,47 +315,35 @@ void func_8008C3A8(void *vertices, u8 *work, s32 count);
  * beyond count. They advance D_80059424 past culled packet slots too, and
  * prepend accepted packets to D_80059568 without a depth sort. */
 void func_8008C620(u8 *prims, s32 count);
-void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
-void func_80030B14(MATRIX *m);
-MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m);
 /* Scale each rotation column through the GTE, preserving m's translation
  * and leaving the original rotation loaded in the GTE. */
 void func_800731F8(MATRIX *m, s16 *scale);
-void func_8008A63C(Model *model);
+void func_8008A63C(NodeModel *model);
 void func_8008A78C(Node *node);
-void func_8008BCC8(Mesh *mesh, u8 *work);
+void func_8008BCC8(SpriteModel *mesh, u8 *work);
 
-extern s32 D_80050104;
 
 void func_8008C4B0(u8 *prims, s32 count); /* same packet interface as C620 */
 s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void func_8008AC7C(OtPair *pair);
-s32 func_80028A60(s32 a);
 SceneFile *func_8008AF6C(SceneFile *scene);
 Light *func_8008A254(void);
 void func_80089E64(Node *node, void *data);
 void func_8008A3A8(OtPair *layer);
 void func_8008ABAC(Node **lights);
 void func_80030A30(s32 index, Light *light);
-Model *func_80089F8C(Model *model);
-void func_8002DFF0(s32 w, s32 h);
+NodeModel *func_80089F8C(NodeModel *model);
 void func_80089210(s32 width, s32 height);
 void func_80089330(s32 width, s32 height);
 void func_80089534(s32 width, s32 height);
 
-void func_80019CA0(void);
-void func_80037324(void *block);
 void func_8008EADC(void);
-void func_80032CB8(void);
 void func_80088C28(void);
-void func_8003700C(char *format, ...);
-void func_80036DC8(s32 r, s32 g, s32 b);
 void func_8008ACB8(s32 a);
 void func_8008AC8C(void);
 s32 func_800888E4(s32 flag);
 void func_800888B0(s32 flag);
 s32 func_800889C8(void);
-void func_8003278C(s32 a, s32 value, s32 c, s32 d);
 void func_8008895C(void);
 void func_80088A40(void);
 

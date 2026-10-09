@@ -348,7 +348,7 @@ void func_8007EE68(s32 highlight) {
 /* Build the list of the 49 entries (or, when filtering, of those whose
  * required level the current level reaches) and order it when filtering. */
 void func_8007EEE8(s32 filter) {
-    s32 level = D_8006EF64;
+    s32 level = D_8006D634.vars[0];
     ListEntry **list = func_80031BDC(0xC4, 1);
     MoveList *source;
     s32 i;

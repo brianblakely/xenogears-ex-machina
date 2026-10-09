@@ -272,7 +272,7 @@ void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out) {
     if (vertex != 0 && node->type == 1) {
         gte_SetRotMatrix(&node->unk4C);
         gte_SetTransMatrix(&node->unk4C);
-        gte_ldv0(&((SVECTOR *)((Mesh *)((Model *)node->data)->file)->data)[vertex - 1]);
+        gte_ldv0(&((NodeModel *)node->data)->file->vertices[vertex - 1]);
         gte_rt();
         gte_stlvnl(out);
         out->vx += actor->pos.vx;
@@ -608,11 +608,11 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                     break;
                 /* 4 hide part (type: model node): set its model's hidden flag. */
                 case 4:
-                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags |= 1;
+                    ((NodeModel *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags |= 1;
                     break;
                 /* 5 show part (type: model node): clear its hidden flag. */
                 case 5:
-                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags &= ~1;
+                    ((NodeModel *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags &= ~1;
                     break;
                 /* Any other kind retests the same record forever. */
                 default:
@@ -635,14 +635,14 @@ void func_80074998(Actor *actor) {
 
     for (i = 0; i < ((ModelSet *)actor->node->data)->nodeCount; i++) {
         if (nodes[i]->type == 1) {
-            ((Model *)nodes[i]->data)->flags &= ~1;
+            ((NodeModel *)nodes[i]->data)->flags &= ~1;
         }
     }
     for (i = 0; i < actor->visible_count; i++) {
-        ((Model *)nodes[actor->visible[i]]->data)->flags |= 1;
+        ((NodeModel *)nodes[actor->visible[i]]->data)->flags |= 1;
     }
     if (actor->model_id == 0xD) {
-        ((Model *)nodes[13]->data)->flags |= 1;
+        ((NodeModel *)nodes[13]->data)->flags |= 1;
     }
 }
 

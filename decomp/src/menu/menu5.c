@@ -60,7 +60,7 @@ Environment D_8009178C[] = {
 };
 
 /* Files of the menu mode, loaded by func_80029AFC up to the zero file. */
-Resource D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
+FileRequest D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
 
 s32 D_800917F0 = 0;
 
@@ -1006,7 +1006,7 @@ void func_80084BEC(Actor *actor) {
     void *part = func_80089FC4();
 
     func_80089E2C(object, part);
-    func_8008A184(part, D_80091FB0);
+    func_8008A184(part, &D_80091FB0);
     func_80089C88(parent, object);
     object->rotation.vy = 0xC00;
     object->rotation.vx = 0;
@@ -1170,8 +1170,8 @@ void func_80085134(s32 which) {
 }
 
 /* Load a resource by its file number. */
-void func_8008518C(Resource *resource, s32 arg) {
-    resource->data = func_80031BDC(func_800288EC(resource->file), arg);
+void func_8008518C(FileRequest *resource, s32 arg) {
+    resource->destination = func_80031BDC(func_800288EC(resource->file), arg);
 }
 
 /* Leave the menu mode: stop its sound and streams, wait for drawing and
@@ -1217,15 +1217,15 @@ void func_800852C4(s32 arg) {
     D_80092920 |= 1;
     D_800928DC = func_80031BDC(0x10010, 0);
     rig = func_8008A3E0(func_8008A2B8(0x1000));
-    func_8002C59C(D_80091FB0);
+    func_8002C59C(&D_80091FB0);
     func_8008518C(&D_800917C0[0], 0);
     func_8008518C(&D_800917C0[1], 0);
     func_8008518C(&D_800917C0[2], 1);
     func_8008518C(&D_800917C0[3], 1);
     func_8008518C(&D_800917C0[4], 1);
     func_80029AFC(D_800917C0, 0, 0);
-    sequence = (s32)D_800917C0[0].data;
-    D_800927C4 = (s32)D_800917C0[1].data;
+    sequence = (s32)D_800917C0[0].destination;
+    D_800927C4 = (s32)D_800917C0[1].destination;
     func_8008976C(0x140, 0xDA);
     func_80088308();
     func_80030988(1, 1, 0x40, 0x40);
@@ -1249,17 +1249,17 @@ void func_800852C4(s32 arg) {
     } else {
         D_80092948 = D_80062528;
     }
-    func_80032EB4(D_800917C0[3].data, D_800928DC);
-    func_800320E8(D_800917C0[3].data);
+    func_80032EB4(D_800917C0[3].destination, D_800928DC);
+    func_800320E8(D_800917C0[3].destination);
     func_80081ECC();
-    file = func_80032E88(D_800917C0[2].data, 0);
-    func_800320E8(D_800917C0[2].data);
+    file = func_80032E88(D_800917C0[2].destination, 0);
+    func_800320E8(D_800917C0[2].destination);
     func_8003342C(file);
     D_80092880 = file[1];
     D_80092874 = (struct MoveList *)file[2];
     func_8007EEE8(D_8005061C == 1);
-    file = func_80032E88(D_800917C0[4].data, 1);
-    func_800320E8(D_800917C0[4].data);
+    file = func_80032E88(D_800917C0[4].destination, 1);
+    func_800320E8(D_800917C0[4].destination);
     func_8003342C(file);
     func_80082C4C(file);
     func_8007B388(file);
@@ -2214,7 +2214,7 @@ void func_80087E38(VECTOR *pos) {
 
     if (count < 0x1F) {
         base = &D_8009A928[0].x;
-        at = base + count * (sizeof(PathPoint) / sizeof(s16));
+        at = base + count * (sizeof(PathMarker) / sizeof(s16));
         at[0] = pos->vx;
         at[1] = pos->vy;
         D_800928F8 = count + 1;
@@ -2226,7 +2226,7 @@ void func_80087E38(VECTOR *pos) {
  * clear the list. */
 void func_80087EA0(u32 *ot) {
     SVECTOR ends[6];
-    PathPoint *point;
+    PathMarker *point;
     s32 i;
     s32 j;
 
@@ -2458,7 +2458,7 @@ void func_800888B0(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006F978.flags[flag >> 3] |= bit;
+    D_8006D634.progress[flag >> 3] |= bit;
 }
 
 /* Test a bit of the resident flag array. */
@@ -2467,7 +2467,7 @@ s32 func_800888E4(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    return D_8006F978.flags[flag >> 3] & bit;
+    return D_8006D634.progress[flag >> 3] & bit;
 }
 
 /* Clear a bit of the resident flag array. */
@@ -2476,20 +2476,18 @@ void func_80088908(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006F978.flags[flag >> 3] &= ~bit;
+    D_8006D634.progress[flag >> 3] &= ~bit;
 }
 
 /* Set bit 16 of the resident state word. */
 void func_80088940(void) {
-    s32 *state = &D_8006F980;
-
-    *state |= 0x10000;
+    D_8006D634.options.complete = 1;
 }
 
 /* Once bit 16 of the resident state word is set, queue list entry 22
  * (ARGENTO, only once). */
 void func_8008895C(void) {
-    if ((D_8006F980 & 0x10000) && D_800927EC == 0) {
+    if (D_8006D634.options.complete && D_800927EC == 0) {
         D_800927EC = 1;
         D_800928EC[D_80092888++] = &D_80091964[22];
     }
@@ -2505,7 +2503,7 @@ s32 func_800889C8(void) {
             return 0;
         }
     }
-    D_8006F978.options.complete = 1;
+    D_8006D634.options.complete = 1;
     func_8008895C();
     return 0;
 }
@@ -2513,11 +2511,11 @@ s32 func_800889C8(void) {
 /* Store the current option settings in the saved options word. */
 void func_80088A40(void) {
     if (D_8005061C) {
-        D_8006F978.options.version = 1;
-        D_8006F978.options.option4 = D_80099D98.option4;
-        D_8006F978.options.option5 = D_80099D98.option5;
-        D_8006F978.options.option6 = D_80099D98.option6;
-        D_8006F978.options.option13 = D_80099D98.level;
+        D_8006D634.options.version = 1;
+        D_8006D634.options.option4 = D_80099D98.option4;
+        D_8006D634.options.option5 = D_80099D98.option5;
+        D_8006D634.options.option6 = D_80099D98.option6;
+        D_8006D634.options.option13 = D_80099D98.level;
     }
 }
 
@@ -2528,14 +2526,14 @@ void func_80088AF8(void) {
 
     if (D_8005061C) {
         D_800927EC = 0;
-        if (D_8006F978.options.version == 1) {
-            D_80099D98.option4 = D_8006F978.options.option4;
-            D_80099D98.option5 = D_8006F978.options.option5;
-            D_80099D98.option6 = D_8006F978.options.option6;
-            D_80099D98.level = D_8006F978.options.option13;
-            if (D_8006F978.options.complete) {
+        if (D_8006D634.options.version == 1) {
+            D_80099D98.option4 = D_8006D634.options.option4;
+            D_80099D98.option5 = D_8006D634.options.option5;
+            D_80099D98.option6 = D_8006D634.options.option6;
+            D_80099D98.level = D_8006D634.options.option13;
+            if (D_8006D634.options.complete) {
                 for (i = 0; i < 8; i++) {
-                    D_8006F978.flags[i] = 0;
+                    D_8006D634.progress[i] = 0;
                 }
             }
         } else {

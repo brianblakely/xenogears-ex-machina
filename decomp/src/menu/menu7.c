@@ -448,7 +448,7 @@ void func_80089D5C(Node *node) {
 }
 
 /* Make a node a model node. */
-void func_80089E2C(Node *node, Model *model) {
+void func_80089E2C(Node *node, NodeModel *model) {
     node->data = model;
     node->type = 1;
 }
@@ -511,12 +511,12 @@ void func_80089EB4(ModelSet *set) {
 }
 
 /* Reset a model payload: grey, nothing loaded. */
-Model *func_80089F8C(Model *model) {
+NodeModel *func_80089F8C(NodeModel *model) {
     model->unk4 = 1;
     model->flags = 0;
     model->packets[0] = NULL;
     model->packets[1] = NULL;
-    model->unk10 = 0;
+    model->morph = NULL;
     model->file = NULL;
     model->unk1C = 0;
     model->b = 0x40;
@@ -526,17 +526,17 @@ Model *func_80089F8C(Model *model) {
 }
 
 /* Allocate a reset model payload. */
-Model *func_80089FC4(void) {
+NodeModel *func_80089FC4(void) {
     func_800324B8(1);
-    return func_80089F8C(func_80031BDC(sizeof(Model), 0));
+    return func_80089F8C(func_80031BDC(sizeof(NodeModel), 0));
 }
 
 /* Release a model payload's resources. */
-void func_80089FF8(Model *model) {
+void func_80089FF8(NodeModel *model) {
     if (model->packets[0] != NULL) {
         func_80032C18(model->packets[0], 2);
     }
-    func_8002CBBC(model->file);
+    func_8002CBBC((ModelBuffer *)model->file);
 }
 
 /* Pass the model texture page and CLUT positions to target, or zeros when
@@ -551,15 +551,15 @@ void func_8008A040(void *target) {
 
 /* Set a model node's colour. */
 void func_8008A0B4(Node *node, u8 r, u8 g, u8 b) {
-    ((Model *)node->data)->r = r;
-    ((Model *)node->data)->g = g;
-    ((Model *)node->data)->b = b;
-    ((Model *)node->data)->flags |= 0x10;
+    ((NodeModel *)node->data)->r = r;
+    ((NodeModel *)node->data)->g = g;
+    ((NodeModel *)node->data)->b = b;
+    ((NodeModel *)node->data)->flags |= 0x10;
 }
 
 /* Clear a model node's colour override. */
 void func_8008A0F4(Node *node) {
-    ((Model *)node->data)->flags &= ~0x10;
+    ((NodeModel *)node->data)->flags &= ~0x10;
 }
 
 /* Set the texture page position used for loaded models (-1 = none). */
@@ -589,9 +589,9 @@ void func_8008A168(void) {
 
 /* Load a model file into a model payload, applying the texture page and
  * CLUT overrides. */
-void func_8008A184(Model *model, ModelFile *file) {
+void func_8008A184(NodeModel *model, SpriteModel *file) {
     model->file = file;
-    model->unk10 = func_800303C8(file, 1);
+    model->morph = func_800303C8(file, 1);
     func_8002CB54(model->file, &model->packets[0], &model->packets[1]);
     if (D_80092800 >= 0) {
         func_8002CC54(GetTPage(0, 1, D_80092800, D_80092804));
@@ -600,7 +600,7 @@ void func_8008A184(Model *model, ModelFile *file) {
         func_8002CC74(D_80092808, D_8009280C);
     }
     func_8002C8CC(model->file, model->packets[0], 2);
-    func_800732AC(model->packets[1], model->packets[0], model->file->unk34);
+    func_800732AC(model->packets[1], model->packets[0], model->file->packet_size);
     model->flags |= 2;
 }
 
@@ -718,7 +718,7 @@ void func_8008A62C(void) {
 
 /* Draw a model into the current ordering table, with its colour override
  * (or grey) as the GTE back colour when overrides are enabled. */
-void func_8008A63C(Model *model) {
+void func_8008A63C(NodeModel *model) {
     D_80050104 = 0;
     if (D_80092810) {
         if (model->flags & 0x10) {
@@ -791,7 +791,7 @@ void func_8008A7E0(Node *node) {
             CompMatrix(&node->parent->unk4C, &node->view, &node->unk4C);
             CompMatrix(&node->parent->view, &node->view, &node->view);
         }
-        if (node->type == 1 && !(((Model *)node->data)->flags & 1)) {
+        if (node->type == 1 && !(((NodeModel *)node->data)->flags & 1)) {
             func_80030B14(&node->unk6C);
             gte_SetRotMatrix(&node->view);
             gte_SetTransMatrix(&node->view);
@@ -1069,10 +1069,10 @@ Node *func_8008B38C(ModelSetFile *file) {
     Node **nodes;
     ModelSet *set;
     Node *node;
-    Model *model;
+    NodeModel *model;
     Player *player;
 
-    func_8002C3E8((u8 *)data);
+    func_8002C3E8((ModelGroup *)data);
     func_800324B8(0x12);
     nodes = func_80031BDC(count * 4, 0);
     set = func_80089E74();
@@ -1087,7 +1087,7 @@ Node *func_8008B38C(ModelSetFile *file) {
         if (records[i].model != -1) {
             model = func_80089FC4();
             func_80089E2C(node, model);
-            func_8008A184(model, (ModelFile *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
+            func_8008A184(model, (SpriteModel *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
         }
         if (records[i].parent == -1) {
             func_80089C88(root, node);
@@ -1253,12 +1253,12 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
-Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
-    Task *task;
+TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
+    TaskContext *task;
     s32 i;
 
     func_800324B8(3);
-    task = func_80031BDC(sizeof(Task), 2);
+    task = func_80031BDC(sizeof(TaskContext), 2);
     for (i = 0; i < 32; i++) {
         task->regs[i] = 0;
     }
@@ -1272,7 +1272,7 @@ Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
 }
 
 /* Free a task. */
-void func_8008BAE0(Task *task) {
+void func_8008BAE0(TaskContext *task) {
     func_800320E8(task);
 }
 
@@ -1286,7 +1286,7 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
-void func_8008BCC8(Mesh *mesh, u8 *work) {
+void func_8008BCC8(SpriteModel *mesh, u8 *work) {
     VECTOR direction;
     VECTOR unused; /* unused in the original; reserves 16 bytes */
 
@@ -1297,50 +1297,50 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vx <<= 4;
     D_8009A2C8.vy <<= 4;
     D_8009A2C8.vz <<= 4;
-    func_8008C3A8(mesh->data, work, mesh->count);
+    func_8008C3A8(mesh->vertices, work, mesh->vertex_count);
 }
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
-void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
-    u8 *group;
-    s32 groups = mesh->groups;
+void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
+    PrimitiveGroup *group;
+    s32 groups = mesh->group_count;
 
-    D_80059528 = mesh->groupData;
-    D_80059424 = (s32)prims;
-    D_80059568 = (s32)ot;
-    D_8005953C = (s32)work;
-    D_800595C0 += mesh->prims;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
+    D_80059424 = (RenderPacket *)prims;
+    D_80059568 = ot;
+    D_8005953C = (SVECTOR *)work;
+    D_800595C0 += mesh->primitive_count;
     while (--groups != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            func_8008C620(D_80059528, ((s16 *)group)[1]);
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            func_8008C620((u8 *)D_80059528, group->count);
         } else {
-            func_8008C4B0(D_80059528, ((s16 *)group)[1]);
+            func_8008C4B0((u8 *)D_80059528, group->count);
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
 }
 
 /* Build a mesh's packet buffers: a vertex work area and, per display
  * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
  * for every primitive. */
-void func_8008BE4C(ModelPrims *mp, Mesh *mesh) {
+void func_8008BE4C(ModelPrims *mp, SpriteModel *mesh) {
     s32 n; /* vertex, then group counter, then packet bytes per buffer */
     s32 i;
     s32 j;
     s32 triangles;
     s32 quads;
-    u8 *group;
+    PrimitiveGroup *group;
     u8 *vertex;
     u8 *packet;
 
-    mp->vertices = mesh->count;
-    mp->count = mesh->prims;
-    mp->vertexData = mesh->data;
+    mp->vertices = mesh->vertex_count;
+    mp->count = mesh->primitive_count;
+    mp->vertexData = mesh->vertices;
     mp->mesh = mesh;
-    D_80059528 = mesh->groupData;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
     func_800324B8(0x13);
     vertex = mp->work = func_80031BDC(mp->vertices * 8, 2);
     n = mp->vertices;
@@ -1351,42 +1351,42 @@ void func_8008BE4C(ModelPrims *mp, Mesh *mesh) {
     func_800324B8(5);
     triangles = 0;
     quads = 0;
-    n = mesh->groups;
+    n = mesh->group_count;
     while (--n != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            quads += ((s16 *)group)[1];
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            quads += group->count;
         } else {
-            triangles += ((s16 *)group)[1];
+            triangles += group->count;
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
     n = triangles * 0x14 + quads * 0x18;
     packet = func_80031BDC(n * 2, 2);
     mp->prims[0] = (ModelPrim *)packet;
     mp->prims[1] = (ModelPrim *)(packet + n);
-    i = mesh->groups;
-    D_80059528 = mesh->groupData;
+    i = mesh->group_count;
+    D_80059528 = (PrimitiveGroup *)mesh->unk10;
     while (--i != -1) {
         group = D_80059528;
-        D_80059528 = group + 4;
-        if (group[0] & 8) {
-            j = ((s16 *)group)[1];
+        D_80059528 = group + 1;
+        if (group->type & 8) {
+            j = group->count;
             while (--j != -1) {
                 TAG_LEN(packet) = 5;
                 ((u32 *)packet)[1] = 0x28403030;
                 packet += 0x18;
             }
         } else {
-            j = ((s16 *)group)[1];
+            j = group->count;
             while (--j != -1) {
                 TAG_LEN(packet) = 4;
                 ((u32 *)packet)[1] = 0x20403030;
                 packet += 0x14;
             }
         }
-        D_80059528 += ((s16 *)group)[1] * 8;
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
     }
     func_800732AC(mp->prims[1], mp->prims[0], n);
 }
@@ -1430,14 +1430,14 @@ void func_8008C120(Instance *instance) {
 Node *func_8008C188(Node *source, Node *parent) {
     Node *node;
     Instance *instance;
-    Mesh *mesh;
+    SpriteModel *mesh;
 
     func_800324B8(6);
     node = func_80089C54();
     instance = func_8008C0CC(source);
     func_8008C0BC(node, instance);
     if (instance->type == 1) {
-        mesh = (Mesh *)((Model *)source->data)->file;
+        mesh = ((NodeModel *)source->data)->file;
         func_800324B8(5);
         instance->prims = func_80031BDC(sizeof(ModelPrims), 2);
         func_8008BE4C(instance->prims, mesh);
@@ -1469,7 +1469,7 @@ void func_8008C2E8(Node *node) {
     Instance *instance = node->data;
     ModelPrims *prims;
 
-    if (instance->type == 1 && !(((Model *)instance->source->data)->flags & 1)) {
+    if (instance->type == 1 && !(((NodeModel *)instance->source->data)->flags & 1)) {
         prims = instance->prims;
         func_8008BD70(prims->mesh, prims->prims[D_800928A0], D_800928E4 + 1, prims->work);
     }

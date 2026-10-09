@@ -36,7 +36,7 @@ static SVECTOR D_80092630; /* model view angles */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static MenuWindow D_80092954; /* the opening text, then the scene list */
+static Window D_80092954; /* the opening text, then the scene list */
 static DR_TPAGE D_800929E4[2];
 static VECTOR D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
 
@@ -550,7 +550,7 @@ s32 func_8007107C(void) {
 /* Link the marker sprite (16x16, at D_800925E0, D_800925E4) and this
  * frame's texture page packet. */
 void func_80071724(u32 *ot) {
-    Window *frame = D_80092868;
+    DisplayBuffer *frame = D_80092868;
 
     /* x0 and y0 of the sprite, stored as one word */
     *(u32 *)&frame->sprite.x0 = D_800925E0 | (D_800925E4 << 16);
@@ -595,10 +595,10 @@ void func_8007191C(s32 scene) {
     D_80092608 = scene == 0;
     if (scene == 0) {
         func_8008EB4C(0x37);
-        D_8009868C.unkC = 2;
+        D_8009868C.lines = 2;
         D_8009868C.unk6 = 0xB4;
     } else {
-        D_8009868C.unkC = 4;
+        D_8009868C.lines = 4;
         D_8009868C.unk6 = 0x9A;
     }
     func_80070F80(D_8009105C[scene]);
@@ -634,7 +634,7 @@ void func_800719F0(void) {
  * marker sprite (shown while D_800925F0 is set, blinking every 4 frames)
  * and its easing, the message window and the camera. */
 void func_80071AD0(void) {
-    MenuWindow *message;
+    Window *message;
 
     if (D_800925F0 != 0 && (D_800928E8 & 4)) {
         func_80071724(D_80092938);
@@ -789,7 +789,7 @@ void func_800720D4(void) {
  * then the caption when its text changed and the camera view. */
 void func_80072170(void) {
     Actor *actor;
-    MenuWindow *window;
+    Window *window;
     VECTOR pos;
     Node *part;
     s32 i;
@@ -860,7 +860,7 @@ void func_80072170(void) {
             window->unk68 = 1;
             func_8003463C(window);
             func_80034714(window, func_80033728(D_80092880, D_800925D4));
-            window->unkC = 2;
+            window->lines = 2;
             window->unk6 = 0xB4;
             D_800925D8 = D_800925D4;
         }

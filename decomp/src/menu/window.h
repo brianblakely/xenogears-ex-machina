@@ -48,22 +48,14 @@ extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_8008
 
 /* Bout-end sequence effects. */
 void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
-void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
 
 /* Menu mode main loop. */
-extern Resource D_800917C0[6]; /* sequence, sound bank, messages, map, scene; zero file */
-extern u8 D_8005061D;          /* resident: entry kind (0 bout, 1 bout mode 4, 2 scene) */
-extern u8 D_8005061E;          /* resident: first actor's model id */
-extern u8 D_8005061F;          /* resident: second actor's model id */
-extern u8 D_80050620;          /* resident: option 6 */
-extern u8 D_80050621;          /* resident: level */
-extern s32 D_80062528;         /* resident: default sequence handle */
+extern FileRequest D_800917C0[6]; /* sequence, sound bank, messages, map, scene; zero file */
 
 /* Scene script interpreter. */
 extern Actor *D_80092894; /* actor the scene script drives */
-s32 func_80033CD0(MenuWindow *window); /* chosen answer, 0 while open */
-void func_800345E0(MenuWindow *window);
+s32 func_80033CD0(Window *window); /* chosen answer, 0 while open */
 void func_800707A8(void);
 s32 func_8008F9B0(Actor *actor);
 
@@ -98,19 +90,18 @@ typedef struct {
 
 extern VECTOR D_80096FA8; /* view origin */
 
-s32 func_8002DC9C(s32 x, s32 y, s32 z);
 
 /* A recorded path position and its debug marker: three axis lines (red
  * x, green y, blue z) per buffer. */
-typedef struct PathPoint {
+typedef struct PathMarker {
     LINE_F2 axes[2][3]; /* 0x00 */
     s16 x, y, z;          /* 0x60 */
     u8 pad[2];
-} PathPoint;
+} PathMarker;
 
 /* Thirty records end the BSS the resident's mode table clears (8009b558);
  * func_80087E38 records up to 31, the last over the heap that follows. */
-extern PathPoint D_8009A928[30];
+extern PathMarker D_8009A928[30];
 extern s32 D_800928F8; /* recorded path points */
 extern POLY_FT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 
@@ -205,16 +196,10 @@ extern s32 D_80092880;
 extern Menu D_800915AC[8];
 extern s32 D_80091364; /* pad port of the menu input */
 /* Resident pad state, per port. */
-extern u16 D_80059570, D_80059574;
-extern u16 D_800594A4, D_800594A8;
-extern u16 D_8005948C, D_80059490;
-extern u8 D_80059438, D_8005943C; /* stick x */
-extern u8 D_80059430, D_80059434; /* stick y */
 
 extern u8 D_800928FC;  /* pad port driving the menus */
 
 void func_80080AE8(void);
-void func_80036420(void);
 void func_80081A44(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
 void func_80080D20(void *packets);
@@ -222,14 +207,12 @@ void func_80086E24(void);
 void func_8008E120(void);
 void func_8007F258(void *packets, s32 arg);
 void func_8008BC04(void);
-void func_8003A838(s32 arg0, s32 arg1, s32 arg2);
 void func_8008E064(void);
 s32 func_80033728(s32 table, s32 index); /* text string of an index */
 s32 func_80034EAC(s32 string, u8 *image, s32 colour, s32 arg); /* returns width */
 void func_8007EE08(s32 arg);
 void func_80080F04(void);
 void func_8007E894(s32 x, s32 y);
-s32 func_80035734(s32 port); /* pad type */
 void func_8008EB4C(s32 sound);
 void func_80080964(s32 menu);
 

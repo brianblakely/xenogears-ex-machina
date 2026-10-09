@@ -119,13 +119,6 @@ typedef struct {
 extern u16 D_80091CE0[]; /* glow palette (256 entries) */
 
 void func_800324B8(s32 tag);                 /* heap allocation tag */
-void *func_80031BDC(s32 size, s32 arg);      /* heap allocation */
-void func_80032C18(void *block, s32 arg);    /* heap release */
-void func_800316C0(u32 *ot, LINE_F2 *prim);
-void func_80031708(u32 *ot, LINE_F3 *prim);
-void func_80031750(u32 *ot, LINE_F4 *prim);
-void func_80031804(u32 *ot, TILE *prim);
-void func_80031870(u32 *ot, TILE_1 *prim);
 Emitter *func_8008D3F4(s32 shape, s32 placement);
 void func_8008D580(Emitter *emitter);
 void func_8008D5C0(Emitter *emitter, s32 count);

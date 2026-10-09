@@ -94,7 +94,6 @@ typedef struct {
     TILE frame[2]; /* 0x1C: the page's box, per draw buffer */
 } MenuPage;
 
-s32 func_80035734(s32 port); /* controller type */
 void func_8007EC54(u8 *text);
 void func_8007F258(void *ot, s32 flag);
 extern char *D_8009132C[]; /* names of the entries of setting 10 */
@@ -115,7 +114,6 @@ extern u8 *D_800928D8; /* the 49 portraits, 0x1000 bytes each */
 void func_80080964(s32 page);
 void func_80080B58(void);
 void func_8007F8B4(void);
-void func_80031BB4(s32 high); /* choose the heap end to allocate from */
 void func_80080AA0(s32 forget);
 void func_8008509C(s32 a, s32 b);
 void *func_800891C0(s32 arg);
@@ -137,7 +135,6 @@ typedef struct {
     u8 unk10[4];
 } GridCell;
 
-extern u16 D_8006EF64;
 extern ListEntry D_80091964[49];
 extern struct MoveList *D_80092874; /* per model id */
 extern ListEntry **D_800928EC;
@@ -145,8 +142,6 @@ extern s32 D_80092888;
 
 extern s32 D_80091364;
 void func_80085134(s32 side);
-void *func_800289D0(s32 index);
-void func_8002954C(void *entry, void *dst, s32 size, s32 a3, s32 a4);
 
 void func_8007E3CC(u32 *ot);
 extern Glyph D_80091230[]; /* menu font glyphs: digits, capitals, punctuation */
@@ -166,8 +161,6 @@ void func_8007E020(u32 *ot);
 /* Menu overlay drawing. */
 void func_800811AC(void *ot);
 
-extern u16 D_800595D4;
-extern u16 D_80059414;
 
 /* Two-player selection wheels: each side's portraits per buffer, and the
  * neighbour offsets and slide of the portraits beside the pick (row 1
