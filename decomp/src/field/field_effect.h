@@ -9,9 +9,6 @@
 extern s32 D_80050100; /* resident: depth shift */
 
 
-void func_800495DC(SVECTOR *v, VECTOR *out);  /* resident: rotate by the GTE matrix */
-void func_8004998C(VECTOR *v, VECTOR *out);   /* resident: rotate a long vector */
-MATRIX *func_8004ABBC(SVECTOR *angles, MATRIX *m); /* resident: rotation matrix */
 void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 s32 func_800A9B1C(s32 value, s32 delta);
 void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, VECTOR *scale, s32 mode);

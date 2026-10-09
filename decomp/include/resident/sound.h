@@ -397,7 +397,6 @@ void func_80038E6C(s32 volume, SpuVolume *out, s32 channel);
 void *func_80038F18(s32 size);
 s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
 s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
-SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames); /* start a sequence */
 SoundSeq *func_80039850(SoundSeqHeader *header);
 SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq);
 void func_800399D4(SoundSeq *seq);  /* release a sequence */
@@ -420,12 +419,41 @@ s32 func_8003F614(u32 *data, u32 magic, s32 id); /* check a sound file */
 void func_8003A094(SoundBank *bank);
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
-s32 func_8003BDFC(s32 wait);
 void func_8003E680(s32 bits, SoundSeq *seq);
 void func_8003E83C(SoundChannel *state, u32 voice);
 void func_8003F484(u32 voices);   /* key off */
 void func_8003F5BC(s32 voice, s32 rate, s32 mode); /* set a voice's release */
 void func_8003F6B0(s32 error);
 void func_8003BC10(u32 address, u8 *data, s32 size, void (*callback)(void)); /* SPU transfer */
+
+/* More of the sound services and their state. */
+SoundSequence *func_800380D0(SoundSequence *bank, s32 size, s32 mode);
+s32 func_8003827C(u8 *data, s32 size);
+void func_80038428(SoundBank *bank);
+void func_8003852C(SoundBank *bank);
+void func_800386C4(s32 mode);
+s32 func_80038824(void);
+void func_80038D18(s32 volume, s32 frames);
+void func_80039B68(SoundSeq *seq, s32 fade, s32 frames);
+void func_80039E18(s32 channel);
+void func_80039EC4(s32 channel, s32 sound);
+void func_8003A14C(s32 id);
+void func_8003A20C(s32 sound);
+void func_8003A344(s32 sound, s32 volume);
+void func_8003A3B8(s32 id, s32 volume, s32 frames);
+void func_8003A450(s32 sound, s32 volume, s32 frames);
+void func_8003A55C(s32 sound, s32 pan);
+s32 func_8003A5D0(s32 id);
+void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames);
+void func_8003A948(SoundSeq *seq, s32 pitch, s32 frames);
+void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames);
+void func_8003AAC4(SoundSeq *seq, u32 mask);
+extern u16 D_80059454;
+extern u8 D_8005954C;
+extern s32 D_8005A408[3];
+extern u8 *D_800658C8; /* the loaded music's instrument data */
+extern struct SoundBank *D_800595D0;
+
+extern struct SoundBank *D_8006259C; /* the effect sound bank of the field, the world map and the menus */
 
 #endif

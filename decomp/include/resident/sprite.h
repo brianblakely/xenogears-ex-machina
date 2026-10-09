@@ -90,7 +90,7 @@ typedef struct Sprite {
     s32 x, y, z;                /* +0x0: position (16.16) */
     s32 speed_x, speed_y, speed_z; /* +0xc */
     s32 speed;                  /* +0x18: walking speed */
-    s32 word1c;                 /* +0x1c */
+    s32 gravity;                /* +0x1c: 16.16, added to speed_y per step */
     SpriteRenderer *renderer;   /* +0x20 */
     void *image;                /* +0x24 */
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
@@ -132,8 +132,8 @@ typedef struct Sprite {
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void (*callback)(struct Sprite *sprite); /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
-    struct Sprite *word70;   /* +0x70: the sprite this one is attached to */
-    struct Sprite *word74;   /* +0x74: the sprite this one aims at */
+    struct Sprite *parent;   /* +0x70: the sprite this one is attached to */
+    struct Sprite *partner;  /* +0x74: the sprite this one aims at */
     s32 word78;              /* +0x78 */
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80: facing angle */
@@ -347,9 +347,7 @@ void func_8002393C(SpriteRenderer *renderer);
 
 void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
-void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
 void func_800222BC(Sprite *sprite, s32 *data);
-void func_800223B0(Sprite *sprite, s16 angle);
 void func_80022660(Sprite *sprite, u8 *target, s32 count);
 void func_80023538(Sprite *sprite, u16 *animation);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
@@ -365,7 +363,6 @@ void func_8001E3D8(Sprite *sprite, u_long *ot);
 void func_8001E9BC(Sprite *sprite, u_long *ot);
 void func_8001EE88(Sprite *sprite, u_long *ot, s32 height);
 void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height);
-void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stage floor */
 void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
@@ -374,7 +371,6 @@ s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
 void func_800248D4(Sprite *sprite); /* run the next script command */
 extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);
-Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
@@ -404,29 +400,14 @@ typedef struct {
 } SpriteVoice;
 
 /* Positions of other modes the script can place a sprite at. */
-typedef struct {
-    u8 unknown0[0xE];
-    s16 x, z;              /* +0xe */
-    u8 unknown12[0xA];
-} SpriteAnchor;
-
 extern SpriteVoice *D_8005919C;
-extern u8 *D_8006BE20;          /* the shared animation block */
 extern VECTOR D_8006F99C;       /* positions (16.16) of two field points */
 extern VECTOR D_8006F9AC;
-extern Sprite *D_800C3E1C;      /* battle overlay: the acting sprite */
-extern SpriteAnchor D_800C3EB0[]; /* battle overlay: formation places by side and slot */
-extern Sprite *D_800D363C[];    /* battle overlay: the sprites of a group, NULL-terminated */
-void func_800B2AEC(void *model, u8 *packets0, u8 *packets1, s16 red, s16 green, s16 blue); /* battle overlay: tint a model */
 
-s32 func_80023124(DVECTOR from, DVECTOR to); /* the direction from `from` to `to` */
 void func_80023290(Sprite *sprite, s32 rate);
 Sprite *func_80023B84(Sprite *sprite, u16 *animation, SpriteSource *image);
-void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z);
 void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z);
-s32 func_80021AD8(s32 value, s32 delta);
 void func_80021CA0(Sprite *sprite, u8 value);
-void func_80021FE0(Sprite *sprite, s16 direction);
 void func_8001D4E8(Sprite *sprite);
 void func_8001FB30(void);
 u8 *func_8001FBA4(Sprite *sprite, u8 *code);
@@ -459,15 +440,10 @@ s32 func_80023440(u16 *entry);
 s32 func_80023468(s32 kind, s32 fallback);
 SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
 void func_80024730(SpriteTask *task);
-void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marker */
 void func_80022E8C(Task *task);
 void func_80025224(Task *task, s32 kind);
-void func_800C11CC(Sprite *sprite); /* battle overlay: run a sprite's script */
-void func_8001FBE4(Sprite *sprite, u8 op, u8 *args); /* run a script command */
-u8 func_80021C20(Sprite *sprite);
 s32 func_80021C6C(Sprite *sprite);
 void func_8001E298(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
-extern u8 D_800C3664;
 /* The scratchpad work area of the pixel colour scaling (80025c04). */
 typedef struct {
     u16 colour;     /* +0x0: the scaled pixel */
@@ -479,7 +455,59 @@ typedef struct {
 extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
-struct ScriptEntry;
-/* Battle overlay: draw an effect-script entry with its packet buffer. */
-void func_800B1F6C(struct ScriptEntry *entry, u8 *packets, u32 *ot, s32 unused, s32 depth, s32 blend);
+
+/* More of the task and sprite services and their state. */
+void func_8001C8DC(void);
+void func_8001C944(void);
+void func_8001C964(void);
+void func_8001C9F8(void);
+Task *func_8001CD08(Task *owner, s32 size);
+void *func_8001CD7C(Task *task);
+Task *func_8001D0A4(Task *owner, void (*update)(Task *));
+Task *func_8001D164(void (*update)(Task *));
+void func_8001D19C(Task *task);
+Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *), void (*destroy)(Task *));
+void func_8001D468(void);
+void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height);
+void func_8001E368(Sprite *sprite, u_long *ot, s32 height);
+s32 func_8001EE68(u8 *frame);
+void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth);
+void func_8001FAB4(s32 x, s32 y);
+void func_80021B24(SVECTOR *to, SVECTOR *from);
+void func_80021BF0(Sprite *sprite, s32 resource);
+void func_80021BF8(Sprite *sprite, void *callback);
+void func_80021C00(Sprite *sprite, s32 group);
+void func_80021D50(Sprite *sprite, SpriteState *state);
+void func_80021EBC(Sprite *sprite, SpriteState *state);
+void func_80021FC0(Sprite *sprite, s32 speed);
+s32 func_80022A00(s32 *word);
+void func_8002303C(Sprite *sprite, s32 count, s32 mode);
+void func_800230A8(Sprite *sprite);
+void func_80023340(Sprite *sprite, s32 count);
+SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra);
+void func_80024F64(s32 size, s32 mode);
+void func_80024FB8(void);
+void func_80024FE4(s32 value);
+void func_80024FF4(MATRIX *view);
+void func_80025044(void);
+void func_800250E0(s32 queue);
+void func_80025A88(Task *task);
+void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode, s32 factor);
+void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y);
+void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot);
+extern u8 D_800591B1;
+extern u8 D_800591B2;
+extern u16 D_800591B4;
+extern u8 D_80059468[3];
+extern void *D_800594BC;
+extern u8 D_800594CC;
+extern s32 D_800595A0;
+extern void *D_800595A8;
+
+/* Darken `count` RGB555 pixels of `source` into `out` by level / 32, and
+ * blend them from `base` towards `target` by level / 32, through the GTE
+ * (handwritten). */
+void func_80026F44(s32 count, s32 level, u16 *out, u16 *source);
+void func_80026FE8(s32 count, s32 level, u16 *out, u16 *base, u16 *target);
+
 #endif

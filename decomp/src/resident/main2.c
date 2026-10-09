@@ -5,14 +5,15 @@
 #include "psyq/libgpu.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "text.h"
-#include "window.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
-#include "cd.h"
-#include "heap.h"
-#include "mode.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
+#include "resident/cd.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (8005934c), the larger window, text and controller queue buffers in its

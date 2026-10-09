@@ -204,7 +204,7 @@ struct BattleSprite *D_800D39EC; /* the sprite the camera circles */
 void *D_800D39F0; /* battle message table */
 
 #include "battle_core.h"
-#include "area.h"
+#include "battle/area.h"
 #include "action_file.h"
 #include "action_resolve.h"
 #include "actor.h"

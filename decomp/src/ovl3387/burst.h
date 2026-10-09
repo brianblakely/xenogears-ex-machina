@@ -130,8 +130,8 @@ typedef struct {
     u32 *ot;               /* +8c54 */
     u8 unk8C58[0x2C];
     s32 buffer;            /* +8c84: double-buffer index being drawn */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* The battle's texture pages to keep (two 64x256 areas). */
 typedef struct {

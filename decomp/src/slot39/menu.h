@@ -1303,8 +1303,6 @@ s32 func_80036410(void);
 void func_80037E8C(void);     /* resume sound */
 void func_80037EE4(void);     /* pause sound */
 void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
-s32 func_80040574(char *device);          /* format */
-s32 func_800405A4(char *from, char *to);  /* rename */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
@@ -1318,7 +1316,6 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void func_801E927C(POLY_FT4 *poly);
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-s32 func_8004E784(s32 channel); /* start a card check */
 void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
@@ -1377,9 +1374,6 @@ struct DIRENTRY {
     s32 head;
     char system[4];
 };
-struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
-struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
-s32 func_800405B4(char *name);    /* erase */
 void func_801D9B08(void);
 void func_801C9EF4(s32 mode, s32 slot);
 void func_801CADB0(void);

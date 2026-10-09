@@ -12,6 +12,10 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt decomp/targets/overlays/field.bss.ld
 SOURCE_DIRS := decomp/src/field
+CLASSIFICATION := decomp/targets/overlays/field.classification.txt
+# INCLUDE_ASSET reads the movie sound timelines from ORIGINAL, whose file
+# offset 0 is VRAM 0x8006FAF0.
+TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0
 # The program ends at 0x800af5e8 (file 0x3faf8), where the resident's mode
 # table starts the field BSS. The original packer then appended zero literal
 # tokens until its last group held eight and recorded the padded length: the

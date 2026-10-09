@@ -271,7 +271,7 @@ class MatchingTests(unittest.TestCase):
         (self.root / "decomp").mkdir()
         (self.root / "decomp/include").symlink_to(repo / "decomp/include")
         (self.root / "heap.c").write_text(
-            '#include "' + str(repo / "decomp/src/resident/heap.h") + '"\n'
+            '#include "' + str(repo / "decomp/include/resident/heap.h") + '"\n'
             + "u32 read_caller(void) {\n"
             + "    u32 caller = 0; GET_RA(&caller); return caller;\n}\n"
             + "extern u32 *caller_slot(void);\n"

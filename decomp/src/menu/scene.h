@@ -220,23 +220,6 @@ void func_8007E020(u32 *ot);
 void SetDrawMove(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
 void func_800811AC(void *ot);
 
-/* SPRT with its position and texture coordinates as whole words. */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    u32 xy0;
-    u16 uv0;
-    u16 clut;
-    s16 w, h;
-} SprtWords;
-
-/* A sprite strip drawn from a shared pixel buffer, per draw buffer. */
-typedef struct {
-    u8 *pixels;
-    SprtWords sprite[2];
-    u8 unk2C[4];
-} SpriteStrip;
-
 extern u16 D_800595D4;
 extern u16 D_80059414;
 void SetSprt(void *prim);           /* initialise a SPRT */

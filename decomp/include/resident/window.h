@@ -68,12 +68,22 @@ typedef struct {
     WindowQueue *queue;
 } Window;
 
-void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
-                   u16 columns, u16 rows); /* allocate and initialize */
 void func_80033DF0(Window *window);
 void func_80034888(Window *window, u_long *ot, s32 buffer); /* draw */
 
 /* Hand-written ordering table link helper (800315a0-80031894). */
 void func_80031798(u_long *ot, void *prim); /* link a SPRT */
+
+/* More of the window services. */
+void func_800345E0(Window *window);
+void func_80034614(Window *window);
+void func_8003463C(Window *window);
+void func_800346A4(Window *window);
+void func_800346D4(Window *window);
+s16 func_80034714(Window *window, s32 message);
+s32 func_800347AC(Window *window);
+s32 func_800347C0(Window *window);
+void func_8003487C(Window *window);
+extern u8 D_800594D4[3]; /* the window colour */
 
 #endif

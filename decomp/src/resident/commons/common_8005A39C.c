@@ -33,17 +33,16 @@ s32 D_8005A49C;
 void *D_8005A4A0; /* file 0xa7 block */
 s32 D_8005A4A4;
 s32 D_8005A4A8;
-void *D_8005A4AC;
-void *D_8005A4B0;
+u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
 s32 D_8005A4B4;
 u16 D_8005A4B8;
 void *D_8005A4BC; /* file 0xa8 block */
 s32 D_8005A4C0; /* map read-ahead size */
 s32 D_8005A4C4; /* unreferenced */
 
-#include "../cd.h"
-#include "../menu.h"
-#include "../mode.h"
-#include "../sound.h"
-#include "../sprite.h"
-#include "../stream.h"
+#include "resident/cd.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"

@@ -7,8 +7,8 @@
 
 #include "psyq/libc.h"
 #include "psyq/libsn.h"
-#include "console.h"
-#include "heap.h"
+#include "resident/console.h"
+#include "resident/heap.h"
 
 static s32 D_80059348; /* host file of the heap report */
 

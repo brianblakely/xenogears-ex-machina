@@ -49,14 +49,12 @@ void func_800320A4(void *data); /* keep the block across heap restarts */
 void func_800320B8(void *data); /* stop keeping the block */
 void func_800320D0(void *data);
 s32 func_800320E8(void *data);  /* release a block */
-void func_8003218C(u8 tag);
 void func_8003223C(void);
 void func_800322B4(void);
 s32 func_80032340(void);
 s32 func_800323B4(void);
 u32 func_80032404(void);
 void func_80032498(s32 tag, s32 value);
-void func_800324B8(s16 kind);
 void func_800324C4(u32 address, char *out);
 void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags);
 void *func_80032B0C(s32 size);
@@ -70,5 +68,7 @@ void func_80032CB8(void);
 void func_80032D60(void);
 void func_80032DCC(char *line);
 void func_80032E04(char *name);
+extern void *D_800594AC; /* the reservation below the heap marker */
+extern void *D_80059480; /* the heap marker for the high-memory reservation */
 
 #endif

@@ -4,9 +4,10 @@
 
 #include "psyq/libc.h"
 #include "psyq/libsn.h"
-#include "console.h"
-#include "heap.h"
-#include "mode.h"
+#include "resident/console.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "own_declarations.h"
 
 /* The heap state, this unit's own variables. GCC emits them after its small
  * data and the assembler allocates those of up to 8 bytes in the unit's
