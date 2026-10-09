@@ -54,16 +54,19 @@ The scan finds 4436 compiled game functions and these library entries
 
 | Library | Entries the game calls |
 | --- | --- |
-| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, primitive setters |
-| libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix, TransMatrix, lighting (NormalColor*), Push/PopMatrix, SetGeomOffset/SetGeomScreen, SetFogNearFar, and 16 entries without a signature name (below) |
+| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu func_8001A4B4, the debug console's flush func_80037324, arena func_80088E90), GetDrawEnv (2: the resident panorama func_8002709C, ovl2615's stage backdrop func_801E7914), MargePrim (arena HUD func_80085EC8), LoadClut2 (arena palette func_8007B270), SetGraphDebug(0) (boot func_80019578), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
+| libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix/TransMatrix (29 each), SetGeomScreen (24), ApplyMatrix (22), MulMatrix0 (20), RotTransPers (19), SetGeomOffset (19), Push/PopMatrix (15), ReadGeomScreen (12), MulMatrix2, ReadGeomOffset, RotAverage4, RotTransPers3, ApplyMatrixLV/ApplyMatrixSV, SetBackColor, SetColorMatrix, SetLightMatrix, OuterProduct0, VectorNormalS/VectorNormalSS, InitGeom, RotTransSV, RotMatrixZ, ScaleMatrixL, SetMulMatrix, lighting (NormalColor, NormalColor3, NormalColorCol, NormalColorCol3), SetFogNearFar, and 16 entries without a signature name (below) |
 | libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (func_80028230 only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the St* streaming ring (Disc and files) |
-| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Memory card and saves), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
+| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset func_80019CD0), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Memory card and saves), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
 | libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite are func_8004D818/func_8004D878 by inspection (unattributed, called by sound.c func_8003BE68) |
 | libcard | InitCARD, StartCARD, `_bu_init` (A(70h)) |
 | libpress, libds | DecDCTReset/DecDCTin/DecDCTout/DecDCTvlc/DecDCTvlcSize and DecDCToutCallback, all from mdec |
 | libc, libc2 | bzero (126), rand (96), memcpy (33), memmove (16), sprintf (11), strcat, strcpy, strlen, memset, memchr, strcmp |
 | libsn | PCopen, PCcreat, PClseek, PCclose and func_8004C38C/func_8004C398/func_8004C470 (PCinit/PCread/PCwrite by inspection): development-host paths only (D_8004FE48 set, or `D_80010000 != -1`) |
+
+The rows other than libcd name every entry the scan reports at this revision;
+its `--detail` output lists each entry's caller functions.
 
 BIOS stubs are named by table and number; splat merged consecutive stubs into
 one symbol (`close` also holds B(41h)-B(45h), SpuGetReverbModeType ends with
@@ -98,8 +101,24 @@ Outside the libraries the game itself uses:
 - **GTE** inline in 78 compiled functions (the PsyQ GTE macros) and in the
   handwritten renderers (resident model renderers, menu and world-map batches).
 - **Scratchpad** (0x1F800000-0x1F8003FF) as work memory in 98 functions, 80 of
-  them in the world map, and as a temporary stack (field func_8007554C, battle
-  `SPAD_STACK_ENTER`).
+  them in the world map, and as a temporary stack. The scan above does not
+  count the stack use, because it does not follow the `move` in the stack
+  switch, `move $8, top; sw $29, 0($8); addiu $8, $8, -4; move $29, $8`
+  (undone by `addiu $29, $29, 4; lw $29, 0($29)`). Matching that sequence in
+  the linked images finds 23 switches:
+  - Eight go to the scratchpad top 0x1F8003FC, in seven functions. These are
+    field func_800739C0 (twice: the camera update func_80073230 and the view
+    composition func_800722F4) and func_8007554C (the frame); battle
+    func_800BE790 (the frame), func_800A4654 (the stage update) and
+    func_800B7870 (the intro swirl); and ovl2615's shatter and burst load
+    modes func_801E8588 and func_801E91E8. In the C they are the
+    `SPAD_STACK_ENTER()` and `"r"(0x1F8003FC)` sites.
+  - The other 15 go to the top of a heap block: the 11
+    `STACK_ENTER(stack + size)` sites of the resident sprite code (3) and
+    battle (8), and the private stacks of debug2611 func_80281FD8, ovl2615
+    func_801E6DC8/func_801E6FEC and ovl3387 func_801FC898.
+
+  The arena coroutine switches stacks its own way (Control flow).
 - **BIOS Kanji ROM**: Krom2RawAdd returns a ROM glyph address for a Shift-JIS
   code. slot39 func_801E65E4 draws every listed save title from it; field
   func_800ABFDC uses it for staff-roll codes outside the game font (8540-887F),
@@ -408,9 +427,10 @@ wait; VSync(-1) returns libetc's blank counter (D_80058960). The game calls it
 from 75 functions: VSync(0) 89 sites, VSync(2) 15, VSync(3) 13, VSync(1) 13,
 VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 
-- VSync(-1) feeds game logic at exactly four sites: the start and end of the
-  field frame (field.c func_8007554C) and of the battle frame
-  (battle_800BD3AC.c func_800BE790).
+- VSync(-1) is read at exactly four sites: the start and end of the field
+  frame (field.c func_8007554C), which only pace it, and of the battle frame
+  (battle_800BD3AC.c func_800BE790), whose measurement battle logic consumes
+  (Pacing per mode).
 - VSync(1) feeds only profiling values (field D_800ADB9C/D_800ADBA0/D_800ADBA4
   read by debug595, battle D_800D309C.drawn/synced, arena D_800927F0 and the
   movie monitor's D_800773B8).
@@ -420,9 +440,25 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   func_8008ACB8), which changes which empty tags are skipped, not the image.
 - D_80059488, the game's own blank count (vblank handler), is the play time
   stored in saves; it also drives input repeat, arena colour cycles and the
-  arena's vblank hook. Pause loops (field func_80077E88, world map
-  worldmap_80072238.c, battle battle.c, menus ovl2598/ovl2600/ovl2601/ovl2602)
-  save and restore it, so paused time is not counted.
+  arena's vblank hook. Every pause and missing-pad loop (Pacing per mode)
+  saves and restores it, so paused time is not counted. These are field
+  func_80077E88, world map func_8007634C and func_80076594, the battle input
+  readers func_80089CCC, func_8008A3EC and func_8008A684 (battle.c), and the
+  menu input readers slot39 func_801C7D78, ovl2598 func_801C92AC, ovl2600
+  func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
+- The vblank handler's h:m:s clock (main2.c func_80035E44) counts blanks in
+  D_80059370 (60 to the second), then seconds in D_80059418, minutes in
+  D_80059420 and hours in D_80059484; D_800501F8 stops it at 100 h. It lives in
+  BSS, so it starts at zero at boot and after a soft reset. It counts through
+  pauses, because only D_80059488 is restored, and saves do not store it (the
+  payload keeps D_80059488). Scripts can read it: in each field frame
+  (func_80077DAC) func_800A31E8 copies it into event variables 0xC (seconds |
+  minutes << 8) and 0xE (hours) (field_800854D0.c:11067-11068). The kernel
+  menu also prints it (main.c func_8001A344). Decoding all 935 maps
+  of both discs with `tools/analysis/events.py` (walking from each entry) finds
+  no instruction that names variables 0xC-0xF as a variable or bit operand.
+  Shipped scripts are therefore not known to read the clock, though an indirect
+  read is not ruled out.
 - Video is NTSC only: SetVideoMode(0) at boot (main.c func_80019578).
 
 ### Pacing per mode
@@ -432,14 +468,54 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 | 0 kernel menu (resident func_8001A4B4) | DrawSync, VSync(0) | 1 | development start screen |
 | boot logo (func_80019D48) | VSync(0) per step | 1 | 16 fade-in steps, 110 held, 17 fade-out |
 | 1 field (func_80077E88, frame func_8007554C) | start = VSync(-1); DrawSync and VSync(0) mid-frame; at the end busy-waits until VSync(-1) >= start + D_800B2078.unk217C + 2 | 2, 3 or 4 | unk217C comes from field event d6 (func_800925A0, operand 0/1/2, which also sets text speed 8/6/4); scripts use all three values on both discs. Sprite scripts tick D_80059198 + 1 = 2 times per update (field.c func_80071FB0) |
-| 1 field pause | DrawSync, VSync(2) | 2 | while the pad is missing or Start is held (func_80077E88); D_80059488 restored |
+| 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2997-3008). The other is a toggle on Start (field.c:3010-3021): it starts when the field's repeat word D_800C3900 (the queued D_800594A4, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (func_80037EE4, until func_80037E8C) and restore D_80059488 |
 | 1 field movie (func_800A7C58) | mode D_800ADB74 0: VSync(0) before each decode batch (func_800A732C); 1: field overlays and VSync(0) (func_80075910); 2: the full field frame | 1, or the field's | movie progress D_800B06A0 comes from the MDEC callback |
-| 2 battle (resident func_8001B6C4, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync D_80059494 = VSync(-1) - start - D_80059198, clamped 0-4; then VSync(D_80059198 + 1), or VSync(0) when D_80059198 is 0 | 1, plus catch-up | the next frame re-runs camera and sprite updates (func_800BBAB8, func_8001C964) and effects (func_8008A9C0(1)) D_80059494 more times. func_800B88C4 leaves D_80059198 = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: Select gives VSync(8) |
+| 2 battle (resident func_8001B6C4, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync D_80059494 = VSync(-1) - start - D_80059198, clamped 0-4; then VSync(D_80059198 + 1), or VSync(0) when D_80059198 is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). func_800B88C4 leaves D_80059198 = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: holding Select gives VSync(8) and drops the catch-up (func_800BEBC4, D_80010000 != -1) |
+| 2 battle pause and missing pad (battle.c func_80089CCC, func_8008A3EC, func_8008A684) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in func_80089CCC and func_8008A3EC only while D_800CCC58 is set) toggles D_800C3444. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and D_80059488 is restored, as in the field |
 | 3 world map (func_80070CFC, loop func_800712D0) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (func_800967E4); sprite scripts tick twice per update (D_80059198 = 1, func_80072238) |
+| 3 world-map pause (worldmap_80072238.c func_8007634C, func_80076594) | DrawSync, VSync(0) | 1 | A Start press (the pressed word D_8009BD10 & 0x800) enters func_8007634C until the next press, and a missing first pad enters func_80076594 until one answers (worldmap.c func_800712D0). Both draw on the other buffer, suspend voices and tick, and restore D_80059488 |
 | 4 Battling arena (`menu` target, func_80088E90) | VSync(D_80092898) | 1 or 2 | the arena task sets D_80092898 to 0 or 2 (menu5.c func_800852C4); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident func_8001C634; frames func_8001C074, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
+| 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on func_80035734(0), with no VSync, until the first pad answers; voices and tick suspended, D_80059488 restored |
 | 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (func_801D3F7C) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
+
+Battle alone measures its frames and scales logic by the result. The field's
+VSync(-1) values only pace its frame (field.c:2084-2160), and the work driven by
+blanks rather than frames follows D_80059488 (above). After DrawSync the battle
+frame func_800BE790 stores D_80059494, the blanks since the frame's start less
+D_80059198, clamped to 0-4. It also stores frameTicks D_800CCC5C
+(BattleArea.frameTicks) = D_80059494 + D_80059198 (battle_800BD3AC.c:675-682).
+The next frame consumes them:
+
+- Catch-up in the frame (battle_800BD3AC.c:661-671). The camera step
+  func_800BBAB8 and the main task list func_8001C964 run D_80059494 more times,
+  and so does the battle step func_8008A9C0(1). func_8008A9C0 dispatches on
+  D_800C3E4C, and in state 1 its func_8008A274 runs the ATB tick func_8007171C
+  (while D_800CCC58 is set). The ATB therefore advances once per blank of the
+  previous frame, up to five times a frame. func_8001C964 zeroes D_80059494
+  when its pause count D_80059428 runs out.
+- Stage steps (battle_8009E53C.c func_800A9A50, 4057-4065). D_800C3E88 += 1 +
+  frameTicks, capped at 6, yields up to three steps of two blanks, and the
+  remainder carries over. The steps advance:
+  - the wave phase (D_800C3CF0 += 56 each);
+  - each object's pose and animation (func_800AAA20, which runs func_800A0838
+    and func_800AE2A4 once per step);
+  - the camera channels (func_800B026C, while D_800C3DF8 is set);
+  - the sprite pool's fades (func_800A2FD8);
+  - the timers and wait-frames counts of the objects' effect scripts
+    (func_800AAD54, run from func_800AAA20). These scripts run only in an
+    update with at least one step.
+- frameTicks itself. Those effect scripts integrate the object's motion
+  frameTicks + 1 times (func_800AAD54). Image animations advance by speed x
+  (frameTicks + 1) (func_800A3E98), both for every drawn object (func_8009F844)
+  and for the stage object (func_800A4654, from func_800BB9D4 each frame).
+- Not scaled. The highlight pulse (D_800C3B7C += 0x80), the push-apart of the
+  acting object (func_800B10EC) and the placement of child objects
+  (func_800AAB34) run once per stage update.
+- The first frame's frameTicks is max(0, n / 2 - 1), where n counts the gear
+  enemies present: slots 3-10 that hold a gear and whose field2 is below 0x11
+  (battle_800B8098.c func_800B88C4).
 
 The sound driver runs beside this on its own timer: 240 ticks per second, about
 4.01 per NTSC vertical blank, so the ticks per frame are not a whole number.
@@ -448,24 +524,118 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
-| vblank handler func_8003634C (main2.c) | VSyncCallback at boot (func_80019578) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | D_80059488++; pad words D_80059570/D_80059574, D_8005948C/D_80059490, D_800594A4/D_800594A8 and the sticks; the input ring D_8005A0FC-D_8005A19C; the h:m:s clock D_80059370/D_80059418/D_80059420/D_80059484 (stops at 100 h, D_800501F8); actuators D_8005A1BC; then the hook D_800501FC | input readers |
+| vblank handler func_8003634C (main2.c) | VSyncCallback at boot (func_80019578) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | D_80059488++; pad words D_80059570/D_80059574, D_8005948C/D_80059490, D_800594A4/D_800594A8 and the sticks; the input ring D_8005A0FC-D_8005A19C; the h:m:s clock D_80059370/D_80059418/D_80059420/D_80059484 (stops at 100 h, D_800501F8); actuators D_8005A1BC; then the hook D_800501FC. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs D_80010000 != -1 and D_80059390 set. Only func_800363E0 can set D_80059390 (func_80036288 clears it), and nothing calls or references func_800363E0 | input readers, including the battle pause, which spins on the queue |
+| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c func_80036288); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | D_800625FC[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (func_800358BC). Main-thread readers: the pad check func_80035734, which the battle and menu missing-pad loops spin on without VSync; the button read func_8003569C in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read func_800BEC18; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump func_800365FC |
 | vblank hook D_800501FC | the arena (menu5.c func_800852C4: func_80084FD0); cleared by the dispatcher | every vertical blank | on odd blanks while D_80092784 is set, func_8008E120 steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
-| sound tick func_8003C020 (sound.c) | func_80037B88: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz unless flag 0x40 (suspended) | D_80059504 (tick count, stamps effect voices); every other tick the master and CD fades (D_8005A3C0), every tick the sequence slides and beats (D_80059564), staged voice registers written through D_800508E4 (func_8003E900, func_8003EB5C), SpuSetCommonAttr, SPU IRQ re-enable (D_8005955C) | the main loop reads the same driver state between ticks |
-| SPU transfer done func_8003BB64 | func_80037B88, each transfer (func_8003BE68) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (D_80059510/D_800594F4) | `while (func_8003BDFC(0))` spins (battle, movie), `while (D_8005957C & 0x10)` (world map func_80072238), ring space in func_8003BCA0 |
+| sound tick func_8003C020 (sound.c) | func_80037B88: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, func_80037EE4, and func_80037E8C clears it) | D_80059504 (tick count, stamps effect voices); every other tick the master and CD fades (D_8005A3C0), every tick the sequence slides and beats (D_80059564, which links the effect channels too), staged voice registers written through D_800508E4 (func_8003E900, func_8003EB5C), SpuSetCommonAttr, SPU IRQ re-enable (D_8005955C) | the effect-end waits (below); the main loop reads the same driver state between ticks |
+| SPU transfer done func_8003BB64 | func_80037B88, each transfer (func_8003BE68) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (D_80059510/D_800594F4), which sets 0x10 again | the transfer waits (below) |
 | SPU IRQ func_8003BFA0 | func_80037B88 | SPU IRQ | D_80059514++, hook D_8005950C | — |
 | CD sync/ready/data | resident func_80029690 (one file), func_80029AFC (file list), func_80029EB0 (image stream), func_8002A2D0, then the callbacks themselves (main_8002709C.c); world map func_8009699C, func_80096A6C (installs func_80096C0C) | CD interrupts | the read state machine D_8004FE1C, retry reason D_8004FE20, counters D_8005A48C/D_8005A490, sector copies (CdGetSector), stream-ring slots D_8004FE2C; image streams load VRAM strips from the callback (func_8002BB50) | func_80028A60(0) and `while (func_800286CC() ...)` busy-wait without VSync; world-map func_800967E4 |
-| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_open, removed by movie_stop | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field func_800A7120 (D_800B06A0 frame number, display block D_800ADB78/D_800C426C, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off D_800B06A0 |
+| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:183), removed by movie_stop (mdec.c:443) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field func_800A7120 (D_800B06A0 frame number, display block D_800ADB78/D_800C426C, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off D_800B06A0 |
 | DrawSync callback | field func_8007781C (development kits only, D_800C268C == 0), arena func_80088C00 | GPU idle | VSync(1) stamps (profiling) | — |
 | card events 0xF4000001 | slot39 func_801D9B08 | BIOS card driver | event state | func_801C881C (TestEvent spin) |
 
-Shared state touched from interrupts is guarded with Enter/ExitCriticalSection
-(11 functions). Blocking waits deep in call stacks: VSync and DrawSync (75 and
-159 functions); disc waits func_80028A60(0) and the world map's
-`while (func_800286CC() >= 3)` spin without VSync; CdInit/CdControlB retry
-loops (func_80028230, func_800283D4) and the disc-change checks in slot39
-(func_801E92CC, func_801E93A0, VSync(3) between commands); the SPU transfer
-spins above; the card TestEvent loop; and the endless error screens
-(func_80019EF8, func_8002804C).
+How the main program excludes these handlers:
+
+- **Critical sections.** EnterCriticalSection/ExitCriticalSection appear in 11
+  functions. They bracket:
+  - the instruction-cache flush, FlushCache, in the dispatcher func_80019ACC,
+    field func_8007999C, battle func_800BEB04 and world map func_800762FC,
+    each after a DrawSync and a VSync;
+  - the sound driver's start and stop (func_80037B88, func_80037DC0) and its
+    transfer queue (func_8003BCA0);
+  - slot39's card events and its CD-callback swap (func_801C8960,
+    func_801D9B08, func_801D9C84, func_801D9E3C).
+
+  The soft reset func_80019CD0 uses SwExitCriticalSection and
+  SwEnterCriticalSection instead. These set and clear status-register bits
+  0x401 directly (80040514, 800404f4).
+- **The sound tick.** The sound-driver API excludes only the tick: 16 functions
+  wrap their updates in DisableEvent/EnableEvent(D_800595BC), the tick's
+  root-counter event. They guard:
+  - the wave-bank list: func_80037FD8, func_800380D0, func_80038310;
+  - the effect-bank list: func_80038428, func_8003852C;
+  - the driver memory pool: func_80038F18, func_80039024, func_80039144;
+  - sequence start, resume, snapshot, restart and stop: func_80039A80,
+    func_8003AA30, func_8003ADCC, func_8003AE84, func_8003AF24;
+  - the effect channels: func_80039FF8, func_8003B644;
+  - the playing list: func_8003B9E4.
+
+  The functions up to func_80039A80 are in main2_800366E0.c, the rest in
+  sound.c. A port that runs the tick on an audio thread must keep each of these
+  sections exclusive with it. Two paths return with the event still disabled:
+  a failed allocation in func_80038F18 or func_80039024, and error 0xB in
+  func_8003852C. The tick then stays off until the next guarded call reaches
+  its EnableEvent.
+
+Waits on the sound driver. A host that does not run the tick and the transfer
+callback never leaves these:
+
+- **Effect ends.** The tick ends an effect channel when its data reaches opcode
+  90 end or FF stop_when_silent (sound.c func_8003CD8C, func_8003E54C).
+  Otherwise a channel ends only through a stop call or a new effect that takes
+  it. The stop calls are func_80039FF8 (all), func_8003A094 (a bank),
+  func_8003A14C (an effect) and func_8003A20C (a channel pair); the channel
+  choice for a new effect is func_8003A65C.
+  - Field event fe 64 (func_8008F5E4) yields while any effect channel in the
+    mask operand 1 << 8 is active (func_8003A5D0(-1)), so its script stalls.
+  - Battle func_800B838C, reached through ovl3087 opcode 48 (func_801E8750),
+    runs battle frames until func_8003A5D0(sound) returns 0. The event VM
+    stalls while the battle keeps running.
+- **SPU transfers.** Flag 0x10 stays set until the transfer queue is empty.
+  - func_8003BDFC(0x10) re-reads the flag until it clears (the loop at
+    8003be08). Every such call is a busy-wait
+    (`grep -rn 'func_8003BDFC(0x10)' decomp/src`). They are boot
+    func_80019578 (main.c:114), the driver's error beep func_8003F6B0
+    (sound.c:3995), field func_80085788, func_80085890, func_800859DC,
+    func_80085C90, func_80085F30 and func_8008AACC (field_800854D0.c:170, 204,
+    233, 294, 367, 1951), and ovl3087 func_801E5160 (ovl3087.c:125).
+  - `while (func_8003BDFC(0) != 0)` runs battle frames in battle
+    func_800B838C, func_800B853C and func_800B89FC (battle_800B8098.c:193, 257,
+    390) and func_800BFBA0 (battle_800BD3AC.c:1166). It spins in battle
+    func_800C0FAC (battle_800BFE48.c:534), trapping to the debugger on each
+    pass on a development kit, and in movie.c's unreferenced host-PC loaders
+    func_800753B8 and func_8007548C.
+  - ovl2615 func_801E6D6C polls the flag once per task step.
+  - Outside a transfer callback, func_8003BCA0 spins while at least six of the
+    eight ring entries are queued (func_8003BDBC).
+  - Not a wait: the world map's `while (D_8005957C & 0x10) {}` in
+    func_80072238 (worldmap_80072238.c:300), and its
+    `if (debug) while (debug)` form in func_8007D918, func_80080D00 and
+    func_80082324. Each runs after a wave-bank load (func_80037FD8) and the
+    terrain-stream wait. All four compile to a single test followed by a
+    branch to itself (`bnez v0` at 0x80072584, 0x8007DB54, 0x80080EFC and
+    0x80082538), so the world map hangs if a transfer is still running when it
+    gets there. No other code in the images branches to itself this way. The
+    other self-branches are counted delay loops, which change their counter in
+    the delay slot, and the fatal error's endless `j` (func_80019EF8). A modern
+    compiler may treat the loop differently: it can re-read the flag, keep the
+    hang, or drop the loop, since C11 lets it assume such a loop terminates
+    (6.8.5p6). A port should code the intended behaviour explicitly.
+
+Blocking waits deep in call stacks:
+
+- VSync and DrawSync (75 and 159 functions).
+- Disc waits: func_80028A60(0) and the world map's
+  `while (func_800286CC() >= 3)` spin without VSync.
+- The CdInit/CdControlB retry loops (func_80028230, func_800283D4) and the
+  disc-change checks in slot39 (func_801E92CC, func_801E93A0, with VSync(3)
+  between commands).
+- The transfer waits above.
+- The missing-pad spins of battle and the menus, and the battle pause (Pacing
+  per mode). These run without VSync and depend on the pad driver and the
+  vblank handler.
+- The card TestEvent loop.
+- The endless error screens (func_80019EF8, func_8002804C).
+
+Development only:
+
+- The ovl2606 battle-scene selector func_801E0238 loops DrawSync and VSync(0)
+  until Start. Battle func_80070F40 runs it only while D_800594F8 is set
+  (battle_80070E2C.c:345), and the field's and world map's battle requests
+  clear that flag (field.c:3468, field_800854D0.c:5040 and 5067,
+  worldmap.c:118).
+- The vblank handler's pollhost() trap (above).
 
 ## Control flow and state
 
@@ -476,7 +646,7 @@ spins above; the card TestEvent loop; and the endless error screens
 | dispatcher func_80019ACC(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (func_80019560), decode its cached overlay to 0x8006FAF0 (func_80032EB4), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
 | never-returning dispatch sites | boot func_80019578, kernel menu func_8001A4B4, field func_8007954C, battle func_8001B6C4, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu func_8001C1A8 (debug start), movie func_800737EC (2 sites), heap errors 0x82 (func_80031BDC) and 0x83 (func_800320E8, func_80032C18) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors and the disc error indicator (func_8002804C, endless after four retries) are fatal |
 | fatal error func_80019EF8 | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (D_80010000 = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
-| soft reset func_80019CA0 -> func_80019CD0 | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | stops the CD (func_800283D4), sound (func_80037DC0), SPU, callbacks and pads, then the entry clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
+| soft reset func_80019CA0 -> func_80019CD0 | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (func_800283D4, CdFlush), sound (func_80037DC0), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine func_8008BB3C (resume) / func_8008BC04 (yield) (handwritten, menu) | task made by func_8008BA2C on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c func_80088E90); yields at 7 sites (menu2.c 1, menu5.c 6); D_80096D88/D_80096D8C hold the suspended caller; func_8008BB00/func_8008BB1C (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
 | environment-map patcher func_80030988 (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of func_80030750 at fixed offsets from D_800308D0; image default (6, 6, 0x40, 0x40); callers arena menu2.c func_800725B0 (5, 4), func_800726B4 and menu5.c func_800852C4 (1, 1), battle func_800A8B0C and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
@@ -570,11 +740,24 @@ GTE with H 0x1000 (sprite_80025C04.c).
   0x00FFFFFF; the arena rebuilds pointers from links as
   `(tag & 0xFFFFFF) - 0x80000000` (menu7.c func_8008ACB8).
 - Dithering is on by default (above). The DR_MODE/DR_TPAGE packets the game
-  builds mostly turn it off for what follows (SetDrawMode at 58 call sites and
-  SetDrawTPage at 12 pass dither 0): the arena's screen fades (menu7.c
-  func_8008E2B8, func_8008E3CC) and HUD pages (menu5.c) pass 1, ovl2615's
-  stage backdrops copy the draw environment's flags. Observed:
-  rendering-behavior.md, Dithering.
+  builds mostly turn it off for what follows. The counts below take the third
+  (dither) argument of every call that
+  `grep -rn 'SetDrawMode(\|SetDrawTPage(' decomp/src --include=*.c` lists. It
+  lists 63 and 21 lines, all of them calls, each with its first three
+  arguments on the line:
+  - SetDrawMode passes 0 at 58 of 63 call sites.
+  - SetDrawTPage passes 0 at 16 of 21.
+  - The linked images hold 62 and 20 such calls, because the two branches of
+    arena func_8008E2B8 and of world map func_800925A0 each share one call.
+  - Dither 1 goes to the arena's screen fades (menu7.c func_8008E2B8 at 2118
+    and 2120, func_8008E3CC at 2167), its HUD packets (menu5.c func_80085EC8
+    at 1565 and 1635, func_800868E0 at 1792 and 1794) and the world map's
+    dithered saved-screen fade (worldmap_80072238.c:515 in func_80072DB4, a
+    DR_TPAGE drawn before its translucent black quad).
+  - ovl2615's stage backdrops copy the draw environment's dfe and dtd
+    (stage.c func_801E7914, two sites, after GetDrawEnv).
+
+  Observed: rendering-behavior.md, Dithering.
 - Semi-transparency: SetSemiTrans (76 functions) with the rate from GetTPage's
   abr argument (0 at 127 sites, 1 at 29, 2 at 31, 3 once in
   worldmap_80077E68.c, plus variables such as the field fade channels'
@@ -589,7 +772,7 @@ GTE with H 0x1000 (sprite_80025C04.c).
   func_80080D20, the world-map heat haze func_80081D80); StoreImage (23
   functions), MoveImage (40), LoadImage (109) and ClearImage (17) read, copy and
   rewrite VRAM, including the saved-screen slot at (0x2C0, 0x100). The CPU sets
-  bit 15 (STP) on captured pixels (battle_800B7870.c func_800B7870, field
+  bit 15 (STP) on captured pixels (battle_800B7134.c func_800B7870, field
   func_800A5774), so textures rely on per-texel semi-transparency.
 - Mask bit: no game code sends an E6 packet; the observed environments write
   E6 set=0 check=0 (rendering-behavior.md).
