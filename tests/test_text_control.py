@@ -18,6 +18,7 @@ from tools.analysis.text_control import (
     decode_text,
     decode_token,
     fits,
+    grid_letters,
     initial_names,
     number_glyphs,
     pair_kind,
@@ -287,6 +288,40 @@ class CharacterTests(unittest.TestCase):
         self.assertEqual(agreeing(proposals, known), ["Ab Cd", "Ab Ce"])
         tie = {"Ab Cd": spell("Ab Cd"), "Af Gh": spell("Ib Jk")}
         self.assertEqual(agreeing(tie, known), [])
+
+    def test_name_entry_grid_runs_give_the_alphabet(self):
+        # An invented grid: screen row r shows entries r, r + 9, r + 18 and
+        # r + 27, five codes each. Rows 0-1 hold the run 0x20-0x39 and rows
+        # 2-3 the run 0x3d-0x56, code n with the one-byte glyph n + 0x40.
+        grid = bytearray([0x0F] * 36 * 6)
+
+        def place(row: int, first: int) -> None:
+            codes = list(range(first, first + 26))
+            for column, entry in enumerate((row, row + 9, row + 18, row + 27, row + 1, row + 10)):
+                chunk = codes[column * 5 : column * 5 + 5]
+                grid[entry * 6 : entry * 6 + len(chunk)] = bytes(chunk)
+
+        place(0, 0x20)
+        place(2, 0x3D)
+        pairs = bytearray(2 * PAIR_CODES)
+        for code in range(0x20, 0x57):
+            pairs[2 * code + 1] = code + 0x40
+        capitals = {0x61: "B", 0x63: "D", 0x75: "V"}  # glyphs of codes 0x21, 0x23, 0x35
+        small = {0x7D: "a", 0x96: "z"}  # codes 0x3d and 0x56
+        letters = grid_letters(bytes(grid), bytes(pairs), THRESHOLD, {**capitals, **small})
+        self.assertEqual(len(letters), 52 - 5)
+        self.assertEqual((letters[0x60], letters[0x79], letters[0x7E]), ("A", "Z", "b"))
+        # One known letter out of place, too few or of both cases in a run,
+        # or a letter already known at another glyph, and that run adds nothing.
+        for known in (
+            {**capitals, 0x64: "D", **small},  # "D" at E's place
+            {0x61: "B", **small},  # one capital
+            {**capitals, 0x62: "c", **small},  # both cases
+            {**capitals, 0x10: "A", **small},  # "A" has a glyph already
+        ):
+            with self.subTest(known):
+                found = grid_letters(bytes(grid), bytes(pairs), THRESHOLD, known)
+                self.assertNotIn(0x60, found)
 
     def test_render_prints_known_glyphs_as_characters(self):
         data = b"\x41\x10\x42\xfe\x41\x01\x5b\x00"

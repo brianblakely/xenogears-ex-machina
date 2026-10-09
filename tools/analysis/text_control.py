@@ -32,9 +32,10 @@ by mnemonic in brackets; text no entry reaches follows as `unreached`.
 
 `--chars` prints the glyphs whose characters the disc's own data gives as
 those characters and every other glyph as {hex} (character_map): the digits,
-signs and blank of the number code, and the letters of the memory card title
-lines that recur as whole texts. There is no font map in this module; the
-limits are in docs/scripts/text-control.md.
+signs and blank of the number code, the letters of the memory card title
+lines that recur as whole texts, and the other letters of the name entry
+grid's two alphabet runs, whose places those letters confirm. There is no
+font map in this module; the limits are in docs/scripts/text-control.md.
 """
 
 from __future__ import annotations
@@ -455,6 +456,12 @@ BLANK_CODE = 0xC3
 TITLE_FILE = (0x10, 1, 1)
 TITLE_BYTES = 30
 SJIS_TABLE = 0x801EA610 - 0x801C5000  # offset of D_801EA610 in the slot-39 image
+# The name entry grid (ovl2600 D_801CBEC0): 36 entries of six character codes,
+# of which func_801CA558 shows five, in four columns of nine, so screen row r
+# shows entries r, r + 9, r + 18 and r + 27 from left to right.
+GRID = 0x801CBEC0 - 0x801C5000  # offset of D_801CBEC0 in the ovl2600 image
+GRID_ENTRIES, GRID_CODES, GRID_SHOWN, GRID_ROWS = 36, 6, 5, 9
+ALPHABETS = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 
 
 def number_glyphs(pairs: bytes, threshold: int) -> dict[int, str]:
@@ -584,18 +591,69 @@ def align_titles(
             aligned.append((title, proposals[title]))
 
 
+def grid_letters(
+    grid: bytes, pairs: bytes, threshold: int, known: dict[int, str]
+) -> dict[int, str]:
+    """The letters of the name entry grid's alphabet runs. In screen order
+    (GRID notes) each run of 26 ascending character codes whose resource 27
+    pairs are one-byte glyphs is an alphabet when the known glyphs among them
+    are at least two letters of one case, each at its own place in that
+    alphabet; its other glyphs then take the alphabet's other letters, unless
+    one of them is known or one of those letters has a glyph already. A run
+    that fails any of this adds nothing."""
+    codes = [
+        code
+        for row in range(GRID_ROWS)
+        for column in range(GRID_ENTRIES // GRID_ROWS)
+        for code in grid[(row + GRID_ROWS * column) * GRID_CODES :][:GRID_SHOWN]
+    ]
+    runs, run = [], codes[:1]
+    for code in codes[1:]:
+        if code == run[-1] + 1:
+            run.append(code)
+        else:
+            runs.append(run)
+            run = [code]
+    runs.append(run)
+    letters: dict[int, str] = {}
+    for run in runs:
+        if len(run) != len(ALPHABETS[0]) or 2 * run[-1] + 1 >= len(pairs):
+            continue
+        if any(
+            pair_kind(pairs[2 * code], pairs[2 * code + 1], threshold) != "one-byte glyph"
+            for code in run
+        ):
+            continue
+        glyphs = [pairs[2 * code + 1] for code in run]
+        placed = [(place, known[glyph]) for place, glyph in enumerate(glyphs) if glyph in known]
+        cases = [alphabet for alphabet in ALPHABETS if all(c in alphabet for _, c in placed)]
+        if len(placed) < 2 or len(cases) != 1:
+            continue
+        alphabet = cases[0]
+        if any(alphabet[place] != char for place, char in placed) or len(set(glyphs)) != 26:
+            continue
+        added = {glyph: alphabet[place] for place, glyph in enumerate(glyphs) if glyph not in known}
+        if set(added.values()) & set(known.values()):
+            continue
+        letters.update(added)
+    return letters
+
+
 @dataclass(frozen=True)
 class CharacterMap:
     glyphs: dict[int, str]  # one-byte glyph -> character
     numbers: int  # glyphs from the number code
-    titles: tuple[tuple[str, bytes], ...]  # (title, text) pairs that gave the others
+    titles: tuple[tuple[str, bytes], ...]  # (title, text) pairs that gave letters
+    grid: int = 0  # glyphs from the name entry grid's alphabet runs
 
     def summary(self) -> str:
         letters = "".join(sorted(c for c in self.glyphs.values() if c.isalpha()))
+        from_titles = len(self.glyphs) - self.numbers - self.grid
         return (
             f"{len(self.glyphs)} glyphs: {self.numbers} from the number code, "
-            f"{len(self.glyphs) - self.numbers} from {len(self.titles)} memory card titles "
-            f"({', '.join(title for title, _ in self.titles)}); letters {letters}"
+            f"{from_titles} from {len(self.titles)} memory card titles "
+            f"({', '.join(title for title, _ in self.titles)}), {self.grid} from the name "
+            f"entry grid's alphabets; letters {letters}"
         )
 
 
@@ -621,13 +679,17 @@ def whole_texts(disc: Disc, threshold: int) -> set[bytes]:
 
 def character_map(disc: Disc, threshold: int) -> CharacterMap:
     """The glyphs whose characters `disc`'s own data gives (module notes)."""
-    known = number_glyphs(archive_entry(system_data(disc), 27), threshold)
+    pairs = archive_entry(system_data(disc), 27)
+    known = number_glyphs(pairs, threshold)
     slot, other, _ = OVERLAYS["slot39"]  # the unpacked image, directory (0x10, 0) file 5
     image = disc.data((slot, other)[disc.number - 1])
     table = struct.unpack_from("<96H", image, SJIS_TABLE)
     titles = save_titles(disc.data(disc.slot(*TITLE_FILE)), table)
     glyphs, aligned = align_titles(titles, whole_texts(disc, threshold), known)
-    return CharacterMap(glyphs, len(known), tuple(aligned))
+    slot, other, _ = OVERLAYS["ovl2600"]
+    grid = disc.data((slot, other)[disc.number - 1])[GRID : GRID + GRID_ENTRIES * GRID_CODES]
+    letters = grid_letters(grid, pairs, threshold, glyphs)
+    return CharacterMap({**glyphs, **letters}, len(known), tuple(aligned), len(letters))
 
 
 @dataclass
