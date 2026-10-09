@@ -3,18 +3,8 @@
 
 #include "common.h"
 #include "model.h"
+#include "battle/area.h"
 
-/* Presentation event queue slot (0x48 bytes, from D_800C3FE8). */
-typedef struct {
-    u16 amounts[11];
-    u16 targetMask;          /* 0x16 */
-    u8 codes[11];            /* 0x18 */
-    u8 actor;                /* 0x23 */
-    u16 accumulated[11];     /* 0x24 */
-    u16 parameter;           /* 0x3A */
-    u8 accumulatedCodes[11]; /* 0x3C */
-    u8 type;                 /* 0x47: 0xF7 continues, 0xFF ends */
-} BattleEvent;
 
 /* A battle object's extra file: more effect scripts and animations. */
 typedef struct {
@@ -216,21 +206,6 @@ typedef struct ResidentRecord18 {
     u8 pad[0x18];
 } ResidentRecord18;
 
-/* Per-slot formation information and placement (0x1C bytes, D_800C3EB4). */
-typedef struct {
-    u8 group;  /* formation group */
-    u8 member;
-    u8 field2; /* 0x7F none */
-    u8 hidden; /* 0x03 */
-    u8 gear;   /* 0x04: fights in a gear */
-    u8 pad5;
-    u8 targetCode; /* 0x06: from the default target (80085310) */
-    u8 pad7[0xA - 0x7];
-    s16 x; /* 0x0A */
-    s16 z; /* 0x0C */
-    s16 y; /* 0x0E */
-    u8 pad10[0x1C - 0x10];
-} BattleSlot;
 
 /* Battle scene and effect state. */
 extern SVECTOR *D_800D3344;       /* scene points */

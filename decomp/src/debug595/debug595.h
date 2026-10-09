@@ -76,7 +76,6 @@ typedef struct {
 void func_800379C8(const char *format, ...); /* debug text print */
 void func_80036DC8(s32 r, s32 g, s32 b);     /* debug text colour */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m); /* RotMatrix */
-void func_8004A6DC(SVECTOR *v, long *t, SVECTOR *r);
 void func_80037324(u32 *ot);
 
 /* Field state. */

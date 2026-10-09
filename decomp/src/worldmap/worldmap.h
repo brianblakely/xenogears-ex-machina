@@ -150,7 +150,6 @@ extern s32 D_8009BCDC;
 extern u8 D_8009BB48[3]; /* background colour */
 
 void func_8002C6E0(s32 r, s32 g, s32 b);
-void func_8004A10C(s32 r, s32 g, s32 b);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct WorldmapActor {
@@ -286,7 +285,6 @@ extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
 extern s32 D_80050100;          /* ordering-table depth shift */
 
-MATRIX *func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrixYXZ */
 
 /* Textured quad packet (PsyQ POLY_FT4 layout). */
 typedef struct PolyFT4 {
@@ -799,10 +797,7 @@ s32 func_800968E0(void);
 #define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
 #define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
-MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
-MATRIX *func_80049ACC(MATRIX *m0, MATRIX *m1); /* m0 = m0 * m1 */
 void func_80093740(VECTOR *normal, s32 x, s32 z); /* ground normal */
-MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
 
 /* Camera placement: eye, target and up direction. */
 typedef struct {
@@ -823,7 +818,6 @@ typedef struct {
 
 #define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
 
-void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 
 /* Actor slot entry points (kind: start, update: step); they return the
  * next command. */
@@ -895,7 +889,6 @@ typedef struct TrailPoint {
 extern TrailPoint D_8009CEC4[32];
 extern s16 D_8009D154; /* trail index */
 
-MATRIX *func_8004ABBC(SVECTOR *angle, MATRIX *m); /* rotation matrix from angles */
 extern s32 D_8009C5A8; /* arrival kind */
 void func_8008E034(VECTOR *position);
 
@@ -1159,7 +1152,6 @@ void func_8003A2E4(s32 sound, s32 volume);
 
 /* worldmap_80083A00 */
 void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
-void func_8004A8EC(MATRIX *in, MATRIX *out);
 s32 func_80093978(s32 x, s32 z); /* terrain height */
 
 typedef struct {
@@ -1322,7 +1314,6 @@ typedef struct {
 
 void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
 
-void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 
 /* Indirect GTE reads need memory clobbers to keep their producer stores. */
@@ -1392,7 +1383,6 @@ typedef struct {
 
 #define CELL_PROBE ((CellProbe *)0x1F800000)
 
-s32 func_8004A70C(s32 sxy0, s32 sxy1, s32 sxy2); /* NormalClip */
 s32 func_8009443C(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);

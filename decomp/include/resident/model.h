@@ -143,7 +143,6 @@ extern s32 D_80050100;           /* depth shift into the ordering table */
 
 void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
 
-s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2); /* upload an image list */
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 /* A primitive group: its type (an index into D_8004FE50) and count; the
@@ -179,8 +178,24 @@ void func_8002C8CC(SpriteModel *model, RenderPacket *packets, s32 mode); /* buil
 void func_8002CCAC(void);
 s32 func_8002C3E8(ModelGroup *group);
 void func_8002C59C(SpriteModel *model);
-void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second);
 /* Old-style definition: callers pass the mode as an int. */
 s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
+
+/* More of the model services. */
+s32 func_8002C4BC(ModelGroup *group);
+s32 func_8002C644(ModelGroup *group);
+void func_8002CBBC(ModelBuffer *buffer);
+void func_8002CC54(u16 tpage);
+s32 func_8002DC9C(s32 x, s32 y, s32 z);
+void func_8002DD20(u32 *list);
+void func_8002DFF0(s32 a, s32 b);
+MorphState *func_800303C8(SpriteModel *model, s32 mode);
+void func_800305D8(MorphState *state);
+void func_800306D0(MorphState *state);
+void func_80030B14(MATRIX *rotation);
+
+/* Set the environment-map texture mapping of func_80030750 by rewriting its
+ * code: the u and v shifts and offsets (handwritten). */
+void func_80030988(s32 u_shift, s32 v_shift, s32 u_offset, s32 v_offset);
 
 #endif

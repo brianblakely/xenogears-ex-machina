@@ -14,7 +14,7 @@ typedef struct {
     u32 unknown;
 } MenuBuffer;
 
-typedef struct MenuWork {
+typedef struct MenuState {
     u8 unknown0[0x6C];
     MenuBuffer buffers[2];      /* +0x6c */
     MenuBuffer *current;        /* +0x1d4 */
@@ -38,9 +38,9 @@ typedef struct MenuWork {
     u8 unknown32a[0x1B6A];
     u8 debug_show;              /* +0x1e94 */
     u8 debug_value;             /* +0x1e95 */
-} MenuWork;
+} MenuState;
 
-extern MenuWork *D_800625A0;
+extern MenuState *D_800625A0;
 
 extern u8 D_80059178;       /* debug start: choose the menu screen */
 extern u8 D_80059460;       /* menu screen */
@@ -49,8 +49,7 @@ extern char *D_8004FA9C[7]; /* menu screen names */
 extern void *D_8005945C;
 extern void *D_800658CC;
 extern void *D_8006BE24;
-extern void *D_8005A4AC;
-extern void *D_8005A4B0;
+extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
 
 /* Menu overlay (801c5000) entries. */
 void func_801C62A8(void);
@@ -66,5 +65,6 @@ void func_8001C1A8(void);
 void func_8001BF38(void);
 void func_8001C074(void);
 
+/* More of the menu screens' resident state. */
 
 #endif

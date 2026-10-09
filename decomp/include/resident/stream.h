@@ -50,4 +50,9 @@ void func_8002A68C(u8 intr, u8 *result);
 void func_8002AC24(u8 intr, u8 *result);
 void func_8002BA40(void);
 
+/* More of the stream services. */
+s32 func_8002C3D8(void);
+s32 func_80028F30(u8 **data, StreamFrame **frame);
+StreamRing *func_8002A260(s32 count, s32 mode);
+
 #endif

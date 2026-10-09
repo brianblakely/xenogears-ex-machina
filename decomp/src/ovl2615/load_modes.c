@@ -184,7 +184,7 @@ void func_801E8588(void) {
     RECT rect;
     u16 *screen;
     u16 *pixel;
-    BattleWork *work;
+    BattleArea *work;
     DrawBuffer *first;
     DrawBuffer *next;
     ShatterTask *shatter;

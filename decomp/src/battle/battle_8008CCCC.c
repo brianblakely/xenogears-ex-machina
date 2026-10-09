@@ -18,7 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
-#include "area.h"
+#include "battle/area.h"
 
 /* The unit's own uninitialized variable (its .bss, after battle.c's). */
 static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
@@ -1668,7 +1668,7 @@ u8 func_800941A4(void) {
     if (D_800C3E04 < 3 && D_800C34B0->commandIndex < 7) {
         if (D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] <= 0xFDE7) {
             D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] +=
-                D_800C3E00->pilot.pad55 + D_800C3E00->pilot.padA1[0];
+                D_800C3E00->pilot.field55 + D_800C3E00->pilot.fieldA1;
         }
     }
     func_80094C78();
@@ -2936,7 +2936,7 @@ void func_80097D5C(void) {
                 D_800C34B0->gearCommands[member][i].cost = (D_800C34B0->gearCommands[member][i].cost + 1) >> 1;
             }
         }
-        if (D_800C3E00->pilot.field62 >= 50) {
+        if (D_800C3E00->pilot.level >= 50) {
             D_8006ECF4[D_800C3E00->pilot.characterId].mask4 |= 8;
         }
         if (D_800C3E00->pilot.characterId == 7) {
@@ -2962,8 +2962,8 @@ void func_80097D5C(void) {
             level[1] = 0;
             D_8006ECF4[3].flags1A = 0x8000;
         }
-        if (D_8006D634.value1930 >= 231 && !(D_8006D634.flags2355 & 0x80)) {
-            D_8006D634.characters[9].field6A = 0x27;
+        if (D_8006D634.vars[0] >= 231 && !(D_8006D634.flags2355 & 0x80)) {
+            D_8006D634.characters[9].weapons[0] = 0x27;
             D_8006D634.characters[9].entries[0].value4 = 0x1E;
             D_8006D634.flags2355 |= 0x80;
         }
@@ -3011,7 +3011,7 @@ void func_8009892C(void) {
     if (D_8006ECF4[8].flags1A & 0x2000) {
         D_8006ECF4[8].mask2 |= 0x800;
     }
-    if (D_8006D634.value1930 < 0xBB) {
+    if (D_8006D634.vars[0] < 0xBB) {
         D_8006D8A0.gears[0].field74 = 10;
         D_8006D8A0.gears[1].field74 = 10;
         D_8006D8A0.gears[11].field74 = 9;
@@ -3019,9 +3019,9 @@ void func_8009892C(void) {
         D_8006D8A0.gears[13].field74 = 8;
         D_8006D8A0.gears[14].field74 = 12;
         D_8006D8A0.gears[15].field74 = 12;
-        D_8006D8A0.gears[13].field2 = 0x58;
+        D_8006D8A0.gears[13].engine = 0x58;
         D_8006D8A0.gears[7].field3 = 0;
-        D_8006D8A0.gears[15].field8 = 0x28;
+        D_8006D8A0.gears[15].frame = 0x28;
     }
 }
 
@@ -3716,7 +3716,7 @@ void func_8009A2D4(u8 member) {
     if (!(*(u16 *)D_8006F8EA & 0x4000)) {
         chance = 0;
     }
-    if (record->pilot.field62 < 50) {
+    if (record->pilot.level < 50) {
         chance = 0;
     }
     if (record->pilot.gearId == 3) {

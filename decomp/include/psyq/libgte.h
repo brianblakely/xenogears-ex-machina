@@ -68,9 +68,28 @@ void NormalColor3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *v3, CVECTOR *v
 void NormalColorCol(SVECTOR *v0, CVECTOR *v1, CVECTOR *v2);
 void NormalColorCol3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *v3, CVECTOR *v4, CVECTOR *v5,
                      CVECTOR *v6);
-long VectorNormalS(VECTOR *v0, SVECTOR *v1);
 void VectorNormalSS(SVECTOR *v0, SVECTOR *v1);
 long VectorNormal(VECTOR *v0, VECTOR *v1);
 MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
+
+/* Members of libgte the symbol file does not name yet, by their signatures
+ * and their callers' uses (the SDK function where the callers name it). */
+void func_80048E94(MATRIX *m, MATRIX *out);     /* orthonormal rows from two outer products */
+void func_8004901C(SVECTOR *v0, SVECTOR *v1, long p0, long p1, SVECTOR *v2); /* LoadAverageShort12 */
+void func_800495DC(SVECTOR *v0, VECTOR *v1);    /* rotate by the current GTE matrix */
+void func_8004998C(VECTOR *v0, VECTOR *v1);     /* rotate a long vector by it */
+MATRIX *func_80049ACC(MATRIX *m0, MATRIX *m1);  /* m0 = m0 * m1 */
+void func_8004A10C(long r, long g, long b);     /* the far colour */
+void func_8004A414(VECTOR *v0, VECTOR *v1);     /* Square0 */
+void func_8004A480(VECTOR *v0, VECTOR *v1, VECTOR *v2); /* OuterProduct12 */
+void func_8004A6DC(SVECTOR *v0, VECTOR *v1, long *flag); /* RotTrans */
+long func_8004A70C(long sxy0, long sxy1, long sxy2); /* NormalClip */
+long func_8004A83C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,
+                   long *sxy2, long *sxy3, long *p, long *otz, long *flag);
+void func_8004A8EC(MATRIX *m, MATRIX *out);
+MATRIX *func_8004A92C(SVECTOR *r, MATRIX *m);   /* RotMatrixYXZ */
+MATRIX *func_8004ABBC(SVECTOR *r, MATRIX *m);   /* RotMatrix */
+MATRIX *func_8004AE4C(long r, MATRIX *m);       /* RotMatrixX */
+MATRIX *func_8004AFEC(long r, MATRIX *m);       /* RotMatrixY */
 
 #endif
