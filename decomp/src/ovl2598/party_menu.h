@@ -6,6 +6,15 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 
 
 /* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
@@ -50,12 +59,6 @@ typedef struct {
     u32 ot[16];    /* 0x70 */
     u8 pad_B0[4];
 } DrawEnv;
-
-/* The loaded effect bank object. */
-typedef struct {
-    u8 pad_0[0x14];
-    u16 id; /* 0x14 */
-} EffectBank;
 
 /* The 0x1194-byte block at state + 0x350. */
 typedef struct {
@@ -191,7 +194,7 @@ typedef struct {
     u8 pad_210[0x2DC - 0x210];
     void *sprite_sheet; /* 0x2DC: sprite table for func_8002675C */
     void *label_text;   /* 0x2E0: label text offset table */
-    EffectBank *effect_bank; /* 0x2E4 */
+    SoundBank *effect_bank; /* 0x2E4 */
     u8 pad_2E8[0x308 - 0x2E8];
     s32 buffer_index;    /* 0x308: draw buffer being built (0/1) */
     u8 available[16];    /* 0x30C: character may join the party */
@@ -245,10 +248,7 @@ typedef struct {
 } MenuArchive;
 
 extern MenuArchive *D_8005945C;
-extern void *D_8006259C; /* effect bank */
 extern u8 D_80059178;    /* sound effects enabled */
-extern u16 D_80059414;   /* highlighted text CLUT */
-extern u16 D_800595D4;   /* normal text CLUT */
 extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
@@ -274,31 +274,10 @@ typedef struct {
 extern GameData D_8006D634;
 extern u16 D_8006F94C;   /* characters locked in place */
 
-extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
-extern void func_800320E8(void *block);         /* release */
-extern void *func_80032E88(void *packed, s32 mode);       /* unpack */
-extern void func_8003342C(void *archive);
-extern void func_8002DD20(void *data);
-extern void func_80028470(s32 a, s32 b);
-extern s32 func_800288EC(s32 id);
-extern void func_800295D8(s32 id, void *buffer, s32 a, s32 b);
-extern void func_80028A60(s32 a);
-extern void func_80038428(void *bank);
 extern void func_80019CA0(void);               /* reset combination check */
 extern void func_80039DB8(s32 sound);          /* play a sound */
-extern void func_8003A094(void *bank);
-extern void func_8003852C(void *bank);
-extern s32 func_80035734(s32 port);            /* pad present */
-extern void func_80037EE4(void);               /* pause sound */
-extern void func_80037E8C(void);               /* resume sound */
-extern s32 func_80036410(void);                /* input queue overflowed */
-extern void func_80035DB0(void);               /* reset the input queue */
-extern s32 func_80035CDC(void);                /* dequeue an input entry */
 extern s32 D_80059488;                         /* vsync count */
 extern s32 *D_8005917C;                        /* stack guard word (-1 intact) */
-extern u16 D_800594A4;                         /* dequeued buttons */
-extern u16 D_8005948C;                         /* dequeued buttons (pressed) */
-extern MATRIX *func_8003F738(SVECTOR *r, MATRIX *m); /* RotMatrix */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                          s32 scale);
 extern s32 func_800263E4(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
@@ -306,8 +285,6 @@ extern s32 func_800263E4(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s3
 extern void *func_80033728(void *table, s32 index);      /* message address */
 extern u8 func_80034EAC(void *text, u8 *image, s32 a, s32 b); /* render text */
 extern void func_80033698(s32 a, s32 b);
-extern void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d,
-                          s32 *e, s32 *f);
 
 /* Resource loading and panel drawing. */
 void func_801C5390(void);

@@ -2735,7 +2735,7 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             codes[j] = name[j];
             encoded[j] = 0;
         }
-        func_80033C20(codes, encoded);
+        func_80033C20(codes, (u16 *)encoded);
         for (j = 0; j < 20; j++) {
             name[j] = encoded[j];
         }

@@ -9,6 +9,16 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -161,12 +171,6 @@ typedef struct MenuBuffer {
     u32 ot[16]; /* 70: reverse ordering table */
     u8 padB0[0x4];
 } MenuBuffer;
-
-/* The menu's sound effect bank (resident). */
-typedef struct MenuSoundBank {
-    u8 pad0[0x14];
-    u16 id; /* 14 */
-} MenuSoundBank;
 
 /* A point moving along a line (801c81e0, 801c8324). */
 typedef struct MenuMover {
@@ -979,7 +983,7 @@ typedef struct MenuState {
     s32 frameCounter; /* 2D8: frames since last cleared */
     void *sheet; /* 2DC: sprite sheet */
     void *labels; /* 2E0: label text */
-    MenuSoundBank *effectBank; /* 2E4: menu sound effect bank */
+    SoundBank *effectBank; /* 2E4: menu sound effect bank */
     u8 pad2E8[0x4];
     s32 time[7]; /* 2EC: play time digits: hours (three), minutes and seconds (two each) */
     s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
@@ -1052,7 +1056,6 @@ extern MenuState *D_800625A0; /* the menu state */
 extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6 other */
 extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
-extern u8 D_800594CC;         /* field menu cursor kept between openings */
 extern CharRecord D_8006D8A0[]; /* game data: character records, then gears from 11 */
 extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
 extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
@@ -1091,10 +1094,6 @@ extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
-extern u16 D_80059414;         /* label palette (clut) */
-extern u16 D_800595D4;         /* plain label palette (clut) */
-extern u16 D_8005948C;         /* pad buttons pressed this frame */
-extern u16 D_800594A4;         /* pad buttons of the dequeued input (repeating) */
 extern s32 D_80059488;         /* play time in frames */
 extern s32 *D_8005917C;       /* stack guard word, -1 while intact */
 
@@ -1127,10 +1126,6 @@ extern u8 D_801EA568[];  /* status screen labels: a character's page, then (6) a
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA574[];  /* sound mode labels */
 extern s32 D_801E9F88[];  /* sound mode label x offsets */
-extern u8 *D_8004FDF0;         /* disc directory records */
-extern u8 *D_8004FDF4;
-extern u8 *D_8004FE48;
-void func_8002954C(s32 file, void *buffer, s32 size, s32 arg3, s32 arg4); /* read a disc file */
 void func_801E9340(char *name, void *buffer, s32 size);
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u8 D_801E9778;    /* a card changed during a choice */
@@ -1164,8 +1159,6 @@ extern u16 D_801E97F0[];
 extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
 extern u16 D_8006ECFA[];
 extern u16 D_8006ED0E[];  /* part panel row y positions */
-extern u16 D_80059414;   /* portrait palette of odd images */
-extern u16 D_800595D4;   /* portrait palette of even images */
 extern s32 D_801E9B18;   /* field block number offsets (x, y): +62 */
 extern s32 D_801E9B1C;
 extern s32 D_801E9B20;   /* +63 */
@@ -1267,10 +1260,7 @@ extern s32 D_801EA900[2];     /* per port */
 extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */
-void *func_80031BDC(s32 size, s32 flags); /* allocate */
-void func_800320E8(void *block);          /* free */
 void func_8001B970(void);
-void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d, s32 *e, s32 *f);
 
 /* Menu resource loading (801c65f4). */
 typedef struct MenuResources {
@@ -1279,29 +1269,12 @@ typedef struct MenuResources {
 } MenuResources;
 
 extern MenuResources *D_8005945C; /* the menu resources */
-extern void *D_8006259C;          /* the menu effect bank */
-void func_8003342C(void *archive);                /* relocate an offset table */
-void *func_80032E88(void *packed, s32 mode);     /* unpack into a new block */
-void func_8002DD20(void *list);                   /* load a TIM list */
-void func_80038428(void *bank);
-void func_80028470(s32 arg0, s32 arg1);
-s32 func_800288EC(s32 file);                                 /* file size */
-void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
-void func_80028A60(s32 arg0);
 void func_8002A428(s32 arg0);
-void func_8002A498(s32 arg0);
-s32 func_8002C3D8(void);                                /* wait for the read */
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
 void func_800263E4(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
 s32 func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void func_80033698(s32 x, s32 y);
-s32 func_80035734(s32 port);  /* pad connected */
-s32 func_80035CDC(void);      /* dequeue pad input */
-void func_80035DB0(void);
-s32 func_80036410(void);
-void func_80037E8C(void);     /* resume sound */
-void func_80037EE4(void);     /* pause sound */
 void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
@@ -1315,15 +1288,8 @@ void func_801E4754(MenuTables *tables, u8 gear);
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void func_801E927C(POLY_FT4 *poly);
-void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-void func_8003852C(void *bank);
-void func_8003A094(void *bank);
 
-s32 func_80028530(void);
 u8 *func_800337E8(u8 id);
-u8 *func_80033908(s32 index); /* art name */
-u8 *func_800339FC(s32 index); /* gear art name */
-u8 *func_80033A8C(s32 index); /* gear special art name */  /* accessory name */
 u8 *func_80033848(u8 id);  /* weapon name */
 u8 *func_80033A2C(u8 id);  /* gear accessory name */
 u8 *func_80033A5C(u8 id);  /* gear part name */
@@ -1411,11 +1377,9 @@ void func_801CA1D4(s32 mode, s32 slot);
 void func_801CA480(s32 mode, s32 slot);
 void func_801CA5F0(s32 mode, s32 slot);
 void func_801E781C(s32 index, u8 rebuild);
-void func_80039E60(s32 sound);
 /* The 31 names at the start of the game data (encoded in the save). */
 #define GAME_NAMES ((u8 *)&D_8006D634)
 s32 func_80033B34(u8 *codes, u8 *text, s32 count); /* decode a name */
-void func_80033C20(u8 *text, u8 *codes);            /* encode a name */
 
 /* The summary at the start of a save payload (801cba4c). */
 typedef struct MenuSavePayload {
@@ -1537,8 +1501,6 @@ void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
 u8 func_801D9808(void);
-s32 func_80038824(void);
-void func_800386C4(s32 mode);
 void func_801E86C8(u8 row);
 void func_801E8B4C(u8 row);
 u8 func_801C93A8(void);

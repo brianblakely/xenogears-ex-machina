@@ -6,6 +6,15 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 
 /* A save file name prefix (13 bytes with its terminator). */
 typedef struct {
@@ -284,12 +293,6 @@ typedef struct {
     u8 unk66[0x6C - 0x66];
 } ScreenFlags;
 
-/* A linked sound effect bank. */
-typedef struct {
-    u8 unk0[0x14];
-    u16 id; /* 14 */
-} EffectBank;
-
 /* A draw buffer's environments and ordering table (b4h bytes). */
 typedef struct {
     u8 draw[0x5C]; /* 00: DRAWENV */
@@ -384,7 +387,7 @@ typedef struct {
     u8 model_b[0x2DC - 0x298]; /* 298 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
-    EffectBank *effect_bank; /* 2e4 */
+    SoundBank *effect_bank; /* 2e4 */
     u8 unk2E8[0x308 - 0x2E8];
     s32 buffer;          /* 308: draw buffer being built (0/1) */
     u8 member_present[16]; /* 30c */
@@ -491,37 +494,16 @@ extern Character D_8006D8A0[];
 extern u16 D_8006F364;   /* party members joined */
 extern u16 D_8006F366;   /* party members available */
 extern u8 D_8006F368[3]; /* party member ids */
-extern u16 D_80059414;   /* highlighted text CLUT */
-extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
 extern MenuResources *D_8005945C;        /* the menu resources block */
-extern EffectBank *D_8006259C;           /* the loaded menu sound bank */
 extern const CardPrefix D_801C5000;      /* "BISLPS-00800" */
-void func_8002DD20(void *list);          /* load a TIM list into VRAM */
-void func_80028470(s32 unk0, s32 unk1);  /* disc access mode */
-void func_80038428(EffectBank *bank);    /* link an effect bank */
 extern u8 D_80059171;                    /* shop number */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
 void func_80019CA0(void);                /* soft reset combination */
-s32 func_80035734(s32 port);             /* controller present */
-void func_80037EE4(void);                /* pause the sound */
-void func_80037E8C(void);                /* resume the sound */
-s32 func_80036410(void);                 /* input queue overflowed */
-void func_80035DB0(void);                /* reset the input queue */
-s32 func_80035CDC(void);                 /* dequeue an input entry */
 void func_80039DB8(s32 effect);          /* play a sound effect */
 extern u8 D_80059178;                    /* menu sound effects loaded */
-void func_8003A094(EffectBank *bank);    /* stop the bank's effects */
-void func_8003852C(EffectBank *bank);    /* unlink an effect bank */
 extern s32 D_80059488;                   /* sound state saved while paused */
-extern u16 D_800594A4;                   /* dequeued buttons */
-extern u16 D_8005948C;                   /* dequeued buttons, second set */
-void *func_80031BDC(s32 size, s32 mode); /* heap allocate */
-void func_800320E8(void *block);         /* heap free */
-void *func_80032E88(void *packed, s32 mode); /* unpack into a new block */
-void func_8003342C(void *list);          /* relocate an offset list */
-void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
 u8 *func_80033848(s32 id);               /* equipment name */
@@ -531,11 +513,7 @@ s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* mirrored sprite */
-s32 func_800288EC(s32 file);             /* file size in words */
-void func_800295D8(s32 file, void *dst, s32 offset, s32 mode); /* disc read */
-s32 func_80028A60(s32 mode);             /* disc wait */
 
-MATRIX *func_8003F738(SVECTOR *r, MATRIX *m);      /* RotMatrix */
 
 /* This overlay. */
 void func_801C54B4(void);
