@@ -2,14 +2,17 @@
 #define FIELD_MONITOR_H
 
 /* The field and its debug monitor (debug595, at 80280000): the monitor's
- * entries, which the field calls while D_800C268C is clear, and the field's
- * state and calls that the monitor shows, edits and makes. The field and the
- * monitor both include this; the monitor's views of the field's own objects
- * (its view, work block, actors and emitters) stay in debug595.h. */
+ * entries and debug-lines flag, which the field calls and sets while
+ * D_800C268C is clear, and the field's state and calls that the monitor
+ * shows, edits and makes. The field and the monitor both include this; the
+ * monitor's views of the field's own objects (its view, work block, actors
+ * and emitters) stay in debug595.h. */
 
 #include "common.h"
 
-/* The monitor (debug595.c). */
+/* The monitor: its debug-lines flag and entries (debug595.c), and the
+ * field's flag for its absence (field_common.c, set by 80077e88) and its
+ * page toggle (field.c). */
 extern s32 D_800C268C;         /* set when the debug monitor is absent */
 extern s32 D_80285988;         /* debug lines shown: the field sets it on a talk or a
                                 * touch, the monitor clears it each frame (80281400) */
@@ -25,16 +28,13 @@ void func_80281450(void);
 void func_802815B0(void);
 void func_80284EA4(void);      /* move the camera by the pad (L2 and the debug button) */
 
-/* This frame's buttons per port (80074700 drains them from the resident's
- * pad queue). Port 1's are masked by the work block's input mask and
- * 800adb00; all are dropped on a camera cut. */
+/* This frame's held and repeated buttons per port, which the monitor reads
+ * (80074700; the field's field_pad.h has the newly pressed ones and port 1's
+ * mask). */
 extern u16 D_800AFE9C;         /* port 1 held */
-extern u16 D_800C2694;         /* port 1 newly pressed */
 extern u16 D_800C3900;         /* port 1 repeated (they move a window's choice) */
 extern u16 D_800AFEA0;         /* port 2 held */
-extern u16 D_800C38F8;         /* port 2 newly pressed */
 extern u16 D_800C3908;         /* port 2 repeated */
-extern u16 D_800ADB00;         /* port 1 buttons the position allows */
 extern s16 D_800ADB02;         /* frames stuck against terrain (player control) */
 
 /* The frame: its times and the draw buffer. */

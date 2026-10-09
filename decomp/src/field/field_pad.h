@@ -8,8 +8,14 @@
 #include "common.h"
 #include "field/monitor.h"
 
-/* This frame's buttons per port are in field/monitor.h (the debug monitor
- * reads them too). */
+/* This frame's buttons per port (80074700 drains them from the resident's
+ * pad queue). Port 1's are masked by the work block's input mask and
+ * 800adb00; all are dropped on a camera cut. The held and repeated ones are
+ * in field/monitor.h (the debug monitor reads them too). */
+extern u16 D_800C2694;         /* port 1 newly pressed */
+extern u16 D_800C38F8;         /* port 2 newly pressed */
+extern u16 D_800ADB00;         /* port 1 buttons the position allows */
+
 void func_80074700(void);      /* drain the pad queue into this frame's buttons */
 
 /* Player control (event a7); its count of frames stuck against terrain,

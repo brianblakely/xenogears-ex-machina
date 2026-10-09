@@ -273,7 +273,8 @@ that defines it; also the screen burst that ovl2615 and ovl3387 both carry),
 `menu/` (the blocks the menu mode's screens, slot39 and ovl2598-ovl2602, keep
 behind the menu state of `resident/menu.h`) and `field/` (`monitor.h`: the field
 state and calls that its debug monitor, debug595, also uses, and the monitor's
-entries). A resident or battle function whose callers in other targets were built
+entries and debug-lines flag, which the field calls and sets). A resident or
+battle function whose callers in other targets were built
 with other argument or result conversions (narrow parameters, another count)
 stays out of them: each target declares it, the
 resident and the battle in their `own_declarations.h`. So does a variable some
