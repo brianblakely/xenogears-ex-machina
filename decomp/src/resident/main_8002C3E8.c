@@ -20,13 +20,15 @@
 #include "console.h"
 #include "sound.h"
 
-/* This unit's own variables of up to 8 bytes (its .sbss, 80059308, as the
- * original assembler placed them); the larger light matrices D_80059F64 and
- * D_80059F84 follow in its .bss (slus_006.64.yaml). */
+/* This unit's own variables: those of up to 8 bytes in its .sbss
+ * (80059308), the larger light matrices in its .bss (80059f64), as the
+ * original assembler placed them (SBSS_main_8002C3E8 in slus_006.64.mk). */
 static u16 D_80059308; /* the primitive's texture page, overridden */
 static u16 D_8005930C; /* the primitive's CLUT, overridden */
 static s32 D_80059310; /* the texture page override */
 static s32 D_80059314; /* the CLUT override */
+static MATRIX D_80059F64; /* light directions, one per row */
+static MATRIX D_80059F84; /* light colors, one per column */
 
 /* The handwritten renderers with their alternate entries (model_draw.s) and
  * the C routines that prepare one record's packets. */

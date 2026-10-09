@@ -331,8 +331,6 @@ func_8001C8DC = 0x8001C8DC; // type:func
 D_80048BBC = 0x80048BBC; // size:0x8
 // Eight-byte SDK object tag between longjmp and _96_remove, also in .text.
 D_8004BED0 = 0x8004BED0; // size:0x8
-// Game data the C addresses by its start although no assembly names it.
-D_8005A0C8 = 0x8005A0C8; // size:0x18
 // SDK string blocks whose later strings the library data points at (the
 // libcd SYS command and interrupt name tables 800564d0-8005656c, and the
 // "$Id:" version strings of libcd bios.c, libgpu sys.c and libetc intr.c

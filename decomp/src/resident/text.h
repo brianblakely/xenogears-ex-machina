@@ -15,8 +15,6 @@ typedef struct {
     u8 second;
 } CharPair;
 
-extern u16 D_8005A0C8[12]; /* number character codes: color, 10 digits, 0xFFFF */
-extern u8 D_8005A0E4[]; /* decoded text */
 extern u16 D_80059414;  /* text CLUTs */
 extern u16 D_800595D4;
 extern u16 D_80050190[]; /* text palette */

@@ -24,7 +24,6 @@ typedef struct {
     POLY_F3 cursor;
 } KernelBuffer;
 
-extern KernelBuffer D_800595E8[2];
 /* An 8x8 tile of the debug Game of Life screen (a TILE_8 primitive). */
 typedef struct {
     u32 tag;

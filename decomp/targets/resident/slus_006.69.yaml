@@ -211,29 +211,28 @@ segments:
       # libraries' generated statics and commons (psyq_*). Listing every
       # subsegment keeps their names out of undefined_syms_auto.txt: the
       # link places each variable from its definition.
-      # The units compiled at -G0 (main, main_8002C3E8, main2,
-      # main2_800366E0) are allocated by maspsx in one .bss, so their small
-      # statics are their .bss here and their larger ones stay generated
-      # (*_large) until the build models the assembler's size split.
-      - { start: 0x49ABC, type: .bss, vram: 0x800592BC, name: main }
+      # The GCC 2.7.2 units compiled at -G0 (main, main_8002C3E8, main2,
+      # main2_800366E0) address all their variables absolutely; the build
+      # divides them by size as their assembler did (SBSS in the .mk).
+      - { start: 0x49ABC, type: .sbss, vram: 0x800592BC, name: main, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x800592E4, name: sprite, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x800592EC, name: sprite_80022090, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x800592F8, name: sprite_800248D4, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .bss, vram: 0x80059308, name: main_8002C3E8 }
+      - { start: 0x49ABC, type: .sbss, vram: 0x80059308, name: main_8002C3E8, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059318, name: heap, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059348, name: heap_80032DCC, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .bss, vram: 0x8005934C, name: main2 }
-      - { start: 0x49ABC, type: .bss, vram: 0x80059394, name: main2_800366E0 }
+      - { start: 0x49ABC, type: .sbss, vram: 0x8005934C, name: main2, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x80059394, name: main2_800366E0, linker_section_order: .bss }
       # The libraries' small statics: libapi's controller patches (main3),
       # libgte's and libcard's patches (psyq_tail_80048BC4).
       - { start: 0x49ABC, type: bss, vram: 0x800593A4, name: psyq_sbss }
       - { start: 0x49ABC, type: .bss, vram: 0x80059404, name: commons/common_80059404 }
-      - { start: 0x49ABC, type: bss, vram: 0x800595E8, name: main_large }
+      - { start: 0x49ABC, type: .bss, vram: 0x800595E8, name: main }
       - { start: 0x49ABC, type: .bss, vram: 0x800596F8, name: main_8002709C }
-      - { start: 0x49ABC, type: bss, vram: 0x80059F64, name: main_8002C3E8_large }
+      - { start: 0x49ABC, type: .bss, vram: 0x80059F64, name: main_8002C3E8 }
       - { start: 0x49ABC, type: .bss, vram: 0x80059FA4, name: heap }
-      - { start: 0x49ABC, type: bss, vram: 0x80059FD8, name: main2_large }
-      - { start: 0x49ABC, type: bss, vram: 0x8005A1CC, name: main2_800366E0_large }
+      - { start: 0x49ABC, type: .bss, vram: 0x80059FD8, name: main2 }
+      - { start: 0x49ABC, type: .bss, vram: 0x8005A1CC, name: main2_800366E0 }
       # The libraries' other statics: libc rand and putchar, libapi's patch
       # table, libcd, libgpu's state and its TIM/TMD readers (main3).
       - { start: 0x49ABC, type: bss, vram: 0x8005A1FC, name: psyq_bss }

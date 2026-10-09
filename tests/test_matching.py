@@ -122,6 +122,7 @@ class MatchingTests(unittest.TestCase):
             ([], "CC=2.7.2"),
             (["MASPSX_cache=--aspsx-version=2.56"], "MASPSX_FLAGS=--aspsx-version=2.56"),
             (["EXTERN_cache=absolute"], "EXTERN=absolute"),
+            (["SBSS_cache=8"], "SBSS=8"),
             (["TARGET_CPPFLAGS=-DQUOTED='1'"], "-DQUOTED='1'"),
             (["CC1FLAGS=-quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O1"], "-O1"),
             (["ASFLAGS=-EL -march=r3000 -mtune=r3000 -msoft-float -G0"], "ASFLAGS=-EL"),
@@ -1389,6 +1390,59 @@ class MatchingTests(unittest.TestCase):
         _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.86"])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no slot rule", result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test the small-data split",
+    )
+    def test_sbss_divides_a_g0_units_variables_by_declared_size(self):
+        source = (
+            '#include "include_asm.h"\n'
+            "static unsigned char flag;\n"
+            "static unsigned char pairs[3][2];\n"
+            "static int big[3];\n"
+            "static short half;\n"
+            "static int word;\n"
+            "int use(void) { return flag + pairs[1][1] + big[2] + half + word; }\n"
+        )
+
+        def layout(settings):
+            obj = self.build_fixture_unit(source, settings)
+            symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                     capture_output=True, text=True).stdout
+            sections = subprocess.run(["psx-readelf", "-SW", str(obj)], check=True,
+                                      capture_output=True, text=True).stdout
+            index = {number: name for number, name in re.findall(r"\[\s*(\d+)\] (\S+)", sections)}
+            placed = {}
+            for value, number, name in re.findall(
+                    r"\d+: ([0-9a-f]{8})\s+\d+ \w+\s+\w+\s+\w+\s+(\d+) (\w+)\n", symbols):
+                if name in ("flag", "pairs", "big", "half", "word"):
+                    placed.setdefault(index[number], {})[name] = int(value, 16)
+            relocations = subprocess.run(["psx-readelf", "-rW", str(obj)], check=True,
+                                         capture_output=True, text=True).stdout
+            # The code addresses every variable absolutely, as at -G0.
+            self.assertNotIn("GPREL", relocations)
+            return placed
+
+        # Without the setting maspsx keeps one .bss in declaration order.
+        self.assertEqual(layout([]), {".bss": {"flag": 0, "pairs": 4, "big": 12, "half": 24,
+                                               "word": 28}})
+        # Objects of up to SBSS_<unit> bytes move to .sbss and the others stay,
+        # each group in declaration order and in whole-word slots.
+        self.assertEqual(layout(["SBSS_unit=8"]), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 12, "word": 16}, ".bss": {"big": 0}})
+        # The threshold compares the size GCC declares, not the slot: the
+        # 6-byte array moves at 6 although its slot takes 8 bytes, not at 5.
+        self.assertEqual(layout(["SBSS_unit=6"]), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 12, "word": 16}, ".bss": {"big": 0}})
+        self.assertEqual(layout(["SBSS_unit=5"]), {
+            ".sbss": {"flag": 0, "half": 4, "word": 8}, ".bss": {"pairs": 0, "big": 8}})
+        # The slot rule of the unit's ASPSX applies to both sections.
+        sized = ["MASPSX_FLAGS=--aspsx-version=2.56", "SBSS_unit=8"]
+        self.assertEqual(layout(sized), {
+            ".sbss": {"flag": 0, "pairs": 4, "half": 10, "word": 12}, ".bss": {"big": 0}})
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in ("make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as")),

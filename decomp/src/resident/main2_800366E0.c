@@ -17,12 +17,18 @@
 #include "heap.h"
 #include "mode.h"
 
-/* This unit's own variables of up to 8 bytes (its .sbss, 80059394, as the
- * original assembler placed them); the larger format defaults D_8005A1CC
- * and music file list D_8005A1DC follow in its .bss (slus_006.64.yaml). */
+/* This unit's own variables: those of up to 8 bytes in its .sbss
+ * (80059394), the larger format defaults and music file list in its .bss
+ * (8005a1cc), as the original assembler placed them (SBSS_main2_800366E0 in
+ * slus_006.64.mk). */
 static Console *D_80059394;
 static RECT D_80059398;   /* the console font CLUTs' VRAM rectangle */
 static s32 D_800593A0;    /* the console block is not owned (not released) */
+static FormatSpec D_8005A1CC; /* the format defaults */
+/* The music file list (func_800379D8): sequence, wave bank and the zero
+ * entry ending it, and a fourth entry that nothing addresses (an 8-byte
+ * object of its own would be a small variable, in .sbss). */
+static FileRequest D_8005A1DC[4];
 
 void func_800370DC(s32 c);
 
@@ -680,7 +686,6 @@ INCLUDE_ASM("decomp/src/resident", func_800379C8);
 void func_800379D0(void) {
 }
 
-extern FileRequest D_8005A1DC[3]; /* the music file list */
 extern u8 *D_800658C8;            /* the loaded music's instrument data */
 
 /* Load the music of `scene` from directory 12/3: its sequence (file

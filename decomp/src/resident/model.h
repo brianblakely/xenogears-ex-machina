@@ -126,9 +126,6 @@ typedef struct {
     u16 r, g, b;
 } ModelLight;
 
-extern MATRIX D_80059F64; /* light directions, one per row */
-extern MATRIX D_80059F84; /* light colors, one per column */
-
 /* Renderer output packet header. */
 typedef struct RenderPacket {
     u8 unk0[3];

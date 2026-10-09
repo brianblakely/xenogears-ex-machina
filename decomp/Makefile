@@ -89,27 +89,50 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # addresses one object's members from a single %hi, these from four), its u8
 # at 800c3cac is followed by a u8[3] at the next word, and 800B8098's s32
 # after a u8 and its SVECTORs lie at word, not doubleword, boundaries
-# (800c3cbc, 800c3ccc). Under 2.34 and 2.79 (no 2.79 unit allocates any in C
-# yet) this filter gives each object a whole number of words at a word
-# boundary; under 2.56 it aligns a 2-byte object to 2 and a larger one to 4;
-# under any other version it rejects a sub-word object, whose placement
-# nothing evidences. Only the .sbss/.bss that maspsx appends are touched: any
-# other section directive ends them.
+# (800c3cbc, 800c3ccc). Under 2.34 and 2.79 this filter gives each object a
+# whole number of words at a word boundary; under 2.56 it aligns a 2-byte
+# object to 2 and a larger one to 4; under any other version it rejects a
+# sub-word object, whose placement nothing evidences. Only the .sbss/.bss that
+# maspsx appends are touched: any other section directive ends them.
 # The 2.79 setting stands for the world map's assembler, which its code shows only
-# to be ASPSX >= 2.50: maspsx 2.56 and 2.79 build identical objects for every
-# unit set to either.
+# to be ASPSX >= 2.50: every code unit set to 2.56 or 2.79 builds identically
+# under either. Only this filter tells them apart: the world map's commons
+# unit needs the word slots that PSYLINK gave its commons (consecutive
+# u16 a word apart at 8009bd10-8009bd1c, 8009bd24/8009bd28, 8009cd4c/8009cd50);
+# under 2.56 its link fails the mode table's BSS bounds. Its units have no
+# statics, and the 2.79 sprite units' are words, so the 2.79 assembler's own
+# .lcomm rule is not evidenced.
+# The assembler of some -G0 units also divided their variables by a small-data
+# threshold of its own, SBSS_<file> bytes (default none): each object of at most
+# that size, as GCC declares it, went to the unit's .sbss and each larger one to
+# its .bss, both in declaration order, while the code, assembled before them,
+# addresses every one absolutely (maspsx's -G would also move those accesses to
+# $gp). The filter moves such objects of the .bss that maspsx appends to a
+# .sbss after it; the slot rule applies to both. Evidence: with SBSS 8 every
+# variable of the resident's GCC 2.7.2 -G0 units and of the menu's units links
+# at its original address, each of up to 8 bytes among the small variables in
+# unit order (800592bc-800593a4, 800925d4-80092954) and each larger one among
+# the larger (800595e8-8005a1fc, 80092954-8009b558), while the GCC 2.6.3 unit
+# between them keeps one .bss (resident main_8002709C: a 2048-byte static, then
+# 4- and 8-byte ones, at 800596f8-80059f64).
 WORD_SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
 SIZE_ALIGNED_ASPSX := --aspsx-version=2.56
 bss_rule_of = $(if $(filter $(WORD_SLOT_ASPSX),$(call maspsx_of,$(1))),words,$(if $(filter $(SIZE_ALIGNED_ASPSX),$(call maspsx_of,$(1))),sized,none))
-bss_filter_of = | awk -v rule=$(call bss_rule_of,$(1)) \
-	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { printf "%s", held; held = ""; bss = $$0 ~ /^\.section \.s?bss$$/; print; next } \
+sbss_of = $(SBSS_$(basename $(notdir $(1))))
+bss_filter_of = | awk -v rule=$(call bss_rule_of,$(1)) -v sbss=$(call sbss_of,$(1)) \
+	'function emit(text) { if (move) object = object text; else printf "%s", text } \
+	$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { printf "%s%s", object, held; object = held = ""; \
+	bss = $$0 ~ /^\.section \.s?bss$$/; move = sbss != "" && $$0 == ".section .bss"; print; next } \
 	!bss { print; next } \
-	$$1 == ".align" { if (rule == "sized") next; if (rule == "words" && $$2 > 2) $$0 = "\t.align\t2"; print; next } \
-	$$1 == ".space" && rule == "sized" { printf "\t.align\t%d\n%s", ($$2 > 2 ? 2 : $$2 > 1 ? 1 : 0), held; held = ""; print; next } \
-	$$1 == ".space" && $$2 % 4 { if (rule != "words") { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
-	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } \
-	rule == "sized" && $$1 != ".space" { held = held $$0 "\n"; next } \
-	{ print } END { printf "%s", held }'
+	$$1 == ".align" { if (rule == "sized") next; if (rule == "words" && $$2 > 2) $$0 = "\t.align\t2"; emit($$0 "\n"); next } \
+	$$1 == ".space" { size = $$2; \
+	if (rule == "sized") { emit(sprintf("\t.align\t%d\n%s", (size > 2 ? 2 : size > 1 ? 1 : 0), held)); held = "" } \
+	else if (size % 4) { if (rule != "words") { print "a " size "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
+	$$0 = "\t.space\t" int((size + 3) / 4) * 4 } \
+	emit($$0 "\n"); if (move) { if (size <= sbss) small = small object; else printf "%s", object; object = "" } next } \
+	rule == "sized" { held = held $$0 "\n"; next } \
+	{ emit($$0 "\n") } \
+	END { printf "%s%s", object, held; if (small != "") printf ".section .sbss\n%s", small }'
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.
@@ -127,6 +150,7 @@ $(ROOT)/$(BUILD)/%.cflags: matching-flags-force
 		$(call shell_quote,MASPSX=$(MASPSX)) \
 		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
 		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
+		$(call shell_quote,SBSS=$(call sbss_of,$*)) \
 		$(call shell_quote,AS=$(AS)) \
 		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
 		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \

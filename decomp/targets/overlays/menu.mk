@@ -34,9 +34,12 @@ PACKER_TAIL := 5
 # code addresses it: all 208 objects of up to 8 bytes in 800925d4-80092954 and
 # all 50 larger ones in 80092954-8009b558, each group in unit order with its
 # commons last. Field, compiled by the same GCC 2.7.2, keeps one .bss with its
-# small and large commons interleaved. This front end, beside this file (ROOT
-# may name another tree), runs maspsx and then makes the split (menu.yaml,
-# menu.bss.ld); the units are rebuilt when it changes.
-MENU_MASPSX := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/menu.maspsx.py
-MASPSX := $(PYTHON) $(MENU_MASPSX)
-$(patsubst %,$(ROOT)/$(BUILD)/decomp/src/menu/%.o,menu menu2 menu3 menu4 menu5 menu6 menu7 menu_common): $(MENU_MASPSX)
+# small and large commons interleaved. SBSS (decomp/Makefile) makes the split
+# in every unit with variables (menu.yaml, menu.bss.ld).
+SBSS_menu2 := 8
+SBSS_menu3 := 8
+SBSS_menu4 := 8
+SBSS_menu5 := 8
+SBSS_menu6 := 8
+SBSS_menu7 := 8
+SBSS_menu_common := 8

@@ -14,9 +14,10 @@
 #include "heap.h"
 #include "mode.h"
 
-/* This unit's own variables of up to 8 bytes (its .sbss, 8005934c, as the
- * original assembler placed them); the larger window, text and controller
- * queue buffers (80059fd8-8005a1cc) follow in its .bss (slus_006.64.yaml). */
+/* This unit's own variables: those of up to 8 bytes in its .sbss
+ * (8005934c), the larger window, text and controller queue buffers in its
+ * .bss (80059fd8), as the original assembler placed them (SBSS_main2 in
+ * slus_006.64.mk). */
 static s32 D_8005934C;  /* font: first byte of a two-byte character */
 static s32 D_80059350;
 static s32 D_80059354;
@@ -36,6 +37,21 @@ static u32 D_80059384;  /* queue read index */
 static u8 D_80059388;   /* kind of the last read controller */
 static u8 D_8005938C;
 static s32 D_80059390;  /* the vertical-blank callback polls the host */
+/* The one-line layout window and its line. */
+static Window D_80059FD8;
+static WindowLine D_8005A068;
+/* Number character codes: color, 10 digits, 0xFFFF, and two that nothing
+ * addresses (a word of its own would be a small variable, in .sbss). */
+static u16 D_8005A0C8[14];
+static u8 D_8005A0E4[0x18]; /* decoded text */
+/* Queued controller states (16 entries of the six state words). */
+static u16 D_8005A0FC[16];
+static u16 D_8005A11C[16];
+static u16 D_8005A13C[16];
+static u16 D_8005A15C[16];
+static u16 D_8005A17C[16];
+static u16 D_8005A19C[16];
+static Actuator D_8005A1BC[2];
 
 /* The text palette: two 16-colour CLUTs. */
 u16 D_80050190[32] = {
@@ -1008,10 +1024,6 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
     AddPrim(ot, window->unk30);
 }
 
-/* The one-line layout window and its line. */
-extern Window D_80059FD8;
-extern WindowLine D_8005A068;
-
 /* Lay out one line of `text` into `image` in the layout window, `width`
  * made odd. Returns the laid-out width in pixels. */
 s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
@@ -1336,14 +1348,6 @@ void func_800358BC(void) {
     }
 }
 
-/* Queued controller states (16 entries of the six state words). */
-extern u16 D_8005A0FC[16];
-extern u16 D_8005A11C[16];
-extern u16 D_8005A13C[16];
-extern u16 D_8005A15C[16];
-extern u16 D_8005A17C[16];
-extern u16 D_8005A19C[16];
-
 /* Queue the current controller state (flag an overflow when full). */
 void func_80035C0C(void) {
     s32 i;
@@ -1488,8 +1492,6 @@ s32 func_80035FF8(RECT *rect, char *name) {
     PCclose(fd);
     return 0;
 }
-
-extern Actuator D_8005A1BC[2];
 
 /* Stop both controllers' actuators and register their data with libpad. */
 void func_8003611C(void) {

@@ -90,6 +90,15 @@ CC_main_8001B6C4 := 2.6.3
 GP_main_8001B6C4 := 8
 MASPSX_main_8001B6C4 := --aspsx-version=2.34 --use-comm-section
 EXTERN_main_8001B6C4 := absolute
+# The assembler of the GCC 2.7.2 -G0 units placed each one's own variables of
+# up to 8 bytes in its .sbss and the larger ones in its .bss (decomp/Makefile):
+# all of them link among the units' small variables (800592bc-800593a4) or
+# their larger ones (800595e8-8005a1fc) in unit order, and the code addresses
+# every one absolutely.
+SBSS_main := 8
+SBSS_main_8002C3E8 := 8
+SBSS_main2 := 8
+SBSS_main2_800366E0 := 8
 # Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
 # whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800
