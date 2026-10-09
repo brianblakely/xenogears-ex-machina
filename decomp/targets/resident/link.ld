@@ -19,13 +19,11 @@ ASSERT(main_BSS_START == 0x800592BC && main_BSS_END == 0x8006FAF0,
 /* Names the resident code uses for parts of uninitialized objects, each from
  * that object's linked address, where addressing the object compiles
  * differently: main_8001B6C4's window colour bytes cannot be an array there
- * (main_8001B6C4.c), 8003885c stores the CD mix bytes and the CD request as
- * scalars, and 8001b970 reads the name slots' second bytes from a base of
- * their own. */
+ * (main_8001B6C4.c), 8003885c stores the CD mix bytes as scalars, and
+ * 8001b970 reads the name slots' second bytes from a base of their own. */
 D_800594D5 = D_800594D4 + 0x1;  /* window colour green */
 D_800594D6 = D_800594D4 + 0x2;  /* window colour blue */
 D_80059531 = D_80059530 + 0x1;  /* CdlATV .val1 (main2_800366E0.c) */
 D_80059532 = D_80059530 + 0x2;  /* .val2 */
 D_80059533 = D_80059530 + 0x3;  /* .val3 */
-D_8005A3EE = D_8005A3C0 + 0x2E; /* .cd_request (main2_800366E0.c) */
 D_8006D635 = D_8006D634 + 0x1;  /* .names[0][1] (main_8001B6C4.c) */
