@@ -645,6 +645,53 @@ class MatchingTests(unittest.TestCase):
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf", "psx-nm",
+        )),
+        "enter the matching Nix shell to test the link's symbol files",
+    )
+    def test_splat_symbol_files_never_override_a_definition(self):
+        # splat assigns an address to every name its assembly used; the link
+        # reads its files as PROVIDE, so the unit's own definition stands and
+        # only a name that no object defines takes the file's address.
+        self.build_fixture_unit("int defined = 1;\nextern int elsewhere;\n"
+                                "int *use(void) { return &elsewhere; }\n")
+        auto = self.root / "auto/undefined_syms_auto.txt"
+        auto.parent.mkdir()
+        auto.write_text("defined = 0x80020000;\nelsewhere = 0x80030000;\nunused = 0x80040000;\n")
+        (self.root / "pad.ld").write_text("__file_end = 0x40;\n")
+        settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt pad.ld", "PAD_TO_SYMBOL=__file_end"]
+        self.cover_linked_fixture("image.bin", settings, sections=(".text", ".data"))
+        symbols = {
+            fields[2]: (int(fields[0], 16), fields[1])
+            for fields in map(str.split, subprocess.run(
+                ["psx-nm", str(self.root / "image.bin.elf")], check=True, capture_output=True,
+                text=True).stdout.splitlines())
+            if len(fields) == 3
+        }
+        self.assertNotEqual(symbols["defined"][1], "A")  # the unit's, in the image
+        self.assertNotEqual(symbols["defined"][0], 0x80020000)
+        self.assertEqual(symbols["elsewhere"], (0x80030000, "A"))
+        self.assertNotIn("unused", symbols)
+        # PAD_TO_SYMBOL pads the file to that symbol of the link.
+        self.assertEqual((self.root / "image.bin").stat().st_size, 0x40)
+        repo = Path(__file__).resolve().parents[1]
+        for setting, message in (("PAD_TO_SYMBOL=__missing", "--pad-to"),
+                                 ("LINKER_EXTRA=auto/undefined_syms_auto.txt", "not a symbol")):
+            with self.subTest(setting):
+                if setting.startswith("LINKER_EXTRA"):
+                    auto.write_text("INCLUDE other.ld\n")
+                result = subprocess.run(
+                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                     "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=bad.bin", *settings,
+                     setting, str(self.root / "bad.bin")],
+                    cwd=self.root, text=True, capture_output=True, check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
             "psx-ld", "psx-objcopy", "psx-readelf",
         )),
         "enter the matching Nix shell to test data carried by assembly",

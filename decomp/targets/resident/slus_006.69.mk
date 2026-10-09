@@ -8,7 +8,8 @@ BUILD := .local/decomp/build/resident2
 IMAGE := .local/decomp/build/SLUS_006.69
 LINKER_SCRIPT := .local/decomp/resident2/slus_006.69.ld
 LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/resident2/undefined_funcs_auto.txt decomp/targets/resident/link.ld
-OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
+OBJCOPY_FLAGS := --gap-fill 0
+PAD_TO_SYMBOL := __exe_file_size
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
 # The heap unit addresses its small globals through $gp.

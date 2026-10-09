@@ -6,6 +6,7 @@ TOOLS := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))../tools)
 PYTHON ?= python3
 AS := psx-as
 LD := psx-ld
+NM := psx-nm
 OBJCOPY := psx-objcopy
 MASPSX := maspsx
 .DEFAULT_GOAL := verify
@@ -157,11 +158,28 @@ $(ROOT)/$(BUILD)/%.cov.o: $(ROOT)/%.c $(ROOT)/$(BUILD)/%.o $(TOOLS)/matching_cov
 	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py --mark-gas < $@.s > $@.marks.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.marks.s
 
-$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(LINKER_EXTRA))) $(CONFIG)
+# splat's undefined_syms_auto.txt and undefined_funcs_auto.txt assign an
+# address to every name its generated assembly used, also to names that a
+# linked object defines, and GNU ld silently lets a script assignment win
+# over the object's definition (the symbol becomes absolute). The link reads
+# them as PROVIDE, which defines only a name no linked object defines.
+LINKER_SCRIPTS = $(foreach script,$(LINKER_EXTRA),$(if $(filter %_auto.txt,$(script)),$(BUILD)/$(script:.txt=.ld),$(script)))
+
+# Each `NAME = VALUE;` line as PROVIDE(NAME = VALUE); any other line fails.
+PROVIDE_AWK := '/^[A-Za-z_.$$][A-Za-z0-9_.$$]* = [^;]+;$$/ { sub(/;$$/, ""); split($$0, f, " = "); print "PROVIDE(" f[1] " = " f[2] ");"; next } NF { print FILENAME ":" FNR ": not a symbol assignment" > "/dev/stderr"; exit 1 }'
+
+$(ROOT)/$(BUILD)/%_auto.ld: $(ROOT)/%_auto.txt
+	@mkdir -p $(dir $@)
+	awk $(PROVIDE_AWK) $< > $@.tmp && mv $@.tmp $@
+
+# PAD_TO_SYMBOL pads the file to that symbol's value in the link (the
+# resident's whole number of sectors, link.ld).
+pad_to = $(if $(PAD_TO_SYMBOL),--pad-to 0x$$($(NM) $(IMAGE).elf | awk '$$3 == "$(PAD_TO_SYMBOL)" { print $$1 }'))
+$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(filter-out %_auto.txt,$(LINKER_EXTRA)))) $(patsubst $(ROOT)/%.txt,$(ROOT)/$(BUILD)/%.ld,$(wildcard $(addprefix $(ROOT)/,$(filter %_auto.txt,$(LINKER_EXTRA))))) $(CONFIG)
 	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }
 	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
-		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_EXTRA)) -o $(IMAGE).elf
-	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(IMAGE).elf $(IMAGE)
+		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_SCRIPTS)) -o $(IMAGE).elf
+	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(pad_to) $(IMAGE).elf $(IMAGE)
 	$(if $(PACKER_TAIL),cd $(ROOT) && head -c $(PACKER_TAIL) /dev/zero >> $(IMAGE))
 
 verify: $(ROOT)/$(IMAGE)

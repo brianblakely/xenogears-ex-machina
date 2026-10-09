@@ -91,6 +91,13 @@ executable or byte-identical to a target image (MDEC streams are reported
 apart). Distinct overlays at the same address keep separate targets and symbol
 files.
 
+The link reads splat's `undefined_syms_auto.txt` and `undefined_funcs_auto.txt` as
+`PROVIDE` (decomp/Makefile): an address splat gave a name defines it only where no
+linked object defines it, so an object's own definition stands (GNU ld lets a plain
+script assignment win silently and makes the name absolute; 63 names were so bound
+before, the resident's D_800308D0 among them). The resident pads its file to the
+link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
+
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
 python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
