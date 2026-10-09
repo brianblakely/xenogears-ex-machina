@@ -6,7 +6,6 @@
 #include "psyq/libgte.h"
 #include "resident/gamedata.h"
 #include "resident/menu.h"
-#include "menu/panel.h"
 #include "menu/tables.h"
 
 /* The field menu's screens (slot39, menu kind 0): the command list and field
