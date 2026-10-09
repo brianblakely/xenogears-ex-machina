@@ -128,9 +128,10 @@ Notes from the handler:
   control. Once the file's bytes are used up (`D_800AF780`), every further
   line is blank.
 - Source: directory (4, 0) files 0xAB and 0xAC, loaded by `func_800AC308`
-  from `func_800ACC58` when `D_8004F300` is set. Only field extended event BE
-  (`func_80087C0C`) sets it, and no reachable field script on either disc uses
-  that event (`python3 -m tools.analysis.events --sweep`).
+  from `func_800ACC58` when `D_8004F300` is set. Only field ext `be`
+  (`enable_movie_overlay`, `func_80087C0C`) sets it, and no reachable field
+  script on either disc uses that event (`python3 -m tools.analysis.events
+  --sweep`).
 
 ```sh
 python3 -m tools.analysis.staff_roll --sweep    # aggregate, both discs

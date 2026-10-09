@@ -125,10 +125,16 @@ Outside the libraries the game itself uses:
   The arena coroutine switches stacks its own way (Control flow).
 - **BIOS Kanji ROM**: Krom2RawAdd returns a ROM glyph address for a Shift-JIS
   code. slot39 func_801E65E4 draws every listed save title from it; field
-  func_800ABFDC uses it for staff-roll codes outside the game font (8540-887F),
-  reachable only through field event BE, which no shipped script uses
-  (tools/analysis/staff_roll.py). A hosted build needs the user's BIOS font or
-  a labelled substitute.
+  func_800ABFDC uses it for staff-roll codes outside the game font (8540-887F).
+  The staff roll (func_800A7948) runs only while D_8004F300 is set, which only
+  field ext `be` (enable_movie_overlay, func_80087C0C, entry 0xBE of the
+  extended table D_800AE6A0) does; the game-wide reset func_8001AADC clears it
+  (`tools/data_users.py --range 8004f300:8004f304`). The movie player
+  func_800A7C58 calls it on each pass of a mode-0 movie (ext `a0`, or ext `60`
+  with layout 1 or 2), and it draws over movie frames 0x687-0x18E1. No
+  reachable field script on either disc uses ext `be` (`python3 -m
+  tools.analysis.events --sweep` lists it among the extended opcodes no script
+  uses). A hosted build needs the user's BIOS font or a labelled substitute.
 
 ### Controllers
 
@@ -738,7 +744,7 @@ isrgb24 0. The game changes only what the table lists.
 | fatal error (host only) | 384x240 at y 0 and 240 | default | 0 | 0 | isbg black | 1 | main.c func_80019EF8 |
 | file server error (PC file server only) | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | main_8002709C.c func_8002804C |
 | field | 320x224 at y 0 and 256 | (0, 10, 256, 216) | 0, 1 on the shown block while a 24-bit movie plays (func_800A7120) | 0 | no isbg: ClearImage each frame; dtd 0 after map setup when D_800B2078.jump_mode is set (func_80078C5C) | 2-4 | field.c func_80071FB0, field_800854D0.c func_80086D8C |
-| field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (func_80086E1C), used once, field map 41 on both discs; the staff roll func_800A7948 also switches to it but needs event BE |
+| field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (func_80086E1C), used once, field map 41 on both discs; the staff roll func_800A7948 also switches to it but needs field ext `be` (enable_movie_overlay, func_80087C0C), which no shipped script uses (Services, BIOS Kanji ROM) |
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_80072238.c func_80072BB0 |
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | main_8001B6C4.c func_8001B844 |
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_800B8098.c func_800B8284 |
