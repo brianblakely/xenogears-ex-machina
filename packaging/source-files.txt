@@ -194,6 +194,7 @@ decomp/src/battle/window_draw.h
 decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c
 decomp/src/debug2611/pages.c
+decomp/src/debug2611/pages.h
 decomp/src/debug595/debug595.c
 decomp/src/debug595/debug595.h
 decomp/src/field/field.c

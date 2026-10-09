@@ -3,7 +3,7 @@
  * unit of its own: its positive li are ori (ASPSX 2.34) where the tools
  * unit's are addiu, and GCC 2.6.3 and 2.7.2 build it where the tools unit's
  * 2.7.2-cdk does not (debug2611.mk). */
-#include "battle_debug.h"
+#include "pages.h"
 
 /* "\nChar#%d:", linked as original rodata below its user (INCLUDE_RODATA). */
 extern char D_8028007C[];

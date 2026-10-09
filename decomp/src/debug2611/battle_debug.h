@@ -1,20 +1,17 @@
 #ifndef DEBUG2611_BATTLE_DEBUG_H
 #define DEBUG2611_BATTLE_DEBUG_H
 
-/* The battle debug tools: the battle overlay objects they read beyond the
- * shared battle area and work area (battle/area.h, battle/work.h), by their
- * own views, and the tools' load meter and calls. */
+/* The battle debug tools (debug2611.c): the battle overlay objects they read
+ * beyond the shared battle area (battle/area.h), by their own views, and the
+ * tools' load meter and calls. */
 
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "battle/area.h"
-#include "battle/work.h"
 #include "resident/console.h"
-#include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
-#include "resident/mode.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
 
@@ -22,33 +19,6 @@
  * (u16 colours there): build the console font CLUTs from a foreground and a
  * background colour. */
 void func_80036E4C(s32 foreground, s32 background);
-
-/* The battle's action list (8 bytes, 32 from 800d2e5c; the battle overlay's
- * BattleAction); the state page names its fields. */
-typedef struct {
-    u8 code;         /* Cd */
-    u8 cls;          /* Cl */
-    u8 anim;         /* An */
-    u8 param[3];     /* P1..P3 */
-    u16 target;      /* Tg */
-} Effect;
-extern Effect D_800D2E5C[23];
-
-/* Enemy AI flags (0x40 per enemy slot 3..10; the battle overlay's EnemyAi). */
-typedef struct {
-    u8 unk0[0x10];
-    s32 lflag[4];    /* +10 */
-    u16 hflag[8];    /* +20 */
-    u8 bflag[16];    /* +30 */
-} EnemyFlags;
-extern EnemyFlags D_800D3400[8];
-
-/* Battle turn state; only the acting slot. */
-typedef struct {
-    u8 unk0[0x2D3];
-    u8 actor;        /* +2d3 */
-} TurnState;
-extern TurnState *D_800C3EAC;
 
 /* The bound object of a kind 15 sprite's model renderer: its polygon count. */
 typedef struct {
