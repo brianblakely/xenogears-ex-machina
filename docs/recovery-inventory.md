@@ -1,16 +1,27 @@
-# Recovery inventory diagnostics
+# Host reconstruction inventory
 
-[The recovery inventory](../analysis/recovery.json) records incomplete symbols,
-formats, behavior and original dispatch windows. Repository validation now checks
-its IDs, next experiments, status labels, evidence links, authored source paths,
-opcode order and table fingerprints. A missing row, changed original table value,
-unsupported status or unlisted source fails the public check with its location.
+[The inventory](../analysis/recovery.json) records the status of the host
+reference reconstruction ([executable-reconstruction.md](executable-reconstruction.md)):
+which original dispatch entries its C++ library implements, the bounded original
+comparisons behind them and the connections it still lacks. It does not record the
+recovery of the original program. That program is recovered under decomp/, every
+target byte-identical, and its formats, dispatch tables and script instructions are
+documented in [docs/scripts](scripts/interpreters.md) with their decoders under
+tools/analysis.
+An `unresolved` or `unimplemented` entry means only that the host library lacks it.
 
-Daily work starts with the [executable reconstruction](executable-reconstruction.md).
-Its report joins an actually encountered dependency to this inventory's original
-handler address, available source, evidence and next investigation. Completed
-entries return normally without manufacturing a missing dependency. The commands
-below audit the inventory or query a declared obligation; they do not execute code.
+- Dispatch rows: the field event primary and extended tables (`D_800AE2A0`,
+  `D_800AE6A0`) and the resident sprite command table (`0x800183d8`, opcodes
+  8a-fc), with every original table value, also the extended values that are not
+  code; the table fingerprints keep them unchanged. `native_status` says whether the
+  C++ library implements an entry (`cpp_reconstruction` names its source).
+  `analysis_status` says whether that implementation was compared with original
+  execution (`observed_subset`, with its evidence) or only written from the source
+  (`source_reconstructed_unobserved`).
+- Symbols and behaviour: connections the host runner stops at (it names them, such
+  as `symbol:field-return-sprite-ownership`) and original branches its comparisons
+  have not exercised. The format list is empty: the original formats are documented
+  with the decomp.
 
 Run these commands inside the [pinned Nix environment](development.md):
 
@@ -21,23 +32,19 @@ python3 tools/repository/recovery.py \
   --dependency symbol:field-return-sprite-ownership
 ```
 
-The first command checks inventory integrity and reports incomplete-entry counts.
-The second returns exit code 1 and JSON identifying the dependency, its next
-experiment, available evidence and the requested coverage that it blocks.
-Malformed inventory or command input returns exit code 2.
+The first command checks the inventory and counts the entries the host library has
+not completed (649: 627 dispatch rows, 6 symbols, 16 behaviours). The second returns
+exit code 1 and JSON identifying the dependency, its next step, its evidence and the
+requested coverage that it blocks. Malformed inventory or command input returns
+exit code 2. `tools/analysis/execution.py` adds the matching row to a runner report
+that stops at a dependency.
 
 Dependency names use `symbol:<id>`, `format:<id>`, `behavior:<id>` or
 `instruction:<namespace>:0xNN`. Instruction namespaces are `primary`, `extended`
-and `sprite`. A syntactically valid but unlisted dependency remains blocked.
-Observed instruction subsets and authored C++ libraries retain those statuses;
-neither establishes full instruction behavior. Equal dispatch values retain
-separate opcode entries, including extended-table values not established as code.
-
-The coverage name is an explicit caller declaration. This diagnostic does not
-infer that an unused instruction blocks the selected route, update validation
-results, or grant a coverage pass. The [slice gate](matching.md)
-continues to require independent original evidence for each scoped proof.
-Complete symbol/format discovery and P01-T15 remain open.
+and `sprite`. A syntactically valid but unlisted dependency remains blocked. Equal
+dispatch values keep separate entries. The coverage name is an explicit caller
+declaration: the diagnostic does not infer that an instruction blocks a route or
+grant a pass.
 
 [The synthetic tests](../tests/test_recovery.py) inject unresolved symbols,
 formats and instructions, then verify precise blockers and a failing CLI result.

@@ -124,6 +124,34 @@ maps are identical to Disc 1's.
   `800a7c58`), `b5` the gathering warp (`800b2348`), and `2a`/`2b` and `cd`/`ce`
   the actor flags 0x20000 and 0x800000 that keep talk and touch, or touch alone,
   from starting events 2 and 3 (`8008399c`).
+- Named from the readers of the flags they set:
+  - `b7`/`b8` camera flag 0x4000. Only the follow camera (`80073230`, modes 0
+    and 2) reads it: while it is clear, the eye goal sinks no lower than the floor
+    of the last collision layer under it (`8007b1c4`). Ext `54` also sets it,
+    with 0x8000 (`77`, which stops the shoulder-button turns of `800726e8`), and
+    ext `53` and the camera reset (`8007254c`) clear it.
+  - Ext `07` layer flag 0x400. `80075b44` sets layer flag 0x200 when an
+    actor's sprite projects off screen. Such an actor moves (`8008110c`), turns
+    (`800739c0`) and runs its sprite animation (`800752c8`) only with 0x400.
+  - Ext `09` layer flag 0x800, which every actor starts with (`80080a74`).
+    `800764b4` draws no drop shadow for it. For an 801e layer actor, `80075b44`
+    sets bit 0 of its layer object's +4a, and ovl2143 `801dcec8` then skips the
+    object's shadow quad.
+  - Ext `46` layer flag 0x20000. It applies to an 801e layer actor (layer flag
+    0x2000). The actor then moves by its layer object's speed (+128/+130;
+    `80081f80`, `80082620`) and takes the layer model's facing. Without the flag
+    it turns the model to its own facing (`80075b44`).
+  - Ext `c3`/`c4` layer flags 0x2000000 and 0x800. `80075b44` still projects a
+    sprite actor with 0x2000000 but does not draw its sprite; `22` and `24`
+    clear it.
+  - Ext `9f` the character bits of the game's `+2318`. The party menu (ovl2598
+    `801cab48`) does not exchange a locked member, and the debug monitor (debug595
+    `80281b90`) prints the bits as `FrLock`.
+  - Ext `d1` flag 0x4000 of the game's `+22b6`. With it a gear at attack level 3
+    may start the boost (battle `8009a2d4`). The battle results also learn
+    counter skills 7-12 (ovl2596 `801e3be0`) and raise tier 6 to 7 at level 50
+    (`801e403c`), and the field menu rates rows 7 and up of a member's
+    completion table (slot39 `801e1418`).
 - Compared with the host disassembler (`src/reconstruction/field_disassembler.cpp`),
   the lengths agree for every opcode and form. It differs in three places, and
   the C reading above is used:
@@ -138,7 +166,9 @@ maps are identical to Disc 1's.
   its button test live (`v0050` 0), so it depends on actor 56 running event 1
   and the field's input mask there; a capture in map 488 would settle it.
 - The bounds of variable `a6` indexes: the sweep follows consecutive jumps.
-- Forms still named by a flag bit, whose readers are not traced here: camera flag
-  0x4000 (`b7`/`b8`), layer flags 0x400, 0x800, 0x20000 and 0x2000000 (ext `07`,
-  `09`, `46`, `c3`, `c4`), the character bits of the game's `+2318` (ext `9f`)
-  and flag 0x4000 of its `+22b6` (ext `d1`).
+- Whether the gear part durability bytes reach the words of ext `d1` and `9f`.
+  The battle (`func_80080160`, `func_80093B08`, `func_8009D3A0`,
+  `func_8009E788`) and the field menu (slot39 `func_801DF0D4`) index them by a
+  part slot from the address of `+22b6` (`D_8006F8EA[slot]`), so slots 0 and 1
+  would be that flag word and slots 0x62 and 0x63 `+2318`. The slots' range is
+  not traced here.
