@@ -69,8 +69,9 @@ typedef struct {
     ModelPrims *prims; /* 0x0C: own packet buffers for model sources */
 } Instance;
 
-/* Light payload (0x14 bytes); the resident loads it into the GTE light
- * matrix (80030a30). */
+/* Light payload (0x14 bytes), which the resident loads into the GTE light
+ * matrix (80030a30): its ModelLight (resident/model.h) with signed
+ * colours, which the menu halves as signed values (80083dcc). */
 typedef struct Light {
     s32 direction[3];
     s16 colour[3];     /* 0x0C: 0x1000 = full */

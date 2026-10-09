@@ -569,8 +569,8 @@ class FrameEventSourceTests(unittest.TestCase):
     def setUp(self):
         self.menu3 = (ROOT / "decomp/src/menu/menu3.c").read_text()
 
-    def test_layouts_follow_menu_h(self):
-        header = (ROOT / "decomp/src/menu/menu.h").read_text()
+    def test_layouts_follow_actor_h(self):
+        header = (ROOT / "decomp/src/menu/actor.h").read_text()
         self.assertEqual(struct_fields(header, "FrameEvent"), FRAME_EVENT)
         self.assertEqual(struct_fields(header, "HitSpec"), HIT_SPEC)
 

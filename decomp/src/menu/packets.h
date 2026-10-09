@@ -5,7 +5,9 @@
 
 /* A TILE, a TILE_1 and a POLY_FT4 as the menu writes them: the colour and
  * code as one word (and the POLY_FT4's positions as words, its texture
- * coordinates as halfwords), where the libgpu layouts have bytes. */
+ * coordinates as halfwords). Each such store compiles to one instruction
+ * where the libgpu layouts' byte members take one per byte, so these views
+ * stay beside psyq/libgpu.h. */
 typedef struct {
     u8 addr[3];
     u8 len;
