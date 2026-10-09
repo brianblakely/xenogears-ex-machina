@@ -2974,8 +2974,10 @@ void func_801E4998(MenuTables *tables, u8 gear) {
     art->gearCost = art->gearCost / 10 * 10;
 }
 
-/* Not GCC's built-in memcpy, which psyq/libc.h keeps: under it the two 0xa38-byte
- * copies below are inline block moves, where the original calls memcpy. */
+/* A prototype, which drops GCC's built-in memcpy (psyq/libc.h keeps it; cc1 warns
+ * of the conflict): the built-in moves the two constant 0xa38-byte copies below
+ * inline, where the original calls memcpy. A length passed in a variable keeps the
+ * built-in and gives the same calls; nothing decides which the original had. */
 void *memcpy(void *dest, void *src, int n);
 
 /* Copy the game data into save buffer `save`: characters, gears (their
