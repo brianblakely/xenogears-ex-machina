@@ -152,6 +152,31 @@ maps are identical to Disc 1's.
     counter skills 7-12 (ovl2596 `801e3be0`) and raise tier 6 to 7 at level 50
     (`801e403c`), and the field menu rates rows 7 and up of a member's
     completion table (slot39 `801e1418`).
+- The special part durability bytes stay clear of the words of `d1` and `9f`.
+  Character 4's special parts (character record `+6f`) and its gear's (gear
+  record `+04`) are weapon and gear part ids from 50, 0 for an empty slot: the
+  field menu offers inventory ids from 50 (slot39 `801de5cc`), the battle lists
+  weapon ids 50-72 (ovl2615 `801e4cd0`) and copies weapon records 50-97
+  (`801e5384`). The code addresses an id's durability from 50 bytes before its
+  array (splat's `D_8006F8BA`, `+2286`, and `D_8006F8EA`, `+22b6`): ids 50-97
+  are the 48-byte arrays at `+22b8` and `+22e8` (`specialDurability`,
+  `gearSpecialDurability`); a gear part id 98 or 99 would reach `+2318`, a
+  weapon id the gears' array. `python3 -m tools.analysis.special_parts
+  --sweep` finds no source of those on either disc: give_item (its 172 and 53
+  variable operands resolved from the same map's set_variable immediates), the
+  shops the field opens, the enemies' drops and the AI's drop setters supply
+  weapon ids 50-64 (and 67-70 on disc 1) and gear part ids 50-64, and the
+  new-game file holds 100 in all 96 bytes, 0x8000 at `+22b6` and 0 at `+2318`.
+  Only gear shop 15 lists ids past 72 (gear parts 93-95 and 101; 101 would
+  reach the saved map's high byte `+231b`), and only the menus of maps 488 and
+  723 (with a number they step in `v0016`) and the resident's debug start
+  (`8001c1a8`) open it. An empty slot reads the low byte of `+22b6` for a gear,
+  `+2286` (gear accessory list entry 108) for character 4. No code sets that
+  low byte (`d1` sets 0x4000, `d0`'s copies to characters 9 and 10 set 0x2000
+  and 0x1000, and `8009e788`, which wears the gear's parts, lowers only a
+  nonzero byte), so every gear without a first special part, the enemies'
+  included (their records hold none), gains `+9f` as with a broken weapon
+  (battle `8009d3a0`).
 - Compared with the host disassembler (`src/reconstruction/field_disassembler.cpp`),
   the lengths agree for every opcode and form. It differs in three places, and
   the C reading above is used:
@@ -166,9 +191,7 @@ maps are identical to Disc 1's.
   its button test live (`v0050` 0), so it depends on actor 56 running event 1
   and the field's input mask there; a capture in map 488 would settle it.
 - The bounds of variable `a6` indexes: the sweep follows consecutive jumps.
-- Whether the gear part durability bytes reach the words of ext `d1` and `9f`.
-  The battle (`func_80080160`, `func_80093B08`, `func_8009D3A0`,
-  `func_8009E788`) and the field menu (slot39 `func_801DF0D4`) index them by a
-  part slot from the address of `+22b6` (`D_8006F8EA[slot]`), so slots 0 and 1
-  would be that flag word and slots 0x62 and 0x63 `+2318`. The slots' range is
-  not traced here.
+- Whether the gear accessory list ever holds an id at entry 108. Character
+  4's empty special slot (slot39 `801e0434` empties slot 0 when its weapon
+  changes) then reads that id as its durability (battle `80080160`,
+  `80093b08`, `80096ab8`) and its attacks lower the id (`8009afd8`).

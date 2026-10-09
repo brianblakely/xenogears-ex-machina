@@ -273,12 +273,12 @@ typedef struct GameData {
     u16 flags;                    /* 0x22B6: option flags (0x4000 battle's boost, ext d1;
                                    * 0x2000/0x1000 a copy to character 9/10, ext d0) */
     /* The durability of each special part by id - 50, ids 50-97 (the 48 weapon
-     * records ovl2615 func_801E5384 copies for the battle). Battle and slot39
-     * index them by the id from 50 bytes before: D_8006F8BA (+0x2286) and
-     * D_8006F8EA (+0x22B6, the address of `flags`). An empty slot (id 0) reads
-     * gearAccessoryIds[108] or the low byte of `flags`, which no code sets;
-     * ids 98 and 99 would reach gearSpecialDurability[0-1] and `locked`
-     * (docs/scripts/field-events.md). */
+     * records ovl2615 func_801E5384 copies for the battle). The code forms an
+     * id's address from 50 bytes before each array, splat's D_8006F8BA
+     * (+0x2286) and D_8006F8EA (+0x22B6, the address of `flags`). An empty
+     * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,
+     * which no code sets; ids 98 and 99 would reach gearSpecialDurability[0-1]
+     * and `locked` (docs/scripts/field-events.md). */
     u8 specialDurability[48];     /* 0x22B8: characters' special parts */
     u8 gearSpecialDurability[48]; /* 0x22E8: gears' special parts */
     u16 locked;                   /* 0x2318: characters locked in place */

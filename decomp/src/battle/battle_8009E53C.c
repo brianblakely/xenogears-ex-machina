@@ -69,8 +69,9 @@ s32 func_8009E53C(u8 index) {
 
 /* Put battle gear part index into character 4's gear entry holding its id
  * (entry k when none does; the third entry's match selects entry 3): copy its
- * values, record the part slot and durability, and update the battle copies of
- * character 4's gear. */
+ * values, record the part slot and its durability (in the characters' array,
+ * as 8009a854 does, not gearSpecialDurability), and update the battle copies
+ * of character 4's gear. No image calls it or 8009e53c. */
 void func_8009E5C8(u8 index, u8 k) {
     BattlePart *part = &D_800C34B0->lists.parts.list[index];
     u8 gearId = D_8006D8A0.characters[4].gearId;

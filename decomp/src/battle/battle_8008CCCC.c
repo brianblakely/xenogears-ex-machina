@@ -4836,9 +4836,11 @@ void func_8009D354(void) {
 }
 
 /* Gear hit outcome of the current command on the target: 1 hit, 2 half,
- * 3 miss. Like 80096ab8 with gear accuracy (+0x9f with a broken weapon,
- * 1.5x with status 0x800), the target's evasion (half its gear's +0x9f,
- * 1.5x with status 0x400) and the gears' blind/evade status 0x10. */
+ * 3 miss. Like 80096ab8 with gear accuracy (+0x9f while the first special
+ * part's durability is 0; an empty slot reads the low byte of the game data's
+ * flags, which no code sets, so every gear without one gains it; 1.5x with
+ * status 0x800), the target's evasion (half its gear's +0x9f, 1.5x with
+ * status 0x400) and the gears' blind/evade status 0x10. */
 s8 func_8009D3A0(void) {
     s16 penalty = 0;
     s16 bonus = 0;
