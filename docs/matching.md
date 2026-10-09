@@ -361,8 +361,42 @@ the audit; they are never counted as matches. This diagnostic does not replace
   scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them
   in place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE`
   set in the .mk), and an `asset` line in the classification names the format and
-  its reader. Never commit their bytes as C initializers; numeric program tables
-  (sine, pitch, note encodings, opcode lengths) are source.
+  its reader. Never commit their bytes as C initializers. Media, and authored
+  content that a reader walks as a sequence (scripts, cue timelines, scene
+  directions: entries that say what happens or when, consumed in order from a
+  position the reader keeps across updates up to the data's own end), are assets;
+  tables the program indexes to compute a result are source (sine, pitch, note
+  encodings, opcode lengths, dispatch, per-character file numbers, and points,
+  paths and layouts that code interpolates or steps through on its own count and
+  timing). So the field's movie sound timelines `D_800AE060`, (frame, sound) runs
+  ended by frame 0xFFFF that `func_80085678` plays in order, are an asset, and the
+  world map ferry's eight waypoints, which `func_80087C6C` steps through and wraps
+  itself, are source.
+- The rule was applied to every initialized object cc1 emits from the 26 targets' C
+  (at 8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every
+  named data symbol of the C objects is one of them or linked by
+  INCLUDE_ASSET/INCLUDE_ORIGINAL/INCLUDE_RODATA. All 571 that are not scalars (488
+  numeric arrays and structures, 65 pointer tables, 18 character arrays) were read
+  with their comments, and the 283 objects (56 of them scalars) flagged by shape (an
+  end value 0xFF, 0xFFFF, -1, 0x8000 or 0x7FFF that ends the object or recurs), by
+  reader (an index or pointer into it that persists or advances, a test of its
+  elements against an end value, its address stored for later) or by their comment's
+  wording were checked against their readers. Six were authored sequences and are
+  now assets, 528 bytes: `D_800AE060` and the world map's terrain texture animation
+  runs `D_8009A1A0`, `D_8009A1C4`, `D_8009A208`, `D_8009A220` and `D_8009A238`,
+  (image, duration) frames ended by a negative duration that `func_80074F2C` and
+  `func_80075104` step (docs/scripts/timelines.md). None remains: the others are
+  lookups by a key the code computes, also where an end value closes them (the
+  picture table `D_800AF47C` searched by map, the battle modes' sound programs
+  `D_8004F388`, the gear shop lamps' frames `D_801D6FE0` on the code's timing),
+  lists one call processes whole (the battle panel glyph sets ended by 0xFFFF, the
+  world map's object links `D_8009AFA0`), geometry the code interpolates or steps
+  through on its own count (the world map's camera and flight paths, which
+  `func_80076858` interpolates at the parameter its scene code advances; the ferry's
+  waypoints; the scripted flights' waypoints, whose counts `func_8008E76C` fixes,
+  never reading their -1 ends), and masks and thresholds. The four objects passed
+  to LoadImage are palettes the code's own drawing indexes (text, gauges, the
+  console font, menu7's glow ramp).
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per code unit (Qualified configuration, above,
