@@ -17,11 +17,11 @@ SVECTOR D_801FCE14 = {0, 0, 0};
 #define VERTEX(n) ((SVECTOR *)(((u16 *)desc)[n] * sizeof(SVECTOR) + (s32)vertices))
 
 /* Release the pieces, their primitives and the task. */
-void func_801FC074(TaskNode *node) {
-    DebrisTask *debris = node->object;
+void func_801FC074(Task *node) {
+    DebrisTask *debris = node->data;
 
     func_800320E8(debris->pieces);
-    func_80025180(debris->prims[0]);
+    func_80025180((u32)debris->prims[0]);
     func_8001CB48(&debris->draw);
     func_8001CD94(&debris->task);
     func_800320E8(debris);
@@ -29,8 +29,8 @@ void func_801FC074(TaskNode *node) {
 
 /* Move and spin every piece under gravity; the effect ends when its life
  * runs out. */
-void func_801FC0CC(TaskNode *node) {
-    DebrisTask *debris = node->object;
+void func_801FC0CC(Task *node) {
+    DebrisTask *debris = node->data;
     Piece *piece = debris->pieces;
     s32 count = debris->count;
     s32 i;
@@ -53,44 +53,44 @@ void func_801FC0CC(TaskNode *node) {
  * matrix and the camera, project its corners into its primitive and queue it.
  * Each primitive kind has its own case (the compiler merges the identical
  * ones afterwards). */
-void func_801FC1A8(TaskNode *node) {
+void func_801FC1A8(Task *node) {
     DebrisTask *debris;
     Piece *piece;
-    PacketDesc *desc;
+    ScriptCommand *desc;
     u8 *prim;
     MATRIX camera;
     s32 position[3];
     MATRIX m;
-    s32 sxy[4];
-    s32 p, flag;
+    long sxy[4];
+    long p, flag;
     s32 count;
     s32 kind;
     s32 i;
 
-    debris = node->object;
+    debris = node->data;
     CompMatrix(&D_8004FBB8, &debris->matrix, &camera);
     piece = debris->pieces;
     prim = debris->prims[D_800C3EB0.buffer];
-    desc = (PacketDesc *)(debris->model->packets + (s32)debris->model);
+    desc = (ScriptCommand *)(debris->model->commands + (s32)debris->model);
     count = debris->count;
     for (i = 0; i != count; i++, piece++) {
         position[0] = piece->position[0] >> 16;
         position[1] = piece->position[1] >> 16;
         position[2] = piece->position[2] >> 16;
-        TransMatrix(&m, position);
+        TransMatrix(&m, (VECTOR *)position);
         func_8003F738(&piece->rotation, &m);
         CompMatrix(&camera, &m, &m);
         SetTransMatrix(&m);
         SetRotMatrix(&m);
-        kind = desc->kind & 0x1C;
+        kind = desc->code & 0x1C;
         if (kind & 8) {
             RotTransPers4(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &piece->vertex[3],
                           &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
-            AddPrim(D_8005956C, prim);
+            AddPrim((u32 *)D_8005956C, prim);
         } else {
             RotTransPers3(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &sxy[0], &sxy[1],
                           &sxy[2], &p, &flag);
-            AddPrim(D_8005956C, prim);
+            AddPrim((u32 *)D_8005956C, prim);
         }
         /* The corners' places in POLY_F3/F4/FT3/G3/GT3/FT4/G4/GT4. */
         switch (kind) {
@@ -139,8 +139,8 @@ void func_801FC1A8(TaskNode *node) {
             *(s32 *)(prim + 0x2C) = sxy[3];
             break;
         }
-        prim += (desc->prim_words + 1) * 4;
-        desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
+        prim += (desc->primWords + 1) * 4;
+        desc = (ScriptCommand *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }
 
@@ -151,11 +151,11 @@ void func_801FC1A8(TaskNode *node) {
  * `life` frames. `prims` holds the model's primitives, or 0 to build them
  * (twice: one copy per display buffer). The primitives are read through
  * `source`, a copy of `model` (the original keeps the two apart). */
-void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
+void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
                    s32 spin_range, s32 life) {
     DebrisTask *debris;
     Piece *piece;
-    PacketDesc *desc;
+    ScriptCommand *desc;
     SVECTOR *vertices;
     SVECTOR *v0, *v1, *v2, *v3;
     SVECTOR centre;
@@ -164,9 +164,9 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     MATRIX m;
     s32 count, size, kind, i, r;
     u8 *buffer;
-    Model *source;
+    ScriptEntry *source;
 
-    debris = func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
+    debris = (DebrisTask *)func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
     debris->model = model;
     count = model->count;
     debris->count = count;
@@ -185,12 +185,12 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     }
     debris->prims[0] = buffer;
     debris->prims[1] = buffer + size;
-    desc = (PacketDesc *)(source->packets + (s32)source);
+    desc = (ScriptCommand *)(source->commands + (s32)source);
     vertices = (SVECTOR *)(source->vertices + (s32)source);
     for (i = 0; i != count; i++) {
         /* Bit 8 selects the unlit command layout; descriptor flags bit 0
          * selects lighting. Vertex indices follow its header and colours. */
-        kind = desc->kind & 0x1C;
+        kind = desc->code & 0x1C;
         kind |= ((desc->flags ^ 1) & 1) << 8;
         switch (kind) {
         case 0x00:
@@ -343,6 +343,6 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
         piece->spin.vz = r;
         piece->gravity = gravity;
         piece++;
-        desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
+        desc = (ScriptCommand *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }

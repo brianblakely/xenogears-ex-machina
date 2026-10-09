@@ -21,25 +21,26 @@
 SVECTOR D_801FC6F8[3] = {{-2, -2, 0}, {6, -2, 0}, {-2, 6, 0}};
 SVECTOR D_801FC710[3] = {{2, -6, 0}, {2, 2, 0}, {-6, 2, 0}};
 
-/* Count the effect's frames; the battle's flag 0x100 ends it. */
-void func_801FC000(TaskNode *node) {
-    ((TileTask *)node->object)->frame++;
-    if (D_800C3EB0.flags & 0x100) {
+/* Count the effect's frames; select (0x100) newly pressed on the second
+ * controller ends it. */
+void func_801FC000(Task *node) {
+    ((TileTask *)node->data)->frame++;
+    if (D_800C3EB0.pressed2 & 0x100) {
         node->destroy(node);
     }
 }
 
 /* Queue every triangle of the current display buffer at a fixed 64,64
  * offset. */
-void func_801FC064(TaskNode *node) {
+void func_801FC064(Task *node) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
-    s32 ofx, ofy;
+    long ofx, ofy;
     s32 h;
     s32 half, row, column;
 
-    task = node->object;
+    task = node->data;
     ReadGeomOffset(&ofx, &ofy);
     h = ReadGeomScreen();
     SetGeomOffset(64, 64);
@@ -65,7 +66,7 @@ void func_801FC064(TaskNode *node) {
                     prim->y1 = tile->spread[1].vy + offset.vy;
                     prim->x2 = tile->spread[2].vx + offset.vx;
                     prim->y2 = tile->spread[2].vy + offset.vy;
-                    AddPrim(D_8005956C, prim);
+                    AddPrim((u32 *)D_8005956C, prim);
                 }
             }
         }
@@ -75,10 +76,10 @@ void func_801FC064(TaskNode *node) {
 }
 
 /* Unlink the effect's nodes, release it and restore the depth shift. */
-void func_801FC278(TaskNode *node) {
-    func_8001CB48((TaskNode *)((u8 *)node + 0x1C));
+void func_801FC278(Task *node) {
+    func_8001CB48((Task *)((u8 *)node + 0x1C));
     func_8001CD94(node);
-    func_80025180(node);
+    func_80025180((u32)node);
     D_80050100 = 4;
 }
 
@@ -95,7 +96,7 @@ void func_801FC2C0(void) {
     u8 u;
 
     D_80050100 = 0;
-    task = func_8001D1D8(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
+    task = (TileTask *)func_8001D1D8(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
     task->frame = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row < 16; row++) {

@@ -120,7 +120,7 @@ typedef struct Sprite {
         unsigned unknown29 : 3;
         } bits;
     } render;                /* +0x3c: tests read the word, as the original does */
-    u32 flags;               /* +0x40: bits 8-12 facing group */
+    u32 flags;               /* +0x40: SpriteFlagBits (bits 8-12 the scale shift) */
     s32 *resource_block;     /* +0x44: the block the image's sections come from */
     s32 *animations;         /* +0x48: the animation block, NULL none */
     s32 resource;            /* +0x4c */
@@ -424,10 +424,11 @@ typedef struct {
 } TexturePosition;
 extern TexturePosition D_8004FAB8[8];
 /* Second sprite unit (80022090-8002709c). */
-/* The bits of a sprite's flags word (+0x40) that the original writes as fields. */
+/* The bits of a sprite's flags word (+0x40) that the original writes as fields
+ * (the battle modules read part_bytes and shift as fields too). */
 typedef struct {
-    unsigned unknown0 : 8;
-    unsigned group : 5;      /* facing group */
+    unsigned part_bytes : 8; /* four per drawn part: bits 2-7 the part count */
+    unsigned shift : 5;      /* scale shift of the parts' offsets and sizes (8001e148) */
     unsigned type : 4;       /* sprite kind (80023440) */
     unsigned unknown17 : 1;
     unsigned flag18 : 1;     /* inherited by child sprites (80023b84) */

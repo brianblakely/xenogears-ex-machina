@@ -2,71 +2,14 @@
 #define OVL3384_DEBRIS_H
 
 #include "common.h"
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
-
-MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2);
-MATRIX *TransMatrix(MATRIX *m, s32 *v);
-void SetRotMatrix(MATRIX *m);
-void SetTransMatrix(MATRIX *m);
-s32 RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2,
-                  s32 *p, s32 *flag);
-s32 RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1,
-                  s32 *sxy2, s32 *sxy3, s32 *p, s32 *flag);
-void AddPrim(void *ot, void *p);
-MATRIX *func_8003F738(SVECTOR *rotation, MATRIX *m); /* RotMatrix */
-
-extern MATRIX D_8004FBB8; /* sprite camera */
-extern void *D_8005956C;  /* current ordering table */
-
-/* Battle overlay work area (800c3eb0); only the member the module reads. */
-typedef struct {
-    u8 unk0[0x8C84];
-    s32 buffer; /* +8c84: double-buffer index being drawn */
-} BattleArea;
-extern BattleArea D_800C3EB0;
-
-/* Resident task system: a task node (update) followed by its drawing node;
- * both callbacks receive their node, whose +4 names the task's object. */
-typedef struct TaskNode {
-    u32 unk0;
-    void *object;
-    void (*update)(struct TaskNode *node);
-    void (*destroy)(struct TaskNode *node);
-    u32 unk10;
-    u32 unk14;
-    struct TaskNode *next;
-} TaskNode;
-
-void func_8001CB48(TaskNode *node); /* unlink a drawing node */
-void func_8001CD94(TaskNode *node); /* unlink a task */
-void func_80025180(void *block);    /* release a block after the frame */
-void func_800320E8(void *block);    /* release a heap block */
-
-/* A model's packet descriptor: the words of its primitive and of itself,
- * and the primitive kind (bits 2..4: 4 textured, 8 quad, 16 gouraud). */
-typedef struct {
-    u8 prim_words;
-    u8 words;
-    u8 flags; /* bit 0: lit; selects the command's vertex-index layout */
-    u8 kind;
-} PacketDesc;
-
-/* An unrelocated effect script entry (the layout used by battle 800B16A4
- * and 800B1720); only the members this module reads. */
-typedef struct {
-    s32 vertices; /* +00: offset of the vertices */
-    u8 unk4[0xC];
-    s32 packets;  /* +10: offset of the packet descriptors */
-    s32 count;    /* +14: primitives */
-} Model;
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/sprite.h"
+#include "battle/area.h"
+#include "battle/effect_script.h"
 
 /* One flying piece of the broken model (0x54 bytes). */
 typedef struct {
@@ -80,37 +23,30 @@ typedef struct {
     SVECTOR vertex[4]; /* +34 */
 } Piece;
 
-/* The effect task (0x74 bytes): a model broken into flying pieces. */
+/* The effect task (0x74 bytes; resident tasks: the update node, then the
+ * drawing node, both with the task as their data): a model (an unrelocated
+ * effect script entry) broken into flying pieces. */
 typedef struct {
-    TaskNode task;      /* +00 */
-    TaskNode draw;      /* +1c */
+    Task task;          /* +00 */
+    Task draw;          /* +1c */
     MATRIX matrix;      /* +38: the model's placement */
     s32 count;          /* +58: pieces */
     s32 life;           /* +5c: frames left */
     u32 unk60;
     void *prims[2];     /* +64: the pieces' primitives, per display buffer */
-    Model *model;       /* +6c */
+    ScriptEntry *model; /* +6c */
     Piece *pieces;      /* +70 */
 } DebrisTask;
 
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
-void *func_80031BDC(s32 size, s32 mode); /* allocate a heap block */
-void *func_8001D1D8(s32 size, void *owner, void (*update)(TaskNode *),
-                    void (*draw)(TaskNode *), void (*destroy)(TaskNode *)); /* create a task */
-void *memcpy(void *dst, const void *src, u32 n);
-s32 rand(void);
-s32 func_800B16A4(Model *model);  /* size of the model's primitives */
-void func_800B1720(Model *model, void *prims, s32 arg2, s32 arg3); /* build the model's primitives */
+/* Battle overlay services. */
+s32 func_800B16A4(ScriptEntry *model);  /* size of the model's primitives */
+void func_800B1720(ScriptEntry *model, void *prims, s32 arg2, s32 arg3); /* build the model's primitives */
 void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles); /* direction angles */
 
 extern SVECTOR D_801FCE14; /* origin */
 
-void func_801FC074(TaskNode *node);
-void func_801FC0CC(TaskNode *node);
-void func_801FC1A8(TaskNode *node);
+void func_801FC074(Task *node);
+void func_801FC0CC(Task *node);
+void func_801FC1A8(Task *node);
 
 #endif

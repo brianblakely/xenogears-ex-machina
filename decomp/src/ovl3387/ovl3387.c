@@ -19,8 +19,8 @@ u32 *D_801FCE48 = NULL;
 
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
  * frames. The empty loops over a 2x14x20 grid are left from removed work. */
-void func_801FC000(TaskNode *node) {
-    Burst *burst = node->object;
+void func_801FC000(Task *node) {
+    Burst *burst = node->data;
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 i, j, k;
 
@@ -56,16 +56,16 @@ void func_801FC000(TaskNode *node) {
  * 1: of the angle plus its distance; otherwise the cosine of its distance)
  * scaled by the twist, and lights up with it; projected with a 512 screen
  * distance about the screen centre. */
-void func_801FC11C(TaskNode *node) {
-    Burst *burst = node->object;
-    s32 ofs[2];
+void func_801FC11C(Task *node) {
+    Burst *burst = node->data;
+    long ofs[2];
     MATRIX m;
     BurstCell *cell;
     SVECTOR *corner;
     POLY_GT3 *prim;
     s32 twist;
     s32 screen;
-    s32 p, flag;
+    long p, flag;
     s32 wave, light, otz;
     s32 row, half, col, k;
 
@@ -113,8 +113,8 @@ void func_801FC11C(TaskNode *node) {
                         break;
                     }
                 }
-                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
-                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (long *)&prim->x0,
+                                    (long *)&prim->x1, (long *)&prim->x2, &p, &flag);
                 otz >>= 6;
                 if (!(flag & 0x8000)) {
                     AddPrim(D_801FCE48 + otz, prim);
@@ -133,18 +133,18 @@ void func_801FC400(Burst *burst) {
 }
 
 /* Unlink a task-registered effect and release it after the frame. */
-void func_801FC434(TaskNode *node) {
+void func_801FC434(Task *node) {
     func_8001CB48(node + 1);
     func_8001CD94(node);
-    func_80025180(node);
+    func_80025180((u32)node);
 }
 
 /* Allocate and set up the effect's state. */
 Burst *func_801FC470(void) {
     Burst *burst = func_80031BDC(sizeof(Burst), 1);
 
-    burst->task.object = burst;
-    burst->draw.object = burst;
+    burst->task.data = burst;
+    burst->draw.data = burst;
     return func_801FC4A8(burst);
 }
 
@@ -271,31 +271,31 @@ void func_801FC8F4(void) {
     struct {
         u8 colour[3];
         s32 unused[2]; /* unused in the original; reserves 8 bytes */
-        u8 *pages[2];
+        u_long *pages[2];
     } saved;
     RECT rect;
     u16 *screen;
     u16 *p;
-    DrawBuffer *next;
+    FrameBuffer *next;
     POLY_F4 *prim;
     Burst *burst;
     BattleArea *work;
-    DrawBuffer *buffers;
-    DrawBuffer *shown;
-    DrawBuffer *back;
+    FrameBuffer *buffers;
+    FrameBuffer *shown;
+    FrameBuffer *back;
     u8 isbg;
     s32 frames = 0xA4;
     s32 i;
 
     saved.pages[0] = func_80031BDC(0x8000, 1);
     saved.pages[1] = func_80031BDC(0x8000, 1);
-    rect.x = D_800C3668.x0;
-    rect.y = D_800C3668.y0;
+    rect.x = D_800C3668[1].x;
+    rect.y = D_800C3668[1].y;
     rect.w = 0x40;
     rect.h = 0x100;
     StoreImage(&rect, saved.pages[0]);
-    rect.x = D_800C3668.x1;
-    rect.y = D_800C3668.y1;
+    rect.x = D_800C3668[2].x;
+    rect.y = D_800C3668[2].y;
     rect.w = 0x40;
     rect.h = 0x100;
     StoreImage(&rect, saved.pages[1]);
@@ -306,7 +306,7 @@ void func_801FC8F4(void) {
     rect.y = 0;
     rect.w = 0x140;
     rect.h = 0xE0;
-    StoreImage(&rect, screen);
+    StoreImage(&rect, (u_long *)screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
         *p++ |= 0x8000;
@@ -315,7 +315,7 @@ void func_801FC8F4(void) {
     rect.y = 0x100;
     rect.w = 0x140;
     rect.h = 0xE0;
-    LoadImage(&rect, screen);
+    LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
@@ -327,61 +327,61 @@ void func_801FC8F4(void) {
     }
     work->current = back;
     work->ot = back->ot;
-    ClearOTagR(back->ot, 0x1000);
-    saved.colour[0] = work->buffers[1].draw.r0;
-    saved.colour[1] = work->buffers[1].draw.g0;
-    saved.colour[2] = work->buffers[1].draw.b0;
-    isbg = work->buffers[0].draw.isbg;
+    ClearOTagR((u_long *)back->ot, 0x1000);
+    saved.colour[0] = work->buffers[1].drawEnv.r0;
+    saved.colour[1] = work->buffers[1].drawEnv.g0;
+    saved.colour[2] = work->buffers[1].drawEnv.b0;
+    isbg = work->buffers[0].drawEnv.isbg;
     work->buffer = 0;
     work->current = &buffers[0];
-    work->buffers[0].draw.isbg = 0;
-    work->buffers[1].draw.isbg = 0;
-    work->buffers[0].draw.r0 = 0;
-    work->buffers[1].draw.r0 = 0;
-    work->buffers[0].draw.g0 = 0;
-    work->buffers[1].draw.g0 = 0;
-    work->buffers[0].draw.b0 = 0;
-    work->buffers[1].draw.b0 = 0;
+    work->buffers[0].drawEnv.isbg = 0;
+    work->buffers[1].drawEnv.isbg = 0;
+    work->buffers[0].drawEnv.r0 = 0;
+    work->buffers[1].drawEnv.r0 = 0;
+    work->buffers[0].drawEnv.g0 = 0;
+    work->buffers[1].drawEnv.g0 = 0;
+    work->buffers[0].drawEnv.b0 = 0;
+    work->buffers[1].drawEnv.b0 = 0;
     burst = func_801FC470();
     while (frames != 0) {
         if (frames > 0) {
             frames--;
         }
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
         next = &D_800C3EB0.buffers[0];
         if (D_800C3EB0.current == next) {
             next = &D_800C3EB0.buffers[1];
         }
         D_800C3EB0.current = next;
         D_800C3EB0.ot = next->ot;
-        ClearOTagR(next->ot, 0x1000);
+        ClearOTagR((u_long *)next->ot, 0x1000);
         D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
         D_801FCE48 = D_800C3EB0.ot;
         DrawSync(0);
         VSync(2);
         func_801FC000(&burst->task);
         func_801FC11C(&burst->task);
-        PutDispEnv(&D_800C3EB0.current->disp);
-        PutDrawEnv(&D_800C3EB0.current->draw);
-        DrawOTag(&D_800C3EB0.current->ot[0xFFF]);
+        PutDispEnv(&D_800C3EB0.current->dispEnv);
+        PutDrawEnv(&D_800C3EB0.current->drawEnv);
+        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     DrawSync(0);
     VSync(2);
-    ClearOTagR(D_800C3EB0.ot, 0x1000);
+    ClearOTagR((u_long *)D_800C3EB0.ot, 0x1000);
     DrawSync(0);
     VSync(2);
-    rect.x = D_800C3668.x0;
-    rect.y = D_800C3668.y0;
+    rect.x = D_800C3668[1].x;
+    rect.y = D_800C3668[1].y;
     rect.w = 0x40;
     rect.h = 0x100;
     LoadImage(&rect, saved.pages[0]);
-    rect.x = D_800C3668.x1;
-    rect.y = D_800C3668.y1;
+    rect.x = D_800C3668[2].x;
+    rect.y = D_800C3668[2].y;
     rect.w = 0x40;
     rect.h = 0x100;
     LoadImage(&rect, saved.pages[1]);
@@ -396,7 +396,7 @@ void func_801FC8F4(void) {
     DrawSync(0);
     VSync(2);
     prim = (POLY_F4 *)D_80059580;
-    D_80059580 += sizeof(POLY_F4);
+    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F4));
     SetPolyF4(prim);
     prim->r0 = 0;
     prim->g0 = 0;
@@ -410,13 +410,13 @@ void func_801FC8F4(void) {
     prim->x3 = 0x140;
     prim->y3 = 0xF0;
     AddPrim(&D_800C3EB0.ot[0xFFE], prim);
-    D_800C3EB0.buffers[1].draw.isbg = isbg;
-    D_800C3EB0.buffers[0].draw.isbg = isbg;
-    D_800C3EB0.buffers[1].draw.r0 = saved.colour[0];
-    D_800C3EB0.buffers[0].draw.r0 = saved.colour[0];
-    D_800C3EB0.buffers[1].draw.g0 = saved.colour[1];
-    D_800C3EB0.buffers[0].draw.g0 = saved.colour[1];
-    D_800C3EB0.buffers[1].draw.b0 = saved.colour[2];
-    D_800C3EB0.buffers[0].draw.b0 = saved.colour[2];
+    D_800C3EB0.buffers[1].drawEnv.isbg = isbg;
+    D_800C3EB0.buffers[0].drawEnv.isbg = isbg;
+    D_800C3EB0.buffers[1].drawEnv.r0 = saved.colour[0];
+    D_800C3EB0.buffers[0].drawEnv.r0 = saved.colour[0];
+    D_800C3EB0.buffers[1].drawEnv.g0 = saved.colour[1];
+    D_800C3EB0.buffers[0].drawEnv.g0 = saved.colour[1];
+    D_800C3EB0.buffers[1].drawEnv.b0 = saved.colour[2];
+    D_800C3EB0.buffers[0].drawEnv.b0 = saved.colour[2];
     func_801FC400(burst);
 }

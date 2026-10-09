@@ -109,6 +109,8 @@ cmake/ProjectOptions.cmake
 decomp/Makefile
 decomp/README.md
 decomp/include/battle/area.h
+decomp/include/battle/effect_script.h
+decomp/include/battle/sprite.h
 decomp/include/battle/work.h
 decomp/include/common.h
 decomp/include/include_asm.h
