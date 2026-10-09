@@ -158,7 +158,7 @@ void func_801E67A4(s32 slot, s32 row, s32 animation) {
     sprite->image[2] = D_800C3EB0.sources[row].x;
     *(DVECTOR *)((u8 *)sprite->sequencer + 0xE) = *(DVECTOR *)&sprite->image[2];
     D_800C3EB0.sprites[slot] = task->data;
-    D_800C3EB0.tasks[slot] = (struct ActorTask *)task;
+    D_800C3EB0.tasks[slot] = (SpriteTask *)task;
     sprite->slotLow = slot;
     sprite->slotHigh = (u32)slot >> 2;
     func_80021D3C(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
@@ -226,7 +226,7 @@ void func_801E6AC4(void) {
             D_800C3EB0.sources[member].x = D_801E9638 + 0x100;
             D_801E9638 += D_801E962C[type];
             func_801E67A4(member, member, 1);
-            sprite = D_800C3EB0.sprites[member];
+            sprite = (BattleSprite *)D_800C3EB0.sprites[member];
             *sprite->sequencer = D_801E95BC[type].sequence;
             func_800320E8(sprite->renderer->parts[0]);
             sprite->renderer->parts[0] = func_80031BDC(0x300, 0);
@@ -234,7 +234,7 @@ void func_801E6AC4(void) {
     }
     if (D_800D36B8 == 0) {
         for (member = 0; member != 3; member++) {
-            sprite = D_800C3EB0.sprites[member];
+            sprite = (BattleSprite *)D_800C3EB0.sprites[member];
             if (sprite != NULL) {
                 func_800BA8F4((Sprite *)sprite);
                 x = sprite->x;
@@ -259,7 +259,8 @@ void func_801E6C80(Task *node) {
     if (task->timer == 0) {
         for (member = 0; member != 3; member++) {
             if (D_800C3EB0.slots[member].gear == 0 &&
-                (sprite = D_800C3EB0.sprites[member]) != NULL && sprite->y != sprite->ground) {
+                (sprite = (BattleSprite *)D_800C3EB0.sprites[member]) != NULL &&
+                sprite->y != sprite->ground) {
                 return;
             }
         }

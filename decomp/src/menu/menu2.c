@@ -702,7 +702,7 @@ void func_80071AD0(void) {
     D_800925E0 += func_800707D8(D_800925E8, D_800925E0, 4);
     D_800925E4 += func_800707D8(D_800925EC, D_800925E4, 4);
     if (D_80092608 != 0) {
-        func_80034888(&D_80092954, D_80092938, D_800928A0);
+        func_80034888(&D_80092954, (u_long *)D_80092938, D_800928A0);
     }
     if (D_800925D4 != D_800925D8) {
         message->unk68 = 3;
@@ -767,7 +767,7 @@ void func_80071DA4(Actor *actor) {
 s32 func_80071F8C(s32 command) {
     switch (command) {
     case 0:
-        func_80039C4C(D_80092948);
+        func_80039C4C((SoundTrack *)D_80092948);
         func_80039FF8();
         break;
     case 1:

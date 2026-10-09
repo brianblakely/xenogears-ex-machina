@@ -198,7 +198,7 @@ void func_801C5318(void) {
     memmove(D_800625A0->card->save_icon, D_800625A0->card->icon.paddr, 0x80);
     func_800320E8(data);
     data = func_80032E88(archive->files[1], 1);
-    func_8002DD20(data);
+    func_8002DD20((u32 *)data);
     func_800320E8(data);
     D_800625A0->sheet = func_80032E88(archive->files[2], 0);
     D_800625A0->label_text = func_80032E88(archive->files[3], 0);

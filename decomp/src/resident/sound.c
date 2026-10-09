@@ -3956,7 +3956,7 @@ void func_8003F6B0(s32 error) {
     D_80059500 = error;
     func_800396E0(0x10000);
     func_80037FD8((SoundSequence *)D_80050940, 0);
-    func_80038428(D_80050910);
+    func_80038428((SoundBank *)D_80050910);
     func_8003BDFC(0x10);
     func_80039E60((((SoundBank *)D_80050910)->id << 16) | 1);
 }

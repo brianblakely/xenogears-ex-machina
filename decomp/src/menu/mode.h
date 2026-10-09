@@ -57,7 +57,7 @@ extern s32 D_800928CC;
 extern u16 D_800928D0;             /* debug display switches */
 extern u8 D_80092920;              /* bit 0: the menu screen is shown */
 extern void (*D_80092930)(void *block); /* debug hook (switch 0x10) */
-extern s32 D_80092948;             /* the music sequence */
+extern struct SoundSeq *D_80092948; /* the music sequence */
 extern Settings D_80099D98;
 
 void func_800851D4(void);

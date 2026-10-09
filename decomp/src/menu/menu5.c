@@ -69,7 +69,7 @@ static s32 D_800927AC; /* orbit angle */
 static s32 D_800927B0; /* orbit speed */
 static void *D_800927B4[2]; /* loaded model of each actor slot */
 static s32 D_800927BC[2]; /* unreferenced */
-static s32 D_800927C4;
+static SoundBank *D_800927C4;
 static s32 D_800927C8; /* unreferenced */
 static u8 *D_800927CC; /* per map row: right edge of the drawn span */
 static u8 *D_800927D0; /* per map row: left edge of the drawn span */
@@ -833,7 +833,7 @@ void func_80083CE8(void) {
     seconds = D_80092944 % 1800;
     minutes = D_80092944 / 1800;
     sprintf(text, "%02d'%02d''%02d", minutes, seconds / 30, D_80092944 % 30 * 99 / 30);
-    func_8007EBE0((s32)text);
+    func_8007EBE0(text);
 }
 
 /* Update an actor's glow light (fading it) at its position relative to its
@@ -942,7 +942,7 @@ s32 func_800840CC(LightRig *rig) {
     func_8008779C(layer->ot[D_800928A0], D_8009867C.vx, D_8009867C.vz);
     func_8008AE1C(layer);
     func_80086E24();
-    func_80031678(D_80092938, &D_80095580[D_800928A0]);
+    func_80031678((u_long *)D_80092938, &D_80095580[D_800928A0]);
     return 0;
 }
 
@@ -1220,7 +1220,7 @@ void func_8008518C(FileRequest *resource, s32 arg) {
 void func_800851D4(void) {
     func_8003852C(D_800927C4);
     if (D_800917F0 != 0) {
-        func_80039C4C(D_80092948);
+        func_80039C4C((SoundTrack *)D_80092948);
         func_800399D4(D_80092948);
     }
     func_80088A40();
@@ -1249,7 +1249,7 @@ void func_800852C4(s32 arg) {
     LightRig *rig;
     void *file;
     void *model;
-    s32 sequence;
+    SoundSeqHeader *sequence;
     s32 step;
     s32 idle;
     s32 hold; /* never initialised: the first held frame counts from garbage */
@@ -1265,8 +1265,8 @@ void func_800852C4(s32 arg) {
     func_8008518C(&D_800917C0[3], 1);
     func_8008518C(&D_800917C0[4], 1);
     func_80029AFC(D_800917C0, 0, 0);
-    sequence = (s32)D_800917C0[0].destination;
-    D_800927C4 = (s32)D_800917C0[1].destination;
+    sequence = D_800917C0[0].destination;
+    D_800927C4 = D_800917C0[1].destination;
     func_8008976C(0x140, 0xDA);
     func_80088308();
     func_80030988(1, 1, 0x40, 0x40);
@@ -1288,7 +1288,7 @@ void func_800852C4(s32 arg) {
         D_80092948 = func_80039850(sequence);
         func_80039A80(D_80092948, 0x7F, 0);
     } else {
-        D_80092948 = D_80062528;
+        D_80092948 = (SoundSeq *)D_80062528;
     }
     func_80032EB4(D_800917C0[3].destination, D_800928DC);
     func_800320E8(D_800917C0[3].destination);
@@ -1464,7 +1464,7 @@ new_bout:
         D_800928B0 = 0;
         D_80092790 = D_80092794;
         func_80084B48();
-        func_80034888(&D_8009868C, D_80092938, D_800928A0);
+        func_80034888(&D_8009868C, (u_long *)D_80092938, D_800928A0);
         switch (D_80092790) {
         case 1:
             func_80079DF0(&D_8009872C, &D_80097010);
@@ -2310,9 +2310,9 @@ void func_80087EA0(u32 *ot) {
         *(u32 *)&point->axes[D_800928A0][1].r0 = 0x4000FF00;
         setlen(&point->axes[D_800928A0][2], 3);
         *(u32 *)&point->axes[D_800928A0][2].r0 = 0x40FF0000;
-        func_800316C0(ot, &point->axes[D_800928A0][0]);
-        func_800316C0(ot, &point->axes[D_800928A0][1]);
-        func_800316C0(ot, &point->axes[D_800928A0][2]);
+        func_800316C0((u_long *)ot, &point->axes[D_800928A0][0]);
+        func_800316C0((u_long *)ot, &point->axes[D_800928A0][1]);
+        func_800316C0((u_long *)ot, &point->axes[D_800928A0][2]);
     }
     D_800928F8 = 0;
 }

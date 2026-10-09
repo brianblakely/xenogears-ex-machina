@@ -1550,7 +1550,7 @@ void func_8008C8B4(SparkLine4 *spark, u32 *ot) {
     spark->trail[2] = spark->trail[1];
     spark->trail[1] = spark->trail[0];
     spark->trail[0] = spark->pos;
-    func_80031750(ot + (otz >> 2), line);
+    func_80031750((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Collapse a three-point spark line's trail onto its position. */
@@ -1593,7 +1593,7 @@ void func_8008CA84(SparkLine3 *spark, u32 *ot) {
     spark->trail[0] = spark->pos;
     gte_stsxy3(&line->x0, &line->x1, &line->x2);
     gte_stszotz(&otz);
-    func_80031708(ot + (otz >> 2), line);
+    func_80031708((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Collapse a two-point spark line's trail onto its position. */
@@ -1622,7 +1622,7 @@ void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
     otz = RotTransPers3(&spark->pos, &spark->trail[0], (SVECTOR *)&depth, (long *)&line->x0,
                         (long *)&line->x1, &depth, &depth, &depth);
     spark->trail[0] = spark->pos;
-    func_800316C0(ot + (otz >> 2), line);
+    func_800316C0((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Reset a tile spark: it keeps no trail. */
@@ -1655,7 +1655,7 @@ void func_8008CE0C(SparkTile *spark, u32 *ot) {
     tile = &spark->tile[D_800928A0];
     gte_stsxy(&tile->x0);
     gte_stszotz(&otz);
-    func_80031804(ot + (otz >> 2), tile);
+    func_80031804((u_long *)(ot + (otz >> 2)), tile);
 }
 
 /* Reset a dot spark: it keeps no trail. */
@@ -1676,7 +1676,8 @@ void func_8008CF30(SparkDot *spark, u32 *ot) {
     TILE_1 *dot = &spark->dot[D_800928A0];
     long depth;
 
-    func_80031870(ot + (RotTransPers(&spark->pos, (long *)&dot->x0, &depth, &depth) >> 2), dot);
+    func_80031870(
+        (u_long *)(ot + (RotTransPers(&spark->pos, (long *)&dot->x0, &depth, &depth) >> 2)), dot);
 }
 
 /* Place a spark at its source's origin. */
