@@ -38,12 +38,12 @@ u16 D_8009B688[10] = {0, 0, 0, 47, 52, 52, 52, 52, 0, 0};
 u16 D_8009B69C[10] = {0, 0, 0, 0, 0, 0, 67, 79, 64, 0};
 u16 D_8009B6B0[10] = {0, 0, 0, 0, 43, 43, 43, 43, 43, 0};
 
-/* Fixed path regions (scene id and parameter, path link): func_8008E078
- * selects the first two for scenes 15 and 16, func_800712D0 the third. */
-PathTable D_8009B6C4[3] = {
-    {{0, 0, 0, 0, 0x138, 1}, 14, 0},
-    {{0, 0, 0, 0, 0x1B8, 1}, 29, 0},
-    {{0, 0, 0, 0, 0x122, 3}, 0xFFFF, 0},
+/* Fixed path regions (scene, entry, path link): func_8008E078 selects the
+ * first two for scenes 15 and 16, func_800712D0 the third. */
+PathRegion D_8009B6C4[3] = {
+    {0, 0, 0, 0, 0x138, 1, 14, 0},
+    {0, 0, 0, 0, 0x1B8, 1, 29, 0},
+    {0, 0, 0, 0, 0x122, 3, -1, 0},
 };
 
 /* The map screen's 32 dots: x and z, interleaved (24-26 are placed from the

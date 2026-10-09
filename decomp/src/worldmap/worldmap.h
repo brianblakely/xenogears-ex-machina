@@ -421,16 +421,23 @@ extern s16 D_8009BD04;
 
 s32 func_8008C364(WorldmapActor *actor, s32 kind);
 
-/* A path region as the current path (PathRegion's layout): data holds the
- * bounds, then the scene id and its parameter; count is the path link. */
+/* A path region (16 bytes) of an area file's path tables or the fixed ones:
+ * its bounds, the scene and entry a world-map exit from it stores (D_8006F94E
+ * scene, D_8006F954[0]), its path link (-1 none) and its kind: 1 leaves
+ * without the button (func_80090A84), 2 makes a flying vehicle descend first
+ * (func_8008E190), 3 takes the exit from the camera target's region of path
+ * table 3 (func_80070CFC), 4 only records a destination (func_80094238). A
+ * scene of -1 ends a table. */
 typedef struct {
-    s16 data[6];
-    u16 count;
-    u16 pad;
-} PathTable;
+    s16 x, z, w, h;
+    s16 scene;
+    s16 entry;
+    s16 link; /* 0x0C: path or destination id */
+    s16 kind; /* 0x0E */
+} PathRegion;
 
-extern PathTable D_8009B6C4[3];
-extern PathTable *D_8009D7D8;
+extern PathRegion D_8009B6C4[3];
+extern PathRegion *D_8009D7D8; /* the current path, -1 none */
 extern s16 D_8009BD24;
 extern u8 D_8009D738, D_8009BD60;
 
@@ -640,15 +647,6 @@ typedef struct {
 extern SlopeNormal D_8009B264[16];
 
 void func_800964B0(HostReadRequest *list);
-
-/* Path region (16 bytes); an id of -1 ends a list. */
-typedef struct {
-    s16 x, z, w, h;
-    s16 id;
-    s16 padA;
-    s16 link; /* 0x0C: path or destination id */
-    s16 kind; /* 0x0E: 4 destination */
-} PathRegion;
 
 extern s16 D_8009B18C[], D_8009B194[], D_8009B19C[], D_8009B1A4[];
 extern s32 D_8009CD44, D_8009BD2C;

@@ -838,9 +838,8 @@ def world_modes(root: Path = ROOT) -> tuple[str, ...]:
 
 
 # The world map leaves for a field (exit 0, worldmap.c func_80070CFC) with the
-# scene and entry of the current path region (PathRegion id and the word
-# after it, D_8009D7D8 data[4] and [5]) or, from a scripted mode, constants its
-# code stores in D_8006F94E.scene. func_80094238 makes a region current for a
+# scene and entry of the current path region (D_8009D7D8, a PathRegion) or,
+# from a scripted mode, constants its code stores in D_8006F94E.scene. func_80094238 makes a region current for a
 # path table (it tests every region with a link; kind 4 regions only record a
 # destination) and func_80094364 for table 3. The area files (0x24, 0) area + 1
 # of D_8009B584 hold the four path tables (func_80073530: AreaHeader.spots,
