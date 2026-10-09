@@ -40,9 +40,9 @@ void *D_8005A4BC; /* file 0xa8 block */
 s32 D_8005A4C0; /* map read-ahead size */
 s32 D_8005A4C4; /* unreferenced */
 
-#include "../cd.h"
-#include "../menu.h"
-#include "../mode.h"
-#include "../sound.h"
-#include "../sprite.h"
-#include "../stream.h"
+#include "resident/cd.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"

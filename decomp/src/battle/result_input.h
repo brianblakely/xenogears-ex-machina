@@ -2,8 +2,8 @@
 #define BATTLE_RESULT_INPUT_H
 
 #include "battle_core.h"
-#include "../resident/pad.h"
-#include "../resident/console.h"
+#include "resident/pad.h"
+#include "resident/console.h"
 
 /* Battle input with pausing (8008a3ec). */
 extern u8 D_800C3444;  /* the battle is paused */

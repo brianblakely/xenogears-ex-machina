@@ -15,8 +15,8 @@
  * is the simplest such owner; whether D_80059180 ends it or opens sprite.o's
  * .sdata is undetermined. */
 #include "common.h"
-#include "mode.h"
-#include "menu.h"
+#include "resident/mode.h"
+#include "resident/menu.h"
 
 u8 D_80059170 = 0;  /* unreferenced; size from value and alignment */
 u8 D_80059171 = 0;  /* menu screen parameter */

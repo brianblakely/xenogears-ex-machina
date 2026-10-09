@@ -433,7 +433,7 @@ class PrimitiveTests(unittest.TestCase):
 
 class LayoutTests(unittest.TestCase):
     def test_model_header_fields_follow_the_c(self):
-        header = source("resident/model.h")
+        header = (ROOT / "decomp/include/resident/model.h").read_text()
         fields = header[: header.index("} SpriteModel;")].rsplit("typedef struct {", 1)[1]
         declarations = re.findall(r"(\w+) \**(\w+);", re.sub(r"/\*.*?\*/", "", fields))
         # u16 counts at +0, +2, +4 and +6, six offsets from +8, the box from +0x20,

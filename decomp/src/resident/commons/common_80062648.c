@@ -21,6 +21,6 @@ void *D_8006BE24;
 s32 D_8006BE28; /* unreferenced */
 s16 D_8006BE2C[3]; /* field */
 
-#include "../menu.h"
-#include "../mode.h"
-#include "../sprite.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/sprite.h"

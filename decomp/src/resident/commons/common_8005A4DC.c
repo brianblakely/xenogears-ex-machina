@@ -20,9 +20,9 @@ struct FileRequest D_800625A4[4]; /* party file list, zero-terminated */
 s32 D_800625C4[14]; /* unreferenced */
 struct PadBuffer D_800625FC[2]; /* controller receive buffers */
 
-#include "../cd.h"
-#include "../menu.h"
-#include "../mode.h"
-#include "../pad.h"
-#include "../sound.h"
-#include "../stream.h"
+#include "resident/cd.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/stream.h"

@@ -1,9 +1,9 @@
 /* Resident battle-mode entry. This unit owns the entry flag; setup flags
  * belong to the following menu-support unit and are addressed absolutely. */
 #include "common.h"
-#include "cd.h"
-#include "console.h"
-#include "mode.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/mode.h"
 
 u8 D_8005959C;
 extern u8 D_8005947C;
