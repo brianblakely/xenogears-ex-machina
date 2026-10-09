@@ -1,12 +1,18 @@
-/* Menu overlay unit from 801DBDB4 (screens reached from the field menu).
- * Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump tables),
- * where 801DBE54's table sits; 801CC6D8 is the last function using the
- * previous unit's rodata. Its uninitialized variables open with the item
- * list's scroll bar, which 801DBDB4 sizes, so the unit starts there. */
+/* Menu overlay unit from 801DBDB4 (screens reached from the field menu),
+ * named after 801DBE54, where it started before its variables moved the
+ * boundary. Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump
+ * tables), where 801DBE54's table sits; func_801CD2AC is the last function
+ * using the previous unit's rodata. Its uninitialized variables open with
+ * the item list's scroll bar, which 801DBDB4 sizes and 801DBE54 reads, so
+ * the text boundary lies after 801CD2AC and at or before 801DBDB4, where it
+ * is kept. An earlier one would move the .bss boundary with it and must not
+ * split 801D84B4/801D8644 or 801D9C84/801D9E3C, which share variables; the
+ * item screen's helpers from 801DA4A8, which only this unit's functions
+ * call, may belong here too. */
 #include "menu.h"
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
- * in a slot of whole words (BSS in slot39.mk). */
+ * in a slot of whole words (decomp/Makefile). */
 static s16 D_801EA724; /* item list scroll bar */
 static s32 D_801EA728;
 static s16 D_801EA72C;

@@ -8,7 +8,7 @@
 #include "gte.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
- * unit's data, each in a slot of whole words (BSS in menu.mk). */
+ * unit's data, each in a slot of whole words (decomp/Makefile). */
 static s32 D_80092638;
 static s32 D_8009263C;
 static s32 D_80092640;

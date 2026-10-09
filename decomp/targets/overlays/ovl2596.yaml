@@ -50,8 +50,10 @@ segments:
       # (INCLUDE_ORIGINAL).
       - [0x64c0, .data, ovl2596]
       # From 801e44cc the file holds the module's uninitialized variables
-      # (its .bss, loaded) as zeros, each in a slot of whole words (BSS in
-      # ovl2596.mk): the u8 at 801e44e4 follows the u8 at 801e44e0 four bytes
-      # on, and the image ends two bytes after the u8[3][2] at 801e44f8.
+      # (its .bss, loaded) as zeros. All are commons, which the original
+      # linker allocated each in a slot of whole words (decomp/Makefile): the
+      # u8 at 801e44e4 follows the u8 at 801e44e0 four bytes on. The image
+      # ends two bytes after the last, the u8[3][2] at 801e44f8, as a
+      # word-rounded section or file would.
       - [0x64cc, .bss, ovl2596]
   - [0x6500]

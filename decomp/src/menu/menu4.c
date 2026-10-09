@@ -8,7 +8,7 @@
 #include "gte.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
- * unit's data, each in a slot of whole words (BSS in menu.mk). */
+ * unit's data, each in a slot of whole words (decomp/Makefile). */
 static PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
 static s32 D_800926DC;
 static u16 D_800926E0; /* text texture page */
@@ -168,13 +168,6 @@ Menu D_800915AC[8] = {
     { 0, { 0 }, D_80091368, 2, 3 },
     { 0, { 0 }, D_80091390, 2, 3 },
     { 1, { 0 }, D_8009155C, 4, 7, func_8007FB0C },
-};
-
-/* Stage colours. */
-Environment D_8009178C[] = {
-    { { 0x10, 0x60, 0x80 }, 0, 0x38, 0x38, 0x38, 0, { 0x70, 0x70, 0x70 }, 0, { 0x80, 0x80, 0x80 }, 0, 1 },
-    { { 0x30, 0x60, 0x40 }, 0, 0x40, 0x40, 0x40, 0, { 0xE0, 0xB0, 0x70 }, 0, { 0x90, 0x90, 0x90 }, 0, 1 },
-    { { 0x08, 0x30, 0x3F }, 0, 0x20, 0x20, 0x30, 0, { 0x40, 0x40, 0x50 }, 0, { 0x30, 0x30, 0x38 }, 0, 0 },
 };
 
 /* Set the scene state, playing sound 0x24 when state 10 starts from 0. */

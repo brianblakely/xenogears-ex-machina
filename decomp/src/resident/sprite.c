@@ -54,8 +54,7 @@ Sprite *D_80059190 = NULL;
 s16 D_80059194 = 0; /* texture area row (0-2) of the next image */
 s16 D_80059196 = 0; /* texture area column of the next image */
 s32 *D_800592E4;              /* image list for 8001fb30 */
-s16 D_800592E8;               /* its position */
-s16 D_800592EA;
+DVECTOR D_800592E8;           /* its position */
 Task *D_800594C0;
 Task *D_8005958C;
 Task *D_80059590;
@@ -1519,13 +1518,13 @@ void func_8001FAB4(s32 x, s32 y) {
     func_800320E8(image);
 }
 
-/* Upload the image list at D_800592E4 to (D_800592E8, D_800592EA), running
+/* Upload the image list at D_800592E4 to D_800592E8, running
  * the upload on an 8 KB heap block as its stack. */
 void func_8001FB30(void) {
     u8 *stack = func_80031BDC(0x2000, 1);
 
     STACK_ENTER(stack + 0x1F00);
-    func_8002DDE4(D_800592E4, 1, D_800592E8, D_800592EA, 0, 0, 0);
+    func_8002DDE4(D_800592E4, 1, D_800592E8.vx, D_800592E8.vy, 0, 0, 0);
     STACK_LEAVE();
     func_800320E8(stack);
 }
@@ -1675,8 +1674,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             D_800592E4 = (s32 *)((((s8)code[2] << 16) + (code[1] << 8) + code[0]) + (s32)code);
             image_x = ((SpriteSource *)sprite->image)->origin.vx;
             image_y = ((SpriteSource *)sprite->image)->origin.vy;
-            D_800592E8 = image_x;
-            D_800592EA = image_y;
+            D_800592E8.vx = image_x;
+            D_800592E8.vy = image_y;
         }
         func_8001FB30();
         STACK_LEAVE();

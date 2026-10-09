@@ -50,15 +50,18 @@ segments:
       - [0xFC, .rodata, slot39_801DBE54]
       - [0x278, .rodata, slot39_801E8070]
       - [0x31c, c, slot39]
+      # Named after 801DBE54, its start before its uninitialized variables
+      # bounded the text boundary (at or before 801DBDB4; see its header).
       - [0x16DB4, c, slot39_801DBE54]
       - [0x23070, c, slot39_801E8070]
       # All initialized data is slot39's: the other units' tables are interleaved
       # with its own and come before every unit's uninitialized variables.
       - [0x246A4, .data, slot39]
       # The file ends with each unit's uninitialized variables (their .bss,
-      # loaded), each in a slot of whole words (BSS in slot39.mk): two bytes
+      # loaded), each in a slot of whole words (decomp/Makefile): two bytes
       # lie four apart (801EA710, 801EA714). The common variables follow every
-      # unit's own.
+      # unit's own. Only a unit's own code forms addresses in its own
+      # (tools/data_users.py slot39.mk: no FOREIGN reference).
       - [0x256D0, .bss, slot39]
       - [0x25724, .bss, slot39_801DBE54]
       - [0x258F4, .bss, slot39_801E8070]

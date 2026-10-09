@@ -51,7 +51,8 @@ segments:
       - [0xcf50, .data, ovl2601]
       - [0xd210, .data, shop]
       # The file ends with the units' uninitialized variables (their .bss,
-      # loaded), each in a slot of whole words (BSS in ovl2601.mk): the shop's
-      # u16 D_801D2260.
+      # loaded): the shop's common u16 D_801D2260, whose slot of whole words
+      # (decomp/Makefile) ends the file at 801D2264, as a word-rounded
+      # section or file would.
       - [0xd260, .bss, shop]
   - [0xd264]

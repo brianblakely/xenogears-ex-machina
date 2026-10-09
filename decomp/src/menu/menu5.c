@@ -8,7 +8,7 @@
 #include "gte.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
- * unit's data, each in a slot of whole words (BSS in menu.mk). */
+ * unit's data, each in a slot of whole words (decomp/Makefile). */
 static SVector D_80092768; /* stored map position */
 static s32 D_80092770;
 static s32 D_80092774;
@@ -38,6 +38,13 @@ static u8 D_800927DC; /* backdrop texel u */
 static u8 D_800927E0; /* backdrop texel v */
 static s32 D_800927E4[2]; /* unreferenced */
 static u8 D_800927EC;
+
+/* Stage colours, read by func_80082A70 alone. */
+Environment D_8009178C[] = {
+    { { 0x10, 0x60, 0x80 }, 0, 0x38, 0x38, 0x38, 0, { 0x70, 0x70, 0x70 }, 0, { 0x80, 0x80, 0x80 }, 0, 1 },
+    { { 0x30, 0x60, 0x40 }, 0, 0x40, 0x40, 0x40, 0, { 0xE0, 0xB0, 0x70 }, 0, { 0x90, 0x90, 0x90 }, 0, 1 },
+    { { 0x08, 0x30, 0x3F }, 0, 0x20, 0x20, 0x30, 0, { 0x40, 0x40, 0x50 }, 0, { 0x30, 0x30, 0x38 }, 0, 0 },
+};
 
 /* Files of the menu mode, loaded by func_80029AFC up to the zero file. */
 Resource D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };

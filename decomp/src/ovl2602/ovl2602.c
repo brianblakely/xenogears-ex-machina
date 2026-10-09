@@ -72,6 +72,12 @@ u32 D_801D6C88[32] = {
     0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000,
 };
 
+/* The unit's own uninitialized variables, the first in the file after both
+ * units' data (zero there), each in a slot of whole words (decomp/Makefile).
+ * Only this unit's code reads them (tools/data_users.py). */
+static POLY_FT4 D_801D7108[200]; /* model values debug display packets, two per sprite */
+static s32 D_801D9048;           /* their sprite count */
+
 /* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
 u16 func_801C511C(u16 min, u16 max) {
     s32 range;

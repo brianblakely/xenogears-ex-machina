@@ -10,6 +10,3 @@ LINKER_EXTRA := .local/decomp/slot39/undefined_syms_auto.txt .local/decomp/slot3
 SOURCE_DIRS := decomp/src/slot39
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:39 2:34 1:3957 2:3952
-# The original assembler gave each uninitialized variable a slot of whole
-# words (decomp/Makefile, BSS).
-BSS := slots

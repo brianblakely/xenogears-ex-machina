@@ -11,6 +11,3 @@ SOURCE_DIRS := decomp/src/ovl2596
 # INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
 # VRAM 0x801DE000.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x801DE000
-# The original assembler gave each uninitialized variable a slot of whole
-# words (decomp/Makefile, BSS).
-BSS := slots

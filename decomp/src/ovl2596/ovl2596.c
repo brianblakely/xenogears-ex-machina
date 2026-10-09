@@ -17,7 +17,8 @@ GameData *D_801E44C4 = &D_8006D634;
 BattleWork *D_801E44C8 = (BattleWork *)D_800CCCE8;
 /* The module's uninitialized variables (the level gauge animation, the
  * growth data and the record being processed, the experience pools), zero
- * in the file, each in a slot of whole words. */
+ * in the file: commons, which the original linker allocated each in a slot
+ * of whole words (decomp/Makefile). */
 s32 D_801E44CC;
 s32 D_801E44D0;
 s32 D_801E44D4;

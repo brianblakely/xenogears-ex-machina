@@ -63,15 +63,29 @@ maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
 LA_ABSOLUTE := -e 's/^la\t(\$$[0-9a-z]+),((\$$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
 extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\.extern/d')
 asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
-# The original assembler gave every uninitialized variable (.lcomm, and the
-# .comm that maspsx allocates in its unit) a slot of whole words: two u8
-# variables lie four bytes apart and a u8[3][2] takes eight (ovl2596
-# 801e44e0-801e4500). BSS := slots (per target; BSS_<file> per unit) rounds each
-# object of the .bss that maspsx appends up to a whole word; maspsx itself
-# packs them without alignment.
-BSS_SLOTS := awk '/^\.section[ \t]+\.bss$$/ {bss = 1} bss && $$1 == ".space" {$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4} {print}'
-bss_of = $(or $(BSS_$(basename $(notdir $(1)))),$(BSS))
-bss_filter_of = $(if $(filter slots,$(call bss_of,$(1))),| $(BSS_SLOTS))
+# Uninitialized variables: GCC emits a unit's statics as .lcomm and its
+# tentative definitions as .comm after the code, and maspsx allocates both in
+# the unit's .sbss/.bss (packed without alignment; in .sbss an 8-byte object
+# 8-aligned). In the original images every such object takes a slot of whole
+# words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39 801ea8e4). That
+# is evidenced separately for ASPSX 2.34's .lcomm statics (mdec
+# 801e8958-801e8968: five u8, stored and loaded bytewise; menu3
+# 80092678-800926a0; slot39 801ea710/801ea714) and for the commons PSYLINK
+# allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
+# Stsector_offset alone at 801e89bc; the ASPSX 2.79 world map's u16 at
+# 8009bd10-8009bd1c, shared by three units), which the commons units
+# reproduce. Under the qualified ASPSX versions, 2.34 and 2.79 (no 2.79 unit
+# allocates any in C yet), this filter gives each object a whole number of
+# words at a word boundary; under any other (2.56 units define only words so
+# far) it rejects a smaller one, whose placement nothing evidences. Only the
+# .sbss/.bss that maspsx appends are touched: any other section directive ends
+# them.
+SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
+bss_filter_of = | awk -v slots=$(if $(filter $(SLOT_ASPSX),$(call maspsx_of,$(1))),1,0) \
+	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { bss = $$0 ~ /^\.section \.s?bss$$/ } \
+	bss && slots && $$1 == ".align" && $$2 > 2 { $$0 = "\t.align\t2" } \
+	bss && $$1 == ".space" && $$2 % 4 { if (!slots) { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
+	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } { print }'
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.
@@ -89,7 +103,6 @@ $(ROOT)/$(BUILD)/%.cflags: matching-flags-force
 		$(call shell_quote,MASPSX=$(MASPSX)) \
 		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
 		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
-		$(call shell_quote,BSS=$(call bss_of,$*)) \
 		$(call shell_quote,AS=$(AS)) \
 		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
 		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \
@@ -125,6 +138,7 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
 		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_EXTRA)) -o $(IMAGE).elf
 	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(IMAGE).elf $(IMAGE)
+	$(if $(PACKER_TAIL),cd $(ROOT) && head -c $(PACKER_TAIL) /dev/zero >> $(IMAGE))
 
 verify: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
@@ -137,10 +151,14 @@ audit: coverage
 
 # Compressed-container reproduction (a separate claim from image matching):
 # CONTAINERS lists DISC:SLOT pairs whose packed file holds this image.
+# PACKER_TAIL counts the zero literals the original packer appended to complete
+# its last group; the image rule appends them after the linked program, so the
+# image matches only when the link ends exactly where the program does.
 container: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && for pair in $(CONTAINERS); do \
 		disc=$${pair%%:*}; slot=$${pair##*:}; \
-		$(PYTHON) tools/packed_container.py $(IMAGE) --disc .local/discs/disc$$disc.bin \
+		$(PYTHON) tools/packed_container.py $(IMAGE) --tail $(or $(PACKER_TAIL),0) \
+			--disc .local/discs/disc$$disc.bin \
 			--manifest .local/extract/disc$$disc/manifest.json --slot $$slot || exit 1; \
 	done
 

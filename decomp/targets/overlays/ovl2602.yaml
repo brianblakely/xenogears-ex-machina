@@ -25,7 +25,7 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: True
+  ld_bss_is_noload: False
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
@@ -47,7 +47,12 @@ segments:
       - [0x11c, c, ovl2602]
       - [0x91D0, c, gear_shop]
       - [0x1197c, .data, ovl2602]
-      # The gear screen unit's data, then the overlay's zero-filled
-      # uninitialized variables (see the head of gear_shop.c).
       - [0x11d08, .data, gear_shop]
+      # The file ends with the uninitialized variables (loaded .bss) as
+      # zeros, each in a slot of whole words (decomp/Makefile): each unit's
+      # own, which only its code reads, in unit order, then the commons
+      # both units read (tools/data_users.py).
+      - [0x12108, .bss, ovl2602]
+      - [0x1404c, .bss, gear_shop]
+      - [0x14050, .bss, ovl2602_common]
   - [0x140a0]

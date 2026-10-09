@@ -60,8 +60,11 @@ segments:
       - [0xBF8, .rodata, menu7]   # tables 800706E8-80070748 at 0 mod 8
       # The overlay number's unit has no code: 800707A8-8007099C reads
       # menu2's uninitialized variables, so menu2's text starts there. The
-      # variables also move the menu3/menu4 boundary to 8007E528 and the
-      # menu4/menu5 boundary to 80081ECC (see the .bss below).
+      # variables (see the .bss below) also place the menu3/menu4 boundary
+      # at 8007E528 (8007E3CC reads menu3's, 8007E528 menu4's) and bound
+      # menu4/menu5's to 80081E00, 80081E6C or 80081ECC: 80081D2C is the
+      # last function reading menu4's own, 80081ECC the first reading
+      # menu5's, and the two between touch only commons. The latest is kept.
       - [0xcb8, c, menu2]
       - [0x37DC, c, menu3]
       - [0xEA38, c, menu4]
@@ -73,19 +76,32 @@ segments:
       - [0x21448, .data, menu2]
       - [0x21604, .data, menu3]
       - [0x21740, .data, menu4]
-      - [0x21CD0, .data, menu5]
+      # menu5's data opens with the stage colours (D_8009178C), which only
+      # its func_80082A70 reads.
+      - [0x21C9C, .data, menu5]
       # menu6's gear list: its strings open menu6's rodata (D_80070284).
       - [0x21E74, .data, menu6]
       # menu7's .data ends with the embedded sprite model D_80091FB0 (asset,
       # menu.classification.txt) and D_800925A4, whose padding holds three
       # stray assembler bytes ("ind").
       - [0x2211C, .data, menu7]
-      # The file then holds the small (up to eight bytes) uninitialized
-      # variables (loaded .bss), zero, each in a slot of whole words (BSS in
-      # menu.mk): every unit's own, in unit order, then the commons
-      # (menu_common.c). Every variable a unit reads lies in its own range,
-      # which fixes the unit boundaries above. The larger ones follow from
-      # D_80092954 on in the same order, past the program's end.
+      # The file then holds the uninitialized variables of up to eight
+      # bytes (loaded .bss), zero, each in a slot of whole words
+      # (decomp/Makefile): every unit's own, in unit order, then the commons
+      # (menu_common.c). The larger ones follow past the program's end in
+      # the same order: each unit's own from D_80092954 to 80096FA8, then
+      # the large commons up to the mode table's BSS end, 8009B558. The
+      # GCC 2.6.3 images keep one .bss in declaration order (slot39, mdec),
+      # so the split is likely the original assembler's 8-byte small-data
+      # threshold applied to the .lcomm/.comm GCC emits after the code,
+      # with the linker's small commons (docs/matching.md). Until it is
+      # modelled the larger variables stay extern (undefined_syms_auto.txt):
+      # defined in their units, they would be allocated among the small
+      # ones. Every variable a unit reads lies in its own range
+      # (tools/data_users.py menu.mk --end 80096fa8: no FOREIGN reference or
+      # INVERSION; the one SHARED address, 80092A30, is menu3's variable and
+      # the end bound menu2 forms for its array at 800929F4), which places
+      # or bounds the text boundaries above.
       - [0x22AE4, .bss, menu2]
       - [0x22B48, .bss, menu3]
       - [0x22BE4, .bss, menu4]

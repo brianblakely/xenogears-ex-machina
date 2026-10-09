@@ -468,6 +468,12 @@ class MatchingTests(unittest.TestCase):
 
     def build_fixture_unit(self, source, settings=()):
         """Compile decomp/src/t/unit.c with the target Makefile; returns the object."""
+        obj, result = self.make_fixture_unit(source, settings)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return obj
+
+    def make_fixture_unit(self, source, settings=()):
+        """Run the target Makefile's object rule on decomp/src/t/unit.c."""
         repo = Path(__file__).resolve().parents[1]
         include = self.root / "decomp/include"
         include.mkdir(parents=True, exist_ok=True)
@@ -488,23 +494,44 @@ class MatchingTests(unittest.TestCase):
              "ROOT=" + str(self.root), "CONFIG=fixture.mk", *settings, str(obj)],
             cwd=self.root, text=True, capture_output=True, check=False,
         )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        return obj
+        return obj, result
 
     def section_bytes(self, obj, section):
         out = self.root / (section.strip(".") + ".bin")
         subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)], check=True)
         return out.read_bytes()
 
+    def cover_linked_fixture(self, image, settings=()):
+        """Link the fixture unit's .data and .bss (loaded) at 0x80010000 with the
+        target Makefile, then run the coverage report on its ELF and map."""
+        repo = Path(__file__).resolve().parents[1]
+        (self.root / "fixture.ld").write_text(
+            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n"
+            "    build/decomp/src/t/unit.o(.data)\n    build/decomp/src/t/unit.o(.bss)\n"
+            "  }\n  /DISCARD/ : { *(*) }\n}\n"
+        )
+        build = subprocess.run(
+            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+             "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=" + image,
+             "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings, str(self.root / image)],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
+        return subprocess.run(
+            [sys.executable, str(repo / "tools/matching_coverage.py"), image + ".elf",
+             "--map", image + ".map", "--src", "decomp/src"],
+            cwd=self.root, text=True, capture_output=True, check=False,
+        )
+
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
-            "psx-objcopy", "psx-readelf",
+            "psx-ld", "psx-objcopy", "psx-readelf",
         )),
         "enter the matching Nix shell to test original data objects",
     )
     def test_original_object_links_in_place_and_counts_as_included(self):
-        from tools.matching_coverage import data_coverage, source_names
+        from tools.matching_coverage import source_names
 
         self.original.write_bytes(bytes(range(16)))
         self.digest = hashlib.sha256(self.original.read_bytes()).hexdigest()
@@ -513,7 +540,9 @@ class MatchingTests(unittest.TestCase):
             "int before = 0x11111111;\n"
             '/* a byte object whose padding holds 05 06 07 */\n'
             'INCLUDE_ORIGINAL(".data", D_80010004, 0x80010004, 4);\n'
-            "int after = 0x22222222;\n",
+            "int after = 0x22222222;\n"
+            "static int counter;\n"
+            "int *count(void) { return &counter; }\n",
             ["TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000"],
         )
         self.assertEqual(
@@ -523,11 +552,48 @@ class MatchingTests(unittest.TestCase):
         symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                  capture_output=True, text=True).stdout
         self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
-        _asm, _nonmatching, included = source_names([self.root / "decomp/src"])
-        self.assertEqual(included, {"D_80010004"})
-        sections = [(".data", 0x80010000, 12, "build/decomp/src/t/unit.o")]
-        totals = data_coverage(sections, [(0x80010004, 0x80010008)], [], self.root)
-        self.assertEqual(totals, {"c": 8, "included": 4})
+        _asm, _nonmatching, included, assets = source_names([self.root / "decomp/src"])
+        self.assertEqual((included, assets), ({"D_80010004"}, set()))
+        # The report on the link resolves the name through the ELF and counts
+        # every loaded byte, the loaded .bss included.
+        result = self.cover_linked_fixture("image.bin")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["data_classes"], {"bss": 4, "c": 8, "included": 4})
+        self.assertEqual(report["remaining_data_placeholder_bytes"], 0)
+        # A linker-script assignment shadowing the object would leave its
+        # original bytes counted as C: the report fails instead.
+        (self.root / "shadow.ld").write_text("D_80010004 = 0x80010004;\n")
+        result = self.cover_linked_fixture("shadow.bin", ["LINKER_EXTRA=shadow.ld"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("D_80010004: an absolute symbol", result.stderr)
+
+    def test_original_objects_must_resolve_to_one_sized_symbol(self):
+        from tools.matching_coverage import original_objects, source_names
+
+        table = [
+            (0x80010004, 4, "NOTYPE", "1", "D_ok"),
+            (0x80010010, 0, "NOTYPE", "1", "D_empty"),
+            (0x80010014, 4, "NOTYPE", "ABS", "D_shadowed"),
+            (0x80010018, 4, "OBJECT", "1", "D_twice"),
+            (0x8001001C, 4, "OBJECT", "2", "D_twice"),
+            (0x80010020, 8, "NOTYPE", "1", "D_asset"),
+        ]
+        assets = [(0x80010020, 0x80010028, "asset", "a packed image")]
+        self.assertEqual(original_objects(table, {"D_ok"}, {"D_asset"}, assets),
+                         [(0x80010004, 0x80010008)])
+        for name, message in (("D_missing", "no ELF symbols"), ("D_empty", "no size"),
+                              ("D_shadowed", "absolute"), ("D_twice", "2 ELF symbols")):
+            with self.assertRaisesRegex(SystemExit, message):
+                original_objects(table, {name}, set(), assets)
+        with self.assertRaisesRegex(SystemExit, "outside every asset range"):
+            original_objects(table, set(), {"D_ok"}, assets)
+        # A wrapper macro would hide its names from the scan.
+        header = self.root / "decomp/src/t/wrap.h"
+        header.parent.mkdir(parents=True, exist_ok=True)
+        header.write_text('#define PALETTE(name) \\\n    INCLUDE_ASSET(".data", name, 0x80010020, 8)\n')
+        with self.assertRaisesRegex(SystemExit, "wrap.h: a macro wrapping"):
+            source_names([self.root / "decomp/src"])
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -536,34 +602,52 @@ class MatchingTests(unittest.TestCase):
         "enter the matching Nix shell to test uninitialized variable slots",
     )
     def test_bss_slots_give_each_uninitialized_variable_whole_words(self):
-        source = (
-            '#include "include_asm.h"\n'
-            "static unsigned char flag;\n"
-            "unsigned char pairs[3][2];\n"
-            "static short half;\n"
-            "int word;\n"
-            "int use(void) { return flag + pairs[1][1] + half + word; }\n"
-        )
-
-        def layout(settings):
+        def layout(source, section, settings=()):
             obj = self.build_fixture_unit(source, settings)
             symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                      capture_output=True, text=True).stdout
             sections = subprocess.run(["psx-readelf", "-SW", str(obj)], check=True,
                                       capture_output=True, text=True).stdout
-            bss = re.search(r"\] \.bss\s+NOBITS\s+\w+\s+\w+\s+(\w+)", sections)
+            size = re.search(r"\] " + re.escape(section) + r"\s+NOBITS\s+\w+\s+\w+\s+(\w+)", sections)
             offsets = {
                 name: int(value, 16)
                 for value, name in re.findall(r"\d+: ([0-9a-f]{8})\s+\d+ \w+\s+\w+\s+\w+\s+\d+ (\w+)\n", symbols)
-                if name in ("flag", "pairs", "half", "word")
+                if name in ("flag", "pairs", "half", "word", "point")
             }
-            return offsets, int(bss.group(1), 16)
+            return offsets, int(size.group(1), 16)
 
-        # GCC emits the file-scope tentative definitions in declaration order;
-        # maspsx packs them, ASPSX's slots keep every one word-aligned.
-        self.assertEqual(layout([]), ({"flag": 0, "pairs": 1, "half": 7, "word": 9}, 13))
-        self.assertEqual(layout(["BSS=slots"]), ({"flag": 0, "pairs": 4, "half": 12, "word": 16}, 20))
-        self.assertIn("BSS=slots", (self.root / "build/decomp/src/t/unit.cflags").read_text())
+        # Statics (.lcomm), so the unit's own allocation order is tested. A
+        # tentative definition (.comm) maspsx would allocate among them in
+        # GCC's order, where the original linker placed commons after every
+        # unit's own; the commons units reproduce that by their link order.
+        source = (
+            '#include "include_asm.h"\n'
+            "static unsigned char flag;\n"
+            "static unsigned char pairs[3][2];\n"
+            "static short half;\n"
+            "static int word;\n"
+            "int use(void) { return flag + pairs[1][1] + half + word; }\n"
+        )
+        # Declaration order, each object in whole words (ASPSX 2.34, the
+        # fixture's default), so every one is naturally aligned.
+        offsets, size = layout(source, ".bss")
+        self.assertEqual((offsets, size), ({"flag": 0, "pairs": 4, "half": 12, "word": 16}, 20))
+        for name, alignment in {"flag": 1, "pairs": 1, "half": 2, "word": 4}.items():
+            self.assertEqual(offsets[name] % alignment, 0, name)
+        # Small data takes the same slots: an 8-byte object follows a byte at
+        # 4 mod 8, as in the original images, where maspsx would 8-align it.
+        small = (
+            '#include "include_asm.h"\n'
+            "static unsigned char flag;\n"
+            "static struct { int x, y; } point;\n"
+            "int use(void) { return flag + point.y; }\n"
+        )
+        self.assertEqual(layout(small, ".sbss", ["GP_unit=8"]), ({"flag": 0, "point": 4}, 12))
+        # No slot rule is evidenced for other ASPSX versions: a sub-word
+        # variable fails the build instead of keeping maspsx's packing.
+        _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.56"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no slot rule", result.stderr)
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
@@ -590,6 +674,29 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(found["hardware_pointers"], [0x800508E4])
         self.assertEqual(found["calls"], [0x80040000])
         self.assertEqual((found["gte"], found["indirect"]), (1, 1))
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_data_users_resolve_bases_gp_and_indexed_accesses(self):
+        from tools.data_users import formed_addresses
+
+        words = [
+            0x3C1C8006,  # lui   gp, 0x8006
+            0x279C9170,  # addiu gp, gp, -0x6e90  (the start code's $gp: no data address)
+            0x3C048009,  # lui   a0, 0x8009
+            0x248425D4,  # addiu a0, a0, 0x25d4   (formed only)
+            0x8C820004,  # lw    v0, 4(a0)
+            0x00852021,  # addu  a0, a0, a1       (an indexed access keeps the base)
+            0x90830002,  # lbu   v1, 2(a0)
+            0x83820010,  # lb    v0, 0x10(gp)
+            0x0C010000,  # jal   0x80040000
+            0x00000000,  # nop
+            0x8C850000,  # lw    a1, 0(a0)        (a0 clobbered by the call)
+            0x03E00008,  # jr    ra
+        ]
+        blob = b"".join(w.to_bytes(4, "little") for w in words)
+        self.assertEqual(formed_addresses(blob, 0x80010000), {
+            0x800925D4: {"addiu"}, 0x800925D8: {"lw"}, 0x800925D6: {"lbu"}, 0x80059180: {"lb@gp"},
+        })
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):

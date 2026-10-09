@@ -333,7 +333,7 @@ u16 D_801EA610[96] = {
 };
 
 /* The unit's uninitialized variables, zero in the file after all units'
- * initialized data, each in a slot of whole words (BSS in slot39.mk). */
+ * initialized data, each in a slot of whole words (decomp/Makefile). */
 static u8 D_801EA6D0[2][16]; /* per port and save slot: a save of this game exists */
 static s32 D_801EA6F0;       /* unreferenced */
 static u8 *D_801EA6F4;       /* the save information of the last matched file */

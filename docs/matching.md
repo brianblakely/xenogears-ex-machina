@@ -105,12 +105,18 @@ python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxx
 The six packed overlay files (mode overlays in slots 35-40 and the slot-39
 image's second copy) are reproduced from the rebuilt images by
 `tools/packed_container.py` (`make -C decomp all-container`). The packer is
-Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
-complete eight-token group; the same rule reproduces a 25-file sample of other
-packed disc files. The zero literals that complete the last group count in the
-decoded length, so a decoded image can end a few bytes past its last object
-(worldmap 2, field 6, movie 7, menu 5 bytes): those bytes belong to no object
-and stay out of C as file padding (`OBJCOPY_FLAGS := --gap-fill 0 --pad-to`).
+Okumura's LZSS binary-tree encoder without preset-ring matches; it completes the
+last eight-token group with zero literals, which count in the decoded length.
+The plain encoding of the program plus those literals is every container's
+stream, and some such tail reproduces each of the 24 other disc-1 files holding
+one whole packed stream (`packed_container.py --sample .local/extract/disc1/files`);
+splitting trailing copies into literals instead fails on files/0090.bin. A
+decoded image therefore ends a few bytes past its program (worldmap 2, field 6,
+movie 7, menu 5 bytes): they belong to no object and stay out of C. Where a
+program ends in zeros the stream alone cannot place them (field's could be 4-6,
+worldmap's 1-3); there the resident's mode table, which starts the overlay's BSS
+at its program end, does. A target appends its tail after the link
+(`PACKER_TAIL`), so the image matches only when the link ends at the program end.
 This is a separate claim from image matching; whole-disc filesystem/ECC
 reproduction is not attempted.
 
@@ -375,31 +381,72 @@ converted to C per unit. What converting the targets' `.data` established:
   Define the real object and index it as the code does (`D_8009A68C[index - 4]`,
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
-  `undefined_syms_auto.txt` covers only unaligned ones).
+  `undefined_syms_auto.txt` covers only unaligned ones). These aliases are
+  scaffolding, deleted when their last assembly user matches (slot39's and field's
+  have gone). One of a static resolves only because maspsx makes `.lcomm` symbols
+  global, where ASPSX kept them local.
 - GCC emits an initializer's string literals into `.rodata` in reverse order (menu6's
   heap tag names).
 - Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
   `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
-  ovl2143 and ovl2602 still define theirs zero-initialized in `.data` (ovl2143
-  word-aligns D_801E869C with `__attribute__((aligned(4)))`).
 - GCC emits a unit's function-local statics, then its file-scope tentative
-  definitions in first-declaration order, packing adjacent narrow ones; the original
-  assembler gave each a slot of whole words (resident u8 variables at
-  8005942c-8005943c; two `u8` four bytes apart; `BSS := slots` in the target filters
-  maspsx's output). A unit's own variables come first, as statics where the commons
-  follow apart, and a unit reads only its own, which fixes text boundaries (menu
-  800707A8, 8007E528 and 80081ECC, slot39 801DBDB4). The commons, which the original
-  linker allocated after every unit's own in an order of its own (mdec's five player
-  commons among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked
-  last (slot39_common.c, menu_common.c, mdec commons/). Zeros a packer added past the
+  definitions in the order of their first declaration (a header's `extern` counts),
+  and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
+  (in `.sbss` it 8-aligns an 8-byte object). In the original images each object takes
+  a slot of whole words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39's RECT
+  801ea8e4), evidenced separately for ASPSX 2.34's `.lcomm` statics (mdec
+  801e8958-801e8968: five u8, stored and loaded bytewise; menu3 80092678-800926a0;
+  slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
+  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
+  map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
+  object whole words at a word boundary under the qualified ASPSX 2.34 and 2.79 (no
+  2.79 unit allocates any in C yet) and rejects a smaller one under any other version
+  (decomp/Makefile); no target or unit setting selects it. Variables that share a word
+  are therefore one object, also in the resident's generated `.bss`: the sprite
+  position D_800592E8 is a DVECTOR. The window colour D_800594D4, the overlays'
+  `u8[3]`, is still a `u8` with extern +1/+2 bytes: ASPSX 2.34 addressed a common at
+  an offset absolutely (maspsx models it), but GNU as moves a small common's offset
+  accesses to `$gp`.
+- A unit's own variables come first, in unit order, as statics where the commons
+  follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
+  reports every FOREIGN reference into a unit's own `.bss` (none in any target) and,
+  with `--end`, the order of variables still extern. That places menu 800707A8 and
+  8007E528 exactly, the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, and
+  slot39's after 801CD2AC and at or before 801DBDB4 (an earlier one moves the `.bss`
+  boundary with it); the latest is kept. The commons, which the original linker
+  allocated after every unit's own in an order of its own (mdec's five player commons
+  among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
+  (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
+  the linker's placement rather than modelling it. Zeros a packer added past the
   program are file padding (Compressed containers).
-- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, so a
-  one-pass ASPSX has seen every definition before any use: small data that all its
-  users address absolutely is no user's own. The resident's (80059170-80059184,
-  80059198-800591b8) is defined by data-only `-G8` units at its link positions
-  (kernel_settings.c, sprite_settings.c).
+- The menu (GCC 2.7.2) splits its uninitialized variables by size. Those of up to
+  eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
+  and end the program; the larger ones follow past it in the same order, each unit's
+  own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
+  (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no FOREIGN
+  reference or INVERSION). The GCC 2.6.3 images keep one `.bss` in declaration order
+  (slot39_801DBE54's 2-, 200-, 200- and 1-byte statics at 801ea72c-801ea8c0; mdec's
+  64-byte movie_decoder among 4-byte statics), so the split is likely the original
+  assembler's 8-byte small-data threshold applied to the `.lcomm`/`.comm` GCC emits
+  after the code, with the linker's small commons. Until it is modelled the larger
+  variables stay extern (`undefined_syms_auto.txt`): defined in their units they
+  would be allocated among the small ones.
+- GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
+  definition placed after its use: `extern int late_var; int g(void) { return
+  late_var; } int late_var = 2;` through `psx-cc1-<version> -O2 -G8` puts `late_var:`
+  before `g:` under 2.6.3, 2.7.2 and 2.7.2-cdk, and every GP 8 unit's `.o.cc1.s` in
+  the build directory shows the same order. A one-pass ASPSX has therefore seen a
+  unit's own definitions before any use: small data that every user loads and stores
+  absolutely is no user's own (addresses, `la`, are formed absolutely even of a unit's
+  own). Only the link position constrains its owner, so the resident's
+  (80059170-80059184, 80059198-800591b8) is defined by data-only `-G8` units there,
+  the simplest owners that fit (kernel_settings.c, sprite_settings.c; their compiler
+  is immaterial: the three give identical `.sdata` and relocations). Before calling
+  shared data unreferenced, check every image (`tools/data_users.py --range
+  START:END`): four of the resident's fillers are battle and ovl2596 flags, and the
+  battle-entry flag at 80059179 sat in what was taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).
@@ -427,12 +474,19 @@ Measure source coverage and exact matching independently. Do not call a baseline
 made entirely of original assembly a completed decompilation.
 
 The coverage audit reports functions, bytes and static MIPS instructions per class.
-From the link map it also attributes every loaded .rodata/.data/.sdata input
-section to compiled C, original bytes INCLUDE_RODATA'd or INCLUDE_ORIGINAL'd in C
-(`included`),
-authored assembly, a classified `sdk`/`asset` range, or a generated
-`placeholder` (`remaining_data_placeholder_bytes`). `asset` marks user-supplied
-game data or bytecode that is parsed and documented rather than rewritten as source.
+From the link map it also attributes every loaded data byte: each .rodata/.data/.sdata
+input section and, where an image holds its uninitialized variables as zeros, each
+.bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
+alignment gaps and a packer's tail belong to no input section). A byte is compiled C
+(`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
+INCLUDE_ORIGINAL'd in C (`included`), authored assembly, a classified `sdk`/`asset`
+range, or a generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss
+included). Every INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name in a target's C
+units and headers must resolve to one sized, section-relative ELF symbol, an
+INCLUDE_ASSET object must lie in an `asset` range, and no macro may wrap them;
+otherwise the report fails rather than count original bytes as C. `asset` marks
+user-supplied game data or bytecode that is parsed and documented rather than
+rewritten as source.
 GCC emits a static initializer's string literals last to first once the initializer
 ends, so a pointer table whose strings lie in reverse address order was written with
 its literals (resident message and name tables); under `-G8` strings of up to 8 bytes
