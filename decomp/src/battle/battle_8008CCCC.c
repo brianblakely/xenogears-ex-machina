@@ -1475,9 +1475,10 @@ void func_800939CC(u8 member, u8 kind) {
     }
 }
 
-/* For party character 4 with no command page open: show the two equipped
- * items' (in a gear: parts') names and durability (two digits, no leading
- * zero) in window 0. */
+/* For party character 4 with no command page open: show the ammo of its
+ * first and fourth special slots (in a gear: its gear's), each name with its
+ * rounds left (hundreds and tens without leading zeros, then the ones digit),
+ * in window 0. */
 void func_80093B08(u8 member) {
     RECT nameRect;
     RECT onesRect;
@@ -1500,13 +1501,13 @@ void func_80093B08(u8 member) {
         if (D_800D32A0[member].unk1 == 0) {
             slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
             slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
-            values[0] = D_8006D634.specialDurability[slots[0] - 50];
-            values[1] = D_8006D634.specialDurability[slots[1] - 50];
+            values[0] = D_8006D634.ammo[slots[0] - 50];
+            values[1] = D_8006D634.ammo[slots[1] - 50];
         } else {
             slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
             slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
-            values[0] = D_8006D634.gearSpecialDurability[slots[0] - 50];
-            values[1] = D_8006D634.gearSpecialDurability[slots[1] - 50];
+            values[0] = D_8006D634.gearAmmo[slots[0] - 50];
+            values[1] = D_8006D634.gearAmmo[slots[1] - 50];
         }
         func_80077610();
         func_80076EA4();
@@ -2405,9 +2406,11 @@ void func_800968C0(void) {
 }
 
 /* Hit outcome of the current command on the target: 1 hit, 2 half, 3 miss,
- * 5 forced. Gear-only and weapon checks, sure-hit and never-hit statuses
- * come first; then the attacker's +0x5e plus the command's +0x15 against
- * the target's +0x5f sets a margin for the percent rolls. */
+ * 5 forced. Gear-only and ammo checks (character 4 misses with a command that
+ * needs an ammo slot out of rounds, and D_800C34AE keeps 8009afd8 from taking
+ * one), sure-hit and never-hit statuses come first; then the attacker's +0x5e
+ * plus the command's +0x15 against the target's +0x5f sets a margin for the
+ * percent rolls. */
 s32 func_80096AB8(void) {
     s16 bonus = 0;
     s16 guard = 0;
@@ -2422,11 +2425,11 @@ s32 func_80096AB8(void) {
         return 3;
     }
     if (D_800C3E00->pilot.characterId == 4) {
-        if ((D_800C3DFC->itemKinds & 0x80) && D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x80) && D_8006D634.ammo[D_800C3E00->pilot.entryItems[0] - 50] == 0) {
             D_800C34AE = 1;
             return 3;
         }
-        if ((D_800C3DFC->itemKinds & 0x10) && D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x10) && D_8006D634.ammo[D_800C3E00->pilot.entryItems[3] - 50] == 0) {
             D_800C34AE = 1;
             return 3;
         }
@@ -3794,8 +3797,8 @@ s32 func_8009A7E4(u8 index) {
 }
 
 /* Put battle item index into character 4's entry holding its id (entry k when
- * none does): copy its values, record the item slot and durability, and update
- * the battle copies of character 4. */
+ * none does): copy its values, record the item slot, set the id's rounds from
+ * the item's +3, and update the battle copies of character 4. */
 void func_8009A854(u8 index, u8 k) {
     BattleItem *item = &D_800C34B0->lists.items.list[index];
     u8 i;
@@ -3817,7 +3820,7 @@ void func_8009A854(u8 index, u8 k) {
     D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
     D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
     D_8006D8A0.characters[4].entryItems[k] = index;
-    D_8006D634.specialDurability[index - 50] = item->durability;
+    D_8006D634.ammo[index - 50] = item->durability;
     D_8006D8A0.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
@@ -4002,16 +4005,16 @@ void func_8009AEFC(u8 slot) {
     }
 }
 
-/* Wear the attacker's weapon items for the current command: commands 0-3 the
- * first entry's, 6 the fourth's, 7-19 both. */
+/* Take a round of the attacker's ammo for the current command (none below 0):
+ * commands 0-3 the first special slot's, 6 the fourth's, 7-19 both. */
 void func_8009AFD8(void) {
     switch (D_800C34B0->commandIndex) {
     case 0:
     case 1:
     case 2:
     case 3:
-        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
-            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] += -1;
+        if (D_8006D634.ammo[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
+            D_8006D634.ammo[D_800C3E00->pilot.entryItems[0] - 50] += -1;
         }
         break;
     case 7:
@@ -4027,13 +4030,13 @@ void func_8009AFD8(void) {
     case 17:
     case 18:
     case 19:
-        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
-            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[0] - 50] += -1;
+        if (D_8006D634.ammo[D_800C3E00->pilot.entryItems[0] - 50] != 0) {
+            D_8006D634.ammo[D_800C3E00->pilot.entryItems[0] - 50] += -1;
         }
         /* fallthrough */
     case 6:
-        if (D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] != 0) {
-            D_8006D634.specialDurability[D_800C3E00->pilot.entryItems[3] - 50] += -1;
+        if (D_8006D634.ammo[D_800C3E00->pilot.entryItems[3] - 50] != 0) {
+            D_8006D634.ammo[D_800C3E00->pilot.entryItems[3] - 50] += -1;
         }
         break;
     }
@@ -4540,7 +4543,8 @@ void func_8009C134(void) {
 /* Resolve a gear's action against every target in the target mask: select the
  * current command descriptor, run its gear formula (table D_800C34DC) per
  * target with the status step it asks for (8009DBFC), then the per-target
- * follow-ups and the command's wear and element. */
+ * follow-ups, the rounds character 4's gear uses (8009e788) and the command's
+ * element. */
 void func_8009C198(void) {
     s32 bit;
 
@@ -4836,17 +4840,18 @@ void func_8009D354(void) {
 }
 
 /* Gear hit outcome of the current command on the target: 1 hit, 2 half,
- * 3 miss. Like 80096ab8 with gear accuracy (+0x9f while the first special
- * part's durability is 0; an empty slot reads the low byte of the game data's
- * flags, which no code sets, so every gear without one gains it; 1.5x with
- * status 0x800), the target's evasion (half its gear's +0x9f, 1.5x with
+ * 3 miss. Like 80096ab8 (character 4's gear misses with a command that needs
+ * an ammo slot out of rounds) with gear accuracy (+0x9f while the first ammo
+ * slot reads 0 rounds; an empty slot reads the low byte of the game data's
+ * flags, which no code sets, so every gear without ammo there gains it; 1.5x
+ * with status 0x800), the target's evasion (half its gear's +0x9f, 1.5x with
  * status 0x400) and the gears' blind/evade status 0x10. */
 s8 func_8009D3A0(void) {
     s16 penalty = 0;
     s16 bonus = 0;
     s16 evasion;
     s16 accuracy;
-    u8 durability;
+    u8 rounds;
     s16 margin;
     s16 roll;
     u16 status;
@@ -4870,19 +4875,19 @@ s8 func_8009D3A0(void) {
         return 1;
     }
     evasion = D_800C3E34->pilot.field5F;
-    durability = D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50];
+    rounds = D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50];
     accuracy = D_800C3E00->pilot.field5E;
-    if (durability == 0) {
+    if (rounds == 0) {
         accuracy += D_800D2D6C->hitBonus;
     }
     if (D_800D2DC8->hitBonus != 0) {
         evasion += D_800D2DC8->hitBonus / 2;
     }
     if (D_800C3E00->pilot.characterId == 4) {
-        if ((D_800C3DFC->itemKinds & 0x80) && durability == 0) {
+        if ((D_800C3DFC->itemKinds & 0x80) && rounds == 0) {
             return 3;
         }
-        if ((D_800C3DFC->itemKinds & 0x20) && D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] == 0) {
+        if ((D_800C3DFC->itemKinds & 0x20) && D_8006D634.gearAmmo[D_800D2D6C->partItems[3] - 50] == 0) {
             return 3;
         }
     }

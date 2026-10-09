@@ -79,8 +79,8 @@ typedef struct {
     u8 field64[4];        /* 0x64 */
     u8 pad68[0x6A - 0x68];
     u8 weapons[5];        /* 0x6A: equipped weapons; [0] the weapon */
-    u8 entryItems[5];     /* 0x6F: special parts (weapon ids from 50, 0 none); [0]-[3] go
-                           * with entries[0]-[3] */
+    u8 entryItems[5];     /* 0x6F: special parts, the ammo (weapon ids from 50, 0 none);
+                           * [0]-[3] go with entries[0]-[3] */
     u8 accessories[3];    /* 0x74 */
     u8 field77;
     u8 field78;
@@ -120,8 +120,8 @@ typedef struct GearRecord {
     u8 pad0[2];
     u8 engine;            /* 0x02: entry of the 0x18-byte engine table */
     u8 field3;            /* 0x03: entry of the 0x10-byte table */
-    u8 partItems[4];      /* 0x04: special part of each weapon slot (gear part ids from 50,
-                           * 0 none) */
+    u8 partItems[4];      /* 0x04: special part of each weapon slot, its ammo (gear part
+                           * ids from 50, 0 none) */
     u8 frame;             /* 0x08: entry of the 0x14-byte frame table */
     u8 parts[3];          /* 0x09: entries of the 0x1c-byte part table */
     u8 weapons[4];        /* 0x0C: weapons below item 0x32; [0] entry of the weapon table */
@@ -175,7 +175,8 @@ typedef struct GearRecord {
     u8 guard;             /* 0x9C: tenths a half hit loses (at most 9) */
     u8 field9D;
     u8 frameFactor;       /* 0x9E: attack scale in quarters */
-    s8 hitBonus;          /* 0x9F: accuracy with broken weapons, half as evasion */
+    s8 hitBonus;          /* 0x9F: accuracy while its first ammo slot reads 0 rounds, as
+                           * an empty slot does (battle func_8009D3A0); half as evasion */
     u8 padA0[0xA4 - 0xA0];
 } GearRecord;
 
@@ -272,15 +273,21 @@ typedef struct GameData {
     u8 unk22B4[2];
     u16 flags;                    /* 0x22B6: option flags (0x4000 battle's boost, ext d1;
                                    * 0x2000/0x1000 a copy to character 9/10, ext d0) */
-    /* The durability of each special part by id - 50, ids 50-97 (the 48 weapon
-     * records ovl2615 func_801E5384 copies for the battle). The code forms an
-     * id's address from 50 bytes before each array, splat's D_8006F8BA
+    /* The rounds left of each ammo id, by id - 50 for ids 50-97 (the 48 weapon
+     * records ovl2615 func_801E5384 copies for the battle). The special parts
+     * are ammo: system texts 23 and 51 name ids 50-72 "... Ammo", and only
+     * character 4 and its gears 5 and 13 may use them
+     * (docs/scripts/field-events.md). The field menu sets an id's byte to 100
+     * when it is loaded (slot39 func_801DF0D4), each action of a command that
+     * uses it takes one (battle func_8009AFD8, func_8009E788) and at 0 such a
+     * command misses (func_80096AB8, func_8009D3A0). The code forms
+     * an id's address from 50 bytes before each array, splat's D_8006F8BA
      * (+0x2286) and D_8006F8EA (+0x22B6, the address of `flags`). An empty
      * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,
-     * which no code sets; ids 98 and 99 would reach gearSpecialDurability[0-1]
-     * and `locked` (docs/scripts/field-events.md). */
-    u8 specialDurability[48];     /* 0x22B8: characters' special parts */
-    u8 gearSpecialDurability[48]; /* 0x22E8: gears' special parts */
+     * which no code sets; ids 98 and 99 would reach gearAmmo[0-1] and
+     * `locked`. */
+    u8 ammo[48];                  /* 0x22B8: character 4's (weapon ids) */
+    u8 gearAmmo[48];              /* 0x22E8: its gears' (gear part ids) */
     u16 locked;                   /* 0x2318: characters locked in place */
     u16 map;                      /* 0x231A: the saved map (scene) */
     u16 entry[3];                 /* 0x231C: its entry parameters (heading, area); the world
@@ -319,8 +326,8 @@ LAYOUT_CHECK(GameDataLayout, OFFSET_OF(GameData, characters) == 0x26C &&
                                  OFFSET_OF(GameData, gearAccessoryIds) == 0x221A &&
                                  OFFSET_OF(GameData, inGear) == 0x22B1 &&
                                  OFFSET_OF(GameData, flags) == 0x22B6 &&
-                                 OFFSET_OF(GameData, specialDurability) == 0x22B8 &&
-                                 OFFSET_OF(GameData, gearSpecialDurability) == 0x22E8 &&
+                                 OFFSET_OF(GameData, ammo) == 0x22B8 &&
+                                 OFFSET_OF(GameData, gearAmmo) == 0x22E8 &&
                                  OFFSET_OF(GameData, locked) == 0x2318 &&
                                  OFFSET_OF(GameData, map) == 0x231A &&
                                  OFFSET_OF(GameData, progress) == 0x2344 &&

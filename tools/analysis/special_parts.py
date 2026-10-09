@@ -1,21 +1,23 @@
-"""Special parts: the ids from 50 that index the game data's durability bytes.
+"""Special parts: the ammo ids from 50 that index the game data's round counts.
 
 Character 4 equips special parts beside its weapons (CharacterRecord.entryItems)
 and so does the gear it pilots (GearRecord.partItems): weapon and gear part ids
-from 50, 0 for an empty slot. The field menu offers the inventory's ids from 50
-of the slot's weapon kind (slot39 func_801DE5CC); the battle lists weapon ids
-50-72 (ovl2615 func_801E4CD0) and copies the 48 weapon records 50-97 (0x300
-bytes from +0x320 of the setup archive's entry 0x25, func_801E5384). Each id's
-durability byte is GameData.specialDurability[id - 50] (+0x22B8, characters)
-or gearSpecialDurability[id - 50] (+0x22E8, gears), 48 bytes each
-(decomp/include/resident/gamedata.h): the code forms its address from 50 bytes
+from 50, 0 for an empty slot. They are its ammo: system texts 23 and 51 name
+ids 50-72 "... Ammo" (docs/scripts/field-events.md). The field menu offers the
+inventory's ids from 50 of the slot's weapon kind (slot39 func_801DE5CC); the
+battle lists weapon ids 50-72 (ovl2615 func_801E4CD0) and copies the 48 weapon
+records 50-97 (0x300 bytes from +0x320 of the setup archive's entry 0x25,
+func_801E5384). Each id's rounds are GameData.ammo[id - 50] (+0x22B8, character
+4) or gearAmmo[id - 50] (+0x22E8, its gears), 48 bytes each
+(decomp/include/resident/gamedata.h): the code forms the address from 50 bytes
 before the array (0x8006F8BA; 0x8006F8EA, the flag word +0x22B6), so an index
 outside 50-97 reaches other game data, which `alias` names.
 
     python3 -m tools.analysis.special_parts --sweep   # both discs, aggregates
 
 The sweep reads the user's discs and prints the special records of the item
-tables, the new-game file's arrays, flag word and special slots, the enemies'
+tables (their users, kinds and the byte the battle loads as rounds), the
+new-game file's arrays, flag word, weapons and special slots, the enemies'
 gear special slots, and every id from 50 a source can put into the weapon list
 or the gear part list:
 
@@ -27,11 +29,18 @@ or the gear part list:
   of each 0x5c-byte record of the menu resources' file 6 as weapons
   (func_801C6A6C, func_801CF2A0), fe 5a (kind 5, ovl2602) with bytes
   0x3c-0x4f of each 0x64-byte record of file 7 as gear parts (func_801C6E74,
-  func_801D44FC), and every record of both tables;
+  func_801D44FC), and every whole record of both tables, whose record counts
+  it prints: a shop number past them reads the memory after the unpacked
+  table, which the sweep cannot see;
 * the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154
   categories, 0 weapons and 3 gear parts; ovl2596 func_801E42C4,
   func_801E1444) and the AI's set_drop (3c, the first) and set_own_155 (3b, the
   second: +0x155, +0x153, +0x151).
+
+It also lists every field take_item (8d) from the weapon or gear part list,
+resolved as give_item is: one that takes an item's last copy leaves its slot's
+id at 0xFF (field func_8009640C), which slot39 func_801DE5CC tests as an id
+from 50 through the table record 255, past the table's end.
 
 The field menu's debug fill (slot39 func_801E5058) adds ids 1-71 to both lists.
 """
@@ -54,6 +63,7 @@ FIRST, COUNT = 50, 48  # slot39 func_801DE5CC ids >= 50; ovl2615 func_801E5384 r
 BATTLE_END = 73  # ovl2615 func_801E4CD0: weapon ids 50..72 enter the battle's list
 BATTLE_RECORDS = 0x25  # func_801E5384: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
 ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # D_8006F8BA, D_8006F8EA as game data offsets
+GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # D_8006D634, sizeof(GameData)
 # The game data around the arrays (gamedata.h): (offset, size, member).
 LAYOUT = (
     (0x221A, 150, "gearAccessoryIds"),
@@ -61,20 +71,24 @@ LAYOUT = (
     (0x22B1, 3, "inGear"),
     (0x22B4, 2, "unk22B4"),
     (0x22B6, 2, "flags"),
-    (0x22B8, COUNT, "specialDurability"),
-    (0x22E8, COUNT, "gearSpecialDurability"),
+    (0x22B8, COUNT, "ammo"),
+    (0x22E8, COUNT, "gearAmmo"),
     (0x2318, 2, "locked"),
     (0x231A, 2, "map"),
     (0x231C, 6, "entry"),
 )
 FLAGS, LOCKED = 0x22B6, 0x2318
 NEW_GAME = (0x10, 0, 3)  # func_8001B970 loads it whole into D_8006D634
-CHARACTERS, CHARACTER, ENTRY_ITEMS = 0x26C, 0xA4, 0x6F  # 11 records
-GEARS, GEAR, PART_ITEMS = 0x978, 0xA4, 0x04  # 20 records
+# 11 records: CharacterRecord.weapons (5) and entryItems (5)
+CHARACTERS, CHARACTER, CHARACTER_WEAPONS, ENTRY_ITEMS = 0x26C, 0xA4, 0x6A, 0x6F
+# 20 records: GearRecord.partItems (4) and weapons (4)
+GEARS, GEAR, PART_ITEMS, GEAR_RECORD_WEAPONS = 0x978, 0xA4, 0x04, 0x0C
 MENU_DATA = (0x10, 0, 2)  # slot39 func_801C72BC: the MenuDataArchive
 WEAPONS, GEAR_WEAPONS = 1, 42  # its +8 and +0xAC entries (tables->weapons, ->gearWeapons)
-# (entry, record size, users offset and width, durability offset, kind offset):
-# slot39 MenuWeapon / GearWeapon; battle BattleItem / BattlePart durability.
+# (entry, record size, users offset and width, load offset, kind offset):
+# slot39 MenuWeapon / GearWeapon. The load byte is the one battle func_8009A854
+# (BattleItem +3) and the uncalled func_8009E5C8 (BattlePart +0xC) store as an
+# id's rounds.
 TABLES = {
     "weapon": (WEAPONS, 0x10, 0x0, 2, 0x3, 0x6),
     "gear weapon": (GEAR_WEAPONS, 0x14, 0x4, 4, 0xC, 0xF),
@@ -86,7 +100,8 @@ RESOURCES = (0x10, 0, 1)
 SHOPS, SHOP, SHOP_WEAPONS = 6, 0x5C, 30  # ovl2601: files[6], kind 0 (ids 0-29) weapons
 GEAR_SHOPS, GEAR_SHOP, GEAR_PARTS = 7, 0x64, (0x3C, 0x50)  # ovl2602: files[7], stock[4]
 OPEN_SHOP, OPEN_GEAR_SHOP = "fe 59", "fe 5a"  # field func_800939A0, func_80093A04
-GIVE_ITEM, SET_VARIABLE = "8c", "35"
+GIVE_ITEM, TAKE_ITEM, SET_VARIABLE = "8c", "8d", "35"  # take_item: field func_8009640C
+EMPTIED = 0xFF  # the id take_item leaves in a slot whose count reaches 0
 CAMERA_STORES = ("af", "b0", "b1")  # u16@1 a variable when u8@3 is 0
 WEAPON_LIST, GEAR_PART_LIST = 1, 3  # field item code lists
 LOCAL_VARIABLES = 0x400  # byte offsets of D_800C3A68[0x200..0x3ff]
@@ -103,18 +118,19 @@ def alias(base: int, index: int) -> str:
     for start, size, name in LAYOUT:
         if start <= offset < start + size:
             return f"{name}[{offset - start}]" if size > 2 else f"{name} byte {offset - start}"
-    return f"+0x{offset:x}"
+    past = f", 0x{GAME_DATA + offset:08x} past the game data" if offset >= GAME_DATA_SIZE else ""
+    return f"+0x{offset:x}{past}"
 
 
-def specials(table: bytes, record: int, users: int, width: int, durability: int, kind: int):
-    """{id: (users, kind, durability)} of the records from FIRST with a kind,
+def specials(table: bytes, record: int, users: int, width: int, load: int, kind: int):
+    """{id: (users, kind, load byte)} of the records from FIRST with a kind,
     and the ids from FIRST whose record has none."""
     found, empty = {}, []
     for index in range(FIRST, len(table) // record):
         row = table[record * index : record * (index + 1)]
         mask = int.from_bytes(row[users : users + width], "little")
         if row[kind]:
-            found[index] = (mask, row[kind], row[durability])
+            found[index] = (mask, row[kind], row[load])
         else:
             empty.append(index)
     return found, empty
@@ -162,9 +178,14 @@ class Census:
     # those only a table no immediate operand opens holds
     sources: dict[str, dict[int, set[str]]] = field(default_factory=lists)
     unopened: dict[str, dict[int, set[str]]] = field(default_factory=lists)
+    # list -> {id: take_items}: any id; taking its last copy leaves id EMPTIED
+    taken: dict[str, dict[int, set[str]]] = field(default_factory=lists)
     variable_gives: int = 0
+    variable_takes: int = 0
     unresolved: list[str] = field(default_factory=list)
     variable_shops: list[str] = field(default_factory=list)
+    # shop table -> (whole records, bytes)
+    shop_tables: dict[str, tuple[int, int]] = field(default_factory=dict)
     enemy_slots: Counter = field(default_factory=Counter)
 
 
@@ -188,7 +209,8 @@ def written(instructions) -> dict[int, list[int | None]]:
 
 
 def item_codes(ins, writes: dict[int, list[int | None]]) -> list[int] | None:
-    """The item codes give_item `ins` may add; None when they are not known."""
+    """The item codes give_item or take_item `ins` may name; None when they
+    are not known."""
     if ins.immediate[0]:
         return [ins.operands[0] & 0x7FFF]
     values = writes.get(ins.operands[0], [])
@@ -197,15 +219,23 @@ def item_codes(ins, writes: dict[int, list[int | None]]) -> list[int] | None:
     return values
 
 
+def in_lists(code: int) -> tuple[str, int] | None:
+    """(list, id) when item code `code` names the weapon or gear part list
+    (the list in the high byte, field func_8009501C)."""
+    kind = {WEAPON_LIST: "weapon list", GEAR_PART_LIST: "gear part list"}.get(code >> 8)
+    return (kind, code & 0xFF) if kind else None
+
+
 def listed(code: int) -> tuple[str, int] | None:
     """(list, id) when item code `code` adds an id from FIRST to the weapon or
     gear part list (the list in the high byte, field func_800951B8)."""
-    kind = {WEAPON_LIST: "weapon list", GEAR_PART_LIST: "gear part list"}.get(code >> 8)
-    return (kind, code & 0xFF) if kind and code & 0xFF >= FIRST else None
+    found = in_lists(code)
+    return found if found and found[1] >= FIRST else None
 
 
 def field_sources(census: Census, disc: Disc, root: Path) -> tuple[set[int], set[int]]:
-    """Field give_item ids and the shop numbers fe 59 and fe 5a name."""
+    """Field give_item ids, take_item ids and the shop numbers fe 59 and fe 5a
+    name."""
     extract = root / ".local/extract" / f"disc{disc.number}"
     track = root / ".local/discs" / f"disc{disc.number}.bin"
     shops, gear_shops = set(), set()
@@ -222,15 +252,21 @@ def field_sources(census: Census, disc: Disc, root: Path) -> tuple[set[int], set
                     (shops if ins.key == OPEN_SHOP else gear_shops).add(ins.operands[0] & 0x7FFF)
                 else:
                     census.variable_shops.append(f"map {map_id} {ins.text()}")
-            if ins.key != GIVE_ITEM:
+            if ins.key not in (GIVE_ITEM, TAKE_ITEM):
                 continue
-            census.variable_gives += not ins.immediate[0]
+            if ins.key == GIVE_ITEM:
+                census.variable_gives += not ins.immediate[0]
+            else:
+                census.variable_takes += not ins.immediate[0]
             codes = item_codes(ins, writes)
             if codes is None:
                 census.unresolved.append(f"map {map_id} +0x{ins.pc:x} {ins.text()}")
-                continue
-            for kind, item in filter(None, map(listed, codes)):
-                census.sources[kind][item].add(f"give_item map {map_id}")
+            elif ins.key == TAKE_ITEM:
+                for kind, item in filter(None, map(in_lists, codes)):
+                    census.taken[kind][item].add(f"take_item map {map_id} +0x{ins.pc:x}")
+            else:
+                for kind, item in filter(None, map(listed, codes)):
+                    census.sources[kind][item].add(f"give_item map {map_id}")
     return shops, gear_shops
 
 
@@ -245,18 +281,20 @@ def census_disc(disc: Disc, root: Path = ROOT) -> Census:
     setup = archive_entries(disc.sectors(disc.slot(*SETUP_ARCHIVE)))
     census.battle_records = setup[BATTLE_RECORDS][copied] == raw["weapon"][copied]
     game = disc.data(disc.slot(*NEW_GAME))
-    slots = []
+    slots = []  # (holder, its weapons, its special slots) with a special part
     for c in range(11):
-        row = tuple(game[CHARACTERS + CHARACTER * c + ENTRY_ITEMS :][:5])
+        record = CHARACTERS + CHARACTER * c
+        row = tuple(game[record + ENTRY_ITEMS :][:5])
         if any(row):
-            slots.append((f"character {c}", row))
+            slots.append((f"character {c}", tuple(game[record + CHARACTER_WEAPONS :][:5]), row))
     for g in range(20):
-        row = tuple(game[GEARS + GEAR * g + PART_ITEMS :][:4])
+        record = GEARS + GEAR * g
+        row = tuple(game[record + PART_ITEMS :][:4])
         if any(row):
-            slots.append((f"gear {g}", row))
+            slots.append((f"gear {g}", tuple(game[record + GEAR_RECORD_WEAPONS :][:4]), row))
     census.new_game = {
-        "specialDurability": game[0x22B8 : 0x22B8 + COUNT],
-        "gearSpecialDurability": game[0x22E8 : 0x22E8 + COUNT],
+        "ammo": game[0x22B8 : 0x22B8 + COUNT],
+        "gearAmmo": game[0x22E8 : 0x22E8 + COUNT],
         "flags": struct.unpack_from("<H", game, FLAGS)[0],
         "locked": struct.unpack_from("<H", game, LOCKED)[0],
         "gearAccessoryIds[108]": game[ITEM_BASE],
@@ -268,7 +306,9 @@ def census_disc(disc: Disc, root: Path = ROOT) -> Census:
         (SHOPS, SHOP, (0, SHOP_WEAPONS), shops, "weapon list", "shop"),
         (GEAR_SHOPS, GEAR_SHOP, GEAR_PARTS, gear_shops, "gear part list", "gear shop"),
     ):
-        for shop, ids in shop_ids(archive_entry(archive, table, packed=True), size, span).items():
+        data = archive_entry(archive, table, packed=True)
+        census.shop_tables[name] = (len(data) // size, len(data))
+        for shop, ids in shop_ids(data, size, span).items():
             target = census.sources if shop in opened else census.unopened
             for item in ids:
                 if item >= FIRST:
@@ -303,24 +343,27 @@ def report(results: dict[int, Census]) -> str:
     for number, census in results.items():
         out.append(f"disc {number}")
         for name, (found, empty) in census.tables.items():
+            users = ", ".join(f"0x{mask:x}" for mask in sorted({m for m, _, _ in found.values()}))
             kinds = sorted({kind for _, kind, _ in found.values()})
-            durability = sorted({value for _, _, value in found.values()})
+            loads = sorted({value for _, _, value in found.values()})
             out.append(
-                f"  {name} table: ids {ranges(found)} kinds {kinds} durability {durability};"
-                f" ids {ranges(empty)} no kind"
+                f"  {name} table: ids {ranges(found)} users [{users}] kinds {kinds}"
+                f" load byte {loads}; ids {ranges(empty)} no kind"
             )
         out.append(
             f"  setup archive entry 0x{BATTLE_RECORDS:x} +0x320-0x61f (the battle's records"
             f" {FIRST}-{FIRST + COUNT - 1}) equals the weapon table's: {census.battle_records}"
         )
         game = census.new_game
-        for name in ("specialDurability", "gearSpecialDurability"):
+        for name in ("ammo", "gearAmmo"):
             out.append(f"  new game {name}: {dict(sorted(Counter(game[name]).items()))}")
         out.append(
             f"  new game flags 0x{game['flags']:04x}, locked 0x{game['locked']:04x},"
             f" gearAccessoryIds[108] {game['gearAccessoryIds[108]']}"
         )
-        slots = "; ".join(f"{who} {list(row)}" for who, row in game["slots"])
+        slots = "; ".join(
+            f"{who} weapons {list(weapons)} ammo {list(row)}" for who, weapons, row in game["slots"]
+        )
         out.append(f"  new game special slots: {slots}")
         for kind in ("weapon list", "gear part list"):
             ids = census.sources[kind]
@@ -334,16 +377,30 @@ def report(results: dict[int, Census]) -> str:
                 for item in sorted(unopened):
                     out.append(f"    {item}: {', '.join(sorted(unopened[item]))}")
         out.append(
-            f"  give_item variable operands: {census.variable_gives},"
-            f" unresolved {len(census.unresolved)}"
+            f"  variable operands: give_item {census.variable_gives},"
+            f" take_item {census.variable_takes}, unresolved {len(census.unresolved)}"
         )
         out += [f"    {line}" for line in census.unresolved[:8]]
+        for kind in ("weapon list", "gear part list"):
+            taken = census.taken[kind]
+            out.append(
+                f"  take_item from the {kind} (its last copy leaves id 0x{EMPTIED:x}):"
+                f" {ranges(taken)}"
+            )
+            out += [f"    {item}: {', '.join(sorted(taken[item]))}" for item in sorted(taken)]
+        tables = ", ".join(
+            f"{name}s {records} ({size} bytes)"
+            for name, (records, size) in census.shop_tables.items()
+        )
+        out.append(f"  shop tables, whole records: {tables}")
         out.append(f"  shops opened by a variable number: {census.variable_shops or 'none'}")
         out.append(f"  enemy gear special slots: {dict(census.enemy_slots)}")
         for kind, base in (("weapon list", ITEM_BASE), ("gear part list", GEAR_BASE)):
             ids = set(census.sources[kind]) | set(census.unopened[kind])
-            past = sorted(i for i in ids if i >= FIRST + COUNT)
-            listed = ", ".join(f"{i} -> {alias(base, i)}" for i in past) or "none"
+            past = [(i, "") for i in sorted(ids) if i >= FIRST + COUNT]
+            if census.taken[kind]:
+                past.append((EMPTIED, " (take_item)"))
+            listed = ", ".join(f"{i}{how} -> {alias(base, i)}" for i, how in past) or "none"
             out.append(f"  {kind} ids past {FIRST + COUNT - 1}: {listed}")
     return "\n".join(out)
 

@@ -10,10 +10,14 @@ from pathlib import Path
 from tools.analysis import events
 from tools.analysis.special_parts import (
     BATTLE_END,
+    CHARACTER_WEAPONS,
     COUNT,
+    EMPTIED,
     FIRST,
+    GAME_DATA_SIZE,
     GEAR_BASE,
     GEAR_PARTS,
+    GEAR_RECORD_WEAPONS,
     GEAR_SHOP,
     ITEM_BASE,
     LAYOUT,
@@ -27,6 +31,7 @@ from tools.analysis.special_parts import (
     Census,
     alias,
     drops,
+    in_lists,
     item_codes,
     listed,
     report,
@@ -52,14 +57,17 @@ class LayoutTests(unittest.TestCase):
         for start, _, name in LAYOUT:
             if name in offsets:
                 self.assertEqual(offsets[name], start, name)
-        for name in ("specialDurability", "gearSpecialDurability"):
+        for name in ("ammo", "gearAmmo"):
             self.assertRegex(text, rf"u8 {name}\[{COUNT}\];")
         self.assertEqual([start for start, _, _ in LAYOUT[1:]], [s + n for s, n, _ in LAYOUT[:-1]])
+        self.assertIn(f"sizeof(GameData) == 0x{GAME_DATA_SIZE:X}", text)
+        self.assertIn(f"OFFSET_OF(CharacterRecord, weapons) == 0x{CHARACTER_WEAPONS:X}", text)
+        self.assertRegex(text, rf"u8 weapons\[4\]; +/\* 0x{GEAR_RECORD_WEAPONS:02X}:")
 
     def test_the_arrays_lie_from_fifty_bytes_past_each_base(self):
         arrays = {name: start for start, _, name in LAYOUT}
-        self.assertEqual(ITEM_BASE + FIRST, arrays["specialDurability"])
-        self.assertEqual(GEAR_BASE + FIRST, arrays["gearSpecialDurability"])
+        self.assertEqual(ITEM_BASE + FIRST, arrays["ammo"])
+        self.assertEqual(GEAR_BASE + FIRST, arrays["gearAmmo"])
         self.assertEqual(GEAR_BASE, arrays["flags"])
         self.assertEqual(GEAR_BASE + FIRST + COUNT, LOCKED)
 
@@ -83,30 +91,34 @@ class LayoutTests(unittest.TestCase):
         self.assertIn(f"shop_kinds[j] = i / {SHOP_WEAPONS};", shop)
         copy = function("decomp/src/ovl2615/ovl2615.c", "void func_801E4870(void) {")
         self.assertIn(f"D_800C3DD0 + 0x{RECORDS:x}", copy)
+        take = function("decomp/src/field/field_800854D0.c", "void func_8009640C(void) {")
+        self.assertRegex(take, rf"if \(--counts\[slot\] == 0\) \{{\s+ids\[slot\] = 0x{EMPTIED:X};")
 
     def test_alias_names_what_each_index_reaches(self):
         self.assertEqual(alias(ITEM_BASE, 0), "gearAccessoryIds[108]")
-        self.assertEqual(alias(ITEM_BASE, 50), "specialDurability[0]")
-        self.assertEqual(alias(ITEM_BASE, 97), "specialDurability[47]")
-        self.assertEqual(alias(ITEM_BASE, 98), "gearSpecialDurability[0]")
+        self.assertEqual(alias(ITEM_BASE, 50), "ammo[0]")
+        self.assertEqual(alias(ITEM_BASE, 97), "ammo[47]")
+        self.assertEqual(alias(ITEM_BASE, 98), "gearAmmo[0]")
         self.assertEqual(alias(GEAR_BASE, 0), "flags byte 0")
         self.assertEqual(alias(GEAR_BASE, 1), "flags byte 1")
-        self.assertEqual(alias(GEAR_BASE, 72), "gearSpecialDurability[22]")
+        self.assertEqual(alias(GEAR_BASE, 72), "gearAmmo[22]")
         self.assertEqual(alias(GEAR_BASE, 98), "locked byte 0")
         self.assertEqual(alias(GEAR_BASE, 101), "map byte 1")
+        self.assertEqual(alias(GEAR_BASE, 0x88), "+0x233e")  # inside the game data, not in LAYOUT
+        self.assertEqual(alias(GEAR_BASE, EMPTIED), "+0x23b5, 0x8006f9e9 past the game data")
 
 
 class TableTests(unittest.TestCase):
     def test_specials_take_the_records_from_fifty_with_a_kind(self):
-        _, size, users, width, durability, kind = TABLES["weapon"]
+        _, size, users, width, load, kind = TABLES["weapon"]
         table = bytearray(size * 100)
         rows = {10: (0x10, 1, 100), 50: (0x10, 1, 100), 67: (0x10, 5, 255)}
-        for index, (mask, value, life) in rows.items():
+        for index, (mask, value, rounds) in rows.items():
             row = size * index
             table[row + users : row + users + width] = mask.to_bytes(width, "little")
-            table[row + kind], table[row + durability] = value, life
+            table[row + kind], table[row + load] = value, rounds
         table[size * 73 + users] = 0x10  # users but no kind: an empty record
-        found, empty = specials(bytes(table), size, users, width, durability, kind)
+        found, empty = specials(bytes(table), size, users, width, load, kind)
         self.assertEqual(found, {50: (0x10, 1, 100), 67: (0x10, 5, 255)})
         self.assertEqual(empty, [i for i in range(FIRST, 100) if i not in (50, 67)])
 
@@ -162,6 +174,20 @@ class FieldTests(unittest.TestCase):
         self.assertIsNone(item_codes(ins[4], writes))  # v0016 is saved, set elsewhere too
         self.assertIsNone(item_codes(ins[5], writes))  # v0512 never written
 
+    def test_take_item_resolves_as_give_item_and_names_any_id(self):
+        set_part = bytes([0x35, 0x10, 0x05]) + struct.pack("<H", 0x32B) + b"\x40"
+        take = bytes([0x8D, 0x10, 0x05, 0x8D, 0x2B, 0x81, 0x8D, 0x05, 0x80])
+        ins = self.decode(set_part + take)
+        writes = written(ins)
+        self.assertEqual([i.key for i in ins[1:4]], ["8d"] * 3)
+        self.assertEqual(item_codes(ins[1], writes), [0x32B])
+        self.assertEqual(item_codes(ins[2], writes), [0x12B])
+        self.assertEqual(
+            [in_lists(c) for c in (0x32B, 0x12B, 0x005, 0x22B)],
+            [("gear part list", 43), ("weapon list", 43), None, None],
+        )
+        self.assertIsNone(listed(0x32B))  # below FIRST: no special part
+
     def test_bit_operands_and_camera_stores_write_variables(self):
         set_local = bytes([0x35, 0x10, 0x05]) + struct.pack("<H", 0x135) + b"\x40"
         set_bit = bytes([0xFE, 0x0A]) + struct.pack("<H", 0x510 << 4 | 3)
@@ -180,20 +206,33 @@ class ReportTests(unittest.TestCase):
         census = Census(battle_records=True)
         census.tables = {"weapon": ({50: (0x10, 1, 100)}, list(range(51, 100)))}
         census.new_game = {
-            "specialDurability": bytes([100] * COUNT),
-            "gearSpecialDurability": bytes([100] * COUNT),
+            "ammo": bytes([100] * COUNT),
+            "gearAmmo": bytes([100] * COUNT),
             "flags": 0x8000,
             "locked": 0,
             "gearAccessoryIds[108]": 0,
-            "slots": [("character 4", (50, 0, 0, 57, 0))],
+            "slots": [("character 4", (31, 0, 0, 37, 0), (50, 0, 0, 57, 0))],
         }
         census.sources["gear part list"] = defaultdict(set, {55: {"gear shop 14"}})
         census.unopened["gear part list"] = defaultdict(set, {101: {"gear shop 15"}})
+        census.taken["gear part list"] = defaultdict(set, {43: {"take_item map 1 +0x10"}})
+        census.shop_tables = {"shop": (2, SHOP * 2 + 4), "gear shop": (1, GEAR_SHOP + 5)}
         text = report({1: census})
+        self.assertIn("weapon table: ids 50 users [0x10] kinds [1] load byte [100]", text)
         self.assertIn("gear part list, ids only in tables no immediate opens: 101", text)
-        self.assertIn("gear part list ids past 97: 101 -> map byte 1", text)
+        self.assertIn(
+            "gear part list ids past 97: 101 -> map byte 1,"
+            " 255 (take_item) -> +0x23b5, 0x8006f9e9 past the game data",
+            text,
+        )
         self.assertIn("weapon list ids past 97: none", text)
+        self.assertIn("take_item from the gear part list (its last copy leaves id 0xff): 43", text)
+        self.assertIn("    43: take_item map 1 +0x10", text)
+        self.assertIn("take_item from the weapon list (its last copy leaves id 0xff): none", text)
+        tables = "shop tables, whole records: shops 2 (188 bytes), gear shops 1 (105 bytes)"
+        self.assertIn(tables, text)
         self.assertIn("new game flags 0x8000, locked 0x0000, gearAccessoryIds[108] 0", text)
+        self.assertIn("character 4 weapons [31, 0, 0, 37, 0] ammo [50, 0, 0, 57, 0]", text)
 
 
 if __name__ == "__main__":
