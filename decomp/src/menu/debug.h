@@ -30,4 +30,6 @@ extern s32 D_800928F8; /* recorded path points */
  * func_80087E38 records up to 31, the last over the heap that follows. */
 extern PathMarker D_8009A928[30];
 
+void func_80088308(void);
+
 #endif
