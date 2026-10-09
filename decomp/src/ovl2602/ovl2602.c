@@ -2,12 +2,40 @@
  * ovl2602 (Disc 1 slot 2602, Disc 2 slot 2597; loaded at 801c5000): the Gear
  * parts shop. Its entry (801ce024) sets up the same shop screen as ovl2601
  * (sell lists, buying with prices and gold, yes/no prompts) and adds the
- * Gear side: the gear records at 8006dfac and their part tables, a 3D model
+ * Gear side: the game data's gear records and their part tables, a 3D model
  * of the chosen Gear drawn through code at 801e7xxx outside this overlay
  * with a second 400h-entry ordering table, the member switch and the gear
- * screen block at menu state +454. Functions shared with ovl2601 are recovered from the
- * same source; the ones that differ keep their own versions here.
+ * screen block (menu state gear_screen). Functions shared with ovl2601 are
+ * recovered from the same source; the ones that differ keep their own
+ * versions here.
+ *
+ * This unit, the screen code and the entry, is the image's first: rodata
+ * 801c5000-801c5038, text 801c511c-801ce1d0, data 801d697c-801d6d08 and its
+ * variables 801d7108-801d904c. gear_shop.c follows; its head gives the
+ * boundary evidence.
  */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "menu/card.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
+#include "menu/shop.h"
+#include "menu/tables.h"
 #include "gear_shop.h"
 
 const CardPrefix D_801C5000 = {"BISLPS-00800"};

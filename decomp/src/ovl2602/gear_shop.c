@@ -1,9 +1,24 @@
 /*
- * Gear screen and shop code (801ce1d0 onwards): the model and parts panel,
- * member switching, stock and sale lists, fitting and refuelling. These
- * callers pass quad coordinates as words, while the shared screen unit's
- * local calls see the helper's narrow definition.
+ * Gear screen and shop code: the model and parts panel, member switching,
+ * stock and sale lists, fitting and refuelling. Rodata 801c5038-801c511c,
+ * text 801ce1d0-801d697c, data 801d6d08-801d7108 and its variable at
+ * 801d904c, before the commons. A separate translation unit from the
+ * screen code: these callers pass quad coordinates as words, while the
+ * shared screen unit's local calls see the helper's narrow definition.
  */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/model.h"
+#include "resident/text.h"
+#include "menu/screen.h"
+#include "menu/shop.h"
+#include "menu/tables.h"
 #include "gear_shop.h"
 
 /* Headings: two sets of four sprites and the two alternative ones, with
