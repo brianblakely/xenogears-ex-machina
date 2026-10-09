@@ -108,7 +108,7 @@ typedef struct MenuSlotImage {
     DR_MODE boxMode[2]; /* 140 */
 } MenuSlotImage;
 
-/* The disc label read from sector 0 of the data track (file 17). */
+/* The disc label: the first 16 bytes of sector 0x17 (func_801E93A0). */
 typedef struct DiscLabel {
     u8 unk0[3];
     u8 disc; /* 3: '1' or '2' */

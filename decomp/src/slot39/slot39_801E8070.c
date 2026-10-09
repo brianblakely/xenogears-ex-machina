@@ -373,7 +373,8 @@ void func_801E9340(char *name, void *buffer, s32 size) {
 
 /* Check that disc `disc` is in the drive and load its directory: from the
  * host files on the development link, else after waiting for the lid to
- * close and the drive to settle, from the disc label and files 18 and 28.
+ * close and the drive to settle, from sectors 0x18 and 0x28 once the disc
+ * label (sector 0x17) names this disc.
  * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
  * disc. */
 s32 func_801E93A0(s32 disc) {

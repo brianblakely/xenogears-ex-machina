@@ -1,13 +1,13 @@
 /* Panoramic backdrops, texture scrolls, disc access and streams
  * (8002709c-8002c3e8), GCC 2.6.3 with inline division checks (80027d64,
  * 80027eac, 80028808 and 80029afc match only so, 8002bb50 only under
- * 2.6.3): the backdrops and scrolls, the disc error indicator, disc start-up,
- * directories and file sizes, the shared sector ring, file, list and stream
- * reads with their CD command and data callbacks (and the PC file server's),
- * and the image stream steps. Its code from 8002a260 on has no division, but
- * it reads the same statics as the code before it, so the unit runs to the
- * model unit (main_8002C3E8.c), whose jump table phase starts a unit after
- * 8002c310. Its .data (0x8004fde0) is the disc and stream state. */
+ * 2.6.3): the backdrops and scrolls, the PC file server's retry screen, disc
+ * start-up, directories and file sizes, the shared sector ring, file, list
+ * and stream reads with their CD command and data callbacks (and the PC file
+ * server's), and the image stream steps. Its code from 8002a260 on has no
+ * division, but it reads the same statics as the code before it, so the unit
+ * runs to the model unit (main_8002C3E8.c), whose jump table phase starts a
+ * unit after 8002c310. Its .data (0x8004fde0) is the disc and stream state. */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libcd.h"
@@ -378,7 +378,10 @@ void func_8002800C(TextureScroll *scroll) {
     }
 }
 
-/* Disc error indicator: draw a coloured bar for retry `level`; from the fourth, switch to a text screen showing the failing file forever. */
+/* The PC file server's retry and error screen; only the host-file paths call
+ * it. Draw a coloured bar for retry `level` (red after a failed open, green
+ * after a read, blue after a close); from the fourth, switch to a text screen
+ * showing the failing file forever. */
 void func_8002804C(s32 level, s32 r, s32 g, s32 b) {
     RECT rect;
     struct {

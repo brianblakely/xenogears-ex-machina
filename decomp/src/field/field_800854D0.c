@@ -5153,7 +5153,8 @@ void func_80093A04(void) {
     D_800B0078->pc += 3;
 }
 
-/* Clear the camera hold flag (0x8000). */
+/* Clear the camera hold flag (0x8000, which stops 800726e8's shoulder-button
+ * turns). */
 void func_80093A68(void) {
     D_800AF880.flags &= 0x7FFF;
     D_800B0078->pc += 1;
@@ -5166,7 +5167,9 @@ void func_80093A98(void) {
 }
 
 /* Release script control: clear the encounter inhibition, both control
- * bytes and the camera hold flags. */
+ * bytes and the camera's hold (0x8000) and eye unclamp (0x4000) flags; with
+ * 0x4000 clear the follow camera (80073230) keeps its eye goal from sinking
+ * below the floor of the last collision layer. */
 void func_80093AC8(void) {
     D_800B2078.encounter_inhibition = 0;
     D_800B2078.script_control[0] = 0;
@@ -5175,8 +5178,8 @@ void func_80093AC8(void) {
     D_800B0078->pc += 1;
 }
 
-/* Take script control (both control bytes, camera hold flags); re-runs
- * while the field is not ready. */
+/* Take script control (both control bytes, the camera's hold and eye unclamp
+ * flags); re-runs while the field is not ready. */
 void func_80093B10(void) {
     D_800B2078.encounter_inhibition = -1;
     D_800B2078.script_control[0] = 1;

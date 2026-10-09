@@ -38,7 +38,12 @@ extern s32 D_8004FE18;      /* second directory selection */
 extern s32 D_8004FE1C;      /* CD command state (8002a68c) */
 extern s32 D_8004FE20;      /* retry reason of the failed command */
 extern s32 D_8004FE34;
-extern s32 D_8004FE38;      /* read mode */
+/* The current read's mode (the read calls' mode argument, or a stop's
+ * reason): when the read ends or stops, 8002a394 seeks to that file, or
+ * pauses for 0, as nearly every caller passes (the movie mode's read check
+ * passes 1, the movie library its XA channel); the XA filter takes its low
+ * byte as the channel (8002a68c). */
+extern s32 D_8004FE38;
 extern s32 D_8004FE3C;
 extern u8 D_8004FE44;
 extern u8 D_8004FE45;
