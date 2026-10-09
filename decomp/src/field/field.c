@@ -3294,7 +3294,7 @@ void func_80078D44(void) {
         MoveImage(&rect, 0x200, 0);
     }
     if (D_8004F304 != 0) {
-        func_80039C4C((SoundTrack *)D_80062528);
+        func_80039C4C((SoundSeq *)D_80062528);
         func_800399D4((SoundSeq *)D_80062528);
         func_80038310(D_8006258C);
         D_8004F304 = 0;

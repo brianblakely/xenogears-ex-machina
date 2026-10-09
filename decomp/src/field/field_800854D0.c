@@ -379,7 +379,7 @@ s32 func_80085C90(s32 music) {
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {
     if (D_8004F2FC != 0) {
-        func_80039C4C((SoundTrack *)D_8004F2FC);
+        func_80039C4C((SoundSeq *)D_8004F2FC);
         func_800399D4((SoundSeq *)D_8004F2FC);
         D_8004F2FC = 0;
     }

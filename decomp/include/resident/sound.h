@@ -77,13 +77,6 @@ typedef struct SoundBank {
     u16 effect[1];     /* data offsets of each effect's two channels */
 } SoundBank;
 
-/* A sound track (list through `next`); flag 1 marks it paused. */
-typedef struct SoundTrack {
-    struct SoundTrack *next;
-    u8 unk4[0xC];
-    u16 flags;
-} SoundTrack;
-
 /* The effect id of a channel: bank id in the high half, effect in the low. */
 typedef union {
     s32 full;
@@ -401,7 +394,7 @@ SoundSeq *func_80039850(SoundSeqHeader *header);
 SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq);
 void func_800399D4(SoundSeq *seq);  /* release a sequence */
 void func_80039A80(SoundSeq *seq, s32 fade, s32 frames); /* play from the start */
-void func_80039C4C(SoundTrack *track); /* resume a track */
+void func_80039C4C(SoundSeq *seq);  /* stop a sequence */
 void func_80039CC4(void);
 void func_80039FF8(void);
 u32 func_8003A65C(s32 id, s32 width);

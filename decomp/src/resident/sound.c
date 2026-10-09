@@ -1818,7 +1818,7 @@ s32 func_8003C020(void) {
             if (seq->voices != 0) {
                 seq->unk24++;
                 if (seq->fade.value == 0) {
-                    func_80039C4C((SoundTrack *)seq);
+                    func_80039C4C(seq);
                     seq->flags |= 0x100;
                 }
                 if (seq->unk32 == seq->unk1E) {

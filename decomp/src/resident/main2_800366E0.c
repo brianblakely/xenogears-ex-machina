@@ -1900,7 +1900,7 @@ SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq) {
 /* Stop and release a sequence (its memory unless the caller provided it). */
 void func_800399D4(SoundSeq *seq) {
     if ((s16)seq->flags & 0x8000) {
-        func_80039C4C((SoundTrack *)seq);
+        func_80039C4C(seq);
     }
     if (func_8003F67C(seq->header) != 0) {
         func_8003F6B0(0xA);
@@ -1928,7 +1928,7 @@ void func_80039A80(SoundSeq *seq, s32 fade, s32 frames) {
         return;
     }
     if ((s16)seq->flags & 0x8000) {
-        func_80039C4C((SoundTrack *)seq);
+        func_80039C4C(seq);
     }
     DisableEvent(D_800595BC);
     func_8003B22C(seq);
@@ -1970,14 +1970,15 @@ void func_80039B68(SoundSeq *seq, s32 fade, s32 frames) {
     func_8003A89C(seq, fade, frames);
 }
 
-/* Resume a track (error 5 without one). */
-void func_80039C4C(SoundTrack *track) {
-    if (track == NULL) {
+/* Stop a sequence: clear its playing flag and release its channels' voices
+ * (error 5 without one). */
+void func_80039C4C(SoundSeq *seq) {
+    if (seq == NULL) {
         func_8003F6B0(5);
         return;
     }
-    track->flags &= 0x7FFF;
-    func_8003B060((SoundSeq *)track);
+    seq->flags &= 0x7FFF;
+    func_8003B060(seq);
 }
 
 /* Fade a sequence out over `c` frames (error 5 without one). */

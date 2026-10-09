@@ -767,7 +767,7 @@ void func_80071DA4(Actor *actor) {
 s32 func_80071F8C(s32 command) {
     switch (command) {
     case 0:
-        func_80039C4C((SoundTrack *)D_80092948);
+        func_80039C4C(D_80092948);
         func_80039FF8();
         break;
     case 1:

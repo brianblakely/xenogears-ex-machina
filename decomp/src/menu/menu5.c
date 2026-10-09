@@ -1220,7 +1220,7 @@ void func_8008518C(FileRequest *resource, s32 arg) {
 void func_800851D4(void) {
     func_8003852C(D_800927C4);
     if (D_800917F0 != 0) {
-        func_80039C4C((SoundTrack *)D_80092948);
+        func_80039C4C(D_80092948);
         func_800399D4(D_80092948);
     }
     func_80088A40();
