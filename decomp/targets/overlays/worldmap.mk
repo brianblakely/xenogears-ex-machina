@@ -9,7 +9,7 @@ BSS_END := 0x8009D810
 BUILD := .local/decomp/build/worldmap
 IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
-LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt decomp/targets/overlays/worldmap.data.ld
+LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt decomp/targets/overlays/worldmap.resident.ld decomp/targets/overlays/worldmap.data.ld
 # worldmap.data.ld names the shared read list's first destination member
 # D_8009D3FC, from which two loaders pass the list (WORLD_READ_LIST): formed
 # from D_8009D3F8 itself, the constant lets cse store the list's first entry

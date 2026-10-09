@@ -78,7 +78,6 @@ typedef struct PolyG4 {
 
 extern PolyG4 D_8009D194[4][2]; /* sky gradient bands, per buffer */
 
-extern WorldmapReturn D_8006EE54;
 /* Halfword view of the three saved gear flags in that same return state. */
 extern u16 D_8006EE70, D_8006EE72, D_8006EE74;
 extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
@@ -1489,8 +1488,8 @@ extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
 extern u16 D_8009B6F4[64];       /* 32 map dot positions: interleaved X/Z */
 
 /* Resident words of the world state relative to D_8006EE54. */
-#define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006EE54 + (offset)))
-#define STATE_U32(offset) (*(u32 *)((u8 *)&D_8006EE54 + (offset)))
+#define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006D634.worldmap + (offset)))
+#define STATE_U32(offset) (*(u32 *)((u8 *)&D_8006D634.worldmap + (offset)))
 
 /* Scratchpad work area of the map overlay. */
 typedef struct {

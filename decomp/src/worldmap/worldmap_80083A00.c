@@ -1704,9 +1704,9 @@ s32 func_80087FD0(s32 index) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
-        scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
-        scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
-        scratch->work.vy = (s16)D_8006EE54.unk62;
+        scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
         func_80093534(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
@@ -1809,9 +1809,9 @@ s32 func_80088720(s32 index) {
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
-    scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
-    scratch->work.vy = (s16)D_8006EE54.unk62;
+    scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
     func_80093534(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
@@ -2496,9 +2496,9 @@ s32 func_8008A2C8(s32 index) {
         point->heading = actor->heading;
         point++;
     } while (i < 0x20);
-    D_8006EE54.x = actor->position.vx >> 12;
-    D_8006EE54.z = actor->position.vz >> 12;
-    D_8006EE54.heading = actor->heading;
+    D_8006D634.worldmap.x = actor->position.vx >> 12;
+    D_8006D634.worldmap.z = actor->position.vz >> 12;
+    D_8006D634.worldmap.heading = actor->heading;
     return 1;
 }
 
@@ -2527,12 +2527,12 @@ s32 func_8008A5B8(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     i = 0;
     point = D_8009CEC4;
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->motion.vz = 0;
@@ -2761,7 +2761,7 @@ s32 func_8008A72C(s32 index) {
         scratch->start.vx = D_8006EF8E[0].x << 12;
         scratch->start.vz = D_8006EF8E[0].z << 12;
         scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
-        scratch->heading = D_8006EE54.unk5A;
+        scratch->heading = D_8006D634.worldmap.unk5A;
         value = 0x1F;
         do {
             point->position = scratch->start;
@@ -2774,7 +2774,7 @@ s32 func_8008A72C(s32 index) {
         actor->position.vx = D_8006EF8E[0].x << 12;
         actor->position.vz = D_8006EF8E[0].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = D_8006EE54.unk5A;
+        heading = D_8006D634.worldmap.unk5A;
         actor->unk5C = heading;
         actor->heading = heading;
         scratch->target.vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
@@ -2846,9 +2846,9 @@ s32 func_8008A72C(s32 index) {
     case 0x40:
         break;
     }
-    D_8006EE54.x = actor->position.vx >> 12;
-    D_8006EE54.z = actor->position.vz >> 12;
-    D_8006EE54.heading = actor->heading;
+    D_8006D634.worldmap.x = actor->position.vx >> 12;
+    D_8006D634.worldmap.z = actor->position.vz >> 12;
+    D_8006D634.worldmap.heading = actor->heading;
     if (actor->unk24 == 0) {
         func_80074794(0, &actor->position);
     }
@@ -2873,13 +2873,13 @@ s32 func_8008B2BC(s32 index) {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.heading;
+    actor->heading = D_8006D634.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
@@ -2952,10 +2952,10 @@ s32 func_8008B54C(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;
@@ -3126,13 +3126,13 @@ s32 func_8008BB40(s32 index) {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.heading;
+    actor->heading = D_8006D634.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0x1E;
     actor->unk5C = actor->heading;
@@ -3205,10 +3205,10 @@ s32 func_8008BDD0(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006EE54.x << 12;
-    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vx = D_8006D634.worldmap.x << 12;
+    actor->position.vz = D_8006D634.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006EE54.heading;
+    heading = D_8006D634.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;

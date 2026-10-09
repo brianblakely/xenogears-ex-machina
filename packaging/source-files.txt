@@ -492,6 +492,7 @@ decomp/targets/overlays/slot39.yaml
 decomp/targets/overlays/worldmap.classification.txt
 decomp/targets/overlays/worldmap.data.ld
 decomp/targets/overlays/worldmap.mk
+decomp/targets/overlays/worldmap.resident.ld
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
 decomp/targets/resident/classification.txt

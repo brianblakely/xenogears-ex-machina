@@ -257,7 +257,7 @@ void func_80072238(void) {
         D_8004F2FC = 0;
         D_80062528 = (s32)seq;
     }
-    if ((u16)D_8006EE54.unk6A != 0) {
+    if ((u16)D_8006D634.worldmap.unk6A != 0) {
         func_80073398();
     } else if (D_8009C894 == 0) {
         func_80073448(D_8009D3D4);
@@ -561,8 +561,8 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
 /* Choose the movement mode from the saved state: a vehicle kind, or on foot
  * (1 when no party flag is set, else 2). */
 void func_80073300(void) {
-    if (D_8006EE54.flags & 0x4000) {
-        switch (D_8006EE54.flags & 0x1FFF) {
+    if (D_8006D634.worldmap.flags & 0x4000) {
+        switch (D_8006D634.worldmap.flags & 0x1FFF) {
         case 0:
             break;
         case 1:
@@ -587,19 +587,19 @@ void func_80073300(void) {
 
 /* Restore the player position and heading for the current movement mode. */
 void func_80073398(void) {
-    D_8006EE54.unk6A = 0;
+    D_8006D634.worldmap.unk6A = 0;
     switch (D_8009BE10) {
     case 1:
     case 2:
-        D_8009C5AC.vx = D_8006EE54.x << 12;
-        D_8009C5AC.vz = D_8006EE54.z << 12;
-        D_8009C584 = D_8006EE54.heading;
+        D_8009C5AC.vx = D_8006D634.worldmap.x << 12;
+        D_8009C5AC.vz = D_8006D634.worldmap.z << 12;
+        D_8009C584 = D_8006D634.worldmap.heading;
         break;
     case 4:
     case 5:
     case 7:
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006EE54.vehicle_heading;
+        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
         break;
     }
 }
@@ -610,10 +610,10 @@ void func_80073448(s32 id) {
     s32 unused; /* unreferenced; the original frame reserves it */
     WorldmapSpot *spot;
 
-    if (D_8006EE54.flags & 0x2000) {
-        D_8006EE54.flags &= ~0x2000;
+    if (D_8006D634.worldmap.flags & 0x2000) {
+        D_8006D634.worldmap.flags &= ~0x2000;
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006EE54.vehicle_heading;
+        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
         return;
     }
     for (spot = D_8009D3F4; spot->id != -1; spot++) {
@@ -1162,7 +1162,7 @@ void func_80075228(void) {
         D_8009C854[i] = 0;
     }
     D_8009D64C = 1;
-    if (D_8006EE54.flags & 0x4000) {
+    if (D_8006D634.worldmap.flags & 0x4000) {
         D_8009BE40 = 0x300;
     } else {
         D_8009BE40 = 0x180;
@@ -1264,10 +1264,10 @@ void func_800758C0(void) {
     void *block;
     s32 i;
 
-    D_8006EE54.unk6A = 1;
+    D_8006D634.worldmap.unk6A = 1;
     D_8006F94E.heading = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
-        (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+        (&D_8006D634.worldmap.unk70)[i] = (&D_8006F8E5)[i];
     }
     D_8009D14C = D_80059179;
     if (func_80093F18(&D_8009D55C.target) == 4) {
@@ -1366,7 +1366,7 @@ void func_80075B58(void) {
     VSync(0);
     func_80035DB0();
     D_8009D804 = 0;
-    D_8006EE54.unk6A = 0;
+    D_8006D634.worldmap.unk6A = 0;
     D_80059179 = D_8009D14C;
     func_80075D4C();
 }
@@ -1383,7 +1383,7 @@ void func_80075D4C(void) {
 
     i = 0;
     actors = D_8009BE24;
-    applied = (u8 *)&D_8006EE54.unk70;
+    applied = (u8 *)&D_8006D634.worldmap.unk70;
     timers = (s16 *)(applied + 0x11E);
     do {
         state = (&D_8006F8E5)[i];
@@ -1410,7 +1410,7 @@ void func_80075D4C(void) {
             count++;
         }
     }
-    if (!(D_8006EE54.flags & 0x4000)) {
+    if (!(D_8006D634.worldmap.flags & 0x4000)) {
         D_8009BE10 = count != 0 ? 2 : 1;
     }
 }

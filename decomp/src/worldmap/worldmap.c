@@ -25,15 +25,15 @@ void func_80070CFC(void) {
         D_8006F94E.area = 0xFFF;
         D_8006F94E.heading = 0xC00;
         D_8006F954[0] = 1;
-        D_8006EE54.flags = 0x4003;
-        D_8006EE54.unk6A = 1;
-        D_8006EE54.unk60 = 0x6680;
-        D_8006EE54.unk62 = 0xFF00;
-        D_8006EE54.unk64 = 0x2A00;
+        D_8006D634.worldmap.flags = 0x4003;
+        D_8006D634.worldmap.unk6A = 1;
+        D_8006D634.worldmap.unk60 = 0x6680;
+        D_8006D634.worldmap.unk62 = 0xFF00;
+        D_8006D634.worldmap.unk64 = 0x2A00;
         D_8006EE66 = 0;
-        D_8006EE54.x = 0x7580;
-        D_8006EE54.z = 0x2C00;
-        D_8006EE54.heading = 0;
+        D_8006D634.worldmap.x = 0x7580;
+        D_8006D634.worldmap.z = 0x2C00;
+        D_8006D634.worldmap.heading = 0;
         D_8006F368[1] = 0xA;
         D_8006F368[2] = 5;
         D_8006F368[0] = 0;
@@ -117,7 +117,7 @@ void func_80070CFC(void) {
         func_8001996C(2);
         D_800594F8 = 0;
         for (i = 0; i < 3; i++) {
-            (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+            (&D_8006D634.worldmap.unk70)[i] = (&D_8006F8E5)[i];
         }
         func_80039CC4();
         data = D_8009C614;
@@ -258,7 +258,7 @@ void func_800712D0(void) {
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    D_8006EE54.flags |= 0x2000;
+                    D_8006D634.worldmap.flags |= 0x2000;
                 }
             }
         } else {
@@ -316,7 +316,7 @@ s32 func_80071A58(void) {
     func_80073B04();
     func_800737EC();
     func_80086798();
-    if (D_8006EE54.unk76 == 0) {
+    if (D_8006D634.worldmap.unk76 == 0) {
         func_800740B8();
     }
     return 1;

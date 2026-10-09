@@ -36,7 +36,7 @@ s32 func_8008E190(s32 index) {
     actor->unk6C = 0;
     actor->heading = D_8006EE66;
     scratch = (ActorScratch *)0x1F800000;
-    switch (D_8006EE54.flags & 0x1FFF) {
+    switch (D_8006D634.worldmap.flags & 0x1FFF) {
     case 0:
         result = 3;
         break;
@@ -91,7 +91,7 @@ s32 func_8008E190(s32 index) {
     func_8004A92C(&scratch->position, &D_8009C620[0].matrix);
     func_8004A92C(&scratch->position, &D_8009C620[1].matrix);
     func_8008E034(&actor->position);
-    D_8006EE54.vehicle_heading = actor->heading;
+    D_8006D634.worldmap.vehicle_heading = actor->heading;
     switch (D_8009C5A8) {
     case 2:
         actor->state = 0x24;
@@ -125,7 +125,7 @@ s32 func_8008E4F4(s32 index) {
     D_8009C620[0].position = actor->position;
     result = 1;
     D_8009C620[0].visible = actor->unk24;
-    if (!(D_8006EE54.flags & 0x1FFF)) {
+    if (!(D_8006D634.worldmap.flags & 0x1FFF)) {
         result = 3;
     }
     switch (D_8009BE10) {
@@ -166,7 +166,7 @@ s32 func_8008E680(s32 index) {
     actor = &D_8009BE24[index];
     func_8008DFF4(&actor->position);
     actor->position.vy = 0x80000;
-    actor->heading = D_8006EE54.vehicle_heading;
+    actor->heading = D_8006D634.worldmap.vehicle_heading;
     actor->turn = 0x20;
     actor->unk74 = 3;
     actor->unk68 = -0x280000;
@@ -269,8 +269,8 @@ s32 func_8008E76C(s32 index) {
         if (D_8009C170 == ++actor->unk74) {
             func_80097770(8, 9);
             VEHICLE_CAMERA();
-            D_8006EE54.flags |= 0x4000;
-            kind = D_8006EE54.flags & 0x1FFF;
+            D_8006D634.worldmap.flags |= 0x4000;
+            kind = D_8006D634.worldmap.flags & 0x1FFF;
             switch (kind) {
             case 1:
                 actor->state = 0xC;
@@ -878,7 +878,7 @@ s32 func_8008E76C(s32 index) {
     D_8009C620[0].position.vy = D_8009C620[1].position.vy = actor->position.vy >> 12;
     D_8009C620[0].position.vz = D_8009C620[1].position.vz = actor->position.vz >> 12;
     func_8008E034(&actor->position);
-    D_8006EE54.vehicle_heading = actor->heading;
+    D_8006D634.worldmap.vehicle_heading = actor->heading;
     switch (actor->state) {
     case 2:
     case 8:

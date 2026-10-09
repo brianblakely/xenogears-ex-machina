@@ -71,7 +71,7 @@ s32 func_8008C530(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5A;
+    actor->heading = D_8006D634.worldmap.unk5A;
     actor->turn = 0xC;
     actor->unk5C = actor->heading;
     switch (D_8009BE10) {
@@ -98,7 +98,7 @@ s32 func_8008C530(s32 index) {
     }
     D_8006EF8E[0].x = actor->position.vx >> 12;
     D_8006EF8E[0].z = actor->position.vz >> 12;
-    D_8006EE54.unk5A = actor->heading;
+    D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
 
@@ -434,7 +434,7 @@ s32 func_8008C844(s32 index) {
     }
     D_8006EF8E[0].x = actor->position.vx >> 12;
     D_8006EF8E[0].z = actor->position.vz >> 12;
-    D_8006EE54.unk5A = actor->heading;
+    D_8006D634.worldmap.unk5A = actor->heading;
     return result;
 }
 
@@ -450,7 +450,7 @@ s32 func_8008D3F0(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5C;
+    actor->heading = D_8006D634.worldmap.unk5C;
     actor->turn = 0xC;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
@@ -470,7 +470,7 @@ s32 func_8008D3F0(s32 index) {
     }
     D_8006EF8E[1].x = actor->position.vx >> 12;
     D_8006EF8E[1].z = actor->position.vz >> 12;
-    D_8006EE54.unk5C = actor->heading;
+    D_8006D634.worldmap.unk5C = actor->heading;
     return result;
 }
 
@@ -725,7 +725,7 @@ s32 func_8008DD6C(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006EE54.unk5E;
+    actor->heading = D_8006D634.worldmap.unk5E;
     actor->turn = 0xC;
     actor->unk58 = 0x1F;
     actor->unk5C = actor->heading;
@@ -745,7 +745,7 @@ s32 func_8008DD6C(s32 index) {
     }
     D_8006EF8E[2].x = actor->position.vx >> 12;
     D_8006EF8E[2].z = actor->position.vz >> 12;
-    D_8006EE54.unk5E = actor->heading;
+    D_8006D634.worldmap.unk5E = actor->heading;
     return result;
 }
 
@@ -794,16 +794,16 @@ s32 func_8008DF0C(s32 index) {
 
 /* Restore the saved vehicle position (world units to 20.12). */
 void func_8008DFF4(VECTOR *position) {
-    position->vx = (s16)D_8006EE54.unk60 << 12;
-    position->vy = (s16)D_8006EE54.unk62 << 12;
-    position->vz = (s16)D_8006EE54.unk64 << 12;
+    position->vx = (s16)D_8006D634.worldmap.unk60 << 12;
+    position->vy = (s16)D_8006D634.worldmap.unk62 << 12;
+    position->vz = (s16)D_8006D634.worldmap.unk64 << 12;
 }
 
 /* Save the vehicle position in world units. */
 void func_8008E034(VECTOR *position) {
-    D_8006EE54.unk60 = position->vx >> 12;
-    D_8006EE54.unk62 = position->vy >> 12;
-    D_8006EE54.unk64 = position->vz >> 12;
+    D_8006D634.worldmap.unk60 = position->vx >> 12;
+    D_8006D634.worldmap.unk62 = position->vy >> 12;
+    D_8006D634.worldmap.unk64 = position->vz >> 12;
 }
 
 /* Select the path table of scenes 15 and 16. The link is read unsigned here
