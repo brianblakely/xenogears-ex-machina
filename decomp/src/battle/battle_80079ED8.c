@@ -18,7 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
-#include "area.h"
+#include "battle/area.h"
 
 /* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
  * `read` is 0, else return it. */
@@ -2380,17 +2380,17 @@ void func_80080160(u8 member) {
     }
     if (D_800D2D24[member] == 4) {
         if (D_800D32A0[member].unk1 == 0) {
-            if (D_8006F8BA[D_8006D634.characters[4].entryItems[0]] == 0) {
+            if (D_8006D634.specialDurability[D_8006D634.characters[4].entryItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006F8BA[D_8006D634.characters[4].entryItems[3]] == 0) {
+            if (D_8006D634.specialDurability[D_8006D634.characters[4].entryItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         } else {
-            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0]] == 0) {
+            if (D_8006D634.gearSpecialDurability[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]] == 0) {
+            if (D_8006D634.gearSpecialDurability[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         }

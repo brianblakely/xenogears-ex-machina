@@ -135,10 +135,10 @@ s32 D_800595DC;
 s32 D_800595E0;
 u32 D_800595E4; /* end of the sound driver's pool */
 
-#include "../menu.h"
-#include "../mode.h"
-#include "../model.h"
-#include "../pad.h"
-#include "../sound.h"
-#include "../sprite.h"
-#include "../text.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"

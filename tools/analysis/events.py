@@ -545,10 +545,12 @@ b5 turn_camera_octant func_8009B8E4 5 wait iv@1 iv@3
     turn the camera to octant operand 1 over operand-3 frames once idle
 b6 blend_camera_projection func_8009B6AC 5 next iv@1 iv@3
     blend the camera projection to operand 1 over operand-3 frames
-b7 set_camera_flag_4000 func_8009ADDC 1 next
-    set camera flag 0x4000
-b8 clear_camera_flag_4000 func_8009AE0C 1 next
-    clear camera flag 0x4000
+b7 unclamp_camera_eye func_8009ADDC 1 next
+    set camera flag 0x4000: the follow camera (80073230) stops keeping its eye
+    goal from sinking below the floor of the last collision layer under it
+b8 clamp_camera_eye func_8009AE0C 1 next
+    clear camera flag 0x4000, so the follow camera keeps its eye goal no lower
+    than that floor again
 b9 branch_unless_game_flag func_80096534 4 branch u8@1 addr@2
     continue when game flag bit byte 1 (+1d30) is set, else jump to operand 2
 ba set_game_flag func_800965A8 2 next u8@1
@@ -723,12 +725,16 @@ _EXTENDED = """
     continue when the selected actor is on layer operand 2, else jump
 06 branch_unless_on_attribute func_80095D6C 6 branch actor@1 iv@2 addr@4
     continue when the selected actor's floor has attribute operand 2, else jump
-07 set_layer_flag_400 func_8008D604 2 next u8@1
-    clear (0) or set (1) layer flag 0x400
+07 set_offscreen_update func_8008D604 2 next u8@1
+    clear (0) or set (1) layer flag 0x400: with it an actor whose sprite
+    projects off screen (layer flag 0x200, 80075b44) still moves (8008110c),
+    turns (800739c0) and animates (800752c8)
 08 set_scale_xyz func_8008D180 7 next iv@1 iv@3 iv@5
     scale the running actor by operands 1, 3, 5
-09 set_layer_flag_800 func_8008D078 3 next iv@1
-    clear (operand 1 zero) or set layer flag 0x800
+09 set_shadow_hidden func_8008D078 3 next iv@1
+    clear (operand 1 zero) or set layer flag 0x800, which actors start with
+    (80080a74): with it 800764b4 draws no drop shadow, and an 801e layer
+    actor's object gets +4a bit 0, which skips its shadow (ovl2143 801dcec8)
 0a set_variable_bit func_8008D684 3 next bit@1
     set variable bit operand 1
 0b clear_variable_bit func_8008D700 3 next bit@1
@@ -870,8 +876,10 @@ _EXTENDED = """
 45 set_idle_animation func_8009A0FC 2 next u8@1
     set the running actor's idle animation (+e6, which walks end with)
     to byte 1
-46 set_layer_flag_20000 func_8008AE5C 2 next u8@1
-    set (byte 1 zero) or clear layer flag 0x20000
+46 set_layer_driven func_8008AE5C 2 next u8@1
+    set (byte 1 zero) or clear layer flag 0x20000: with it an 801e layer actor
+    (layer flag 0x2000) moves by its layer object's speed (80081f80, 80082620)
+    and takes its facing from the layer model instead of turning it (80075b44)
 47 set_layer_turn_step func_8008B144 3 next iv@1
     set the turn step of layer-flag-0x2000 actors (800b21b4)
 48 set_orbit_angles func_8008B518 8 next sel@1:7/80 sel@3:7/40 sel@5:7/20 flags@7
@@ -897,9 +905,11 @@ _EXTENDED = """
 52 set_script_control1 func_80093C20 1 next
     set script control byte 1
 53 release_script_control func_80093AC8 1 next
-    clear the encounter inhibition, both control bytes and the camera holds
+    clear the encounter inhibition, both control bytes and camera flags 0x8000
+    (77) and 0x4000 (b7)
 54 take_script_control func_80093B10 1 wait
-    set the inhibition, both control bytes and the camera holds once ready
+    set the inhibition, both control bytes and camera flags 0x8000 and 0x4000
+    once ready
 55 open_menu0 func_80093740 1 next
     request menu kind 0 with parameter 800b236c; yields
 56 open_menu1 func_80093930 3 next iv@1
@@ -1075,8 +1085,10 @@ _EXTENDED = """
     request screen transition 3 over operand-1 frames
 9e set_clip func_8008EFE4 9 next iv@1 iv@3 iv@5 iv@7
     set both draw buffers' clip areas
-9f set_character_2318_bit func_800883D4 4 next u8@1 iv@2
-    set (byte 1 zero) or clear character operand 2's bit of +2318
+9f set_party_lock func_800883D4 4 next u8@1 iv@2
+    lock (byte 1 zero) or unlock character operand 2 (fd-ff party slots) in
+    the game's +2318: the party menu does not exchange a locked member (ovl2598
+    801cab48)
 a0 play_movie_sound func_8008EA58 12 wait sel@1:11/80 sel@3:11/40 sel@5:11/20 sel@7:11/10 \
         sel@9:11/08 flags@11
     while 800adbdc is set request movie operand 1 with sound bank operand
@@ -1164,10 +1176,11 @@ c1 store_member_animation func_80088508 7 next var@1 var@3 iv@5
     store party member operand 5's animation +0c and actor in variables
 c2 begin_effect func_80088674 9 next iv@1 iv@3 iv@5 iv@7
     as 8f for actor operand 1 with launch frame operand 3
-c3 set_layer_2000800 func_8009E014 1 next
-    set the running actor's layer flags 0x2000000 and 0x800
-c4 set_actor_layer_2000800 func_8009DF78 2 next actor@1
-    set the selected actor's layer flags 0x2000000 and 0x800
+c3 hide_sprite_and_shadow func_8009E014 1 next
+    set the running actor's layer flags 0x2000000 (80075b44 does not draw its
+    sprite; 22 and 24 clear it) and 0x800 (no drop shadow, ext 09)
+c4 hide_actor_sprite_and_shadow func_8009DF78 2 next actor@1
+    as c3 for the selected actor
 c5 attach_to_layer_node func_80086F7C 5 next iv@1 iv@3
     attach the running actor to node operand 3 of layer actor operand
     1 (ffff detaches)
@@ -1200,8 +1213,11 @@ cf change_map_menu func_80093888 5 next iv@1 iv@3
     request map operand 1 at entry operand 3 through menu kind 1; yields
 d0 copy_character func_8008764C 5 next iv@1 iv@3
     copy character slot and record operand 1 over operand 3
-d1 set_game_flag_4000 func_8008754C 1 next
-    set flag 0x4000 of the game's +22b6
+d1 unlock_boost_and_skills func_8008754C 1 next
+    set flag 0x4000 of the game's +22b6: with it a gear at attack level 3 may
+    start the boost (battle 8009a2d4), the battle results also learn counter
+    skills 7-12 (ovl2596 801e3be0) and raise tier 6 to 7 at level 50
+    (801e403c), and the field menu rates rows 7 and up (slot39 801e1418)
 d2 skip_2 func_8008752C 3 next
     advance over two unread bytes
 d3 scale_pair func_80087420 17 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 var@13 var@15

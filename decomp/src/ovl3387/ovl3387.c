@@ -279,7 +279,7 @@ void func_801FC8F4(void) {
     DrawBuffer *next;
     POLY_F4 *prim;
     Burst *burst;
-    BattleWork *work;
+    BattleArea *work;
     DrawBuffer *buffers;
     DrawBuffer *shown;
     DrawBuffer *back;

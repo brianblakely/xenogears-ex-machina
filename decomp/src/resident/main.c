@@ -7,17 +7,18 @@
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "mode.h"
-#include "menu.h"
-#include "sprite.h"
-#include "cd.h"
-#include "stream.h"
-#include "model.h"
-#include "heap.h"
-#include "text.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
+#include "resident/mode.h"
+#include "resident/menu.h"
+#include "resident/sprite.h"
+#include "resident/cd.h"
+#include "resident/stream.h"
+#include "resident/model.h"
+#include "resident/heap.h"
+#include "resident/text.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
+#include "own_declarations.h"
 
 /* This unit's own variables. GCC emits them after the code, and the
  * original assembler gave those of up to 8 bytes the unit's .sbss, ahead of
@@ -730,9 +731,9 @@ void func_8001ACA4(void) {
     func_8001B158(1);
 }
 
-/* The first byte of character record `index` in the game data. */
+/* The gear character `index` pilots (0xff none). */
 s32 func_8001ACF0(s32 index) {
-    return D_8005A39C->characters[index].first;
+    return D_8005A39C->characters[index].gearId;
 }
 
 /* Wait until the disc is idle, then for the pending read (80028a60). */

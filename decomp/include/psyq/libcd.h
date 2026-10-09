@@ -49,4 +49,13 @@ CdlLOC *CdIntToPos(int i, CdlLOC *p);
 int CdPosToInt(CdlLOC *p);
 int CdRead2(long mode);
 
+/* The data stream library (libcd's St* members). */
+void StSetRing(u_long *ring_addr, u_long ring_size);
+void StUnSetRing(void);
+void StSetStream(u_long mode, u_long start_frame, u_long end_frame, void (*func1)(), void (*func2)());
+u_long StFreeRing(u_long *base);
+u_long StGetNext(u_long **addr, u_long **header);
+void StCdInterrupt(void);
+int StGetBackloc(CdlLOC *loc);
+
 #endif

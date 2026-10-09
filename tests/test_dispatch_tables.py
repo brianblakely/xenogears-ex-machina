@@ -97,7 +97,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("D_800C3DFC->flagsA & 0x10", caller)
 
     def test_descriptor_fields_and_archive_layout(self):
-        header = source("battle/combatant.h")
+        header = (ROOT / "decomp/include/battle/work.h").read_text()
         self.assertIn("u8 formula; /* 0x16", header)
         self.assertIn("u16 flagsA;   /* 0x0A */", header)
         loader = " ".join(function_body(source("ovl2615/ovl2615.c"), "func_801E5384").split())
@@ -433,7 +433,7 @@ class PrimitiveTests(unittest.TestCase):
 
 class LayoutTests(unittest.TestCase):
     def test_model_header_fields_follow_the_c(self):
-        header = source("resident/model.h")
+        header = (ROOT / "decomp/include/resident/model.h").read_text()
         fields = header[: header.index("} SpriteModel;")].rsplit("typedef struct {", 1)[1]
         declarations = re.findall(r"(\w+) \**(\w+);", re.sub(r"/\*.*?\*/", "", fields))
         # u16 counts at +0, +2, +4 and +6, six offsets from +8, the box from +0x20,

@@ -69,8 +69,9 @@ s32 func_8009E53C(u8 index) {
 
 /* Put battle gear part index into character 4's gear entry holding its id
  * (entry k when none does; the third entry's match selects entry 3): copy its
- * values, record the part slot and durability, and update the battle copies of
- * character 4's gear. */
+ * values, record the part slot and its durability (in the characters' array,
+ * as 8009a854 does, not gearSpecialDurability), and update the battle copies
+ * of character 4's gear. No image calls it or 8009e53c. */
 void func_8009E5C8(u8 index, u8 k) {
     BattlePart *part = &D_800C34B0->lists.parts.list[index];
     u8 gearId = D_8006D8A0.characters[4].gearId;
@@ -90,7 +91,7 @@ void func_8009E5C8(u8 index, u8 k) {
     D_8006D8A0.gears[gearId].entries[k].value10 = part->value10;
     D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
     D_8006D8A0.gears[gearId].partItems[k] = index;
-    D_8006F8BA[index] = part->durability;
+    D_8006D634.specialDurability[index - 50] = part->durability;
     for (i = 0; i < 3; i++) {
         if ((D_800C34B0->records + i)->pilot.characterId == 4) {
             D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;
@@ -107,8 +108,8 @@ void func_8009E5C8(u8 index, u8 k) {
 void func_8009E788(void) {
     switch (D_800C34B0->commandIndex) {
     case 0:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 3:
@@ -123,22 +124,22 @@ void func_8009E788(void) {
     case 12:
     case 13:
     case 14:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
-        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     case 15:
-        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 2:
     case 17:
-        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
-            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        if (D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] != 0) {
+            D_8006D634.gearSpecialDurability[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     }
@@ -588,7 +589,6 @@ void func_8009F794(ModelList *list, s32 release) {
 }
 
 /* The in-place matrix product used to scale the shadow's rotation. */
-void func_80049ACC(MATRIX *m, MATRIX *scale);
 SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 

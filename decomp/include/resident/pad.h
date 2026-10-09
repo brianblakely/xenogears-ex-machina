@@ -39,4 +39,14 @@ void func_8003634C(void);
 void func_800363F0(void (*hook)(void));
 s32 func_80036410(void);
 
+/* More of the controller services and their state. */
+s32 func_8003569C(s32 port);
+u8 func_80035884(s32 buttons);
+u8 func_800358A0(s32 buttons);
+void func_80036420(void);
+extern u16 D_8005941C;
+extern u16 D_80059490;
+extern u16 D_800594A8;
+extern u16 D_80059574;
+
 #endif

@@ -6,7 +6,7 @@
 
 /* A centred one-line caption: its text image and one sprite per buffer. */
 typedef struct {
-    s32 image;         /* 0x00 */
+    u8 *image;         /* 0x00 */
     Sprite sprite[2];  /* 0x04 */
     s16 width;         /* 0x2C */
     s16 x;             /* 0x2E */
@@ -238,7 +238,7 @@ void func_8008BC04(void);
 void func_8003A838(s32 arg0, s32 arg1, s32 arg2);
 void func_8008E064(void);
 s32 func_80033728(s32 table, s32 index); /* text string of an index */
-s32 func_80034EAC(s32 string, s32 image, s32 colour, s32 arg); /* returns width */
+s32 func_80034EAC(s32 string, u8 *image, s32 colour, s32 arg); /* returns width */
 void LoadImage(Rect *rect, void *pixels); /* load pixels into VRAM */
 void func_8007EE08(s32 arg);
 void func_80080F04(void);

@@ -2181,7 +2181,6 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 
 /* The rotation matrix whose second row is `axis`: the first row is the unit
  * vector perpendicular to world up and `axis`, the third completes the basis. */
@@ -3613,8 +3612,7 @@ extern s16 D_8006BE2C[3];
 extern void *D_8005945C;    /* the menu's shared file (1) */
 extern u8 D_80059178;
 extern u8 D_80059460;       /* menu kind */
-extern u32 *D_8005A4AC;     /* the menu's order tables */
-extern u32 *D_8005A4B0;
+extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
 extern s32 D_8004F31C;
 extern s32 D_8004F320;
 void func_8001C634(void);
@@ -3719,8 +3717,8 @@ void func_800799D4(void) {
         D_8006BE2C[i] = D_8005A39C->unk22B1[i];
     }
     func_800798BC();
-    D_8005A4AC = D_800B249C[0].ot;
-    D_8005A4B0 = D_800B249C[1].ot;
+    D_8005A4AC[0] = D_800B249C[0].ot;
+    D_8005A4AC[1] = D_800B249C[1].ot;
     func_8007999C();
     func_8001C634();
     func_8007999C();
