@@ -56,7 +56,7 @@ The scan finds 4436 compiled game functions and these library entries
 | --- | --- |
 | libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, primitive setters |
 | libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix, TransMatrix, lighting (NormalColor*), Push/PopMatrix, SetGeomOffset/SetGeomScreen, SetFogNearFar, and 16 entries without a signature name (below) |
-| libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the St* streaming ring |
+| libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (func_80028230 only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the St* streaming ring (Disc and files) |
 | libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Memory card and saves), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
 | libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite are func_8004D818/func_8004D878 by inspection (unattributed, called by sound.c func_8003BE68) |
@@ -172,6 +172,230 @@ Outside the libraries the game itself uses:
   subsets +0x99C, more GameData blocks at +0xE4C, +0xEC4, +0x1024 and +0x1124,
   ending at +0x1B5C; the rest is zero. tools/analysis/menu_save_file.py checks
   the serialisation against a card image a capture wrote.
+
+### Disc and files
+
+The resident disc unit (main_8002709C.c, 80028230-8002c3e8, API in
+`resident/cd.h`) reads every file. Outside it, three shipped parts issue drive
+commands themselves: the world-map terrain reader, the movie library (mdec) and
+the disc check of the swap (and the movie overlay's development tools). Each of
+them, like the unit, branches on func_8002C3D8 (D_8004FE48) to a host-file path,
+so the original development build replaced the drive at these four places (PC
+file server, below). A port can take the same cut: serve the unit's reads,
+rings and image streams, the world map's request lists, the movie ring and the
+swap's disc check from the imported discs. Raw sector reads are part of it,
+which the host path does not serve (func_8002954C returns -1 there): the
+arena's portraits and the swap's label and index. The other libcd calls are the
+busy test's CdDataSync(1) (func_800286CC), CdDataSync(0) before a field movie
+(field func_800A7394), a per-frame CdSync(1) whose status no code reads (world
+map func_800712D0), CdFlush at soft reset, the card screens' callback save and
+restore (Memory card and saves) and the dormant CdMix.
+
+- **Index.** Each resident image carries its disc's index ahead of its code,
+  the only bytes in which SLUS_006.64 and SLUS_006.69 differ (three rodatabins,
+  [matching.md](matching.md#recovering-data)): the boot word D_80010000 (-1 in
+  both), 0x8000 bytes of 7-byte file records (D_8004FDF0: a 24-bit first sector,
+  then a signed 32-bit size in bytes; a negative size marks a directory record
+  whose magnitude counts its files, func_80028928) and the u16 directory table
+  (D_8004FDF4: each directory's first record, 1-based; word 0x3C is the disc
+  number). Boot passes the three to func_80028230 (main.c func_80019578): -1
+  keeps the embedded copies, 0 re-reads them from sectors 24 (0x8000 bytes) and
+  40 (0x7A bytes), any other value selects the PC file server.
+- **Addressing.** func_80028470(g, i) selects the base D_8004FE14 =
+  table[g + i] - 1 (g a multiple of four, func_800284B4; a zero entry returns -1
+  and selects 0, but the tables' unused entries hold 0xFFFF, which it does not
+  catch). File f of the selection is record f + base - 1 (func_800289D0 its
+  first sector, func_80028738 its size, func_800288EC the size rounded up to
+  words), that is slot f + table[g + i] - 2, the rule
+  [matching.md](matching.md#script-instructions) gives and the slot numbering of
+  `tools/extraction/disc_files.py`. It reproduces the field pairs of
+  [EVID-REF-007](../analysis/findings/EVID-REF-007.json) (files 0xB8/0xB9 + 2m
+  of entry 4, which holds 424 on Disc 1 and 419 on Disc 2: slots 606/607 + 2m
+  and 601/602 + 2m) and the mode overlays' slots (files 0xD-0x12 of (0, 1),
+  whose entry holds 24 on Disc 1 and 19 on Disc 2: slots 35-40 and 30-35, the
+  same files).
+  [EVID-REF-005](../analysis/findings/EVID-REF-005.json) measured the record
+  format at LBA 24 and the label at LBA 23 on both discs and left their loader
+  use open; these functions are that use. A read resolves its later files in
+  the directory selected when it started (D_8004FE18: func_80028808,
+  func_80028A18), so callers reselect right after starting one (field
+  func_80085B20); func_800284B4 returns the selection's (g, i), which battle,
+  mdec, main.c func_800199CC and func_800379D8 restore after reading elsewhere.
+- **Reads.** Each read entry spins until the drive is idle (func_80028A60(0)),
+  sets the busy count D_8004FDFC, issues Setloc and returns; the CD callbacks
+  (Interrupt-context work) finish it. func_800286CC returns that count (for a
+  list, the files not yet finished, which func_8002BA40 copies from D_8004FE00;
+  otherwise 1), or 1 while a command (D_8004FE1C) or a sector transfer
+  (CdDataSync(1)) is pending. The world map's entry (func_80072238) and scene
+  setups go on once a list has fewer than three files left
+  (`while (func_800286CC() >= 3)` at eleven sites; `>= 2` in func_800758C0),
+  so a port must report the count, not only busy. A finished or stopped read
+  seeks to the file given as its `after` argument (D_8004FE38, func_8002A394)
+  or, for 0, pauses; every shipped caller passes 0 (only the movie overlay's
+  development tools pass 1).
+
+  | Entry | Reads | Sector callbacks |
+  | --- | --- | --- |
+  | func_800295D8(file, dest, after, flags), func_80029690 | one file of the selection; flags 0x100: into a stream ring (0x200: the host movie stream; on the disc it issues nothing) | func_8002B084 copies; for a ring, func_8002B2F0 puts each sector in a free slot numbered in arrival order and the data callback func_8002BA58 completes the slots in order |
+  | func_8002954C(sector, dest, size) | raw sectors: the swap's label and index, the arena's portraits (two sectors each inside file 6, menu4.c func_80080644), boot word 0's index, the movie tools | func_8002B084 |
+  | func_80029AFC(list, after) | a zero-terminated (file, destination) list, sorted by file and read in one pass: a next file at most D_8004FDE0 = 16 sectors ahead is read through (the sectors between are not copied), a farther one gets Pause and Setloc | func_8002AC24 |
+  | func_80029EB0(file, ring, after, 0, placement) | an image stream into VRAM (Streams) | func_8002B5D0 (a copy of func_8002B2F0); the data callback func_8002BB50 loads the strips |
+  | func_8002A2D0, func_8002A394(file) | a seek (Setloc, SeekL) to a file, or Pause for file <= 0; func_8002A2D0 only when idle, once before a field movie (field func_800A7C58) | — |
+  | func_8002A428(mode), func_8002A498(after) | Setmode, then Pause; a stop request that the next sector callback carries out | — |
+
+- **Commands**, numbered as libcd's own name table (D_800564D0) names them.
+  CdControlF returns at once and completion reaches the sync callback;
+  CdControlB waits for completion (it calls CD_sync), and its callers mostly
+  repeat it until it succeeds.
+
+  | Command | Issued by |
+  | --- | --- |
+  | Setloc (2) | every resident read and seek (func_80029690, func_80029AFC, func_80029EB0, func_8002A2D0, func_8002A394), retries and list gaps (func_8002A68C, func_8002AC24); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
+  | ReadN (6) | func_8002A68C after Setloc: every resident read |
+  | ReadS (0x1B) | the world-map reader (func_80096A6C); CdRead2 for movies (movie_restart) |
+  | SeekL (0x15) | func_8002A68C after a seek's Setloc; the swap |
+  | Pause (9) | the end of every shipped resident read, func_8002A428 after Setmode, retries; soft reset (func_800283D4); the world-map reader at a list's end and in recovery; movie_stop |
+  | Stop (8) | retry reason 4; the swap's preparation (func_801E92CC) |
+  | Standby (7) | func_80028230 through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
+  | Setmode (0x0E) | func_8002A428: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
+  | Setfilter (0x0D) | movie_start: file 1 and the movie's channel, when its select bit 0 is set |
+  | Nop (1, Getstat) | retries (func_8002A68C, func_80096A6C, func_80096C0C); the swap's lid and motor polling |
+  | GetTN (0x13) | retries, once the drive status shows the lid closed; the swap |
+
+- **Modes and sectors** (Setmode bits after psx-spx: 0x80 double speed, 0x40
+  XA-ADPCM to the SPU, 0x20 whole 0x924-byte sectors, 0x08 XA filter).
+  Resident and world-map reads run in 0xA0: each sector callback copies the
+  4-byte header and 8-byte subheader (CdGetSector(..., 3)) and the 2048 data
+  bytes (the rest of a short last sector goes to D_800596F8, the world map's to
+  D_8009D7D4) and checks the header's position against the expected sector
+  (CdPosToInt): on a mismatch, counted in D_8004FDE4/D_8004FDE8/D_8004FDEC (the
+  world map's in D_8009CCA0), the sector is not taken and the read restarts
+  there (Retries). Movies read 2048-byte sectors in the low byte of
+  movie_cd_mode | 0x80: 0xC8 with XA audio, 0x88 when select bit 1 clears the
+  ADPCM bit again (field movies with their own sound bank, field
+  func_800A7218), 0x80 without. CdRead2 issues that Setmode, installs the St
+  ring's callbacks (StCdInterrupt2, data_ready_callback) for bit 0x100 and
+  sends ReadS (mdec CdRead2). Setmode 0 is "NORMAL SPEED" in the development
+  test (movie.c func_80072480).
+- **Retries.** func_8002A68C (state D_8004FE1C, reason D_8004FE20): a command
+  that does not complete (status other than Complete, 2), or a sector that
+  fails, arrives out of place or finds no free ring slot, makes it poll Getstat
+  until a status completes with the lid closed (bit 0x10 clear) and send GetTN,
+  then by reason: 1 Setloc and SeekL again, 2 Pause again, 3 Pause, then Setloc
+  and ReadN from the failed sector, 4 Stop and then as 3, 6 Setmode and Pause
+  again. Every third failed sector of a read (D_8005A4DC) takes reason 4 after
+  an empty 10,000 x 2,000 loop inside the callback, which an optimising native
+  compiler may delete. Nothing limits the retries or reports an error to the
+  caller: an unreadable disc leaves func_80028A60(0) spinning, without a message
+  (func_8002804C's bars run only on the PC server's paths). States 12 and 8
+  (Setmode, then Setfilter with file 1 and the low byte of D_8004FE38) are
+  entered only through reason 5, which only they set, so the resident never
+  selects an XA channel. The read statistics D_8005A488-D_8005A4B4 feed only
+  the movie overlay's development monitor (func_800704E8). The world-map reader
+  recovers the same way under its own state D_8009CD44 (Getstat while the lid
+  is open, GetTN, Pause, Setloc and ReadS), while the world-map loop spins
+  VSync(0) (worldmap.c func_800712D0).
+- **Streams.**
+  - Music: the field streams a music's wave file (0x13 + 2 * wave of directory
+    (0x1C, 0), field func_80085B20) through an eight-slot ring
+    (func_80085560, flags 0x100). The field's post-frame step (func_80078B5C,
+    func_80085C90, func_80085C3C) takes up to five sectors a frame in order
+    (func_80028B14); func_800859DC gathers the first four into a 0x2000-byte
+    wave bank (func_800380D0) and hands later ones to the SPU (func_8003827C)
+    after the previous transfer (func_8003BDFC(0x10)). A full ring makes the
+    drive read the sector again (Retries). Sequences (0x14 + 2 * music) and the
+    battle music (func_800379D8, a two-file list of directory (12, 3)) are
+    plain reads.
+  - Image streams (func_80029EB0): the field map's (file 0xB9 + 2 * map of
+    entry 4, four slots, field.c func_80070488, waited for by func_80070508)
+    and a battle action's (file 0x23 + 2 * index of (0xC, 2), eight slots,
+    battle_800B7134.c func_800B7C34). Each image's first sector holds type
+    0x1200 or 0x1201, an origin and an offset (placed by the caller's mode and
+    base for each type, D_80059F24-D_80059F38; both shipped callers pass 0,
+    origin plus offset), the strip width, the image count, the strip count and
+    the strip heights. Each following sector is one strip, loaded with
+    LoadImage by the data callback func_8002BB50 at interrupt time.
+  - World-map terrain: the world map queues (sector, bytes, destination)
+    requests per frame (func_8009623C: at most 0x58 a list, 16 lists;
+    func_80096328 sorts a list by sector). Its reader (func_8009699C,
+    func_80096A6C, func_80096C0C) reads a list with one Setloc and ReadS,
+    reading through gaps under 0x13 sectors, seeking past larger ones and
+    pausing at the end. Terrain blocks are 0x710 bytes, one per sector: rows
+    from file D_8009BCD8 (the area's file + 9) in block order, columns from
+    file D_8009BD08 (+ 10) in column-major order (func_80097DC0,
+    func_80098CC0). func_80096130 and func_80096694 wait with VSync(0) for list
+    space and for the queue to drain.
+  - Movies (mdec, Services): movie_open makes a ring of 2048-byte sectors
+    (StSetRing); movie_start sets the XA filter and StSetStream; movie_restart
+    issues Setloc (the file's first sector plus the start sector, or
+    StGetBackloc's position after 0x871 polls without a frame, movie_poll) and
+    CdRead2; frames come through StGetNext and StFreeRing
+    (movie_next_bitstream, movie_decode); movie_stop unsets the ring, pauses
+    and sets 0xA0 again. The field plays file + 2 of directory (0x18, 1)
+    (func_800A7218), the movie mode a request's entry + 2 of (0x18, 1) or + 3
+    of (0x18, 0) (movie.c func_80076488).
+  - XA: only movie_start selects a channel: file 1 and the channel, 1 at every
+    shipped caller (field func_800A7218; movie.c func_800737EC for a request).
+    With bit 0x40 the drive plays the matching sectors into the SPU's CD input
+    (Sound output modes).
+
+  The disc path overlaps reads with frames: battle runs battle frames until the
+  disc is idle (func_800B8354), the field runs field frames before a movie
+  (func_800A7394), the world map steps its reader on VSync(0) and each frame,
+  and the field's frame feeds the music ring. How many frames a load spans is
+  the read latency, which nothing bounds. The host path finishes plain and list
+  reads and image streams inside the call.
+- **Disc identity and the swap.** func_80028530 returns directory word 0x3C, 1
+  in Disc 1's table and 2 in Disc 2's. Its readers: boot's opening-movie
+  request (main.c func_80019578: D_8004FE45 = 0x10 on Disc 1, else 7, played as
+  file 0x12 or 9 of directory (0x18, 1), movie.c func_80076488), the title file
+  screen's exit after 600 idle frames, on Disc 1 only (slot39.c func_801C58EC),
+  the swap (func_801C8694), the save (func_801CBA4C: D_8006F008 = disc - 1, or
+  1 for the save offered at the change), field event `cd` (store_disc_number,
+  func_800A0DFC) and the movie overlay's development screens.
+
+  The swap runs in the in-game menu (mode 5). Menu kind 6 (field event `da`,
+  slot39.c func_801C57A4) offers a save and then asks for Disc 2
+  (func_801C8694(1)); after the title file screen (kind 2, func_801C62A8) the
+  menu asks for Disc 1 or, after a load, for the file's disc D_8006F008
+  ([EVID-REF-003](../analysis/findings/EVID-REF-003.json) saw Disc 2's New Game
+  ask for Disc 1). func_801C8694(d) repeats while the reported disc is not
+  d + 1. func_801E92CC stops the read, sets Setmode 0 and retries Stop every
+  VSync(3); the change notice shows; func_801E93A0(d + 1) polls Getstat every
+  VSync(3) until the lid opens (bit 0x10), until it closes and until the motor
+  runs (bit 0x02) with the command completing, then sends GetTN, Setloc to
+  sector 0 and SeekL. A SeekL failing with the error bit 0x01 and error-code bit
+  0x40 returns 2; another failure retries from GetTN. The development test
+  (movie.c func_80072480 over func_80072A08) labels these steps "CD STOPED",
+  "CD OPENED", "CD CLOSED", "SPINDLE OK", "TOC OK" and "SET LOCATION OK", and
+  that failure "IT IS NOT PLAY STATION DISC". Then come Setmode 0xA0 and 16
+  bytes of sector 0x17: bytes 4-7 must read "_XEN" (else 2) and byte 3 the
+  digit of the wanted disc (else 3); a nonzero result shows message 0x89 for 29
+  frames and asks again. On a match the index (sector 0x18, 0x8000 bytes) and
+  the directory table (sector 0x28, 0x7A bytes) are re-read over the copies
+  boot passed (0x80010004, 0x80018004), so func_80028530 reports the new disc;
+  they lie in the loaded image, which a soft reset keeps (Control flow).
+  EVID-REF-005 found "DS01_XENOGEARS" and "DS02_XENOGEARS" at the start of LBA
+  23. Both discs run the same code and address files only through these tables,
+  so for a swap a port's drive presents the lid opening and closing, a running
+  motor, successful GetTN, Setloc and SeekL, the label at sector 23 and the
+  other disc's sectors 24 and 40.
+- **PC file server, development only.** A boot word other than 0 and -1 selects
+  it: func_80028230 calls func_8004C38C (PCinit by inspection) and keeps the
+  word as D_8004FE48, a table of 64-byte host file names, one per index record
+  (func_80028998), which func_8002C3D8 returns. Both retail images hold -1, so
+  none of this runs on retail. Plain and list reads then open, read and close
+  host files with four tries per call, drawing func_8002804C's coloured bars
+  and, after the fourth failure, its endless text screen; sizes come from
+  PClseek; ring streams read a sector per step (func_80028B14; func_80028F30
+  reads 0x920-byte records with their subheaders when the mode byte has 0x08,
+  skipping file-1 sectors); func_80029EB0 pumps a whole image stream before it
+  returns; the world map reads (path, offset) lists (func_800962B0,
+  func_800966CC); the movie library uses the resident ring
+  (movie_host_stream); and the swap loads `c:\work\cdrom.mdg` (the index,
+  0x8000 bytes), `cdrom.fid` (the directory table, 0x7A) and `cdrom.fnd` (the
+  names, 0x40000), or `cdrom2.*` for Disc 2 (slot39 func_801E93A0, movie
+  func_80072A08). libsn's entries are in the Services table.
 
 ## Timing
 

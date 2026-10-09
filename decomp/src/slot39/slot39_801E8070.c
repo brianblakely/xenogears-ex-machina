@@ -329,8 +329,9 @@ void func_801E927C(POLY_FT4 *poly) {
     poly->b0 = 0x80;
 }
 
-/* Unless 8002c3d8 reports ready, reset the drive and retry command 8 until it
- * succeeds. */
+/* On the disc (8002c3d8 is 0 without the PC file server): stop the read, set
+ * normal speed (CdlSetmode 0, then a pause) and repeat CdlStop every
+ * VSync(3) until it succeeds. */
 void func_801E92CC(void) {
     if (func_8002C3D8() == 0) {
         func_8002A498(0);
@@ -353,11 +354,12 @@ void func_801E9340(char *name, void *buffer, s32 size) {
     PCclose(handle);
 }
 
-/* Check that disc `disc` is in the drive and load its directory: from the
- * host files on the development link, else after waiting for the lid to
- * close and the drive to settle, from the disc label and files 18 and 28.
- * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
- * disc. */
+/* Check that disc `disc` is in the drive and load its index: from the host
+ * files on the development link, else once the lid has opened and closed and
+ * the motor runs, from the label at sector 0x17 and the index and directory
+ * table at sectors 0x18 and 0x28. Returns 0 when loaded, 2 when the seek
+ * fails as for a disc that is not a PlayStation disc or the label is not
+ * Xenogears', 3 for the other disc. */
 s32 func_801E93A0(s32 disc) {
     DiscLabel label = { { 0 } };
     u8 pos[4];
