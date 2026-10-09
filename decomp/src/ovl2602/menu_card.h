@@ -232,14 +232,6 @@ extern u8 D_801D6A24[];    /* sell list label text ids */
 extern u8 D_801D6A2C[];    /* buy list label text ids */
 extern s32 D_801D6A40[];   /* gear list label x offsets */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
-/* The gear record's bytes 0x55-0x57 (pad55, equipAttackScale, chargeRate)
- * as the stat rebuild clears them: one array indexed from the record, which
- * the separate members of GearRecord do not compile alike. */
-typedef struct {
-    u8 pad[0x55];
-    u8 bytes55[3];
-} GearRecordBytes55;
-
 /* The camera's move between two points (801d9050). */
 typedef struct {
     s32 from[3];     /* 00: previous target */

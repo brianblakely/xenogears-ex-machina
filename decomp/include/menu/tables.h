@@ -139,6 +139,15 @@ typedef struct GearSummary {
     u8 pad1b;
 } GearSummary;
 
+/* A gear record's bytes 0x55-0x57 (GearRecord pad55, equipAttackScale,
+ * chargeRate) as the gear stat rebuild clears them: one array indexed from
+ * the record, which the separate members do not compile alike (the address
+ * would add the index first). */
+typedef struct GearRecordBytes55 {
+    u8 pad[0x55];
+    u8 bytes55[3];
+} GearRecordBytes55;
+
 /* The data table directory (MenuState tables). */
 typedef struct MenuTables {
     EquipInfo *equipment;                /* 0x00 */

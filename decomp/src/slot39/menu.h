@@ -59,14 +59,6 @@ typedef struct ArtInfo {
     u8 pad26[0x2];
 } ArtInfo;
 
-/* The gear record's bytes 0x55-0x57 (pad55, equipAttackScale, chargeRate)
- * as the stat rebuild clears them: one array indexed from the record, which
- * the separate members of GearRecord do not compile alike. */
-typedef struct {
-    u8 pad[0x55];
-    u8 bytes55[3];
-} GearRecordBytes55;
-
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {
     s32 time; /* 0: play time in frames */

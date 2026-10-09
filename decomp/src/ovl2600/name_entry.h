@@ -22,11 +22,6 @@
 #include "menu/panel.h"
 #include "menu/screen.h"
 
-/* Sprite part packets built by func_8002675C: one quad per draw buffer. */
-typedef struct {
-    POLY_FT4 poly[2];
-} SpriteParts;
-
 /* The name entry block (0xDEC bytes). */
 typedef struct NameEntry {
     POLY_FT4 confirm[2];     /* 0x0: sprite 0xF9 */

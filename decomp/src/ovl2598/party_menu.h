@@ -23,11 +23,6 @@
 #include "menu/screen.h"
 
 
-/* Sprite part packets built by func_8002675C: one quad per draw buffer. */
-typedef struct {
-    POLY_FT4 poly[2];
-} SpriteParts;
-
 
 
 extern void func_80039DB8(s32 sound);          /* play a sound */
