@@ -113,6 +113,17 @@ maps are identical to Disc 1's.
   so its 6-byte skip would land inside it. Not followed.
 - `8008d808` and `8008da04` write instructions into the bytecode, but nothing
   calls them.
+- Ext `0c` sets six halfwords at `800b21a0` that no code reads:
+  `tools/data_users.py --range 800b21a0:800b21ac` finds only its stores and the
+  field setup's (0x100 three times, then 0x200).
+- Named from their readers: ext `b9`-`bc` the world map vehicle's saved
+  position, heading and flags (game `+182c`-`+1834`, `WorldmapReturn`), `d5` the
+  ferry's saved place (`+1844`, `+1846`; `D_8006EE78`), `d6`/`d7` the circling
+  flight's (`+184e`, `+1852`; `D_8006EE80`), `c0` the arena bout's outcome
+  (`80050622`, menu3 `func_80075060`), `61` the field movie's start (`800adb7c`,
+  `800a7c58`), `b5` the gathering warp (`800b2348`), and `2a`/`2b` and `cd`/`ce`
+  the actor flags 0x20000 and 0x800000 that keep talk and touch, or touch alone,
+  from starting events 2 and 3 (`8008399c`).
 - Compared with the host disassembler (`src/reconstruction/field_disassembler.cpp`),
   the lengths agree for every opcode and form. It differs in three places, and
   the C reading above is used:
@@ -127,5 +138,7 @@ maps are identical to Disc 1's.
   its button test live (`v0050` 0), so it depends on actor 56 running event 1
   and the field's input mask there; a capture in map 488 would settle it.
 - The bounds of variable `a6` indexes: the sweep follows consecutive jumps.
-- Some targets are still only addresses: the six halfwords at `800b21a0` (ext
-  `0c`) and the game's `+182c`-`+1856` words (ext `b9`-`bc`, `d5`-`d7`).
+- Forms still named by a flag bit, whose readers are not traced here: camera flag
+  0x4000 (`b7`/`b8`), layer flags 0x400, 0x800, 0x20000 and 0x2000000 (ext `07`,
+  `09`, `46`, `c3`, `c4`), the character bits of the game's `+2318` (ext `9f`)
+  and flag 0x4000 of its `+22b6` (ext `d1`).

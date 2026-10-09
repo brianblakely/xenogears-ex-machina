@@ -929,8 +929,9 @@ void func_8008764C(void) {
     D_800B0078->pc += 5;
 }
 
-/* Event: store 80050622, the byte after the six parameters ext bf sets, in
- * variable operand 1. */
+/* Event: store the arena bout's outcome (80050622, the byte after the six
+ * parameters ext bf sets; menu3 func_80075060 writes it) in variable
+ * operand 1. */
 void func_80087800(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, D_80050622);
     D_800B0078->pc += 3;
@@ -959,14 +960,16 @@ void func_80087848(void) {
     D_800B0078->pc += 13;
 }
 
-/* Event: store the game's +1844 and +1846 in variables op1 and op3. */
+/* Event: store the world map ferry's saved x and z (+1844, +1846;
+ * D_8006EE78) in variables op1 and op3. */
 void func_80087960(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1844);
     func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1846);
     D_800B0078->pc += 5;
 }
 
-/* Event: store the game's +184e and +1852 in variables op1 and op3. */
+/* Event: store the circling flight's saved x and z (+184e, +1852;
+ * D_8006EE80) in variables op1 and op3. */
 void func_800879D0(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk184E);
     func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1852);
@@ -987,9 +990,9 @@ void func_80087A7C(void) {
     D_800B0078->pc += 2;
 }
 
-/* Event: set the game's +184e and +1852 from operands 1 and 3, immediate by
- * flags 0x80/0x40 of byte 9 (past the instruction's 6 bytes), clear +1850 and
- * +1854 and set +1856 to 1. */
+/* Event: set the circling flight's saved x and z (+184e, +1852; D_8006EE80)
+ * from operands 1 and 3, immediate by flags 0x80/0x40 of byte 9 (past the
+ * instruction's 6 bytes), clear +1850 and +1854 and set +1856 to 1. */
 void func_80087AB8(void) {
     D_8005A39C->unk184E = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
     D_8005A39C->unk1852 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
@@ -999,7 +1002,8 @@ void func_80087AB8(void) {
     D_800B0078->pc += 6;
 }
 
-/* Event: store the game's four halfwords at +182c in variables op1..op7. */
+/* Event: store the world map vehicle's saved position (game +182c-+1830)
+ * and heading (+1832; WorldmapReturn) in variables op1..op7. */
 void func_80087B5C(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk182C[0]);
     func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk182C[1]);
@@ -1015,8 +1019,9 @@ void func_80087C0C(void) {
     D_800B0078->pc++;
 }
 
-/* Event: set the game's four halfwords at +182c from operands 1..7
- * (immediate by flags 0x80/0x40/0x20/0x10 of byte 9). */
+/* Event: set the world map vehicle's saved position and heading
+ * (+182c-+1832) from operands 1..7 (immediate by flags 0x80/0x40/0x20/0x10
+ * of byte 9). */
 void func_80087C34(void) {
     D_8005A39C->unk182C[0] = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
     D_8005A39C->unk182C[1] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
@@ -1025,14 +1030,15 @@ void func_80087C34(void) {
     D_800B0078->pc += 10;
 }
 
-/* Event: store the game's +1834 in variable op1. */
+/* Event: store the world map vehicle's flags (+1834, WorldmapReturn.flags)
+ * in variable op1. */
 void func_80087D30(void) {
     func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1834);
     D_800B0078->pc += 3;
 }
 
-/* Event: set the game's +1834 from operand 1 (immediate when flag 0x80 of
- * byte 3 is set). */
+/* Event: set the world map vehicle's flags (+1834) from operand 1
+ * (immediate when flag 0x80 of byte 3 is set). */
 void func_80087D80(void) {
     D_8005A39C->unk1834 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
     D_800B0078->pc += 4;
@@ -3348,7 +3354,9 @@ void func_8008E8C8(void) {
     D_800B0078->pc += 2;
 }
 
-/* Event: wait for 800adb7c, clearing it once seen; yield each time. */
+/* Event 61: wait until the field movie player (800a7c58) has started
+ * presenting frames (800adb7c), clearing the flag once seen; yield each
+ * time. */
 void func_8008E9F8(void) {
     if (D_800ADB7C == 0) {
         D_800B0078->pc--;
@@ -9087,7 +9095,8 @@ void func_8009DA44(void) {
     actor->pc++;
 }
 
-/* Set actor flag 0x800000. */
+/* Set the current actor's flag 0x800000, which keeps the player's touch
+ * trigger (8008399c) from starting its event 3. */
 void func_8009DA70(void) {
     FieldActor *actor = D_800B0078;
 
@@ -9095,7 +9104,7 @@ void func_8009DA70(void) {
     actor->pc++;
 }
 
-/* Clear actor flag 0x800000. */
+/* Clear the current actor's flag 0x800000 (see cd). */
 void func_8009DA98(void) {
     FieldActor *actor = D_800B0078;
 
