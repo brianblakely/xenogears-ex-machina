@@ -31,9 +31,9 @@
 #include "resident/pad.h"
 #include "resident/sprite.h"
 #include "resident/window.h"
+#include "field/monitor.h"
 #include "field.h"
 #include "field_camera.h"
-#include "field_debug.h"
 #include "field_dialogue.h"
 #include "field_draw.h"
 #include "field_event.h"
@@ -2763,7 +2763,7 @@ typedef struct {
     s16 z;       /* 2A */
 } FieldBox;
 
-/* The debug monitor's box report (field_debug.h lists its other entries);
+/* The debug monitor's box report (field/monitor.h lists its other entries);
  * declared beside the box type only this unit has. */
 extern void func_80281678(FieldBox *box);
 

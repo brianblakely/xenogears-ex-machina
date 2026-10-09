@@ -27,9 +27,9 @@
 #include "resident/sprite.h"
 #include "resident/stream.h"
 #include "resident/text.h"
+#include "field/monitor.h"
 #include "field.h"
 #include "field_camera.h"
-#include "field_debug.h"
 #include "field_dialogue.h"
 #include "field_draw.h"
 #include "field_effect.h"
@@ -4875,8 +4875,6 @@ void func_80092EA0(void) {
         func_80092894(0x3E0, 0, 0, 0);
     }
 }
-
-s32 func_8009744C(void);
 
 /* Publish the current field id and two values in variables 4, 6 and 8 and
  * count variable 0x12 up. */

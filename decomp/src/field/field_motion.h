@@ -9,12 +9,13 @@
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
+#include "field/monitor.h"
 #include "field.h"
 
-/* The per-actor motion stages of the field update (8008110c). */
+/* The per-actor motion stages of the field update (8008110c); the flag they
+ * test, D_800ADB98, is in field/monitor.h. */
 extern s32 D_800AF858;         /* the next 801e layer entry the update visits */
 extern s32 D_800ADC0C;         /* 1 once the update ran */
-extern s32 D_800ADB98;
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor); /* additive motion */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor); /* move an actor */
 void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *actor); /* talk and touch triggers */

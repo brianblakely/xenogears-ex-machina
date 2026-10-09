@@ -6,22 +6,15 @@
  * and the pointer's pads, divisors and bounds (field.c, field_8007A44C.c). */
 
 #include "common.h"
+#include "field/monitor.h"
 
-/* This frame's buttons per port. Port 1's are masked by the work block's
- * input mask and 800adb00; all are dropped on a camera cut. */
-extern u16 D_800AFE9C;         /* port 1 held */
-extern u16 D_800C2694;         /* port 1 newly pressed */
-extern u16 D_800C3900;         /* port 1 repeated (they move a window's choice) */
-extern u16 D_800AFEA0;         /* port 2 held */
-extern u16 D_800C38F8;         /* port 2 newly pressed */
-extern u16 D_800C3908;         /* port 2 repeated */
-extern u16 D_800ADB00;         /* port 1 buttons the position allows */
-
+/* This frame's buttons per port are in field/monitor.h (the debug monitor
+ * reads them too). */
 void func_80074700(void);      /* drain the pad queue into this frame's buttons */
 
-/* Player control (event a7). */
+/* Player control (event a7); its count of frames stuck against terrain,
+ * D_800ADB02, is in field/monitor.h. */
 extern s32 D_800ADB68;         /* pad input polled this pass */
-extern s16 D_800ADB02;         /* frames stuck against terrain */
 extern s32 D_800ADB28;         /* latched jump setting */
 extern u16 D_800ADF68[16];     /* d-pad direction per button state */
 extern u16 D_800ADF88[16];     /* alternate d-pad directions */

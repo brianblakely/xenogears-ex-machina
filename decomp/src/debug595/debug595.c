@@ -467,7 +467,7 @@ free_size:
             func_800379C8("Num=%x HP=%3d MP=%2d\n", i, D_8005A39C->characters[i].hp, D_8005A39C->characters[i].ep);
         }
         func_800379C8("Gold=%d\n", D_8005A39C->gold);
-        func_800379C8("SinarioFlag=%d\n", D_800C3A68);
+        func_800379C8("SinarioFlag=%d\n", (u16)D_800C3A68[0]);
         func_800379C8("Party=%d %d %d\n", D_80062590[0], D_80062590[1], D_80062590[2]);
         n = D_8005A39C->joined;
         func_800379C8("Member ");

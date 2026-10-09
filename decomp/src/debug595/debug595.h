@@ -2,8 +2,8 @@
 #define DEBUG595_DEBUG595_H
 
 /* The field debug monitor: its debug lines, CPU-time marks and the field
- * overlay's objects it reads and edits, by its own views of them (the
- * field's own headers are not shared). */
+ * overlay's objects it reads and edits. What it shares with the field is in
+ * field/monitor.h; its views of the field's own objects are below. */
 
 #include "common.h"
 
@@ -17,6 +17,7 @@
 #include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/sound.h"
+#include "field/monitor.h"
 
 /* One debug line: a segment in its own frame, drawn in both buffers. */
 typedef struct {
@@ -83,36 +84,27 @@ typedef struct {
     s16 rot_angle;            /* 0x76 ROTANGLE */
 } ParticleEmitter;            /* 0x78 */
 
-/* Field state. */
-extern s32 D_800C268C;
-extern u_long *D_800C426C; /* the field's current draw block, read as its ordering table words */
-extern s32 D_800ADB08;   /* current draw buffer */
-extern MATRIX D_800AFA64;
-extern u16 D_800AFEA0;   /* buttons held (shoulder bits) */
-extern u16 D_800C3908;   /* buttons pressed or repeating */
-extern u16 D_800AFE9C;   /* buttons held */
-extern s32 D_800B0044;   /* particle emitter being edited */
-extern ParticleEmitter D_800B02CC[8];
-extern s32 D_800ADB94;   /* camera distance */
-extern s32 D_800ADB98;
-extern s32 D_800AF984;
-extern s32 D_800AF988;
-extern s32 D_800AF9F0;
-extern s16 D_800AF9E6;
-extern s16 D_800AF9FC;
-extern u16 D_800AF9FE;
-
-extern s32 D_800ADB9C;   /* scanline count at the last mark */
-
 s32 func_80281B90(u_long *ot);
 void func_802814D4(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer);
 
 /* Particle emitter editor. */
+void func_802835E0(void);
 void func_80284354(s32 row, s32 cursor, s32 blink);
 s32 func_8028439C(s32 row, s32 cursor, s32 *selected);
 void func_802846CC(s32 axis, u32 item);
 
-/* The monitor's view of the field (80281b90). */
+/* The monitor's views of the field's own objects, whose types stay in the
+ * field's headers (src/field). The view at 800af880 (FieldView) and the
+ * work block at 800b2078 (FieldWork) it addresses member by member through
+ * symbols of its own: as FieldView members, func_80281B90 and func_80284EA4
+ * compile differently (a member's address is kept in a register), and it
+ * reads 800af9fc and 800af9fe as s16 and u16 where the field has u16 and
+ * s16; the work block's members build the same either way. It reads the
+ * current draw block as its ordering table words (FieldDrawBlock +0xcc),
+ * names the emitter templates (the field's Record78) from its editor's
+ * labels and takes the actors and their descriptors as below (80281b90). */
+extern u_long *D_800C426C;     /* the current draw block */
+extern ParticleEmitter D_800B02CC[8]; /* the eight template emitters */
 
 /* An event actor record; the members the monitor prints. */
 typedef struct {
@@ -166,38 +158,29 @@ typedef struct {
     MonitorTriangle *triangles[4];   /* 800afb24 */
 } FieldObjects;
 
-extern FieldObjects D_800AFB0C;
-extern s32 D_800B226C;         /* player actor */
-extern s32 D_800ADBFC;         /* event actors */
-extern s32 D_800ADB40;
-extern s16 D_800ADB02;
-extern s32 D_800ADAFC;
-extern s32 D_800ADBA0;         /* CPU time */
-extern s32 D_800ADBA4;         /* GPU time */
-extern u16 D_800C3900;         /* buttons pressed */
-extern u16 D_800C3A68;         /* scenario flag */
+/* FieldView members (800af880). */
 extern Fixed D_800AF880[3];    /* camera eye */
 extern Fixed D_800AF890[3];    /* camera look-at */
 extern Fixed D_800AF8B0[3];    /* second camera eye */
 extern Fixed D_800AF8C0[3];    /* second camera look-at */
+extern s32 D_800AF984;
+extern s32 D_800AF988;
+extern s16 D_800AF9E6;
+extern s32 D_800AF9F0;
 extern u8 D_800AF9F4;          /* dolly set */
 extern u8 D_800AF9F5;          /* dolly stop */
 extern s32 D_800AF9F8;         /* screen distance */
+extern s16 D_800AF9FC;
+extern u16 D_800AF9FE;
+extern MATRIX D_800AFA64;
+extern FieldObjects D_800AFB0C;
+/* FieldWork members (800b2078). */
+extern s16 D_800B218E;
 extern u8 D_800B2190[3];       /* fog near colour */
 extern u8 D_800B2194[3];       /* fog far colour */
 extern s16 D_800B2198[2];      /* fog near, far */
-extern s16 D_800B218E;
+extern s32 D_800B226C;         /* player actor */
 extern s32 D_800B2298;         /* encounter timer */
 extern s32 D_800B229C;         /* encounter number */
-void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
-void func_80073E38(void);
-void func_8008E718(void);
-s32 func_8009744C(void);       /* character direction */
-s32 func_8009A514(void);       /* camera direction */
-s32 func_800A3018(u32 reference); /* read an event variable */
-void func_800A3F4C(void);
-void func_800A98E8(s32 actor, s32 value);
-void func_800A99A8(s32 actor);
-void func_802835E0(void);
 
 #endif
