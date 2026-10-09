@@ -113,7 +113,7 @@ typedef struct MenuState {
     struct MenuImages *images;  /* +0x350: the screen images */
     struct MenuSpriteLists *lists; /* +0x354: two sprite lists */
     struct MenuDetail *detail;  /* +0x358: slot39's detail panel */
-    struct MenuEquipment *equipment; /* +0x35c: slot39's equipment panel */
+    struct MenuEquipPanel *equip_panel; /* +0x35c: slot39's equipment panel */
     struct MenuEquipLabels *equip_labels; /* +0x360: slot39 */
     struct MenuPanel *panels[7];   /* +0x364: framed 3D panels */
     struct MenuGrowth *growth[7];  /* +0x380: their opening */

@@ -3642,33 +3642,33 @@ void func_801CE860(void) {
     s32 flag;
 
     for (i = 0; i < 7; i++) {
-        if (D_800625A0->equipment->rowShown[i] != 0) {
-            if (D_800625A0->equipment->highlighted != 0) {
-                RotTransPers4(&D_800625A0->equipment->highlightAt[i][0], &D_800625A0->equipment->highlightAt[i][1], &D_800625A0->equipment->highlightAt[i][2],
-                              &D_800625A0->equipment->highlightAt[i][3],
-                              (s32 *)&D_800625A0->equipment->highlights[i][D_800625A0->equipment->highlightBuffer[i]].x0,
-                              (s32 *)&D_800625A0->equipment->highlights[i][D_800625A0->equipment->highlightBuffer[i]].x1,
-                              (s32 *)&D_800625A0->equipment->highlights[i][D_800625A0->equipment->highlightBuffer[i]].x2,
-                              (s32 *)&D_800625A0->equipment->highlights[i][D_800625A0->equipment->highlightBuffer[i]].x3, &p, &flag);
-                AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equipment->highlights[i][D_800625A0->equipment->highlightBuffer[i]]);
-                func_801CE198(D_800625A0->equipment->rowBCount[i], D_800625A0->equipment->rowBAt[i], D_800625A0->equipment->rowB[i], D_800625A0->equipment->rowBBuffer[i]);
+        if (D_800625A0->equip_panel->rowShown[i] != 0) {
+            if (D_800625A0->equip_panel->highlighted != 0) {
+                RotTransPers4(&D_800625A0->equip_panel->highlightAt[i][0], &D_800625A0->equip_panel->highlightAt[i][1], &D_800625A0->equip_panel->highlightAt[i][2],
+                              &D_800625A0->equip_panel->highlightAt[i][3],
+                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x0,
+                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x1,
+                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x2,
+                              (s32 *)&D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]].x3, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->highlights[i][D_800625A0->equip_panel->highlightBuffer[i]]);
+                func_801CE198(D_800625A0->equip_panel->rowBCount[i], D_800625A0->equip_panel->rowBAt[i], D_800625A0->equip_panel->rowB[i], D_800625A0->equip_panel->rowBBuffer[i]);
             }
-            RotTransPers4(&D_800625A0->equipment->barAt[i][0], &D_800625A0->equipment->barAt[i][1], &D_800625A0->equipment->barAt[i][2], &D_800625A0->equipment->barAt[i][3],
-                          (s32 *)&D_800625A0->equipment->bars[i][D_800625A0->equipment->barBuffer[i]].x0, (s32 *)&D_800625A0->equipment->bars[i][D_800625A0->equipment->barBuffer[i]].x1,
-                          (s32 *)&D_800625A0->equipment->bars[i][D_800625A0->equipment->barBuffer[i]].x2, (s32 *)&D_800625A0->equipment->bars[i][D_800625A0->equipment->barBuffer[i]].x3, &p,
+            RotTransPers4(&D_800625A0->equip_panel->barAt[i][0], &D_800625A0->equip_panel->barAt[i][1], &D_800625A0->equip_panel->barAt[i][2], &D_800625A0->equip_panel->barAt[i][3],
+                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x0, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x1,
+                          (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x2, (s32 *)&D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]].x3, &p,
                           &flag);
-            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equipment->bars[i][D_800625A0->equipment->barBuffer[i]]);
-            func_801CE198(D_800625A0->equipment->rowACount[i], D_800625A0->equipment->rowAAt[i], D_800625A0->equipment->rowA[i], D_800625A0->equipment->rowABuffer[i]);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->equip_panel->bars[i][D_800625A0->equip_panel->barBuffer[i]]);
+            func_801CE198(D_800625A0->equip_panel->rowACount[i], D_800625A0->equip_panel->rowAAt[i], D_800625A0->equip_panel->rowA[i], D_800625A0->equip_panel->rowABuffer[i]);
         }
     }
 }
 
 /* While party flag +8 is set, draw the sprites of the block at +35c. */
 void func_801CEB5C(void) {
-    MenuBlock35C *block;
+    MenuEquipPanel *block;
 
     if (D_800625A0->flags->equipment_shown != 0) {
-        block = D_800625A0->equipment;
+        block = D_800625A0->equip_panel;
         func_801CE198(block->kind, block->verts, block->polys, block->buffer);
         func_801CE860();
     }
@@ -5895,29 +5895,29 @@ void func_801D7F50(s32 x, s32 y, u8 first) {
     s32 part;
 
     func_80026338(D_800625A0->sheet, 0xe0, &clutX, &clutY, &pageX, &pageY, &u, &v);
-    D_800625A0->equipment->kind = 0;
+    D_800625A0->equip_panel->kind = 0;
     for (i = 0; i < 7 - first; i++) {
-        start = D_800625A0->equipment->kind;
-        D_800625A0->equipment->kind += func_8002675C(D_800625A0->sheet, D_801EA45C[first * 7 + i],
-                                                    &D_800625A0->equipment->polys[start * 2], D_800625A0->buffer_index,
+        start = D_800625A0->equip_panel->kind;
+        D_800625A0->equip_panel->kind += func_8002675C(D_800625A0->sheet, D_801EA45C[first * 7 + i],
+                                                    &D_800625A0->equip_panel->polys[start * 2], D_800625A0->buffer_index,
                                                     x + D_801E9D40[i], y + D_801E9D5C[i], 0x1000);
         if (i & 1) {
-            for (part = start; part < D_800625A0->equipment->kind; part++) {
-                SetShadeTex(&D_800625A0->equipment->polys[part * 2 + D_800625A0->buffer_index], 0);
-                (D_800625A0->equipment->polys + (part * 2 + D_800625A0->buffer_index))->r0 = 0x40;
-                (D_800625A0->equipment->polys + (part * 2 + D_800625A0->buffer_index))->g0 = 0x40;
-                (D_800625A0->equipment->polys + (part * 2 + D_800625A0->buffer_index))->b0 = 0x40;
+            for (part = start; part < D_800625A0->equip_panel->kind; part++) {
+                SetShadeTex(&D_800625A0->equip_panel->polys[part * 2 + D_800625A0->buffer_index], 0);
+                (D_800625A0->equip_panel->polys + (part * 2 + D_800625A0->buffer_index))->r0 = 0x40;
+                (D_800625A0->equip_panel->polys + (part * 2 + D_800625A0->buffer_index))->g0 = 0x40;
+                (D_800625A0->equip_panel->polys + (part * 2 + D_800625A0->buffer_index))->b0 = 0x40;
             }
         }
     }
-    for (i = 0; i < D_800625A0->equipment->kind; i++) {
-        func_801C851C(&D_800625A0->equipment->verts[i * 4],
-                      D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].x0,
-                      D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].y0,
-                      D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].x1 -
-                          D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].x0,
-                      D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].y3 -
-                          D_800625A0->equipment->polys[i * 2 + D_800625A0->buffer_index].y0);
+    for (i = 0; i < D_800625A0->equip_panel->kind; i++) {
+        func_801C851C(&D_800625A0->equip_panel->verts[i * 4],
+                      D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].x0,
+                      D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].y0,
+                      D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].x1 -
+                          D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].x0,
+                      D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].y3 -
+                          D_800625A0->equip_panel->polys[i * 2 + D_800625A0->buffer_index].y0);
     }
 }
 
@@ -6062,74 +6062,74 @@ void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
     }
     scale = func_801D85DC(0, before, shown);
     for (row = 0; row < 7 - first; row++) {
-        D_800625A0->equipment->rowACount[row] = 0;
-        D_800625A0->equipment->rowBCount[row] = 0;
+        D_800625A0->equip_panel->rowACount[row] = 0;
+        D_800625A0->equip_panel->rowBCount[row] = 0;
         func_801D84B4(before[row], shown[row], scale);
-        func_801D827C(D_800625A0->equipment->bars[row], 0);
-        func_801C851C(D_800625A0->equipment->barAt[row], D_801E9D78 + x, y + D_801E9D7C + row * 8, D_801EA708, 6);
-        D_800625A0->equipment->barBuffer[row] = D_800625A0->buffer_index;
+        func_801D827C(D_800625A0->equip_panel->bars[row], 0);
+        func_801C851C(D_800625A0->equip_panel->barAt[row], D_801E9D78 + x, y + D_801E9D7C + row * 8, D_801EA708, 6);
+        D_800625A0->equip_panel->barBuffer[row] = D_800625A0->buffer_index;
         func_801C80B8(D_801EA6FC);
         for (i = 0; i < 4; i++) {
             if (D_800625A0->digits[5 + i] != 0xff) {
-                D_800625A0->equipment->rowACount[row] +=
+                D_800625A0->equip_panel->rowACount[row] +=
                     func_8002675C(D_800625A0->sheet, D_800625A0->digits[5 + i],
-                                  &D_800625A0->equipment->rowA[row][D_800625A0->equipment->rowACount[row] * 2],
+                                  &D_800625A0->equip_panel->rowA[row][D_800625A0->equip_panel->rowACount[row] * 2],
                                   D_800625A0->buffer_index, x + D_801E9D80 + i * 8, y + D_801E9D84 + row * 8, 0x1000);
             }
         }
-        for (i = 0; i < D_800625A0->equipment->rowACount[row]; i++) {
-            func_801C851C(&D_800625A0->equipment->rowAAt[row][i * 4],
-                          D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].x0,
-                          D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].y0,
-                          D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].x1 -
-                              D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].x0,
-                          D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].y3 -
-                              D_800625A0->equipment->rowA[row][i * 2 + D_800625A0->buffer_index].y0);
+        for (i = 0; i < D_800625A0->equip_panel->rowACount[row]; i++) {
+            func_801C851C(&D_800625A0->equip_panel->rowAAt[row][i * 4],
+                          D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].x0,
+                          D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].y0,
+                          D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].x1 -
+                              D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].x0,
+                          D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].y3 -
+                              D_800625A0->equip_panel->rowA[row][i * 2 + D_800625A0->buffer_index].y0);
         }
         if (row & 1) {
-            func_801D83AC(D_800625A0->equipment->rowA[row], 2, D_800625A0->equipment->rowACount[row],
+            func_801D83AC(D_800625A0->equip_panel->rowA[row], 2, D_800625A0->equip_panel->rowACount[row],
                           D_800625A0->buffer_index);
         }
-        D_800625A0->equipment->rowABuffer[row] = D_800625A0->buffer_index;
+        D_800625A0->equip_panel->rowABuffer[row] = D_800625A0->buffer_index;
         if (compare) {
-            func_801D827C(D_800625A0->equipment->highlights[row], D_801EA710);
+            func_801D827C(D_800625A0->equip_panel->highlights[row], D_801EA710);
             if (D_801EA710 == 2) {
                 start = x + D_801E9D78 + D_801EA708;
             } else {
                 start = x + D_801E9D78 + D_801EA708 - D_801EA70C;
             }
-            func_801C851C(D_800625A0->equipment->highlightAt[row], start, y + D_801E9D7C + row * 8, D_801EA70C, 6);
-            D_800625A0->equipment->highlightBuffer[row] = D_800625A0->buffer_index;
+            func_801C851C(D_800625A0->equip_panel->highlightAt[row], start, y + D_801E9D7C + row * 8, D_801EA70C, 6);
+            D_800625A0->equip_panel->highlightBuffer[row] = D_800625A0->buffer_index;
             if (compare && D_801EA704 != 0) {
-                D_800625A0->equipment->rowBCount[row] +=
-                    func_8002675C(D_800625A0->sheet, D_801EA714, D_800625A0->equipment->rowB[row],
+                D_800625A0->equip_panel->rowBCount[row] +=
+                    func_8002675C(D_800625A0->sheet, D_801EA714, D_800625A0->equip_panel->rowB[row],
                                   D_800625A0->buffer_index, x + D_801E9D80 + 0x20, y + D_801E9D84 + row * 8, 0x1000);
                 func_801C80B8(D_801EA704);
                 for (i = 0, drawn = 0; i < 3; i++) {
                     if (D_800625A0->digits[6 + i] != 0xff) {
-                        D_800625A0->equipment->rowBCount[row] += func_8002675C(
+                        D_800625A0->equip_panel->rowBCount[row] += func_8002675C(
                             D_800625A0->sheet, D_800625A0->digits[6 + i],
-                            &D_800625A0->equipment->rowB[row][D_800625A0->equipment->rowBCount[row] * 2],
+                            &D_800625A0->equip_panel->rowB[row][D_800625A0->equip_panel->rowBCount[row] * 2],
                             D_800625A0->buffer_index, x + D_801E9D80 + 0x28 + drawn * 8, y + D_801E9D84 + row * 8, 0x1000);
                         drawn++;
                     }
                 }
-                for (i = 0; i < D_800625A0->equipment->rowBCount[row]; i++) {
-                    func_801C851C(&D_800625A0->equipment->rowBAt[row][i * 4],
-                                  D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].x0,
-                                  D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].y0,
-                                  D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].x1 -
-                                      D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].x0,
-                                  D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].y3 -
-                                      D_800625A0->equipment->rowB[row][i * 2 + D_800625A0->buffer_index].y0);
+                for (i = 0; i < D_800625A0->equip_panel->rowBCount[row]; i++) {
+                    func_801C851C(&D_800625A0->equip_panel->rowBAt[row][i * 4],
+                                  D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].x0,
+                                  D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].y0,
+                                  D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].x1 -
+                                      D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].x0,
+                                  D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].y3 -
+                                      D_800625A0->equip_panel->rowB[row][i * 2 + D_800625A0->buffer_index].y0);
                 }
-                func_801D83AC(D_800625A0->equipment->rowB[row], D_801EA710 - 2, D_800625A0->equipment->rowBCount[row],
+                func_801D83AC(D_800625A0->equip_panel->rowB[row], D_801EA710 - 2, D_800625A0->equip_panel->rowBCount[row],
                               D_800625A0->buffer_index);
-                D_800625A0->equipment->rowBBuffer[row] = D_800625A0->buffer_index;
-                D_800625A0->equipment->highlighted = 1;
+                D_800625A0->equip_panel->rowBBuffer[row] = D_800625A0->buffer_index;
+                D_800625A0->equip_panel->highlighted = 1;
             }
         }
-        D_800625A0->equipment->rowShown[row] = 1;
+        D_800625A0->equip_panel->rowShown[row] = 1;
     }
 }
 
@@ -6147,7 +6147,7 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
     func_801D7F50(x, y, mode);
     func_801D8644(slot, x, y, arg2, mode);
     D_800625A0->flags->equipment_shown = 1;
-    D_800625A0->equipment->buffer = D_800625A0->buffer_index;
+    D_800625A0->equip_panel->buffer = D_800625A0->buffer_index;
 }
 
 /* Draw the part panel of party slot `slot` on the equipment screen: rows of

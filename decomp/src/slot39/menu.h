@@ -131,7 +131,7 @@ typedef struct MenuFileInfo {
     POLY_FT4 discDigits[2][2]; /* 2D1C: two digits */
     u8 rebuilt; /* 2DBC */
     u8 pad2DBD[0x3];
-} MenuBlock34C;
+} MenuFileInfo;
 
 /* Five labels (*(state + 360)). */
 typedef struct MenuEquipLabels {
@@ -142,7 +142,7 @@ typedef struct MenuEquipLabels {
     u8 count; /* 299 */
     u8 pad29A[0x2];
     u8 parts[3][5]; /* 29C: equipment kept from the character or gear */
-} MenuLabels360;
+} MenuEquipLabels;
 
 /* The save/load screen block (*(state + 42c)). */
 typedef struct MenuItemList {
@@ -153,7 +153,7 @@ typedef struct MenuItemList {
     u8 shown[16]; /* 1184 */
     u8 extraShown; /* 1194 */
     u8 pad1195[0x3];
-} MenuBlock42C;
+} MenuItemList;
 
 /* The file list block (*(state + 430)). */
 typedef struct MenuFileList {
@@ -167,7 +167,7 @@ typedef struct MenuFileList {
     u8 shown[14]; /* 1084 */
     u8 extraShown; /* 1092 */
     u8 pad1093[0x1];
-} MenuBlock430;
+} MenuFileList;
 
 /* The status list block (*(state + 438)). */
 typedef struct MenuStatusList {
@@ -182,7 +182,7 @@ typedef struct MenuStatusList {
     u8 shown[13]; /* 2596 */
     u8 gaugeShown[13]; /* 25A3 */
     u8 gaugeBuffer[13]; /* 25B0 */
-} MenuBlock438;
+} MenuStatusList;
 
 /* The field menu command block (*(state + 340)). */
 typedef struct MenuFieldMenu {
@@ -251,10 +251,10 @@ typedef struct MenuDetail {
     u8 tabCount;                 /* 2AED */
     u8 tabBuffer;                /* 2AEE */
     u8 pad2AEF[0x1];
-} MenuBlock358;
+} MenuDetail;
 
 /* The equipment panel block (*(state + 35c)). */
-typedef struct MenuEquipment {
+typedef struct MenuEquipPanel {
     POLY_FT4 polys[94];            /* 0: stat name parts (801d7f50) */
     POLY_FT4 rowA[7][8];           /* EB0: per row: parts, two per buffer */
     POLY_FT4 rowB[7][8];           /* 1770 */
@@ -275,7 +275,7 @@ typedef struct MenuEquipment {
     u8 buffer;                     /* 32F1 */
     u8 highlighted;                /* 32F2 */
     u8 kind;                       /* 32F3: stat name parts built */
-} MenuBlock35C;
+} MenuEquipPanel;
 
 /* A position record passed to the panel builders (+28 base). */
 typedef struct MenuAnchor {
@@ -326,7 +326,7 @@ typedef struct MenuEquipList {
     u8 shown[8]; /* A10 */
     u8 extraShown; /* A18 */
     u8 padA19[0x3];
-} MenuBlock434;
+} MenuEquipList;
 
 /* The card access indicator (*(state + 44c), 7bc bytes). */
 typedef struct MenuIndicator {
@@ -340,7 +340,9 @@ typedef struct MenuIndicator {
 } MenuIndicator;
 
 /* A file screen slot (*(state + 3a8 + 4 * slot)): its icon, the two
- * connector lines to the next slot and the cursor box, one per buffer. */
+ * connector lines to the next slot and the cursor box, one per buffer. The
+ * item and equipment screens draw the lines as the icon's frame and the box
+ * as a semi-transparent cover. */
 typedef struct MenuSlotImage {
     POLY_FT4 icon[2];  /* 0 */
     LINE_F3 lineA[2];  /* 50 */
@@ -351,19 +353,6 @@ typedef struct MenuSlotImage {
     SVECTOR lineBAt[4]; /* 120 */
     DR_MODE boxMode[2]; /* 140 */
 } MenuSlotImage;
-
-/* An image block (*(state + 3a8)[i], 158 bytes): a sprite and a green
- * frame drawn as two three-point lines. */
-typedef struct MenuImage {
-    POLY_FT4 polys[2]; /* 0 */
-    LINE_F3 top[2]; /* 50: per buffer: top and right edges */
-    LINE_F3 bottom[2]; /* 80: per buffer: left and bottom edges */
-    POLY_F4 shade[2]; /* B0: per buffer: semi-transparent cover */
-    SVECTOR shadeVerts[4]; /* E0 */
-    SVECTOR topVerts[4]; /* 100 */
-    SVECTOR bottomVerts[4]; /* 120 */
-    DR_MODE modes[2]; /* 140 */
-} MenuImage;
 
 /* The sheet images of one command of a command window. */
 typedef struct MenuCommandImages {

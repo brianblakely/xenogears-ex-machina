@@ -776,7 +776,7 @@ void func_801DE400(void) {
     D_800625A0->flags->equipment_shown = 0;
     D_800625A0->flags->equip_labels_shown = 0;
     func_801C7BF4();
-    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_panel);
     func_800320E8(D_800625A0->equip_labels);
 }
 
@@ -1605,7 +1605,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 drawnRow = 0xff;
                 panel = 1;
                 previewed = 0;
-                D_800625A0->equipment->highlighted = 0;
+                D_800625A0->equip_panel->highlighted = 0;
             }
         }
     }
@@ -1618,7 +1618,7 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     void *block;
 
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->equipment = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
     D_800625A0->equip_labels = block;
@@ -1632,7 +1632,7 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
 /* Open the 801e1544 screen: its block (+438), labels and window, the party
  * panel when two or more members can take part, and the green gauges. */
 void func_801E1014(void) {
-    MenuBlock438 *block;
+    MenuStatusList *block;
     s32 i;
     s32 j;
 
@@ -1969,7 +1969,7 @@ u8 func_801E2250(void) {
     D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->equipment = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
     D_800625A0->equip_labels = block;
@@ -1994,7 +1994,7 @@ void func_801E2324(u8 page) {
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2368(void) {
     func_800320E8(D_800625A0->detail);
-    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_panel);
     func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
@@ -2158,7 +2158,7 @@ void func_801E2AE0(void) {
     D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->equipment = block;
+    D_800625A0->equip_panel = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
     D_800625A0->equip_labels = block;
@@ -2170,7 +2170,7 @@ void func_801E2AE0(void) {
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2B80(void) {
     func_800320E8(D_800625A0->detail);
-    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_panel);
     func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
@@ -3194,7 +3194,7 @@ void func_801E53CC(u8 index) {
 /* Set up image block `index`'s 16x16 sprite and semi-transparent cover at
  * its position for both buffers, and the two draw modes (blend mode 2). */
 void func_801E56E8(s32 index) {
-    MenuImage *image;
+    MenuSlotImage *image;
     s16 *x;
     s16 *y;
     s32 i;
@@ -3205,43 +3205,43 @@ void func_801E56E8(s32 index) {
     y = D_801E9914[index];
     image = D_800625A0->slots[index];
     for (; i < 2; i++) {
-        func_801E927C(&image->polys[i]);
-        image->polys[i].x0 = *x;
-        image->polys[i].y0 = *y;
-        image->polys[i].x1 = *x + 0x10;
-        image->polys[i].y1 = *y;
-        image->polys[i].x2 = *x;
-        image->polys[i].y2 = *y + 0x10;
-        image->polys[i].x3 = *x + 0x10;
-        image->polys[i].y3 = *y + 0x10;
-        image->polys[i].tpage = GetTPage(0, 0, 0x140, 0x80);
-        SetPolyF4(&image->shade[i]);
-        image->shade[i].r0 = 0x80;
-        image->shade[i].g0 = 0x80;
-        image->shade[i].b0 = 0x80;
-        SetSemiTrans(&image->shade[i], 1);
-        image->shade[i].x0 = *x;
-        image->shade[i].y0 = *y;
-        image->shade[i].x1 = *x + 0x10;
-        image->shade[i].y1 = *y;
-        image->shade[i].x2 = *x;
-        image->shade[i].y2 = *y + 0x10;
-        image->shade[i].x3 = *x + 0x10;
-        image->shade[i].y3 = *y + 0x10;
-        func_801C851C(image->shadeVerts, *x, *y, 0x10, 0x10);
+        func_801E927C(&image->icon[i]);
+        image->icon[i].x0 = *x;
+        image->icon[i].y0 = *y;
+        image->icon[i].x1 = *x + 0x10;
+        image->icon[i].y1 = *y;
+        image->icon[i].x2 = *x;
+        image->icon[i].y2 = *y + 0x10;
+        image->icon[i].x3 = *x + 0x10;
+        image->icon[i].y3 = *y + 0x10;
+        image->icon[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyF4(&image->box[i]);
+        image->box[i].r0 = 0x80;
+        image->box[i].g0 = 0x80;
+        image->box[i].b0 = 0x80;
+        SetSemiTrans(&image->box[i], 1);
+        image->box[i].x0 = *x;
+        image->box[i].y0 = *y;
+        image->box[i].x1 = *x + 0x10;
+        image->box[i].y1 = *y;
+        image->box[i].x2 = *x;
+        image->box[i].y2 = *y + 0x10;
+        image->box[i].x3 = *x + 0x10;
+        image->box[i].y3 = *y + 0x10;
+        func_801C851C(image->iconAt, *x, *y, 0x10, 0x10);
     }
     window.y = 0;
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    SetDrawMode(&image->modes[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
-    SetDrawMode(&image->modes[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->boxMode[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->boxMode[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
 }
 
 /* Set up image block `index`'s green 16x16 frame at its position: the
  * top/right and left/bottom lines and their vertices, for both buffers. */
 void func_801E5924(s32 index) {
-    MenuImage *image;
+    MenuSlotImage *image;
     s16 *x;
     s16 *y;
     s32 i;
@@ -3250,28 +3250,28 @@ void func_801E5924(s32 index) {
     y = D_801E9914[index];
     image = D_800625A0->slots[index];
     for (i = 0; i < 2; i++) {
-        SetLineF3(&image->top[i]);
-        image->top[i].r0 = 0;
-        image->top[i].g0 = 0xff;
-        image->top[i].b0 = 0;
-        image->top[i].x0 = *x;
-        image->top[i].y0 = *y;
-        image->top[i].x1 = *x + 0x10;
-        image->top[i].y1 = *y;
-        image->top[i].x2 = *x + 0x10;
-        image->top[i].y2 = *y + 0x10;
-        func_801C851C(image->topVerts, *x, *y, 0x10, 0x10);
-        SetLineF3(&image->bottom[i]);
-        image->bottom[i].r0 = 0;
-        image->bottom[i].g0 = 0xff;
-        image->bottom[i].b0 = 0;
-        image->bottom[i].x0 = *x;
-        image->bottom[i].y0 = *y;
-        image->bottom[i].x1 = *x;
-        image->bottom[i].y1 = *y + 0x10;
-        image->bottom[i].x2 = *x + 0x10;
-        image->bottom[i].y2 = *y + 0x10;
-        func_801C851C(image->bottomVerts, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->lineA[i]);
+        image->lineA[i].r0 = 0;
+        image->lineA[i].g0 = 0xff;
+        image->lineA[i].b0 = 0;
+        image->lineA[i].x0 = *x;
+        image->lineA[i].y0 = *y;
+        image->lineA[i].x1 = *x + 0x10;
+        image->lineA[i].y1 = *y;
+        image->lineA[i].x2 = *x + 0x10;
+        image->lineA[i].y2 = *y + 0x10;
+        func_801C851C(image->lineAAt, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->lineB[i]);
+        image->lineB[i].r0 = 0;
+        image->lineB[i].g0 = 0xff;
+        image->lineB[i].b0 = 0;
+        image->lineB[i].x0 = *x;
+        image->lineB[i].y0 = *y;
+        image->lineB[i].x1 = *x;
+        image->lineB[i].y1 = *y + 0x10;
+        image->lineB[i].x2 = *x + 0x10;
+        image->lineB[i].y2 = *y + 0x10;
+        func_801C851C(image->lineBAt, *x, *y, 0x10, 0x10);
     }
 }
 
