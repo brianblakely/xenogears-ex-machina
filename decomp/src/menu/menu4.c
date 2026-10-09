@@ -51,9 +51,9 @@ static u8 D_80092764; /* stick is deflected */
 static DrMove D_80095498[2];
 static DrTpage D_800954C8[2];
 static SceneSprite D_800954D8[2];
-/* The upper and lower captions: two sprite strips sharing one pixel buffer
- * (func_80080F04), each drawn as a Caption. */
-static SpriteStrip D_80095510[2];
+/* The upper and lower captions, which share one pixel buffer
+ * (func_80080F04). */
+static Caption D_80095510[2];
 static DrTpage D_80095570[2];
 
 /* Menu font glyphs (func_8007E8AC maps characters to these). */
@@ -1117,16 +1117,16 @@ void func_80080D20(void *ot) {
 void func_80080F04(void) {
     u8 *pixels = func_80031BDC(0x6B4, 0);
 
-    D_80095510[0].pixels = D_80095510[1].pixels = pixels;
-    D_80095510[0].sprite[0].xy0 = 0xB40000;
-    D_80095510[0].sprite[0].uv0 = 0x3000;
+    D_80095510[0].image = D_80095510[1].image = pixels;
+    *(u32 *)&D_80095510[0].sprite[0].x0 = 0xB40000;
+    *(u16 *)&D_80095510[0].sprite[0].u0 = 0x3000;
     SetSprt(&D_80095510[0].sprite[0]);
     SetShadeTex(&D_80095510[0].sprite[0], 1);
     D_80095510[0].sprite[0].h = 0xD;
     D_80095510[0].sprite[0].clut = D_800595D4;
     D_80095510[0].sprite[1] = D_80095510[0].sprite[0];
-    D_80095510[1].sprite[0].xy0 = 0xC30000;
-    D_80095510[1].sprite[0].uv0 = 0x3000;
+    *(u32 *)&D_80095510[1].sprite[0].x0 = 0xC30000;
+    *(u16 *)&D_80095510[1].sprite[0].u0 = 0x3000;
     SetSprt(&D_80095510[1].sprite[0]);
     SetShadeTex(&D_80095510[1].sprite[0], 1);
     D_80095510[1].sprite[0].h = 0xD;
@@ -1155,19 +1155,19 @@ void func_80081100(s32 text, s32 lower) {
             return;
         }
         D_8009273C = text;
-        func_80081094((Caption *)&D_80095510, text, 0);
+        func_80081094(&D_80095510[0], text, 0);
     } else {
         if (text == D_80092740) {
             return;
         }
         D_80092740 = text;
-        func_80081094((Caption *)&D_80095510[1], text, 1);
+        func_80081094(&D_80095510[1], text, 1);
     }
     rect.x = 0x140;
     rect.y = 0x30;
     rect.w = 0x42;
     rect.h = 0xD;
-    LoadImage(&rect, (void *)((Caption *)(Caption *)&D_80095510)->image);
+    LoadImage(&rect, (void *)D_80095510[0].image);
 }
 
 /* Link the shown captions into the ordering table. */
@@ -1175,13 +1175,13 @@ void func_800811AC(void *ot) {
     Caption *caption;
 
     if (D_8009273C != 0) {
-        caption = (Caption *)&D_80095510;
+        caption = &D_80095510[0];
         caption->sprite[D_800928A0].w = caption->width;
         caption->sprite[D_800928A0].x0 = caption->x;
         AddPrim(ot, &caption->sprite[D_800928A0]);
     }
     if (D_80092740 != 0) {
-        caption = (Caption *)&D_80095510[1];
+        caption = &D_80095510[1];
         caption->sprite[D_800928A0].w = caption->width;
         caption->sprite[D_800928A0].x0 = caption->x;
         AddPrim(ot, &caption->sprite[D_800928A0]);

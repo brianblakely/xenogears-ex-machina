@@ -13,17 +13,18 @@
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "mode.h"
-#include "menu.h"
-#include "sprite.h"
-#include "cd.h"
-#include "stream.h"
-#include "model.h"
-#include "heap.h"
-#include "text.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
+#include "resident/mode.h"
+#include "resident/menu.h"
+#include "resident/sprite.h"
+#include "resident/cd.h"
+#include "resident/stream.h"
+#include "resident/model.h"
+#include "resident/heap.h"
+#include "resident/text.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
+#include "own_declarations.h"
 
 void func_80025258(Task *task);
 void func_8002541C(Task *task);
@@ -211,7 +212,7 @@ next:
     /* 98: with a creator (+70) running this sprite's wait animation (+8d) in state 2, retry
      * each frame; then go on after a frame (at once without a creator). */
     case 0x98:
-        creator = (Sprite *)sprite->word70;
+        creator = (Sprite *)sprite->parent;
         if (creator == NULL) {
             break;
         }
@@ -436,7 +437,7 @@ void func_80025258(Task *task) {
         }
     } else {
         if ((sprite->render.word >> 29) & 1) {
-            depth = ((Sprite *)sprite->word70)->depth;
+            depth = ((Sprite *)sprite->parent)->depth;
         }
         if (depth > 0 && depth < 0x1000) {
             func_8001E298(sprite, (u_long *)(D_8005956C + depth * 4));

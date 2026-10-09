@@ -9,7 +9,7 @@
 #include "psyq.h"
 #include "scene.h"
 #include "battle_core.h"
-#include "area.h"
+#include "battle/area.h"
 #include "files.h"
 #include "objects.h"
 #include "screen.h"

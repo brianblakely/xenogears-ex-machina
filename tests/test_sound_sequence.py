@@ -211,7 +211,8 @@ class ScriptTests(unittest.TestCase):
         resident = Path(__file__).resolve().parents[1] / "decomp/src/resident"
         self.assertIn(f"D_800508A4[{WAVE_SLOTS}])", (resident / "sound.c").read_text())
         self.assertIn(
-            f"SoundModulator modulator[{MODULATORS}];", (resident / "sound.h").read_text()
+            f"SoundModulator modulator[{MODULATORS}];",
+            (resident.parents[1] / "include/resident/sound.h").read_text(),
         )
 
     def test_unreached_bytes_decode_on_their_own(self):

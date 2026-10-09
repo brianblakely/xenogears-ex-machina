@@ -23,8 +23,6 @@
 
 /* RotAverageNclip4: the quad's screen points, its depth and flag; its
  * winding (> 0 facing). */
-s32 func_8004A83C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1, long *sxy2,
-                  long *sxy3, long *p, long *otz, long *flag);
 void func_800B1F0C(u32 *ot);
 
 #endif
