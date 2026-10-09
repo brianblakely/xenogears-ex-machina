@@ -540,8 +540,9 @@ def asset_size(text: str, address: int) -> int:
 
 
 def asset_ranges(overlay: str) -> list[tuple[int, int]]:
-    """The `asset` ranges of an overlay's classification file."""
-    lines = (ROOT / f"decomp/targets/overlays/{overlay}.classification.txt").read_text()
+    """The `asset` ranges of an overlay's (or the resident's) classification file."""
+    name = "resident/classification.txt" if overlay == "resident" else f"overlays/{overlay}.classification.txt"
+    lines = (ROOT / "decomp/targets" / name).read_text()
     return [
         (int(start, 16), int(end, 16))
         for start, end, kind in re.findall(r"^(\w+) (\w+) (\w+) ", lines, re.M)
@@ -550,9 +551,10 @@ def asset_ranges(overlay: str) -> list[tuple[int, int]]:
 
 
 class AssetTests(unittest.TestCase):
-    """The scripts the decoders read stay user-supplied: each is linked from the
-    user's image with INCLUDE_ASSET inside an `asset` range, never written as a
-    C initializer (docs/matching.md)."""
+    """The scripts the decoders read and the media embedded in data stay
+    user-supplied: each is linked from the user's image with INCLUDE_ASSET
+    inside an `asset` range, never written as a C initializer
+    (docs/matching.md)."""
 
     def check(self, overlay: str, addresses: list[int]) -> None:
         sources = "".join(
@@ -580,6 +582,11 @@ class AssetTests(unittest.TestCase):
 
     def test_world_map_texture_animations(self):
         self.check("worldmap", texture_runs())
+
+    def test_resident_media(self):
+        # The packed boot logo, sprite image and console font, the 0xFFFF
+        # font glyph and the error sound's effect and wave banks.
+        self.check("resident", [0x8004EABC, 0x8004FBD8, 0x800501D0, 0x80050240, 0x80050910, 0x80050940])
 
 
 def function(text: str, name: str) -> str:
