@@ -232,7 +232,7 @@ void func_801C559C(void) {
     D_800625A0->card_poll_timer = 60;
     D_800625A0->b_334 = 0;
     D_800625A0->b_335 = 0;
-    flags = D_8006F364 & D_8006F366 & 0x7FF;
+    flags = D_8006D634.joined & D_8006D634.available & 0x7FF;
     for (i = 0; i < 16; i++) {
         if (func_801C5018(flags, i) & 0xFFFF) {
             D_800625A0->available[i] = 1;
@@ -241,7 +241,7 @@ void func_801C559C(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        id = D_8006F368[i];
+        id = D_8006D634.party[i];
         if (id != 0xFF && D_800625A0->available[id]) {
             D_800625A0->flags->party[i] = id;
         } else {
@@ -1321,12 +1321,12 @@ void func_801C9748(void) {
 
     for (i = 0, count = 0; i < 3; i++) {
         if (D_800625A0->flags->party[i] != 0xFF) {
-            D_8006F368[count] = D_800625A0->flags->party[i];
+            D_8006D634.party[count] = D_800625A0->flags->party[i];
             count++;
         }
     }
     for (; count < 3; count++) {
-        D_8006F368[count] = 0xFF;
+        D_8006D634.party[count] = 0xFF;
     }
     func_801C94A0();
     func_801C94A0();
@@ -1442,7 +1442,7 @@ void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
                               i * 8 + x[10], row_height * slot + y[10], 0x1000);
         }
     }
-    func_801C969C(D_8006D634.characters[id].b63);
+    func_801C969C(D_8006D634.characters[id].level2);
     panel->next_count = 0;
     for (i = 0, n = 0; i < 3; i++) {
         if (D_800625A0->digits[6 + i] != 0xFF) {
@@ -1477,7 +1477,7 @@ void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
                               i * 8 + x[12], row_height * slot + y[12], 0x1000);
         }
     }
-    func_801C969C(D_8006D634.characters[id].hp_max);
+    func_801C969C(D_8006D634.characters[id].maxHp);
     panel->hp_max_count = 0;
     for (i = 0, n = 0; i < 3; i++) {
         if (D_800625A0->digits[6 + i] != 0xFF) {
@@ -1498,7 +1498,7 @@ void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
                               i * 8 + x[14], row_height * slot + y[14], 0x1000);
         }
     }
-    func_801C969C(D_8006D634.characters[id].ep_max);
+    func_801C969C(D_8006D634.characters[id].maxEp);
     panel->ep_max_count = 0;
     for (i = 0, n = 0; i < 2; i++) {
         if (D_800625A0->digits[7 + i] != 0xFF) {
@@ -1621,7 +1621,7 @@ void func_801CAB04(void) {
 }
 
 /* Swap the party member and the list member picked by the two cursor
- * positions unless either is empty or locked (D_8006F94C); an exchange that
+ * positions unless either is empty or locked (D_8006D634.locked); an exchange that
  * would leave the party empty is undone. Returns whether they were swapped. */
 u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page) {
     u8 party_ok;
@@ -1646,12 +1646,12 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
     }
     if (D_800625A0->flags->party[slot] == 0xFF) {
         party_ok = 0;
-    } else if (func_801C5018(D_8006F94C, D_800625A0->flags->party[slot]) & 0xFFFF) {
+    } else if (func_801C5018(D_8006D634.locked, D_800625A0->flags->party[slot]) & 0xFFFF) {
         party_ok = 0;
     }
     if (D_800625A0->members[index] == 0xFF) {
         member_ok = 0;
-    } else if (func_801C5018(D_8006F94C, D_800625A0->members[index]) & 0xFFFF) {
+    } else if (func_801C5018(D_8006D634.locked, D_800625A0->members[index]) & 0xFFFF) {
         member_ok = 0;
     }
     if (party_ok && member_ok) {
@@ -1783,7 +1783,7 @@ void func_801CAD14(void) {
     func_801CAB04();
     func_801C76FC(2);
     for (i = 0; i < 3; i++) {
-        D_8006F368[i] = D_800625A0->flags->party[i];
+        D_8006D634.party[i] = D_800625A0->flags->party[i];
     }
 }
 

@@ -30,23 +30,23 @@ void func_801C6E90();
 
 /* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
 void func_801CCE1C(ResourceSet *view, u8 id) {
-    Character *c;
+    CharacterRecord *c;
 
-    c = &D_8006D8A0[id];
-    if (c->unk56 == 4) {
-        view->stats[0] = c->unk4 + c->unk1C;
+    c = &D_8006D634.characters[id];
+    if (c->characterId == 4) {
+        view->stats[0] = c->entries[0].value4 + c->entries[3].value4;
     } else {
-        view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
+        view->stats[0] = c->entries[0].value4 + (c->attack + c->equipAttack);
     }
-    view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
-    view->stats[1] = c->bonus[6] + c->base[6];
-    view->stats[2] = c->base[5] + (c->bonus[1] + c->base[1]);
-    view->stats[3] = c->bonus[7] + c->base[7];
-    view->stats[4] = c->bonus[3] + c->base[3];
+    view->stats[0] = c->entries[0].value4 + (c->attack + c->equipAttack);
+    view->stats[1] = c->field5E + c->equip5E;
+    view->stats[2] = c->bodyDefense + (c->defense + c->equipDefense);
+    view->stats[3] = c->field5F + c->equip5F;
+    view->stats[4] = c->accuracy + c->equipAccuracy;
     view->stats[5] = 99;
-    view->stats[6] = c->bonus[4] + c->base[4];
+    view->stats[6] = c->etherDefense + c->equipEtherDefense;
     view->stats[7] = 10;
-    view->stats[8] = c->bonus[2] + c->base[2];
+    view->stats[8] = c->speed + c->equipSpeed;
     if (view->stats[0] >= 1000) {
         view->stats[0] = 999;
     }
@@ -269,11 +269,11 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                 case 0:
                     for (k = 0; k < 5; k++) {
                         if (item < 0x32) {
-                            if (D_8006D8A0[i].weapons[k] == item) {
+                            if (D_8006D634.characters[i].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006D8A0[i].armour[k] == item) {
+                        } else if (D_8006D634.characters[i].entryItems[k] == item) {
                             found = 1;
                             break;
                         }
@@ -281,7 +281,7 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                     break;
                 case 1:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006D8A0[i].accessories[k] == item) {
+                        if (D_8006D634.characters[i].accessories[k] == item) {
                             found = 1;
                             break;
                         }
@@ -437,18 +437,18 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     switch (kind) {
     case 0:
         if (member != 4) {
-            current = &D_800625A0->resources->equipment[D_8006D8A0[member].weapons[0]];
-            before[0] = current->power + D_8006D8A0[member].bonus[0];
+            current = &D_800625A0->resources->equipment[D_8006D634.characters[member].weapons[0]];
+            before[0] = current->power + D_8006D634.characters[member].attack;
             current = &D_800625A0->resources->equipment[id];
-            after[0] = current->power + D_8006D8A0[member].bonus[0];
+            after[0] = current->power + D_8006D634.characters[member].attack;
         } else {
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
+                current = &D_800625A0->resources->equipment[D_8006D634.characters[member].entryItems[k]];
                 before[0] += current->power;
             }
             fitted = &D_800625A0->resources->equipment[id];
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
+                current = &D_800625A0->resources->equipment[D_8006D634.characters[member].entryItems[k]];
                 if (current->type == fitted->type && current->type != 5) {
                     after[0] += fitted->power;
                 } else {
@@ -459,14 +459,14 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         break;
     case 1:
         replace = 1;
-        before[1] = after[1] = D_8006D8A0[member].bonus[1];
+        before[1] = after[1] = D_8006D634.characters[member].defense;
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+            accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
             before[1] += accessory->power;
         }
         fitted_accessory = &D_800625A0->resources->accessories[id];
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+            accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
             if (accessory->group != 0 && accessory->group == fitted_accessory->group) {
                 after[1] += fitted_accessory->power;
                 replace = 0;
@@ -477,16 +477,16 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+                accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
                 if (lowest >= accessory->power) {
                     lowest = accessory->power;
                     weakest = k;
                 }
             }
-            after[1] = D_8006D8A0[member].bonus[1] + fitted_accessory->power;
+            after[1] = D_8006D634.characters[member].defense + fitted_accessory->power;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
-                    accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+                    accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
                     after[1] += accessory->power;
                 }
             }
@@ -532,17 +532,17 @@ void func_801CE91C(u8 kind, u8 id) {
 
     switch (kind) {
     case 0:
-        ids = D_8006F3D0;
+        ids = D_8006D634.weaponIds;
         counts = ids - 100;
         n = 100;
         break;
     case 1:
-        ids = D_8006F4FC;
+        ids = D_8006D634.accessoryIds;
         counts = ids - 200;
         n = 200;
         break;
     case 2:
-        ids = D_8006F65A;
+        ids = D_8006D634.itemIds;
         counts = ids - 150;
         n = 150;
         break;
@@ -720,18 +720,18 @@ void func_801CF2A0(u32 gold) {
             case 0:
                 new_item = 1;
                 for (j = 0; j < 100; j++) {
-                    if (D_8006F3D0[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.weaponIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F36C[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F36C[j] = 99;
+                        if ((D_8006D634.weaponCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.weaponCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 100; j++) {
-                        if (D_8006F3D0[j] == 0) {
-                            D_8006F3D0[j] = D_800625A0->shop_items[i];
-                            D_8006F36C[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.weaponIds[j] == 0) {
+                            D_8006D634.weaponIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.weaponCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -740,18 +740,18 @@ void func_801CF2A0(u32 gold) {
             case 1:
                 new_item = 1;
                 for (j = 0; j < 200; j++) {
-                    if (D_8006F4FC[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.accessoryIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F434[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F434[j] = 99;
+                        if ((D_8006D634.accessoryCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.accessoryCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 200; j++) {
-                        if (D_8006F4FC[j] == 0) {
-                            D_8006F4FC[j] = D_800625A0->shop_items[i];
-                            D_8006F434[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.accessoryIds[j] == 0) {
+                            D_8006D634.accessoryIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.accessoryCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -760,18 +760,18 @@ void func_801CF2A0(u32 gold) {
             case 2:
                 new_item = 1;
                 for (j = 0; j < 150; j++) {
-                    if (D_8006F65A[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.itemIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F5C4[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F5C4[j] = 99;
+                        if ((D_8006D634.itemCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.itemCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 150; j++) {
-                        if (D_8006F65A[j] == 0) {
-                            D_8006F65A[j] = D_800625A0->shop_items[i];
-                            D_8006F5C4[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.itemIds[j] == 0) {
+                            D_8006D634.itemIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.itemCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -1228,8 +1228,8 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
                         D_8006D634.characters[member].weapons[0] = 0;
                     } else {
                         for (j = 0; j < 4; j++) {
-                            if (ids[i] == D_8006D634.characters[member].armour[j]) {
-                                D_8006D634.characters[member].armour[j] = 0;
+                            if (ids[i] == D_8006D634.characters[member].entryItems[j]) {
+                                D_8006D634.characters[member].entryItems[j] = 0;
                                 break;
                             }
                         }
@@ -1500,8 +1500,8 @@ u8 func_801D1658(void) {
         }
         n = 0;
         for (i = 0; i < 3; i++) {
-            if (D_8006D8A0[member].accessories[i] != 0) {
-                ids[n] = D_8006D8A0[member].accessories[i];
+            if (D_8006D634.characters[member].accessories[i] != 0) {
+                ids[n] = D_8006D634.characters[member].accessories[i];
                 kinds[n] = 1;
                 n++;
             }
@@ -1513,17 +1513,17 @@ u8 func_801D1658(void) {
 
 /* Run the sell list for inventory 1 (200 entries). */
 void func_801D18A8(void) {
-    func_801D0E68(200, D_8006F4FC, D_8006F4FC - 200, 1, 1, D_8006F4FC - 200, 0);
+    func_801D0E68(200, D_8006D634.accessoryIds, D_8006D634.accessoryIds - 200, 1, 1, D_8006D634.accessoryIds - 200, 0);
 }
 
 /* Run the sell list for inventory 0 (100 entries). */
 void func_801D18E8(void) {
-    func_801D0E68(100, D_8006F3D0, D_8006F3D0 - 100, 0, 1, D_8006F3D0 - 100, 0);
+    func_801D0E68(100, D_8006D634.weaponIds, D_8006D634.weaponIds - 100, 0, 1, D_8006D634.weaponIds - 100, 0);
 }
 
 /* Run the sell list for inventory 2 (150 entries). */
 void func_801D1928(void) {
-    func_801D0E68(150, D_8006F65A, D_8006F65A - 150, 2, 1, D_8006F65A - 150, 0);
+    func_801D0E68(150, D_8006D634.itemIds, D_8006D634.itemIds - 150, 2, 1, D_8006D634.itemIds - 150, 0);
 }
 
 /* Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */

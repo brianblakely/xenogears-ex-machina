@@ -288,7 +288,7 @@ void func_801C58F4(void) {
     D_800625A0->poll_timer = 0x3C;
     D_800625A0->unk334 = 0;
     D_800625A0->unk335 = 0;
-    available = D_8006F364 & D_8006F366 & 0x7FF;
+    available = D_8006D634.joined & D_8006D634.available & 0x7FF;
     for (i = 0; i < 16; i++) {
         if (func_801C50B0(available, i)) {
             D_800625A0->member_present[i] = 1;
@@ -297,7 +297,7 @@ void func_801C58F4(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        id = D_8006F368[i];
+        id = D_8006D634.party[i];
         if (id != 0xFF && D_800625A0->member_present[id] != 0) {
             D_800625A0->flags->members[i] = id;
         } else {

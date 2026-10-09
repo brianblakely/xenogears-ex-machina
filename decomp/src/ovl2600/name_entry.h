@@ -8,6 +8,7 @@
 #include "psyq/libgte.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
 #include "resident/model.h"
@@ -252,30 +253,7 @@ typedef struct {
 
 extern MenuArchive *D_8005945C;
 extern u8 D_80059178;    /* sound effects enabled */
-extern u16 D_8006F364;   /* characters that may join */
-extern u16 D_8006F366;
-extern u8 D_8006F368[3]; /* current party (0xFF empty) */
 extern u8 D_80059171;    /* character being named */
-/* A character record (0xA4 bytes) of the game data. */
-typedef struct {
-    u8 pad_0[0x4C];
-    u16 hp;     /* 0x4C */
-    u16 hp_max; /* 0x4E */
-    u16 ep;     /* 0x50 */
-    u16 ep_max; /* 0x52 */
-    u8 pad_54[0x62 - 0x54];
-    u8 level;   /* 0x62 */
-    u8 b63;   /* 0x63 */
-    u8 pad_64[0xA4 - 0x64];
-} CharacterRecord;
-
-/* The game data at 8006d634, as far as the menus use it. */
-typedef struct {
-    u8 names[31][0x14];            /* text codes */
-    CharacterRecord characters[31]; /* 0x26C */
-} GameData;
-
-extern GameData D_8006D634;
 
 extern void func_80019CA0(void);               /* reset combination check */
 extern void func_80039DB8(s32 sound);          /* play a sound */

@@ -8,6 +8,7 @@
 #include "psyq/libgte.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
 #include "resident/model.h"
@@ -333,25 +334,6 @@ typedef struct {
     u32 *ot_big;   /* b0: ovl2602's 400h-entry ordering table */
 } DrawEnv;
 
-/* A character record of the game data (a4h bytes, 8006d8a0). */
-typedef struct {
-    u8 unk0[4];
-    u8 unk4;       /* 04 */
-    u8 unk5[0x1C - 5];
-    u8 unk1C;      /* 1c */
-    u8 unk1D[0x28 - 0x1D];
-    u8 base[8];    /* 28 */
-    u8 unk30[0x56 - 0x30];
-    u8 unk56;      /* 56 */
-    u8 unk57;
-    u8 bonus[8];   /* 58 */
-    u8 unk60[0x6A - 0x60];
-    u8 gear[13];   /* 6a: equipped items */
-    u8 unk77[0xA0 - 0x77];
-    u8 unkA0;      /* a0: ff for a member who cannot be chosen */
-    u8 unkA1[3];
-} Character;
-
 /* A party member's detail view; its nine stat words at +b8. */
 typedef struct {
     u8 unk0[0xB8];
@@ -470,15 +452,6 @@ extern s32 D_801D6D74;   /* third number x */
 extern s32 D_801D6D78;   /* third number y */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
-/* Game state. */
-extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
-extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
-extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */
-extern Character D_8006D8A0[];
-extern u16 D_8006F364;   /* party members joined */
-extern u16 D_8006F366;   /* party members available */
-extern u8 D_8006F368[3]; /* party member ids */
-
 /* Resident services. */
 extern MenuResources *D_8005945C;        /* the menu resources block */
 extern u8 D_80059171;                    /* shop number */
@@ -570,92 +543,10 @@ void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 /* ovl2602 only. */
-extern u8 D_8006F6F0[];  /* inventory 4 counts (100) */
-extern u8 D_8006F7B8[];  /* inventory 3 counts (150) */
-extern u8 D_8006F754[];  /* inventory 4 ids (100), counts just before */
-extern u8 D_8006F84E[];  /* inventory 3 ids (150), counts just before */
 void func_801C5600(u8 allocate);
 void func_801C5664(u8 allocate);
 u8 func_801CCA40(u8 wait, u8 movable);
 
-/* A gear record of the game data (a4h bytes, 8006dfac). */
-typedef struct {
-    u8 unk0[2];
-    u8 unk2;       /* 02: entry of the 18h-byte table */
-    u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4[4];    /* 04: weapons (items 32h and up), entries of the 14h-byte weapon table */
-    u8 unk8;       /* 08: entry of the 14h-byte table */
-    u8 unk9[3];    /* 09: entries of the 1ch-byte part table */
-    u8 unkC[4];    /* 0c: weapons (items below 32h); [0] entry of the weapon table */
-    u16 unk10;     /* 10: weapon slots of 8 bytes */
-    u8 unk12, unk13, unk14;
-    u8 unk15[3];
-    u16 unk18;     /* 18 */
-    u8 unk1A, unk1B, unk1C;
-    u8 unk1D[3];
-    u16 unk20;     /* 20 */
-    u8 unk22, unk23, unk24;
-    u8 unk25[0x38 - 0x25];
-    u16 fuel;     /* 38 */
-    u16 max_fuel;     /* 3a */
-    u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
-    u16 unk40;     /* 40 */
-    u16 unk42;     /* 42 */
-    u16 unk44;     /* 44 */
-    u8 unk46[2];
-    u16 unk48;     /* 48 */
-    u8 unk4A;      /* 4a */
-    u8 unk4B;
-    u8 unk4C, unk4D, unk4E, unk4F; /* 4c */
-    u8 unk50[4];   /* 50 */
-    u8 unk54;      /* 54 */
-    u8 unk55[3];   /* 55 */
-    u8 unk58[0x5C - 0x58];
-    u8 unk5C, unk5D, unk5E, unk5F; /* 5c */
-    u32 hp;     /* 60 */
-    u32 max_hp;     /* 64 */
-    u16 unk68;     /* 68 */
-    u16 unk6A;     /* 6a */
-    u8 unk6C[2];
-    u16 unk6E;     /* 6e */
-    u16 unk70;     /* 70 */
-    u16 unk72;     /* 72 */
-    u8 unk74;
-    u8 unk75;      /* 75 */
-    u8 unk76[0x7E - 0x76];
-    u16 unk7E;     /* 7e */
-    u8 unk80[2];
-    u16 unk82;     /* 82 */
-    u8 unk84[2];
-    u16 unk86;     /* 86 */
-    u8 unk88[16];  /* 88 */
-    u8 unk98;      /* 98 */
-    u8 unk99[3];
-    u8 unk9C, unk9D, unk9E, unk9F; /* 9c */
-    u8 unkA0[4];
-} Gear;
-
-/* A pilot's record of the game data (20h bytes, 8006ecf8). */
-typedef struct {
-    u16 flags;     /* 00: pilot ability bits */
-    u8 unk2[0x16 - 2];
-    u16 unk16;     /* 16 */
-    u8 unk18[8];
-} PilotRecord;
-
-/* The game data (8006d634): names, character and gear records, pilots. */
-typedef struct {
-    u8 names[31][0x14];        /* 0000 */
-    Character characters[11];  /* 026c: 8006d8a0 */
-    Gear gears[20];            /* 0978: 8006dfac */
-    u8 unk1648[0x16C4 - 0x1648];
-    PilotRecord pilots[11];    /* 16c4: 8006ecf8 */
-    u8 unk1824[0x1924 - 0x1824];
-    u32 gold;                  /* 1924: 8006ef58 */
-    u8 unk1928[0x22B6 - 0x1928];
-    u16 unk22B6;               /* 22b6: 8006f8ea */
-} GameData;
-extern GameData D_8006D634;
 
 typedef struct {
     u32 users; /* 00: party bits of the members who can use it */
@@ -682,7 +573,7 @@ typedef struct {
     u16 unk8;  /* 08 */
     u16 unkA;  /* 0a */
     u8 unkC[0x14 - 0xC];
-} GearEntry;
+} GearFrame;
 
 /* A part record (1ch bytes). */
 typedef struct {
@@ -719,7 +610,7 @@ typedef struct {
     u8 unk0[8];
     GearRecord18 *records18; /* 08 */
     GearRecord10 *records10; /* 0c */
-    GearEntry *entries;      /* 10 */
+    GearFrame *entries;      /* 10 */
     GearPart *parts;         /* 14 */
     GearWeapon *weapons;     /* 18 */
     u8 unk1C[0x9C - 0x1C];
@@ -731,7 +622,6 @@ typedef struct {
     u8 unkB2, unkB3, unkB4, unkB5, unkB6; /* b2 */
 } GearTable;
 
-extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */
 extern u8 D_801D70F4[];   /* pilot of each gear */
 extern s32 D_801D6FD8;    /* available members 1-10 */
@@ -777,6 +667,14 @@ extern u8 D_801D6A24[];    /* sell list label text ids */
 extern u8 D_801D6A2C[];    /* buy list label text ids */
 extern s32 D_801D6A40[];   /* gear list label x offsets */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
+/* The gear record's bytes 0x55-0x57 (pad55, equipAttackScale, chargeRate)
+ * as the stat rebuild clears them: one array indexed from the record, which
+ * the separate members of GearRecord do not compile alike. */
+typedef struct {
+    u8 pad[0x55];
+    u8 bytes55[3];
+} GearRecordBytes55;
+
 /* The camera's move between two points (801d9050). */
 typedef struct {
     s32 from[3];     /* 00: previous target */
@@ -836,7 +734,6 @@ extern u16 D_801D70C4[14];      /* their y */
 /* Gear value positions (x, y). */
 extern u16 D_801D70E0, D_801D70E2, D_801D70E4, D_801D70E6, D_801D70E8;
 extern u16 D_801D70EA, D_801D70EC, D_801D70EE, D_801D70F0, D_801D70F2;
-extern u32 D_8006EF58;     /* party gold */
 void func_801CB4E4(void);
 void func_801CBE60(void);
 void func_801CABD8(void);

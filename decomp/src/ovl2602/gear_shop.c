@@ -477,7 +477,7 @@ void func_801CF448(void) {
         func_8002675C(D_800625A0->sprite_sheet, D_801D708C[j], &D_800625A0->unk454->frame[j * 2],
                       D_800625A0->buffer, D_801D70A8[j], D_801D70C4[j], 0x1000);
     }
-    func_801C5298(D_8006DFAC[D_801D9084].hp);
+    func_801C5298(D_8006D634.gears[D_801D9084].hp);
     D_800625A0->unk454->part_count[0] = 0;
     for (i = 0; i < 5; i++) {
         if (D_800625A0->digits[i + 4] != 0xFF) {
@@ -487,7 +487,7 @@ void func_801CF448(void) {
                               D_800625A0->buffer, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].max_hp);
+    func_801C5298(D_8006D634.gears[D_801D9084].maxHp);
     D_800625A0->unk454->part_count[1] = 0;
     for (i = 0, j = 0; i < 5; i++) {
         if (D_800625A0->digits[i + 4] != 0xFF) {
@@ -498,7 +498,7 @@ void func_801CF448(void) {
             j++;
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].fuel);
+    func_801C5298(D_8006D634.gears[D_801D9084].fuel);
     D_800625A0->unk454->part_count[2] = 0;
     for (i = 0; i < 4; i++) {
         if (D_800625A0->digits[i + 5] != 0xFF) {
@@ -508,7 +508,7 @@ void func_801CF448(void) {
                               D_800625A0->buffer, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].max_fuel);
+    func_801C5298(D_8006D634.gears[D_801D9084].maxFuel);
     D_800625A0->unk454->part_count[3] = 0;
     for (i = 0, j = 0; i < 4; i++) {
         if (D_800625A0->digits[i + 5] != 0xFF) {
@@ -519,7 +519,7 @@ void func_801CF448(void) {
             j++;
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].unk68);
+    func_801C5298(D_8006D634.gears[D_801D9084].field68);
     D_800625A0->unk454->part_count[4] = 0;
     for (i = 0; i < 5; i++) {
         if (D_800625A0->digits[i + 4] != 0xFF) {
@@ -715,9 +715,9 @@ void func_801D0398(u8 back) {
         D_800625A0->model_parts[1]->unk12 = 0;
         func_801E8030(1);
         func_801CC1C4();
-        func_801CF9BC(D_8006D8A0[member].unkA0, 1);
-        D_801D9084 = D_8006D8A0[member].unkA0;
-        func_801CFAB8(1, D_8006D8A0[member].unkA0);
+        func_801CF9BC(D_8006D634.characters[member].gearId, 1);
+        D_801D9084 = D_8006D634.characters[member].gearId;
+        func_801CFAB8(1, D_8006D634.characters[member].gearId);
         func_801CC1C4();
     }
 }
@@ -914,28 +914,28 @@ u32 func_801D1078(u8 item, u8 kind) {
             if (D_800625A0->member_present[i] != 0) {
                 switch (kind) {
                 case 1:
-                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk2 == item) {
+                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].engine == item) {
                         found = 1;
                     }
                     break;
                 case 0:
-                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk8 == item) {
+                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].frame == item) {
                         found = 1;
                     }
                     break;
                 case 2:
-                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk3 == item) {
+                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].field3 == item) {
                         found = 1;
                     }
                     break;
                 case 4:
                     for (k = 0; k < 4; k++) {
                         if (item < 0x32) {
-                            if (D_8006DFAC[D_8006D8A0[i].unkA0].unkC[k] == item) {
+                            if (D_8006D634.gears[D_8006D634.characters[i].gearId].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006DFAC[D_8006D8A0[i].unkA0].unk4[k] == item) {
+                        } else if (D_8006D634.gears[D_8006D634.characters[i].gearId].partItems[k] == item) {
                             found = 1;
                             break;
                         }
@@ -943,7 +943,7 @@ u32 func_801D1078(u8 item, u8 kind) {
                     break;
                 case 3:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006DFAC[D_8006D8A0[i].unkA0].unk9[k] == item) {
+                        if (D_8006D634.gears[D_8006D634.characters[i].gearId].parts[k] == item) {
                             found = 1;
                             break;
                         }
@@ -952,7 +952,7 @@ u32 func_801D1078(u8 item, u8 kind) {
                 }
             }
             if (found) {
-                members |= func_801C5260(D_8006D8A0[i].unkA0);
+                members |= func_801C5260(D_8006D634.characters[i].gearId);
             }
         }
     }
@@ -1049,7 +1049,7 @@ u32 func_801D1304(u8 id, u8 kind) {
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
         if (D_800625A0->member_present[i] != 0) {
-            gear = D_8006D8A0[i].unkA0;
+            gear = D_8006D634.characters[i].gearId;
             if (func_801C527C(users, gear)) {
                 D_800625A0->details->bar_shown[j] = 1;
             } else {
@@ -1173,7 +1173,7 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     s32 j;
 
     func_801CB498(0xD1);
-    party_gold = &D_8006EF58;
+    party_gold = &D_8006D634.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
@@ -1213,7 +1213,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
     u8 chosen[n];
     u8 selectable[n];
     u8 *held;
-    u32 gold = D_8006EF58;
+    u32 gold = D_8006D634.gold;
     u8 held_storage[n];
     u32 total;
     u32 new_gold;
@@ -1363,12 +1363,12 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
 
 /* Run the sell list for inventory 3 (150 entries). */
 void func_801D2784(void) {
-    func_801D2054(150, D_8006F84E, D_8006F84E - 150, 3, 1, D_8006F84E - 150, 0);
+    func_801D2054(150, D_8006D634.gearAccessoryIds, D_8006D634.gearAccessoryIds - 150, 3, 1, D_8006D634.gearAccessoryIds - 150, 0);
 }
 
 /* Run the sell list for inventory 4 (100 entries). */
 void func_801D27C4(void) {
-    func_801D2054(100, D_8006F754, D_8006F754 - 100, 4, 1, D_8006F754 - 100, 0);
+    func_801D2054(100, D_8006D634.gearPartIds, D_8006D634.gearPartIds - 100, 4, 1, D_8006D634.gearPartIds - 100, 0);
 }
 
 /* Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
@@ -1404,15 +1404,15 @@ void func_801D2950(u8 kind) {
     switch (kind) {
     case 0:
         D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[6], D_8006D634.gears[D_801D9084].unk8), pixels, 0x24, 0);
+            func_80033728(D_800625A0->details->resources[6], D_8006D634.gears[D_801D9084].frame), pixels, 0x24, 0);
         break;
     case 1:
         D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[7], D_8006D634.gears[D_801D9084].unk2), pixels, 0x24, 0);
+            func_80033728(D_800625A0->details->resources[7], D_8006D634.gears[D_801D9084].engine), pixels, 0x24, 0);
         break;
     case 2:
         D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[8], D_8006D634.gears[D_801D9084].unk3), pixels, 0x24, 0);
+            func_80033728(D_800625A0->details->resources[8], D_8006D634.gears[D_801D9084].field3), pixels, 0x24, 0);
         break;
     }
     rect.x = 0x198;
@@ -1443,7 +1443,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
     u32 users;
     u32 trade;
     s32 price;
-    GearEntry *frame;
+    GearFrame *frame;
     GearRecord18 *engine;
     GearRecord10 *armour;
     s32 value;
@@ -1468,7 +1468,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
         if (D_800625A0->shop_items[top + row] != 0) {
             switch (D_800625A0->shop_kinds[top + row]) {
             case 0:
-                frame = &((GearTable *)D_800625A0->resources)->entries[D_8006DFAC[D_801D9084].unk8];
+                frame = &((GearTable *)D_800625A0->resources)->entries[D_8006D634.gears[D_801D9084].frame];
                 trade = frame->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[6], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
@@ -1478,7 +1478,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 users = frame->users;
                 break;
             case 1:
-                engine = &((GearTable *)D_800625A0->resources)->records18[D_8006DFAC[D_801D9084].unk2];
+                engine = &((GearTable *)D_800625A0->resources)->records18[D_8006D634.gears[D_801D9084].engine];
                 trade = engine->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[7], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
@@ -1488,7 +1488,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 users = engine->users;
                 break;
             case 2:
-                armour = &((GearTable *)D_800625A0->resources)->records10[D_8006DFAC[D_801D9084].unk3];
+                armour = &((GearTable *)D_800625A0->resources)->records10[D_8006D634.gears[D_801D9084].field3];
                 trade = armour->price >> 1;
                 D_800625A0->details->names_a[row].width = func_80034EAC(
                     func_80033728(D_800625A0->details->resources[8], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
@@ -1595,24 +1595,24 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     s32 slot;
     s32 k;
 
-    gear = D_8006D8A0[member].unkA0;
-    saved[0] = D_8006DFAC[gear].unkC[0];
-    saved[1] = D_8006DFAC[gear].unk4[0];
-    saved[2] = D_8006DFAC[gear].unk4[1];
-    saved[3] = D_8006DFAC[gear].unk4[2];
-    saved[4] = D_8006DFAC[gear].unk4[3];
-    saved[5] = D_8006DFAC[gear].unk9[0];
-    saved[6] = D_8006DFAC[gear].unk9[1];
-    saved[7] = D_8006DFAC[gear].unk9[2];
+    gear = D_8006D634.characters[member].gearId;
+    saved[0] = D_8006D634.gears[gear].weapons[0];
+    saved[1] = D_8006D634.gears[gear].partItems[0];
+    saved[2] = D_8006D634.gears[gear].partItems[1];
+    saved[3] = D_8006D634.gears[gear].partItems[2];
+    saved[4] = D_8006D634.gears[gear].partItems[3];
+    saved[5] = D_8006D634.gears[gear].parts[0];
+    saved[6] = D_8006D634.gears[gear].parts[1];
+    saved[7] = D_8006D634.gears[gear].parts[2];
     switch (kind) {
     case 4:
         if (part < 0x32) {
-            D_8006DFAC[gear].unkC[0] = part;
+            D_8006D634.gears[gear].weapons[0] = part;
         } else {
             weapon = &((GearTable *)D_800625A0->resources)->weapons[part];
             for (k = 0; k < 4; k++) {
-                if (((GearTable *)D_800625A0->resources)->weapons[D_8006DFAC[gear].unk4[k]].unkF == weapon->unkF) {
-                    D_8006DFAC[gear].unk4[k] = part;
+                if (((GearTable *)D_800625A0->resources)->weapons[D_8006D634.gears[gear].partItems[k]].unkF == weapon->unkF) {
+                    D_8006D634.gears[gear].partItems[k] = part;
                 }
             }
         }
@@ -1624,7 +1624,7 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
             current = &((GearTable *)D_800625A0->resources)->parts[saved[5 + k]];
             if (current->unk8 != 0 && current->unk8 == fitted->unk8) {
                 replace = 0;
-                D_8006DFAC[gear].unk9[k] = part;
+                D_8006D634.gears[gear].parts[k] = part;
             }
         }
         if (replace) {
@@ -1636,12 +1636,12 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
                     slot = k;
                 }
             }
-            D_8006DFAC[gear].unk9[slot] = part;
+            D_8006D634.gears[gear].parts[slot] = part;
         }
         break;
     }
-    func_801D6150((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
-    func_801D5F94((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
+    func_801D6150((GearTable *)D_800625A0->resources, D_8006D634.characters[member].gearId);
+    func_801D5F94((GearTable *)D_800625A0->resources, D_8006D634.characters[member].gearId);
     values[0][0] = ((GearTable *)D_800625A0->resources)->unkB0;
     values[0][1] = ((GearTable *)D_800625A0->resources)->unkA4;
     values[1][0] = D_800625A0->details->stat_b0[member];
@@ -1655,15 +1655,15 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
             decrease[k] = 1;
         }
     }
-    D_8006DFAC[gear].unkC[0] = saved[0];
-    D_8006DFAC[gear].unk4[0] = saved[1];
-    D_8006DFAC[gear].unk4[1] = saved[2];
-    D_8006DFAC[gear].unk4[2] = saved[3];
-    D_8006DFAC[gear].unk4[3] = saved[4];
-    D_8006DFAC[gear].unk9[0] = saved[5];
-    D_8006DFAC[gear].unk9[1] = saved[6];
-    D_8006DFAC[gear].unk9[2] = saved[7];
-    func_801D6150((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
+    D_8006D634.gears[gear].weapons[0] = saved[0];
+    D_8006D634.gears[gear].partItems[0] = saved[1];
+    D_8006D634.gears[gear].partItems[1] = saved[2];
+    D_8006D634.gears[gear].partItems[2] = saved[3];
+    D_8006D634.gears[gear].partItems[3] = saved[4];
+    D_8006D634.gears[gear].parts[0] = saved[5];
+    D_8006D634.gears[gear].parts[1] = saved[6];
+    D_8006D634.gears[gear].parts[2] = saved[7];
+    func_801D6150((GearTable *)D_800625A0->resources, D_8006D634.characters[member].gearId);
 }
 
 /* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
@@ -1696,13 +1696,13 @@ void func_801D3A80(u8 kind, u8 id) {
     known = 0;
     switch (kind) {
     case 4:
-        ids = D_8006F754;
+        ids = D_8006D634.gearPartIds;
         counts = ids - 100;
         n = 100;
         known = 1;
         break;
     case 3:
-        ids = D_8006F84E;
+        ids = D_8006D634.gearAccessoryIds;
         counts = ids - 150;
         n = 150;
         known = 1;
@@ -1822,7 +1822,7 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
         if (D_800625A0->member_present[i] != 0) {
-            gear = D_8006D8A0[i].unkA0;
+            gear = D_8006D634.characters[i].gearId;
             if (func_801C527C(users, gear)) {
                 D_800625A0->details->bar_shown[shown] = 1;
             } else {
@@ -1890,7 +1890,7 @@ void func_801D44FC(u32 gold) {
     u8 new_item;
 
     func_801CB498(0xD1);
-    party_gold = &D_8006EF58;
+    party_gold = &D_8006D634.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
@@ -1899,29 +1899,29 @@ void func_801D44FC(u32 gold) {
         if (D_800625A0->shop_items[i] != 0 && D_800625A0->details->amounts[i] != 0) {
             switch (D_800625A0->shop_kinds[i]) {
             case 0:
-                D_8006DFAC[D_801D9084].unk8 = D_800625A0->shop_items[i];
+                D_8006D634.gears[D_801D9084].frame = D_800625A0->shop_items[i];
                 break;
             case 1:
-                D_8006DFAC[D_801D9084].unk2 = D_800625A0->shop_items[i];
+                D_8006D634.gears[D_801D9084].engine = D_800625A0->shop_items[i];
                 break;
             case 2:
-                D_8006DFAC[D_801D9084].unk3 = D_800625A0->shop_items[i];
+                D_8006D634.gears[D_801D9084].field3 = D_800625A0->shop_items[i];
                 break;
             case 4:
                 new_item = 1;
                 for (j = 0; j < 100; j++) {
-                    if (D_8006F754[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.gearPartIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F6F0[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F6F0[j] = 99;
+                        if ((D_8006D634.gearPartCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.gearPartCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 100; j++) {
-                        if (D_8006F754[j] == 0) {
-                            D_8006F754[j] = D_800625A0->shop_items[i];
-                            D_8006F6F0[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.gearPartIds[j] == 0) {
+                            D_8006D634.gearPartIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.gearPartCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -1930,18 +1930,18 @@ void func_801D44FC(u32 gold) {
             case 3:
                 new_item = 1;
                 for (j = 0; j < 150; j++) {
-                    if (D_8006F84E[j] == D_800625A0->shop_items[i]) {
+                    if (D_8006D634.gearAccessoryIds[j] == D_800625A0->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006F7B8[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006F7B8[j] = 99;
+                        if ((D_8006D634.gearAccessoryCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006D634.gearAccessoryCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 150; j++) {
-                        if (D_8006F84E[j] == 0) {
-                            D_8006F84E[j] = D_800625A0->shop_items[i];
-                            D_8006F7B8[j] = D_800625A0->details->amounts[i];
+                        if (D_8006D634.gearAccessoryIds[j] == 0) {
+                            D_8006D634.gearAccessoryIds[j] = D_800625A0->shop_items[i];
+                            D_8006D634.gearAccessoryCounts[j] = D_800625A0->details->amounts[i];
                             break;
                         }
                     }
@@ -1959,17 +1959,17 @@ u8 func_801D4888(s32 index) {
     wanted = 1;
     switch (D_800625A0->shop_kinds[index]) {
     case 0:
-        if (D_8006DFAC[D_801D9084].unk8 >= D_800625A0->shop_items[index]) {
+        if (D_8006D634.gears[D_801D9084].frame >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 1:
-        if (D_8006DFAC[D_801D9084].unk2 >= D_800625A0->shop_items[index]) {
+        if (D_8006D634.gears[D_801D9084].engine >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 2:
-        if (D_8006DFAC[D_801D9084].unk3 >= D_800625A0->shop_items[index]) {
+        if (D_8006D634.gears[D_801D9084].field3 >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
@@ -2024,9 +2024,9 @@ u8 func_801D498C(u8 page, u8 fit) {
     new_gold = gold;
     funds = new_gold;
     for (i = 0; i < 11; i++) {
-        if (D_8006D634.characters[i].unkA0 != 0xFF) {
-            func_801D6150((GearTable *)D_800625A0->resources, D_8006D634.characters[i].unkA0);
-            func_801D5F94((GearTable *)D_800625A0->resources, D_8006D634.characters[i].unkA0);
+        if (D_8006D634.characters[i].gearId != 0xFF) {
+            func_801D6150((GearTable *)D_800625A0->resources, D_8006D634.characters[i].gearId);
+            func_801D5F94((GearTable *)D_800625A0->resources, D_8006D634.characters[i].gearId);
             D_800625A0->details->stat_b0[i] = ((GearTable *)D_800625A0->resources)->unkB0;
             D_800625A0->details->stat_a4[i] = ((GearTable *)D_800625A0->resources)->unkA4;
         }
@@ -2225,9 +2225,9 @@ void func_801D5398(void) {
     message = 0xA6;
     mode = 1;
     confirm = 1;
-    if (D_8006DFAC[D_801D9084].max_fuel == D_8006DFAC[D_801D9084].fuel) {
+    if (D_8006D634.gears[D_801D9084].maxFuel == D_8006D634.gears[D_801D9084].fuel) {
         message = 0xB5;
-        if (D_8006DFAC[D_801D9084].hp == D_8006DFAC[D_801D9084].max_hp) {
+        if (D_8006D634.gears[D_801D9084].hp == D_8006D634.gears[D_801D9084].maxHp) {
             message = 0xB8;
             mode = 0;
             confirm = 0;
@@ -2235,7 +2235,7 @@ void func_801D5398(void) {
             mode = 2;
         }
     }
-    units = (D_8006DFAC[D_801D9084].max_fuel - D_8006DFAC[D_801D9084].fuel) / 100;
+    units = (D_8006D634.gears[D_801D9084].maxFuel - D_8006D634.gears[D_801D9084].fuel) / 100;
     if (units == 0) {
         units = 1;
     }
@@ -2257,15 +2257,15 @@ void func_801D5398(void) {
                         done = 1;
                     }
                     price = D_8006D634.gold / 10;
-                    D_8006DFAC[D_801D9084].fuel += price * 100;
+                    D_8006D634.gears[D_801D9084].fuel += price * 100;
                     D_8006D634.gold %= 10;
-                    if (D_8006DFAC[D_801D9084].max_fuel < D_8006DFAC[D_801D9084].fuel) {
-                        D_8006DFAC[D_801D9084].fuel = D_8006DFAC[D_801D9084].max_fuel;
+                    if (D_8006D634.gears[D_801D9084].maxFuel < D_8006D634.gears[D_801D9084].fuel) {
+                        D_8006D634.gears[D_801D9084].fuel = D_8006D634.gears[D_801D9084].maxFuel;
                     }
                 }
             } else {
                 D_8006D634.gold -= price;
-                D_8006DFAC[D_801D9084].fuel = D_8006DFAC[D_801D9084].max_fuel;
+                D_8006D634.gears[D_801D9084].fuel = D_8006D634.gears[D_801D9084].maxFuel;
                 done = 1;
             }
             break;
@@ -2275,7 +2275,7 @@ void func_801D5398(void) {
         }
     }
     if (done) {
-        D_8006DFAC[D_801D9084].hp = D_8006DFAC[D_801D9084].max_hp;
+        D_8006D634.gears[D_801D9084].hp = D_8006D634.gears[D_801D9084].maxHp;
         func_801CB498(0xD1);
     }
     func_801CC4DC(0);
@@ -2444,7 +2444,7 @@ void func_801D5D38(void) {
     while (D_800625A0->member_present[i] == 0) {
         i++;
     }
-    D_801D9084 = D_8006D634.characters[i].unkA0;
+    D_801D9084 = D_8006D634.characters[i].gearId;
     func_801CF9BC(D_801D9084, 1);
     func_801D0348();
 }
@@ -2469,34 +2469,34 @@ void func_801D5EB8(void) {
  * its pilot's bonuses.
  */
 void func_801D5F94(GearTable *table, u8 id) {
-    Gear *gear;
-    Character *pilot;
+    GearRecord *gear;
+    CharacterRecord *pilot;
     s32 bonus;
 
-    if (D_8006D634.unk22B6 & 0x1000) {
+    if (D_8006D634.flags & 0x1000) {
         D_801D70F4[9] = 10; /* gear 9's pilot */
     }
     gear = &D_8006D634.gears[id];
     pilot = &D_8006D634.characters[D_801D70F4[id]];
     table->unk9C = gear->hp;
-    table->unkA0 = gear->max_hp;
-    table->unkA4 = gear->unk70 + gear->unk40;
-    table->unkA6 = pilot->bonus[4] + pilot->base[4] + gear->unk42 + gear->unk72;
-    table->unkA8 = gear->unk68 + gear->unk44;
-    table->unkAA = gear->unk6A;
+    table->unkA0 = gear->maxHp;
+    table->unkA4 = gear->bodyDefense + gear->equipBodyDefense;
+    table->unkA6 = pilot->etherDefense + pilot->equipEtherDefense + gear->equipArmor + gear->armor;
+    table->unkA8 = gear->field68 + gear->equip68a;
+    table->unkAA = gear->field6A;
     table->unkAC = gear->fuel;
-    table->unkAE = gear->max_fuel;
-    bonus = gear->unk3C * (gear->unk74 + gear->unk55[1]);
+    table->unkAE = gear->maxFuel;
+    bonus = gear->attack * (gear->field74 + gear->equipAttackScale);
     if (id == 5 || id == 13) {
-        table->unkB0 = (gear->unk12 + gear->unk22) * 6 / 10 + bonus;
+        table->unkB0 = (gear->entries[0].valueE + gear->entries[2].valueE) * 6 / 10 + bonus;
     } else {
-        table->unkB0 = gear->unk12 + bonus;
+        table->unkB0 = gear->entries[0].valueE + bonus;
     }
-    table->unkB2 = gear->unk9F + gear->unk4D;
-    table->unkB3 = gear->unk98 - gear->unk4A;
-    table->unkB4 = gear->unk9E;
-    table->unkB5 = gear->unk9D;
-    table->unkB6 = gear->unk9C;
+    table->unkB2 = gear->hitBonus + gear->equipHitBonus;
+    table->unkB3 = gear->speed - gear->speedPenalty;
+    table->unkB4 = gear->frameFactor;
+    table->unkB5 = gear->field9D;
+    table->unkB6 = gear->guard;
 }
 
 /* Rebuild gear `id`'s derived values. */
@@ -2510,58 +2510,58 @@ void func_801D6150(GearTable *table, u8 id) {
 
 /* Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
 void func_801D61B8(GearTable *table, u8 id) {
-    Gear *gear;
+    GearRecord *gear;
     GearRecord18 *record;
 
-    gear = &D_8006DFAC[id];
+    gear = &D_8006D634.gears[id];
     record = table->records18;
-    record += gear->unk2;
-    gear->max_hp = record->unk4;
-    gear->unk68 = record->unk8;
-    gear->unk98 = record->unk14;
-    gear->unk9E = record->unk15;
-    gear->unk9D = record->unk16;
-    gear->unk9F = record->unk17;
-    if (gear->max_hp < gear->hp) {
-        gear->hp = gear->max_hp;
+    record += gear->engine;
+    gear->maxHp = record->unk4;
+    gear->field68 = record->unk8;
+    gear->speed = record->unk14;
+    gear->frameFactor = record->unk15;
+    gear->field9D = record->unk16;
+    gear->hitBonus = record->unk17;
+    if (gear->maxHp < gear->hp) {
+        gear->hp = gear->maxHp;
     }
 }
 
 /* Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
 void func_801D6250(GearTable *table, u8 id) {
-    Gear *gear;
-    GearEntry *entry;
+    GearRecord *gear;
+    GearFrame *entry;
 
-    gear = &D_8006DFAC[id];
+    gear = &D_8006D634.gears[id];
     entry = table->entries;
-    entry += gear->unk8;
-    gear->unk70 = entry->unk8;
-    gear->unk72 = entry->unkA;
+    entry += gear->frame;
+    gear->bodyDefense = entry->unk8;
+    gear->armor = entry->unkA;
 }
 
 /* Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
 void func_801D62A4(GearTable *table, u8 id) {
-    Gear *gear;
+    GearRecord *gear;
     GearRecord10 *record;
     u16 limit;
 
-    gear = &D_8006DFAC[id];
+    gear = &D_8006D634.gears[id];
     record = table->records10;
     limit = gear->fuel;
-    record += gear->unk3;
-    gear->max_fuel = record->unk6;
-    gear->unk3C = record->unkC;
-    gear->unk3D = record->unkD;
-    gear->unk3E = record->unkE;
-    gear->unk3F = record->unkE;
-    if (gear->max_fuel < limit) {
-        gear->fuel = gear->max_fuel;
+    record += gear->field3;
+    gear->maxFuel = record->unk6;
+    gear->attack = record->unkC;
+    gear->pad3D = record->unkD;
+    gear->field3E = record->unkE;
+    gear->attackScale = record->unkE;
+    if (gear->maxFuel < limit) {
+        gear->fuel = gear->maxFuel;
     }
 }
 
 /* Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
 void func_801D6334(GearTable *table, u8 id) {
-    Gear *gear;
+    GearRecord *gear;
     GearPart *part;
     u16 *abilities;
     u16 *status;
@@ -2569,62 +2569,62 @@ void func_801D6334(GearTable *table, u8 id) {
     u8 k;
 
     gear = &D_8006D634.gears[id];
-    abilities = &D_8006D634.pilots[D_801D70F4[id]].flags;
-    status = &D_8006D634.pilots[D_801D70F4[id]].unk16;
-    gear->unk40 = 0;
-    gear->unk42 = 0;
-    gear->unk44 = 0;
-    gear->unk48 = 0;
-    gear->unk4C = 0;
-    gear->unk4D = 0;
-    gear->unk4E = 0;
-    gear->unk4F = 0;
-    gear->unk6E = 0;
+    abilities = &D_8006D634.skills[D_801D70F4[id]].unlocksA;
+    status = &D_8006D634.skills[D_801D70F4[id]].flags1A;
+    gear->equipBodyDefense = 0;
+    gear->equipArmor = 0;
+    gear->equip68a = 0;
+    gear->field48 = 0;
+    gear->equipGuard = 0;
+    gear->equipHitBonus = 0;
+    gear->equipSpeed = 0;
+    gear->field4F = 0;
+    gear->field6E = 0;
     for (i = 0; i < 16; i++) {
-        gear->unk88[i] = 0;
+        gear->resistances[i] = 0;
     }
     for (i = 0; i < 4; i++) {
-        gear->unk50[i] = 0;
+        gear->speedBonus[i] = 0;
     }
     for (i = 0; i < 3; i++) {
-        gear->unk55[i] = 0;
+        ((GearRecordBytes55 *)gear)->bytes55[i] = 0;
     }
-    gear->unk54 = 0;
-    gear->unk7E = 0;
-    gear->unk82 = 0;
-    gear->unk86 &= 0xF000;
+    gear->equipFrameFactor = 0;
+    gear->field7E = 0;
+    gear->status82 = 0;
+    gear->status84.half.permanent &= 0xF000;
     *abilities &= 0xDB7F;
     for (k = 0; k < 3; k++) {
         part = table->parts;
-        part += gear->unk9[k];
-        gear->unk40 += part->unkD;
-        gear->unk42 += part->unkE;
-        gear->unk44 += part->unk6;
-        gear->unk4C += part->unk18;
-        gear->unk4D += part->unk14;
+        part += gear->parts[k];
+        gear->equipBodyDefense += part->unkD;
+        gear->equipArmor += part->unkE;
+        gear->equip68a += part->unk6;
+        gear->equipGuard += part->unk18;
+        gear->equipHitBonus += part->unk14;
         for (i = 0; i < 4; i++) {
-            gear->unk50[i] += part->unk10[i];
+            gear->speedBonus[i] += part->unk10[i];
         }
         switch (part->unk15) {
         case 1:
-            gear->unk7E |= part->unk16;
+            gear->field7E |= part->unk16;
             break;
         case 2:
-            gear->unk82 |= part->unk16;
+            gear->status82 |= part->unk16;
             break;
         case 3:
-            gear->unk86 |= part->unk16;
+            gear->status84.half.permanent |= part->unk16;
             break;
         case 4:
             for (i = 0; i < 16; i++) {
-                gear->unk6E |= part->unk16;
+                gear->field6E |= part->unk16;
                 if (part->unk16 & (0x8000 >> i)) {
-                    gear->unk88[i] += part->unk1A;
+                    gear->resistances[i] += part->unk1A;
                 }
             }
             break;
         case 5:
-            gear->unk4F += part->unk16;
+            gear->field4F += part->unk16;
             break;
         case 6:
             if ((*abilities & 0x1000) && (*abilities & 0x800)) {
@@ -2642,76 +2642,76 @@ void func_801D6334(GearTable *table, u8 id) {
             }
             break;
         case 9:
-            gear->unk48 |= part->unk16;
+            gear->field48 |= part->unk16;
             /* fallthrough */
         case 10:
-            gear->unk55[1] += part->unk16;
+            gear->equipAttackScale += part->unk16;
             break;
         case 11:
-            gear->unk55[2] += part->unk16;
+            gear->chargeRate += part->unk16;
             break;
         }
     }
-    gear->unk4A = func_801D690C(id);
-    if (gear->unk4F != 0) {
+    gear->speedPenalty = func_801D690C(id);
+    if (gear->field4F != 0) {
         *status |= 0x8000;
-    } else if (id == D_8006D634.characters[D_801D70F4[id]].unkA0) {
+    } else if (id == D_8006D634.characters[D_801D70F4[id]].gearId) {
         *status &= 0x7FFF;
     }
 }
 
 /* Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
 void func_801D6738(GearTable *table, u8 id) {
-    Gear *gear;
+    GearRecord *gear;
     GearWeapon *weapon;
 
     gear = &D_8006D634.gears[id];
     weapon = table->weapons;
-    weapon += gear->unkC[0];
-    gear->unk12 = weapon->unkE;
-    gear->unk10 = weapon->unk12;
-    gear->unk13 = weapon->unk10;
-    gear->unk14 = weapon->unk11;
-    gear->unk5C = weapon->unk0;
-    gear->unk5D = weapon->unk1;
-    gear->unk5E = weapon->unk2;
-    gear->unk5F = weapon->unk3;
-    if (gear->unk14 == 100) {
-        gear->unk86 &= 0xFFF;
-        gear->unk86 |= gear->unk10;
+    weapon += gear->weapons[0];
+    gear->entries[0].valueE = weapon->unkE;
+    gear->entries[0].field0 = weapon->unk12;
+    gear->entries[0].value10 = weapon->unk10;
+    gear->entries[0].value11 = weapon->unk11;
+    gear->fileVariant = weapon->unk0;
+    gear->spriteVariants[0] = weapon->unk1;
+    gear->spriteVariants[1] = weapon->unk2;
+    gear->spriteVariants[2] = weapon->unk3;
+    if (gear->entries[0].value11 == 100) {
+        gear->status84.half.permanent &= 0xFFF;
+        gear->status84.half.permanent |= gear->entries[0].field0;
     }
     if (id == 5 || id == 13) {
         weapon = table->weapons;
-        weapon += gear->unk4[0];
-        gear->unk12 = weapon->unkE;
-        gear->unk10 = weapon->unk12;
-        gear->unk13 = weapon->unk10;
-        gear->unk14 = weapon->unk11;
-        gear->unk5D = weapon->unk1;
+        weapon += gear->partItems[0];
+        gear->entries[0].valueE = weapon->unkE;
+        gear->entries[0].field0 = weapon->unk12;
+        gear->entries[0].value10 = weapon->unk10;
+        gear->entries[0].value11 = weapon->unk11;
+        gear->spriteVariants[0] = weapon->unk1;
         weapon = table->weapons;
-        weapon += gear->unk4[1];
-        gear->unk1A = weapon->unkE;
-        gear->unk18 = weapon->unk12;
-        gear->unk1B = weapon->unk10;
-        gear->unk1C = weapon->unk11;
-        gear->unk5E = weapon->unk2;
+        weapon += gear->partItems[1];
+        gear->entries[1].valueE = weapon->unkE;
+        gear->entries[1].field0 = weapon->unk12;
+        gear->entries[1].value10 = weapon->unk10;
+        gear->entries[1].value11 = weapon->unk11;
+        gear->spriteVariants[1] = weapon->unk2;
         weapon = table->weapons;
-        weapon += gear->unk4[3];
-        gear->unk22 = weapon->unkE;
-        gear->unk20 = weapon->unk12;
-        gear->unk23 = weapon->unk10;
-        gear->unk24 = weapon->unk11;
-        gear->unk5F = weapon->unk3;
+        weapon += gear->partItems[3];
+        gear->entries[2].valueE = weapon->unkE;
+        gear->entries[2].field0 = weapon->unk12;
+        gear->entries[2].value10 = weapon->unk10;
+        gear->entries[2].value11 = weapon->unk11;
+        gear->spriteVariants[2] = weapon->unk3;
     }
 }
 
 /* Half of (gear `id`'s +44 / 120 less its +75), not below zero. */
 u8 func_801D690C(u8 id) {
-    Gear *gear;
+    GearRecord *gear;
     s16 value;
 
-    gear = &D_8006DFAC[id];
-    value = ((u16)(gear->unk44 / 120) - gear->unk75) / 2;
+    gear = &D_8006D634.gears[id];
+    value = ((u16)(gear->equip68a / 120) - gear->field75) / 2;
     if (value < 0) {
         value = 0;
     }

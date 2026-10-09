@@ -8,6 +8,7 @@
 #include "psyq/libgte.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
 #include "resident/model.h"
@@ -301,36 +302,6 @@ typedef struct {
     u32 *ot_big;   /* b0: ovl2602's 400h-entry ordering table */
 } DrawEnv;
 
-/* A character record of the game data (a4h bytes, 8006d8a0). */
-typedef struct {
-    u8 unk0[4];
-    u8 unk4;       /* 04 */
-    u8 unk5[0x1C - 5];
-    u8 unk1C;      /* 1c */
-    u8 unk1D[0x28 - 0x1D];
-    u8 base[8];    /* 28 */
-    u8 unk30[0x56 - 0x30];
-    u8 unk56;      /* 56 */
-    u8 unk57;
-    u8 bonus[8];   /* 58 */
-    u8 unk60[0x6A - 0x60];
-    u8 weapons[5];     /* 6a: equipment slots for weapons (ids below 32h) */
-    u8 armour[5];      /* 6f: equipment slots for armour (ids from 32h) */
-    u8 accessories[3]; /* 74 */
-    u8 unk77[0xA0 - 0x77];
-    u8 unkA0;      /* a0: ff for a member who cannot be chosen */
-    u8 unkA1[3];
-} Character;
-
-/* The persistent game data (8006d634). */
-typedef struct {
-    u8 unk0[0x26C];
-    Character characters[11]; /* 26c */
-    u8 unk978[0x1924 - 0x978];
-    u32 gold;                 /* 1924 */
-} GameData;
-
-extern GameData D_8006D634;
 
 /* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */
 typedef struct {
@@ -482,18 +453,6 @@ extern s32 D_801D2254;   /* second number y */
 extern s32 D_801D2258;   /* third number x */
 extern s32 D_801D225C;   /* third number y */
 extern s32 D_801D21B0[]; /* cursor y per position */
-
-/* Game state. */
-extern u8 D_8006F36C[];  /* inventory 0 counts (100) */
-extern u8 D_8006F434[];  /* inventory 1 counts (200) */
-extern u8 D_8006F5C4[];  /* inventory 2 counts (150) */
-extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
-extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
-extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */
-extern Character D_8006D8A0[];
-extern u16 D_8006F364;   /* party members joined */
-extern u16 D_8006F366;   /* party members available */
-extern u8 D_8006F368[3]; /* party member ids */
 
 /* Resident services. */
 extern MenuResources *D_8005945C;        /* the menu resources block */

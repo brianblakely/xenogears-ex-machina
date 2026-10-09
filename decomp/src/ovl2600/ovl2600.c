@@ -198,7 +198,7 @@ void func_801C5318(void) {
         D_800625A0->flags->party[0] = D_80059171;
     } else {
         D_800625A0->entry->max_length = 10;
-        if (D_80059171 - 11 == 9 && (D_8006F364 & 0x400)) {
+        if (D_80059171 - 11 == 9 && (D_8006D634.joined & 0x400)) {
             D_800625A0->flags->party[0] = 10;
             use_table = 0;
         }
@@ -252,7 +252,7 @@ void func_801C58B8(void) {
     D_800625A0->card_poll_timer = 60;
     D_800625A0->b_334 = 0;
     D_800625A0->b_335 = 0;
-    flags = D_8006F364 & D_8006F366 & 0x7FF;
+    flags = D_8006D634.joined & D_8006D634.available & 0x7FF;
     for (i = 0; i < 16; i++) {
         if (func_801C5040(flags, i) & 0xFFFF) {
             D_800625A0->available[i] = 1;
@@ -261,7 +261,7 @@ void func_801C58B8(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        id = D_8006F368[i];
+        id = D_8006D634.party[i];
         if (id != 0xFF && D_800625A0->available[id]) {
             D_800625A0->flags->party[i] = id;
         } else {

@@ -336,16 +336,16 @@ void func_801C5B08(void) {
     D_800625A0->poll_timer = 0x3C;
     D_800625A0->unk334 = 0;
     D_800625A0->unk335 = 0;
-    available = D_8006F364 & D_8006F366 & 0x77F;
+    available = D_8006D634.joined & D_8006D634.available & 0x77F;
     for (i = 0; i < 16; i++) {
-        if (func_801C5228(available, i) && D_8006D8A0[i].unkA0 != 0xFF) {
+        if (func_801C5228(available, i) && D_8006D634.characters[i].gearId != 0xFF) {
             D_800625A0->member_present[i] = 1;
         } else {
             D_800625A0->member_present[i] = 0;
         }
     }
     for (i = 0; i < 3; i++) {
-        id = D_8006F368[i];
+        id = D_8006D634.party[i];
         if (id != 0xFF && D_800625A0->member_present[id] != 0) {
             D_800625A0->flags->members[i] = id;
         } else {
