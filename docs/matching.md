@@ -506,12 +506,12 @@ converted to C per unit. What converting the targets' `.data` established:
   loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
   documented unread tables and copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
-  list_cursor]`). slot39's unreferenced byte 08 at 801E96A6, then 00, was fill: GCC
-  2.6.3 aligns the u16 masks D_801E96A8 to a word, so after the flags D_801E96A4 and
-  D_801E96A5 these two bytes are the assembler's fill, which no image's code or data
-  reaches, and they look like the stray fill after other byte flags: battle's
-  D_800C2050 08 00 00 and D_800C204C 08 00 71, ovl2596's D_801E44C0 04 00 00.
-  D_801E96A5 is linked with its padding as those flags are, with
+  list_cursor]`). slot39's unreferenced byte 08 at 801E96A6, then 00, is taken as
+  fill: GCC 2.6.3 aligns the u16 masks D_801E96A8 to a word, so after the flags
+  D_801E96A4 and D_801E96A5 alone these two bytes are the assembler's fill, no image's
+  code or data reaches them, and they look like the stray fill after other byte
+  flags: battle's D_800C2050 08 00 00 and D_800C204C 08 00 71, ovl2596's D_801E44C0
+  04 00 00. D_801E96A5 is linked with its padding as those flags are, with
   INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). The vendor assembler,
   Psy-Q ASPSX 2.34 of Psy-Q 3.5, writes alignment fill into its section's code record,
   as zeros in every DOSBox run: the whole slot39 unit compiled by CC1PSX 2.6.3.SN.2,
