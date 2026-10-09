@@ -766,7 +766,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     }
     if (i < current) {
         floor -= 0x50;
-        gap = ((s16 *)D_8009B234)[current] + base - floor;
+        gap = D_8009B234[current] + base - floor;
         if (gap < 0) {
             gap = -gap;
         }
