@@ -803,15 +803,17 @@ class MatchingTests(unittest.TestCase):
             0xACC00100,  # sw    zero, 0x100(a2)  (scratchpad)
             0x3C028005,  # lui   v0, 0x8005
             0x8C4208E4,  # lw    v0, 0x8e4(v0)   (hardware pointer global)
-            0x0C010000,  # jal   0x80040000
             0x4A280030,  # rtpt
+            0x0C010000,  # jal   0x80040000
+            0xACC00200,  # sw    zero, 0x200(a2)  (the delay slot runs before the call)
+            0xACC00300,  # sw    zero, 0x300(a2)  (a2 clobbered by the call)
             0x0040F809,  # jalr  v0
             0x03E00008,  # jr    ra
         ]
         blob = b"".join(w.to_bytes(4, "little") for w in words)
         found = scan_function(blob, 0x80010000, {0x800508E4: 0x1F801C00})
         self.assertEqual(found["io"], [0x1F801814, 0x1F801824])
-        self.assertEqual(found["scratchpad"], [0x1F800100])
+        self.assertEqual(found["scratchpad"], [0x1F800100, 0x1F800200])
         self.assertEqual(found["hardware_pointers"], [0x800508E4])
         self.assertEqual(found["calls"], [0x80040000])
         self.assertEqual((found["gte"], found["indirect"]), (1, 1))

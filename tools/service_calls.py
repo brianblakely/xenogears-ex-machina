@@ -10,8 +10,8 @@ statically scans the linked image's instructions and reports:
   function, with their game callers (the services a port must provide);
 * direct loads/stores to the I/O register window 0x1F801000-0x1F802FFF and to
   the scratchpad 0x1F800000-0x1F8003FF, found by tracking `lui`/`addiu`/`ori`
-  base registers within the function (a static lower bound, not an execution
-  trace);
+  base registers through the function (`constant_bases`, also used by
+  tools/data_users.py: a linear static scan, not an execution trace);
 * hardware pointer globals: data words outside function ranges whose value
   lies in the I/O window (e.g. the sound driver's SPU register base), and the
   game functions that load them;
@@ -46,6 +46,52 @@ SCRATCHPAD = (0x1F800000, 0x1F800400)
 LOADS_STORES = {
     "lb", "lbu", "lh", "lhu", "lw", "lwl", "lwr", "sb", "sh", "sw", "swl", "swr", "lwc2", "swc2",
 }
+VOLATILE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31)  # at, v, a, t, ra
+
+
+def constant_bases(blob: bytes, address: int, gp: int | None = None, indexed: bool = False):
+    """Yield (instruction, opcode, target) for each word of a function: target
+    is the address a load/store reaches, or an `addiu`/`ori` forms, from a
+    register holding a constant (`lui`, then `addiu`/`ori`), else None.
+
+    One linear pass: a register keeps its constant across branches and jumps
+    until another write, or a call, whose caller-saved registers go after its
+    delay slot. With `gp`, $gp holds that value (setting it forms no address);
+    with `indexed`, `addu` of a constant base and another register keeps the
+    base (an indexed access into the same object)."""
+    regs: dict[int, int] = {} if gp is None else {28: gp}
+    clobber = 0
+    for offset in range(0, len(blob) - 3, 4):
+        word = int.from_bytes(blob[offset : offset + 4], "little")
+        ins = rabbitizer.Instruction(word, vram=address + offset)
+        name = ins.getOpcodeName()
+        if clobber:
+            clobber -= 1
+            if not clobber:
+                for reg in VOLATILE:
+                    regs.pop(reg, None)
+        target = None
+        if name in LOADS_STORES and ins.rs.value in regs:
+            target = (regs[ins.rs.value] + ins.getProcessedImmediate()) & 0xFFFFFFFF
+        if name == "lui":
+            regs[ins.rt.value] = (ins.getProcessedImmediate() << 16) & 0xFFFFFFFF
+        elif name in ("addiu", "ori") and ins.rs.value in regs:
+            value, immediate = regs[ins.rs.value], ins.getProcessedImmediate()
+            regs[ins.rt.value] = (value + immediate if name == "addiu" else value | immediate) & 0xFFFFFFFF
+            if gp is None or ins.rt.value != 28:
+                target = regs[ins.rt.value]
+        elif indexed and name == "addu" and (ins.rs.value in regs) != (ins.rt.value in regs):
+            regs[ins.rd.value] = regs.get(ins.rs.value, regs.get(ins.rt.value))
+        else:
+            if ins.modifiesRt():
+                regs.pop(ins.rt.value, None)
+            if ins.modifiesRd():
+                regs.pop(ins.rd.value, None)
+            if name in ("jal", "jalr"):
+                clobber = 2
+            if gp is not None:
+                regs[28] = gp
+        yield ins, name, target
 
 
 def target(config_path: Path) -> dict:
@@ -110,48 +156,22 @@ def hardware_pointers(t: dict) -> dict[int, int]:
 
 
 def scan_function(blob: bytes, address: int, pointers: dict[int, int]) -> dict:
-    regs: dict[int, int] = {}
     calls, io, scratch, gte, indirect = [], set(), set(), 0, 0
     hardware = set()
-    for offset in range(0, len(blob) - 3, 4):
-        word = int.from_bytes(blob[offset : offset + 4], "little")
-        ins = rabbitizer.Instruction(word, vram=address + offset)
-        name = ins.getOpcodeName()
+    for ins, name, target in constant_bases(blob, address):
         if name == "jal":
             calls.append(ins.getInstrIndexAsVram())
         elif name == "jalr":
             indirect += 1
-        if word >> 26 in (0x12, 0x32, 0x3A):  # COP2 (GTE commands, moves), lwc2, swc2
+        if ins.getRaw() >> 26 in (0x12, 0x32, 0x3A):  # COP2 (GTE commands, moves), lwc2, swc2
             gte += 1
-        if name in LOADS_STORES:
-            base = ins.rs.value
-            if base in regs:
-                target_address = (regs[base] + ins.getProcessedImmediate()) & 0xFFFFFFFF
-                if name == "lw" and target_address in pointers:
-                    hardware.add(target_address)
-                if IO_WINDOW[0] <= target_address < IO_WINDOW[1]:
-                    io.add(target_address)
-                elif SCRATCHPAD[0] <= target_address < SCRATCHPAD[1]:
-                    scratch.add(target_address)
-        # Track constant base registers (lui, then addiu/ori of the same value).
-        written = None
-        if name == "lui":
-            written = ins.rt.value
-            regs[written] = (ins.getProcessedImmediate() << 16) & 0xFFFFFFFF
-            continue
-        if name in ("addiu", "ori") and ins.rs.value in regs:
-            written = ins.rt.value
-            value = regs[ins.rs.value]
-            immediate = ins.getProcessedImmediate()
-            regs[written] = (value + immediate if name == "addiu" else value | immediate) & 0xFFFFFFFF
-            continue
-        if ins.modifiesRt():
-            regs.pop(ins.rt.value, None)
-        if ins.modifiesRd():
-            regs.pop(ins.rd.value, None)
-        if name in ("jal", "jalr"):
-            for volatile in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31):
-                regs.pop(volatile, None)
+        if name in LOADS_STORES and target is not None:
+            if name == "lw" and target in pointers:
+                hardware.add(target)
+            if IO_WINDOW[0] <= target < IO_WINDOW[1]:
+                io.add(target)
+            elif SCRATCHPAD[0] <= target < SCRATCHPAD[1]:
+                scratch.add(target)
     return {
         "calls": calls, "io": sorted(io), "scratchpad": sorted(scratch), "gte": gte,
         "indirect": indirect, "hardware_pointers": sorted(hardware),

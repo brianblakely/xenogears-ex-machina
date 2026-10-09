@@ -411,8 +411,9 @@ converted to C per unit. What converting the targets' `.data` established:
   accesses to `$gp`.
 - A unit's own variables come first, in unit order, as statics where the commons
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
-  reports every FOREIGN reference into a unit's own `.bss` (none in any target) and,
-  with `--end`, the order of variables still extern. That places menu 800707A8 and
+  reports every FOREIGN reference, another unit's code forming an address in a unit's
+  own `.bss` (none in any target), and, with `--end`, the order of variables still
+  extern. That places menu 800707A8 and
   8007E528 exactly, the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, and
   slot39's after 801CD2AC and at or before 801DBDB4 (an earlier one moves the `.bss`
   boundary with it); the latest is kept. The commons, which the original linker
@@ -444,9 +445,11 @@ converted to C per unit. What converting the targets' `.data` established:
   (80059170-80059184, 80059198-800591b8) is defined by data-only `-G8` units there,
   the simplest owners that fit (kernel_settings.c, sprite_settings.c; their compiler
   is immaterial: the three give identical `.sdata` and relocations). Before calling
-  shared data unreferenced, check every image (`tools/data_users.py --range
-  START:END`): four of the resident's fillers are battle and ovl2596 flags, and the
-  battle-entry flag at 80059179 sat in what was taken for padding.
+  shared data unreferenced, check the code of every image (`tools/data_users.py
+  --range START:END`) and its data words, which that scan does not read (pointer
+  tables; no image holds a word in 80059170-800591b8): four of the resident's fillers
+  are battle and ovl2596 flags, and the battle-entry flag at 80059179 sat in what was
+  taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).
