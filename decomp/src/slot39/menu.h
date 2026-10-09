@@ -14,6 +14,7 @@
 #include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
+#include "resident/menu.h"
 #include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/pad.h"
@@ -31,7 +32,7 @@
 
 /* structs: begin */
 /* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
-typedef struct MenuParty {
+typedef struct MenuFlags {
     u8 fieldShown[3]; /* 0 */
     u8 redraw3; /* 3 */
     u8 redraw4; /* 4 */
@@ -165,30 +166,6 @@ typedef struct MenuCard {
     u32 otherPrefix[4]; /* 501C: the other file name prefix (13 bytes) */
     u8 pad502C[0x8];
 } MenuCard;
-
-/* One of the two display buffers. */
-typedef struct MenuBuffer {
-    u8 draw[0x5c]; /* 0: DRAWENV */
-    u8 disp[0x14]; /* 5C: DISPENV */
-    u32 ot[16]; /* 70: reverse ordering table */
-    u8 padB0[0x4];
-} MenuBuffer;
-
-/* A point moving along a line (801c81e0, 801c8324). */
-typedef struct MenuMover {
-    s32 x0; /* 0 */
-    s32 x1; /* 4 */
-    s32 y0; /* 8 */
-    s32 y1; /* C */
-    s32 stepX; /* 10: 8.8 per step */
-    s32 stepY; /* 14 */
-    s32 accX; /* 18: 8.8 distance moved */
-    s32 accY; /* 1C */
-    u8 negX; /* 20: moving towards smaller x */
-    u8 negY; /* 21 */
-    u8 speed; /* 22: steps per frame */
-    u8 done; /* 23 */
-} MenuMover;
 
 /* A gear frame record of the data tables. */
 typedef struct GearFrame {
@@ -341,18 +318,6 @@ typedef struct {
     u8 bytes55[3];
 } GearRecordBytes55;
 
-/* A laid-out label: its quads and sprite list. */
-typedef struct MenuLabelSlot {
-    POLY_FT4 polys[2]; /* 0 */
-    SVECTOR verts[4]; /* 50 */
-    RECT rect; /* 70: VRAM area of the rendered text */
-    u8 *pixels; /* 78 */
-    u8 palette; /* 7C: 0 the plain palette (D_800595D4), else D_80059414 */
-    u8 count; /* 7D: the quad shown */
-    u8 width; /* 7E */
-    u8 visible; /* 7F */
-} MenuLabelSlot;
-
 /* Two sprite lists (*(state + 354)). */
 typedef struct MenuSpriteLists {
     POLY_FT4 first[32]; /* 0 */
@@ -365,7 +330,7 @@ typedef struct MenuSpriteLists {
 } MenuSpriteLists;
 
 /* An image block (*(state + 444)): quads and sprite list. */
-typedef struct MenuImageBlock {
+typedef struct MenuCursor {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
     s32 frame; /* 70: animation frame, counts down from 4 */
@@ -432,7 +397,7 @@ typedef struct MenuView {
 } MenuView;
 
 /* The 2dc0-byte block (*(state + 34c)). */
-typedef struct MenuBlock34C {
+typedef struct MenuFileInfo {
     POLY_FT4 chars[64]; /* 0: 32 text character quads, pairs per buffer */
     POLY_FT4 cursor[2]; /* A00: 32x32 sprite, per buffer */
     POLY_G4 band[2]; /* A50: shaded band, per buffer */
@@ -449,8 +414,8 @@ typedef struct MenuBlock34C {
 } MenuBlock34C;
 
 /* Five labels (*(state + 360)). */
-typedef struct MenuLabels360 {
-    MenuLabelSlot labels[5]; /* 0 */
+typedef struct MenuEquipLabels {
+    MenuLabel labels[5]; /* 0 */
     u16 stats[9]; /* 280: stats kept from the equipment screen */
     u8 pad292[0x2];
     u8 visible[5]; /* 294 */
@@ -469,10 +434,10 @@ typedef struct MenuMarkers {
 } MenuMarkers;
 
 /* The save/load screen block (*(state + 42c)). */
-typedef struct MenuBlock42C {
-    MenuLabelSlot names[16]; /* 0 */
-    MenuLabelSlot values[16]; /* 800 */
-    MenuLabelSlot extra[3]; /* 1000 */
+typedef struct MenuItemList {
+    MenuLabel names[16]; /* 0 */
+    MenuLabel values[16]; /* 800 */
+    MenuLabel extra[3]; /* 1000 */
     u8 *unk1180; /* 1180 */
     u8 shown[16]; /* 1184 */
     u8 extraShown; /* 1194 */
@@ -480,13 +445,13 @@ typedef struct MenuBlock42C {
 } MenuBlock42C;
 
 /* The file list block (*(state + 430)). */
-typedef struct MenuBlock430 {
-    MenuLabelSlot names[14]; /* 0 */
-    MenuLabelSlot values[14]; /* 700 */
-    MenuLabelSlot headA; /* E00 */
-    MenuLabelSlot headB; /* E80 */
-    MenuLabelSlot extra[2]; /* F00 */
-    MenuLabelSlot footer; /* 1000 */
+typedef struct MenuFileList {
+    MenuLabel names[14]; /* 0 */
+    MenuLabel values[14]; /* 700 */
+    MenuLabel headA; /* E00 */
+    MenuLabel headB; /* E80 */
+    MenuLabel extra[2]; /* F00 */
+    MenuLabel footer; /* 1000 */
     u8 *texts; /* 1080: description texts */
     u8 shown[14]; /* 1084 */
     u8 extraShown; /* 1092 */
@@ -494,10 +459,10 @@ typedef struct MenuBlock430 {
 } MenuBlock430;
 
 /* The status list block (*(state + 438)). */
-typedef struct MenuBlock438 {
-    MenuLabelSlot names[13]; /* 0 */
-    MenuLabelSlot values[13]; /* 680 */
-    MenuLabelSlot title; /* D00 */
+typedef struct MenuStatusList {
+    MenuLabel names[13]; /* 0 */
+    MenuLabel values[13]; /* 680 */
+    MenuLabel title; /* D00 */
     POLY_FT4 lists[13][10]; /* D80 */
     POLY_G4 gauges[13][2]; /* 21D0 */
     u8 *unk2578; /* 2578 */
@@ -528,7 +493,7 @@ typedef struct MenuFieldMenu2 {
 /* The detail panel block (*(state + 358)): a frame, a portrait, the layout
  * parts and the digit lists of the numbers shown, two quads per part (one per
  * draw buffer) with a screen quad each. */
-typedef struct MenuBlock358 {
+typedef struct MenuDetail {
     POLY_FT4 frame[2];           /* 0 */
     POLY_FT4 portrait[2];        /* 50 */
     POLY_FT4 parts[66];          /* A0: layout parts (801d6194) */
@@ -578,7 +543,7 @@ typedef struct MenuBlock358 {
 } MenuBlock358;
 
 /* The equipment panel block (*(state + 35c)). */
-typedef struct MenuBlock35C {
+typedef struct MenuEquipment {
     POLY_FT4 polys[94];            /* 0: stat name parts (801d7f50) */
     POLY_FT4 rowA[7][8];           /* EB0: per row: parts, two per buffer */
     POLY_FT4 rowB[7][8];           /* 1770 */
@@ -615,7 +580,7 @@ typedef struct MenuAnchor {
 } MenuAnchor;
 
 /* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
-typedef struct MenuPanel {
+typedef struct MenuStatusPanel {
     POLY_FT4 list0[18]; /* 0 */
     POLY_FT4 extra[10]; /* 2D0 */
     POLY_FT4 frameA[2]; /* 460 */
@@ -660,7 +625,7 @@ typedef struct MenuFieldBlock {
 } MenuFieldBlock;
 
 /* A one-quad sprite (*(state + 43c)). */
-typedef struct MenuBlock43C {
+typedef struct MenuScrollBar {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
     u8 buffer; /* 70 */
@@ -668,7 +633,7 @@ typedef struct MenuBlock43C {
 } MenuBlock43C;
 
 /* A four-quad sprite (*(state + 440)). */
-typedef struct MenuBlock440 {
+typedef struct MenuMarkerQuads {
     POLY_FT4 polys[8]; /* 0 */
     SVECTOR verts[16]; /* 140 */
     u8 buffer; /* 1C0 */
@@ -676,7 +641,7 @@ typedef struct MenuBlock440 {
 } MenuBlock440;
 
 /* A portrait mark growing to its size (*(state + 380)). */
-typedef struct MenuMark {
+typedef struct MenuGrowth {
     u16 x; /* 0 */
     u16 y; /* 2 */
     u16 w; /* 4 */
@@ -692,11 +657,11 @@ typedef struct MenuMark {
 } MenuMark;
 
 /* A list screen block (*(state + 434)). */
-typedef struct MenuBlock434 {
-    MenuLabelSlot names[8]; /* 0 */
-    MenuLabelSlot values[8]; /* 400 */
-    MenuLabelSlot title; /* 800 */
-    MenuLabelSlot extra[3]; /* 880 */
+typedef struct MenuEquipList {
+    MenuLabel names[8]; /* 0 */
+    MenuLabel values[8]; /* 400 */
+    MenuLabel title; /* 800 */
+    MenuLabel extra[3]; /* 880 */
     u8 *texts[4]; /* A00: description texts: weapons, accessories, gear parts, gear accessories */
     u8 shown[8]; /* A10 */
     u8 extraShown; /* A18 */
@@ -706,7 +671,7 @@ typedef struct MenuBlock434 {
 /* A portrait window (*(state + 364), 720 bytes): a 3D panel of corner, edge
  * and frame sprites around a translucent fill, two quads per piece (one per
  * draw buffer); the same layout as ovl2600's panels. */
-typedef struct MenuPortrait {
+typedef struct MenuPanel {
     POLY_FT4 corner[8];      /* 0: corner sprite parts */
     POLY_FT4 edge[4][4];     /* 140: top, bottom, left and right edges, two pieces each */
     POLY_FT4 frameSide[2];   /* 3C0: sprite 106 */
@@ -815,91 +780,8 @@ typedef struct SaveData {
     u8 unk1124[0xA38]; /* 1124: game data 1920 */
 } SaveData;
 
-/* The menu mode's state (*D_800625A0). */
-typedef struct MenuState {
-    MenuMover movers[3]; /* 0 */
-    MenuBuffer buffers[2]; /* 6C */
-    MenuBuffer *current; /* 1D4: the buffer being built */
-    SVECTOR viewAngles; /* 1D8: 3D view rotation */
-    VECTOR viewOffset; /* 1E0: 3D view translation */
-    MATRIX viewMatrix; /* 1F0 */
-    u8 pad210[0xC8];
-    s32 frameCounter; /* 2D8: frames since last cleared */
-    void *sheet; /* 2DC: sprite sheet */
-    void *labels; /* 2E0: label text */
-    SoundBank *effectBank; /* 2E4: menu sound effect bank */
-    u8 pad2E8[0x4];
-    s32 time[7]; /* 2EC: play time digits: hours (three), minutes and seconds (two each) */
-    s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
-    u8 present[16]; /* 30C: per character: in the party bits */
-    u8 digits[9]; /* 31C: decimal digits of a number, leading zeros ff */
-    u8 input; /* 325: decoded input of this frame */
-    u8 cardPollTimer; /* 326 */
-    u8 drawing; /* 327: nonzero draws the screen each frame */
-    u8 unk328; /* 328 */
-    u8 viewMotion; /* 329 */
-    u8 sounds; /* 32A: nonzero plays menu effects */
-    u8 partyCount; /* 32B */
-    MenuCard *card; /* 32C: memory-card state (5034 bytes) */
-    MenuTables *tables; /* 330: data table directory (cc bytes) */
-    u8 cardsPresent; /* 334 */
-    u8 unk335; /* 335 */
-    u8 cursor; /* 336: top command cursor */
-    u8 cursorShown; /* 337: cursor the labels were last drawn for */
-    u8 choice; /* 338 */
-    u8 choiceShown; /* 339 */
-    u8 choiceCount; /* 33A */
-    u8 fighters; /* 33B: party members with a gear */
-    MenuParty *party; /* 33C: party block (6c bytes) */
-    MenuFieldMenu *fieldMenu; /* 340: field-menu block (328 bytes) */
-    MenuFieldMenu2 *fieldMenu2; /* 344: field-menu block (374 bytes) */
-    MenuPrims *primitives; /* 348: shared primitive block (15c bytes) */
-    MenuBlock34C *block34C; /* 34C: 2dc0 bytes */
-    MenuImages *screenImages; /* 350: screen images (1194 bytes) */
-    MenuSpriteLists *spriteLists; /* 354: 140c bytes */
-    MenuBlock358 *block358; /* 358 */
-    MenuBlock35C *block35C; /* 35C */
-    MenuLabels360 *labels360; /* 360 */
-    MenuPortrait *portraits[7]; /* 364 */
-    MenuMark *portraitMarks[7]; /* 380 */
-    MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
-    MenuSlotImage *images[32]; /* 3A8: file screen slots */
-    MenuMarkers *markers; /* 428: marker block (14c bytes) */
-    MenuBlock42C *block42C; /* 42C: 1198 bytes */
-    MenuBlock430 *block430; /* 430: 1094 bytes */
-    MenuBlock434 *block434; /* 434 */
-    MenuBlock438 *block438; /* 438 */
-    MenuBlock43C *block43C; /* 43C */
-    MenuBlock440 *block440; /* 440 */
-    MenuImageBlock *blocks444[10]; /* 444 */
-    s32 sheetEntries[4][6]; /* 46C: sprite sheet records (80026338) */
-    s32 unk4CC; /* 4CC */
-    s32 unk4D0; /* 4D0 */
-    s32 unk4D4; /* 4D4 */
-    u8 loadState; /* 4D8 */
-    u8 unk4D9; /* 4D9 */
-    u8 pad4DA[0x2];
-    u8 firstMember; /* 4DC: first occupied party slot */
-    u8 pad4DD[0x3];
-    MenuLabelSlot topLabels[4]; /* 4E0: label images (801e7e68); the first owns the 38e-byte pixel block */
-    MenuLabelSlot commandLabels[8]; /* 6E0: laid-out labels (801e7e68) */
-    MenuLabelSlot partyLabels[6]; /* AE0 */
-    MenuLabelSlot fileLabels[6]; /* DE0 */
-    MenuLabelSlot labels10E0[8]; /* 10E0 */
-    MenuLabelSlot labels14E0[6]; /* 14E0 */
-    MenuLabelSlot labels17E0[2]; /* 17E0 */
-    MenuLabelSlot labels18E0[6]; /* 18E0 */
-    MenuLabelSlot soundLabels[4]; /* 1BE0 */
-    MenuLabelSlot *blocks1DE0[4]; /* 1DE0 */
-    u8 pad1DF0[0x18];
-    MenuPanel *panels[3]; /* 1E08 */
-} MenuState;
 /* structs: end */
 
-extern MenuState *D_800625A0; /* the menu state */
-extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6 other */
-extern u8 D_80059171;         /* the triangle menu opened the menu */
-extern u8 D_80059178;         /* menu sound effects loaded */
 /* The battle script variables (a resident common): the save keeps them
  * in its flag words. No shared header declares them; battle reads them
  * signed. */
@@ -1072,13 +954,6 @@ extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */
 
-/* Menu resource loading (801c65f4). */
-typedef struct MenuResources {
-    s32 count;
-    void *files[8]; /* packed files, relocated by 8003342c */
-} MenuResources;
-
-extern MenuResources *D_8005945C; /* the menu resources */
 void func_8002A428(s32 arg0);
 void func_8001BD40(s32 arg0, s32 arg1);
 void func_800263E4(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
@@ -1205,7 +1080,6 @@ typedef struct MenuSavePayload {
     u8 digit; /* 23: file digit */
 } MenuSavePayload;
 /* Block 2 of state + 444 holds the card access indicator. */
-#define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);
 void func_801C9270(s32 port);
 extern s32 D_801E981C[];          /* card slot (port * 16 + n) of each cursor position */
@@ -1374,13 +1248,13 @@ void func_801E64E0(void);
 void func_801E5924(s32 index);
 void func_801E5B88(void);
 void func_801E5E4C(void);
-void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count);
-void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
+void func_801E7E68(MenuLabel *labels, u8 *layout, s32 first, s32 count);
+void func_801E8018(u8 count, MenuLabel *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
-void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
+void func_801E8070(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
                    u8 mode);
 void func_801E8474(s32 count, MenuCommandImages *images);
-void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode);
+void func_801E7C50(MenuLabel *label, s32 index, s32 first, u8 mode);
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E8F60(u8 index, u8 dim);
 void func_801E92CC(void);
@@ -1393,7 +1267,7 @@ void func_801D1EE0(s32 index, u8 outline);
 void func_801D261C(void);
 void func_801D2EC0(u8 slot, u8 mode);
 void func_801D3344(s32 x, s32 y, s32 h);
-void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode);
+void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode);
 s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
 void func_801DA4A8(void);
 void func_801DB02C(u8 index);

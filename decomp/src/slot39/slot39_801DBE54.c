@@ -178,7 +178,7 @@ u8 func_801DBE54(void) {
     func_801D2484();
     func_801DB340(0);
     func_801DB340(1);
-    func_801E8044(8, D_800625A0->party->unk38);
+    func_801E8044(8, D_800625A0->flags->unk38);
     return 1;
 }
 
@@ -190,7 +190,7 @@ void func_801DC1D4(u8 kind) {
 
     page = 0;
     block = func_80031BDC(0x1094, 0);
-    D_800625A0->block430 = block;
+    D_800625A0->file_list = block;
     bzero(block, 0x1094);
     switch (kind) {
     case 0:
@@ -204,7 +204,7 @@ void func_801DC1D4(u8 kind) {
         page = 1;
         break;
     }
-    func_801E8018(8, D_800625A0->labels10E0, D_801EA548 + page * 8, D_800625A0->party->unk38);
+    func_801E8018(8, D_800625A0->labels10e0, D_801EA548 + page * 8, D_800625A0->flags->unk38);
     func_801C72BC(view);
     func_801D22F4(2);
     func_801D3488(2, kind);
@@ -220,7 +220,7 @@ void func_801DC2CC(u8 kind) {
     func_801D4EA0(5);
     func_801D4EA0(6);
     func_801D2484();
-    D_800625A0->party->unk4A = 0;
+    D_800625A0->flags->unk4A = 0;
     func_801C7BF4();
     switch (kind) {
     case 0:
@@ -234,9 +234,9 @@ void func_801DC2CC(u8 kind) {
         break;
     }
     func_801C72BC(view | 0x10);
-    func_800320E8(D_800625A0->block430);
-    D_800625A0->party->redraw6 = 1;
-    D_800625A0->party->unk20[1] = 1;
+    func_800320E8(D_800625A0->file_list);
+    D_800625A0->flags->redraw6 = 1;
+    D_800625A0->flags->unk20[1] = 1;
 }
 
 /* Build the arts list of party slot `slot` (`kind` 0 the character's, 1 its
@@ -263,7 +263,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
     u8 fuel;
 
     fuel = 0;
-    ep = D_8006D634.characters[D_800625A0->party->ids[slot]].ep;
+    ep = D_8006D634.characters[D_800625A0->flags->ids[slot]].ep;
     image = func_80031BDC(0x3f6, 0);
     powers[0] = 1;
     powers[1] = 10;
@@ -278,14 +278,14 @@ void func_801DC3D8(u8 slot, u8 kind) {
         known = 0;
         switch (kind) {
         case 0:
-            known = func_801C8640(D_8006D634.skills[D_800625A0->party->ids[slot]].levelSkills, row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].levelSkills, row) || row >= 12;
             break;
         case 1:
-            known = func_801C8640(D_8006D634.skills[D_800625A0->party->ids[slot]].unlocksB, row) || row >= 12;
+            known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].unlocksB, row) || row >= 12;
             break;
         case 2:
             if (!(row & 1)) {
-                known = func_801C8640(D_8006D634.skills[D_800625A0->party->ids[slot]].flags1A, row / 2) || row >= 12;
+                known = func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].flags1A, row / 2) || row >= 12;
             }
             break;
         }
@@ -294,33 +294,33 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_80033908(D_800625A0->party->ids[slot] * 16 + row), image, 0x24, 0);
-                    cost = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][22 + row].cost;
+                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                        func_80033908(D_800625A0->flags->ids[slot] * 16 + row), image, 0x24, 0);
+                    cost = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]][22 + row].cost;
                     break;
                 case 1:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_800339FC(D_8006D634.characters[D_800625A0->party->ids[slot]].gearId * 16 + row), image, 0x24, 0);
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId][21 + row].cost;
+                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                        func_800339FC(D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 16 + row), image, 0x24, 0);
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId][21 + row].cost;
                     break;
                 case 2:
-                    D_800625A0->block430->names[row].width = func_80034EAC(
-                        func_80033A8C(D_8006D634.characters[D_800625A0->party->ids[slot]].gearId * 4 + row / 2), image, 0x24, 0);
-                    ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].fuel;
-                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId][37 + row / 2].gearCost;
+                    D_800625A0->file_list->names[row].width = func_80034EAC(
+                        func_80033A8C(D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 4 + row / 2), image, 0x24, 0);
+                    ep = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel;
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId][37 + row / 2].gearCost;
                     digits = 4;
                     break;
                 }
             } else if (row == 12) {
                 if (kind != 2) {
-                    cost = D_8006D634.characters[D_800625A0->party->ids[slot]].ep;
+                    cost = D_8006D634.characters[D_800625A0->flags->ids[slot]].ep;
                 } else {
                     fuel = 3;
-                    cost = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].fuel;
+                    cost = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel;
                     digits = 5;
                 }
             } else {
-                cost = D_8006D634.characters[D_800625A0->party->ids[slot]].maxEp;
+                cost = D_8006D634.characters[D_800625A0->flags->ids[slot]].maxEp;
             }
             value = cost;
             started = 0;
@@ -339,7 +339,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             codes[pos * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, digits);
             grey = 0x80;
-            D_800625A0->block430->values[row].width = func_80034EAC(text, image, 0x24, 1);
+            D_800625A0->file_list->values[row].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = row / 2 * 0xd + 0x80;
             rect.w = 0x28;
@@ -349,7 +349,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    if (func_801C865C(D_801E97F0[D_800625A0->party->ids[slot]], row)) {
+                    if (func_801C865C(D_801E97F0[D_800625A0->flags->ids[slot]], row)) {
                         if (ep < cost) {
                             grey = 0;
                         }
@@ -368,25 +368,25 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 }
             }
             if (row < 12) {
-                func_801E7C50(&D_800625A0->block430->names[row], row, 0x80, grey | 1);
-                func_801C851C(D_800625A0->block430->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
-                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->block430->names[row].width, 0xd);
+                func_801E7C50(&D_800625A0->file_list->names[row], row, 0x80, grey | 1);
+                func_801C851C(D_800625A0->file_list->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
+                              (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->file_list->names[row].width, 0xd);
             }
-            func_801E7C50(&D_800625A0->block430->values[row], row, 0x80, grey | 2);
-            func_801C851C(D_800625A0->block430->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
-                          D_800625A0->block430->values[row].width, 0xd);
-            D_800625A0->block430->names[row].count = D_800625A0->bufferIndex;
-            D_800625A0->block430->values[row].count = D_800625A0->bufferIndex;
-            D_800625A0->block430->shown[row] = grey | 1;
+            func_801E7C50(&D_800625A0->file_list->values[row], row, 0x80, grey | 2);
+            func_801C851C(D_800625A0->file_list->values[row].verts, D_801E9DDC[row], D_801E9E14[row],
+                          D_800625A0->file_list->values[row].width, 0xd);
+            D_800625A0->file_list->names[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->file_list->values[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->file_list->shown[row] = grey | 1;
         } else {
-            D_800625A0->block430->shown[row] = 0;
+            D_800625A0->file_list->shown[row] = 0;
         }
     }
     func_800320E8(image);
-    func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, 6, 1, fuel + 2);
-    func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, 7, 1, fuel + 2);
-    func_801D36E0(&D_800625A0->block430->footer, slot, kind, 1);
-    D_800625A0->party->unk4A = 1;
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, 6, 1, fuel + 2);
+    func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, 7, 1, fuel + 2);
+    func_801D36E0(&D_800625A0->file_list->footer, slot, kind, 1);
+    D_800625A0->flags->unk4A = 1;
 }
 
 /* Show the description of file list row `row` for party slot `slot` (`kind`
@@ -405,53 +405,53 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
 
     switch (kind) {
     case 0:
-        text = (D_800625A0->party->ids[slot] << 5) + row * 2;
+        text = (D_800625A0->flags->ids[slot] << 5) + row * 2;
         break;
     case 1:
-        text = (D_8006D634.characters[D_800625A0->party->ids[slot]].gearId << 5) + row * 2;
+        text = (D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId << 5) + row * 2;
         break;
     case 2:
-        text = D_8006D634.characters[D_800625A0->party->ids[slot]].gearId * 8 + (row & ~1);
+        text = D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId * 8 + (row & ~1);
         break;
     }
-    if (D_800625A0->block430->shown[row] != 0) {
+    if (D_800625A0->file_list->shown[row] != 0) {
         image = func_80031BDC(0x618, 0);
         bzero(image, 0x618);
-        D_800625A0->block430->extra[0].width =
-            func_80034EAC(func_80033728(D_800625A0->block430->texts, text), image, 0x39, 0);
-        D_800625A0->block430->extra[1].width =
-            func_80034EAC(func_80033728(D_800625A0->block430->texts, text + 1), image, 0x39, 1);
+        D_800625A0->file_list->extra[0].width =
+            func_80034EAC(func_80033728(D_800625A0->file_list->texts, text), image, 0x39, 0);
+        D_800625A0->file_list->extra[1].width =
+            func_80034EAC(func_80033728(D_800625A0->file_list->texts, text + 1), image, 0x39, 1);
         rect.x = 0x140;
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
         LoadImage(&rect, image);
         DrawSync(0);
-        func_801E7C50(&D_800625A0->block430->extra[0], 0, 0, 0);
-        func_801E920C(&D_800625A0->block430->extra[0].polys[D_800625A0->bufferIndex], 0x1c, 0x9e, 0, 0x4e,
-                      D_800625A0->block430->extra[0].width, 0xd);
-        func_801C851C(D_800625A0->block430->extra[0].verts, 0x1c, 0x9e, D_800625A0->block430->extra[0].width, 0xd);
-        func_801E7C50(&D_800625A0->block430->extra[1], 1, 0, 0);
-        func_801E920C(&D_800625A0->block430->extra[1].polys[D_800625A0->bufferIndex], 0x1c, 0xae, 0, 0x4e,
-                      D_800625A0->block430->extra[1].width, 0xd);
-        func_801C851C(D_800625A0->block430->extra[1].verts, 0x1c, 0xae, D_800625A0->block430->extra[1].width, 0xd);
+        func_801E7C50(&D_800625A0->file_list->extra[0], 0, 0, 0);
+        func_801E920C(&D_800625A0->file_list->extra[0].polys[D_800625A0->buffer_index], 0x1c, 0x9e, 0, 0x4e,
+                      D_800625A0->file_list->extra[0].width, 0xd);
+        func_801C851C(D_800625A0->file_list->extra[0].verts, 0x1c, 0x9e, D_800625A0->file_list->extra[0].width, 0xd);
+        func_801E7C50(&D_800625A0->file_list->extra[1], 1, 0, 0);
+        func_801E920C(&D_800625A0->file_list->extra[1].polys[D_800625A0->buffer_index], 0x1c, 0xae, 0, 0x4e,
+                      D_800625A0->file_list->extra[1].width, 0xd);
+        func_801C851C(D_800625A0->file_list->extra[1].verts, 0x1c, 0xae, D_800625A0->file_list->extra[1].width, 0xd);
         func_800320E8(image);
-        memmove(&D_800625A0->block430->headA, &D_800625A0->block430->names[row], sizeof(MenuLabelSlot));
-        func_801C851C(D_800625A0->block430->headA.verts, 0x12, 0x8e, D_800625A0->block430->names[row].width, 0xd);
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->r0 = 0x80;
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->g0 = 0x80;
-        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->b0 = 0x80;
-        SetSemiTrans(&D_800625A0->block430->headA.polys[D_800625A0->bufferIndex], 0);
-        func_801E8044(8, D_800625A0->party->unk38);
+        memmove(&D_800625A0->file_list->headA, &D_800625A0->file_list->names[row], sizeof(MenuLabel));
+        func_801C851C(D_800625A0->file_list->headA.verts, 0x12, 0x8e, D_800625A0->file_list->names[row].width, 0xd);
+        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->r0 = 0x80;
+        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->g0 = 0x80;
+        (D_800625A0->file_list->headA.polys + D_800625A0->buffer_index)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->file_list->headA.polys[D_800625A0->buffer_index], 0);
+        func_801E8044(8, D_800625A0->flags->unk38);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
+            effect = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId] + row + 21;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId] + (row >> 1) + 37;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -462,20 +462,20 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         } else {
             all = 1;
         }
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, all, 0, 2);
         targetKind = (effect->target & 3) + 3;
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, targetKind, 0, 2);
-        D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
-        D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extra[1].count = D_800625A0->bufferIndex;
-        D_800625A0->block430->extraShown = 1;
-        D_800625A0->party->unk38[6] = 1;
-        D_800625A0->party->unk38[7] = 1;
+        func_801E8070(8, D_800625A0->labels10e0, D_801EA550, D_801E9EA0, D_800625A0->flags->unk38, targetKind, 0, 2);
+        D_800625A0->file_list->headA.buffer = D_800625A0->buffer_index;
+        D_800625A0->file_list->headB.buffer = D_800625A0->buffer_index;
+        D_800625A0->file_list->extra[0].buffer = D_800625A0->buffer_index;
+        D_800625A0->file_list->extra[1].buffer = D_800625A0->buffer_index;
+        D_800625A0->file_list->extraShown = 1;
+        D_800625A0->flags->unk38[6] = 1;
+        D_800625A0->flags->unk38[7] = 1;
     } else {
-        D_800625A0->block430->extraShown = 0;
+        D_800625A0->file_list->extraShown = 0;
         for (i = 0; i < 6; i++) {
-            D_800625A0->party->unk38[i] = 0;
+            D_800625A0->flags->unk38[i] = 0;
         }
     }
 }
@@ -489,15 +489,15 @@ void func_801DD5E8(u8 mode) {
     func_801E8F60(5, mode);
     func_801E8F60(6, mode);
     for (i = 0; i < 12; i++) {
-        if (D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count].r0 != 0x20) {
-            func_801E8EAC(&D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count], mode);
-            func_801E8EAC(&D_800625A0->block430->values[i].polys[D_800625A0->block430->values[i].count], mode);
+        if (D_800625A0->file_list->names[i].polys[D_800625A0->file_list->names[i].buffer].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->file_list->names[i].polys[D_800625A0->file_list->names[i].buffer], mode);
+            func_801E8EAC(&D_800625A0->file_list->values[i].polys[D_800625A0->file_list->values[i].buffer], mode);
         }
     }
-    func_801E8EAC(&D_800625A0->blocks444[0]->polys[D_800625A0->blocks444[0]->count], mode);
-    func_801E8EAC(&D_800625A0->block430->headA.polys[D_800625A0->block430->headA.count], mode);
+    func_801E8EAC(&D_800625A0->cursors[0]->polys[D_800625A0->cursors[0]->count], mode);
+    func_801E8EAC(&D_800625A0->file_list->headA.polys[D_800625A0->file_list->headA.buffer], mode);
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->block430->extra[i].polys[D_800625A0->block430->extra[i].count], mode);
+        func_801E8EAC(&D_800625A0->file_list->extra[i].polys[D_800625A0->file_list->extra[i].buffer], mode);
     }
 }
 
@@ -520,17 +520,17 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     targets = 1;
     redraw = 1;
     x = 0;
-    cursor = D_800625A0->firstMember;
+    cursor = D_800625A0->first_member;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
+        effect = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]] + row + 22;
         break;
     case 1:
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId] + row + 21;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 21;
         break;
     case 2:
         x = 0x18;
-        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId] + row + 37;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId] + row + 37;
         cursor = slot;
         break;
     }
@@ -549,7 +549,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
         if (all) {
             for (i = 0; i < 3; i++) {
-                if (D_800625A0->party->ids[i] != 0xff) {
+                if (D_800625A0->flags->ids[i] != 0xff) {
                     targets |= 1 << i;
                     D_800625A0->markers->visible[i] = 1;
                 }
@@ -558,13 +558,13 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             targets = 1 << cursor;
             D_800625A0->markers->visible[cursor] = 1;
         }
-        D_800625A0->party->unk2F = 1;
+        D_800625A0->flags->unk2F = 1;
         if (kind != 2) {
-            if (D_8006D634.characters[D_800625A0->party->ids[slot]].ep - effect->cost < 0) {
+            if (D_8006D634.characters[D_800625A0->flags->ids[slot]].ep - effect->cost < 0) {
                 targets = 0;
             }
         } else {
-            if (D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].fuel - effect->gearCost < 0) {
+            if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel - effect->gearCost < 0) {
                 targets = 0;
             }
         }
@@ -581,28 +581,28 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                 hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
-                        if (D_8006D634.characters[D_800625A0->party->ids[i]].hp != D_8006D634.characters[D_800625A0->party->ids[i]].maxHp) {
+                        if (D_8006D634.characters[D_800625A0->flags->ids[i]].hp != D_8006D634.characters[D_800625A0->flags->ids[i]].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     } else {
-                        if (D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[i]].gearId].hp !=
-                            D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[row]].gearId].maxHp) {
+                        if (D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[i]].gearId].hp !=
+                            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[row]].gearId].maxHp) {
                             used = 1;
                             hit = 1;
                         }
                     }
                     if (hit) {
-                        func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
+                        func_801E35BC(D_800625A0->tables, D_800625A0->flags->ids[slot], D_800625A0->flags->ids[i],
                                       row, kind);
                     }
                 }
             }
             if (used) {
                 if (kind != 2) {
-                    D_8006D634.characters[D_800625A0->party->ids[slot]].ep -= effect->cost;
+                    D_8006D634.characters[D_800625A0->flags->ids[slot]].ep -= effect->cost;
                 } else {
-                    D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].fuel -= effect->gearCost;
+                    D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].fuel -= effect->gearCost;
                 }
                 sound = 0x37;
             } else {
@@ -625,11 +625,11 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     }
     D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
     func_801DD5E8(0);
-    D_800625A0->party->unk46 = 0;
+    D_800625A0->flags->unk46 = 0;
     func_801C7BF4();
     if (D_801E9785 != 0) {
         for (i = 0; i < 3; i++) {
-            func_800320E8(D_800625A0->panels[i]);
+            func_800320E8(D_800625A0->party_panels[i]);
         }
         D_801E9785 = 0;
     }
@@ -646,8 +646,8 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             func_801D29A8(0, 0);                       \
             func_801C7BF4();                           \
         }                                              \
-        D_800625A0->party->redraw6 = 0;                \
-        D_800625A0->party->unk20[1] = 0;               \
+        D_800625A0->flags->redraw6 = 0;                \
+        D_800625A0->flags->unk20[1] = 0;               \
     } while (0)
 
 /* The arts screen of party slot `member` (`kind` 0 the character's, 1 its
@@ -692,7 +692,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
         }
         switch (D_800625A0->input) {
         case 4:
-            if (D_800625A0->block430->shown[cursor] & 0x80) {
+            if (D_800625A0->file_list->shown[cursor] & 0x80) {
                 func_801DD790(slot, cursor, kind);
                 slotShown = 0xff;
                 cursorShown = 0xff;
@@ -733,7 +733,7 @@ void func_801DDF24(u8 member, u8 zoom, u8 kind) {
             break;
         }
     } while (running);
-    func_801E8044(8, D_800625A0->party->unk38);
+    func_801E8044(8, D_800625A0->flags->unk38);
     func_801DB340(0);
 }
 
@@ -748,9 +748,9 @@ void func_801DE2C8(u8 page) {
     void *block;
 
     block = func_80031BDC(0xa1c, 0);
-    D_800625A0->block434 = block;
+    D_800625A0->equip_list = block;
     bzero(block, 0xa1c);
-    func_801E8018(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_800625A0->party->unk40);
+    func_801E8018(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_800625A0->flags->unk40);
     func_801C72BC(7);
     func_801D22F4(3);
     func_801DB02C(0);
@@ -759,25 +759,25 @@ void func_801DE2C8(u8 page) {
 
 /* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
 void func_801DE36C(void) {
-    D_800625A0->party->unk4C = 0;
+    D_800625A0->flags->unk4C = 0;
     func_801D4EA0(2);
     func_801D4EA0(3);
     func_801D4EA0(4);
     func_801D4EA0(5);
     func_801C7BF4();
-    func_801E8044(6, D_800625A0->party->unk40);
+    func_801E8044(6, D_800625A0->flags->unk40);
     func_801C72BC(0x17);
-    func_800320E8(D_800625A0->block434);
+    func_800320E8(D_800625A0->equip_list);
     func_801D3444();
 }
 
 /* Close the 801ddf24 screen: hide its sprites and free its blocks. */
 void func_801DE400(void) {
-    D_800625A0->party->unk8 = 0;
-    D_800625A0->party->unk4B = 0;
+    D_800625A0->flags->unk8 = 0;
+    D_800625A0->flags->unk4B = 0;
     func_801C7BF4();
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_labels);
 }
 
 /* Lay out the page `page` labels of the 801ddf24 screen (rows 2-5 when
@@ -789,7 +789,7 @@ void func_801DE474(u8 wide, u8 page) {
     s32 h;
 
     for (i = 0; i < 6; i++) {
-        D_800625A0->party->unk40[i] = 0;
+        D_800625A0->flags->unk40[i] = 0;
     }
     if (wide) {
         first = 2;
@@ -801,10 +801,10 @@ void func_801DE474(u8 wide, u8 page) {
         h = 0x5a;
     }
     for (i = first; i < end; i++) {
-        func_801E8070(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->party->unk40, i,
+        func_801E8070(6, D_800625A0->labels14e0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->flags->unk40, i,
                       i, 3);
     }
-    if (D_800625A0->party->unk20[4] != 0) {
+    if (D_800625A0->flags->unk20[4] != 0) {
         func_801D4EA0(4);
     }
     func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
@@ -842,20 +842,20 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (!gear) {
             kind = part + 1;
             count = 100;
-            keptWeapon = &D_800625A0->tables->weapons[D_800625A0->labels360->parts[0][part]];
+            keptWeapon = &D_800625A0->tables->weapons[D_800625A0->equip_labels->parts[0][part]];
         } else {
             kind = part + 1;
             count = 100;
-            keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->labels360->parts[0][part]];
+            keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->equip_labels->parts[0][part]];
         }
     } else if (!gear) {
         if (part != 0) {
             kind = 5;
             count = 200;
-            accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]];
+            accessory = &D_800625A0->tables->accessories[D_800625A0->equip_labels->parts[2][part - 1]];
             own = accessory->groups;
             for (i = 0, used = 0; i < 3; i++) {
-                accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]];
+                accessory = &D_800625A0->tables->accessories[D_800625A0->equip_labels->parts[2][i]];
                 used |= accessory->groups;
             }
         } else {
@@ -865,10 +865,10 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]];
+        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->equip_labels->parts[2][part - 1]];
         own = gearAccessory->groups;
         for (i = 0, used = 0; i < 3; i++) {
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]];
+            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->equip_labels->parts[2][i]];
             used |= gearAccessory->groups;
         }
     } else {
@@ -892,7 +892,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (!gear) {
             switch (kind) {
             case 0:
-                if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) && weapon->kind < 5 &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->ids[slot]) && weapon->kind < 5 &&
                     D_8006D634.weaponIds[i] < 50) {
                     ok = 1;
                 }
@@ -901,13 +901,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) &&
+                if (func_801C865C(weapon->users, D_800625A0->flags->ids[slot]) &&
                     weapon->kind == keptWeapon->kind && D_8006D634.weaponIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C865C(accessory->users, D_800625A0->party->ids[slot])) {
+                if (func_801C865C(accessory->users, D_800625A0->flags->ids[slot])) {
                     if (accessory->groups == 0 || (own & accessory->groups)) {
                         ok = 1;
                     } else if (!(used & accessory->groups)) {
@@ -919,7 +919,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         } else {
             switch (kind) {
             case 0:
-                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->party->ids[slot]].gearId) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId) &&
                     gearWeapon->kind < 5 && D_8006D634.gearPartIds[i] < 50) {
                     ok = 1;
                 }
@@ -928,13 +928,13 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             case 2:
             case 3:
             case 4:
-                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->party->ids[slot]].gearId) &&
+                if (func_801C8678(gearWeapon->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId) &&
                     gearWeapon->kind == keptGearWeapon->kind && D_8006D634.gearPartIds[i] >= 50) {
                     ok = 1;
                 }
                 break;
             case 5:
-                if (func_801C8678(gearAccessory->users, D_8006D634.characters[D_800625A0->party->ids[slot]].gearId)) {
+                if (func_801C8678(gearAccessory->users, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId)) {
                     if (gearAccessory->groups == 0 || (own & gearAccessory->groups)) {
                         ok = 1;
                     } else if (!(used & gearAccessory->groups)) {
@@ -968,43 +968,43 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (D_801EA730[top + i] != 0) {
             if (!gear) {
                 if (kind != 5) {
-                    D_800625A0->block434->names[i].width = func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
+                    D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
                 } else {
-                    D_800625A0->block434->names[i].width = func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
+                    D_800625A0->equip_list->names[i].width = func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
                 }
             } else if (kind != 5) {
-                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
+                D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
             } else {
-                D_800625A0->block434->names[i].width = func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
+                D_800625A0->equip_list->names[i].width = func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
             }
             tens = D_801EA7F8[top + i] / 10;
             codes[0] = tens != 0 ? tens + 0x10 : 0xc3;
             codes[2] = D_801EA7F8[top + i] % 10 + 0x10;
             func_80033B34(codes, text, 2);
-            D_800625A0->block434->values[i].width = func_80034EAC(text, image, 0x24, 1);
+            D_800625A0->equip_list->values[i].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (i & 1) * 0x18 + 0x180;
             rect.y = i / 2 * 0xd + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
             LoadImage(&rect, image);
             DrawSync(0);
-            func_801E7C50(&D_800625A0->block434->names[i], i, 0x80, 0x81);
-            func_801E7C50(&D_800625A0->block434->values[i], i, 0x80, 0x82);
-            func_801C851C(D_800625A0->block434->names[i].verts, 0xa8, i * 0xd + 0x12,
-                          D_800625A0->block434->names[i].width, 0xd);
-            func_801C851C(D_800625A0->block434->values[i].verts, 0x10c, i * 0xd + 0x12,
-                          D_800625A0->block434->values[i].width, 0xd);
-            D_800625A0->block434->names[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block434->values[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block434->shown[i] = 1;
+            func_801E7C50(&D_800625A0->equip_list->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->equip_list->values[i], i, 0x80, 0x82);
+            func_801C851C(D_800625A0->equip_list->names[i].verts, 0xa8, i * 0xd + 0x12,
+                          D_800625A0->equip_list->names[i].width, 0xd);
+            func_801C851C(D_800625A0->equip_list->values[i].verts, 0x10c, i * 0xd + 0x12,
+                          D_800625A0->equip_list->values[i].width, 0xd);
+            D_800625A0->equip_list->names[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->equip_list->values[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->equip_list->shown[i] = 1;
         } else {
-            D_800625A0->block434->shown[i] = 0;
+            D_800625A0->equip_list->shown[i] = 0;
         }
     }
     func_800320E8(image);
-    func_801D36E0(&D_800625A0->block434->title, slot, gear, 0);
+    func_801D36E0(&D_800625A0->equip_list->title, slot, gear, 0);
     length -= 8;
-    D_800625A0->party->unk4C = 1;
+    D_800625A0->flags->unk4C = 1;
     if (length < 0) {
         length = 0;
     }
@@ -1042,8 +1042,8 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     length = 100;
     if (special) {
         if (!gear) {
-            kept = D_800625A0->labels360->parts[1][part];
-            at = &D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[part];
+            kept = D_800625A0->equip_labels->parts[1][part];
+            at = &D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1055,8 +1055,8 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 D_8006F8BA[*at] = 100;
             }
         } else {
-            kept = D_800625A0->labels360->parts[1][part];
-            at = &D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[part];
+            kept = D_800625A0->equip_labels->parts[1][part];
+            at = &D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part];
             selected = *at;
             if (selected == 0) {
                 *at = kept;
@@ -1070,9 +1070,9 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
         }
     } else if (!gear) {
         if (part == 0) {
-            id = D_800625A0->party->ids[slot];
+            id = D_800625A0->flags->ids[slot];
             selected = D_8006D634.characters[id].weapons[0];
-            kept = D_800625A0->labels360->parts[0][0];
+            kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
                 D_8006D634.characters[id].weapons[0] = kept;
                 swap = 0;
@@ -1080,17 +1080,17 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.characters[D_800625A0->party->ids[slot]].accessories[part - 1];
+            selected = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1];
             ids = D_8006D634.accessoryIds;
             counts = D_8006D634.accessoryCounts;
-            kept = D_800625A0->labels360->parts[2][part - 1];
+            kept = D_800625A0->equip_labels->parts[2][part - 1];
             length = 200;
         }
     } else {
         if (part == 0) {
-            id = D_800625A0->party->ids[slot];
+            id = D_800625A0->flags->ids[slot];
             selected = D_8006D634.gears[D_8006D634.characters[id].gearId].weapons[0];
-            kept = D_800625A0->labels360->parts[0][0];
+            kept = D_800625A0->equip_labels->parts[0][0];
             if (selected == 0) {
                 D_8006D634.gears[D_8006D634.characters[id].gearId].weapons[0] = kept;
                 swap = 0;
@@ -1098,11 +1098,11 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
-            selected = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts[part - 1];
+            selected = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1];
             ids = D_8006D634.gearAccessoryIds;
             counts = D_8006D634.gearAccessoryCounts;
             length = 150;
-            kept = D_800625A0->labels360->parts[2][part - 1];
+            kept = D_800625A0->equip_labels->parts[2][part - 1];
         }
     }
     if (swap) {
@@ -1149,19 +1149,19 @@ void func_801DF5D0(u8 slot, u8 gear) {
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        D_800625A0->labels360->stats[i] = D_800625A0->tables->shown[i];
+        D_800625A0->equip_labels->stats[i] = D_800625A0->tables->shown[i];
     }
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_800625A0->labels360->parts[0][i] = D_8006D634.characters[D_800625A0->party->ids[slot]].weapons[i];
-            D_800625A0->labels360->parts[1][i] = D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[i];
-            D_800625A0->labels360->parts[2][i] = D_8006D634.characters[D_800625A0->party->ids[slot]].accessories[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_800625A0->labels360->parts[0][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].weapons[i];
-            D_800625A0->labels360->parts[1][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[i];
-            D_800625A0->labels360->parts[2][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts[i];
+            D_800625A0->equip_labels->parts[0][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[i];
+            D_800625A0->equip_labels->parts[1][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[i];
+            D_800625A0->equip_labels->parts[2][i] = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[i];
         }
     }
 }
@@ -1173,19 +1173,19 @@ void func_801DF890(u8 slot, u8 gear) {
 
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_8006D634.characters[D_800625A0->party->ids[slot]].weapons[i] = D_800625A0->labels360->parts[0][i];
-            D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[i] = D_800625A0->labels360->parts[1][i];
+            D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D634.characters[D_800625A0->party->ids[slot]].accessories[i] = D_800625A0->labels360->parts[2][i];
+            D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[i] = D_800625A0->equip_labels->parts[2][i];
         }
     } else {
         for (i = 0; i < 4; i++) {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].weapons[i] = D_800625A0->labels360->parts[0][i];
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[i] = D_800625A0->labels360->parts[1][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[i] = D_800625A0->equip_labels->parts[0][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[i] = D_800625A0->equip_labels->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts[i] = D_800625A0->labels360->parts[2][i];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[i] = D_800625A0->equip_labels->parts[2][i];
         }
     }
 }
@@ -1198,39 +1198,39 @@ void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D634.characters[D_800625A0->party->ids[slot]].weapons[0] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D634.characters[D_800625A0->party->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
+                D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[part] = D_801EA730[top + row];
+            D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part] = D_801EA730[top + row];
         }
     } else {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].weapons[0] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts[part - 1] = D_801EA730[top + row];
+                D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[part] = D_801EA730[top + row];
+            D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part] = D_801EA730[top + row];
         }
     }
 }
 
 /* Compute party slot `slot`'s gear stats and copy them to the shown values. */
 void func_801DFE2C(u8 slot) {
-    func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->party->ids[slot]].gearId);
-    func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->party->ids[slot]].gearId);
+    func_801E3ECC(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId);
+    func_801E3C2C(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId);
     D_800625A0->tables->shown[0] = D_800625A0->tables->unkB0;
     D_800625A0->tables->shown[1] = D_800625A0->tables->unkA4;
     D_800625A0->tables->shown[2] = D_800625A0->tables->unkA6;
@@ -1262,35 +1262,35 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
         kind += gear * 2;
         switch (kind) {
         case 0:
-            table = D_800625A0->block434->texts[0];
+            table = D_800625A0->equip_list->texts[0];
             if (current) {
                 if (!special) {
-                    id = D_8006D634.characters[D_800625A0->party->ids[slot]].weapons[0];
+                    id = D_8006D634.characters[D_800625A0->flags->ids[slot]].weapons[0];
                 } else {
-                    id = D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[part];
+                    id = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[part];
                 }
             }
             break;
         case 1:
-            table = D_800625A0->block434->texts[1];
+            table = D_800625A0->equip_list->texts[1];
             if (current) {
-                id = D_8006D634.characters[D_800625A0->party->ids[slot]].accessories[part - 1];
+                id = D_8006D634.characters[D_800625A0->flags->ids[slot]].accessories[part - 1];
             }
             break;
         case 2:
-            table = D_800625A0->block434->texts[2];
+            table = D_800625A0->equip_list->texts[2];
             if (current) {
                 if (!special) {
-                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].weapons[0];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].weapons[0];
                 } else {
-                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[part];
+                    id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[part];
                 }
             }
             break;
         case 3:
-            table = D_800625A0->block434->texts[3];
+            table = D_800625A0->equip_list->texts[3];
             if (current) {
-                id = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].parts[part - 1];
+                id = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].parts[part - 1];
             }
             break;
         }
@@ -1298,7 +1298,7 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
             image = func_80031BDC(0x3f6, 0);
             bzero(image, 0x3f6);
             for (line = 0; line < 3; line++) {
-                D_800625A0->block434->extra[line].width =
+                D_800625A0->equip_list->extra[line].width =
                     func_80034EAC(func_80033728(table, id * 3 + line), image, 0x24, 0);
                 rect.x = ((line + 8) & 1) * 0x18 + 0x180;
                 rect.y = (line + 8) / 2 * 0xd + 0x80;
@@ -1306,17 +1306,17 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                func_801E7C50(&D_800625A0->block434->extra[line], line + 8, 0x80, 0x81);
-                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
-                              D_800625A0->block434->extra[line].width, 0xd);
-                D_800625A0->block434->extra[line].count = D_800625A0->bufferIndex;
+                func_801E7C50(&D_800625A0->equip_list->extra[line], line + 8, 0x80, 0x81);
+                func_801C851C(D_800625A0->equip_list->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
+                              D_800625A0->equip_list->extra[line].width, 0xd);
+                D_800625A0->equip_list->extra[line].buffer = D_800625A0->buffer_index;
             }
-            D_800625A0->block434->extraShown = 1;
+            D_800625A0->equip_list->extraShown = 1;
             func_800320E8(image);
             return;
         }
     }
-    D_800625A0->block434->extraShown = 0;
+    D_800625A0->equip_list->extraShown = 0;
 }
 
 /* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
@@ -1334,15 +1334,15 @@ void func_801E0434(u8 slot, u8 gear) {
     if (!gear) {
         ids = D_8006D634.weaponIds;
         counts = ids - 100;
-        item = D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[0];
-        D_8006D634.characters[D_800625A0->party->ids[slot]].entryItems[0] = 0;
+        item = D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[0];
+        D_8006D634.characters[D_800625A0->flags->ids[slot]].entryItems[0] = 0;
         size = 100;
     } else {
         ids = D_8006D634.gearPartIds;
         counts = ids - 100;
-        item = D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[0];
+        item = D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[0];
         size = 100;
-        D_8006D634.gears[D_8006D634.characters[D_800625A0->party->ids[slot]].gearId].partItems[0] = 0;
+        D_8006D634.gears[D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId].partItems[0] = 0;
     }
     for (i = 0; i < size; i++) {
         if (ids[i] == item) {
@@ -1419,7 +1419,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     listing = 0;
     drawnTop = 0xff;
     top = 0;
-    D_800625A0->party->redraw7 = 0;
+    D_800625A0->flags->redraw7 = 0;
     func_801DE2C8(gear);
     func_801DF5D0(slot, gear);
     while (running) {
@@ -1444,7 +1444,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
         if (cursor) {
             func_801DB0A8(row, top, 3, 0);
         } else {
-            D_800625A0->party->unk50[0] = 0;
+            D_800625A0->flags->unk50[0] = 0;
         }
         if (row != drawnRow || slot != drawnSlot || top != drawnTop) {
             if (previewed) {
@@ -1452,8 +1452,8 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             }
             previewed = 1;
             if (!gear) {
-                func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-                func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+                func_801E36D4(D_800625A0->tables, D_800625A0->flags->ids[slot]);
+                func_801E3A80(D_800625A0->tables, D_800625A0->flags->ids[slot]);
             } else {
                 func_801DFE2C(slot);
             }
@@ -1482,16 +1482,16 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             if (fade) {
                 func_801D1E80();
                 func_801D29A8(0, 0);
-                while (D_800625A0->viewMotion != 0) {
+                while (D_800625A0->view_motion != 0) {
                     func_801C7BF4();
                 }
             }
             D_800625A0->markers->visible[0] = 1;
-            D_800625A0->party->redraw6 = 0;
+            D_800625A0->flags->redraw6 = 0;
             first = 0;
-            D_800625A0->party->unk20[1] = 0;
+            D_800625A0->flags->unk20[1] = 0;
         }
-        D_800625A0->party->unk2F = 1;
+        D_800625A0->flags->unk2F = 1;
         if (committed) {
             committed = 0;
             D_800625A0->input = 4;
@@ -1511,11 +1511,11 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 panel = 1;
                 cursor = 1;
                 row = 0;
-                D_800625A0->party->unk50[0] = 1;
+                D_800625A0->flags->unk50[0] = 1;
                 break;
             case 0:
             case 2:
-                if (D_800625A0->party->ids[slot] == 4) {
+                if (D_800625A0->flags->ids[slot] == 4) {
                     special ^= 1;
                     drawnPart = 0xff;
                     panel = 1;
@@ -1564,7 +1564,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 func_801DB0A8(0, top, 3, 0);
                 row = 0;
                 drawnSlot = 0xff;
-                D_800625A0->party->unk50[0] = 0;
+                D_800625A0->flags->unk50[0] = 0;
                 break;
             case 4:
                 swapped = func_801DF0D4(slot, part, special, gear);
@@ -1576,7 +1576,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                     func_801E0434(slot, gear);
                 }
                 KEEP_AND_LEAVE_LIST();
-                D_800625A0->party->unk50[0] = 0;
+                D_800625A0->flags->unk50[0] = 0;
                 row = 0;
                 break;
             case 1:
@@ -1605,7 +1605,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 drawnRow = 0xff;
                 panel = 1;
                 previewed = 0;
-                D_800625A0->block35C->highlighted = 0;
+                D_800625A0->equipment->highlighted = 0;
             }
         }
     }
@@ -1618,10 +1618,10 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     void *block;
 
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equipment = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     func_801E05D0(slot, arg1, 0);
@@ -1637,19 +1637,19 @@ void func_801E1014(void) {
     s32 j;
 
     block = func_80031BDC(0x25c0, 0);
-    D_800625A0->block438 = block;
+    D_800625A0->status_list = block;
     bzero(block, 0x25c0);
     func_801C72BC(4);
-    func_801E8018(2, D_800625A0->labels17E0, D_801EA564, &D_800625A0->party->unk4E);
-    func_801E8070(2, D_800625A0->labels17E0, D_801EA564, D_801E9EA0, &D_800625A0->party->unk4E, 0, 0, 4);
+    func_801E8018(2, D_800625A0->labels17e0, D_801EA564, &D_800625A0->flags->unk4E);
+    func_801E8070(2, D_800625A0->labels17e0, D_801EA564, D_801E9EA0, &D_800625A0->flags->unk4E, 0, 0, 4);
     func_801D397C(2, 0x44, 0xa, 0xe4, 0xc4, 0, 1, 4, 0);
-    D_800625A0->party->redraw6 = 0;
+    D_800625A0->flags->redraw6 = 0;
     i = 0;
     j = 0; /* members that can take part */
-    D_800625A0->party->unk20[1] = 0;
+    D_800625A0->flags->unk20[1] = 0;
     for (; i < 3; i++) {
-        if (D_800625A0->party->ids[i] != 0xff) {
-            if (D_800625A0->party->ids[i] != 7 && D_800625A0->party->ids[i] != 8) {
+        if (D_800625A0->flags->ids[i] != 0xff) {
+            if (D_800625A0->flags->ids[i] != 7 && D_800625A0->flags->ids[i] != 8) {
                 j++;
             }
         }
@@ -1657,24 +1657,24 @@ void func_801E1014(void) {
     if (j >= 2) {
         func_801D3488(3, 0);
     } else {
-        D_800625A0->party->unk53 = 0;
+        D_800625A0->flags->unk53 = 0;
     }
     for (i = 0; i < 13; i++) {
         j = 0;
         do {
-            SetPolyG4(&D_800625A0->block438->gauges[i][j]);
-            (D_800625A0->block438->gauges[i] + j)->r0 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g0 = 0xff;
-            (D_800625A0->block438->gauges[i] + j)->b0 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r1 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g1 = 0xff;
-            (D_800625A0->block438->gauges[i] + j)->b1 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->b2 = 0;
-            (D_800625A0->block438->gauges[i] + j)->r3 = 0;
-            (D_800625A0->block438->gauges[i] + j)->g3 = 0;
-            (D_800625A0->block438->gauges[i] + j)->b3 = 0;
+            SetPolyG4(&D_800625A0->status_list->gauges[i][j]);
+            (D_800625A0->status_list->gauges[i] + j)->r0 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g0 = 0xff;
+            (D_800625A0->status_list->gauges[i] + j)->b0 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r1 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g1 = 0xff;
+            (D_800625A0->status_list->gauges[i] + j)->b1 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->b2 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->r3 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->g3 = 0;
+            (D_800625A0->status_list->gauges[i] + j)->b3 = 0;
             j++;
         } while (j < 2);
     }
@@ -1683,12 +1683,12 @@ void func_801E1014(void) {
 /* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
 void func_801E1398(void) {
     func_801D3674();
-    D_800625A0->party->unk4D = 0;
+    D_800625A0->flags->unk4D = 0;
     func_801D4EA0(2);
     func_801C7BF4();
-    func_801E8044(2, &D_800625A0->party->unk4E);
+    func_801E8044(2, &D_800625A0->flags->unk4E);
     func_801C72BC(0x14);
-    func_800320E8(D_800625A0->block438);
+    func_800320E8(D_800625A0->status_list);
 }
 
 /* Rate target `i` of the row: a nonzero target counts towards the average,
@@ -1744,8 +1744,8 @@ u32 func_801E1418(u8 slot, u8 row) {
         i = 0;
         count = 0;
         r = row;
-        id = D_800625A0->party->ids[slot];
-        table = D_800625A0->block438->unk2578;
+        id = D_800625A0->flags->ids[slot];
+        table = D_800625A0->status_list->unk2578;
         values = D_8006D634.characters[id].useCounts;
     loop:
         RATE_TARGET();
@@ -1777,13 +1777,13 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
     case 1:
         for (i = 0; i < 5; i++) {
             if (D_801E97AC[row * 5 + i] != 0xff) {
-                D_800625A0->block438->counts[row] +=
+                D_800625A0->status_list->counts[row] +=
                     func_8002675C(D_800625A0->sheet, D_801E97AC[row * 5 + i],
-                                  &D_800625A0->block438->lists[row][D_800625A0->block438->counts[row] * 2],
-                                  D_800625A0->bufferIndex, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
+                                  &D_800625A0->status_list->lists[row][D_800625A0->status_list->counts[row] * 2],
+                                  D_800625A0->buffer_index, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
             }
         }
-        D_800625A0->block438->starts[row] = D_800625A0->bufferIndex;
+        D_800625A0->status_list->starts[row] = D_800625A0->buffer_index;
         break;
     case 2:
         if (percent / 100) {
@@ -1801,35 +1801,35 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
             text[4] = 0xc3;
         }
         func_80033B34(text, glyphs, 3);
-        D_800625A0->block438->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+        D_800625A0->status_list->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
         rect.x = (row & 1) * 24 + 0x180;
         rect.y = (row >> 1) * 13 + 0x80;
         rect.w = 0x28;
         rect.h = 0xd;
         LoadImage(&rect, pixels);
         DrawSync(0);
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x0 = 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y0 = row * 13 + 0x1f;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x1 =
-            D_800625A0->block438->values[row].width + 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y1 = row * 13 + 0x1f;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x2 = 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2c;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x3 =
-            D_800625A0->block438->values[row].width + 0x10a;
-        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2c;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x0 = 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y0 = row * 13 + 0x1f;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x1 =
+            D_800625A0->status_list->values[row].width + 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y1 = row * 13 + 0x1f;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x2 = 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y2 = row * 13 + 0x2c;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x3 =
+            D_800625A0->status_list->values[row].width + 0x10a;
+        (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y3 = row * 13 + 0x2c;
         percent = percent * 5400 / 10000;
-        func_801E7C50(&D_800625A0->block438->values[row], row, 0x80, 0x82);
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x0 = 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y0 = row * 13 + 0x23;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x1 = percent + 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y1 = row * 13 + 0x23;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x2 = 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2b;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x3 = percent + 0xd4;
-        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2b;
-        D_800625A0->block438->gaugeBuffer[row] = D_800625A0->bufferIndex;
-        D_800625A0->block438->gaugeShown[row] = 1;
+        func_801E7C50(&D_800625A0->status_list->values[row], row, 0x80, 0x82);
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x0 = 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y0 = row * 13 + 0x23;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x1 = percent + 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y1 = row * 13 + 0x23;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x2 = 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y2 = row * 13 + 0x2b;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->x3 = percent + 0xd4;
+        (D_800625A0->status_list->gauges[row] + D_800625A0->buffer_index)->y3 = row * 13 + 0x2b;
+        D_800625A0->status_list->gaugeBuffer[row] = D_800625A0->buffer_index;
+        D_800625A0->status_list->gaugeShown[row] = 1;
         break;
     }
 }
@@ -1853,8 +1853,8 @@ void func_801E1AC8(u8 slot) {
     text[1] = 0;
     pixels = func_80031BDC(0x3f6, 0);
     for (i = 0; i < 13; i++) {
-        D_800625A0->block438->gaugeShown[i] = 0;
-        if (func_801C8640(D_8006D634.skills[D_800625A0->party->ids[slot]].counterSkills, i)) {
+        D_800625A0->status_list->gaugeShown[i] = 0;
+        if (func_801C8640(D_8006D634.skills[D_800625A0->flags->ids[slot]].counterSkills, i)) {
             show = 1;
             kind = 1;
             learned = 1;
@@ -1870,54 +1870,54 @@ void func_801E1AC8(u8 slot) {
             learned = 0;
         }
         if (show) {
-            D_800625A0->block438->names[i].width =
-                func_80034EAC(func_80033784(D_800625A0->party->ids[slot], i), pixels, 0x24, 0);
+            D_800625A0->status_list->names[i].width =
+                func_80034EAC(func_80033784(D_800625A0->flags->ids[slot], i), pixels, 0x24, 0);
             if (i < 7 && learned) {
-                text[0] = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][i + 7].unk17 + 0x10;
+                text[0] = D_800625A0->tables->effects[D_800625A0->flags->ids[slot]][i + 7].unk17 + 0x10;
             } else {
                 text[0] = 0xf;
             }
             func_80033B34(text, glyphs, 1);
-            D_800625A0->block438->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+            D_800625A0->status_list->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
             rect.x = (i & 1) * 24 + 0x180;
             rect.y = i / 2 * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
             LoadImage(&rect, pixels);
             DrawSync(0);
-            func_801E7C50(&D_800625A0->block438->names[i], i, 0x80, 0x81);
-            func_801E7C50(&D_800625A0->block438->values[i], i, 0x80, 0x82);
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x0 = 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x1 =
-                D_800625A0->block438->names[i].width + 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x2 = 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x3 =
-                D_800625A0->block438->names[i].width + 0x5c;
-            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x0 = 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x1 =
-                D_800625A0->block438->values[i].width + 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x2 = 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x3 =
-                D_800625A0->block438->values[i].width + 0xc8;
-            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
-            D_800625A0->block438->names[i].count = D_800625A0->bufferIndex;
-            D_800625A0->block438->shown[i] = 1;
+            func_801E7C50(&D_800625A0->status_list->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->status_list->values[i], i, 0x80, 0x82);
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x0 = 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y0 = i * 13 + 0x1f;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x1 =
+                D_800625A0->status_list->names[i].width + 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y1 = i * 13 + 0x1f;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x2 = 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y2 = i * 13 + 0x2c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->x3 =
+                D_800625A0->status_list->names[i].width + 0x5c;
+            (D_800625A0->status_list->names[i].polys + D_800625A0->buffer_index)->y3 = i * 13 + 0x2c;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x0 = 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y0 = i * 13 + 0x1f;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x1 =
+                D_800625A0->status_list->values[i].width + 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y1 = i * 13 + 0x1f;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x2 = 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y2 = i * 13 + 0x2c;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->x3 =
+                D_800625A0->status_list->values[i].width + 0xc8;
+            (D_800625A0->status_list->values[i].polys + D_800625A0->buffer_index)->y3 = i * 13 + 0x2c;
+            D_800625A0->status_list->names[i].buffer = D_800625A0->buffer_index;
+            D_800625A0->status_list->shown[i] = 1;
         } else {
-            D_800625A0->block438->shown[i] = 0;
+            D_800625A0->status_list->shown[i] = 0;
         }
-        D_800625A0->block438->counts[i] = 0;
+        D_800625A0->status_list->counts[i] = 0;
         func_801E1544(i, kind, pixels, percent);
     }
     func_800320E8(pixels);
-    func_801D36E0(&D_800625A0->block438->title, slot, 0, 2);
-    D_800625A0->party->unk4D = 1;
+    func_801D36E0(&D_800625A0->status_list->title, slot, 0, 2);
+    D_800625A0->flags->unk4D = 1;
 }
 
 /* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
@@ -1929,7 +1929,7 @@ u8 func_801E20C8(u8 slot) {
 
     stay = 1;
     shown = 0xff;
-    if ((u32)(D_800625A0->party->ids[slot] - 7) < 2) {
+    if ((u32)(D_800625A0->flags->ids[slot] - 7) < 2) {
         func_801C8574(4);
         return 1;
     }
@@ -1947,12 +1947,12 @@ u8 func_801E20C8(u8 slot) {
         case 9:
             do {
                 slot = func_801D9704(slot, 0, 0);
-            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->ids[slot] - 7) < 2);
             break;
         case 10:
             do {
                 slot = func_801D9704(slot, 1, 0);
-            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            } while ((u32)(D_800625A0->flags->ids[slot] - 7) < 2);
             break;
         }
     } while (stay);
@@ -1966,18 +1966,18 @@ u8 func_801E2250(void) {
     s32 i;
 
     block = func_80031BDC(0x2af0, 0);
-    D_800625A0->block358 = block;
+    D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equipment = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     i = 0;
     while (1) {
-        if (D_800625A0->party->ready[i] != 0) {
+        if (D_800625A0->flags->ready[i] != 0) {
             break;
         }
         i++;
@@ -1988,14 +1988,14 @@ u8 func_801E2250(void) {
 
 /* Lay out the six labels of page `page` (D_801EA568) at +18e0. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, D_800625A0->labels18E0, D_801EA568 + page, D_800625A0->party->unk54);
+    func_801E8018(6, D_800625A0->labels18e0, D_801EA568 + page, D_800625A0->flags->unk54);
 }
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2368(void) {
-    func_800320E8(D_800625A0->block358);
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->detail);
+    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
 
@@ -2018,7 +2018,7 @@ u8 func_801E23CC(void) {
     shown = 0xf3;
     first = 1;
     D_800625A0->choice = 0;
-    D_800625A0->choiceShown = 0xff;
+    D_800625A0->choice_shown = 0xff;
     slot = func_801E2250();
     while (stay) {
         func_801C7BF4();
@@ -2028,10 +2028,10 @@ u8 func_801E23CC(void) {
             shown = slot;
             page = D_8006D634.inGear[slot] ? 6 : 0;
             func_801E2324(page);
-            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
-            func_801E8070(6, D_800625A0->labels18E0, &D_801EA568[6], D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
-            D_800625A0->labels18E0[4].visible = 1;
-            D_800625A0->labels18E0[5].visible = 1;
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->unk54, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18e0, &D_801EA568[6], D_801E9F48, D_800625A0->flags->unk54, 5, 7, 6);
+            D_800625A0->labels18e0[4].projected = 1;
+            D_800625A0->labels18e0[5].projected = 1;
             if (first) {
                 first = 0;
                 func_801D1E80();
@@ -2039,37 +2039,37 @@ u8 func_801E23CC(void) {
                 func_801E86C8(0);
             }
         }
-        if (D_800625A0->choice != D_800625A0->choiceShown) {
-            func_801E8070(4, D_800625A0->labels18E0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->party->unk54,
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
+            func_801E8070(4, D_800625A0->labels18e0, &D_801EA568[6], &D_801E9F48[page], D_800625A0->flags->unk54,
                           D_800625A0->choice, 7, 0);
             func_801E8B4C(0);
-            D_800625A0->choiceShown = D_800625A0->choice;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801D22C4();
-            func_801E8044(4, D_800625A0->party->unk54);
-            D_800625A0->party->redraw7 = 0;
-            D_800625A0->party->unk8 = 0;
-            D_800625A0->party->unk4B = 0;
-            D_800625A0->party->unk54[4] = 0;
-            D_800625A0->party->unk54[5] = 0;
+            func_801E8044(4, D_800625A0->flags->unk54);
+            D_800625A0->flags->redraw7 = 0;
+            D_800625A0->flags->unk8 = 0;
+            D_800625A0->flags->unk4B = 0;
+            D_800625A0->flags->unk54[4] = 0;
+            D_800625A0->flags->unk54[5] = 0;
             switch (D_800625A0->choice) {
             case 0:
-                if (D_800625A0->party->ids[slot] != 7) {
-                    D_800625A0->party->redrawA = 0;
+                if (D_800625A0->flags->ids[slot] != 7) {
+                    D_800625A0->flags->redrawA = 0;
                     func_801E05D0(slot, 0, 1);
                     func_801DE36C();
                     func_801D8DE4(slot, 0, 0, 1);
                     func_801D8EA4(slot, 0, 0, 1);
-                    D_800625A0->party->redrawA = 1;
+                    D_800625A0->flags->redrawA = 1;
                 } else {
                     func_801C8574(4);
                 }
                 shown = 0xff;
                 break;
             case 1:
-                if (D_800625A0->party->ids[slot] != 7) {
+                if (D_800625A0->flags->ids[slot] != 7) {
                     func_801DDF24(slot, 0, 1);
                     func_801DC2CC(1);
                 } else {
@@ -2078,7 +2078,7 @@ u8 func_801E23CC(void) {
                 shown = 0xff;
                 break;
             case 2:
-                if (D_800625A0->party->ids[slot] != 7) {
+                if (D_800625A0->flags->ids[slot] != 7) {
                     func_801DDF24(slot, 0, 2);
                     func_801DC2CC(2);
                 } else {
@@ -2091,7 +2091,7 @@ u8 func_801E23CC(void) {
                     if (D_8006D634.inGear[slot] != 0) {
                         D_8006D634.inGear[slot] = 0;
                         page = 0;
-                    } else if (D_8006D634.characters[D_800625A0->party->ids[slot]].gearId != 0xff) {
+                    } else if (D_8006D634.characters[D_800625A0->flags->ids[slot]].gearId != 0xff) {
                         page = 6;
                         D_8006D634.inGear[slot] = 1;
                     }
@@ -2102,15 +2102,15 @@ u8 func_801E23CC(void) {
                 shown = 0xff;
                 break;
             }
-            D_800625A0->party->unk54[4] = 1;
-            D_800625A0->party->unk54[5] = 1;
-            func_801E8018(6, D_800625A0->labels18E0, &D_801EA568[page], D_800625A0->party->unk54);
-            D_800625A0->party->redraw7 = 1;
-            D_800625A0->party->unk8 = 1;
-            D_800625A0->party->unk4B = 1;
+            D_800625A0->flags->unk54[4] = 1;
+            D_800625A0->flags->unk54[5] = 1;
+            func_801E8018(6, D_800625A0->labels18e0, &D_801EA568[page], D_800625A0->flags->unk54);
+            D_800625A0->flags->redraw7 = 1;
+            D_800625A0->flags->unk8 = 1;
+            D_800625A0->flags->unk4B = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->party->redraw4 = 1;
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->flags->redraw4 = 1;
+            D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 1);
             break;
         case 5:
@@ -2125,27 +2125,27 @@ u8 func_801E23CC(void) {
             if (D_800625A0->choice != 0) {
                 D_800625A0->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choiceCount - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
                 D_800625A0->choice = 0;
             }
             break;
         case 9:
             slot = func_801D9704(slot, 0, 1);
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->choice_shown = 0xff;
             break;
         case 10:
             slot = func_801D9704(slot, 1, 1);
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->choice_shown = 0xff;
             break;
         }
     }
-    func_801E8044(6, D_800625A0->party->unk54);
-    D_800625A0->party->redraw4 = 0;
-    D_800625A0->party->redraw3 = 0;
+    func_801E8044(6, D_800625A0->flags->unk54);
+    D_800625A0->flags->redraw4 = 0;
+    D_800625A0->flags->redraw3 = 0;
     return 1;
 }
 
@@ -2155,13 +2155,13 @@ void func_801E2AE0(void) {
 
     func_801D249C(1);
     block = func_80031BDC(0x2af0, 0);
-    D_800625A0->block358 = block;
+    D_800625A0->detail = block;
     bzero(block, 0x2af0);
     block = func_80031BDC(0x32f4, 0);
-    D_800625A0->block35C = block;
+    D_800625A0->equipment = block;
     bzero(block, 0x32f4);
     block = func_80031BDC(0x2ac, 0);
-    D_800625A0->labels360 = block;
+    D_800625A0->equip_labels = block;
     bzero(block, 0x2ac);
     func_801C72BC(3);
     func_801D3488(0, 0);
@@ -2169,9 +2169,9 @@ void func_801E2AE0(void) {
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2B80(void) {
-    func_800320E8(D_800625A0->block358);
-    func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->labels360);
+    func_800320E8(D_800625A0->detail);
+    func_800320E8(D_800625A0->equipment);
+    func_800320E8(D_800625A0->equip_labels);
     func_801C72BC(0x13);
 }
 
@@ -2188,12 +2188,12 @@ u8 func_801E2BE4(void) {
     stay = 1;
     shown = 0xf3;
     first = 1;
-    slot = D_800625A0->firstMember;
+    slot = D_800625A0->first_member;
     D_800625A0->choice = 2;
-    D_800625A0->choiceShown = 0xff;
+    D_800625A0->choice_shown = 0xff;
     func_801E2AE0();
     for (i = 0; i < 3; i++) {
-        if (D_800625A0->party->ids[i] != 0xff) {
+        if (D_800625A0->flags->ids[i] != 0xff) {
             slot = i;
             break;
         }
@@ -2201,8 +2201,8 @@ u8 func_801E2BE4(void) {
     while (stay) {
         func_801C7BF4();
         if (slot != shown) {
-            func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-            func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            func_801E36D4(D_800625A0->tables, D_800625A0->flags->ids[slot]);
+            func_801E3A80(D_800625A0->tables, D_800625A0->flags->ids[slot]);
             func_801D2EC0(slot, 0);
             shown = slot;
             if (first) {
@@ -2212,27 +2212,27 @@ u8 func_801E2BE4(void) {
                 func_801E86C8(0);
             }
         }
-        if (D_800625A0->choice != D_800625A0->choiceShown) {
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801D261C();
             func_801E8B4C(0);
-            D_800625A0->choiceShown = D_800625A0->choice;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801D22C4();
             func_801D25E4();
-            D_800625A0->party->redraw7 = 0;
-            D_800625A0->party->unk8 = 0;
-            D_800625A0->party->unk4B = 0;
+            D_800625A0->flags->redraw7 = 0;
+            D_800625A0->flags->unk8 = 0;
+            D_800625A0->flags->unk4B = 0;
             switch (D_800625A0->choice) {
             case 0:
-                D_800625A0->party->redrawA = 0;
+                D_800625A0->flags->redrawA = 0;
                 func_801E05D0(slot, 0, 0);
                 func_801DE36C();
                 func_801D8DE4(slot, 0, 0, 0);
                 func_801D8EA4(slot, 0, 0, 0);
                 shown = 0xff;
-                D_800625A0->party->redrawA = 1;
+                D_800625A0->flags->redrawA = 1;
                 break;
             case 1:
                 func_801DDF24(slot, 0, 0);
@@ -2244,12 +2244,12 @@ u8 func_801E2BE4(void) {
                 break;
             }
             func_801D249C(1);
-            D_800625A0->party->redraw7 = 1;
-            D_800625A0->party->unk8 = 1;
-            D_800625A0->party->unk4B = 1;
+            D_800625A0->flags->redraw7 = 1;
+            D_800625A0->flags->unk8 = 1;
+            D_800625A0->flags->unk4B = 1;
             func_801D1EE0(D_800625A0->choice + 7, 1);
-            D_800625A0->party->redraw4 = 1;
-            D_800625A0->choiceShown = 0xff;
+            D_800625A0->flags->redraw4 = 1;
+            D_800625A0->choice_shown = 0xff;
             func_801D3488(0, 0);
             break;
         case 5:
@@ -2264,11 +2264,11 @@ u8 func_801E2BE4(void) {
             if (D_800625A0->choice != 0) {
                 D_800625A0->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choiceCount - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
                 D_800625A0->choice = 0;
             }
             break;
@@ -2281,8 +2281,8 @@ u8 func_801E2BE4(void) {
         }
     }
     func_801D249C(0);
-    D_800625A0->party->redraw4 = 0;
-    D_800625A0->party->redraw3 = 0;
+    D_800625A0->flags->redraw4 = 0;
+    D_800625A0->flags->redraw3 = 0;
     return 1;
 }
 
@@ -2294,9 +2294,9 @@ void func_801E3088(u8 offset) {
         func_801D9E3C();
         break;
     case 2:
-        D_800625A0->party->redraw7 = 0;
-        D_800625A0->party->unk8 = 0;
-        D_800625A0->party->unk4B = 0;
+        D_800625A0->flags->redraw7 = 0;
+        D_800625A0->flags->unk8 = 0;
+        D_800625A0->flags->unk4B = 0;
         func_801E2368();
         break;
     case 3:
@@ -2310,9 +2310,9 @@ void func_801E3088(u8 offset) {
         func_801DE400();
         break;
     case 6:
-        D_800625A0->party->redraw7 = 0;
-        D_800625A0->party->unk8 = 0;
-        D_800625A0->party->unk4B = 0;
+        D_800625A0->flags->redraw7 = 0;
+        D_800625A0->flags->unk8 = 0;
+        D_800625A0->flags->unk4B = 0;
         func_801D25E4();
         func_801E2B80();
         break;
@@ -3130,13 +3130,13 @@ void func_801E53CC(u8 index) {
     RECT window;
     u8 i;
 
-    portrait = D_800625A0->portraits[index];
+    portrait = D_800625A0->panels[index];
     window.y = 0;
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    D_800625A0->party->unk20[index] = 0;
-    D_800625A0->party->unk27[index] = 0;
+    D_800625A0->flags->unk20[index] = 0;
+    D_800625A0->flags->unk27[index] = 0;
     for (i = 0; i < 2; i++) {
         SetPolyG4(&portrait->fill[i]);
         (portrait->fill + i)->r0 = 0x68;
@@ -3153,7 +3153,7 @@ void func_801E53CC(u8 index) {
         (portrait->fill + i)->b3 = 0x68;
         SetSemiTrans(&portrait->fill[i], 1);
         SetDrawMode(&portrait->fillMode[i], 0, 0,
-                    GetTPage(0, 0, D_800625A0->sheetEntries[0][4], D_800625A0->sheetEntries[0][5]), &window);
+                    GetTPage(0, 0, D_800625A0->sheet_entries[0].page_x, D_800625A0->sheet_entries[0].page_y), &window);
     }
     for (i = 0; i < 4; i++) {
         SetPolyFT4(&portrait->edge[0][i]);
@@ -3161,33 +3161,33 @@ void func_801E53CC(u8 index) {
         (portrait->edge[0] + i)->r0 = 0xff;
         (portrait->edge[0] + i)->g0 = 0xff;
         (portrait->edge[0] + i)->b0 = 0xff;
-        portrait->edge[0][i].tpage = GetTPage(D_800625A0->sheetEntries[0][1], 0, D_800625A0->sheetEntries[0][4],
-                                            D_800625A0->sheetEntries[0][5]);
-        portrait->edge[0][i].clut = GetClut(D_800625A0->sheetEntries[0][2], D_800625A0->sheetEntries[0][3]);
+        portrait->edge[0][i].tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0, D_800625A0->sheet_entries[0].page_x,
+                                            D_800625A0->sheet_entries[0].page_y);
+        portrait->edge[0][i].clut = GetClut(D_800625A0->sheet_entries[0].clut_x, D_800625A0->sheet_entries[0].clut_y);
         SetPolyFT4(&portrait->edge[1][i]);
         SetShadeTex(&portrait->edge[1][i], 1);
         (portrait->edge[1] + i)->r0 = 0xff;
         (portrait->edge[1] + i)->g0 = 0xff;
         (portrait->edge[1] + i)->b0 = 0xff;
-        portrait->edge[1][i].tpage = GetTPage(D_800625A0->sheetEntries[1][1], 0, D_800625A0->sheetEntries[1][4],
-                                            D_800625A0->sheetEntries[1][5]);
-        portrait->edge[1][i].clut = GetClut(D_800625A0->sheetEntries[1][2], D_800625A0->sheetEntries[1][3]);
+        portrait->edge[1][i].tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0, D_800625A0->sheet_entries[1].page_x,
+                                            D_800625A0->sheet_entries[1].page_y);
+        portrait->edge[1][i].clut = GetClut(D_800625A0->sheet_entries[1].clut_x, D_800625A0->sheet_entries[1].clut_y);
         SetPolyFT4(&portrait->edge[2][i]);
         SetShadeTex(&portrait->edge[2][i], 1);
         (portrait->edge[2] + i)->r0 = 0xff;
         (portrait->edge[2] + i)->g0 = 0xff;
         (portrait->edge[2] + i)->b0 = 0xff;
-        portrait->edge[2][i].tpage = GetTPage(D_800625A0->sheetEntries[2][1], 0, D_800625A0->sheetEntries[2][4],
-                                            D_800625A0->sheetEntries[2][5]);
-        portrait->edge[2][i].clut = GetClut(D_800625A0->sheetEntries[2][2], D_800625A0->sheetEntries[2][3]);
+        portrait->edge[2][i].tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0, D_800625A0->sheet_entries[2].page_x,
+                                            D_800625A0->sheet_entries[2].page_y);
+        portrait->edge[2][i].clut = GetClut(D_800625A0->sheet_entries[2].clut_x, D_800625A0->sheet_entries[2].clut_y);
         SetPolyFT4(&portrait->edge[3][i]);
         SetShadeTex(&portrait->edge[3][i], 1);
         (portrait->edge[3] + i)->r0 = 0xff;
         (portrait->edge[3] + i)->g0 = 0xff;
         (portrait->edge[3] + i)->b0 = 0xff;
-        portrait->edge[3][i].tpage = GetTPage(D_800625A0->sheetEntries[3][1], 0, D_800625A0->sheetEntries[3][4],
-                                            D_800625A0->sheetEntries[3][5]);
-        portrait->edge[3][i].clut = GetClut(D_800625A0->sheetEntries[3][2], D_800625A0->sheetEntries[3][3]);
+        portrait->edge[3][i].tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0, D_800625A0->sheet_entries[3].page_x,
+                                            D_800625A0->sheet_entries[3].page_y);
+        portrait->edge[3][i].clut = GetClut(D_800625A0->sheet_entries[3].clut_x, D_800625A0->sheet_entries[3].clut_y);
     }
 }
 
@@ -3203,7 +3203,7 @@ void func_801E56E8(s32 index) {
     i = 0;
     x = D_801E9894[index];
     y = D_801E9914[index];
-    image = D_800625A0->images[index];
+    image = D_800625A0->slots[index];
     for (; i < 2; i++) {
         func_801E927C(&image->polys[i]);
         image->polys[i].x0 = *x;
@@ -3248,7 +3248,7 @@ void func_801E5924(s32 index) {
 
     x = D_801E9894[index];
     y = D_801E9914[index];
-    image = D_800625A0->images[index];
+    image = D_800625A0->slots[index];
     for (i = 0; i < 2; i++) {
         SetLineF3(&image->top[i]);
         image->top[i].r0 = 0;
@@ -3282,7 +3282,7 @@ void func_801E5ACC(void) {
 
     for (i = 0; i < 32; i++) {
         block = func_80031BDC(0x158, 0);
-        D_800625A0->images[i] = block;
+        D_800625A0->slots[i] = block;
         bzero(block, 0x158);
         func_801E56E8(i);
         func_801E5924(i);
@@ -3294,7 +3294,7 @@ void func_801E5B3C(void) {
     s32 i;
 
     for (i = 0; i < 32; i++) {
-        func_800320E8(D_800625A0->images[i]);
+        func_800320E8(D_800625A0->slots[i]);
     }
 }
 
@@ -3306,25 +3306,25 @@ void func_801E5B88(void) {
 
     for (i = 0; i < 32; i++) {
         for (buffer = 0; buffer < 2; buffer++) {
-            func_801E927C(&D_800625A0->block34C->chars[i * 2 + buffer]);
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x0 = D_801E9994[i % 21] + i / 21 * 8;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y0 = D_801E99E8[i / 21];
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x1 = D_801E9994[i % 21] + i / 21 * 8 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y1 = D_801E99E8[i / 21];
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x2 = D_801E9994[i % 21] + i / 21 * 8;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y2 = D_801E99E8[i / 21] + 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->x3 = D_801E9994[i % 21] + i / 21 * 8 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->y3 = D_801E99E8[i / 21] + 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u0 = i % 16 * 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v0 = i / 16 * 16 - 0x20;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u1 = i % 16 * 16 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v1 = i / 16 * 16 - 0x20;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u2 = i % 16 * 16;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v2 = i / 16 * 16 - 0x11;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->u3 = i % 16 * 16 + 12;
-            (D_800625A0->block34C->chars + (i * 2 + buffer))->v3 = i / 16 * 16 - 0x11;
-            D_800625A0->block34C->chars[i * 2 + buffer].tpage = GetTPage(0, 0, 0x140, 0x80);
-            D_800625A0->block34C->chars[i * 2 + buffer].clut = GetClut(0, 0x1c0);
+            func_801E927C(&D_800625A0->file_info->chars[i * 2 + buffer]);
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x0 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y0 = D_801E99E8[i / 21];
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x1 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y1 = D_801E99E8[i / 21];
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x2 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y2 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->x3 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->y3 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u0 = i % 16 * 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v0 = i / 16 * 16 - 0x20;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u1 = i % 16 * 16 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v1 = i / 16 * 16 - 0x20;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u2 = i % 16 * 16;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v2 = i / 16 * 16 - 0x11;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->u3 = i % 16 * 16 + 12;
+            (D_800625A0->file_info->chars + (i * 2 + buffer))->v3 = i / 16 * 16 - 0x11;
+            D_800625A0->file_info->chars[i * 2 + buffer].tpage = GetTPage(0, 0, 0x140, 0x80);
+            D_800625A0->file_info->chars[i * 2 + buffer].clut = GetClut(0, 0x1c0);
         }
     }
 }
@@ -3342,37 +3342,37 @@ void func_801E5E4C(void) {
     x = &D_801E99F0;
     y = &D_801E99F8;
     for (; i < 2; i++) {
-        func_801E927C(&D_800625A0->block34C->cursor[i]);
-        (D_800625A0->block34C->cursor + i)->x0 = *x;
-        (D_800625A0->block34C->cursor + i)->y0 = *y;
-        (D_800625A0->block34C->cursor + i)->x1 = *x + 0x20;
-        (D_800625A0->block34C->cursor + i)->y1 = *y;
-        (D_800625A0->block34C->cursor + i)->x2 = *x;
-        (D_800625A0->block34C->cursor + i)->y2 = *y + 0x20;
-        (D_800625A0->block34C->cursor + i)->x3 = *x + 0x20;
-        (D_800625A0->block34C->cursor + i)->y3 = *y + 0x20;
-        D_800625A0->block34C->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
-        SetPolyG4(&D_800625A0->block34C->band[i]);
-        (D_800625A0->block34C->band + i)->r0 = 0x80;
-        (D_800625A0->block34C->band + i)->g0 = 0;
-        (D_800625A0->block34C->band + i)->b0 = 0x80;
-        (D_800625A0->block34C->band + i)->r1 = 0;
-        (D_800625A0->block34C->band + i)->g1 = 0;
-        (D_800625A0->block34C->band + i)->b1 = 0x80;
-        (D_800625A0->block34C->band + i)->r2 = 0x10;
-        (D_800625A0->block34C->band + i)->g2 = 0;
-        (D_800625A0->block34C->band + i)->b2 = 0x10;
-        (D_800625A0->block34C->band + i)->r3 = 0;
-        (D_800625A0->block34C->band + i)->g3 = 0;
-        (D_800625A0->block34C->band + i)->b3 = 0x10;
-        (D_800625A0->block34C->band + i)->x0 = 0;
-        (D_800625A0->block34C->band + i)->y0 = 0x4a;
-        (D_800625A0->block34C->band + i)->x1 = right;
-        (D_800625A0->block34C->band + i)->y1 = 0x4a;
-        (D_800625A0->block34C->band + i)->x2 = 0;
-        (D_800625A0->block34C->band + i)->y2 = 0x8a;
-        (D_800625A0->block34C->band + i)->x3 = right;
-        (D_800625A0->block34C->band + i)->y3 = 0x8a;
+        func_801E927C(&D_800625A0->file_info->cursor[i]);
+        (D_800625A0->file_info->cursor + i)->x0 = *x;
+        (D_800625A0->file_info->cursor + i)->y0 = *y;
+        (D_800625A0->file_info->cursor + i)->x1 = *x + 0x20;
+        (D_800625A0->file_info->cursor + i)->y1 = *y;
+        (D_800625A0->file_info->cursor + i)->x2 = *x;
+        (D_800625A0->file_info->cursor + i)->y2 = *y + 0x20;
+        (D_800625A0->file_info->cursor + i)->x3 = *x + 0x20;
+        (D_800625A0->file_info->cursor + i)->y3 = *y + 0x20;
+        D_800625A0->file_info->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyG4(&D_800625A0->file_info->band[i]);
+        (D_800625A0->file_info->band + i)->r0 = 0x80;
+        (D_800625A0->file_info->band + i)->g0 = 0;
+        (D_800625A0->file_info->band + i)->b0 = 0x80;
+        (D_800625A0->file_info->band + i)->r1 = 0;
+        (D_800625A0->file_info->band + i)->g1 = 0;
+        (D_800625A0->file_info->band + i)->b1 = 0x80;
+        (D_800625A0->file_info->band + i)->r2 = 0x10;
+        (D_800625A0->file_info->band + i)->g2 = 0;
+        (D_800625A0->file_info->band + i)->b2 = 0x10;
+        (D_800625A0->file_info->band + i)->r3 = 0;
+        (D_800625A0->file_info->band + i)->g3 = 0;
+        (D_800625A0->file_info->band + i)->b3 = 0x10;
+        (D_800625A0->file_info->band + i)->x0 = 0;
+        (D_800625A0->file_info->band + i)->y0 = 0x4a;
+        (D_800625A0->file_info->band + i)->x1 = right;
+        (D_800625A0->file_info->band + i)->y1 = 0x4a;
+        (D_800625A0->file_info->band + i)->x2 = 0;
+        (D_800625A0->file_info->band + i)->y2 = 0x8a;
+        (D_800625A0->file_info->band + i)->x3 = right;
+        (D_800625A0->file_info->band + i)->y3 = 0x8a;
     }
 }
 
@@ -3383,22 +3383,22 @@ void func_801E61B0(void) {
     s32 i;
 
     for (view = 0; view < 3; view++) {
-        D_800625A0->block34C->views[view].frameCount = 0;
+        D_800625A0->file_info->views[view].frameCount = 0;
         for (i = 0; i < 9; i++) {
             if (D_801EA494[i] != 0xffff) {
-                D_800625A0->block34C->views[view].frameCount +=
+                D_800625A0->file_info->views[view].frameCount +=
                     func_8002675C(D_800625A0->sheet, D_801EA494[i],
-                                  D_800625A0->block34C->views[view].frame[D_800625A0->block34C->views[view].frameCount],
-                                  D_800625A0->bufferIndex, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
+                                  D_800625A0->file_info->views[view].frame[D_800625A0->file_info->views[view].frameCount],
+                                  D_800625A0->buffer_index, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
             }
         }
-        D_800625A0->block34C->views[view].frameBuffer = D_800625A0->bufferIndex;
-        func_801E927C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex]);
-        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
-        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].clut = D_800595D4;
-        func_801E920C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex], D_801E9F98[0] + view * 0x50,
+        D_800625A0->file_info->views[view].frameBuffer = D_800625A0->buffer_index;
+        func_801E927C(&D_800625A0->file_info->views[view].name[D_800625A0->buffer_index]);
+        D_800625A0->file_info->views[view].name[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
+        D_800625A0->file_info->views[view].name[D_800625A0->buffer_index].clut = D_800595D4;
+        func_801E920C(&D_800625A0->file_info->views[view].name[D_800625A0->buffer_index], D_801E9F98[0] + view * 0x50,
                       D_801E9FBC[0] + 7, D_801EA578[view + 6] * 4, D_801EA5C4[view + 6], 0x48, 0xd);
-        D_800625A0->block34C->views[view].nameBuffer = D_800625A0->bufferIndex;
+        D_800625A0->file_info->views[view].nameBuffer = D_800625A0->buffer_index;
     }
 }
 
@@ -3408,7 +3408,7 @@ void func_801E6450(void) {
     u8 reserved[8]; /* the original frame reserves 8 unused bytes */
 
     block = func_80031BDC(0x2dc0, 0);
-    D_800625A0->block34C = block;
+    D_800625A0->file_info = block;
     bzero(block, 0x2dc0);
     func_801E5B88();
     func_801E5E4C();
@@ -3416,8 +3416,8 @@ void func_801E6450(void) {
 
 /* Free the 2dc0-byte block at +34c and clear party flag +b. */
 void func_801E649C(void) {
-    func_800320E8(D_800625A0->block34C);
-    D_800625A0->party->unkB = 0;
+    func_800320E8(D_800625A0->file_info);
+    D_800625A0->flags->unkB = 0;
 }
 
 /* Clear the 64x32 image area at (140, e0) to black and clear party flag +b. */
@@ -3429,7 +3429,7 @@ void func_801E64E0(void) {
     rect.w = 0x40;
     rect.h = 0x20;
     ClearImage(&rect, 0, 0, 0);
-    D_800625A0->party->unkB = 0;
+    D_800625A0->flags->unkB = 0;
 }
 
 /* Pack each of the 16 rows of `rows` in place, merging bytes 1-2, 5-6, 9-10
@@ -3548,27 +3548,27 @@ void func_801E6668(s32 index) {
 void func_801E68AC(MenuViewSet *set) {
     s32 i;
 
-    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon0, D_800625A0->bufferIndex, D_801E9FE0[0], 0x7a,
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->file_info->colon0, D_800625A0->buffer_index, D_801E9FE0[0], 0x7a,
                   0x1000);
-    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon1, D_800625A0->bufferIndex, D_801E9FE0[1], 0x7a,
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->file_info->colon1, D_800625A0->buffer_index, D_801E9FE0[1], 0x7a,
                   0x1000);
     func_801C7F34(set->time);
     for (i = 0; i < 7; i++) {
-        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->block34C->timeDigits[i],
-                      D_800625A0->bufferIndex, D_801E9FE0[i + 2], 0x7a, 0x1000);
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->file_info->timeDigits[i],
+                      D_800625A0->buffer_index, D_801E9FE0[i + 2], 0x7a, 0x1000);
     }
-    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->block34C->discLabel, D_800625A0->bufferIndex, 8, 0x66, 0x1000);
-    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->block34C->discMark, D_800625A0->bufferIndex, 0x10, 0x66, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->block34C->discDigits[0],
-                  D_800625A0->bufferIndex, 0x10, 0x6e, 0x1000);
-    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->block34C->discDigits[1],
-                  D_800625A0->bufferIndex, 0x18, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->file_info->discLabel, D_800625A0->buffer_index, 8, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->file_info->discMark, D_800625A0->buffer_index, 0x10, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->file_info->discDigits[0],
+                  D_800625A0->buffer_index, 0x10, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->file_info->discDigits[1],
+                  D_800625A0->buffer_index, 0x18, 0x6e, 0x1000);
 }
 
 /* Set up view `index` of the block at +34c from its sheet image (14e + set). */
 void func_801E6AE8(u8 index, MenuViewSet *set) {
-    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, &D_800625A0->block34C->views[index],
-                  D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
+    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, &D_800625A0->file_info->views[index],
+                  D_800625A0->buffer_index, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
 /* Lay out view `index`'s number (the set's +16 value) as up to three digit
@@ -3578,18 +3578,18 @@ void func_801E6B70(u8 index, MenuViewSet *set) {
     u8 digit;
 
     func_801C80B8(set->levels[index]);
-    D_800625A0->block34C->views[index].levelCount = 0;
+    D_800625A0->file_info->views[index].levelCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].levelCount +=
+            D_800625A0->file_info->views[index].levelCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              &D_800625A0->block34C->views[index].levelDigits[D_800625A0->block34C->views[index].levelCount],
-                              D_800625A0->bufferIndex, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
+                              &D_800625A0->file_info->views[index].levelDigits[D_800625A0->file_info->views[index].levelCount],
+                              D_800625A0->buffer_index, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
         }
     }
     func_801C80B8(set->unk19[index]);
-    D_800625A0->block34C->views[index].unk871 = 0;
+    D_800625A0->file_info->views[index].unk871 = 0;
 }
 
 /* Lay out view `index`'s values A (+4) and B (+a) as up to three digit
@@ -3600,26 +3600,26 @@ void func_801E6CFC(u8 index, MenuViewSet *set) {
     u8 digit;
 
     func_801C80B8(set->valueA[index]);
-    D_800625A0->block34C->views[index].aCount = 0;
+    D_800625A0->file_info->views[index].aCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].aCount +=
+            D_800625A0->file_info->views[index].aCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].aDigits[D_800625A0->block34C->views[index].aCount],
-                              D_800625A0->bufferIndex, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
+                              D_800625A0->file_info->views[index].aDigits[D_800625A0->file_info->views[index].aCount],
+                              D_800625A0->buffer_index, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
         }
     }
     drawn = 0;
     func_801C80B8(set->valueB[index]);
-    D_800625A0->block34C->views[index].bCount = 0;
+    D_800625A0->file_info->views[index].bCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].bCount +=
+            D_800625A0->file_info->views[index].bCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].bDigits[D_800625A0->block34C->views[index].bCount],
-                              D_800625A0->bufferIndex, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
+                              D_800625A0->file_info->views[index].bDigits[D_800625A0->file_info->views[index].bCount],
+                              D_800625A0->buffer_index, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
             drawn++;
         }
     }
@@ -3633,26 +3633,26 @@ void func_801E6F5C(u8 index, MenuViewSet *set) {
     u8 digit;
 
     func_801C80B8(set->valueC[index]);
-    D_800625A0->block34C->views[index].cCount = 0;
+    D_800625A0->file_info->views[index].cCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].cCount +=
+            D_800625A0->file_info->views[index].cCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].cDigits[D_800625A0->block34C->views[index].cCount],
-                              D_800625A0->bufferIndex, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
+                              D_800625A0->file_info->views[index].cDigits[D_800625A0->file_info->views[index].cCount],
+                              D_800625A0->buffer_index, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
         }
     }
     drawn = 0;
     func_801C80B8(set->valueD[index]);
-    D_800625A0->block34C->views[index].dCount = 0;
+    D_800625A0->file_info->views[index].dCount = 0;
     for (i = 0; i < 2; i++) {
         digit = D_800625A0->digits[i + 7];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].dCount +=
+            D_800625A0->file_info->views[index].dCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              D_800625A0->block34C->views[index].dDigits[D_800625A0->block34C->views[index].dCount],
-                              D_800625A0->bufferIndex, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
+                              D_800625A0->file_info->views[index].dDigits[D_800625A0->file_info->views[index].dCount],
+                              D_800625A0->buffer_index, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
             drawn++;
         }
     }
@@ -3696,25 +3696,25 @@ void func_801E733C(void) {
     s32 i;
 
     for (i = 0; i < 16; i++) {
-        func_801E927C(&D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex]);
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x0 = D_801EA04C + i * 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y0 = D_801EA050;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x1 = D_801EA04C + i * 12 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y1 = D_801EA050;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x2 = D_801EA04C + i * 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y2 = D_801EA050 + 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x3 = D_801EA04C + i * 12 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y3 = D_801EA050 + 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u0 = i * 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v0 = 0xf0;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u1 = i * 16 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v1 = 0xf0;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u2 = i * 16;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v2 = 0xff;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u3 = i * 16 + 12;
-        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v3 = 0xff;
-        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x140, 0x80);
-        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].clut = GetClut(0, 0x1c0);
+        func_801E927C(&D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index]);
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x0 = D_801EA04C + i * 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y0 = D_801EA050;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x1 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y1 = D_801EA050;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x2 = D_801EA04C + i * 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y2 = D_801EA050 + 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->x3 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->y3 = D_801EA050 + 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u0 = i * 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v0 = 0xf0;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u1 = i * 16 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v1 = 0xf0;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u2 = i * 16;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v2 = 0xff;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->u3 = i * 16 + 12;
+        (D_800625A0->file_info->title + (i * 2 + D_800625A0->buffer_index))->v3 = 0xff;
+        D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x140, 0x80);
+        D_800625A0->file_info->title[i * 2 + D_800625A0->buffer_index].clut = GetClut(0, 0x1c0);
     }
 }
 
@@ -3727,16 +3727,16 @@ void func_801E76EC(s32 index) {
     func_801E61B0();
     for (i = 0; i < 3; i++) {
         if (set->images[i] != 0xff) {
-            D_800625A0->block34C->views[i].shown = 1;
+            D_800625A0->file_info->views[i].shown = 1;
             func_801E6AE8(i, set);
             func_801E6B70(i, set);
             func_801E6CFC(i, set);
             func_801E6F5C(i, set);
             func_801E71B4(i, set, index);
         } else {
-            D_800625A0->block34C->views[i].shown = 0;
+            D_800625A0->file_info->views[i].shown = 0;
         }
-        D_800625A0->block34C->views[i].buffer = D_800625A0->bufferIndex;
+        D_800625A0->file_info->views[i].buffer = D_800625A0->buffer_index;
     }
     func_801E68AC(set);
     func_801E733C();
@@ -3749,12 +3749,12 @@ void func_801E781C(s32 index, u8 rebuild) {
         if (rebuild) {
             func_801E76EC(index);
             func_801E6668(index);
-            D_800625A0->block34C->rebuilt = 1;
+            D_800625A0->file_info->rebuilt = 1;
         } else {
             func_801E6668(index);
-            D_800625A0->block34C->rebuilt = 0;
+            D_800625A0->file_info->rebuilt = 0;
         }
-        D_800625A0->party->unkB = 1;
+        D_800625A0->flags->unkB = 1;
     }
 }
 
@@ -3825,12 +3825,12 @@ void func_801E78C8(s32 file) {
     }
 }
 
-/* Point the current quad at its palette (D_80059414 or the plain
+/* Point the current quad at its CLUT (the highlighted D_80059414 or the plain
  * D_800595D4). A statement macro. */
 #define SET_QUAD_CLUT()                                                \
     do {                                                               \
         POLY_FT4 *p = poly;                                            \
-        p->clut = label->palette != 0 ? D_80059414 : D_800595D4;      \
+        p->clut = label->highlight != 0 ? D_80059414 : D_800595D4;      \
     } while (0)
 
 /* Set up the current quad of `label`: mode 0 takes image `index` from the
@@ -3842,7 +3842,7 @@ void func_801E78C8(s32 file) {
         semi = 0;                                                      \
         func_801E927C(poly);                                           \
         if (mode == 0) {                                               \
-            label->palette = half;                                     \
+            label->highlight = half;                                     \
             poly->tpage = GetTPage(0, 0, 0x140, 0);                    \
             setUVWH(poly, column, (index + first) / 4 * 0xd, label->width, 0xd); \
         } else {                                                       \
@@ -3851,7 +3851,7 @@ void func_801E78C8(s32 file) {
                 SetSemiTrans(poly, 1);                                 \
                 setRGB0(poly, semi, semi, semi);                       \
             }                                                          \
-            label->palette = (mode & 0x7f) - 1;                        \
+            label->highlight = (mode & 0x7f) - 1;                        \
             poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);          \
             setUVWH(poly, half * 0x60, row * 0xd + first, label->width, 0xd); \
         }                                                              \
@@ -3872,7 +3872,7 @@ void func_801E78C8(s32 file) {
 /* Set up `label`'s two quads for label image `index` (the quad loop is
  * not loop-optimized: each quad's palette and window are recomputed) and
  * hide the label. */
-void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
+void func_801E7C50(MenuLabel *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
     u16 semi;
@@ -3888,21 +3888,21 @@ void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
 loop:
     SET_QUAD();
     NEXT_QUAD();
-    label->visible = 0;
+    label->projected = 0;
 }
 
 /* Render `count` labels (text ids in `layout`) in pairs into one 28x13
  * image each (two columns of 32 from x 140, rows of 13 from label `first`),
  * lay them out and upload the images. */
-void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
+void func_801E7E68(MenuLabel *labels, u8 *layout, s32 first, s32 count) {
     s32 i;
     RECT *image;
 
     for (i = 0; i < count; i += 2) {
-        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->label_text, layout[i]), D_800625A0->labels[0].pixels,
                                         0x18, 0);
         image = &labels[i].rect;
-        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
+        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->label_text, layout[i + 1]), D_800625A0->labels[0].pixels,
                                         0x18, 1);
         labels[i].rect.x = (i / 2 & 1) * 0x20 + 0x140;
         labels[i].rect.y = (i + first) / 4 * 0xd;
@@ -3911,13 +3911,13 @@ void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
         labels[i + 1].rect = labels[i].rect;
         func_801E7C50(&labels[i], i, first, 0);
         func_801E7C50(&labels[i + 1], i + 1, first, 0);
-        LoadImage(image, D_800625A0->topLabels[0].pixels);
+        LoadImage(image, D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }
 
 /* Lay out `count` labels from `table` into `labels` (the placement is unused). */
-void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
+void func_801E8018(u8 count, MenuLabel *labels, u8 *table, u8 *flags) {
     func_801E7E68(labels, table, 4, count);
 }
 

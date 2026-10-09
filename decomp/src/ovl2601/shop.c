@@ -83,10 +83,10 @@ void func_801CCFF4(void) {
     if (D_800625A0->flags->unk5A != 0) {
         for (i = 0; i < 9; i++) {
             if (D_800625A0->details->bar_shown[i] != 0) {
-                AddPrim(&D_800625A0->draw_env->ot[4],
-                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer]);
-                AddPrim(&D_800625A0->draw_env->ot[4],
-                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer]);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer_index]);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer_index]);
             }
         }
         func_801C8D58(D_800625A0->details->heading_count, D_800625A0->details->heading,
@@ -97,26 +97,26 @@ void func_801CCFF4(void) {
                       D_800625A0->details->members_buffer);
         for (i = 0; i < 8; i++) {
             if (D_800625A0->details->name_shown[i] != 0) {
-                func_801C8C3C(1, D_800625A0->details->names_a[i].quad, D_800625A0->details->names_a[i].poly,
+                func_801C8C3C(1, D_800625A0->details->names_a[i].verts, D_800625A0->details->names_a[i].polys,
                               D_800625A0->details->names_a[i].buffer);
-                func_801C8C3C(1, D_800625A0->details->names_b[i].quad, D_800625A0->details->names_b[i].poly,
+                func_801C8C3C(1, D_800625A0->details->names_b[i].verts, D_800625A0->details->names_b[i].polys,
                               D_800625A0->details->names_b[i].buffer);
             }
         }
         if (D_800625A0->details->label4430_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label4430.quad, D_800625A0->details->label4430.poly,
+            func_801C8C3C(1, D_800625A0->details->label4430.verts, D_800625A0->details->label4430.polys,
                           D_800625A0->details->label4430.buffer);
         }
         if (D_800625A0->details->label44B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label44B0.quad, D_800625A0->details->label44B0.poly,
+            func_801C8C3C(1, D_800625A0->details->label44B0.verts, D_800625A0->details->label44B0.polys,
                           D_800625A0->details->label44B0.buffer);
         }
         if (D_800625A0->details->label45B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label45B0.quad, D_800625A0->details->label45B0.poly,
+            func_801C8C3C(1, D_800625A0->details->label45B0.verts, D_800625A0->details->label45B0.polys,
                           D_800625A0->details->label45B0.buffer);
         }
         if (D_800625A0->details->digits_shown != 0) {
-            AddPrim(&D_800625A0->draw_env->ot[4], &D_800625A0->details->frame[D_800625A0->buffer]);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->details->frame[D_800625A0->buffer_index]);
             func_801C8D58(D_800625A0->details->digits1_count, D_800625A0->details->digits1,
                           D_800625A0->details->digits1_buffer);
             func_801C8D58(D_800625A0->details->digits2_count, D_800625A0->details->digits2,
@@ -146,17 +146,17 @@ void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        SetShadeTex(&packets[i * 2 + D_800625A0->buffer], 0);
+        SetShadeTex(&packets[i * 2 + D_800625A0->buffer_index], 0);
         switch (color) {
         case 0:
-            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x80;
-            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x80;
+            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x40;
             break;
         case 1:
-            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x80;
+            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x80;
             break;
         }
     }
@@ -173,14 +173,14 @@ void func_801CD5D0(void) {
         shown = 0;
         D_800625A0->details->members_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_800625A0->member_present[i] != 0) {
+            if (D_800625A0->present[i] != 0) {
                 D_800625A0->details->members_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
-                                  D_800625A0->buffer, D_801D21CC[shown], 0xA6, 0x1000);
+                    func_8002675C(D_800625A0->sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
+                                  D_800625A0->buffer_index, D_801D21CC[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
-        D_800625A0->details->members_buffer = D_800625A0->buffer;
+        D_800625A0->details->members_buffer = D_800625A0->buffer_index;
         func_801CB014();
     }
 }
@@ -192,11 +192,11 @@ void func_801CD6F8(void) {
     D_800625A0->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
         D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sprite_sheet, D_801D2210[i],
+            func_8002675C(D_800625A0->sheet, D_801D2210[i],
                           D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer, D_801D2218[i], D_801D2230[i], 0x1000);
+                          D_800625A0->buffer_index, D_801D2218[i], D_801D2230[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
 }
 
 /* Draw the two alternative heading sprites. */
@@ -206,11 +206,11 @@ void func_801CD7E4(void) {
     D_800625A0->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
         D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sprite_sheet, D_801D2214[i],
+            func_8002675C(D_800625A0->sheet, D_801D2214[i],
                           D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer, D_801D2228[i], D_801D2240[i], 0x1000);
+                          D_800625A0->buffer_index, D_801D2228[i], D_801D2240[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
 }
 
 /* Draw three nine-digit numbers (leading zeros blank) at their three positions. */
@@ -222,34 +222,34 @@ void func_801CD8D0(u32 first, u32 second, u32 third) {
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits1_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits1 + D_800625A0->details->digits1_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2248, D_801D224C, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2248, D_801D224C, 0x1000);
         }
     }
-    D_800625A0->details->digits1_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits1_buffer = D_800625A0->buffer_index;
     func_801C50E8(second);
     D_800625A0->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits2_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits2 + D_800625A0->details->digits2_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2250, D_801D2254, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2250, D_801D2254, 0x1000);
         }
     }
-    D_800625A0->details->digits2_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits2_buffer = D_800625A0->buffer_index;
     func_801C50E8(third);
     D_800625A0->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->digits3_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->digits3 + D_800625A0->details->digits3_count * 2,
-                              D_800625A0->buffer, i * 8 + D_801D2258, D_801D225C, 0x1000);
+                              D_800625A0->buffer_index, i * 8 + D_801D2258, D_801D225C, 0x1000);
         }
     }
-    D_800625A0->details->digits3_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits3_buffer = D_800625A0->buffer_index;
     D_800625A0->details->digits_shown = 1;
 }
 
@@ -264,7 +264,7 @@ u16 func_801CDBA0(u8 item, u8 kind) {
     if (item != 0 && kind != 2) {
         for (i = 0; i < 16; i++) {
             found = 0;
-            if (D_800625A0->member_present[i] != 0) {
+            if (D_800625A0->present[i] != 0) {
                 switch (kind) {
                 case 0:
                     for (k = 0; k < 5; k++) {
@@ -332,19 +332,19 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             case 0:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033848(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->equipment[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->equipment[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 1:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_800337E8(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->accessories[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->accessories[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 2:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033818(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->items[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->tables->items[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             }
@@ -373,7 +373,7 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.h = 13;
             LoadImage(&rect, pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C6E90(D_800625A0->details->names_a[row].quad, 0x24, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -382,27 +382,27 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             LoadImage(&rect, pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C6E90(D_800625A0->details->names_b[row].quad, 0x8C, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
             D_800625A0->details->name_shown[row] = 1;
             if (D_800625A0->details->amounts[top + row] != 0) {
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xF1, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer, 0xB4, row * 13 + 0x36, 0x1000);
+                    func_8002675C(D_800625A0->sheet, 0xF1, D_800625A0->details->rows[row],
+                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = D_800625A0->details->amounts[top + row] / 10;
                 if (tens != 0) {
                     D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sprite_sheet, tens,
+                        func_8002675C(D_800625A0->sheet, tens,
                                       &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer, 0xBC, row * 13 + 0x36, 0x1000);
+                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
+                    func_8002675C(D_800625A0->sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
                                   &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer;
+                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
             }
         } else {
             D_800625A0->details->name_shown[row] = 0;
@@ -437,18 +437,18 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     switch (kind) {
     case 0:
         if (member != 4) {
-            current = &D_800625A0->resources->equipment[D_8006D634.characters[member].weapons[0]];
+            current = &D_800625A0->tables->equipment[D_8006D634.characters[member].weapons[0]];
             before[0] = current->power + D_8006D634.characters[member].attack;
-            current = &D_800625A0->resources->equipment[id];
+            current = &D_800625A0->tables->equipment[id];
             after[0] = current->power + D_8006D634.characters[member].attack;
         } else {
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D634.characters[member].entryItems[k]];
+                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
                 before[0] += current->power;
             }
-            fitted = &D_800625A0->resources->equipment[id];
+            fitted = &D_800625A0->tables->equipment[id];
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->resources->equipment[D_8006D634.characters[member].entryItems[k]];
+                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
                 if (current->type == fitted->type && current->type != 5) {
                     after[0] += fitted->power;
                 } else {
@@ -461,12 +461,12 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         replace = 1;
         before[1] = after[1] = D_8006D634.characters[member].defense;
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
+            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
             before[1] += accessory->power;
         }
-        fitted_accessory = &D_800625A0->resources->accessories[id];
+        fitted_accessory = &D_800625A0->tables->accessories[id];
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
+            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
             if (accessory->group != 0 && accessory->group == fitted_accessory->group) {
                 after[1] += fitted_accessory->power;
                 replace = 0;
@@ -477,7 +477,7 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
+                accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
                 if (lowest >= accessory->power) {
                     lowest = accessory->power;
                     weakest = k;
@@ -486,7 +486,7 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
             after[1] = D_8006D634.characters[member].defense + fitted_accessory->power;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
-                    accessory = &D_800625A0->resources->accessories[D_8006D634.characters[member].accessories[k]];
+                    accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
                     after[1] += accessory->power;
                 }
             }
@@ -567,9 +567,9 @@ void func_801CE91C(u8 kind, u8 id) {
     LoadImage(&rect, pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
-    func_801C6E90(D_800625A0->details->label45B0.quad, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+    func_801C6E90(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
                   13);
-    D_800625A0->details->label45B0.buffer = D_800625A0->buffer;
+    D_800625A0->details->label45B0.buffer = D_800625A0->buffer_index;
     D_800625A0->details->label45B0_shown = 1;
     func_800320E8(pixels);
 }
@@ -605,19 +605,19 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     case 0:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->equipment[id].price;
-        users = D_800625A0->resources->equipment[id].users;
+        price = D_800625A0->tables->equipment[id].price;
+        users = D_800625A0->tables->equipment[id].users;
         break;
     case 1:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->accessories[id].price;
-        users = D_800625A0->resources->accessories[id].users;
+        price = D_800625A0->tables->accessories[id].price;
+        users = D_800625A0->tables->accessories[id].users;
         break;
     case 2:
         D_800625A0->details->label4430.width =
             func_80034EAC(func_80033728(D_800625A0->details->resources[0], id), pixels, 0x39, 0);
-        price = D_800625A0->resources->items[id].price;
+        price = D_800625A0->tables->items[id].price;
         break;
     }
     holders = func_801CDBA0(id, kind);
@@ -628,10 +628,10 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     LoadImage(&rect, pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C5040(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
+    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
     func_800320E8(pixels);
     if (id) {
         D_800625A0->details->label4430_shown = 1;
@@ -642,7 +642,7 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     shown = 0;
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->member_present[i] != 0) {
+        if (D_800625A0->present[i] != 0) {
             if (func_801C50B0(users, i)) {
                 D_800625A0->details->bar_shown[shown] = 1;
             } else {
@@ -650,9 +650,9 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
             }
             if (func_801C50B0(holders, i)) {
                 D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                    func_8002675C(D_800625A0->sheet, 0xE,
                                   &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
+                                  D_800625A0->buffer_index, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
             }
             D_800625A0->details->cells_a_count[shown] = 0;
             D_800625A0->details->cells_b_count[shown] = 0;
@@ -665,34 +665,34 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_a_count[shown] += func_8002675C(
-                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                D_800625A0->sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
-                                D_800625A0->buffer, xa + k * 8, 0xBE, 0x1000);
+                                D_800625A0->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
                                   worse[0]);
-                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer;
+                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer_index;
                 }
                 if (diffs[1] != 0) {
                     func_801C50E8(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_b_count[shown] += func_8002675C(
-                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                D_800625A0->sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
-                                D_800625A0->buffer, xb + k * 8, 0xC6, 0x1000);
+                                D_800625A0->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
                                   worse[1]);
-                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer;
+                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer_index;
                 }
             }
             shown++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
     func_801CE91C(kind, id);
     return price;
 }
@@ -794,12 +794,12 @@ void func_801CF678(u32 value) {
     for (; i < 9; i++, x += 8) {
         if (D_800625A0->digits[i] != 0xFF) {
             D_800625A0->details->group1220_count +=
-                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
                               D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
-                              D_800625A0->buffer, x, 0x54, 0x1000);
+                              D_800625A0->buffer_index, x, 0x54, 0x1000);
         }
     }
-    D_800625A0->details->group1220_buffer = D_800625A0->buffer;
+    D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
     D_800625A0->flags->unk5B = 2;
 }
 
@@ -835,9 +835,9 @@ u8 func_801CF780(void) {
     total = 0;
     new_gold = gold;
     for (i = 0; i < 11; i++) {
-        func_801CCE1C(D_800625A0->resources, i);
-        D_800625A0->details->attack[i] = D_800625A0->resources->stats[0];
-        D_800625A0->details->defence[i] = D_800625A0->resources->stats[2];
+        func_801CCE1C(D_800625A0->tables, i);
+        D_800625A0->details->attack[i] = D_800625A0->tables->stats[0];
+        D_800625A0->details->defence[i] = D_800625A0->tables->stats[2];
     }
     bzero(D_800625A0->details->amounts, 0x30);
     D_800625A0->images->dim = 1;
@@ -1009,19 +1009,19 @@ u32 func_801CFF58(u8 id, u8 kind) {
     switch (kind) {
     case 0:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033848(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->equipment[id].users;
-        price = D_800625A0->resources->equipment[id].price >> 1;
+        users = D_800625A0->tables->equipment[id].users;
+        price = D_800625A0->tables->equipment[id].price >> 1;
         value = price;
         break;
     case 1:
         D_800625A0->details->label4430.width = func_80034EAC(func_800337E8(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->accessories[id].users;
-        price = D_800625A0->resources->accessories[id].price >> 1;
+        users = D_800625A0->tables->accessories[id].users;
+        price = D_800625A0->tables->accessories[id].price >> 1;
         value = price;
         break;
     case 2:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033818(id), pixels, 0x39, 0);
-        price = D_800625A0->resources->items[id].price >> 1;
+        price = D_800625A0->tables->items[id].price >> 1;
         value = price;
         break;
     }
@@ -1048,15 +1048,15 @@ u32 func_801CFF58(u8 id, u8 kind) {
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C5A7C(&D_800625A0->details->label44B0, 0, 0, 0);
-    D_800625A0->details->label44B0.poly[D_800625A0->buffer].clut = D_80059414;
-    func_801C5040(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+    D_800625A0->details->label44B0.polys[D_800625A0->buffer_index].clut = D_80059414;
+    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   D_800625A0->details->label4430.width, 13);
-    func_801C5040(&D_800625A0->details->label44B0.poly[D_800625A0->buffer], 0x98, 0x12, 0, 0x4E,
+    func_801C5040(&D_800625A0->details->label44B0.polys[D_800625A0->buffer_index], 0x98, 0x12, 0, 0x4E,
                   D_800625A0->details->label44B0.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label44B0.quad, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
-    D_800625A0->details->label44B0.buffer = D_800625A0->buffer;
+    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    func_801C6E90(D_800625A0->details->label44B0.verts, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
+    D_800625A0->details->label44B0.buffer = D_800625A0->buffer_index;
     func_800320E8(pixels);
     if (id) {
         D_800625A0->details->label4430_shown = 1;
@@ -1069,7 +1069,7 @@ u32 func_801CFF58(u8 id, u8 kind) {
     j = 0;
     D_800625A0->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->member_present[i] != 0) {
+        if (D_800625A0->present[i] != 0) {
             if (func_801C50B0(users, i)) {
                 D_800625A0->details->bar_shown[j] = 1;
             } else {
@@ -1077,14 +1077,14 @@ u32 func_801CFF58(u8 id, u8 kind) {
             }
             if (func_801C50B0(holders, i)) {
                 D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                    func_8002675C(D_800625A0->sheet, 0xE,
                                   &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
+                                  D_800625A0->buffer_index, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
     return price;
 }
 
@@ -1151,7 +1151,7 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.h = 13;
             LoadImage(&rect, pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
-            func_801C6E90(D_800625A0->details->names_a[row].quad, 0x24, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -1160,27 +1160,27 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             LoadImage(&rect, pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
-            func_801C6E90(D_800625A0->details->names_b[row].quad, 0x8C, row * 13 + 0x32,
+            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
             D_800625A0->details->name_shown[row] = 1;
             if (chosen[top + row] != 0) {
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, 0xE5, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer, 0xB4, row * 13 + 0x36, 0x1000);
+                    func_8002675C(D_800625A0->sheet, 0xE5, D_800625A0->details->rows[row],
+                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = chosen[top + row] / 10;
                 if (tens != 0) {
                     D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sprite_sheet, tens,
+                        func_8002675C(D_800625A0->sheet, tens,
                                       &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer, 0xBC, row * 13 + 0x36, 0x1000);
+                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
                 D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sprite_sheet, (u8)(chosen[top + row] % 10),
+                    func_8002675C(D_800625A0->sheet, (u8)(chosen[top + row] % 10),
                                   &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer;
+                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
             }
         } else {
             D_800625A0->details->name_shown[row] = 0;
@@ -1301,7 +1301,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         if (ids[i] != 0 && counts[i] != 0) {
             ok = 1;
             if (sell_kinds[i] == 2) {
-                if (D_800625A0->resources->items[ids[i]].flags & 0x10) {
+                if (D_800625A0->tables->items[ids[i]].flags & 0x10) {
                     ok = 0;
                 }
             }
@@ -1490,7 +1490,7 @@ u8 func_801D1658(void) {
         member = 0;
         while (cursor != 0) {
             member++;
-            if (D_800625A0->member_present[member] != 0) {
+            if (D_800625A0->present[member] != 0) {
                 cursor--;
             }
         }
@@ -1566,7 +1566,7 @@ void func_801D1B18(void) {
     D_800625A0->flags->lists_shown = 0;
     func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
     close = 1;
-    switch (D_800625A0->list_cursor) {
+    switch (D_800625A0->choice) {
     case 0:
         close = func_801D1658();
         break;
@@ -1594,8 +1594,8 @@ u8 func_801D1CA4(void) {
 
     running = 1;
     first = 1;
-    D_800625A0->list_cursor = 3;
-    D_800625A0->unk339 = 0xFF;
+    D_800625A0->choice = 3;
+    D_800625A0->choice_shown = 0xFF;
     do {
         func_801CB014();
         if (first) {
@@ -1604,31 +1604,31 @@ u8 func_801D1CA4(void) {
             func_801CB340();
             func_801CC278(0);
         }
-        if (D_800625A0->list_cursor != D_800625A0->unk339) {
+        if (D_800625A0->choice != D_800625A0->choice_shown) {
             func_801CBCF0(4, D_800625A0->list_labels, D_801D1FD0, D_801D1FE8,
-                          D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 3, 0);
+                          D_800625A0->flags->list_label_shown, D_800625A0->choice, 3, 0);
             func_801CC720(0);
-            D_800625A0->unk339 = D_800625A0->list_cursor;
+            D_800625A0->choice_shown = D_800625A0->choice;
         }
         switch (D_800625A0->input) {
         case 4:
             func_801CAC7C(2);
             func_801D1B18();
-            D_800625A0->unk339 = 0xFF;
+            D_800625A0->choice_shown = 0xFF;
             break;
         case 5:
             running = 0;
             break;
         case 1:
-            if (D_800625A0->list_cursor != 0) {
-                D_800625A0->list_cursor--;
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
             } else {
-                D_800625A0->list_cursor = D_800625A0->list_count - 1;
+                D_800625A0->choice = D_800625A0->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
-                D_800625A0->list_cursor = 0;
+            if (++D_800625A0->choice >= D_800625A0->choice_count) {
+                D_800625A0->choice = 0;
             }
             break;
         }
@@ -1641,7 +1641,7 @@ u8 func_801D1CA4(void) {
 
 /* Follow-up after a command returns: command 2 redraws its screen. */
 void func_801D1F10(void) {
-    switch (D_800625A0->top_cursor) {
+    switch (D_800625A0->cursor) {
     case 1:
         break;
     case 2:
