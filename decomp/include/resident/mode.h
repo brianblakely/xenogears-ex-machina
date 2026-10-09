@@ -65,7 +65,6 @@ extern s32 D_80062528;            /* the active sequence */
 extern struct SoundSequence *D_8006258C; /* the transferred wave bank */
 
 extern u8 *const D_80018084; /* overlay decode destination */
-extern u8 D_8006FAF0[];
 extern u8 D_8006FAEC[];      /* the last word below the overlay area */
 extern s32 D_80018088;       /* next mode */
 extern ModeEntry D_8001808C[];

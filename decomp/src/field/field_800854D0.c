@@ -9,11 +9,43 @@
  * again, so further units start after 800a1bd0 (at or before 800a5c40) and
  * after 800a5c40 (at or before 800ab748). */
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
 #include "field.h"
-#include "field_anim.h"
-#include "field_gte.h"
+#include "field_camera.h"
+#include "field_debug.h"
+#include "field_dialogue.h"
+#include "field_draw.h"
+#include "field_effect.h"
+#include "field_event.h"
+#include "field_layer.h"
+#include "field_load.h"
+#include "field_mode.h"
 #include "field_motion.h"
+#include "field_movie.h"
 #include "field_music.h"
+#include "field_pad.h"
+#include "field_panel.h"
+#include "field_party.h"
+#include "field_resident.h"
+#include "field_screen.h"
+#include "field_sound.h"
 
 /* The movie sound timelines: one run per movie sound-effect bank, each of
  * (time, sound) entries ended by 0xffff; 80085788 skips bank + 1 ends. A
@@ -65,7 +97,7 @@ u8 D_800AE294[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 2, 6};
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */
 s32 func_800854D0(void) {
-    s32 arrived = func_80028B14();
+    s32 arrived = (s32)func_80028B14();
 
     D_800ADBBC = arrived;
     if (arrived != 0) {
@@ -224,7 +256,7 @@ void func_800859DC(WaveChunk *chunk) {
     case 3:
         ((WaveChunk *)D_800C3A1C)[D_800B2370] = *chunk;
         D_800B2370++;
-        func_8002945C(chunk);
+        func_8002945C((u8 *)chunk);
         if (D_800B2370 == 4) {
             D_8006258C = func_800380D0(D_800C3A1C, 0x2000, 0);
         }
@@ -233,7 +265,7 @@ void func_800859DC(WaveChunk *chunk) {
         func_8003BDFC(0x10);
         *(WaveChunk *)D_800C3A1C = *chunk;
         func_8003827C(D_800C3A1C, 0x800);
-        func_8002945C(chunk);
+        func_8002945C((u8 *)chunk);
         break;
     }
 }
@@ -321,17 +353,17 @@ s32 func_80085C90(s32 music) {
     }
     if (D_8004F358 == 1) {
         if (D_8004F348 == 0) {
-            sequence = func_80039850(D_80062648);
+            sequence = (s32)func_80039850((SoundSeqHeader *)D_80062648);
             D_80062528 = sequence;
             if (D_8004F340 == -1) {
-                func_80039A80(sequence, 0x7F, 0);
+                func_80039A80((SoundSeq *)sequence, 0x7F, 0);
             } else {
-                func_80039A80(D_80062528, 0, 0);
-                func_8003A89C(D_80062528, 0, 0);
+                func_80039A80((SoundSeq *)D_80062528, 0, 0);
+                func_8003A89C((SoundSeq *)D_80062528, 0, 0);
             }
         } else {
             D_80062528 = D_8004F2FC;
-            func_80039B68(D_8004F2FC, 0x7F, 0xF0);
+            func_80039B68((SoundSeq *)D_8004F2FC, 0x7F, 0xF0);
             D_8004F348 = 0;
             D_8004F2FC = 0;
         }
@@ -347,8 +379,8 @@ s32 func_80085C90(s32 music) {
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {
     if (D_8004F2FC != 0) {
-        func_80039C4C(D_8004F2FC);
-        func_800399D4(D_8004F2FC);
+        func_80039C4C((SoundTrack *)D_8004F2FC);
+        func_800399D4((SoundSeq *)D_8004F2FC);
         D_8004F2FC = 0;
     }
 }
@@ -361,9 +393,9 @@ s32 func_80085F30(void) {
     if (func_800286CC() != 0) {
         return -1;
     }
-    bank = func_80037FD8(D_800B00E0, 0);
-    D_8006251C = bank;
-    D_80059560 = bank;
+    bank = (s32)func_80037FD8(D_800B00E0, 0);
+    D_80062518[1] = bank;
+    D_80059560 = (SoundSequence *)bank;
     func_8003BDFC(0x10);
     func_800320E8(D_800B00E0);
     D_8004F364 = 1;
@@ -387,7 +419,7 @@ void func_80085FB8(void) {
 void func_80086024(void) {
     if (D_8004F368 == 0) {
         D_8004F384 = 1;
-        func_80038310(D_8006251C);
+        func_80038310((SoundSequence *)D_80062518[1]);
         D_8004F368 = 1;
     }
     D_8004F364 = 0;
@@ -805,7 +837,7 @@ void func_80087148(void) {
     s32 record = func_800ACDEC(1);
     s32 bits = func_800ACDEC(3);
 
-    D_8005A39C->records[record].flags |= bits;
+    D_8005A39C->skills[record].flags1A |= bits;
     D_800B0078->pc += 5;
 }
 
@@ -890,7 +922,7 @@ void func_8008752C(void) {
 
 /* Event: set game flag 0x4000 of +22b6. */
 void func_8008754C(void) {
-    D_8005A39C->unk22B6 |= 0x4000;
+    D_8005A39C->flags |= 0x4000;
     D_800B0078->pc++;
 }
 
@@ -911,16 +943,16 @@ void func_8008764C(void) {
     s32 to = func_800ACDEC(3);
 
     D_8005A39C->characters[to] = D_8005A39C->characters[from];
-    D_8005A39C->records[to] = D_8005A39C->records[from];
+    D_8005A39C->skills[to] = D_8005A39C->skills[from];
     {
-        GameState *state = D_8005A39C;
+        GameData *state = D_8005A39C;
 
         if (to == 9) {
-            state->unk22B6 |= 0x2000;
+            state->flags |= 0x2000;
         }
     }
     if (to == 10) {
-        D_8005A39C->unk22B6 |= 0x1000;
+        D_8005A39C->flags |= 0x1000;
     }
     D_800B0078->pc += 5;
 }
@@ -959,16 +991,17 @@ void func_80087848(void) {
 /* Event: store the world map ferry's saved x and z (+1844, +1846;
  * D_8006EE78) in variables op1 and op3. */
 void func_80087960(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1844);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1846);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1844[0]);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1844[1]);
     D_800B0078->pc += 5;
 }
 
 /* Event: store the circling flight's saved x and z (+184e, +1852;
- * D_8006EE80) in variables op1 and op3. */
+ * D_8006EE80) in variables op1 and op3, read unsigned (the world map's
+ * halves are signed). */
 void func_800879D0(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk184E);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1852);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, (u16)D_8005A39C->flight.x);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, (u16)D_8005A39C->flight.z);
     D_800B0078->pc += 5;
 }
 
@@ -990,10 +1023,10 @@ void func_80087A7C(void) {
  * from operands 1 and 3, immediate by flags 0x80/0x40 of byte 9 (past the
  * instruction's 6 bytes), clear +1850 and +1854 and set +1856 to 1. */
 void func_80087AB8(void) {
-    D_8005A39C->unk184E = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->unk1852 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->unk1854 = 0;
-    D_8005A39C->unk1850 = 0;
+    D_8005A39C->flight.x = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->flight.z = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->flight.count = 0;
+    D_8005A39C->flight.z_frac = 0;
     D_8005A39C->unk1856 = 1;
     D_800B0078->pc += 6;
 }
@@ -1001,10 +1034,10 @@ void func_80087AB8(void) {
 /* Event: store the world map vehicle's saved position (game +182c-+1830)
  * and heading (+1832; WorldmapReturn) in variables op1..op7. */
 void func_80087B5C(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk182C[0]);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk182C[1]);
-    func_800A3074(func_800ACDB8(5) & 0xFFFF, D_8005A39C->unk182C[2]);
-    func_800A3074(func_800ACDB8(7) & 0xFFFF, D_8005A39C->unk182C[3]);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->worldmap.unk60);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->worldmap.unk62);
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, D_8005A39C->worldmap.unk64);
+    func_800A3074(func_800ACDB8(7) & 0xFFFF, D_8005A39C->worldmap.vehicle_heading);
     D_800B0078->pc += 9;
 }
 
@@ -1019,24 +1052,24 @@ void func_80087C0C(void) {
  * (+182c-+1832) from operands 1..7 (immediate by flags 0x80/0x40/0x20/0x10
  * of byte 9). */
 void func_80087C34(void) {
-    D_8005A39C->unk182C[0] = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->unk182C[1] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->unk182C[2] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->unk182C[3] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->worldmap.unk60 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->worldmap.unk62 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->worldmap.unk64 = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->worldmap.vehicle_heading = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
     D_800B0078->pc += 10;
 }
 
 /* Event: store the world map vehicle's flags (+1834, WorldmapReturn.flags)
  * in variable op1. */
 void func_80087D30(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1834);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->worldmap.flags);
     D_800B0078->pc += 3;
 }
 
 /* Event: set the world map vehicle's flags (+1834) from operand 1
  * (immediate when flag 0x80 of byte 3 is set). */
 void func_80087D80(void) {
-    D_8005A39C->unk1834 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
+    D_8005A39C->worldmap.flags = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
     D_800B0078->pc += 4;
 }
 
@@ -1099,7 +1132,6 @@ void func_80087FD4(void) {
     D_800B0078->pc++;
 }
 
-extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 /* Event: transform the vector (operands 5, 7, 9) by the world matrix of node
  * operand 3 of 801e layer actor operand 1 (801e72cc; selected by flags byte 11)
  * and store its x, y, z in the variables operands 12, 14 and 16 name. */
@@ -1130,11 +1162,11 @@ void func_8008800C(void) {
  * records at +978). */
 void func_80088198(void) {
     s32 i;
-    GameState *state = D_8005A39C;
+    GameData *state = D_8005A39C;
 
     for (i = 0; i < 20; i++) {
-        state->gears[i].points = state->gears[i].points_max;
-        state->gears[i].gauge = state->gears[i].gauge_max;
+        state->gears[i].hp = state->gears[i].maxHp;
+        state->gears[i].fuel = state->gears[i].maxFuel;
     }
     D_800B0078->pc++;
 }
@@ -1168,7 +1200,7 @@ void func_800882B8(void) {
     s32 character = func_8008CF3C(func_800ACDEC(1));
 
     if (character != 0xFF) {
-        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->characters[character].unkA0);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->characters[character].gearId);
     } else {
         func_800A3074(func_800ACDB8(3) & 0xFFFF, 0xFF);
     }
@@ -1180,7 +1212,7 @@ void func_800882B8(void) {
 void func_80088360(void) {
     s32 slot = func_800ACDEC(1);
 
-    D_8005A39C->characters[slot].unkA0 = func_800ACDEC(3);
+    D_8005A39C->characters[slot].gearId = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
@@ -1190,15 +1222,13 @@ void func_800883D4(void) {
 
     if (character != 0xFF) {
         if (D_800ADC00[D_800B0078->pc + 1] == 0) {
-            D_8005A39C->unk2318 |= 1 << character;
+            D_8005A39C->locked |= 1 << character;
         } else {
-            D_8005A39C->unk2318 &= ~(1 << character);
+            D_8005A39C->locked &= ~(1 << character);
         }
     }
     D_800B0078->pc += 4;
 }
-
-#include "field_script.h"
 
 /* Event: set 800b236c to the inverse of its byte operand's low bit. */
 void func_8008848C(void) {
@@ -1217,16 +1247,16 @@ void func_800884CC(void) {
  * operand 3, clearing +0c unless it is 1; four batch steps. */
 void func_80088508(void) {
     s32 member;
-    FieldModel *model;
+    Sprite *model;
 
     member = D_8005A444[func_800ACDEC(5)];
     D_800AFC7C += 4;
     if (member != 0xFF) {
         model = D_800AF880.components.descriptors[member].model;
-        func_800A3074(func_800ACDB8(1) & 0xFFFF, model->animation->unk0C);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, (u16)SPRITE_SEQUENCER(model)->halfc);
         func_800A3074(func_800ACDB8(3) & 0xFFFF, member);
-        if (model->animation->unk0C != 1) {
-            model->animation->unk0C = 0;
+        if ((u16)SPRITE_SEQUENCER(model)->halfc != 1) {
+            SPRITE_SEQUENCER(model)->halfc = 0;
         }
     } else {
         func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
@@ -1311,13 +1341,12 @@ void func_80088790(void) {
     D_800AFC7C += 4;
 }
 
-extern void func_8002303C(FieldModel *model, s32, s32);
 /* Event: give the current actor's sprite a new two-word sequencer buffer
  * (8002303c) whose entries 2 and 3 are (operand 1 & 15) << 6 and (operand 1 >>
  * 4) << 8 + operand 3; the values and mode 1 are kept in the actor (+12c, +130)
  * for 800a28d4 to rebuild it. */
 void func_800888A4(void) {
-    FieldModel *model;
+    Sprite *model;
     u16 low;
     s32 frame;
 
@@ -1325,9 +1354,9 @@ void func_800888A4(void) {
     low = func_800ACDEC(1) & 0xF;
     frame = ((func_800ACDEC(1) >> 4) << 8) + func_800ACDEC(3);
     func_8002303C(model, 2, 0);
-    model->animation->unk18[2] = low << 6;
+    SPRITE_SEQUENCER(model)->buffer[2] = low << 6;
     D_800B0078->state.bits.unk18 = low << 6;
-    model->animation->unk18[3] = frame;
+    SPRITE_SEQUENCER(model)->buffer[3] = frame;
     D_800B0078->unk130 = frame;
     D_800B0078->state.bits.unk16 = 1;
     D_800B0078->pc += 5;
@@ -1336,7 +1365,7 @@ void func_800888A4(void) {
 /* Event: as ext a6 with a three-word sequencer buffer: entries 2-3 from
  * operands 1 and 3, entries 4-5 from operands 5 and 7 (mode 2). */
 void func_800889BC(void) {
-    FieldModel *model;
+    Sprite *model;
     u16 low0;
     s32 frame0;
     u16 low1;
@@ -1348,13 +1377,13 @@ void func_800889BC(void) {
     low1 = func_800ACDEC(5) & 0xF;
     frame1 = ((func_800ACDEC(5) >> 4) << 8) + func_800ACDEC(7);
     func_8002303C(model, 3, 0);
-    model->animation->unk18[2] = low0 << 6;
+    SPRITE_SEQUENCER(model)->buffer[2] = low0 << 6;
     D_800B0078->state.bits.unk18 = low0 << 6;
-    model->animation->unk18[3] = frame0;
+    SPRITE_SEQUENCER(model)->buffer[3] = frame0;
     D_800B0078->unk130 = frame0;
-    model->animation->unk18[4] = low1 << 6;
+    SPRITE_SEQUENCER(model)->buffer[4] = low1 << 6;
     D_800B0078->unk130_9 = low1 << 6;
-    model->animation->unk18[5] = frame1;
+    SPRITE_SEQUENCER(model)->buffer[5] = frame1;
     D_800B0078->unk130_19 = frame1;
     D_800B0078->pc += 9;
     D_800B0078->state.bits.unk16 = 2;
@@ -1416,7 +1445,6 @@ void func_80088D38(s32 first) {
     D_800B0078->pc += 0x12;
 }
 
-extern s32 D_800ADB40;
 /* Event: select emitter template operand 1 (800b2384) for the template
  * instructions that follow and set it up for the effect's actor (+52 and
  * 800adb40 = 800b2374): operand 3 particles, start delay operand 5, lifetime
@@ -1741,6 +1769,7 @@ void func_8008A4E8(void) {
 void func_8008A4F0(void) {
 }
 
+/* Empty; neither instruction table nor any call reaches it. */
 void func_8008A4F8(void) {
 }
 
@@ -1812,11 +1841,11 @@ void func_8008A640(void) {
     s32 value;
 
     if (character != 0xFF) {
-        value = func_800ACDEC(1) - D_8005A39C->characters[character].unk77;
+        value = func_800ACDEC(1) - D_8005A39C->characters[character].field77;
         if (value < 0) {
             value = 0;
         }
-        D_8005A39C->characters[character].unk78 = value;
+        D_8005A39C->characters[character].field78 = value;
     }
     D_800B0078->pc += 5;
 }
@@ -1828,7 +1857,7 @@ void func_8008A6E0(void) {
     s32 sum;
 
     if (character != 0xFF) {
-        sum = D_8005A39C->characters[character].unk77 + D_8005A39C->characters[character].unk78;
+        sum = D_8005A39C->characters[character].field77 + D_8005A39C->characters[character].field78;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, sum);
     } else {
         func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
@@ -1914,7 +1943,7 @@ void func_8008A974(void) {
 void func_8008A9AC(void) {
     if (func_8008A558() == 0) {
         D_800ADB90 = 0;
-        func_80021BF0(D_800AF880.components.descriptors[D_800AFD1C].model, D_800B0078->unk120);
+        func_80021BF0(D_800AF880.components.descriptors[D_800AFD1C].model, (s32)D_800B0078->unk120);
         D_800B0078->pc++;
     } else {
         D_800B0078->pc--;
@@ -1947,18 +1976,18 @@ void func_8008AACC(void) {
 
     if (func_8008A558() == 0) {
         if (EVENT_OPERAND_BYTE(1) == 1) {
-            D_80062518[D_800AFD18] = func_80037FD8(D_800AFD08, 0);
+            D_80062518[D_800AFD18] = (s32)func_80037FD8(D_800AFD08, 0);
             func_8003BDFC(0x10);
             func_800320E8(D_800AFD08);
             if (D_800AFD18 == 3) {
-                D_800595AC = D_80062524;
+                D_800595AC = (SoundSequence *)D_80062518[3];
             }
             D_800B00C0 = 1;
             D_800B0078->pc += 2;
         } else {
             slot = func_800ACDEC(2);
             D_800AFD18 = slot;
-            func_80038310(D_80062518[slot]);
+            func_80038310((SoundSequence *)D_80062518[slot]);
             file = func_800ACDEC(4);
             D_800AFD0C = file;
             if (!(file & 0x80)) {
@@ -2176,7 +2205,7 @@ void func_8008B5D4(void) {
     POLY_FT4 *ft4_other;
     u8 *prims;
     u8 *other;
-    FieldMesh *mesh;
+    SpriteModel *mesh;
     u32 *group;
     s32 du;
     s32 dv;
@@ -2190,7 +2219,7 @@ void func_8008B5D4(void) {
     prims = instance->packets[D_800ADB08];
     mesh = instance->mesh;
     other = instance->packets[(D_800ADB08 + 1) & 1];
-    group = mesh->groups;
+    group = (u32 *)mesh->unk10;
     du = (s16)func_800ACD7C(1);
     dv = (s16)func_800ACD7C(3);
     for (groups = mesh->group_count; groups > 0; groups--) {
@@ -2294,7 +2323,7 @@ void func_8008B978(s32 member) {
     u8 *code;
     s32 pc_new;
 
-    D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+    D_8005A39C->joined |= 1 << D_800ADBC8;
     descriptor = D_800B06B8;
     actor = D_800B0078;
     if (D_800ADB1C != 0) {
@@ -2318,7 +2347,7 @@ void func_8008B978(s32 member) {
                 func_8008D380(i, D_800B2078.controlled);
                 func_800A1EC8(0xFFFF);
                 func_80077268();
-                D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+                D_8005A39C->joined |= 1 << D_800ADBC8;
                 if (D_8004F34C & 0xC000) {
                     D_800B06B8 = &D_800AF880.components.descriptors[D_8006F990[D_800ADBCC]];
                     D_800B0078 = D_800B06B8->actor;
@@ -2357,13 +2386,13 @@ void func_8008BC80(void) {
         member = func_800ACDEC(1);
         if (member != pending) {
             if (func_8008A790(member, &slot) == 0) {
-                D_8005A39C->unk22B1[slot] = 0;
+                D_8005A39C->inGear[slot] = 0;
                 D_80062590[slot] = member;
                 func_8008A7DC(member, slot);
                 D_800B0078->pc += 3;
                 return;
             }
-            D_8005A39C->unk1D30 |= 1 << member;
+            D_8005A39C->joined |= 1 << member;
             D_800B0078->pc += 5;
             return;
         }
@@ -2387,14 +2416,14 @@ void func_8008BDD8(void) {
     if (D_800ADBC4 == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
         func_80028A60(0);
         if (func_8008A790(D_800ADC00[D_800B0078->pc + 1], &slot) == 0) {
-            D_8005A39C->unk22B1[slot] = 0;
+            D_8005A39C->inGear[slot] = 0;
             member = D_800ADC00[D_800B0078->pc + 1];
             D_80062590[slot] = member;
             func_8008A7DC(member, slot);
             D_800B0078->pc += 2;
             return;
         }
-        D_8005A39C->unk1D30 |= 1 << D_800ADC00[D_800B0078->pc + 1];
+        D_8005A39C->joined |= 1 << D_800ADC00[D_800B0078->pc + 1];
         D_800B0078->pc += 4;
         return;
     }
@@ -2511,21 +2540,21 @@ void func_8008C334(void) {
                 if (D_80062590[1] == 0xFF) {
                     D_80062590[0] = 0xFF;
                     D_8006FABC[0] = 0xFF;
-                    D_8005A39C->unk22B1[0] = 0;
+                    D_8005A39C->inGear[0] = 0;
                 } else {
                     *(PartySprite *)D_8005A414[0] = *(PartySprite *)D_8005A414[1];
                     D_80062590[0] = D_80062590[1];
                     D_8006FABC[0] = D_8006FABC[1];
                     D_80062590[1] = 0xFF;
                     D_8006FABC[1] = 0xFF;
-                    D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
+                    D_8005A39C->inGear[0] = D_8005A39C->inGear[1];
                     if (D_80062590[2] != 0xFF) {
                         *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
                         D_80062590[1] = D_80062590[2];
                         D_8006FABC[1] = D_8006FABC[2];
                         D_80062590[2] = 0xFF;
                         D_8006FABC[2] = 0xFF;
-                        D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                        D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
                     }
                 }
                 break;
@@ -2533,41 +2562,41 @@ void func_8008C334(void) {
                 if (D_80062590[2] == 0xFF) {
                     D_80062590[1] = 0xFF;
                     D_8006FABC[1] = 0xFF;
-                    D_8005A39C->unk22B1[1] = 0;
+                    D_8005A39C->inGear[1] = 0;
                 } else {
                     *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
                     D_80062590[1] = D_80062590[2];
                     D_8006FABC[1] = D_8006FABC[2];
                     D_80062590[2] = 0xFF;
                     D_8006FABC[2] = 0xFF;
-                    D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
-                    D_8005A39C->unk22B1[2] = 0;
+                    D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
+                    D_8005A39C->inGear[2] = 0;
                 }
                 break;
             case 2:
                 D_80062590[2] = 0xFF;
                 D_8006FABC[2] = 0xFF;
-                D_8005A39C->unk22B1[2] = 0;
+                D_8005A39C->inGear[2] = 0;
                 break;
             }
         } else {
             switch (slot) {
             case 0:
-                D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
-                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
-                D_8005A39C->unk22B1[2] = 0;
+                D_8005A39C->inGear[0] = D_8005A39C->inGear[1];
+                D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
+                D_8005A39C->inGear[2] = 0;
                 func_8008C180(0);
                 func_8008BF38(0);
                 func_8008BF38(1);
                 break;
             case 1:
-                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
-                D_8005A39C->unk22B1[2] = 0;
+                D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
+                D_8005A39C->inGear[2] = 0;
                 func_8008C180(1);
                 func_8008BF38(1);
                 break;
             case 2:
-                D_8005A39C->unk22B1[2] = 0;
+                D_8005A39C->inGear[2] = 0;
                 func_8008C180(2);
                 break;
             }
@@ -2603,7 +2632,7 @@ void func_8008C84C(void) {
 
     if (D_8004F36C != 0) {
         a = func_800ACDEC(1);
-        func_8003A89C(D_80062528, a, func_800ACDEC(3));
+        func_8003A89C((SoundSeq *)D_80062528, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 5;
@@ -2624,7 +2653,7 @@ void func_8008C938(void) {
 
     if (D_8004F36C != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A948(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        func_8003A948((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 6;
@@ -2644,7 +2673,7 @@ void func_8008CA60(void) {
 
     if (D_8004F36C != 0) {
         a = func_800ACDEC(1);
-        func_8003A838(D_80062528, a, func_800ACDEC(3));
+        func_8003A838((SoundSeq *)D_80062528, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 5;
@@ -2665,7 +2694,7 @@ void func_8008CB4C(void) {
 
     if (D_8004F36C != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A9BC(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        func_8003A9BC((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 6;
@@ -2682,7 +2711,7 @@ void func_8008CB4C(void) {
  * advance; otherwise advance or wait (pc-- to the fe) as fe 0e. Yields. */
 void func_8008CC74(void) {
     if (D_8004F36C != 0) {
-        func_8003AAC4(D_80062528, func_800ACDEC(1));
+        func_8003AAC4((SoundSeq *)D_80062528, func_800ACDEC(1));
         D_800B0078->pc += 3;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 3;
@@ -2731,7 +2760,7 @@ void func_8008CE64(void) {
     s32 member = func_8008CF3C(func_800ACDEC(1));
 
     if (member != 0xFF) {
-        D_8005A39C->unk1D32 &= ~(1 << member);
+        D_8005A39C->available &= ~(1 << member);
     }
     D_800B0078->pc += 3;
 }
@@ -2743,7 +2772,7 @@ void func_8008CED0(void) {
     s32 member = func_8008CF3C(func_800ACDEC(1));
 
     if (member != 0xFF) {
-        D_8005A39C->unk1D32 |= 1 << member;
+        D_8005A39C->available |= 1 << member;
     }
     D_800B0078->pc += 3;
 }
@@ -2801,7 +2830,7 @@ void func_8008D078(void) {
 void func_8008D0F4(void) {
     s32 scale = func_800ACDEC(1);
 
-    D_800AF880.components.descriptors[D_800AFD1C].model->unk2C = (u32)(scale * 3) >> 2;
+    D_800AF880.components.descriptors[D_800AFD1C].model->scale = (u32)(scale * 3) >> 2;
     D_800B0078->scale[0] = scale;
     D_800B0078->scale[1] = scale;
     D_800B0078->scale[2] = scale;
@@ -2815,7 +2844,7 @@ void func_8008D180(void) {
     s16 y = func_800ACDEC(3);
     s16 z = func_800ACDEC(5);
 
-    D_800AF880.components.descriptors[D_800AFD1C].model->unk2C = 0xC00;
+    D_800AF880.components.descriptors[D_800AFD1C].model->scale = 0xC00;
     D_800B0078->scale[0] = x;
     D_800B0078->scale[1] = y;
     D_800B0078->scale[2] = z;
@@ -2832,7 +2861,7 @@ void func_8008D230(void) {
 
 /* Event: set the current model's +82 to twice operand 1. */
 void func_8008D26C(void) {
-    D_800AF880.components.descriptors[D_800AFD1C].model->unk82 = func_800ACDEC(1) * 2;
+    D_800AF880.components.descriptors[D_800AFD1C].model->word82 = func_800ACDEC(1) * 2;
     D_800B0078->pc += 3;
 }
 
@@ -2876,10 +2905,10 @@ void func_8008D380(s32 to, s32 from) {
     target->unkEC = source->unkEC;
     target->unk72 = source->unk72;
     target->unk014 = source->unk014;
-    D_800AF880.components.descriptors[to].model->unk84 = D_800AF880.components.descriptors[from].model->unk84;
-    D_800AF880.components.descriptors[to].model->position[0] = D_800AF880.components.descriptors[from].model->position[0];
-    D_800AF880.components.descriptors[to].model->position[1] = D_800AF880.components.descriptors[from].model->position[1];
-    D_800AF880.components.descriptors[to].model->position[2] = D_800AF880.components.descriptors[from].model->position[2];
+    D_800AF880.components.descriptors[to].model->ground = D_800AF880.components.descriptors[from].model->ground;
+    D_800AF880.components.descriptors[to].model->x = D_800AF880.components.descriptors[from].model->x;
+    D_800AF880.components.descriptors[to].model->y = D_800AF880.components.descriptors[from].model->y;
+    D_800AF880.components.descriptors[to].model->z = D_800AF880.components.descriptors[from].model->z;
     D_800AF880.components.descriptors[to].matrix.t[0] = D_800AF880.components.descriptors[from].matrix.t[0];
     D_800AF880.components.descriptors[to].matrix.t[1] = D_800AF880.components.descriptors[from].matrix.t[1];
     D_800AF880.components.descriptors[to].matrix.t[2] = D_800AF880.components.descriptors[from].matrix.t[2];
@@ -3000,9 +3029,9 @@ s32 func_8008DB68(s32 member, s32 amount) {
     s32 character = func_8001ACF0(D_80062590[member]);
 
     if (character != 0xFF) {
-        D_8005A39C->gears[character].points += amount;
-        if (D_8005A39C->gears[character].points_max < D_8005A39C->gears[character].points) {
-            D_8005A39C->gears[character].points = D_8005A39C->gears[character].points_max;
+        D_8005A39C->gears[character].hp += amount;
+        if (D_8005A39C->gears[character].maxHp < D_8005A39C->gears[character].hp) {
+            D_8005A39C->gears[character].hp = D_8005A39C->gears[character].maxHp;
         }
     }
 }
@@ -3014,11 +3043,11 @@ s32 func_8008DBF0(s32 member, s32 amount) {
     s32 points;
 
     if (character != 0xFF) {
-        points = D_8005A39C->gears[character].points - amount;
+        points = D_8005A39C->gears[character].hp - amount;
         if (points <= 0) {
             points = 1;
         }
-        D_8005A39C->gears[character].points = points;
+        D_8005A39C->gears[character].hp = points;
     }
 }
 
@@ -3324,7 +3353,7 @@ void func_8008E85C(void) {
  * flag 0x8000, or set layer bit 19 (2); clearing also stops a model moving
  * under bit 19. */
 void func_8008E8C8(void) {
-    FieldModel *model;
+    Sprite *model;
 
     switch (D_800ADC00[D_800B0078->pc + 1]) {
     case 0:
@@ -3333,9 +3362,9 @@ void func_8008E8C8(void) {
         }
         if (D_800B0078->layer_flags & 0x80000) {
             model = D_800AF880.components.descriptors[D_800AFD1C].model;
-            model->unk18 = 0;
-            model->velocity[2] = 0;
-            model->velocity[0] = 0;
+            model->speed = 0;
+            model->speed_z = 0;
+            model->speed_x = 0;
             D_800B0078->layer_flags &= ~0x80000;
         }
         break;
@@ -3513,9 +3542,6 @@ void func_8008EFE4(void) {
     D_800B0078->pc += 9;
 }
 
-extern s32 D_800ADB38;
-extern s32 D_800ADB3C;
-
 /* Event: request screen transition 3 over operand 1 frames (800adb38/800adb3c):
  * 800a5924 fades the screen pieces in and holds them while the request stays
  * 3. */
@@ -3564,8 +3590,6 @@ void func_8008F1C8(void) {
     D_800B0078->pc += 8;
 }
 
-void func_80023290(FieldModel *model, s32 value);
-
 /* Event fe 5e: set the blend rate of the current actor's sprite to operand 1 &
  * 7 (80023290; 0 clears its blending flag). */
 void func_8008F2D8(void) {
@@ -3574,9 +3598,6 @@ void func_8008F2D8(void) {
     func_80023290(D_800AF880.components.descriptors[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
-
-extern s32 D_800C3A5C;
-extern s32 D_800C3A60;
 
 /* Set the screen margins 800c3a5c (x) and 800c3a60 (y) from operands 1 and 3:
  * 800aaa74 widens the screen by them when testing whether a field model
@@ -3595,8 +3616,6 @@ void func_8008F394(void) {
     D_800B0078->pc += 3;
 }
 
-void func_8003A450(s32 a, s32 b, s32 c);
-
 /* Event: slide the volume of the two effect channels of sound 2 * operand 3 to
  * operand 1 over operand 5 frames (resident 8003a450). */
 void func_8008F3D0(void) {
@@ -3609,8 +3628,6 @@ void func_8008F3D0(void) {
     D_800B0078->pc += 7;
 }
 
-void func_8003A344(s32 a, s32 b);
-
 /* Event fe 62: set the volume of the two effect channels of voice pair operand
  * 3 (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
  * (8003a344). */
@@ -3621,8 +3638,6 @@ void func_8008F444(void) {
     func_8003A344(a, func_800ACDEC(1));
     D_800B0078->pc += 5;
 }
-
-void func_8003A55C(s32 a, s32 b);
 
 /* Event fe 63: set the pan of the two effect channels of voice pair operand 3
  * (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
@@ -3646,8 +3661,6 @@ void func_8008F4FC(void) {
     D_800B0078->pc += 5;
 }
 
-void func_800855C8(s32 a, s32 b, s32 c, s32 d);
-
 /* Event fe 66: play sound effect operand 1 on effect voice pair operand 7 at
  * volume operand 5 and pan operand 3, stopping the pair first (800855c8). */
 void func_8008F558(void) {
@@ -3661,8 +3674,6 @@ void func_8008F558(void) {
     func_800855C8(a, b, c, func_800ACDEC(7));
     D_800B0078->pc += 9;
 }
-
-s32 func_8003A5D0(s32 mask);
 
 /* Event fe 64: wait (pc-- to the fe) while any effect channel whose bit is set
  * in operand 1 << 8 is playing (8003a5d0(-1): the mask of active effect
@@ -3698,8 +3709,6 @@ void func_8008F6AC(void) {
     D_800B0078->pc += 7;
 }
 
-extern s32 D_800ADBDC;
-extern s32 D_8004F340;
 void func_8008F7B8(void);
 
 /* Select field music track operand 1 (8008f7b8) with 8004f340 = 0 (its sequence
@@ -3727,13 +3736,6 @@ void func_8008F76C(void) {
     D_8004F340 = -1;
     func_8008F7B8();
 }
-
-extern s32 D_8004F308;
-extern s32 D_8004F324;
-extern s32 D_8004F354;
-void func_80085EEC(void);
-void func_8001B66C(void);
-s32 func_8008A558(void);
 
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
  * only recorded; otherwise yield until the music system can take a change.
@@ -3851,7 +3853,6 @@ void func_8008FB98(void) {
     D_800AF880.scripted_elevation = D_800AF880.elevation;
     D_800AF880.scripted_zoom = (D_800AF880.projection * D_800AF880.distance) >> 12;
 }
-
 
 /* Leave the scripted camera by its mode: 0 clears the hold flag; 1 with
  * operand 1 zero returns to mode 0 at once (hold flag cleared, camera
@@ -4187,7 +4188,6 @@ void func_80090DEC(void) {
     D_800B0078->pc += 7;
 }
 
-
 /* Derive the scripted heading, pitch and zoom (half the distance) from
  * point A looking at point B, reset the scripted scale and store them in
  * variables operands 1, 3 and 5. */
@@ -4404,8 +4404,6 @@ void func_80091720(void) {
     D_800B0078->pc += 3;
 }
 
-void func_80073E38(void);
-
 /* Set the fog colour (operands 1, 3, 5), far colour (7, 9, 11) and fog
  * range (13, 15), set 800b218e (sprite gate) and reselect every shown
  * model's drawing mode (80073e38). */
@@ -4432,7 +4430,6 @@ void func_80091A08(void) {
     D_800AF880.bounds[3] = -func_800ACD7C(7);
     D_800B0078->pc += 9;
 }
-
 
 /* Set the clear colour (800b219c) from operands 1, 3 and 5. */
 void func_80091A78(void) {
@@ -4549,14 +4546,12 @@ void func_80092044(void) {
     D_800B0078->pc += 5;
 }
 
-void func_80027EAC(s32 handle);
-
 /* Pass every handle in the list at 800afea8 to resident 80027EAC. */
 void func_800920D8(void) {
     s32 i;
 
     for (i = 0; i < D_800AFEA8.count; i++) {
-        func_80027EAC(D_800AFEA8.handles[i]);
+        func_80027EAC(D_800AFEA8.scrolls[i]);
     }
 }
 
@@ -4577,10 +4572,6 @@ void func_80092148(void) {
     D_800B0078->pc += 7;
 }
 
-extern s32 D_800ADB8C;
-void *func_80031BDC(s32 size, s32 flags);
-void func_80027D64(s32 handle, s16 x, s16 y, s16 width, s16 height, s16 length, s16 a, s16 b, u8 *buffer);
-
 /* Add a texture scroll (80027d64) to the list at 800afea8 (at most 32, not
  * while 800adb8c is set): area operands 1, 3, 5, 7 (x, y, w, h), operand 9
  * bands, source x operand 11 and y operand 13, every band's speed byte set
@@ -4599,7 +4590,7 @@ void func_800921E8(void) {
         length = func_800ACDB8(9) & 0xFFFF;
         D_800AFEA8.lengths[D_800AFEA8.count] = length;
         D_800AFEA8.buffers[D_800AFEA8.count] = func_80031BDC(length + 1, 0);
-        D_800AFEA8.handles[D_800AFEA8.count] = (s32)func_80031BDC(0x18, 0);
+        D_800AFEA8.scrolls[D_800AFEA8.count] = func_80031BDC(0x18, 0);
         fill = func_800ACDB8(15) & 0xFFFF;
         for (i = 0; i < length; i++) {
             D_800AFEA8.buffers[D_800AFEA8.count][i] = fill;
@@ -4609,7 +4600,7 @@ void func_800921E8(void) {
         width = (s16)func_800ACDB8(5);
         height = (s16)func_800ACDB8(7);
         a = (s16)func_800ACDB8(11);
-        func_80027D64(D_800AFEA8.handles[D_800AFEA8.count], x, y, width, height, length, a,
+        func_80027D64(D_800AFEA8.scrolls[D_800AFEA8.count], x, y, width, height, length, a,
                       func_800ACDB8(13), D_800AFEA8.buffers[D_800AFEA8.count]);
         D_800AFEA8.count++;
     }
@@ -4625,7 +4616,6 @@ void func_800923E4(void) {
 void func_80092404(void) {
     D_800B0078->pc += 1;
 }
-
 
 /* Return byte `which` of collision attribute `index`. */
 s32 func_80092424(s32 index, s32 which) {
@@ -4663,7 +4653,6 @@ void func_800924D4(s32 index, s32 which, s32 value) {
     }
 }
 
-
 /* Set 800b217c to operand 1 and the text speed to 8, 6 or 4 for values 0,
  * 1 and 2 (others keep it). */
 void func_800925A0(void) {
@@ -4684,7 +4673,6 @@ void func_800925A0(void) {
     }
     D_800B0078->pc += 3;
 }
-
 
 /* Set the field input mask (800b217a; ANDed into the held, pressed and
  * repeated buttons each frame) to raw operand 1. */
@@ -4720,8 +4708,6 @@ void func_80092768(void) {
     D_800B0078->pc += 5;
 }
 
-extern FieldDescriptor *D_800B06B8;
-
 /* Offset the current actor's interaction point (+60/+64, added to its position
  * by the talk and touch triggers and the 80092894 walk goal) 36 units along the
  * published descriptor's facing (rotation y) and set its layer flag 0x800. */
@@ -4744,7 +4730,7 @@ void func_80092808(void) {
  * stops, turns and the instruction continues. */
 s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     FieldActor *player;
-    FieldModel *model;
+    Sprite *model;
     s32 from_x;
     s32 from_z;
     s32 reach;
@@ -4761,7 +4747,7 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     model = D_800AF880.components.descriptors[D_800B2078.controlled].model;
     player->layer_flags |= 0x38;
-    model->unk18 = 0x80000;
+    model->speed = 0x80000;
     reach = func_80099A8C(8) * 2;
     from_x = WHOLE(player->position[0]);
     from_z = WHOLE(player->position[2]);
@@ -4794,7 +4780,7 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     }
 arrive:
     player->heading_goal = player->heading = player->heading_goal | 0x8000;
-    model->unk18 = 0;
+    model->speed = 0;
     player->unkE8 = 0;
     func_800821F4(model, 0, &D_800AF880.components.descriptors[D_800B2078.controlled]);
     D_800B00C0 = 1;
@@ -4856,9 +4842,6 @@ void func_80092C20(void) {
     }
 }
 
-extern s32 D_800ADBE4;
-extern s32 D_800ADB2C;
-extern s32 D_800ADB90;
 s32 func_80092894(s32 a, s32 b, s32 c, s32 d);
 
 /* Once field control allows it (yielding until then), set flag 0x80 on the
@@ -4891,9 +4874,7 @@ void func_80092EA0(void) {
     }
 }
 
-extern s32 D_8004F34C;
 s32 func_8009744C(void);
-s32 func_8009A514(void);
 
 /* Publish the current field id and two values in variables 4, 6 and 8 and
  * count variable 0x12 up. */
@@ -4903,9 +4884,6 @@ void func_80092F44(void) {
     func_800A3074(8, func_8009A514() & 0xFFFF);
     func_800A3074(0x12, (s16)(func_800A3018(0x12) + 1));
 }
-
-extern s32 D_800ADBD8;
-extern s32 D_800B0064;
 
 /* Event: when 800adbd8 is set, inhibit encounters, clear it and set 800b0064 to
  * operand 1: the field loop then ends with kind 3, which starts game mode
@@ -4919,8 +4897,6 @@ void func_80092FB4(void) {
     }
     D_800B0078->pc += 3;
 }
-
-extern u8 D_800B02C8;
 
 /* Leave the field once field control allows it (yield otherwise): a last
  * play-record update (800a31e8), encounters inhibited, and the game state's
@@ -4938,26 +4914,25 @@ void func_80093014(void) {
     func_800A31E8();
     D_800B2078.encounter_inhibition = -1;
     D_800ADBE4 = 0;
-    D_8005A39C->unk231A = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
-    D_8005A39C->unk231E = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    D_8005A39C->map = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
+    D_8005A39C->entry[1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
     heading = func_8009D000(5, EVENT_OPERAND_BYTE(9));
     if (((heading & 0xFFFF) == 0xFFFF) | (heading == -1)) {
-        D_8005A39C->unk231C = (D_800AF880.heading_angles.vy + 0x800) & 0xFFF;
+        D_8005A39C->entry[0] = (D_800AF880.heading_angles.vy + 0x800) & 0xFFF;
     } else {
-        D_8005A39C->unk231C = (heading + 0x800) & 0xFFF;
+        D_8005A39C->entry[0] = (heading + 0x800) & 0xFFF;
     }
-    D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));
+    D_8005A39C->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));
     func_800931F8();
     D_800B02C8 = 1;
     D_800B00C0 = 1;
     D_800B0078->pc += 10;
 }
 
+/* Empty; the map-change events call it before they leave. */
 void func_800931F8(void) {
 }
 
-extern s32 D_800B0048;
-extern s32 D_800AFD14;
 void func_800932D0(void);
 
 /* Once field control allows it (yield otherwise), request a map change as 98
@@ -4977,10 +4952,6 @@ void func_80093200(void) {
         D_800B0078->pc += 4;
     }
 }
-
-extern s32 D_800ADB70;
-extern s32 D_800ADBEC;
-void func_80092F44(void);
 
 /* Request a change to field operand 1 at entry operand 3: once field
  * control allows it and no movie is requested, inhibit encounters and,
@@ -5010,13 +4981,6 @@ void func_800932D0(void) {
         D_800B0078->pc += 5;
     }
 }
-
-extern u8 D_8005954C;
-extern u8 D_80059508;
-extern u8 D_800594F8;
-extern s32 D_800ADBE0;
-extern s32 D_800ADB88;
-extern s32 D_800ADB18;
 
 /* Event: once the field allows it (800adbdc, 800adbe4 and 800adbec set,
  * 800adb2c and 800adb90 clear, music result 8004f308 not -1; else pc-- back to
@@ -5083,8 +5047,6 @@ void func_80093664(void) {
     D_800B0078->pc += 5;
 }
 
-extern s32 D_8004F350;
-
 /* Event: wait (pc-- back to fe), yielding, until 8004f350 is zero: the menus
  * requested by ext 55-5a, cf and da (800adb64) have been run by 800799d4, which
  * clears it. */
@@ -5096,9 +5058,6 @@ void func_800936E4(void) {
     }
     D_800B00C0 = 1;
 }
-
-extern u8 D_80059171;
-extern s32 D_800ADB64;
 
 /* Event fe 55: request menu kind 0 (800adb64, run by 800799d4) with the menu
  * parameter 800b236c (ext 99) in 80059171; count 8004f350 up and yield. */
@@ -5168,7 +5127,7 @@ void func_80093930(void) {
     D_800ADB64 = 1;
     D_800B00C0 = 1;
     D_8005A39C->vars[1] = entry;
-    D_8005A39C->unk2320 = entry;
+    D_8005A39C->entry[2] = entry;
     D_800C3A68[1] = entry;
     D_8004F350 += 1;
     D_800B0078->pc += 3;
@@ -5205,7 +5164,6 @@ void func_80093A98(void) {
     D_800AF880.flags |= 0x8000;
     D_800B0078->pc += 1;
 }
-
 
 /* Release script control: clear the encounter inhibition, both control
  * bytes and the camera hold flags. */
@@ -5480,9 +5438,6 @@ void func_800943AC(void) {
     func_80072254(D_800AFD1C);
 }
 
-extern s32 D_8004F318;
-extern s32 D_8004F328;
-
 /* Set the play clock in variable 0x0a to operand 1 minutes : operand 3
  * seconds (low bytes), restart its frame count (8004f318) and stop it
  * (8004f328 = 0xff; 800a31e8 counts down with bit 2 and stops on bit 7). */
@@ -5660,7 +5615,7 @@ s32 func_80094CFC(void) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->count0[i] == 0 || D_8005A39C->id0[i] == 0) {
+        if (D_8005A39C->itemCounts[i] == 0 || D_8005A39C->itemIds[i] == 0) {
             return i;
         }
     }
@@ -5672,7 +5627,7 @@ s32 func_80094D4C(void) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->count1[i] == 0 || D_8005A39C->id1[i] == 0) {
+        if (D_8005A39C->weaponCounts[i] == 0 || D_8005A39C->weaponIds[i] == 0) {
             return i;
         }
     }
@@ -5684,7 +5639,7 @@ s32 func_80094D9C(void) {
     s32 i;
 
     for (i = 0; i < 200; i++) {
-        if (D_8005A39C->count2[i] == 0 || D_8005A39C->id2[i] == 0) {
+        if (D_8005A39C->accessoryCounts[i] == 0 || D_8005A39C->accessoryIds[i] == 0) {
             return i;
         }
     }
@@ -5696,7 +5651,7 @@ s32 func_80094DEC(void) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->count3[i] == 0 || D_8005A39C->id3[i] == 0) {
+        if (D_8005A39C->gearPartCounts[i] == 0 || D_8005A39C->gearPartIds[i] == 0) {
             return i;
         }
     }
@@ -5708,7 +5663,7 @@ s32 func_80094E3C(void) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->count4[i] == 0 || D_8005A39C->id4[i] == 0) {
+        if (D_8005A39C->gearAccessoryCounts[i] == 0 || D_8005A39C->gearAccessoryIds[i] == 0) {
             return i;
         }
     }
@@ -5720,7 +5675,7 @@ s32 func_80094E8C(s32 id) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->id0[i] == id && D_8005A39C->count0[i] != 0) {
+        if (D_8005A39C->itemIds[i] == id && D_8005A39C->itemCounts[i] != 0) {
             return i;
         }
     }
@@ -5732,7 +5687,7 @@ s32 func_80094EDC(s32 id) {
     s32 i;
 
     for (i = 0; i < 200; i++) {
-        if (D_8005A39C->id2[i] == id && D_8005A39C->count2[i] != 0) {
+        if (D_8005A39C->accessoryIds[i] == id && D_8005A39C->accessoryCounts[i] != 0) {
             return i;
         }
     }
@@ -5744,7 +5699,7 @@ s32 func_80094F2C(s32 id) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->id1[i] == id && D_8005A39C->count1[i] != 0) {
+        if (D_8005A39C->weaponIds[i] == id && D_8005A39C->weaponCounts[i] != 0) {
             return i;
         }
     }
@@ -5756,7 +5711,7 @@ s32 func_80094F7C(s32 id) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->id3[i] == id && D_8005A39C->count3[i] != 0) {
+        if (D_8005A39C->gearPartIds[i] == id && D_8005A39C->gearPartCounts[i] != 0) {
             return i;
         }
     }
@@ -5768,7 +5723,7 @@ s32 func_80094FCC(s32 id) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->id4[i] == id && D_8005A39C->count4[i] != 0) {
+        if (D_8005A39C->gearAccessoryIds[i] == id && D_8005A39C->gearAccessoryCounts[i] != 0) {
             return i;
         }
     }
@@ -5779,15 +5734,15 @@ s32 func_80094FCC(s32 id) {
 u8 *func_8009501C(s32 item) {
     switch (item >> 8) {
     case 0:
-        return D_8005A39C->id0;
+        return D_8005A39C->itemIds;
     case 1:
-        return D_8005A39C->id1;
+        return D_8005A39C->weaponIds;
     case 2:
-        return D_8005A39C->id2;
+        return D_8005A39C->accessoryIds;
     case 3:
-        return D_8005A39C->id3;
+        return D_8005A39C->gearPartIds;
     case 4:
-        return D_8005A39C->id4;
+        return D_8005A39C->gearAccessoryIds;
     }
     return NULL;
 }
@@ -5796,15 +5751,15 @@ u8 *func_8009501C(s32 item) {
 u8 *func_800950A0(s32 item) {
     switch (item >> 8) {
     case 0:
-        return D_8005A39C->count0;
+        return D_8005A39C->itemCounts;
     case 1:
-        return D_8005A39C->count1;
+        return D_8005A39C->weaponCounts;
     case 2:
-        return D_8005A39C->count2;
+        return D_8005A39C->accessoryCounts;
     case 3:
-        return D_8005A39C->count3;
+        return D_8005A39C->gearPartCounts;
     case 4:
-        return D_8005A39C->count4;
+        return D_8005A39C->gearAccessoryCounts;
     }
     return NULL;
 }
@@ -5855,7 +5810,7 @@ void func_8009524C(void) {
  * and speed), mark its heading turned (0x8000) and yield without advancing, so
  * the instruction holds the actor every frame. */
 void func_80095284(void) {
-    FieldModel *model;
+    Sprite *model;
     u16 state;
 
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
@@ -5869,9 +5824,9 @@ void func_80095284(void) {
     state = D_800B0078->heading | 0x8000;
     D_800B0078->heading_goal = state;
     D_800B0078->heading = state;
-    model->velocity[0] = 0;
-    model->velocity[2] = 0;
-    model->unk18 = 0;
+    model->speed_x = 0;
+    model->speed_z = 0;
+    model->speed = 0;
 }
 
 /* Set the terrain angle from operand 1. */
@@ -6035,8 +5990,6 @@ void func_80095A7C(s32 *x, s32 *y) {
     *x = screen.xy.vx;
 }
 
-extern s32 D_800ADC18;
-
 /* Event fe 02: with 800adc18 set, advance at once. Otherwise yield and continue
  * when the origin of the actor selected by byte 1 (8009cd7c: the party leader
  * when none) projects inside the screen with a 32-pixel margin (x 33..287, y
@@ -6140,7 +6093,7 @@ void func_80095F24(void) {
     u8 *operand;
 
     operand = &D_800ADC00[D_800B0078->pc];
-    if ((u32)D_8005A39C->gold >=
+    if (D_8005A39C->gold >=
         operand[1] + (operand[2] << 8) + (operand[3] << 16) + (operand[4] << 24)) {
         D_800B0078->pc += 7;
         return;
@@ -6194,8 +6147,6 @@ void func_800960E4(s32 value) {
     }
 }
 
-extern u16 D_800AFE9C;
-extern u16 D_800AFC6C;
 void func_80096078(s32 bits);
 void func_800960E4(s32 value);
 
@@ -6273,7 +6224,6 @@ void func_8009631C(void) {
 
 s32 func_800951B8(s32 item);
 
-
 /* Add one of `item` (list in the high byte) up to 99, or take a free slot.
  * Declared int without a return value, as the original's unfilled branch
  * delay slot shows (v0 stays live to the exit). */
@@ -6334,7 +6284,7 @@ void func_800964B0(void) {
 /* Continue when game flag bit operand 1 (of unk1D30) is set, otherwise
  * jump to operand 2. */
 void func_80096534(void) {
-    if ((D_8005A39C->unk1D30 >> EVENT_OPERAND_BYTE(1)) & 1) {
+    if ((D_8005A39C->joined >> EVENT_OPERAND_BYTE(1)) & 1) {
         D_800B0078->pc += 4;
         return;
     }
@@ -6343,13 +6293,13 @@ void func_80096534(void) {
 
 /* Set game flag bit operand 1 of unk1D30. */
 void func_800965A8(void) {
-    D_8005A39C->unk1D30 |= 1 << EVENT_OPERAND_BYTE(1);
+    D_8005A39C->joined |= 1 << EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
 
 /* Clear game flag bit operand 1 of unk1D30. */
 void func_800965F4(void) {
-    D_8005A39C->unk1D30 &= ~(1 << EVENT_OPERAND_BYTE(1));
+    D_8005A39C->joined &= ~(1 << EVENT_OPERAND_BYTE(1));
     D_800B0078->pc += 2;
 }
 
@@ -6411,8 +6361,8 @@ void func_800967E8(void) {
 /* Restore HP of party slot `slot`, up to its maximum. */
 void func_80096844(s32 slot, s32 amount) {
     D_8005A39C->characters[D_80062590[slot]].hp += amount;
-    if (D_8005A39C->characters[D_80062590[slot]].max_hp < D_8005A39C->characters[D_80062590[slot]].hp) {
-        D_8005A39C->characters[D_80062590[slot]].hp = D_8005A39C->characters[D_80062590[slot]].max_hp;
+    if (D_8005A39C->characters[D_80062590[slot]].maxHp < D_8005A39C->characters[D_80062590[slot]].hp) {
+        D_8005A39C->characters[D_80062590[slot]].hp = D_8005A39C->characters[D_80062590[slot]].maxHp;
     }
 }
 
@@ -6430,8 +6380,8 @@ void func_800968CC(s32 slot, s32 amount) {
 /* Restore EP of party slot `slot`, up to its maximum. */
 void func_80096920(s32 slot, s32 amount) {
     D_8005A39C->characters[D_80062590[slot]].ep += amount;
-    if (D_8005A39C->characters[D_80062590[slot]].max_ep < D_8005A39C->characters[D_80062590[slot]].ep) {
-        D_8005A39C->characters[D_80062590[slot]].ep = D_8005A39C->characters[D_80062590[slot]].max_ep;
+    if (D_8005A39C->characters[D_80062590[slot]].maxEp < D_8005A39C->characters[D_80062590[slot]].ep) {
+        D_8005A39C->characters[D_80062590[slot]].ep = D_8005A39C->characters[D_80062590[slot]].maxEp;
     }
 }
 
@@ -6445,8 +6395,6 @@ void func_800969A8(s32 slot, s32 amount) {
     }
     D_8005A39C->characters[D_80062590[slot]].ep = ep;
 }
-
-extern s16 D_800AEA2C[4];
 
 /* Reduce the HP of the party members masked by entry byte 3 & 3 of 800aea2c (7
  * all, then slot 0, 1, 2) by selected operand 1 (bit 0x80 of byte 3), leaving
@@ -6506,8 +6454,8 @@ void func_80096D28(void) {
 
     if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
         hp = func_800ACDEC(2);
-        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_hp < hp) {
-            hp = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_hp;
+        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxHp < hp) {
+            hp = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxHp;
         }
         D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].hp = hp;
     }
@@ -6522,8 +6470,8 @@ void func_80096E20(void) {
 
     if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
         ep = func_800ACDEC(2);
-        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_ep < ep) {
-            ep = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_ep;
+        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxEp < ep) {
+            ep = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxEp;
         }
         D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].ep = ep;
     }
@@ -6596,8 +6544,8 @@ void func_80097200(void) {
     s32 id;
 
     id = func_800ACDEC(1);
-    D_8005A39C->characters[id].hp = D_8005A39C->characters[id].max_hp;
-    D_8005A39C->characters[id].ep = D_8005A39C->characters[id].max_ep;
+    D_8005A39C->characters[id].hp = D_8005A39C->characters[id].maxHp;
+    D_8005A39C->characters[id].ep = D_8005A39C->characters[id].maxEp;
     D_800B0078->pc += 3;
 }
 
@@ -6606,7 +6554,7 @@ void func_80097264(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        D_8005A39C->characters[i].hp = D_8005A39C->characters[i].max_hp;
+        D_8005A39C->characters[i].hp = D_8005A39C->characters[i].maxHp;
     }
     D_800B0078->pc += 1;
 }
@@ -6616,7 +6564,7 @@ void func_800972AC(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        D_8005A39C->characters[i].ep = D_8005A39C->characters[i].max_ep;
+        D_8005A39C->characters[i].ep = D_8005A39C->characters[i].maxEp;
     }
     D_800B0078->pc += 1;
 }
@@ -6627,9 +6575,6 @@ void func_800972F4(void) {
     D_800B0078->pc += 1;
 }
 
-void func_8007D93C(s32 a);
-void func_80071E58(s32 a);
-
 /* Reset fade channel 0 (8007d93c) and fade the screen back in from full over
  * operand-1 frames (80071e58: only while 800adc08 marks a fade-out, and
  * only in fade mode 2). */
@@ -6639,8 +6584,6 @@ void func_8009731C(void) {
     D_800B0078->pc += 3;
 }
 
-void func_80071DCC(s32 a);
-
 /* Fade the screen out on channel 0 over operand-1 frames (80071dcc: levels
  * rise from 0 to full with blend 2, unless 800adc08 already marks a
  * fade-out, and only in fade mode 2). */
@@ -6648,8 +6591,6 @@ void func_80097364(void) {
     func_80071DCC(func_800ACDEC(1));
     D_800B0078->pc += 3;
 }
-
-s32 func_8001B484(s32 a, s32 b);
 
 /* Start reading file 0xb8 + operand 2 of the current directory ahead as map
  * data (resident 8001b484, slot byte 1); retried without yielding until that
@@ -6790,8 +6731,6 @@ void func_800979F0(void) {
     }
 }
 
-#include "field_motion.h"
-
 /* Walk the current actor toward its move target (move modes 0-3: operand
  * position, offset from the target, another actor's reach, or a point at an
  * angle): set the step from its speed, face along it and return 0 once within
@@ -6801,7 +6740,7 @@ s32 func_80097A50(s32 speed) {
     VECTOR delta;
     VECTOR direction;
     VECTOR step;
-    FieldModel *model;
+    Sprite *model;
     s32 reach;
     s32 extra;
     s32 turning;
@@ -6821,11 +6760,11 @@ s32 func_80097A50(s32 speed) {
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
     x = 0;
     if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
-        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+        model->speed = 0x8000000 / (u16)D_800B0078->unk76;
     } else {
-        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+        model->speed = 0x4000000 / (u16)D_800B0078->unk76;
     }
-    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    reach = func_80099A8C(model->speed >> 15) + 1;
     extra = 0;
     switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
     case 0:
@@ -6862,7 +6801,7 @@ s32 func_80097A50(s32 speed) {
     delta.vy = from_y - y;
     delta.vz = from_z - z;
     VectorNormal(&delta, &direction);
-    scale = model->unk18 >> 8;
+    scale = model->speed >> 8;
     step.vx = -((direction.vx * scale) >> 4);
     step.vy = -((direction.vy * scale) >> 4);
     step.vz = -((direction.vz * scale) >> 4);
@@ -7058,8 +6997,6 @@ void func_80098738(void) {
     D_800B0078->pc += 16;
 }
 
-s32 func_80073930(s32 a, s32 b, s32 c);
-
 /* Event fe 72: store 80073930(op3, op5, op7) in variable operand 1: angle op3
  * turned toward op5 by step op7 the short way round, stopping at the goal
  * (12-bit); selected operands by flags 0x40/0x20/0x10 of byte 9. */
@@ -7100,7 +7037,7 @@ void func_800989F0(void) {
  * (whole units; flags 0x80/0x40/0x20 of byte 7), set its flag 0x10000 and layer
  * flag 0x200000, and mirror the position into its descriptor and model. */
 void func_80098A7C(void) {
-    FieldModel *model;
+    Sprite *model;
 
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
     D_800B0078->flags |= 0x10000;
@@ -7111,9 +7048,9 @@ void func_80098A7C(void) {
     D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
     D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
     D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
-    model->position[0] = D_800B0078->position[0];
-    model->position[1] = D_800B0078->position[1];
-    model->position[2] = D_800B0078->position[2];
+    model->x = D_800B0078->position[0];
+    model->y = D_800B0078->position[1];
+    model->z = D_800B0078->position[2];
     D_800B0078->pc += 8;
 }
 
@@ -7149,7 +7086,7 @@ void func_80098C3C(void) {
  * instruction, then update the model matrix and its animation. */
 void func_80098CAC(s32 mode) {
     VECTOR from;
-    FieldModel *model;
+    Sprite *model;
     s32 speed;
     s32 animation;
     s32 x;
@@ -7224,9 +7161,9 @@ void func_80098CAC(s32 mode) {
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
-        model->position[0] = D_800B0078->position[0];
-        model->position[1] = D_800B0078->position[1];
-        model->position[2] = D_800B0078->position[2];
+        model->x = D_800B0078->position[0];
+        model->y = D_800B0078->position[1];
+        model->z = D_800B0078->position[2];
     }
     if (D_800B0078->unk0EA != 0xFF) {
         animation = D_800B0078->unk0EA;
@@ -7253,7 +7190,7 @@ void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
     SVECTOR unused[4]; /* unused in the original; reserves 0x20 bytes */
-    FieldModel *model;
+    Sprite *model;
     u8 *code;
     u16 pc;
     u8 mode;
@@ -7288,8 +7225,8 @@ void func_80099214(void) {
             y = points[layer].vy;
             D_800B0078->layer = layer;
         }
-        model->velocity[1] = -(model->gravity.value * steps / 2);
-        model->velocity[1] += ((y << 16) - D_800B0078->position[1]) / steps;
+        model->speed_y = -(model->gravity * steps / 2);
+        model->speed_y += ((y << 16) - D_800B0078->position[1]) / steps;
         D_800B0078->target[1] = 0;
         ACTOR_ARC_STEPS(D_800B0078) = steps;
         D_800B0078->unk102 = 0;
@@ -7311,7 +7248,7 @@ void func_80099214(void) {
         y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
         peak = -func_8009D044(8, EVENT_OPERAND_BYTE(10));
         y = (y << 16) - D_800B0078->position[1];
-        model->velocity[1] = -(SquareRoot0(model->gravity.s.whole * (peak << 1)) << 16);
+        model->speed_y = -(SquareRoot0(WHOLE(model->gravity) * (peak << 1)) << 16);
         SquareRoot0(peak);
         value = peak - (y >> 16);
         magnitude = value;
@@ -7337,8 +7274,8 @@ void func_80099214(void) {
         if ((s16)D_800B0078->unk102 < ACTOR_ARC_STEPS(D_800B0078)) {
             D_800B0078->position[0] += D_800B0078->target[0];
             D_800B0078->position[2] += D_800B0078->target[2];
-            D_800B0078->position[1] += model->velocity[1];
-            model->velocity[1] += model->gravity.value;
+            D_800B0078->position[1] += model->speed_y;
+            model->speed_y += model->gravity;
             if ((D_800B0078->target[0] != 0 || D_800B0078->target[2] != 0) && !(D_800B0078->flags & 0x8000)) {
                 value = func_8007B694((VECTOR *)D_800B0078->target) | 0x8000;
                 D_800B0078->heading = value;
@@ -7355,7 +7292,7 @@ void func_80099214(void) {
             } else {
                 y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
             }
-            model->velocity[1] = 0;
+            model->speed_y = 0;
             D_800B0078->position[0] = x << 16;
             D_800B0078->position[1] = y << 16;
             D_800B0078->position[2] = z << 16;
@@ -7366,9 +7303,9 @@ void func_80099214(void) {
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
-        model->position[0] = D_800B0078->position[0];
-        model->position[1] = D_800B0078->position[1];
-        model->position[2] = D_800B0078->position[2];
+        model->x = D_800B0078->position[0];
+        model->y = D_800B0078->position[1];
+        model->z = D_800B0078->position[2];
         D_800B0078->unk102++;
         break;
     }
@@ -7439,7 +7376,7 @@ s32 func_80099A8C(s32 x) {
  * the other actor's load, with its load-delay nop. */
 s32 func_80099AC0(s32 speed) {
     VECTOR delta;
-    FieldModel *model;
+    Sprite *model;
     s32 reach;
     s32 extra;
     s32 from_x;
@@ -7457,11 +7394,11 @@ s32 func_80099AC0(s32 speed) {
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
     x = 0;
     if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
-        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
-    } else if (model->unk18 == 0) {
-        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+        model->speed = 0x8000000 / (u16)D_800B0078->unk76;
+    } else if (model->speed == 0) {
+        model->speed = 0x4000000 / (u16)D_800B0078->unk76;
     }
-    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    reach = func_80099A8C(model->speed >> 15) + 1;
     from_x = WHOLE(D_800B0078->position[0]);
     from_z = WHOLE(D_800B0078->position[2]);
     switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
@@ -7475,7 +7412,7 @@ s32 func_80099AC0(s32 speed) {
         }
         index = func_8009CDB4(1);
         value = (s32)D_800B0078;
-        model = (FieldModel *)D_800AF880.components.descriptors;
+        model = (Sprite *)D_800AF880.components.descriptors;
         other = ((FieldDescriptor *)model)[index].actor;
         MOVE_TRACE_TARGET(other);
         extra = func_80099A8C((u16)other->gravity.s.whole + (u16)((FieldActor *)value)->gravity.s.whole);
@@ -7821,8 +7758,6 @@ void func_8009AB08(u16 angle) {
     D_800B0078->pc += 3;
 }
 
-extern s16 D_800AEA34[8];
-
 /* Turn clockwise by operand-1 octants. */
 void func_8009AB5C(void) {
     s32 turn;
@@ -7926,7 +7861,7 @@ void func_8009AE3C(s32 target, s32 steps) {
  * (x, z) facing `facing`, or its own heading for 0xff) and -1 while it is
  * still walking; a member stuck for 0x40 steps or an override warps. */
 s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
-    FieldModel *model;
+    Sprite *model;
     FieldActor *actor;
     FieldActor *saved;
     s32 saved_index;
@@ -7946,10 +7881,10 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     }
     model = D_800AF880.components.descriptors[member].model;
     actor = D_800AF880.components.descriptors[member].actor;
-    if (model->unk18 == 0) {
-        model->unk18 = 0x4000000 / (u16)actor->unk76;
+    if (model->speed == 0) {
+        model->speed = 0x4000000 / (u16)actor->unk76;
     }
-    step = func_80099A8C(model->unk18 >> 15) + 1;
+    step = func_80099A8C(model->speed >> 15) + 1;
     dx = x - WHOLE(actor->position[0]);
     dz = z - WHOLE(actor->position[2]);
     delta.vx = dx;
@@ -8000,8 +7935,6 @@ void func_8009B15C(void) {
     D_800B2078.forced_position = 1;
     D_800B0078->pc += 1;
 }
-
-void func_80081C54(s32 index);
 
 /* Event fe 44: release forced positioning and party processing, clear the three
  * movement-history indices and preserve_nonplayer_motion, and record the
@@ -8241,8 +8174,6 @@ void func_8009BA0C(void) {
     }
 }
 
-
-
 /* Set the camera at once: heading octant operand 1, elevation operand 3 and
  * projection operand 5 (SetGeomScreen). */
 void func_8009BA7C(void) {
@@ -8328,7 +8259,6 @@ s32 func_8009BE58(void) {
 }
 
 s32 func_8009CD18(s32 *window);
-
 
 /* With byte 1 zero close this actor's open dialogue window (if any);
  * otherwise clear its window overrides (+82, +83, +84, +88, +8a). Advances
@@ -8419,6 +8349,9 @@ void func_8009C12C(void) {
     func_8009C5A8(D_800AFD1C, 3);
 }
 
+#define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
+#define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
+
 /* Show the dialogue portrait of `character`: finish a pending slot first
  * (upload loaded images, or release shown ones) and return -1; a slot
  * already holding it is selected (bits 2-4 of the actor state) and 0
@@ -8428,8 +8361,6 @@ void func_8009C12C(void) {
  * original does. One `file` variable serves both images: set in two blocks
  * it is allocated globally, and the second file's address, which dies where
  * it is loaded into `file`, takes the argument register `file` prefers. */
-#define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
-#define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
     s32 i;
     s32 found;
@@ -8516,8 +8447,6 @@ s32 func_8009C538(s32 id) {
 }
 
 /* The window opener (8007f8dc), as this caller passes the message id. */
-s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
-                  s32 mode, s32 turned, s32 flags);
 
 /* Open this actor's dialogue window for message op1 above/below speaker
  * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
@@ -8888,7 +8817,6 @@ s32 func_8009D154(s32 offset, s32 flags) {
     return value;
 }
 
-
 /* Store a random number (rand) in variable operand 1. */
 void func_8009D198(void) {
     s32 reference;
@@ -9248,8 +9176,6 @@ void func_8009E040(void) {
     D_800B0078->pc += 1;
 }
 
-void func_80021BCC(FieldModel *model, u16 value);
-
 /* Set the current actor's motion divisor (+76: walks and moves advance
  * 0x4000000 / it per step, 16.16) from operand 1 and pass it to its sprite as
  * the gravity divisor (80021bcc). */
@@ -9289,8 +9215,6 @@ void func_8009E10C(void) {
     D_800B0078->pc += 3;
 }
 
-#include "field_actor_events.h"
-
 /* Set the actor layer bits 0-2 from operand bits 0-2 and 3-5 from operand bits 4-6. */
 void func_8009E1A0(void) {
     FieldActor *actor = D_800B0078;
@@ -9316,7 +9240,7 @@ void func_8009E208(void) {
     actor->unk72 = y;
 }
 
-void func_8009E574(s32 x, s32 z);
+/* Defined below without a prototype (an s16 `y`), so callers pass a word. */
 void func_8009E810(s32 y);
 
 /* Place the current actor at x/z signed operands 1/3 on its layer's floor
@@ -9388,7 +9312,7 @@ void func_8009E4BC(void) {
 void func_8009E574(s32 x, s32 z) {
     VECTOR normals[4];
     SVECTOR points[4];
-    FieldModel *model;
+    Sprite *model;
     s32 layer;
 
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
@@ -9402,14 +9326,14 @@ void func_8009E574(s32 x, s32 z) {
     D_800AF880.components.descriptors[D_800AFD1C].transform.t[0] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = x;
     D_800AF880.components.descriptors[D_800AFD1C].transform.t[1] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = points[D_800B0078->layer].vy;
     D_800AF880.components.descriptors[D_800AFD1C].transform.t[2] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = z;
-    model->unk84 = points[D_800B0078->layer].vy;
+    model->ground = points[D_800B0078->layer].vy;
     D_800B0078->position[0] = x << 16;
     D_800B0078->position[1] = points[D_800B0078->layer].vy << 16;
     D_800B0078->position[2] = z << 16;
     D_800B0078->unk72 = points[D_800B0078->layer].vy;
-    model->position[0] = D_800B0078->position[0];
-    model->position[1] = D_800B0078->position[1];
-    model->position[2] = D_800B0078->position[2];
+    model->x = D_800B0078->position[0];
+    model->y = D_800B0078->position[1];
+    model->z = D_800B0078->position[2];
     D_800B0078->unk40[0] = 0;
     D_800B0078->unk40[1] = 0;
     D_800B0078->unk40[2] = 0;
@@ -9422,9 +9346,9 @@ void func_8009E574(s32 x, s32 z) {
     D_800B0078->unk62 = 0;
     D_800B0078->unk60 = 0;
     D_800B0078->unk64 = 0;
-    model->velocity[0] = 0;
-    model->velocity[1] = 0;
-    model->velocity[2] = 0;
+    model->speed_x = 0;
+    model->speed_y = 0;
+    model->speed_z = 0;
     D_800B0078->unkF0 = 0;
     D_800B0078->unkEC = 0;
     D_800B0078->unk72 = D_800B0078->position[1] >> 16;
@@ -9790,7 +9714,6 @@ s32 func_8009FA00(s32 id) {
 
 s16 func_8009E330(s32 offset);
 
-
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
  * variables 8 and 6). One angle variable holds the camera heading and then
@@ -9825,11 +9748,6 @@ s32 func_8009FA54(s32 entry) {
     return 0;
 }
 
-extern s32 D_8004F34C;
-void func_8001AD1C(void);
-void func_8001B044(void);
-void func_8001B3A8(void);
-
 /* Event fe 1e: switch the party files to gears: set 0xc000 in the field id
  * (8004f34c), wait for the disc and its pending read (8001ad1c), make the party
  * files match (8001b044: the gear files with 0xc000 set) and unpack them into
@@ -9843,8 +9761,6 @@ void func_8009FB98(void) {
     D_800B2078.unk2268 = EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
-
-extern s32 D_8006F990[3];
 
 /* Party slot whose field actor is `index`, or 0xFF. */
 s32 func_8009FC10(s32 index) {
@@ -9870,7 +9786,7 @@ void func_8009FC48(void) {
     if (slot >= 3) {
         slot = 2;
     }
-    D_8005A39C->unk22B1[slot] = 1;
+    D_8005A39C->inGear[slot] = 1;
     func_8009FD10(slot);
     D_800B0078->pc += 3;
 }
@@ -9885,7 +9801,7 @@ void func_8009FCAC(void) {
     if (slot >= 3) {
         slot = 2;
     }
-    D_8005A39C->unk22B1[slot] = 0;
+    D_8005A39C->inGear[slot] = 0;
     func_8009FD10(slot);
     D_800B0078->pc += 3;
 }
@@ -9911,8 +9827,6 @@ void func_8009FD10(s32 slot) {
     }
 }
 
-void func_800AD4D4(s32 slot);
-
 /* Event fe 1f: when the current actor is a party slot's field actor (8009fc10:
  * 8006f990) and that slot's stand-in flag (+22b1) is clear, stand it in for the
  * slot's member (800ad4d4: swap their models, set the flag, restart both
@@ -9921,13 +9835,11 @@ void func_8009FDD4(void) {
     s32 slot;
 
     slot = func_8009FC10(D_800AFD1C);
-    if (slot != 0xFF && D_8005A39C->unk22B1[slot] == 0) {
+    if (slot != 0xFF && D_8005A39C->inGear[slot] == 0) {
         func_800AD4D4(slot);
     }
     D_800B0078->pc += 1;
 }
-
-void func_800ACFD0(s32 slot);
 
 /* Event fe 20: when party slot byte 1 is occupied (80062590) and its stand-in
  * flag (+22b1) is set, return the slot to its member (800acfd0: swap the models
@@ -9936,7 +9848,7 @@ void func_8009FE4C(void) {
     u8 slot;
 
     slot = EVENT_OPERAND_BYTE(1);
-    if (D_80062590[slot] != 0xFF && D_8005A39C->unk22B1[slot] != 0) {
+    if (D_80062590[slot] != 0xFF && D_8005A39C->inGear[slot] != 0) {
         func_800ACFD0(slot);
     }
     D_800B0078->pc += 2;
@@ -10020,7 +9932,7 @@ void func_800A0228(void) {
             z = 0;
             D_800B0078->layer = 0;
         }
-        if (D_8005A39C->unk22B1[slot] != 0) {
+        if (D_8005A39C->inGear[slot] != 0) {
             shown = 0;
         } else if (D_80062590[slot] == 7) {
             shown = 0;
@@ -10074,14 +9986,10 @@ void func_800A0524(s32 to, s32 from) {
     target->position[2] = source->position[2];
     func_8007409C(&D_800AF880.components.descriptors[to].matrix, &D_800AF880.components.descriptors[from].matrix);
     func_80074078(&D_800AF880.components.descriptors[to].matrix, &D_800AF880.components.descriptors[from].matrix);
-    D_800AF880.components.descriptors[to].model->position[0] = D_800AF880.components.descriptors[from].actor->position[0];
-    D_800AF880.components.descriptors[to].model->position[1] = D_800AF880.components.descriptors[from].actor->position[1];
-    D_800AF880.components.descriptors[to].model->position[2] = D_800AF880.components.descriptors[from].actor->position[2];
+    D_800AF880.components.descriptors[to].model->x = D_800AF880.components.descriptors[from].actor->position[0];
+    D_800AF880.components.descriptors[to].model->y = D_800AF880.components.descriptors[from].actor->position[1];
+    D_800AF880.components.descriptors[to].model->z = D_800AF880.components.descriptors[from].actor->position[2];
 }
-
-extern s32 D_800AFFEC;
-s32 func_8009FA00(s32 character);
-extern s16 D_800AFD20;
 
 /* Give the current actor the sprite of party member operand 1, or hide it
  * (flag 1, layer flag 0x100000) and end its script when absent. */
@@ -10115,7 +10023,7 @@ void func_800A08B8(void) {
     FieldDescriptor *descriptor;
     s32 character;
     s32 slot;
-    FieldModel *model;
+    Sprite *model;
     s32 *sprites;
     s32 *entry;
 
@@ -10137,7 +10045,7 @@ void func_800A08B8(void) {
             func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268, (u8 *)(*entry + (s32)sprites),
                           0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
             D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
-            if (D_8005A39C->unk22B1[slot] != 0) {
+            if (D_8005A39C->inGear[slot] != 0) {
                 model = D_800AF880.components.descriptors[D_800AFD1C].model;
                 D_800AF880.components.descriptors[D_800AFD1C].model = D_800AF880.components.descriptors[D_8006F990[slot]].model;
                 D_800AF880.components.descriptors[D_8006F990[slot]].model = model;
@@ -10174,7 +10082,7 @@ void func_800A0C4C(void) {
 
 /* Mirror the current actor's position into its descriptor and model. */
 void func_800A0C94(void) {
-    FieldModel *model;
+    Sprite *model;
 
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
     D_800AF880.components.descriptors[D_800AFD1C].transform.t[0] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] =
@@ -10183,13 +10091,12 @@ void func_800A0C94(void) {
         WHOLE(D_800B0078->position[1]);
     D_800AF880.components.descriptors[D_800AFD1C].transform.t[2] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] =
         WHOLE(D_800B0078->position[2]);
-    model->position[0] = D_800B0078->position[0];
-    model->position[1] = D_800B0078->position[1];
-    model->position[2] = D_800B0078->position[2];
-    model->velocity[1] = 0;
-    D_800B0078->unk72 = model->unk84 = WHOLE(D_800B0078->position[1]);
+    model->x = D_800B0078->position[0];
+    model->y = D_800B0078->position[1];
+    model->z = D_800B0078->position[2];
+    model->speed_y = 0;
+    D_800B0078->unk72 = model->ground = WHOLE(D_800B0078->position[1]);
 }
-
 
 /* Give the current actor the field's first sprite and show it. */
 void func_800A0D3C(void) {
@@ -10212,8 +10119,6 @@ void func_800A0DC0(void) {
     D_800B0078->pc += 3;
 }
 
-s32 func_80028530(void);
-
 /* Store the disc number (80028530: directory table word 0x3c) in variable
  * operand 1. */
 void func_800A0DFC(void) {
@@ -10223,7 +10128,6 @@ void func_800A0DFC(void) {
     func_800A3074(reference & 0xFFFF, func_80028530());
     D_800B0078->pc += 3;
 }
-
 
 /* Wait (pc-- back to fe), yielding, until the movie mode 800adb74 is clear
  * (800a7c58 clears it when the movie ends). */
@@ -10236,8 +10140,6 @@ void func_800A0E54(void) {
     D_800B00C0 = 1;
 }
 
-extern s32 D_800ADB84;
-
 /* Count 800adb84 up and yield: a nonzero 800adb84 ends a window movie (movie
  * mode 2, ext 67) in 800a7c58. */
 void func_800A0EB0(void) {
@@ -10245,7 +10147,6 @@ void func_800A0EB0(void) {
     D_800ADB84 += 1;
     D_800B0078->pc += 1;
 }
-
 
 /* Close the current actor's 801e layer (+12c bits 13-15), clearing its layer
  * flag 0x2000: byte 1 0 deactivates the layer object, 1 releases the layer's
@@ -10408,8 +10309,6 @@ void func_800A1624(void) {
     D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
 }
 
-extern void func_800379C8(char *format, ...);
-
 /* Call the script at operand 1, pushing the return PC (after the 5-byte
  * instruction); with the four-entry call stack full, report and yield. */
 void func_800A1730(void) {
@@ -10446,8 +10345,6 @@ void func_800A17F4(void) {
         D_800B00C0 = 1;
     }
 }
-
-extern s32 D_800AFFEC;
 
 /* Return from a script call; with the call stack empty, report, end the
  * current script slot (priority 15, tag 0xff) and yield. */
@@ -10492,8 +10389,6 @@ void func_800A19B0(void) {
     D_800B0078->state.bits.depth = 0;
 }
 
-s32 func_800A3090(s32 actor, s32 event);
-
 /* Point every priority-7 script slot at the actor's script 1, end the
  * current slot and yield. */
 void func_800A1A8C(void) {
@@ -10508,8 +10403,6 @@ void func_800A1A8C(void) {
     D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
     D_800B00C0 = 1;
 }
-
-extern s32 D_800AFFEC;
 
 /* End the current script slot and yield. */
 void func_800A1B70(void) {
@@ -10636,9 +10529,6 @@ void func_800A1E9C(void) {
 }
 
 extern void (*D_800AE2A0[])(void); /* event instructions */
-extern s32 D_800ADBE0;
-extern s32 D_800ADBEC;
-extern s32 D_800AFFEC;
 
 /* Run the current actor's event instructions until one yields, its script
  * slot ends, the field starts a transition or `limit` (raised by some
@@ -10732,9 +10622,6 @@ s32 func_800A2030(void) {
     }
 }
 
-s32 func_800A1EC8(s32 limit);
-extern s32 D_800AFFEC;
-
 /* Run event `event` of actor 0 immediately with fresh script slots, then
  * restore the actor's record. */
 void func_800A22AC(s32 event) {
@@ -10812,7 +10699,6 @@ void func_800A24C4(void) {
     }
 }
 
-extern s32 D_8004F30C;
 void func_800A3C8C(void);
 
 /* Reload the actors' extra blocks (file +124 into +120) and hand them to
@@ -10835,7 +10721,7 @@ void func_800A2714(void) {
         for (i = 0; i < D_800ADBFC; i++) {
             if (D_800AF880.components.descriptors[i].actor->unk124 != -1) {
                 func_80021BF0(D_800AF880.components.descriptors[i].model,
-                              D_800AF880.components.descriptors[i].actor->unk120);
+                              (s32)D_800AF880.components.descriptors[i].actor->unk120);
             }
         }
         func_800A3C8C();
@@ -10855,7 +10741,7 @@ void func_800A2714(void) {
  * table pointer is a block-local variable. */
 void func_800A28D4(void) {
     s32 i;
-    FieldModel *model;
+    Sprite *model;
     FieldActor *actor;
 
     if (D_8004F30C != 0) {
@@ -10876,15 +10762,15 @@ void func_800A28D4(void) {
                 switch (D_800AF880.components.descriptors[i].actor->state.bits.unk16) {
                 case 1:
                     func_8002303C(D_800AF880.components.descriptors[i].model, 2, 0);
-                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
-                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[3] = D_800AF880.components.descriptors[i].actor->unk130;
                     break;
                 case 2:
                     func_8002303C(D_800AF880.components.descriptors[i].model, 3, 0);
-                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
-                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
-                    D_800AF880.components.descriptors[i].model->animation->unk18[4] = D_800AF880.components.descriptors[i].actor->unk130_9;
-                    D_800AF880.components.descriptors[i].model->animation->unk18[5] = D_800AF880.components.descriptors[i].actor->unk130_19;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[4] = D_800AF880.components.descriptors[i].actor->unk130_9;
+                    SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[5] = D_800AF880.components.descriptors[i].actor->unk130_19;
                     break;
                 }
             }
@@ -10892,7 +10778,7 @@ void func_800A28D4(void) {
         if (D_800B2078.unk2268 != 0) {
             for (i = 0; i < 3; i++) {
                 if (D_8005A444[i] != 0xFF) {
-                    if (D_8005A39C->unk22B1[i] != 0) {
+                    if (D_8005A39C->inGear[i] != 0) {
                         model = D_800AF880.components.descriptors[D_8005A444[i]].model;
                         D_800AF880.components.descriptors[D_8005A444[i]].model = D_800AF880.components.descriptors[D_8006F990[i]].model;
                         D_800AF880.components.descriptors[D_8006F990[i]].model = model;
@@ -10987,20 +10873,15 @@ void func_800A30B4(void) {
     func_800A3074(0x42, D_80062590[2]);
 }
 
-extern u16 D_8005941C;
-extern u8 D_800594D0;
-s32 func_8009744C(void);
-s32 func_8009A514(void);
-
 /* Record the current map and camera in the game state and variables and
  * save the event variable bank. */
 void func_800A30FC(void) {
     s32 i;
 
-    D_8005A39C->unk231A = D_8004F34C;
-    D_8005A39C->unk2322 = D_8004F324;
-    D_8005A39C->unk2320 = D_8005A39C->vars[1];
-    D_8005A39C->unk231C = D_8005A39C->vars[4] << 9;
+    D_8005A39C->map = D_8004F34C;
+    D_8005A39C->flagWords[0] = D_8004F324;
+    D_8005A39C->entry[2] = D_8005A39C->vars[1];
+    D_8005A39C->entry[0] = D_8005A39C->vars[4] << 9;
     func_800A3074(0x44, D_8005941C);
     func_800A3074(0x46, D_800594D0);
     func_800A3074(6, func_8009744C() & 0xFFFF);
@@ -11029,13 +10910,13 @@ void func_800A31E8(void) {
     }
     D_800AFC6C |= D_800AFE9C;
     for (i = 0; i < 3; i++) {
-        D_8005A39C->unk1D34[i] = D_80062590[i];
+        D_8005A39C->party[i] = D_80062590[i];
     }
     func_800A30FC();
     D_8004F2F4 = 0;
     D_8004F318++;
     for (i = 0; i < 3; i++) {
-        if (D_8005A39C->unk22B1[i] == 1) {
+        if (D_8005A39C->inGear[i] == 1) {
             func_8009FEE4(i);
         }
     }
@@ -11135,7 +11016,7 @@ void func_800A3C8C(void) {
     D_800AFC50 += 0x920;
     changed = 0;
     for (i = 0; i < 3; i++) {
-        if (D_8005A408[i] != D_8005A39C->unk22B1[i]) {
+        if (D_8005A408[i] != D_8005A39C->inGear[i]) {
             changed++;
         }
     }
@@ -11147,9 +11028,9 @@ void func_800A3C8C(void) {
         }
         if (!(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000)) {
             if (D_800B2078.unk2268 == 0 || !(D_800AF880.components.descriptors[i].actor->flags & 0x600)) {
-                func_80021D50(D_800AF880.components.descriptors[i].model, D_800AFC50);
+                func_80021D50(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
             } else if (changed == 0) {
-                func_80021D50(D_800AF880.components.descriptors[i].model, D_800AFC50);
+                func_80021D50(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
             }
         }
         record = D_800AFC50;
@@ -11192,7 +11073,7 @@ void func_800A3F4C(void) {
         flags = D_800AF880.components.descriptors[i].flags;
         COPY_BLOCK(D_800AFC50, &flags, 4);
         D_800AFC50 += 4;
-        func_80021EBC(D_800AF880.components.descriptors[i].model, D_800AFC50);
+        func_80021EBC(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
         D_800AFC50 += 0x30;
         COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor, 0x138);
         D_800AFC50 += 0x138;
@@ -11208,7 +11089,7 @@ void func_800A3F4C(void) {
     COPY_BLOCK(D_800AFC50, D_800C3A68, 0x800);
     D_800AFC50 += 0x800;
     for (i = 0; i < 3; i++) {
-        D_8005A408[i] = D_8005A39C->unk22B1[i];
+        D_8005A408[i] = D_8005A39C->inGear[i];
     }
     size = (s32)D_800AFC50;
     i = (s32)D_8005A4E4;

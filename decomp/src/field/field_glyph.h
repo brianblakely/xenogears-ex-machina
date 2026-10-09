@@ -1,12 +1,12 @@
 #ifndef FIELD_FIELD_GLYPH_H
 #define FIELD_FIELD_GLYPH_H
 
-#include "field.h"
-#include "psyq/libapi.h"
-
 /* Text lines of file 0xab drawn as 9x16 8-bit glyph cells into VRAM:
  * two-byte codes 8540..887f come from the font image at (380, 100), seven
  * glyphs per row; the rest from the ROM kanji font. */
+
+#include "common.h"
+#include "psyq/libgpu.h"
 
 #define GLYPH_OWN_FIRST 0x8540
 #define GLYPH_OWN_COUNT 0x340
@@ -25,5 +25,13 @@ typedef struct {
     DR_MODE modes[2][4]; /* 00 */
     SPRT sprites[2][4];  /* 60 */
 } TextRollLine;
+
+/* The text sequence (files 0xab and 0xac) that a movie shows over its
+ * frames 687..18e2 (800a7948). */
+void func_800ACC58(void);      /* start it when enabled */
+void func_800ACCF4(void);      /* advance it one pass */
+void func_800AC99C(void);      /* draw the text roll */
+void func_800ACB90(void);      /* upload file 0xac's image */
+void func_800ACCB0(void);      /* release its buffers when enabled */
 
 #endif

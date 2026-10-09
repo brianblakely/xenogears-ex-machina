@@ -119,6 +119,7 @@ typedef struct Sprite {
         unsigned dirty : 1;      /* orientation needs rebuilding */
         unsigned unknown29 : 3;
         } bits;
+        u8 bytes[4];         /* [1]: the field stores its draw mode as a byte */
     } render;                /* +0x3c: tests read the word, as the original does */
     u32 flags;               /* +0x40: SpriteFlagBits (bits 8-12 the scale shift) */
     s32 *resource_block;     /* +0x44: the block the image's sections come from */
@@ -195,7 +196,9 @@ typedef struct {
     s32 word8;
     s16 halfc;
     SpriteImageSize size;  /* +0xe: image size for sequencer frames */
-    u8 unknown12[6];
+    u8 unknown12[2];
+    s16 actor;             /* +0x14: the field's event actor (descriptor) it belongs to */
+    u8 unknown16[2];
     u16 *buffer;           /* +0x18: allocated by 8002303c */
 } SpriteSequencer;
 
