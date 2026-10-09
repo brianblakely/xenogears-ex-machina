@@ -411,7 +411,6 @@ typedef struct {
 } SpriteAnchor;
 
 extern SpriteVoice *D_8005919C;
-extern u8 *D_8006BE20;          /* the shared animation block */
 extern VECTOR D_8006F99C;       /* positions (16.16) of two field points */
 extern VECTOR D_8006F9AC;
 extern Sprite *D_800C3E1C;      /* battle overlay: the acting sprite */
