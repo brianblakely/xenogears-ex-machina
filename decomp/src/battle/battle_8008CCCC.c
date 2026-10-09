@@ -43,9 +43,13 @@ void func_8009E410(void);
 void func_8009E48C(void);
 void func_8009E508(void);
 void func_8009E364(void);
+/* The formula table, by CommandDescriptor.formula: func_800941A4 calls
+ * D_800C348C[formula]() once per target without a range check. Gear attackers
+ * and descriptors with flagsA 0x10 use D_800C34DC instead (func_8009C198).
+ * tools/analysis/dispatch_tables.py counts the ids the descriptors use. */
 void (*D_800C348C[])(void) = {
-    func_80094EE4, func_80095690, func_80095A78, func_80095D4C, func_80096018, func_80095BAC,
-    func_800957D8, func_8009BD94,
+    /* 0 */ func_80094EE4, /* 1 */ func_80095690, /* 2 */ func_80095A78, /* 3 */ func_80095D4C,
+    /* 4 */ func_80096018, /* 5 */ func_80095BAC, /* 6 */ func_800957D8, /* 7 */ func_8009BD94,
 };
 u8 D_800C34AC = 0; /* never read */
 u8 D_800C34AD = 0;
@@ -57,9 +61,12 @@ u8 D_800C34B4[8][3] = {
     {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {4, 6, 7}, {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {1, 5, 7},
 };
 u8 D_800C34CC[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53};
+/* The gear formula table, by CommandDescriptor.formula: func_8009C198 calls
+ * D_800C34DC[formula]() once per target without a range check. */
 void (*D_800C34DC[])(void) = {
-    func_8009CBC4, func_8009D354, func_8009E268, func_8009E278, func_8009E2EC, func_8009E3C8,
-    func_8009E410, func_8009E48C, func_8009E508, func_80096018, func_8009E364,
+    /* 0 */ func_8009CBC4, /* 1 */ func_8009D354, /* 2 */ func_8009E268, /* 3 */ func_8009E278,
+    /* 4 */ func_8009E2EC, /* 5 */ func_8009E3C8, /* 6 */ func_8009E410, /* 7 */ func_8009E48C,
+    /* 8 */ func_8009E508, /* 9 */ func_80096018, /* 10 */ func_8009E364,
 };
 
 /* Hide the command windows (three panels); without `keep` show the +0x641c
@@ -1797,11 +1804,11 @@ void func_80094D24(void) {
     }
 }
 
-/* Formula type 0 (physical and ether damage): none against an immune target
- * (flags34 0x8000, 0x4000 for ether); otherwise attack and defense adjusted
- * by both sides' statuses and the command's attributes, scaled 4:3 (5:4 for
- * ether), by the power / 20 for kinds 0-1, randomised, then shaped by the hit
- * outcome and clamped to 0-9999. */
+/* Formula 0 (D_800C348C[0], physical and ether damage): none against an
+ * immune target (flags34 0x8000, 0x4000 for ether); otherwise attack and
+ * defense adjusted by both sides' statuses and the command's attributes,
+ * scaled 4:3 (5:4 for ether), by the power / 20 for kinds 0-1, randomised,
+ * then shaped by the hit outcome and clamped to 0-9999. */
 void func_80094EE4(void) {
     u16 attack;
     u16 defense;
@@ -1939,9 +1946,10 @@ void func_80094EE4(void) {
     D_800C34B0->damage[D_800C3E50] = amount;
 }
 
-/* Formula: amount = attacker +0x5b times the descriptor's +0x11 (doubled
- * with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the target's
- * +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target; code 2. */
+/* Formula 1 (D_800C348C[1]): amount = attacker +0x5b times the descriptor's
+ * +0x11 (doubled with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the
+ * target's +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target;
+ * code 2. */
 void func_80095690(void) {
     s16 amount = D_800C3E00->pilot.accuracy * D_800C3DFC->power;
     u16 status;
@@ -1963,10 +1971,10 @@ void func_80095690(void) {
     D_800C34B0->damage[D_800C3E50] = amount;
 }
 
-/* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
- * its status words clear, result code 2 and a tenth of its +0x4e times the
- * descriptor's +0x11 as the amount; its timer is held (the held mask
- * 800d2c9e is addressed as its own variable here). */
+/* Formula 6 (D_800C348C[6]): the target defends: a +0x56 state 2 target
+ * first leaves it (8009ac48), its status words clear, result code 2 and a
+ * tenth of its +0x4e times the descriptor's +0x11 as the amount; its timer is
+ * held (the held mask 800d2c9e is addressed as its own variable here). */
 void func_800957D8(void) {
     s32 *amount;
     u8 slot;
@@ -2013,8 +2021,9 @@ void func_800958D8(void) {
     }
 }
 
-/* Status effect of the descriptor on the target (mode +0x11, or 5 with
- * +0xa bit 0x4000); a refused status marks the target's result 6. */
+/* Formula 2 (D_800C348C[2]; 800941a4 also runs it after a hit with flagsA
+ * 0x4000): status effect of the descriptor on the target (mode +0x11, or 5
+ * with +0xa bit 0x4000); a refused status marks the target's result 6. */
 void func_80095A78(void) {
     s8 accepted = func_80097964(D_800C3DFC->field1C, D_800C3DFC->field1D, D_800C3DFC->field1E);
 
@@ -2036,10 +2045,10 @@ void func_80095B44(void) {
     }
 }
 
-/* With the command's chance (+0x1c in percent) clear the target's statuses
- * named by the command's bits (+0x1d: 0x80 the state word except KO/down,
- * 0x40 the timer holds and 0x20 of 7a, 0x20-0x08 the active status words);
- * otherwise it misses (result 6). */
+/* Formula 5 (D_800C348C[5]): with the command's chance (+0x1c in percent)
+ * clear the target's statuses named by the command's bits (+0x1d: 0x80 the
+ * state word except KO/down, 0x40 the timer holds and 0x20 of 7a, 0x20-0x08
+ * the active status words); otherwise it misses (result 6). */
 void func_80095BAC(void) {
     if (D_800C3DFC->field1C < rand() % 100) {
         D_800C34B0->resultCode[D_800C3E50] = 6;
@@ -2063,12 +2072,12 @@ void func_80095BAC(void) {
     }
 }
 
-/* Formula type 3: on a chance roll (the attacker's +0x60 or the command's
- * +0x1c), transfer power / 20 of a maximum (attacker's or target's HP for
- * kinds 0-1, EP for 2-3; kind 5 the target's HP less one) between attacker
- * and target: both slots get the amount, HP kinds with results 2 / 0, EP
- * kinds 3 / 1 unless the target nullifies (status88 0x200). A failed roll
- * or nullified transfer is result 6. */
+/* Formula 3 (D_800C348C[3]): on a chance roll (the attacker's +0x60 or the
+ * command's +0x1c), transfer power / 20 of a maximum (attacker's or target's
+ * HP for kinds 0-1, EP for 2-3; kind 5 the target's HP less one) between
+ * attacker and target: both slots get the amount, HP kinds with results 2 /
+ * 0, EP kinds 3 / 1 unless the target nullifies (status88 0x200). A failed
+ * roll or nullified transfer is result 6. */
 void func_80095D4C(void) {
     u8 chance;
     u16 base;
@@ -2127,10 +2136,11 @@ void func_80095D4C(void) {
     }
 }
 
-/* Chance roll (attacker +0x60 or the descriptor's +0x1c, by +0x18), then the
- * amount by the descriptor's kind +0x1a: target HP / power, HP - 1, the
- * attacker's missing HP, EP * 10, 1, HP, the maximum HP (capped at 9999)
- * or the target's down state (gears refuse it). */
+/* Formula 4 (D_800C348C[4]) and gear formula 9 (D_800C34DC[9]): chance roll
+ * (attacker +0x60 or the descriptor's +0x1c, by +0x18), then the amount by the
+ * descriptor's kind +0x1a: target HP / power, HP - 1, the attacker's missing
+ * HP, EP * 10, 1, HP, the maximum HP (capped at 9999) or the target's down
+ * state (gears refuse it). */
 void func_80096018(void) {
     u8 chance;
 
@@ -4401,8 +4411,8 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
     }
 }
 
-/* Damage the target by the command's power in twentieths of its gear's
- * maximum HP. */
+/* Formula 7 (D_800C348C[7]): damage the target by the command's power in
+ * twentieths of its gear's maximum HP. */
 void func_8009BD94(void) {
     D_800C34B0->resultCode[D_800C3E50] = 2;
     D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
@@ -4677,11 +4687,11 @@ void func_8009CB68(u8 slot) {
     }
 }
 
-/* Gear attack damage: the gear hit outcome, attack and defense values with
- * the element adjustment and both gears' boost/break statuses, the command's
- * drain effects, then (5a - 4d for ether, else 4a - 3d) times the power over
- * 20, a random spread, the element resistance and the hit outcome's result
- * code; at most 9999. */
+/* Gear formula 0 (D_800C34DC[0]), gear attack damage: the gear hit outcome,
+ * attack and defense values with the element adjustment and both gears'
+ * boost/break statuses, the command's drain effects, then (5a - 4d for
+ * ether, else 4a - 3d) times the power over 20, a random spread, the element
+ * resistance and the hit outcome's result code; at most 9999. */
 void func_8009CBC4(void) {
     u16 attack;
     u16 defense;
@@ -4814,7 +4824,8 @@ void func_8009CBC4(void) {
     D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-/* Mark the target missed (result 6) when 8009DBFC finds no hit. */
+/* Gear formula 1 (D_800C34DC[1]): mark the target missed (result 6) when
+ * 8009DBFC finds no hit. */
 void func_8009D354(void) {
     if (func_8009DBFC(0) == 0) {
         D_800C34B0->resultCode[D_800C3E50] = 6;
@@ -5161,12 +5172,14 @@ s8 func_8009DBFC(u8 fromGear) {
     return 1;
 }
 
-/* Clear the target gear's defense percentage. */
+/* Gear formula 2 (D_800C34DC[2]): clear the target gear's defense
+ * percentage. */
 void func_8009E268(void) {
     D_800D2DC8->defense = 0;
 }
 
-/* Damage the target gear by field 0x4F tenths of its maximum HP. */
+/* Gear formula 3 (D_800C34DC[3]): damage the target gear by field 0x4F
+ * tenths of its maximum HP. */
 void func_8009E278(void) {
     u32 damage = D_800D2DC8->field4F * D_800D2DC8->maxHp / 10;
 
@@ -5174,8 +5187,8 @@ void func_8009E278(void) {
     D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-/* Damage the target gear by the command's power in twentieths of its maximum
- * HP. */
+/* Gear formula 4 (D_800C34DC[4]): damage the target gear by the command's
+ * power in twentieths of its maximum HP. */
 void func_8009E2EC(void) {
     u32 damage = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
 
@@ -5183,7 +5196,8 @@ void func_8009E2EC(void) {
     D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-/* Damage the target by the attacker's accuracy times the command's power. */
+/* Gear formula 10 (D_800C34DC[10]): damage the target by the attacker's
+ * accuracy times the command's power. */
 void func_8009E364(void) {
     u32 damage = D_800C3E00->pilot.accuracy * D_800C3DFC->power;
 
@@ -5191,14 +5205,15 @@ void func_8009E364(void) {
     D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-/* Put the target into state 4 with timer 6 at three turns. */
+/* Gear formula 5 (D_800C34DC[5]): put the target into state 4 with timer 6
+ * at three turns. */
 void func_8009E3C8(void) {
     *D_800C3D60 = 4;
     D_800CCCE8.records[D_800C3E50].statusTimers[6] = 3;
 }
 
-/* Drain the target gear's fuel (result 10) by the command's power in
- * twentieths of its maximum fuel. */
+/* Gear formula 6 (D_800C34DC[6]): drain the target gear's fuel (result 10)
+ * by the command's power in twentieths of its maximum fuel. */
 void func_8009E410(void) {
     s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
@@ -5206,8 +5221,8 @@ void func_8009E410(void) {
     D_800C34B0->damage[D_800C3E50] = amount;
 }
 
-/* Restore the target gear's fuel (result 11) by the command's power in
- * twentieths of its maximum fuel. */
+/* Gear formula 7 (D_800C34DC[7]): restore the target gear's fuel (result
+ * 11) by the command's power in twentieths of its maximum fuel. */
 void func_8009E48C(void) {
     s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
@@ -5215,7 +5230,8 @@ void func_8009E48C(void) {
     D_800C34B0->damage[D_800C3E50] = amount;
 }
 
-/* Clear the target gear's statuses 0x7F4 and the target's status 0x20. */
+/* Gear formula 8 (D_800C34DC[8]): clear the target gear's statuses 0x7F4 and
+ * the target's status 0x20. */
 void func_8009E508(void) {
     D_800D2DC8->status7C &= 0xF80B;
     D_800C3E34->pilot.status7A &= ~0x20;
