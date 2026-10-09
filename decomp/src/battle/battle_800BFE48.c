@@ -26,11 +26,14 @@
 #include "settle.h"
 #include "sprite_effect.h"
 
-/* This unit's functions, declared before their first use. */
-/* Called unprototyped here (their slot argument is a u8). */
+/* 8008CCCC's unit's functions as this unit calls them: unprototyped (their
+ * slot argument is a u8 there). */
 s32 func_8009A0DC(); /* the condition shown for a slot */
 s32 func_8009A1AC(); /* the status bits shown for a slot (a u16, taken as int) */
+
+/* This unit's functions, declared before their first use. */
 void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out);
+
 
 /* The idle motion of each shown condition, opening the unit's data: its
  * padding holds stray assembler bytes, so it stays original data. */

@@ -31,15 +31,15 @@
 #include "own_declarations.h"
 #include "resident_views.h"
 
-/* This unit's functions, declared before their first use. */
-/* The gear command menu (8008cde4-8008d598). */
-void func_800930AC(u8 member, u8 *ids, u16 *costs); /* build its list */
+/* This unit's functions, declared before their first use (the formula
+ * functions its tables name are declared with the tables below). */
+void func_800930AC(u8 member, u8 *ids, u16 *costs); /* build the gear command menu's list */
 void func_800939CC(u8 member, u8 kind);
 void func_800946F4(void);
 void func_80094C78(void);
 void func_800958D8(void);
-void func_80095A78(void);
 void func_80095B44(void);
+
 void func_80096494(u16 *attack, u16 *defense, s8 *hit);
 void func_80096824(void);
 void func_800968C0(void);
@@ -75,8 +75,6 @@ s8 func_8009DBFC(u8 fromGear);
 /* The unit's own uninitialized variable (its .bss, after battle.c's). */
 static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
 
-/* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
-extern s32 D_800CCB34_word __asm__("D_800CCB34");
 
 /* This unit's data, 800c348c-800c3508: the formula tables of its formula
  * functions, the formation mode and battle.c's combo steps. */
@@ -356,22 +354,22 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                 for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
                     SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = value;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = value;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->r0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->g0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->b0 = value;
                     D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
                 }
             } else {
                 for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = 0x80;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = 0x80;
-                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->r0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->g0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB04.buffer))->b0 = 0x80;
                 }
             }
             j += 4;
         }
     }
-    return D_800CCB34_word;
+    return D_800CCB04.buffer;
 }
 
 /* Place a window's four corner glyphs (the alternate set while the battle
