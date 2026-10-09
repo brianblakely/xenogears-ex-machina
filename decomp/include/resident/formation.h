@@ -17,9 +17,15 @@ typedef struct BattleFormation {
                         * 2n + 3 (ovl2615 func_801E5384) */
     u8 flags;          /* 0x01: 0x08 no result screens, whose spoils list adds the
                         * drops (ovl2596 func_801E2280 skips func_801E1FB8), nor the
-                        * fade after them (battle func_80070F40); 0x10 the party is
-                        * party slot 0's character and character 10 twice, with
-                        * gear 17 (ovl2615 func_801E5384); 0x20 the event script runs
+                        * fade after them (battle func_80070F40); 0x10 sets
+                        * D_800D3294 (ovl2615 func_801E5384): the party is party
+                        * slot 0's character and character 10 twice, members 1 and
+                        * 2 with gear 17; every member fights in a gear
+                        * (func_801E4048), so partyGroups is not read
+                        * (func_801E4160); members 1 and 2 get fixed HP and stats
+                        * (battle func_8009B098, from func_801E4AC0), character
+                        * 11's portrait (battle func_80078310) and no place in the
+                        * results (ovl2596 func_801E2280); 0x20 the event script runs
                         * (func_801E5014 sets D_800C3D48); 0x40 and 0x80 give every
                         * member command 7 and 8 (func_801E5014). No reader tests
                         * 0x01, 0x02 or 0x04. */
@@ -29,7 +35,8 @@ typedef struct BattleFormation {
     u8 scriptSet;      /* 0x03: the event script set, read under flag 0x20 (ovl3087
                         * func_801E5160) */
     u8 partyGroups[3]; /* 0x04: per member, & 0x7f: its formation group unless it
-                        * fights in its gear (ovl2615 func_801E4160) */
+                        * fights in its gear, as all do under flag 0x10 (ovl2615
+                        * func_801E4160) */
     u8 unk7;           /* 0x07: no reader */
     u8 enemyIds[8];    /* 0x08: per enemy, & 0x7f: its id in the enemy file (0x7f
                         * none); 0x80: it fights in a gear, slot byte 4 (func_801E4160) */

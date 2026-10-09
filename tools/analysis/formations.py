@@ -74,7 +74,7 @@ FIELDS = (
 # The flag bits a reader tests (formation.h); no reader tests 0x01-0x04.
 FLAGS = {
     0x08: "noresults",  # ovl2596 func_801E2280, battle func_80070F40
-    0x10: "party10",  # ovl2615 func_801E5384
+    0x10: "party10",  # ovl2615 func_801E5384 (D_800D3294), battle func_80078310, ovl2596
     0x20: "event",  # ovl2615 func_801E5014 (D_800C3D48), ovl3087 func_801E5160
     0x40: "cmd7",  # ovl2615 func_801E5014
     0x80: "cmd8",  # ovl2615 func_801E5014
