@@ -413,10 +413,10 @@ converted to C per unit. What converting the targets' `.data` established:
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
   reports every FOREIGN reference, another unit's code forming an address in a unit's
   own `.bss` (none in any target), and, with `--end`, the order of variables still
-  extern. That places menu 800707A8 and
-  8007E528 exactly, the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, and
-  slot39's after 801CD2AC and at or before 801DBDB4 (an earlier one moves the `.bss`
-  boundary with it); the latest is kept. The commons, which the original linker
+  extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
+  80081E00, 80081E6C or 80081ECC, and slot39's after 801CD2AC and at or before
+  801DBDB4 (an earlier one moves the `.bss` boundary with it); the latest is kept.
+  The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
   (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
