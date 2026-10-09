@@ -8,7 +8,7 @@
  *
  * Everything after the overlay number is this unit: rodata 8006FAF4-800704E8,
  * text 800704E8-80076E48, data 80076E48-80076F3C and the .bss to 80077458.
- * Its rodata starts at 4 mod 8, the phase of all seven of its jump tables,
+ * Its rodata starts at 4 mod 8, the phase of all six of its jump tables,
  * which is why the number is a unit of its own (movie_number.c). */
 #include "common.h"
 #include "movie_mode.h"

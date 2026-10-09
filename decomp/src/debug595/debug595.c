@@ -9,7 +9,7 @@
  *
  * The whole image is this one unit (rodata 80280000-802811EC, text
  * 802811EC-8028596C, data 8028596C-802861C8), built by GCC 2.7.2
- * (debug595.mk); nothing in it marks another unit. */
+ * (debug595.mk); its three jump tables share one phase. */
 #include "debug595.h"
 
 /* Monitor statics (all zero in the image). */
