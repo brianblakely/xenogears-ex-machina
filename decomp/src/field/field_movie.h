@@ -61,9 +61,4 @@ void func_80085788(void);      /* load the request's bank, seek its timeline */
 void func_80085678(void);      /* play the effects whose time has come */
 void func_80085738(void);      /* release the bank */
 
-/* The movie library's start, which each caller declares (mdec/player.h). */
-void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
-                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows,
-                 void (*callback)(u16 frame, u16 x, u16 y));
-
 #endif

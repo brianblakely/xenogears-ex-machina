@@ -274,11 +274,10 @@ behind the menu state of `resident/menu.h`) and `mdec/` (the movie library's
 player, which the movie mode and the field call). Another image's functions and
 variables keep their definer's names, which the importing overlay's symbol file
 gives its link (movie and field name the library's entries, ovl3087 the battle's
-callbacks it passes, the world map the resident's VSync callback). A resident,
-battle or movie library function whose callers in other targets were built with
-other argument or result conversions (narrow parameters, another count) stays out
-of them: each target declares it, the resident and the battle in their
-`own_declarations.h` (the movie mode passes movie_start's row limit as an s16). So
+callbacks it passes, the world map the resident's VSync callback). A resident or
+battle function whose callers in other targets were built with other argument or
+result conversions (narrow parameters, another count) stays out of them: each
+target declares it, the resident and the battle in their `own_declarations.h`. So
 does a variable some target declares with another qualifier (the vertical blank
 count, volatile in the mode 4 menu), and a target keeps its own view of an object
 whose members its code reads with other types (ovl2615 reads the scene data's

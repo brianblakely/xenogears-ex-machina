@@ -1,9 +1,10 @@
 #ifndef MOVIE_MODE_H
 #define MOVIE_MODE_H
 
-/* Mode 6, the movie mode: its display buffers and sector header, its view of
- * the movie library's start (mdec/player.h), the resident objects no shared
- * header declares and the unit's own functions and forward-declared data. */
+/* Mode 6, the movie mode: its display buffers and sector header, the resident
+ * objects no shared header declares and the unit's own functions and
+ * forward-declared data. It plays movies through the movie library
+ * (mdec/player.h). */
 
 #include "common.h"
 #include "psyq/libcd.h"
@@ -58,11 +59,6 @@ typedef struct MovieSector {
 
 /* Movie playback. */
 extern const RECT D_800704E0; /* the screen area */
-
-/* The library's start (mdec/player.h): u16 rows would load D_800773A0 lhu, not lh. */
-void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
-                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, s16 rows,
-                 void (*callback)(u16 frame, u16 x, u16 y));
 
 s32 func_80076488(void);
 void func_800768D8(u16 frame, u16 x, u16 y);
