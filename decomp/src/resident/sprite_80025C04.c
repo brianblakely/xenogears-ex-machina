@@ -8,8 +8,8 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/inline_c.h"
 #include "resident/sprite.h"
-#include "gte.h"
 
 /* Corners of a sheet part being drawn (z 0x1000 until drawn). */
 SVECTOR D_8004FDC0[4] = {{0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}, {0, 0, 0x1000}};
