@@ -122,6 +122,9 @@ apart). Distinct overlays at the same address keep separate targets and symbol
 files.
 
 ```sh
+# the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis -c \
+  chdman extractcd -i 'discs/Xenogears disc 1.chd' -o .local/discs/disc1.cue -ob .local/discs/disc1.bin
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
 python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
 python3 tools/extraction/overlays.py
