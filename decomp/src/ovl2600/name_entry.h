@@ -52,7 +52,6 @@ typedef struct NameEntry {
 
 
 extern void func_80039DB8(s32 sound);          /* play a sound */
-extern s32 D_80059488;                         /* vsync count */
 extern void func_80033B34(void *codes, u8 *text, s32 count); /* decode text codes */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                          s32 scale);

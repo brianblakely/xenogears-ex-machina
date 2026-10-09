@@ -62,7 +62,6 @@ extern s32 D_801D21B0[]; /* cursor y per position */
 /* Resident services. */
 extern const CardPrefix D_801C5000;      /* "BISLPS-00800" */
 void func_80039DB8(s32 effect);          /* play a sound effect */
-extern s32 D_80059488;                   /* sound state saved while paused */
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
 u8 *func_80033848(s32 id);               /* equipment name */

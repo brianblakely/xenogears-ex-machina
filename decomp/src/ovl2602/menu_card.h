@@ -98,7 +98,6 @@ extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Resident services. */
 void func_80039DB8(s32 effect);          /* play a sound effect */
-extern s32 D_80059488;                   /* sound state saved while paused */
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
 u8 *func_80033A2C(s32 id);               /* kind 3 part name */

@@ -23,6 +23,7 @@ extern PadBuffer D_800625FC[];
 extern u16 D_80059570;    /* held pad buttons */
 extern u16 D_8005948C;    /* pad buttons pressed */
 extern u16 D_800594A4;    /* pad buttons repeated */
+extern s32 D_80059488;    /* vertical blank count (8003634c); saves keep it as the play time in frames */
 extern u8 D_80059484;     /* play time hours */
 extern u8 D_80059420;     /* play time minutes */
 extern u8 D_80059418;     /* play time seconds */

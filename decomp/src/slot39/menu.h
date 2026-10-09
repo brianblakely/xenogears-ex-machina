@@ -41,7 +41,6 @@ typedef struct MenuDataArchive {
     void *unkD4[4]; /* D4 */
 } MenuDataArchive;
 
-extern s32 D_80059488;         /* play time in frames */
 extern s32 D_801EA1EC[]; /* per command: four choices of cursor and label images */
 /* Sheet positions of label images, x / 4 and y: per row pair, from entry 3
  * the portrait per slot (characters, then gears), from 6 the view names. */

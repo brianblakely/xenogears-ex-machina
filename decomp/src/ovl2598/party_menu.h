@@ -26,7 +26,6 @@
 
 
 extern void func_80039DB8(s32 sound);          /* play a sound */
-extern s32 D_80059488;                         /* vsync count */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                          s32 scale);
 extern s32 func_800263E4(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
