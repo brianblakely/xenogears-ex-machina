@@ -713,9 +713,9 @@ class MatchingTests(unittest.TestCase):
         # The C unit's .text, from 80010000: an SDK data tag an INCLUDE_ASM'd
         # file holds (no function of its name), a function its file follows
         # with padding and a data word, an INCLUDE_RODATA'd word and a table
-        # cc1 places in .text before its function. Then a generated and an
-        # authored assembly unit (each GAS aligns to 16), each a function and
-        # a padding word.
+        # cc1 places in .text before its function (8001001c, allowed by its
+        # classification line). Then a generated and an authored assembly
+        # unit (each GAS aligns to 16), each a function and a padding word.
         asm = self.root / "asm"
         asm.mkdir()
         (asm / "D_tag.s").write_text(
@@ -736,7 +736,10 @@ class MatchingTests(unittest.TestCase):
                 "glabel {0}\n    jr $ra\n    nop\nendlabel {0}\n    .word 0\n")
         (asm / "gen.s").write_text(unit.format("func_gen"))
         (self.root / "decomp/src/t/authored.s").write_text(unit.format("func_auth"))
-        (self.root / "classification.txt").write_text("80010000 80010008 sdk a library tag\n")
+        (self.root / "classification.txt").write_text(
+            "80010000 80010008 sdk a library tag\n"
+            "8001001c 80010020 text_data table the original keeps it among the code\n"
+        )
         arguments = ["--classification", "classification.txt"]
         result = self.cover_linked_fixture(
             "image.bin", sections=(".text", ".rodata"), arguments=arguments,
@@ -745,12 +748,13 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         # Functions, bytes and instructions per class: the tag by its range,
-        # each other byte outside the functions under its owner's class.
+        # the table as text_data, each other byte outside the functions under
+        # its owner's class.
         self.assertEqual(
             {cls: (v["functions"], v["bytes"], v["instructions"])
              for cls, v in report["classes"].items()},
-            {"sdk": (0, 8, 0), "asm": (2, 28, 4), "included": (0, 4, 0), "c": (1, 20, 4),
-             "handwritten": (1, 12, 2)},
+            {"sdk": (0, 8, 0), "asm": (2, 28, 4), "included": (0, 4, 0), "c": (1, 16, 4),
+             "text_data": (0, 4, 0), "handwritten": (1, 12, 2)},
         )
         # The classes add up to the .text input sections (48 + 12 + 12; the
         # unit's .rodata follows its .text, and the alignment gaps before the
@@ -769,8 +773,14 @@ class MatchingTests(unittest.TestCase):
             "80010008      8 func_pad", "80010010      8 (outside every function)",
             "80010040      8 func_gen", "80010048      4 (outside every function)",
         ])
+        listing = subprocess.run(
+            [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map", *arguments,
+             "--list", "text_data"],
+            cwd=self.root, text=True, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(listing.splitlines(), ["8001001c      4 table"])
 
-    def cover_probe(self, name, source, files, headers, original):
+    def cover_probe(self, name, source, files, headers, original, settings=(), arguments=()):
         """cover_linked_fixture on a unit of its own (.text, .rodata, .data)."""
         root = self.root / name
         root.mkdir()
@@ -780,8 +790,8 @@ class MatchingTests(unittest.TestCase):
         for path, text in {**files, **headers}.items():
             (root / path).parent.mkdir(parents=True, exist_ok=True)
             (root / path).write_text(text)
-        return self.cover_linked_fixture("image.bin", sections=(".text", ".rodata", ".data"),
-                                         root=root)
+        return self.cover_linked_fixture("image.bin", settings, (".text", ".rodata", ".data"),
+                                         arguments=arguments, root=root)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -895,12 +905,9 @@ class MatchingTests(unittest.TestCase):
             ("instruction_macro", asm_unit("func_m") + "int g(int x) { return x + 1; }\n",
              {"asm/func_m.s": function("func_m") + ".macro j target\n.word 0x0000000D\n.endm\n"},
              "cc1's lines expanded a GAS macro"),
-            # An original-style macro's code counts with its compiled function;
-            # data a unit places in .text counts as C bytes outside every
-            # function.
+            # An original-style macro's code counts with its compiled function
+            # (data cc1 puts in .text: the test after this one).
             ("inline_code", include + ldv0, {}, ({"c": 16}, {})),
-            ("text_data", include + 'int table[] __attribute__((section(".text"))) = { 1 };\n'
-             "int f(void) { return table[0]; }\n", {}, ({"c": 20}, {})),
             # Every .text byte counts once: a function lies inside its input
             # section and overlaps no other.
             ("function_overlap", asm_unit("func_o"),
@@ -924,6 +931,106 @@ class MatchingTests(unittest.TestCase):
                 report = json.loads(result.stdout)
                 text = {k: v["bytes"] for k, v in report["classes"].items()}
                 self.assertEqual((text, report["data_classes"]), expected)
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "psx-cpp-2.7.2-cdk", "psx-cc1-2.7.2-cdk",
+            "maspsx", "psx-as", "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test data in .text",
+    )
+    def test_data_cc1_puts_in_text_counts_only_where_allowed(self):
+        """Bytes cc1 puts in .text outside its functions are data objects, never
+        C code: each counts as text_data only where a classification line names
+        it with the evidence that the original keeps it there. Expected: the
+        (functions, bytes, instructions) of each text class, or the failure."""
+        include = '#include "include_asm.h"\n'
+        unlisted = "a data object in .text, which counts only as a text_data line"
+        f = "int f(int i) { return i + 1; }\n"
+        # 80010000: a two-entry table, then target and f (8 bytes each).
+        table = ("extern void target(void);\n"
+                 'void (*table[])(void) __attribute__((section(".text"))) = { target, target };\n'
+                 "void target(void) {}\n" + f)
+        reason = "the original keeps the table among its code"
+        listed = f"80010000 80010008 text_data table {reason}\n"
+        switch = ("int g(int i) {\n    switch (i) {\n    case 0: return 5;\n    case 1: return 7;\n"
+                  "    case 2: return 9;\n    case 3: return 11;\n    }\n    return 0;\n}\n")
+        cases = [
+            # Authored machine words in a .text array: E1 calls three of them
+            # (jr $ra; nop; li $v0, 1), E2's are a whole function body, which
+            # could replace an INCLUDE_ASM'd function and still match.
+            ("E1_code_array", 'unsigned code[] __attribute__((section(".text"))) = {'
+             " 0x03E00008, 0x00000000, 0x24020001 };\n"
+             "int call(void) { return ((int (*)(void))code)(); }\n", {}, (), "", unlisted),
+            ("E2_function_body_array",
+             'unsigned func_80010000[] __attribute__((section(".text"))) = {\n'
+             "    0x27BDFFE8, 0xAFBF0010, 0x0C004000, 0x00000000,\n"
+             "    0x8FBF0010, 0x27BD0018, 0x03E00008, 0x00000000,\n};\n", {}, (), "", unlisted),
+            # Every spelling of the attribute, also on a static or const object.
+            ("dunder_section", 'int t[] __attribute__((__section__(".text"))) = { 1 };\n' + f,
+             {}, (), "", unlisted),
+            ("attribute_spacing", 'int t[] __attribute((section (".text"))) = { 1 };\n' + f,
+             {}, (), "", unlisted),
+            ("static_const", 'static const int t[] __attribute__((section(".text"))) = { 1, 2 };\n'
+             "int f(int i) { return t[i]; }\n", {}, (), "", unlisted),
+            # 2.7.2-cdk also takes the attribute on a function's static and on
+            # an uninitialized variable (2.6.3/2.7.2 refuse or ignore it).
+            ("cdk_function_static", "int f(int i) {\n"
+             '    static int t[] __attribute__((section(".text"))) = { 1, 2 };\n'
+             "    return t[i];\n}\n", {}, ("CC_VERSION=2.7.2-cdk",), "", unlisted),
+            ("cdk_uninitialized", 'int t __attribute__((section(".text")));\n' + f,
+             {}, ("CC_VERSION=2.7.2-cdk",), "", unlisted),
+            # No attribute: after a definition cc1 believes it is in .data, but
+            # INCLUDE_RODATA leaves the assembler in .text for the next one.
+            ("after_include_rodata", "int a = 1;\n" + 'INCLUDE_RODATA("asm", D_r);\n'
+             "int b = 2;\nint f(void) { return a + b; }\n",
+             {"asm/D_r.s": "dlabel D_r\n    .word 7\nenddlabel D_r\n"}, (), "", unlisted),
+            # -membedded-pic puts a switch's jump table among its code.
+            ("embedded_pic_jump_table", switch, {}, ("CC1FLAGS_unit=-membedded-pic",), "",
+             "a jump table or constant among its code"),
+            # A function's code belongs in .text, attribute or not.
+            ("function_in_text", 'void fn(void) __attribute__((section(".text")));\n'
+             "void fn(void) {}\n", {}, (), "", {"c": (1, 8, 2)}),
+            ("function_in_data", 'void fd(void) __attribute__((section(".data")));\n'
+             "void fd(void) {}\n", {}, (), "", "a function in .data"),
+            # A listed object counts as text_data, bytes only.
+            ("listed", table, {}, (), listed, {"text_data": (0, 8, 0), "c": (2, 16, 4)}),
+            # Each line names one object cc1 defined at its start, spans it to
+            # the next symbol, tiles cc1's bytes with the others, is used and
+            # gives a reason; no classified range overlaps another or counts
+            # cc1's bytes.
+            ("other_name", table, {}, (), listed.replace(" table ", " target "),
+             "is not one data object cc1 defined there"),
+            ("too_long", table, {}, (), listed.replace("80010008", "8001000c"), unlisted),
+            ("too_short", table, {}, (), listed.replace("80010008", "80010004"), unlisted),
+            ("two_objects", table.replace(
+                "target, target };\n", "target };\n"
+                'void (*more[])(void) __attribute__((section(".text"))) = { target };\n'),
+             {}, (), listed, "is not one data object cc1 defined there"),
+            ("unused", table, {}, (), listed + f"80020000 80020004 text_data ghost {reason}\n",
+             "no data object cc1 placed in .text there"),
+            ("no_reason", table, {}, (), "80010000 80010008 text_data table\n",
+             "names its object and the evidence"),
+            ("empty_range", table, {}, (), listed.replace("80010008", "80010000"),
+             "an empty range"),
+            ("range_overlap", table, {}, (), listed + "80010004 80010008 sdk a library word\n",
+             "sdk at 80010004 overlaps text_data"),
+            ("range_only", table, {}, (), "80010000 80010008 sdk a library table\n", unlisted),
+        ]
+        for name, source, files, settings, lines, expected in cases:
+            with self.subTest(name):
+                arguments = ["--classification", "classification.txt"] if lines else []
+                files = {**files, "classification.txt": lines}
+                result = self.cover_probe(name, include + source, files, {}, bytes(16),
+                                          settings, arguments)
+                if isinstance(expected, str):
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertIn(expected, result.stderr)
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                classes = json.loads(result.stdout)["classes"]
+                self.assertEqual({k: (v["functions"], v["bytes"], v["instructions"])
+                                  for k, v in classes.items()}, expected)
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
