@@ -5,6 +5,7 @@
 800c204c 800c2050 included D_800C204C u8 flag 0 (battle_core.h); padding 08 00 71
 800c2050 800c2054 included D_800C2050 u8 flag 0 (item_command.h, read with lbu); padding 08 00 00
 800c3488 800c348c included D_800C3488 00 04 77 68, unreferenced (no code in any image forms its address, tools/data_users.py --range): taken as a byte object with stray padding, as ovl2596's D_801E44C0 (00 04)
+800c34cc 800c34dc included D_800C34CC u8[15] combo flag of each combo step index 0-14 (battle_core.h; func_80086B88, func_80086C88 and func_80086F98 index it up to 14); padding 35 ("5")
 800c35d4 800c35d8 included D_800C35D4 u8 sound fade flag 0 (battle_flow.h); padding 38 36 66
 800c3780 800c3784 included D_800C3780 u8 flag 0 (frame.h); padding 0b 6d 6f
 800c37c8 800c37cc included D_800C37C8 u8 flag 0 (scene.h, effects disabled); padding 74 72 73

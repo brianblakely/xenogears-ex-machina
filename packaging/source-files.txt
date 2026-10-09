@@ -482,6 +482,7 @@ decomp/targets/overlays/ovl3386.yaml
 decomp/targets/overlays/ovl3387.mk
 decomp/targets/overlays/ovl3387.symbols.txt
 decomp/targets/overlays/ovl3387.yaml
+decomp/targets/overlays/slot39.classification.txt
 decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml
