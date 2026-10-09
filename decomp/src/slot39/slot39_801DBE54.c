@@ -2962,15 +2962,16 @@ u8 func_801E4928(u8 gear) {
     return value;
 }
 
-/* Set view `gear`'s value to 2/90 of the gear's +64, in steps of ten. */
-void func_801E4998(MenuGearViews *views, u8 gear) {
-    MenuGearValue *value;
+/* Set the fuel cost of gear `gear`'s art record 37, the first of its
+ * fuel-cost list, to 2/90 of the gear's maximum HP, in steps of ten. */
+void func_801E4998(MenuTables *tables, u8 gear) {
+    ArtInfo *art;
 
-    /* One pointer walks from the view to its value record. */
-    value = (MenuGearValue *)views->views[gear];
-    value = &((MenuGearView *)value)->value;
-    value->unk24 = D_8006D634.gears[gear].maxHp / 10 * 2 / 9;
-    value->unk24 = value->unk24 / 10 * 10;
+    /* One pointer walks from the gear's art records to the record. */
+    art = (tables->arts + 11)[gear];
+    art = &art[37];
+    art->gearCost = D_8006D634.gears[gear].maxHp / 10 * 2 / 9;
+    art->gearCost = art->gearCost / 10 * 10;
 }
 
 /* Copy the game data into save buffer `save`: characters, gears (their

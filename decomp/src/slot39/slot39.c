@@ -1125,7 +1125,7 @@ void func_801C72BC(u8 code) {
                 if (gear != 0xff) {
                     (D_800625A0->tables->arts + 11)[D_8006D634.characters[D_800625A0->flags->party[i]].gearId] =
                         func_80032E88(archive->gears[gear], 0);
-                    func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[i]].gearId);
+                    func_801E4998(D_800625A0->tables, D_8006D634.characters[D_800625A0->flags->party[i]].gearId);
                 }
             }
         }

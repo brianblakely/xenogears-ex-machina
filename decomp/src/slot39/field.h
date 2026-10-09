@@ -27,25 +27,6 @@ typedef struct ArtInfo {
     u8 pad26[0x2];
 } ArtInfo;
 
-/* A sub-record of a gear view (+5c8). */
-typedef struct MenuGearValue {
-    u8 pad0[0x24];
-    u16 unk24; /* 24 */
-    u8 pad26[0x2];
-} MenuGearValue;
-
-/* A gear view (801e4998). */
-typedef struct MenuGearView {
-    u8 pad0[0x5C8];
-    MenuGearValue value; /* 5C8 */
-} MenuGearView;
-
-/* The record passed to 801e4998. */
-typedef struct MenuGearViews {
-    u8 pad0[0x4C];
-    MenuGearView *views[4]; /* 4C */
-} MenuGearViews;
-
 /* The equipment screen's labels (*(state + 360)), and the stats and the
  * equipment kept while a part is chosen. */
 typedef struct MenuEquipLabels {
@@ -318,7 +299,7 @@ void func_801E42AC(MenuTables *tables, u8 gear);
 void func_801E433C(MenuTables *tables, u8 gear);
 void func_801E4754(MenuTables *tables, u8 gear);
 u8 func_801E4928(u8 gear);
-void func_801E4998(MenuGearViews *views, u8 gear);
+void func_801E4998(MenuTables *tables, u8 gear);
 void func_801E5058(void);
 void func_801E5178(void);
 
