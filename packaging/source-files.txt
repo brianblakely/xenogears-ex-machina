@@ -511,6 +511,7 @@ docs/scripts/arena-scene.md
 docs/scripts/battle-ai.md
 docs/scripts/battle-effect-vm.md
 docs/scripts/battle-event-vm.md
+docs/scripts/dispatch-tables.md
 docs/scripts/field-events.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
@@ -720,6 +721,7 @@ tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_disc_read.cpp
 tests/test_disc_stream.cpp
+tests/test_dispatch_tables.py
 tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
@@ -817,6 +819,7 @@ tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
 tools/analysis/disc_index.py
+tools/analysis/dispatch_tables.py
 tools/analysis/event_media.py
 tools/analysis/event_schedule.py
 tools/analysis/event_state.py

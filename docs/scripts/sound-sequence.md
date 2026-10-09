@@ -42,6 +42,12 @@ banks; in the two sequences, instructions just before a channel's start
 offset), and a rest that runs off the end of one bank (disc 1 slot 3903
 +0x2478) is the only leftover.
 
+The sweep also counts the waves the modulator opcodes install from
+`D_800508A4[mode & 0xF]` (16 slots; 8-15 switch the modulator off; D9/E5/ED only
+with a nonzero rate and depth). The distinct scripts install shapes 0-10, 12 and
+15 (D9 all of these, E5 0-9, ED 0-3 and 5-7, F0 2-4, 6 and 7). F0 selects
+modulators 0-3 of the channel's `modulator[4]`, none past the array.
+
 Notes from the handlers:
 
 - The look-ahead lengths differ from execution for 9D (4 against 3) and F5

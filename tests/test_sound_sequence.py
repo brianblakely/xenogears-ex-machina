@@ -3,6 +3,7 @@ describe no original data."""
 
 import struct
 import unittest
+from pathlib import Path
 
 from tools.analysis.sound_sequence import (
     D_80050A94,
@@ -12,10 +13,12 @@ from tools.analysis.sound_sequence import (
     DURATIONS,
     END,
     JUMP,
+    MODULATORS,
     NOTE_KEYS,
     OPCODES,
     UNUSED_HANDLER,
     WAIT,
+    WAVE_SLOTS,
     SequenceError,
     Sweep,
     archive_offsets,
@@ -194,6 +197,22 @@ class ScriptTests(unittest.TestCase):
 
         found = [(label, s.kind) for label, c in containers(Disc()) for _, s in locate(c)[0]]
         self.assertEqual(found, [("disc1 slot 5 entry 1 unpacked", "seds")])
+
+    def test_modulator_waves_and_indices(self):
+        # d9/e5 install wave mode & 0xf only with a nonzero rate and depth (the
+        # second d9 has none); f0 always does, in modulator `index`.
+        channel = bytes([0xD9, 4, 2, 0x13, 0xD9, 4, 0, 5, 0xE5, 1, 1, 0x26, 0xF0, 3, 0x1C, 1, 0x90])
+        result = Sweep()
+        result.add("bank", parse_bank(bank([(channel, None)])))
+        self.assertEqual(result.waves, {(0xD9, 3): 1, (0xE5, 6): 1, (0xF0, 12): 1})
+        self.assertEqual(result.modulators, {3: 1})
+
+    def test_wave_and_modulator_counts_follow_the_c(self):
+        resident = Path(__file__).resolve().parents[1] / "decomp/src/resident"
+        self.assertIn(f"D_800508A4[{WAVE_SLOTS}])", (resident / "sound.c").read_text())
+        self.assertIn(
+            f"SoundModulator modulator[{MODULATORS}];", (resident / "sound.h").read_text()
+        )
 
     def test_unreached_bytes_decode_on_their_own(self):
         # Each effect's channel ends at its first 90; 95 90 and the final 80

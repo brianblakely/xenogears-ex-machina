@@ -45,40 +45,61 @@ s32 func_8002D984(u16 *command);
 s32 func_8002DA14(u16 *command, s16 *vertices);
 s32 func_8002DAFC(void);
 
-/* The renderer of each primitive type, indexed by PrimitiveGroup.type. */
+/* The renderer of each primitive type, indexed by PrimitiveGroup.type
+ * without a range check (func_8002C700, func_8002C8CC). Each row names the
+ * packet its prepare routine builds; the types with a texture (odd ones but
+ * 16) take texture page and CLUT override words first (8002cd64).
+ * tools/analysis/dispatch_tables.py counts the types the game's models use. */
 PrimitiveType D_8004FE50[17] = {
+    /* 0: POLY_F3, coloured by the face normal as the build kind says */
     {{func_8002E038, func_8002ED20, func_8002E470, func_8002E8DC, func_8002E038, func_8002E038},
      func_8002CDCC, 8, 4, 0x14},
+    /* 1: POLY_FT3, shaded by the face normal as the build kind says */
     {{func_8002E04C, func_8002F2E0, func_8002E484, func_8002E8F0, func_8002EF0C, func_8002F0E4},
      func_8002D814, 8, 8, 0x20},
+    /* 2: POLY_G3, lit by the vertex normals */
     {{func_8002E024, func_8002F6B4, func_8002E45C, func_8002E8C8, func_8002E024, func_8002E024},
      func_8002D6AC, 8, 4, 0x1C},
+    /* 3: POLY_GT3, lit by the vertex normals */
     {{func_8002E010, func_8002F4B4, func_8002E448, func_8002E8B4, func_8002E010, func_8002E010},
      func_8002DA14, 8, 8, 0x28},
+    /* 4: POLY_F3, its colour as given */
     {{func_8002E038, func_8002E038, func_8002E470, func_8002E8DC, func_8002E038, func_8002E038},
      func_8002CF34, 8, 4, 0x14},
+    /* 5: POLY_FT3, unlit */
     {{func_8002E04C, func_8002E04C, func_8002E484, func_8002E8F0, func_8002EF0C, func_8002F0E4},
      func_8002D984, 8, 8, 0x20},
+    /* 6: POLY_G3, lit by the vertex normals without the cache */
     {{func_8002E024, func_8002E024, func_8002E45C, func_8002E8C8, func_8002E024, func_8002E024},
      func_8002D77C, 8, 4, 0x1C},
+    /* 7: POLY_GT3, lit by the vertex normals */
     {{func_8002E010, func_8002E010, func_8002E448, func_8002E8B4, func_8002E010, func_8002E010},
      func_8002DA14, 8, 8, 0x28},
+    /* 8: flat quads (0x18-byte packets), coloured as type 0 */
     {{func_8002E254, func_8002F8D0, func_8002E674, func_8002EAE0, func_8002E254, func_8002E254},
      func_8002CF58, 8, 4, 0x18},
+    /* 9: POLY_FT4, shaded by the face normal as the build kind says */
     {{func_8002E268, func_8002FAE8, func_8002E688, func_8002EAF4, func_8002FCFC, func_8002FF0C},
      func_8002D530, 8, 12, 0x28},
+    /* 10: POLY_G4, lit by the vertex normals */
     {{func_8002E240, func_8002E240, func_8002E660, func_8002EACC, func_8002E240, func_8002E240},
      func_8002D180, 8, 4, 0x24},
+    /* 11: POLY_GT4, lit by the vertex normals */
     {{func_8002E22C, func_8002E22C, func_8002E64C, func_8002EAB8, func_8002E22C, func_8002E22C},
      func_8002D244, 8, 12, 0x34},
+    /* 12: POLY_F4, its colour as given */
     {{func_8002E254, func_8002E254, func_8002E674, func_8002EAE0, func_8002E254, func_8002E254},
      func_8002D0C0, 8, 4, 0x18},
+    /* 13: POLY_FT4, its colour as given */
     {{func_8002E268, func_8002E268, func_8002E688, func_8002EAF4, func_8002FCFC, func_8002FF0C},
      func_8002D0E4, 8, 12, 0x28},
+    /* 14: POLY_G4, as type 10 */
     {{func_8002E240, func_8002E240, func_8002E660, func_8002EACC, func_8002E240, func_8002E240},
      func_8002D180, 8, 4, 0x24},
+    /* 15: POLY_GT4, as type 11 */
     {{func_8002E22C, func_8002E22C, func_8002E64C, func_8002EAB8, func_8002E22C, func_8002E22C},
      func_8002D244, 8, 12, 0x34},
+    /* 16: POLY_FT3 on the override texture page and CLUT */
     {{func_80030750, func_80030750, func_80030750, func_80030750, func_80030750, func_80030750},
      func_8002DAFC, 8, 4, 0x20},
 };
@@ -461,6 +482,8 @@ s32 func_8002CDCC(CVECTOR *color, s16 *vertices, s32 flags) {
     return 1;
 }
 
+/* Type 4's record: packet length 4 and the auxiliary colour word (its command
+ * byte included) as given. */
 s32 func_8002CF34(s32 *value) {
     RenderPacket *packet = D_80059424;
 
@@ -499,6 +522,7 @@ s32 func_8002CF58(CVECTOR *color, s16 *vertices, s32 flags) {
     return 1;
 }
 
+/* Type 12's record: packet length 5 and the auxiliary colour word as given. */
 s32 func_8002D0C0(s32 *value) {
     RenderPacket *packet = D_80059424;
 
