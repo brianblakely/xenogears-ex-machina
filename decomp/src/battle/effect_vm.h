@@ -250,10 +250,6 @@
 #define OBJECT_GROUND_SCRIPT(object) (*(u16 **)&(object)->field54)
 #define OBJECT_FIELD3E(object) (*(u16 *)(object)->pad3E)
 
-#ifndef ABS
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-#endif
-
 /* The travel of an animation (its s16 at 0x10), in model units. */
 #define ANIMATION_SPAN(animation) (((s16 *)(animation))[8])
 

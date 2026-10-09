@@ -31,7 +31,6 @@
 #include "field_draw.h"
 #include "field_effect.h"
 #include "field_event.h"
-#include "field_gte.h"
 #include "field_layer.h"
 #include "field_load.h"
 #include "field_mode.h"

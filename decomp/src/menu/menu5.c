@@ -34,7 +34,6 @@
 #include "display.h"
 #include "effects.h"
 #include "glow.h"
-#include "gte.h"
 #include "helpers.h"
 #include "hud.h"
 #include "menus.h"

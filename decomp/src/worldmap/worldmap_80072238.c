@@ -34,7 +34,6 @@
 #include "worldmap.h"
 #include "camera.h"
 #include "effect.h"
-#include "gte.h"
 #include "party.h"
 #include "scene.h"
 #include "screen.h"

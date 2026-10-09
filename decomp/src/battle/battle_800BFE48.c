@@ -8,6 +8,7 @@
  * table at 0x80070BB0 is followed directly by 800C11CC's at 0x80070C14
  * (4 mod 8), so the unit ends before 800C11CC. */
 #include "common.h"
+#include "psyq/inline_c.h"
 #include "psyq/libgte.h"
 #include "resident/heap.h"
 #include "resident/sound.h"
@@ -20,7 +21,6 @@
 #include "battle/sprite.h"
 #include "battle/turn.h"
 #include "curve.h"
-#include "gte.h"
 #include "own_declarations.h"
 #include "resident_views.h"
 #include "settle.h"

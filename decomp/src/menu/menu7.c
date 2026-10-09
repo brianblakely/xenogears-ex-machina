@@ -28,7 +28,6 @@
 #include "brain.h"
 #include "display.h"
 #include "glow.h"
-#include "gte.h"
 #include "helpers.h"
 #include "mode.h"
 #include "node.h"

@@ -25,7 +25,6 @@
 #include "display.h"
 #include "effects.h"
 #include "glow.h"
-#include "gte.h"
 #include "helpers.h"
 #include "menus.h"
 #include "mode.h"

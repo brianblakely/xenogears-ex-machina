@@ -37,7 +37,6 @@
 #include "field_dialogue.h"
 #include "field_draw.h"
 #include "field_event.h"
-#include "field_gte.h"
 #include "field_layer.h"
 #include "field_mode.h"
 #include "field_motion.h"

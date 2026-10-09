@@ -11,6 +11,7 @@
  * the part bookkeeping (8009E53C-8009E788) starts. The unit ends before
  * 800B15D8, where the code generation changes (see battle_800B15D8.c). */
 #include "common.h"
+#include "psyq/abs.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"

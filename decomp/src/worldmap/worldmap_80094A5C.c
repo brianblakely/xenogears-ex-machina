@@ -24,7 +24,6 @@
 #include "resident/text.h"
 #include "worldmap.h"
 #include "camera.h"
-#include "gte.h"
 #include "scene.h"
 #include "screen.h"
 #include "stream.h"

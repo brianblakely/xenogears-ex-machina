@@ -118,7 +118,7 @@ by its exact text in the cc1 output, which must be one of include_asm.h's:
 
 or, written inside a compiled function, one of the original-style macros the
 recovered C uses (``ORIGINAL_ASM``: the PsyQ GTE macros of psyq/inline_c.h and
-the local sets, the debugger break and pollhost, the stack switches, GET_RA,
+the targets' gte.h, the debugger break and pollhost, the stack switches, GET_RA,
 addPrimLen9), whose text is exactly the macro's template with a register for
 each operand. Such a statement must expand no GAS macro and emit only .text, in
 that function, and its code counts with the function. Any other asm statement
@@ -220,7 +220,7 @@ TEMPLATES = {
 # a register for each operand %N.
 ORIGINAL_ASM = (
     # PsyQ GTE macros in the inline_c.h/gtemac.h form (psyq/inline_c.h and the
-    # local sets of battle, field, menu, ovl2143 and worldmap).
+    # gte.h of battle, menu, ovl2143 and worldmap).
     # Control registers: gte_SetRotMatrix, gte_SetLightMatrix,
     # gte_SetColorMatrix, gte_SetTransMatrix, gte_SetBackColor, gte_ldopv1.
     "lw $12, 0(%0);lw $13, 4(%0);ctc2 $12, $0;ctc2 $13, $1;lw $12, 8(%0);lw $13, 12(%0);"

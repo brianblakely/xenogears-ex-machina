@@ -148,6 +148,7 @@ decomp/include/menu/panel.h
 decomp/include/menu/screen.h
 decomp/include/menu/shop.h
 decomp/include/menu/tables.h
+decomp/include/psyq/abs.h
 decomp/include/psyq/inline_c.h
 decomp/include/psyq/kernel.h
 decomp/include/psyq/libapi.h
@@ -225,7 +226,6 @@ decomp/src/field/field_draw.h
 decomp/src/field/field_effect.h
 decomp/src/field/field_event.h
 decomp/src/field/field_glyph.h
-decomp/src/field/field_gte.h
 decomp/src/field/field_layer.h
 decomp/src/field/field_load.h
 decomp/src/field/field_mode.h

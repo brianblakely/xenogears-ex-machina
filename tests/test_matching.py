@@ -149,11 +149,9 @@ class MatchingTests(unittest.TestCase):
     def test_gte_loads_consume_stores_and_evaluate_pointer_once(self):
         repo = Path(__file__).resolve().parents[1]
         worldmap = repo / "decomp/src/worldmap"
-        menu = repo / "decomp/src/menu"
-        # The menu's gte_SetTransMatrix (menu/gte.h, with psyq/inline_c.h's
-        # gte_SetRotMatrix).
+        # The menu's gte_SetRotMatrix and gte_SetTransMatrix (psyq/inline_c.h).
         menu_includes = ('#include "common.h"\n#include "psyq/libgte.h"\n'
-                         '#include "' + str(menu / "gte.h") + '"\n')
+                         '#include "psyq/inline_c.h"\n')
         (self.root / "decomp").mkdir()
         (self.root / "decomp/include").symlink_to(repo / "decomp/include")
         (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
@@ -177,7 +175,7 @@ class MatchingTests(unittest.TestCase):
         cases = (
             ("worldmap_80083A00", "worldmap",
              '#include "' + str(worldmap / "worldmap.h") + '"\n'
-             '#include "' + str(worldmap / "gte.h") + '"\n',
+             '#include "psyq/inline_c.h"\n',
              (
                  ("v0", v0),
                  ("v3", ("SVECTOR", "point[2].vz",
