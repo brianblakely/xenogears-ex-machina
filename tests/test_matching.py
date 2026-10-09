@@ -651,6 +651,39 @@ class MatchingTests(unittest.TestCase):
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
             "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test original data objects",
+    )
+    def test_original_byte_object_follows_the_object_before_it(self):
+        # INCLUDE_ORIGINAL_UNALIGNED links a byte object and its padding where
+        # GCC places a byte, right after the object before it.
+        self.original.write_bytes(bytes(range(16)))
+        obj = self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            "unsigned char before = 0x11;\n"
+            'INCLUDE_ORIGINAL_UNALIGNED(".data", D_80010001, 0x80010001, 3);\n'
+            "int after = 0x22222222;\n",
+            ["TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000"],
+        )
+        self.assertEqual(self.section_bytes(obj, ".data"),
+                         bytes([0x11, 1, 2, 3]) + struct.pack("<I", 0x22222222))
+        symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
+                                 capture_output=True, text=True).stdout
+        self.assertRegex(symbols, r"00000001\s+3 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010001\n")
+        result = self.cover_linked_fixture("image.bin")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("D_80010001 (80010001-80010004) has no stray byte", result.stderr)
+        (self.root / "classification.txt").write_text(
+            "80010001 80010004 included D_80010001 a byte flag whose padding holds 02 03\n")
+        result = self.cover_linked_fixture(
+            "image.bin", arguments=["--classification", "classification.txt"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["data_classes"], {"c": 5, "included": 3})
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
             "psx-ld", "psx-objcopy", "psx-readelf", "psx-nm",
         )),
         "enter the matching Nix shell to test the link's symbol files",

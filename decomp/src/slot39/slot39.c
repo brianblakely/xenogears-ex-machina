@@ -15,8 +15,11 @@ void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */
 u8 D_801E96A4 = 0; /* the file screen saves (nonzero) or loads */
-u8 D_801E96A5 = 0;
-u8 D_801E96A6 = 8; /* unreferenced; a variable or stray fill (open, docs/matching.md) */
+/* The flag D_801E96A5 (0) and its padding before the word-aligned masks,
+ * which holds stray assembler bytes (08 00) that nothing reads, as that of
+ * battle's flags D_800C204C and D_800C2050 does (08 00 71, 08 00 00): it
+ * stays original data (slot39.classification.txt). */
+INCLUDE_ORIGINAL_UNALIGNED(".data", D_801E96A5, 0x801E96A5, 3);
 /* single-bit masks */
 u16 D_801E96A8[16] = {
     0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080,

@@ -332,8 +332,10 @@ the audit; they are never counted as matches. This diagnostic does not replace
   (Recovering data). A .data object whose padding holds such bytes (a byte flag
   followed by `04`, a halfword table ending in `"Mt"`) is
   linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
-  among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
-  only where the padding is non-zero and nothing reads it. Both count as `included`.
+  among the unit's definitions, from the pristine input as INCLUDE_ASSET does
+  (`INCLUDE_ORIGINAL_UNALIGNED`, without the `.align 2`, for a byte that directly
+  follows the object before it, slot39's flag D_801E96A5); use it only where the
+  padding is non-zero and nothing reads it. Both count as `included`.
   The coverage report finds a string's stray byte itself; every other included object
   needs an `included` line in the target's classification with its reason (those data
   objects, and the resident's libcd/libgpu/libspu strings that several library
@@ -491,8 +493,8 @@ converted to C per unit. What converting the targets' `.data` established:
   constant-offset access reads (`tail`, noted `text` or `outlier` where they look
   stray), that nothing references (`unref`), that is declared wider than every access
   with a byte none touches (`wide`), or whose string holds bytes after its terminator
-  (`string`). After the four it reports `2310 C data objects, 194 to review; objects
-  per flag: tail 157, tail read 6, unref 44` (175 distinct, 146 with a tail and 35
+  (`string`). It reports `2308 C data objects, 193 to review; objects
+  per flag: tail 157, tail read 6, unref 43` (174 distinct, 146 with a tail and 34
   unreferenced; the second executable repeats the resident's), each reviewed against
   its readers. None other spells stray fill: the tails are read (masks `& 7` and
   `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
@@ -504,11 +506,19 @@ converted to C per unit. What converting the targets' `.data` established:
   loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
   documented unread tables and copies, or tables read through a base formed before
   them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
-  list_cursor]`). Two stay open. slot39's D_801E96A6 is a byte 08, then 00, between
-  the flag bytes D_801E96A4/D_801E96A5 and the word-aligned D_801E96A8; no image's
-  code or data reaches it, so it may be fill like that after battle's byte flags
-  (08 00 71, 08 00 00) or an unused variable, and INCLUDE_ORIGINAL places an object at
-  a word boundary only. ovl2143's unread copy D_801E85A4 of battle's gear file table
+  list_cursor]`). slot39's unreferenced byte 08 at 801E96A6, then 00, was fill: GCC
+  2.6.3 aligns the u16 masks D_801E96A8 to a word, so after the flags D_801E96A4 and
+  D_801E96A5 these two bytes are the assembler's fill, which no image's code or data
+  reaches, and they begin as the stray fill after the byte flags battle's D_800C2050
+  and D_800C204C (08 00 00, 08 00 71) and ovl2596's D_801E44C0 (04 00 00) does.
+  D_801E96A5 is linked with its padding as those flags are, with
+  INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). The vendor assembler,
+  Psy-Q ASPSX 2.34 of Psy-Q 3.5, writes alignment fill into its section's code record,
+  as zeros in every DOSBox run: the whole slot39 unit compiled by CC1PSX 2.6.3.SN.2,
+  with or without a byte 8 there, assembles to the original .data but for zeros at
+  the stray bytes (08 without the byte, 07 2e after D_801E97AC in both), so the
+  vendor tools cannot tell fill from a variable here. One stays open: ovl2143's
+  unread copy D_801E85A4 of battle's gear file table
   D_800C3508 ends with the pair 66 00 where battle's has 00 00; the bases of gears
   0-18 chain (each is the previous gear's base plus 2 plus that gear's variant count,
   the files func_800A9540 reads), the twentieth pair continues the chain in neither,

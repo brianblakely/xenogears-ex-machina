@@ -1,5 +1,7 @@
 # START END CLASS NAME NOTE (hex VRAM, END exclusive). included: an object a C
-# unit links from the original image (INCLUDE_ORIGINAL) at its place among the
-# unit's .data, with the reason: C cannot emit the stray bytes the original
-# assembler left in its alignment padding, which nothing reads.
+# unit links from the original image (INCLUDE_ORIGINAL, or for a byte object
+# INCLUDE_ORIGINAL_UNALIGNED) at its place among the unit's .data, with the
+# reason: C cannot emit the stray bytes the original assembler left in its
+# alignment padding, which nothing reads.
+801e96a5 801e96a8 included D_801E96A5 u8 flag 0 (menu.h; func_801C57A4 sets it around its save, func_801CBA4C reads it); padding 08 00 before the word-aligned masks, as battle's flags D_800C204C and D_800C2050 have 08 00 71 and 08 00 00
 801e97ac 801e97f0 included D_801E97AC u8[13 * 5] sheet images of the 801e1544 screen's 13 rows (menu.h; func_801E1544 reads row * 5 + 0-4, rows 0-12 from func_801E1AC8); padding 00 07 2e
