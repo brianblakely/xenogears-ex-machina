@@ -158,7 +158,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("mode = D_8006F954[0] & 0x7FFF;", entry)
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_800854D0.c"), "func_80093014")
-        self.assertIn("D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
+        self.assertIn("D_8005A39C->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
         self.assertIn("D_8006F94E[3] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
