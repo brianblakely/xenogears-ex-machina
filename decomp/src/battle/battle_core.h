@@ -17,7 +17,7 @@ typedef struct {
 } TurnSlot;
 
 /* Turn and menu state: the heap block at *800c3eac. */
-typedef struct {
+typedef struct TurnState {
     TurnSlot slots[11];
     u8 unk2C0[4];
     u8 combo[8];       /* +0x2C4 entered combo steps, 0xff ends */
@@ -47,7 +47,7 @@ typedef struct {
 extern TurnState *D_800C3EAC;
 
 /* Battle UI state: the heap block at *800d2d28. */
-typedef struct {
+typedef struct BattleUi {
     RECT textureWindows[6]; /* +0x00 */
     u32 unk30;         /* CLUT cycle position */
     s32 unk34;         /* +0x34 panel cursor window: x */
@@ -179,7 +179,7 @@ typedef struct {
 } SpriteInfo;
 
 /* Battle graphics state (*800c3ea4). */
-typedef struct {
+typedef struct BattleGraphics {
     POLY_FT4 gauge[3][6][2];  /* +0x0000 per member gauge glyphs */
     POLY_GT4 gaugeBars[8];    /* +0x05A0 two per panel slot, one per draw buffer */
     POLY_G4 shade[6];         /* +0x0740 two per member, one per draw buffer */
@@ -244,7 +244,7 @@ extern void *D_800D39F0;   /* battle message table */
 extern u16 D_800C48E8;
 
 /* Eight 0x60-byte message entries from 800d36c8. */
-typedef struct {
+typedef struct BattleMessage {
     POLY_FT4 prims[2];
     RECT rect;         /* +0x50 text image upload rectangle */
     u32 *pixels;       /* +0x58 */
@@ -284,7 +284,7 @@ typedef struct {
     FormationPoint enemies[4]; /* +0x10 */
 } FormationArea;
 
-typedef struct {
+typedef struct Formation {
     FormationArea areas[8];
     GroupPosition positions[8]; /* +0x100 */
     GroupLink links[8][8];      /* +0x140 per formation-group pair */
@@ -294,7 +294,7 @@ extern Formation *D_800D3364;
 
 
 /* Action list entry (8 bytes, 32 from 800d2e5c). */
-typedef struct {
+typedef struct BattleAction {
     u8 type;
     u8 arg1;
     u8 animation;
@@ -320,7 +320,7 @@ typedef struct {
     u8 unk35[3];
 } BattleUnk3278Entry;
 
-typedef struct {
+typedef struct BattleUnk3278 {
     BattleUnk3278Entry entries[16];
     u8 unk380[0x394 - 0x380];
     s16 unk394[(0x7A4 - 0x394) / 2];
@@ -334,7 +334,7 @@ extern BattleUnk3278 *D_800D3278;
 
 /* The HUD primitive lists (*800d2db4, a 0x5da4-byte heap block) with their
  * counts and draw buffers. */
-typedef struct {
+typedef struct ListPrims {
     POLY_FT4 extra0[24];      /* +0x0000 count extraCounts[0] */
     POLY_FT4 extra1[60];      /* +0x03C0 count extraCounts[1] */
     POLY_FT4 extra2[16];      /* +0x0D20 count extraCounts[2] */
@@ -379,7 +379,7 @@ extern s32 D_800D2DAC;
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). The
  * script pointers come from the enemy's table in the enemy data file
  * (ovl2615 801e4870; docs/scripts/battle-ai.md). */
-typedef struct {
+typedef struct EnemyAi {
     u8 *script;        /* +0x00 table +0: the enemy's turn script (800799c8) */
     u8 *unk4;          /* table +2: only copied (80078e24), never run */
     u8 *reaction;      /* +0x08 table +4: reaction script, run by a party
@@ -394,7 +394,7 @@ typedef struct {
 extern EnemyAi D_800D3400[8];
 
 /* Enemy reaction state (4 bytes per enemy from 800c3d18). */
-typedef struct {
+typedef struct EnemyReaction {
     u8 armed;          /* the reaction script runs */
     u8 unk1[2];
     u8 unk3;
@@ -436,7 +436,7 @@ typedef struct {
 
 extern SoundSystem *D_8005919C;
 /* Window rectangle (*800d2d90[window]). */
-typedef struct {
+typedef struct WindowRect {
     u16 x;
     u16 y;
     u16 w;
@@ -447,7 +447,7 @@ typedef struct {
 } WindowRect;
 
 /* A window's primitives (0x5a8-byte heap block). */
-typedef struct {
+typedef struct WindowBlock {
     POLY_FT4 corners[8]; /* corner glyphs: [corner * 2 + draw buffer] */
     POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
     POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
@@ -481,15 +481,6 @@ extern u8 D_800D2C88[12];  /* per-slot result code */
 extern void *D_800D329C;   /* item name table */
 
 /* Stepped line state (80088 87c). */
-extern s32 D_800C3A7C;
-extern s32 D_800C3A80;
-extern s32 D_800C3A84;
-extern s32 D_800C3A88;
-extern s32 D_800C3A8C;
-extern s32 D_800C3A90;
-extern u8 D_800C3A94;
-extern u8 D_800C3A98;
-extern s32 D_800C3A9C;
 extern u8 D_800C207C; /* the stepped line reached its end */
 extern s32 D_800C2080;
 extern s32 D_800C2084;
@@ -521,7 +512,7 @@ extern u8 D_800C3214[5][6]; /* list separator rows by list size (3-7) */
 extern u8 D_800C34CC[];    /* combo step flags */
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
-typedef struct {
+typedef struct DirectionArrows {
     POLY_G3 prims[8]; /* per direction, one per draw buffer */
     s32 shade;           /* +0xE0 pulsing red level */
     u8 buffer;           /* +0xE4 */
@@ -542,7 +533,7 @@ extern CharacterCombos D_8006ECF8[];
 
 
 /* Per-slot flags (8 bytes from 800d32a0). */
-typedef struct {
+typedef struct SlotFlags {
     u8 unk0;
     u8 unk1;
     u8 unk2[6];
@@ -552,7 +543,7 @@ extern SlotFlags D_800D32A0[11];
 
 /* Formation group entries (4 bytes from 800d301c): four eight-group
  * sets, with flagged slots using bases 0x10 and 0x18. */
-typedef struct {
+typedef struct GroupEntry {
     u8 count;
     u8 members;        /* member bits */
     u8 unk2[2];
@@ -574,7 +565,7 @@ extern s32 D_800D328C;
 extern u8 D_800D3298;      /* ATB enabled */
 
 /* Turn queue (800d2dcc). */
-typedef struct {
+typedef struct TurnQueue {
     u8 present[11];    /* slot takes part */
     u8 cursor;         /* +0x0B turn order position */
     u8 order[11];      /* +0x0C slots in turn order */
@@ -682,7 +673,7 @@ extern u8 D_800D2D50;
 extern u8 D_800D2FC4;      /* battle exit requested */
 
 /* Party members' battle masks (from the character battle data). */
-typedef struct {
+typedef struct MemberMasks {
     u16 mask0;
     u16 mask2;
 } MemberMasks;
@@ -786,7 +777,7 @@ void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page);
 void *func_80033784(u8 character, u8 id); /* a character text */
 
 /* A menu icon cell of the icon image (4 bytes, 800d2f68). */
-typedef struct {
+typedef struct IconCell {
     u8 w;
     u8 alternate; /* uses the alternate CLUT */
     u8 u;

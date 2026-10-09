@@ -171,7 +171,6 @@ typedef struct SlotWatch {
     void (*callback)(BattleSprite *sprite);      /* 0x2C */
 } SlotWatch;
 
-extern s32 D_800C3CE8;           /* finished sprite motions */
 extern s32 D_800C3628;
 extern s16 D_800D2D4C;           /* effect hits */
 

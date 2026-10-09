@@ -80,18 +80,30 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
 # Stsector_offset alone at 801e89bc; the ASPSX 2.79 world map's u16 at
 # 8009bd10-8009bd1c, shared by three units), which the commons units
-# reproduce. Under the qualified ASPSX versions, 2.34 and 2.79 (no 2.79 unit
-# allocates any in C yet), this filter gives each object a whole number of
-# words at a word boundary; under any other (2.56 units define only words so
-# far) it rejects a smaller one, whose placement nothing evidences. Only the
-# .sbss/.bss that maspsx appends are touched: any other section directive ends
-# them.
-SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
-bss_filter_of = | awk -v slots=$(if $(filter $(SLOT_ASPSX),$(call maspsx_of,$(1))),1,0) \
-	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { bss = $$0 ~ /^\.section \.s?bss$$/ } \
-	bss && slots && $$1 == ".align" && $$2 > 2 { $$0 = "\t.align\t2" } \
-	bss && $$1 == ".space" && $$2 % 4 { if (!slots) { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
-	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } { print }'
+# reproduce. ASPSX 2.56 (the CDK units) keeps each .lcomm object's own size and
+# aligns it by that size up to a word: battle 800B3F04's four s16 statics lie
+# two bytes apart at 800c3ca4-800c3cab (separate symbols: the CDK compiler
+# addresses one object's members from a single %hi, these from four), its u8
+# at 800c3cac is followed by a u8[3] at the next word, and 800B8098's s32
+# after a u8 and its SVECTORs lie at word, not doubleword, boundaries
+# (800c3cbc, 800c3ccc). Under 2.34 and 2.79 (no 2.79 unit allocates any in C
+# yet) this filter gives each object a whole number of words at a word
+# boundary; under 2.56 it aligns a 2-byte object to 2 and a larger one to 4;
+# under any other version it rejects a sub-word object, whose placement
+# nothing evidences. Only the .sbss/.bss that maspsx appends are touched: any
+# other section directive ends them.
+WORD_SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
+SIZE_ALIGNED_ASPSX := --aspsx-version=2.56
+bss_rule_of = $(if $(filter $(WORD_SLOT_ASPSX),$(call maspsx_of,$(1))),words,$(if $(filter $(SIZE_ALIGNED_ASPSX),$(call maspsx_of,$(1))),sized,none))
+bss_filter_of = | awk -v rule=$(call bss_rule_of,$(1)) \
+	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { printf "%s", held; held = ""; bss = $$0 ~ /^\.section \.s?bss$$/; print; next } \
+	!bss { print; next } \
+	$$1 == ".align" { if (rule == "sized") next; if (rule == "words" && $$2 > 2) $$0 = "\t.align\t2"; print; next } \
+	$$1 == ".space" && rule == "sized" { printf "\t.align\t%d\n%s", ($$2 > 2 ? 2 : $$2 > 1 ? 1 : 0), held; held = ""; print; next } \
+	$$1 == ".space" && $$2 % 4 { if (rule != "words") { print "a " $$2 "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
+	$$0 = "\t.space\t" int(($$2 + 3) / 4) * 4 } \
+	rule == "sized" && $$1 != ".space" { held = held $$0 "\n"; next } \
+	{ print } END { printf "%s", held }'
 
 # A probe's settings must invalidate its object, including when switching back.
 # Keep the stamp's timestamp only while its contents and resolved tools agree.

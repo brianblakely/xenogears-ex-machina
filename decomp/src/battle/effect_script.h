@@ -21,8 +21,6 @@
 /* The vertex (or normal) a command's index at offset names. */
 #define SCRIPT_CMD_VERTEX(list, cmd, offset) ((SVECTOR *)(SCRIPT_CMD_U16(cmd, offset) * 8 + (s32)(list)))
 
-extern DrawPrim8 D_800C3BF8; /* the blend mode's texture page */
-
 /* RotAverageNclip4: the quad's screen points, its depth and flag; its
  * winding (> 0 facing). */
 s32 func_8004A83C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1, long *sxy2,

@@ -1,9 +1,13 @@
-/* Battle unit from 800B3F04 to 800B7870 (Cygnus CDK GCC 2.7.2, like
+/* Battle unit from 800B3F04 to 800B7134 (Cygnus CDK GCC 2.7.2, like
  * battle_800B15D8.c). 800B1F6C's odd-length table ends at 0x80070850 and
  * 800B3F04's follows unpadded at 0 mod 8, so a unit starts between the two;
  * the functions from 800B2AEC to 800B3E04 have no rodata, and the boundary
- * is placed at the first function that has. Its 107-entry table is followed
- * directly by 800B7870's at 0x800709FC (4 mod 8): the unit ends before it. */
+ * is placed at the first function that has (the previous unit's own .bss is
+ * used up to 800B3E04). Its 107-entry table, all its rodata, is followed
+ * directly by 800B7870's at 0x800709FC (4 mod 8), so the unit ends before
+ * 800B7870; it ends before 800B7134, whose shatter draw shares 800B7870's
+ * own variable D_800C3CB4 (a unit's .bss is read by its own code only,
+ * docs/matching.md). */
 #include "common.h"
 #include "battle_core.h"
 #include "combatant.h"
@@ -20,16 +24,29 @@
 #include "stage.h"
 #include "sprite_script.h"
 
+/* The unit's own uninitialized variables (its .bss, after
+ * battle_800B15D8.c's): ASPSX 2.56 keeps the halfwords two bytes apart and
+ * starts the 3-byte colour at the next word (decomp/Makefile). */
+static s16 D_800C3CA4; /* the last trail segment's far corners */
+static s16 D_800C3CA6;
+static s16 D_800C3CA8;
+static s16 D_800C3CAA;
+static u8 D_800C3CAC;    /* the saved background flag of the display buffers */
+static u8 D_800C3CB0[3]; /* the saved background colour */
+
 u8 D_800C3564 = 0;
 BattleSprite *D_800C3568 = NULL;
 u8 D_800C356C[5] = {1, 2, 3, 5, 6};
 MATRIX D_800C3574 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+/* The shatter's triangles and launch velocity, which only the next unit's
+ * code (800B7134-800B7424) reads; where that unit's data starts is not
+ * known, so they stay here. */
 SVECTOR D_800C3594[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
 SVECTOR D_800C35AC[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
 VECTOR D_800C35C4 = {0, 0, -1536 << 16};
 /* The sound fade flag that 800B7870 and 800B8098 also use; whether it ends
- * this unit's data or is 800B7870's only object is not known. Its padding
- * holds stray assembler bytes, so it stays original data. */
+ * this unit's data or the next unit's is not known. Its padding holds stray
+ * assembler bytes, so it stays original data. */
 INCLUDE_ORIGINAL(".data", D_800C35D4, 0x800C35D4, 4);
 
 /* Run battle sprite script command (1-107) on sprite with its argument
@@ -1532,181 +1549,4 @@ void func_800B6F0C(BattleTask *task) {
             }
         }
     }
-}
-
-/* Shatter draw: into the ordering table (800B7160). */
-void func_800B7134(BattleTask *draw) {
-    D_800C3CB4 = D_8005956C;
-    func_800B7160(draw);
-}
-
-/* Shatter draw: each shard that has fallen in front of the screen (z at
- * least 64), its layer's triangle turned and placed, projected at the
- * screen centre and distance 512. */
-void func_800B7160(BattleTask *draw) {
-    ScreenShatter *shatter = draw->data;
-    s32 offsetX;
-    s32 offsetY;
-    s32 screen;
-    s32 layer;
-    s32 row;
-    s32 column;
-    ScreenShard *shard;
-    POLY_FT3 *poly;
-    SVECTOR *triangle;
-
-    ReadGeomOffset(&offsetX, &offsetY);
-    screen = ReadGeomScreen();
-    SetGeomOffset(160, 112);
-    SetGeomScreen(512);
-    for (layer = 0; layer != 2; layer++) {
-        for (row = 0; row != 14; row++) {
-            for (column = 0; column != 20; column++) {
-                shard = &shatter->shards[layer][row][column];
-                poly = &shard->poly[BATTLE_AREA.buffer];
-                if (shard->position.vz >= 64) {
-                    MATRIX m;
-                    s32 p;
-                    s32 flag;
-                    s32 depth;
-
-                    func_8003F738(&shard->angles, &m);
-                    TransMatrix(&m, &shard->position);
-                    SetRotMatrix(&m);
-                    SetTransMatrix(&m);
-                    if (layer == 0) {
-                        triangle = D_800C3594;
-                    } else {
-                        triangle = D_800C35AC;
-                    }
-                    depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
-                                          (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6;
-                    AddPrim(D_800C3CB4 + depth, poly);
-                }
-            }
-        }
-    }
-    SetGeomOffset(offsetX, offsetY);
-    SetGeomScreen(screen);
-}
-
-/* Free a heap block once drawing is done. */
-void func_800B7330(void *block) {
-    DrawSync(0);
-    func_800320E8(block);
-}
-
-/* Shatter destroy: end the draw task, the task and its sprites. */
-void func_800B7364(ScreenShatter *shatter) {
-    func_8001CB48(&shatter->draw);
-    func_8001CD94(shatter);
-    func_80025180(shatter);
-}
-
-/* Shatter the screen copied to VRAM (0x2C0, 0x100). */
-void func_800B73A0(void) {
-    func_800B7424(func_8001D1D8(sizeof(ScreenShatter), 0, func_800B6F0C, func_800B7134, func_800B7364));
-}
-
-/* Set up a shattered screen in a heap block (not run as a task). */
-ScreenShatter *func_800B73EC(void) {
-    ScreenShatter *shatter = func_80031BDC(sizeof(ScreenShatter), 1);
-
-    shatter->task.data = shatter;
-    shatter->draw.data = shatter;
-    return func_800B7424(shatter);
-}
-
-/* Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16
- * cell an upper-left and a lower-right triangle, each starting further out
- * the later it moves, launched outwards at a random speed with a random spin
- * and fall. */
-ScreenShatter *func_800B7424(ScreenShatter *shatter) {
-    ScreenShard *shard;
-    POLY_FT3 *poly;
-    VECTOR square;
-    SVECTOR angles;
-    MATRIX m;
-    s32 radius;
-    s32 row;
-    s32 layer;
-    s32 column;
-    s32 i;
-    s32 distance;
-    s32 turn;
-    s32 tilt;
-    s32 r;
-    s32 base;
-    s32 yaw;
-
-    shatter->frame = 0;
-    radius = SquareRoot0(160 * 160 + 112 * 112) << 10;
-    for (layer = 0; layer != 2; layer++) {
-        for (row = 0; row != 14; row++) {
-            for (column = 0; column != 20; column++) {
-                shard = &shatter->shards[layer][row][column];
-                shard->angles.vx = 0;
-                shard->angles.vy = 0;
-                shard->angles.vz = 0;
-                if (layer == 0) {
-                    shard->position.vx = (column * 16 - 155) * 32;
-                    shard->position.vy = (row * 16 - 107) * 32;
-                    shard->position.vz = 0x4000;
-                } else {
-                    shard->position.vx = (column * 16 - 149) * 32;
-                    shard->position.vy = (row * 16 - 101) * 32;
-                    shard->position.vz = 0x4000;
-                }
-                D_800C35C4.vz = -500 << 16;
-                D_800C35C4.vz = D_800C35C4.vz + (-(rand() % 1000) << 16);
-                func_8004A414(&shard->position, &square);
-                distance = SquareRoot0(square.vx + square.vy);
-                shard->delay = (radius / 32 - distance) / 2048; /* overwritten */
-                shard->delay = distance / 1024;
-                /* Turn outwards, a little at random; tilt by the distance. */
-                turn = ratan2(shard->position.vy, shard->position.vx);
-                r = rand();
-                yaw = (turn += 0x600) + r % 1024;
-                tilt = (distance << 11) / radius;
-                r = rand();
-                base = tilt - 0x20;
-                tilt = base + r % 64;
-                angles.vx = 0;
-                angles.vy = tilt;
-                angles.vz = yaw;
-                func_8004ABBC(&angles, &m);
-                ApplyMatrixLV(&m, &D_800C35C4, &shard->velocity);
-                shard->fall = 0x70800 - ((rand() % 1600) << 8);
-                shard->spin.vx = (rand() & 0xFF) - 0x7F;
-                shard->spin.vy = (rand() & 0xFF) - 0x7F;
-                shard->spin.vz = (rand() & 0x1FF) - 0xFF;
-                for (i = 0; i != 2; i++) {
-                    poly = &shard->poly[i];
-                    SetPolyFT3(poly);
-                    SetShadeTex(poly, 0);
-                    poly->r0 = 0xFF;
-                    poly->g0 = 0xFF;
-                    poly->b0 = 0xFF;
-                    setSemiTrans(poly, 0);
-                    poly->tpage = GetTPage(2, 1, column * 16 + 0x2C0, 0x100);
-                    if (layer == 0) {
-                        poly->u0 = column * 16 & 0x3F;
-                        poly->v0 = row * 16;
-                        poly->u1 = (column * 16 & 0x3F) + 16;
-                        poly->v1 = row * 16;
-                        poly->u2 = column * 16 & 0x3F;
-                        poly->v2 = row * 16 + 16;
-                    } else {
-                        poly->u0 = (column * 16 & 0x3F) + 16;
-                        poly->v0 = row * 16;
-                        poly->u1 = (column * 16 & 0x3F) + 16;
-                        poly->v1 = row * 16 + 16;
-                        poly->u2 = column * 16 & 0x3F;
-                        poly->v2 = row * 16 + 16;
-                    }
-                }
-            }
-        }
-    }
-    return shatter;
 }

@@ -993,7 +993,7 @@ FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_fie
 FIELD_HEADER = 0x154
 # Directory groups (func_80028470 group + index) the battle overlay reads its
 # files from: 0c+0 battle_mode.c, 0c+1 ovl2615 (enemy sets), 0c+2
-# battle_800B7870, 10+0/2 battle_80070E2C, 20+0/2/3 battle.c, 28+0/1/2
+# battle_800B7134, 10+0/2 battle_80070E2C, 20+0/2/3 battle.c, 28+0/1/2
 # battle_8009E53C, 2c+0/1 battle_800B8098 and ovl2615 battle_loader.c. Their
 # sprites run while D_800591AD is set (battle 800B8840 to 800B8774); all
 # other data runs under 800248d4 itself.

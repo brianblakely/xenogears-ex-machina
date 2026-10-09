@@ -103,7 +103,7 @@ typedef struct {
 
 /* Gear record (0xA4 bytes): the game data's (after the characters) and the
  * battle copy at combatant +0xA4. */
-typedef struct {
+typedef struct GearRecord {
     u8 pad0[2];
     u8 field2;
     u8 field3;
@@ -209,7 +209,7 @@ typedef union {
 } BattleItemLists;
 
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes. */
-typedef struct {
+typedef struct Combatant {
     CharacterRecord pilot;
     GearRecord gear;
     u8 field148;
@@ -229,7 +229,7 @@ typedef struct {
 
 /* Command descriptor (0x28 bytes); the party's command tables hold 38 per
  * member, their gears' 42. */
-typedef struct {
+typedef struct CommandDescriptor {
     u16 state; /* 0x00: 1 usable, 0x2000 sealed */
     u16 name;  /* 0x02: shown while it runs */
     u8 pad4[0x8 - 0x4];

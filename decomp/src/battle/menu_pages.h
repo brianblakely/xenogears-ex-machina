@@ -6,7 +6,7 @@
 #include "common.h"
 
 /* A text image's pixels. */
-typedef struct {
+typedef struct TextImage {
     u32 *pixels;
 } TextImage;
 

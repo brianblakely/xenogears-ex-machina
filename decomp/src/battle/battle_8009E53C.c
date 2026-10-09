@@ -22,6 +22,31 @@
 #include "objects.h"
 #include "effect_vm.h"
 
+/* The unit's own uninitialized variables (its .bss, after
+ * battle_8008CCCC.c's), each in a slot of whole words (decomp/Makefile). */
+static LightSlot D_800C3AAC[4];
+static StageColors *D_800C3AC4; /* the stage's colours as loaded */
+static StageColors *D_800C3AC8; /* their working copy */
+static SceneEntry8 D_800C3ACC[20];
+static s32 D_800C3B6C; /* the model list slot being filled */
+static u8 *D_800C3B70; /* the model group being loaded */
+static u8 D_800C3B74;
+static SoundBanks *D_800C3B78;
+static s16 D_800C3B7C;
+static s16 D_800C3B80; /* pulse level of the highlight colour */
+/* The camera. */
+static u8 D_800C3B84;  /* the channel kind reported in D_800C3B88 */
+static u8 D_800C3B88;  /* bit 0: that channel runs, bit 1: it finished */
+static u8 D_800C3B8C;  /* snap: channels 7 and 8 start at their targets */
+static s16 D_800C3B90; /* orbit yaw */
+static s16 D_800C3B94; /* orbit pitch */
+static s16 D_800C3B98; /* orbit distance */
+static s16 D_800C3B9C; /* orbit height */
+static s16 D_800C3BA0; /* look-at yaw */
+static s16 D_800C3BA4; /* look-at distance */
+static s16 D_800C3BA8; /* look-at height */
+static EffectEntry *D_800C3BAC[9];
+
 /* Per gear: its first extra file in directory 0x28 and its variant count. */
 u8 D_800C3508[] = {
     1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,

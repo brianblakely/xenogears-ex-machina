@@ -24,7 +24,7 @@ typedef struct {
 
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
-typedef struct {
+typedef struct BattleObject {
     ModelList *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
     ModelPart *hierarchy; /* 0x04 */
     u8 **scripts;         /* 0x08: effect scripts 0-0x4F */
@@ -159,14 +159,14 @@ typedef struct {
 } SpriteRecord;
 
 /* A pool of sprite records; next is the first record that may be free. */
-typedef struct {
+typedef struct SpritePool {
     SpriteRecord *records;
     s16 count;
     s16 next;
 } SpritePool;
 
 /* A triangle of the scene's light geometry (0xE bytes). */
-typedef struct {
+typedef struct SceneTriangle {
     s16 vertices[3];   /* indices into the scene's points */
     s16 neighbours[3]; /* 0x06: adjacent triangles, -1 none */
     u8 id;             /* 0x0C */
@@ -191,7 +191,7 @@ typedef struct {
 
 /* A position tracker (0x14 bytes, D_800D3304): an offset from a part of a
  * stage object. */
-typedef struct {
+typedef struct Tracker {
     s16 x;
     s16 y;
     s16 z;
@@ -212,7 +212,7 @@ typedef struct {
 } SoundBanks;
 
 /* A 0x18-byte resident record of D_800C3DA0. */
-typedef struct {
+typedef struct ResidentRecord18 {
     u8 pad[0x18];
 } ResidentRecord18;
 
@@ -238,25 +238,18 @@ extern SceneTriangle *D_800D39CC; /* scene triangles */
 extern s32 D_800D3348;            /* scene triangle count */
 extern u8 D_800D2F64;             /* triangle visit stamp */
 extern u8 D_800C37C8;             /* effects disabled */
-extern LightSlot D_800C3AAC[4];
 extern s16 D_800D2FC8;  /* point count of D_800D2FD0 */
 extern u16 *D_800D2FD0; /* (x, z, y) points */
 extern u8 D_800D3611;   /* a light slot changed */
-extern u8 D_800C3B74;
 extern u8 D_800C3D6C;
 extern u8 D_800C3D68;
 extern s32 D_800C3E88;
 extern s16 D_800C3CF0;
-extern s16 D_800C3B7C;
-extern SceneEntry8 D_800C3ACC[20];
 extern Tracker D_800D3304[2];
 extern s32 D_800D2D40;
 extern s32 D_800D2D48;
-extern EffectEntry *D_800C3BAC[9];
 extern BattleObject *D_800D3368[]; /* stage objects */
 extern BattleEvent D_800C3FE8[];   /* presentation events */
-extern u8 *D_800C3BEC;             /* effect script cursor */
-extern s32 D_800C3BF0;             /* effect script step count */
 extern u16 D_800C3E30;             /* slot mask */
 extern u16 D_800C3D40;
 extern EffectPool D_800C3D0C;
@@ -266,7 +259,6 @@ extern s32 D_800C3E38;
 extern void *D_800C3D50[2];
 extern void *D_800C3EA0;
 extern ResidentRecord18 D_800C3DA0[2];
-extern SoundBanks *D_800C3B78;
 extern s32 D_80059464;
 extern u8 D_800591AC;
 extern s32 D_800C360C;

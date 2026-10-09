@@ -20,6 +20,10 @@
 #include "stage.h"
 #include "battle_command.h"
 
+/* The unit's own uninitialized variable (its .bss, after
+ * battle_800B8098.c's); the commons follow (battle_common.c). */
+static s32 D_800C3CE8; /* finished sprite motions */
+
 /* This unit's data (800c374c-800c37d4). The flags D_800C3780 and D_800C37C8
  * have stray assembler bytes in their padding, so they stay original data. */
 s32 D_800C374C = 0;

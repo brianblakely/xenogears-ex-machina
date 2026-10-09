@@ -20,6 +20,9 @@
 #include "result_input.h"
 #include "area.h"
 
+/* The unit's own uninitialized variable (its .bss, after battle.c's). */
+static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
+
 /* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
 extern s32 D_800CCB34_word __asm__("D_800CCB34");
 

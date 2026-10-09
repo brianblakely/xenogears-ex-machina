@@ -20,8 +20,8 @@ CC_battle_800B8098 := 2.7.2-cdk
 MASPSX_battle_800B8098 := --aspsx-version=2.56
 CC_battle_800B3F04 := 2.7.2-cdk
 MASPSX_battle_800B3F04 := --aspsx-version=2.56
-CC_battle_800B7870 := 2.7.2-cdk
-MASPSX_battle_800B7870 := --aspsx-version=2.56
+CC_battle_800B7134 := 2.7.2-cdk
+MASPSX_battle_800B7134 := --aspsx-version=2.56
 CC_battle_800BD3AC := 2.7.2-cdk
 MASPSX_battle_800BD3AC := --aspsx-version=2.56
 CC_battle_800BFE48 := 2.7.2-cdk

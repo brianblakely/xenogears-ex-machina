@@ -21,6 +21,21 @@
 #include "result_input.h"
 #include "area.h"
 
+/* The unit's own uninitialized variables, each in a slot of whole words
+ * (decomp/Makefile). Its .bss opens the overlay's at 800c3a70, where the
+ * resident's mode table starts the clear. */
+static u32 *D_800C3A70[3]; /* combo text image blocks */
+static s32 D_800C3A7C;     /* stepped line state (8008887c) */
+static s32 D_800C3A80;
+static s32 D_800C3A84;
+static s32 D_800C3A88;
+static s32 D_800C3A8C;
+static s32 D_800C3A90;
+static u8 D_800C3A94;
+static u8 D_800C3A98;
+static s32 D_800C3A9C;
+static u8 D_800C3AA0; /* the debug console is open */
+
 /* Confirm the selected entry of the member's on-foot window: entries 4, 6
  * and 7 open the attack page (5) when the member has a target; 1 and 0 open
  * pages 2 and 7 unless their item is unavailable (buzzer 0x4f); 2 opens page

@@ -1,8 +1,12 @@
-/* Battle unit from 800B7870 to 800B8098 (Cygnus CDK GCC 2.7.2).
+/* Battle unit from 800B7134 to 800B8098 (Cygnus CDK GCC 2.7.2).
  * 800B7870's jump table at 0x800709FC sits at 4 mod 8 directly after
  * 800B3F04's odd-length table at 0 mod 8, so a unit starts between the two
- * (placed at the first function with rodata); its own 5-entry table is
- * followed directly by 800B8098's at 0x80070A10 (0 mod 8). */
+ * functions (that table is all of 800B3F04's unit's rodata). The screen
+ * shatter's draw (800B7134, 800B7160) and the intro swirl 800B7870 share
+ * the unit's own variable D_800C3CB4, which follows 800B3F04's .bss, so the
+ * unit starts at 800B7134 at the latest; that is where it is placed.
+ * Its own 5-entry table is followed directly by 800B8098's at 0x80070A10
+ * (0 mod 8). */
 #include "common.h"
 #include "battle_core.h"
 #include "combatant.h"
@@ -18,6 +22,187 @@
 #include "frame.h"
 #include "stage.h"
 #include "action_file.h"
+
+/* The unit's own uninitialized variable (its .bss, after
+ * battle_800B3F04.c's). */
+static u32 *D_800C3CB4; /* the ordering table the shatter draws into */
+
+/* Shatter draw: into the ordering table (800B7160). */
+void func_800B7134(BattleTask *draw) {
+    D_800C3CB4 = D_8005956C;
+    func_800B7160(draw);
+}
+
+/* Shatter draw: each shard that has fallen in front of the screen (z at
+ * least 64), its layer's triangle turned and placed, projected at the
+ * screen centre and distance 512. */
+void func_800B7160(BattleTask *draw) {
+    ScreenShatter *shatter = draw->data;
+    s32 offsetX;
+    s32 offsetY;
+    s32 screen;
+    s32 layer;
+    s32 row;
+    s32 column;
+    ScreenShard *shard;
+    POLY_FT3 *poly;
+    SVECTOR *triangle;
+
+    ReadGeomOffset(&offsetX, &offsetY);
+    screen = ReadGeomScreen();
+    SetGeomOffset(160, 112);
+    SetGeomScreen(512);
+    for (layer = 0; layer != 2; layer++) {
+        for (row = 0; row != 14; row++) {
+            for (column = 0; column != 20; column++) {
+                shard = &shatter->shards[layer][row][column];
+                poly = &shard->poly[BATTLE_AREA.buffer];
+                if (shard->position.vz >= 64) {
+                    MATRIX m;
+                    s32 p;
+                    s32 flag;
+                    s32 depth;
+
+                    func_8003F738(&shard->angles, &m);
+                    TransMatrix(&m, &shard->position);
+                    SetRotMatrix(&m);
+                    SetTransMatrix(&m);
+                    if (layer == 0) {
+                        triangle = D_800C3594;
+                    } else {
+                        triangle = D_800C35AC;
+                    }
+                    depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
+                                          (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6;
+                    AddPrim(D_800C3CB4 + depth, poly);
+                }
+            }
+        }
+    }
+    SetGeomOffset(offsetX, offsetY);
+    SetGeomScreen(screen);
+}
+
+/* Free a heap block once drawing is done. */
+void func_800B7330(void *block) {
+    DrawSync(0);
+    func_800320E8(block);
+}
+
+/* Shatter destroy: end the draw task, the task and its sprites. */
+void func_800B7364(ScreenShatter *shatter) {
+    func_8001CB48(&shatter->draw);
+    func_8001CD94(shatter);
+    func_80025180(shatter);
+}
+
+/* Shatter the screen copied to VRAM (0x2C0, 0x100). */
+void func_800B73A0(void) {
+    func_800B7424(func_8001D1D8(sizeof(ScreenShatter), 0, func_800B6F0C, func_800B7134, func_800B7364));
+}
+
+/* Set up a shattered screen in a heap block (not run as a task). */
+ScreenShatter *func_800B73EC(void) {
+    ScreenShatter *shatter = func_80031BDC(sizeof(ScreenShatter), 1);
+
+    shatter->task.data = shatter;
+    shatter->draw.data = shatter;
+    return func_800B7424(shatter);
+}
+
+/* Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16
+ * cell an upper-left and a lower-right triangle, each starting further out
+ * the later it moves, launched outwards at a random speed with a random spin
+ * and fall. */
+ScreenShatter *func_800B7424(ScreenShatter *shatter) {
+    ScreenShard *shard;
+    POLY_FT3 *poly;
+    VECTOR square;
+    SVECTOR angles;
+    MATRIX m;
+    s32 radius;
+    s32 row;
+    s32 layer;
+    s32 column;
+    s32 i;
+    s32 distance;
+    s32 turn;
+    s32 tilt;
+    s32 r;
+    s32 base;
+    s32 yaw;
+
+    shatter->frame = 0;
+    radius = SquareRoot0(160 * 160 + 112 * 112) << 10;
+    for (layer = 0; layer != 2; layer++) {
+        for (row = 0; row != 14; row++) {
+            for (column = 0; column != 20; column++) {
+                shard = &shatter->shards[layer][row][column];
+                shard->angles.vx = 0;
+                shard->angles.vy = 0;
+                shard->angles.vz = 0;
+                if (layer == 0) {
+                    shard->position.vx = (column * 16 - 155) * 32;
+                    shard->position.vy = (row * 16 - 107) * 32;
+                    shard->position.vz = 0x4000;
+                } else {
+                    shard->position.vx = (column * 16 - 149) * 32;
+                    shard->position.vy = (row * 16 - 101) * 32;
+                    shard->position.vz = 0x4000;
+                }
+                D_800C35C4.vz = -500 << 16;
+                D_800C35C4.vz = D_800C35C4.vz + (-(rand() % 1000) << 16);
+                func_8004A414(&shard->position, &square);
+                distance = SquareRoot0(square.vx + square.vy);
+                shard->delay = (radius / 32 - distance) / 2048; /* overwritten */
+                shard->delay = distance / 1024;
+                /* Turn outwards, a little at random; tilt by the distance. */
+                turn = ratan2(shard->position.vy, shard->position.vx);
+                r = rand();
+                yaw = (turn += 0x600) + r % 1024;
+                tilt = (distance << 11) / radius;
+                r = rand();
+                base = tilt - 0x20;
+                tilt = base + r % 64;
+                angles.vx = 0;
+                angles.vy = tilt;
+                angles.vz = yaw;
+                func_8004ABBC(&angles, &m);
+                ApplyMatrixLV(&m, &D_800C35C4, &shard->velocity);
+                shard->fall = 0x70800 - ((rand() % 1600) << 8);
+                shard->spin.vx = (rand() & 0xFF) - 0x7F;
+                shard->spin.vy = (rand() & 0xFF) - 0x7F;
+                shard->spin.vz = (rand() & 0x1FF) - 0xFF;
+                for (i = 0; i != 2; i++) {
+                    poly = &shard->poly[i];
+                    SetPolyFT3(poly);
+                    SetShadeTex(poly, 0);
+                    poly->r0 = 0xFF;
+                    poly->g0 = 0xFF;
+                    poly->b0 = 0xFF;
+                    setSemiTrans(poly, 0);
+                    poly->tpage = GetTPage(2, 1, column * 16 + 0x2C0, 0x100);
+                    if (layer == 0) {
+                        poly->u0 = column * 16 & 0x3F;
+                        poly->v0 = row * 16;
+                        poly->u1 = (column * 16 & 0x3F) + 16;
+                        poly->v1 = row * 16;
+                        poly->u2 = column * 16 & 0x3F;
+                        poly->v2 = row * 16 + 16;
+                    } else {
+                        poly->u0 = (column * 16 & 0x3F) + 16;
+                        poly->v0 = row * 16;
+                        poly->u1 = (column * 16 & 0x3F) + 16;
+                        poly->v1 = row * 16 + 16;
+                        poly->u2 = column * 16 & 0x3F;
+                        poly->v2 = row * 16 + 16;
+                    }
+                }
+            }
+        }
+    }
+    return shatter;
+}
 
 /* The battle's intro swirl: the screen shatters (800B73EC) while the
  * battle module's set-up phases 0-2 and the scene files load, one step per
