@@ -370,10 +370,10 @@ restore (Memory card and saves) and the dormant CdMix.
   file 0x12 or 9 of directory (0x18, 1), movie.c func_80076488), the title file
   screen's exit after 600 idle frames, on Disc 1 only (slot39.c func_801C58EC),
   the swap (func_801C8694), the save (func_801CBA4C: D_8006F008 = disc - 1, or
-  1 for the save offered at the change), field event `cd` (store_disc_number,
+  1 for the save offered at the change), field event `fe cd` (store_disc_number,
   func_800A0DFC) and the movie overlay's development screens.
 
-  The swap runs in the in-game menu (mode 5). Menu kind 6 (field event `da`,
+  The swap runs in the in-game menu (mode 5). Menu kind 6 (field event `fe da`,
   slot39.c func_801C57A4) offers a save and then asks for Disc 2
   (func_801C8694(1)); after the title file screen (kind 2, func_801C62A8) the
   menu asks for Disc 1 or, after a load, for the file's disc D_8006F008
@@ -626,7 +626,8 @@ Blocking waits deep in call stacks:
   per mode). These run without VSync and depend on the pad driver and the
   vblank handler.
 - The card TestEvent loop.
-- The endless error screens (func_80019EF8, func_8002804C).
+- The endless error screens (func_80019EF8; func_8002804C, PC file server
+  only).
 
 Development only:
 
@@ -644,7 +645,7 @@ Development only:
 | entry func_80019524 (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
 | stack reset func_80019548 (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
 | dispatcher func_80019ACC(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (func_80019560), decode its cached overlay to 0x8006FAF0 (func_80032EB4), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
-| never-returning dispatch sites | boot func_80019578, kernel menu func_8001A4B4, field func_8007954C, battle func_8001B6C4, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu func_8001C1A8 (debug start), movie func_800737EC (2 sites), heap errors 0x82 (func_80031BDC) and 0x83 (func_800320E8, func_80032C18) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors and the disc error indicator (func_8002804C, endless after four retries) are fatal |
+| never-returning dispatch sites | boot func_80019578, kernel menu func_8001A4B4, field func_8007954C, battle func_8001B6C4, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu func_8001C1A8 (debug start), movie func_800737EC (2 sites), heap errors 0x82 (func_80031BDC) and 0x83 (func_800320E8, func_80032C18) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (func_8002804C, endless at the fourth failed try of a host file call; development only, Disc and files) |
 | fatal error func_80019EF8 | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (D_80010000 = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset func_80019CA0 -> func_80019CD0 | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (func_800283D4, CdFlush), sound (func_80037DC0), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine func_8008BB3C (resume) / func_8008BC04 (yield) (handwritten, menu) | task made by func_8008BA2C on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c func_80088E90); yields at 7 sites (menu2.c 1, menu5.c 6); D_80096D88/D_80096D8C hold the suspended caller; func_8008BB00/func_8008BB1C (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
@@ -708,7 +709,7 @@ isrgb24 0. The game changes only what the table lists.
 | boot logo | one 320x224 at (0, 0) | default | 0 | 0 | defaults; DrawPrim without an OT | 1 | main.c func_80019D48 |
 | kernel menu | 320x224 at y 0 and 240 | default | 0 | 0 | isbg (0, 0, 0x20) | 1 | main.c func_8001A250 |
 | fatal error (host only) | 384x240 at y 0 and 240 | default | 0 | 0 | isbg black | 1 | main.c func_80019EF8 |
-| disc error | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | main_8002709C.c func_8002804C |
+| file server error (PC file server only) | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | main_8002709C.c func_8002804C |
 | field | 320x224 at y 0 and 256 | (0, 10, 256, 216) | 0, 1 on the shown block while a 24-bit movie plays (func_800A7120) | 0 | no isbg: ClearImage each frame; dtd 0 after map setup when D_800B2078.jump_mode is set (func_80078C5C) | 2-4 | field.c func_80071FB0, field_800854D0.c func_80086D8C |
 | field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (func_80086E1C), used once, field map 41 on both discs; the staff roll func_800A7948 also switches to it but needs event BE |
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_80072238.c func_80072BB0 |
@@ -734,7 +735,7 @@ GTE with H 0x1000 (sprite_80025C04.c).
   D_800B2078.unk21D4 (0x720 by default, set by an event) downwards, a far
   cutoff (field.c func_8007554C, func_80075458). Battle, ovl2606, ovl2615 and
   ovl3387 frames 0x1000; world map and ovl2602's model table 0x400; menus 16;
-  the arena per layer (OtPair); movie 32; the disc error screen 8.
+  the arena per layer (OtPair); movie 32; the file server error screen 8.
 - 24-bit links: AddPrim (135 functions), AddPrims, the handwritten OT helpers
   (800315a0-80031894) and model renderers store packet addresses masked with
   0x00FFFFFF; the arena rebuilds pointers from links as
