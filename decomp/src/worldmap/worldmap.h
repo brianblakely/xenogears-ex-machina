@@ -19,7 +19,7 @@ s32 func_800295D8(s32 file, void *dest, s32 offset, s32 mode); /* read one file 
 
 /* Eight-byte disc-read entry: file at 0, destination at 4. A zero file
  * ends the list; the two bytes between its members are left untouched. */
-typedef struct {
+typedef struct FileLoad {
     s16 file;
     void *dest;
 } FileLoad;
@@ -49,10 +49,11 @@ typedef struct {
 } SoundBank;
 
 extern SoundBank *D_8006259C; /* area sound bank */
-extern void *D_8009BC38[2], *D_8009BCB0[2]; /* work and packet buffers, per display buffer */
 extern FileLoad D_8009D3F8[]; /* shared read list */
-extern void *D_8009D3FC; /* first destination member of that same read list */
-/* The loaders also address the list from its first destination member. */
+/* The list's first destination member by a name of its own (worldmap.data.ld):
+ * two loaders pass the list from it. Formed from D_8009D3F8 itself, the
+ * constant lets cse store the first entry through the argument register. */
+extern void *D_8009D3FC;
 #define WORLD_READ_LIST ((FileLoad *)((u8 *)&D_8009D3FC - 4))
 
 /* Party: three character ids (0xFF empty) and per-character records. */
@@ -71,7 +72,7 @@ extern void *D_8009C88C, *D_8009C884, *D_8009C888, *D_8009C614;
 
 /* Gouraud quad packet (PsyQ POLY_G4 layout); colour words carry the code
  * in their top byte. */
-typedef struct {
+typedef struct PolyG4 {
     u32 tag;
     u32 rgb0;
     s32 xy0;
@@ -113,14 +114,14 @@ extern u16 D_8006EE70, D_8006EE72, D_8006EE74;
 extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
 
 /* Camera: its target and orientation. */
-typedef struct {
+typedef struct Camera {
     VECTOR target;
 } Camera;
 
 extern Camera D_8009BE28;
 
 /* Named arrival point: position in world units and its id; -1 ends a list. */
-typedef struct {
+typedef struct WorldmapSpot {
     s16 x;
     s16 id;
     s16 z;
@@ -135,11 +136,13 @@ extern WorldmapSpot *D_8009D3F4;
 void func_8008DFF4(VECTOR *position);
 void func_800848B4(s32 parent, s32 child);
 
-typedef struct {
+/* Per display buffer: its environments, its ordering table (0x400 entries)
+ * and its terrain triangle packets (0x10000 bytes). */
+typedef struct DisplayBuffer {
     DRAWENV draw;
     DISPENV disp;
-    u32 unk70;
-    u32 unk74;
+    u32 *ot;       /* 0x70 */
+    void *packets; /* 0x74 */
 } DisplayBuffer;
 
 extern DisplayBuffer D_8009BBC8[2];
@@ -150,7 +153,7 @@ void func_8002C6E0(s32 r, s32 g, s32 b);
 void func_8004A10C(s32 r, s32 g, s32 b);
 
 /* Actor slots (0x80 bytes each). */
-typedef struct {
+typedef struct WorldmapActor {
     s16 command;     /* 0x00: pending command */
     s16 command_arg;
     s16 unk4;
@@ -252,7 +255,7 @@ typedef struct {
     TexAnimFrame *frames;
 } TexAnimSlot;
 
-typedef struct {
+typedef struct TexAnim {
     u8 *images;
     TexAnimSlot *slot;
     s16 frame;
@@ -286,7 +289,7 @@ extern s32 D_80050100;          /* ordering-table depth shift */
 MATRIX *func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrixYXZ */
 
 /* Textured quad packet (PsyQ POLY_FT4 layout). */
-typedef struct {
+typedef struct PolyFT4 {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
@@ -407,7 +410,7 @@ extern void *D_8009BE1C[2]; /* effect quads, per display buffer */
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
 
 /* Queued actor placement (0x18 bytes, ring of 32). */
-typedef struct {
+typedef struct PlaceRequest {
     s16 actor;
     s16 pad2;
     s32 px, py, pz;
@@ -428,7 +431,7 @@ s32 func_8008C364(WorldmapActor *actor, s32 kind);
  * (func_8008E190), 3 takes the exit from the camera target's region of path
  * table 3 (func_80070CFC), 4 only records a destination (func_80094238). A
  * scene of -1 ends a table. */
-typedef struct {
+typedef struct PathRegion {
     s16 x, z, w, h;
     s16 scene;
     s16 entry;
@@ -453,13 +456,13 @@ extern void *D_8009BE08, *D_8009D3C0; /* disc and host-file request buffers */
 extern void *D_8009D7D4; /* unused bytes drained from the final CD sector */
 extern s32 D_8009D808, D_8009BE44, D_8009BCB8;
 
-typedef struct {
+typedef struct DiscReadRequest {
     s32 sector;
     s32 bytes;
     u8 *destination;
 } DiscReadRequest;
 
-typedef struct {
+typedef struct HostReadRequest {
     char *path;
     s32 offset;
     s32 bytes;
@@ -497,7 +500,7 @@ typedef struct {
 } TerrainBlock;
 
 /* Terrain texture entry (8 bytes): offset of its data within the section. */
-typedef struct {
+typedef struct TerrainTexture {
     u8 *data;
     s32 unk4;
 } TerrainTexture;
@@ -505,12 +508,13 @@ typedef struct {
 extern u16 D_8009D478[16]; /* terrain CLUTs */
 extern TerrainTexture *D_8009C7EC;
 
-/* Resident text window. */
-typedef struct {
+/* Resident text window (resident/window.h, 0x90 bytes). */
+typedef struct TextWindow {
     u8 pad0[0x10];
     u16 flags;      /* 0x10 */
     u8 pad12[0x56];
     s8 unk68;       /* 0x68 */
+    u8 pad69[0x27];
 } TextWindow;
 
 extern TextWindow D_8009D498;
@@ -524,7 +528,7 @@ void func_80034614(void *window);
 
 /* Area object (0x54 bytes, 512 of them, eight per group): a particle
  * emitter. */
-typedef struct {
+typedef struct AreaObject {
     s32 unk0;         /* emit timer reload */
     s32 unk4;         /* packed emit timer: low delay, high repeats */
     s16 unk8;         /* most live particles */
@@ -556,7 +560,7 @@ typedef struct {
 #define EFFECT_ENABLED(slot) (((s16 *)&(slot)->timer)[1])
 
 /* Effect slot (0x4C bytes, 256 of them): one particle. */
-typedef struct {
+typedef struct EffectSlot {
     s16 id;            /* emitting area object */
     s16 unk2;
     s32 timer;         /* 0x04: see EFFECT_COUNT, EFFECT_ENABLED */
@@ -572,14 +576,14 @@ typedef struct {
 } EffectSlot;
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
-typedef struct {
+typedef struct Drift {
     s32 x;
     s32 unk4;
     s32 z;
     s32 unkC;
 } Drift;
 
-typedef struct {
+typedef struct DriftVelocity {
     s16 dx;
     s16 unk2;
     s16 dz;
@@ -652,7 +656,7 @@ extern s16 D_8009B18C[], D_8009B194[], D_8009B19C[], D_8009B1A4[];
 extern s32 D_8009CD44, D_8009BD2C;
 
 /* Frame state. */
-typedef struct {
+typedef struct WorldmapView {
     u8 pad0[0x70];
     u32 *ot; /* ordering table */
     s32 unk74;
@@ -839,7 +843,7 @@ void func_8002DD20(void *image); /* upload an image file */
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
 
 /* 9x9 terrain blocks around the camera: block numbers, row-major. */
-typedef struct {
+typedef struct BlockGrid {
     s16 cells[81];
 } BlockGrid;
 
@@ -882,7 +886,7 @@ extern VECTOR D_8009C5AC;
 void func_8008C28C(WorldmapActor *actor, s32 member);
 
 /* Recent positions of the player's vehicle (ring of 32). */
-typedef struct {
+typedef struct TrailPoint {
     VECTOR position;
     u16 heading;
     u16 pad;
@@ -911,7 +915,7 @@ extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E, D_8006EE66;
 s32 func_80093978(s32 x, s32 z); /* ground height at a position */
 
 /* Shared quad pool (192 quads), one copy per display buffer. */
-typedef struct {
+typedef struct QuadBuffer {
     PolyFT4 quads[0xC0];
 } QuadBuffer;
 
@@ -1046,7 +1050,7 @@ typedef struct {
 } CameraScratch;
 
 /* Gouraud triangle packet (PsyQ POLY_G3 layout). */
-typedef struct {
+typedef struct PolyG3 {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
@@ -1057,7 +1061,7 @@ typedef struct {
 } PolyG3;
 
 /* Flat rectangle packet (PsyQ TILE layout). */
-typedef struct {
+typedef struct Tile {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
@@ -1103,7 +1107,7 @@ void func_80097CB8(Camera *camera);
 void func_800976FC(s32 kind, s32 index);
 
 /* PsyQ POLY_G4 with per-vertex fields. */
-typedef struct {
+typedef struct PolyG4v {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
@@ -1277,7 +1281,7 @@ extern u16 D_8006EE7E;
 extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
 
 /* Ferry heading history (ring of 32). */
-typedef struct {
+typedef struct FerryHeading {
     s16 dx;
     s16 pad2;
     s16 dz;

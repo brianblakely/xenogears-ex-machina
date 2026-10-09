@@ -356,10 +356,10 @@ void func_8008106C(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38[0]);
-    func_800320E8(D_8009BCB0[0]);
-    func_800320E8(D_8009BC38[1]);
-    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009BBC8[0].ot);
+    func_800320E8(D_8009BBC8[1].ot);
+    func_800320E8(D_8009BBC8[0].packets);
+    func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
     D_8006F94E.scene = 0x1FA;
