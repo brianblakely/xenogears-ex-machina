@@ -208,7 +208,7 @@ typedef struct {
     u8 used;
     u8 field1;
     u8 mode;         /* 0x02: bit 0 ease, low nibble < 2 follows objects */
-    u8 kind;         /* 0x03 */
+    u8 tag;          /* 0x03: matched against D_800C3B84 */
     s16 current[3];  /* 0x04 */
     s16 slot;        /* 0x0A: the followed object (or the target x) */
     s16 height;      /* 0x0C: subtracted from its height (or the target y) */

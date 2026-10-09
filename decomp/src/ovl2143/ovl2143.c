@@ -54,7 +54,7 @@ u8 D_801E85A4[] = {
  * after D_801E8698, and the file ends with the rest of D_801E86B0's. */
 s32 D_801E85CC;
 u8 D_801E85D0[36]; /* never read */
-GroupModels D_801E85F4[8];
+ModelTable D_801E85F4[8];
 s32 D_801E8634;
 u8 *D_801E8638;
 u16 D_801E863C;
@@ -65,12 +65,12 @@ Actor *D_801E8670[10];
 s16 D_801E8698;
 s16 D_801E869C;
 SpritePool D_801E86A0;
-SlotPool D_801E86A8;
+EffectPool D_801E86A8;
 u16 D_801E86B0;
 
 /* Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */
-GroupModels *func_801DC22C(u8 *group, GroupModels *list) {
+ModelTable *func_801DC22C(u8 *group, ModelTable *list) {
     u32 count;
     u32 i;
 
@@ -90,7 +90,7 @@ GroupModels *func_801DC22C(u8 *group, GroupModels *list) {
  * model index past the group; each model node gets its packets for both
  * buffers (optionally after setting 8002cc10/8002cc74 parameters). Returns the
  * nodes, or NULL when there are none or an allocation fails. */
-ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32 configure,
+ModelPart *func_801DC2D0(ModelTable *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3) {
     HierarchyLink *link;
     ModelPart *parts;
@@ -128,26 +128,26 @@ ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32
     parts->scale[2] = 0x1000;
     parts->parent = NULL;
     parts->visible = 0;
-    parts->model = 0xFFFF;
-    parts->count = count;
+    parts->modelId = 0xFFFF;
+    parts->index = count;
     parts->packets[0] = NULL;
     parts->packets[1] = NULL;
-    parts->rot.vx = 0;
-    parts->rot.vy = 0;
-    parts->rot.vz = 0;
-    parts->pos[0] = 0;
-    parts->pos[1] = 0;
-    parts->pos[2] = 0;
-    parts->attachments[0] = NULL;
-    parts->attachments[1] = NULL;
-    parts->attachments[2] = NULL;
+    parts->rotation.vx = 0;
+    parts->rotation.vy = 0;
+    parts->rotation.vz = 0;
+    parts->translation[0] = 0;
+    parts->translation[1] = 0;
+    parts->translation[2] = 0;
+    parts->effects[0] = NULL;
+    parts->effects[1] = NULL;
+    parts->effects[2] = NULL;
     while (model < group->count || model == 0xFFFF) {
         if (parent == 0xFFFF) {
             part->parent = NULL;
         } else {
             part->parent = parts + parent + 1;
         }
-        part->count = index++;
+        part->index = index++;
         part->dirty = 1;
         part->rotate = 1;
         part->visible = 1;
@@ -155,8 +155,8 @@ ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32
         part->scale[1] = 0x1000;
         part->scale[2] = 0x1000;
         part->yxz = 0;
-        part->billboard = 0;
-        part->model = model;
+        part->field52 = 0;
+        part->modelId = model;
         if (model != 0xFFFF) {
             func_8002CB54(group->models[model], &part->packets[0], &part->packets[1]);
             if (part->packets[0] == NULL) {
@@ -169,20 +169,20 @@ ModelPart *func_801DC2D0(GroupModels *group, HierarchyLink *links, s32 mode, s32
             }
             func_8002C8CC(group->models[model], part->packets[0], mode);
             memcpy(part->packets[1], part->packets[0], group->models[model]->packet_size);
-            part->rot.vx = 0;
+            part->rotation.vx = 0;
         } else {
             part->packets[0] = NULL;
             part->packets[1] = NULL;
-            part->rot.vx = 0;
+            part->rotation.vx = 0;
         }
-        part->rot.vy = 0;
-        part->rot.vz = 0;
-        part->pos[0] = 0;
-        part->pos[1] = 0;
-        part->pos[2] = 0;
-        part->attachments[0] = NULL;
-        part->attachments[1] = NULL;
-        part->attachments[2] = NULL;
+        part->rotation.vy = 0;
+        part->rotation.vz = 0;
+        part->translation[0] = 0;
+        part->translation[1] = 0;
+        part->translation[2] = 0;
+        part->effects[0] = NULL;
+        part->effects[1] = NULL;
+        part->effects[2] = NULL;
         part++;
         link++;
         model = link->model;
@@ -203,14 +203,14 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     u32 i;
 
     part = parts;
-    count = part->count;
-    part->world.t[0] = part->pos[0];
-    part->world.t[1] = part->pos[1];
-    part->world.t[2] = part->pos[2];
+    count = part->index;
+    part->world.t[0] = part->translation[0];
+    part->world.t[1] = part->translation[1];
+    part->world.t[2] = part->translation[2];
     if (part->yxz) {
-        func_8004A92C(&part->rot, &part->world);
+        func_8004A92C(&part->rotation, &part->world);
     } else {
-        func_8003F738(&part->rot, &part->world);
+        func_8003F738(&part->rotation, &part->world);
     }
     product = scale * parts->scale[0];
     product >>= 12;
@@ -227,19 +227,19 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     product = scale * parts->scale[2];
     product >>= 12;
     scaling->m[2][2] = product;
-    MulMatrix0(&parts->world, scaling, &parts->local);
-    parts->local.t[0] = parts->world.t[0];
-    parts->local.t[1] = parts->world.t[1];
-    parts->local.t[2] = parts->world.t[2];
+    MulMatrix0(&parts->world, scaling, &parts->transform);
+    parts->transform.t[0] = parts->world.t[0];
+    parts->transform.t[1] = parts->world.t[1];
+    parts->transform.t[2] = parts->world.t[2];
 
     for (i = 1; i < count; i++) {
         parts++;
         if (parts->rotate) {
             if (parts->yxz) {
-                func_8004A92C(&parts->rot, &parts->local);
+                func_8004A92C(&parts->rotation, &parts->transform);
                 parts->rotate = 0;
             } else {
-                func_8003F738(&parts->rot, &parts->local);
+                func_8003F738(&parts->rotation, &parts->transform);
                 parts->rotate = 0;
             }
         }
@@ -247,13 +247,13 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
             parts->dirty = 1;
         }
         if (parts->dirty) {
-            parts->local.t[0] = parts->pos[0];
-            parts->local.t[1] = parts->pos[1];
-            parts->local.t[2] = parts->pos[2];
+            parts->transform.t[0] = parts->translation[0];
+            parts->transform.t[1] = parts->translation[1];
+            parts->transform.t[2] = parts->translation[2];
             if (parts->parent != NULL) {
-                CompMatrix(&parts->parent->world, &parts->local, &parts->world);
+                CompMatrix(&parts->parent->world, &parts->transform, &parts->world);
             } else {
-                parts->world = parts->local;
+                parts->world = parts->transform;
             }
         }
     }
@@ -276,14 +276,14 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     u32 i;
 
     part = parts;
-    count = part->count;
-    part->world.t[0] = part->pos[0];
-    part->world.t[1] = part->pos[1];
-    part->world.t[2] = part->pos[2];
+    count = part->index;
+    part->world.t[0] = part->translation[0];
+    part->world.t[1] = part->translation[1];
+    part->world.t[2] = part->translation[2];
     if (part->yxz) {
-        func_8004A92C(&part->rot, &part->world);
+        func_8004A92C(&part->rotation, &part->world);
     } else {
-        func_8003F738(&part->rot, &part->world);
+        func_8003F738(&part->rotation, &part->world);
     }
     product = scale * parts->scale[0];
     product >>= 12;
@@ -300,10 +300,10 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     product = scale * parts->scale[2];
     product >>= 12;
     scaling->m[2][2] = product;
-    MulMatrix0(&parts->world, scaling, &parts->local);
-    parts->local.t[0] = parts->world.t[0];
-    parts->local.t[1] = parts->world.t[1];
-    parts->local.t[2] = parts->world.t[2];
+    MulMatrix0(&parts->world, scaling, &parts->transform);
+    parts->transform.t[0] = parts->world.t[0];
+    parts->transform.t[1] = parts->world.t[1];
+    parts->transform.t[2] = parts->world.t[2];
 
     for (i = 1; i < count; i++) {
         parts++;
@@ -318,9 +318,9 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
         if (parts->rotate) {
             scratch = (MATRIX *)0x1F800000;
             if (parts->yxz) {
-                func_8004A92C(&parts->rot, &parts->local);
+                func_8004A92C(&parts->rotation, &parts->transform);
             } else {
-                func_8003F738(&parts->rot, &parts->local);
+                func_8003F738(&parts->rotation, &parts->transform);
             }
             scratch->m[0][0] = parts->scale[0];
             scratch->m[0][1] = 0;
@@ -331,7 +331,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
             scratch->m[2][0] = 0;
             scratch->m[2][1] = 0;
             scratch->m[2][2] = parts->scale[2];
-            MulMatrix0(&parts->local, scratch, &parts->local);
+            MulMatrix0(&parts->transform, scratch, &parts->transform);
             if (parts->parent != NULL) {
                 scratch->m[0][0] = 0x1000000 / parts->parent->scale[0];
                 scratch->m[0][1] = 0;
@@ -342,17 +342,17 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
                 scratch->m[2][0] = 0;
                 scratch->m[2][1] = 0;
                 scratch->m[2][2] = 0x1000000 / parts->parent->scale[2];
-                MulMatrix0(scratch, &parts->local, &parts->local);
+                MulMatrix0(scratch, &parts->transform, &parts->transform);
             }
         }
         if (parts->dirty) {
-            parts->local.t[0] = parts->pos[0];
-            parts->local.t[1] = parts->pos[1];
-            parts->local.t[2] = parts->pos[2];
+            parts->transform.t[0] = parts->translation[0];
+            parts->transform.t[1] = parts->translation[1];
+            parts->transform.t[2] = parts->translation[2];
             if (parts->parent != NULL) {
-                CompMatrix(&parts->parent->world, &parts->local, &parts->world);
+                CompMatrix(&parts->parent->world, &parts->transform, &parts->world);
             } else {
-                parts->world = parts->local;
+                parts->world = parts->transform;
             }
         }
     }
@@ -372,7 +372,7 @@ void func_801DCC34(void) {
  * root's light and view transforms (MulMatrix0 into the light matrix,
  * CompMatrix into the rotation/translation) before its buffer's packets are
  * drawn (8002c700). */
-void func_801DCC3C(GroupModels *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 mode,
+void func_801DCC3C(ModelTable *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 mode,
                    u32 *ot, s32 buffer) {
     MATRIX *light_root = (MATRIX *)0x1F800020;
     MATRIX *view_root = (MATRIX *)0x1F800040;
@@ -381,18 +381,18 @@ void func_801DCC3C(GroupModels *group, ModelPart *parts, MATRIX *view, MATRIX *l
     u32 i;
 
     MulMatrix0(light, &parts->world, light_root);
-    CompMatrix(view, &parts->local, view_root);
-    count = parts->count;
+    CompMatrix(view, &parts->transform, view_root);
+    count = parts->index;
     parts++;
     for (i = 1; i < count; parts++) {
         i++;
-        if (parts->model != 0xFFFF) {
+        if (parts->modelId != 0xFFFF) {
             MulMatrix0(light_root, &parts->world, m);
             SetLightMatrix(m);
             CompMatrix(view_root, &parts->world, m);
             SetRotMatrix(m);
             SetTransMatrix(m);
-            func_8002C700(group->models[parts->model], parts->packets[buffer], ot, mode);
+            func_8002C700(group->models[parts->modelId], parts->packets[buffer], ot, mode);
         }
     }
 }
@@ -404,7 +404,7 @@ void func_801DCD8C(ModelPart *parts) {
 
     if (parts != NULL) {
         part = parts;
-        for (i = 0; i < parts->count; part++) {
+        for (i = 0; i < parts->index; part++) {
             i++;
             if (part->packets[0] != NULL) {
                 func_800320E8(part->packets[0]);
@@ -412,14 +412,14 @@ void func_801DCD8C(ModelPart *parts) {
                 part->packets[1] = NULL;
             }
         }
-        parts->count = 0;
+        parts->index = 0;
         func_800320E8(parts);
     }
 }
 
 /* Release a model list; with `release_models` each model's own packets too
  * (8002cbbc). */
-void func_801DCE18(GroupModels *list, s32 release_models) {
+void func_801DCE18(ModelTable *list, s32 release_models) {
     u32 i;
 
     if (list != NULL) {
@@ -455,7 +455,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     SVECTOR v;
     VECTOR front, back;
     s32 depth, depth2;
-    GroupModels *models;
+    ModelTable *models;
     ModelPart *part;
     ModelPart *parts;
     u16 scale;
@@ -478,11 +478,11 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     part = actor->parts;
     models = actor->models;
     scale = actor->scale;
-    count = part->count;
+    count = part->index;
     parts = part;
-    CompMatrix(m, &part->local, view);
+    CompMatrix(m, &part->transform, view);
     if (!(actor->flags & 1)) {
-        CompMatrix(&part->local, &actor->parts[1].world, scratch);
+        CompMatrix(&part->transform, &actor->parts[1].world, scratch);
         SetRotMatrix(scratch);
         SetTransMatrix(scratch);
         v.vx = 0;
@@ -505,7 +505,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         placed->t[1] = actor->h60;
         placed->t[2] = back.vz;
         CompMatrix(m, placed, placed);
-        shade = actor->scale - (actor->h60 - actor->parts->pos[1]) / 4;
+        shade = actor->scale - (actor->h60 - actor->parts->translation[1]) / 4;
         if (shade < 0) {
             shade = 0;
         }
@@ -562,20 +562,20 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     }
     MulMatrix0(light, &part->world, placed);
     for (i = 1, part++; i < count; i++, part++) {
-        if (part->model == 0xFFFF || !part->visible) {
+        if (part->modelId == 0xFFFF || !part->visible) {
             continue;
         }
         MulMatrix0(placed, &part->world, scratch);
         SetLightMatrix(scratch);
         CompMatrix(view, &part->world, scratch);
-        if (part->billboard > 0) {
+        if ((s16)part->field52 > 0) {
             scratch->m[0][0] = actor->scale;
             scratch->m[0][2] = 0;
             scratch->m[1][0] = 0;
             scratch->m[1][2] = 0;
             scratch->m[2][0] = 0;
             scratch->m[2][2] = actor->scale;
-            if (part->billboard == 1) {
+            if ((s16)part->field52 == 1) {
                 SET_COLUMN_Y(scratch, view->m[0][1], view->m[1][1], view->m[2][1]);
             } else {
                 SET_COLUMN_Y(scratch, 0, actor->scale, 0);
@@ -583,7 +583,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         }
         SetRotMatrix(scratch);
         SetTransMatrix(scratch);
-        func_8002C700(models->models[part->model], part->packets[buffer], ot, mode);
+        func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
     }
     record = actor->records24;
     for (i = 0; i < actor->count10D; record++, i++) {
@@ -593,10 +593,10 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         if ((s16)record->h0 < 0) {
             continue;
         }
-        sun.vx = -D_801E8698 * func_8003F8CC(parts->rot.vy + 0x400) / 4096;
-        sun.vz = D_801E8698 * func_8003F8B0(parts->rot.vy + 0x400) / 4096;
+        sun.vx = -D_801E8698 * func_8003F8CC(parts->rotation.vy + 0x400) / 4096;
+        sun.vz = D_801E8698 * func_8003F8B0(parts->rotation.vy + 0x400) / 4096;
         sun.vy = actor->h3E;
-        CompMatrix(&parts->local, &parts[(s16)record->h0].world, scratch);
+        CompMatrix(&parts->transform, &parts[(s16)record->h0].world, scratch);
         SetRotMatrix(scratch);
         SetTransMatrix(scratch);
         for (k = 0; k < record->rings; k++) {
@@ -609,7 +609,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         }
         entry = record->entries;
         for (k = 0; k < record->entryCount; k++, entry++) {
-            CompMatrix(&parts->local, &parts[entry->h6].world, scratch);
+            CompMatrix(&parts->transform, &parts[entry->h6].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
             gte_ldv0(entry);
@@ -668,7 +668,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             ch->sprite->x3 = (ch->history.screen.second + ch->time)->vx;
             ch->sprite->y3 = (ch->history.screen.second + ch->time)->vy;
         } else {
-            CompMatrix(&parts->local, &parts[ch->id].world, scratch);
+            CompMatrix(&parts->transform, &parts[ch->id].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
             side = ch->time & 1;
@@ -738,9 +738,9 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
  * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. */
-s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
-    PoolSlot *slot;
-    PoolSlot *last;
+s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
+    Tween *slot;
+    Tween *last;
     u8 *track;
     SVECTOR move;
     VECTOR moved;
@@ -754,122 +754,122 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     s32 dx, dy, dz, dist, limit, turn;
     s32 low, high;
 
-    count = parts->count;
+    count = parts->index;
     for (i = 0; i < count; i++, parts++) {
-        if (parts->attachments[0] != NULL) {
-            slot = parts->attachments[0];
+        if (parts->effects[0] != NULL) {
+            slot = (Tween *)parts->effects[0];
             kind = slot->kind;
             switch (kind & 0xF) {
             case 0:
-                track = slot->u.track.pos;
+                track = slot->u.track.cursor;
                 if (!(kind & 0x10)) {
-                    parts->rot.vx = *(u16 *)track;
+                    parts->rotation.vx = *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(kind & 0x20)) {
-                    parts->rot.vy = *(u16 *)track;
+                    parts->rotation.vy = *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(kind & 0x40)) {
-                    parts->rot.vz = *(u16 *)track;
-                    slot->u.track.pos += 2;
+                    parts->rotation.vz = *(u16 *)track;
+                    slot->u.track.cursor += 2;
                 }
                 break;
             case 1:
                 if (!(kind & 0x10)) {
-                    TRACK_STEP(parts->rot.vx, slot->u.track.pos);
+                    TRACK_STEP(parts->rotation.vx, slot->u.track.cursor);
                 }
                 if (!(kind & 0x20)) {
-                    TRACK_STEP(parts->rot.vy, slot->u.track.pos);
+                    TRACK_STEP(parts->rotation.vy, slot->u.track.cursor);
                 }
                 if (!(kind & 0x40)) {
-                    TRACK_STEP(parts->rot.vz, slot->u.track.pos);
+                    TRACK_STEP(parts->rotation.vz, slot->u.track.cursor);
                 }
                 break;
             case 2:
-                track = slot->u.track.pos;
+                track = slot->u.track.cursor;
                 if (!(kind & 0x10)) {
-                    parts->rot.vx += *(u16 *)track;
+                    parts->rotation.vx += *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(kind & 0x20)) {
-                    parts->rot.vy += *(u16 *)track;
+                    parts->rotation.vy += *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(kind & 0x40)) {
-                    parts->rot.vz += *(u16 *)track;
-                    slot->u.track.pos += 2;
+                    parts->rotation.vz += *(u16 *)track;
+                    slot->u.track.cursor += 2;
                 }
                 break;
             case 3:
                 time = slot->time + 1;
-                parts->rot.vx = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                parts->rot.vy = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->rotation.vx = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                parts->rotation.vy = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
-                parts->rot.vz = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->rotation.vz = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 break;
             case 4: {
                 s16 sx, sy, sz;
-                sx = (slot->u.value[3] - parts->rot.vx) / slot->duration;
-                sy = (slot->u.value[4] - parts->rot.vy) / slot->duration;
-                sz = (slot->u.value[5] - parts->rot.vz) / slot->duration;
+                sx = (slot->u.values[3] - parts->rotation.vx) / slot->duration;
+                sy = (slot->u.values[4] - parts->rotation.vy) / slot->duration;
+                sz = (slot->u.values[5] - parts->rotation.vz) / slot->duration;
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    parts->rot.vx = slot->u.value[3];
-                    parts->rot.vy = slot->u.value[4];
-                    parts->rot.vz = slot->u.value[5];
+                    parts->rotation.vx = slot->u.values[3];
+                    parts->rotation.vy = slot->u.values[4];
+                    parts->rotation.vz = slot->u.values[5];
                 } else {
-                    parts->rot.vx += sx;
-                    parts->rot.vy += sy;
-                    parts->rot.vz += sz;
+                    parts->rotation.vx += sx;
+                    parts->rotation.vy += sy;
+                    parts->rotation.vz += sz;
                     slot->time = 0;
                 }
                 break;
             }
             case 5:
-                slot->u.value[0] += slot->u.value[3];
-                parts->rot.vx += slot->u.value[0];
-                slot->u.value[1] += slot->u.value[4];
-                parts->rot.vy += slot->u.value[1];
-                slot->u.value[2] += slot->u.value[5];
+                slot->u.values[0] += slot->u.values[3];
+                parts->rotation.vx += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                parts->rotation.vy += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
                 last = slot;
-                parts->rot.vz += slot->u.value[2];
+                parts->rotation.vz += slot->u.values[2];
                 break;
             case 7:
             case 8:
-                dx = slot->u.value[3] - parts->pos[0];
-                dy = slot->u.value[4] - parts->pos[1];
-                dz = slot->u.value[5] - parts->pos[2];
+                dx = slot->u.values[3] - parts->translation[0];
+                dy = slot->u.values[4] - parts->translation[1];
+                dz = slot->u.values[5] - parts->translation[2];
                 dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
                 last = slot;
-                turn = (ratan2(-dx, -dz) - parts->rot.vy) & 0xFFF;
+                turn = (ratan2(-dx, -dz) - parts->rotation.vy) & 0xFFF;
                 if (turn >= 0x800) {
                     turn -= 0x1000;
                 }
-                limit = slot->u.value[1] + (dist + slot->time) * slot->u.value[2] / slot->u.value[0];
+                limit = slot->u.values[1] + (dist + slot->time) * slot->u.values[2] / slot->u.values[0];
                 if ((turn < 0 ? -turn : turn) < limit) {
-                    parts->rot.vy += turn;
+                    parts->rotation.vy += turn;
                 } else if (turn < 0) {
-                    parts->rot.vy -= limit;
+                    parts->rotation.vy -= limit;
                 } else {
-                    parts->rot.vy += limit;
+                    parts->rotation.vy += limit;
                 }
                 if ((kind & 0xF) == 7) {
-                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - parts->rot.vx) & 0xFFF;
+                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - parts->rotation.vx) & 0xFFF;
                     if (turn >= 0x800) {
                         turn -= 0x1000;
                     }
                     if ((turn < 0 ? -turn : turn) < limit) {
-                        parts->rot.vx += turn;
+                        parts->rotation.vx += turn;
                     } else if (turn < 0) {
-                        parts->rot.vx -= limit;
+                        parts->rotation.vx -= limit;
                     } else {
-                        parts->rot.vx += limit;
+                        parts->rotation.vx += limit;
                     }
                 }
                 if (last->time < 0x7D00) {
@@ -878,13 +878,13 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 goto rot_done;
             }
             if (++slot->time >= slot->duration) {
-                if (!slot->flag) {
+                if (!slot->field1) {
                     if (slot->tag == tag) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, slot);
-                    parts->attachments[0] = NULL;
+                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    parts->effects[0] = NULL;
                 } else {
                     if (slot->tag == tag) {
                         result |= 4;
@@ -892,13 +892,13 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     result |= 0x400;
                     if ((kind & 0xF) < 3) {
                         slot->time = 0;
-                        slot->u.track.pos = slot->u.track.start;
+                        slot->u.track.cursor = slot->u.track.start;
                     } else {
                         slot->time = -1;
                         if ((kind & 0xF) == 5) {
-                            last->u.value[3] = 0;
-                            last->u.value[4] = 0;
-                            last->u.value[5] = 0;
+                            last->u.values[3] = 0;
+                            last->u.values[4] = 0;
+                            last->u.values[5] = 0;
                         }
                     }
                 }
@@ -912,57 +912,57 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
             parts->rotate = 1;
             parts->dirty = 1;
         }
-        if (parts->attachments[1] != NULL) {
-            slot = parts->attachments[1];
+        if (parts->effects[1] != NULL) {
+            slot = (Tween *)parts->effects[1];
             pos_kind = slot->kind;
             switch (pos_kind & 0xF) {
             case 0:
-                track = slot->u.track.pos;
+                track = slot->u.track.cursor;
                 if (!(pos_kind & 0x10)) {
-                    parts->pos[0] = *(s16 *)track;
+                    parts->translation[0] = *(s16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(pos_kind & 0x20)) {
-                    parts->pos[1] = *(s16 *)track;
+                    parts->translation[1] = *(s16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 }
                 if (!(pos_kind & 0x40)) {
-                    parts->pos[2] = *(s16 *)track;
-                    slot->u.track.pos += 2;
+                    parts->translation[2] = *(s16 *)track;
+                    slot->u.track.cursor += 2;
                 }
                 break;
             case 1:
                 if (!(pos_kind & 0x10)) {
-                    TRACK_STEP(parts->pos[0], slot->u.track.pos);
+                    TRACK_STEP(parts->translation[0], slot->u.track.cursor);
                 }
                 if (!(pos_kind & 0x20)) {
-                    TRACK_STEP(parts->pos[1], slot->u.track.pos);
+                    TRACK_STEP(parts->translation[1], slot->u.track.cursor);
                 }
                 if (!(pos_kind & 0x40)) {
-                    TRACK_STEP(parts->pos[2], slot->u.track.pos);
+                    TRACK_STEP(parts->translation[2], slot->u.track.cursor);
                 }
                 break;
             case 2:
-                track = slot->u.track.pos;
+                track = slot->u.track.cursor;
                 if (!(pos_kind & 0x10)) {
                     move.vx = *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 } else {
                     move.vx = 0;
                 }
                 if (!(pos_kind & 0x20)) {
                     move.vy = *(u16 *)track;
                     track += 2;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 } else {
                     move.vy = 0;
                 }
                 if (!(pos_kind & 0x40)) {
                     move.vz = *(u16 *)track;
-                    slot->u.track.pos += 2;
+                    slot->u.track.cursor += 2;
                 } else {
                     move.vz = 0;
                 }
@@ -970,54 +970,54 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 move.vy = move.vy * parts->scale[1] >> 12;
                 move.vz = move.vz * parts->scale[2] >> 12;
                 ApplyMatrix(&parts->world, &move, &moved);
-                parts->pos[0] += scale * moved.vx >> 12;
-                parts->pos[1] += scale * moved.vy >> 12;
-                parts->pos[2] += scale * moved.vz >> 12;
+                parts->translation[0] += scale * moved.vx >> 12;
+                parts->translation[1] += scale * moved.vy >> 12;
+                parts->translation[2] += scale * moved.vz >> 12;
                 break;
             case 3:
                 time = slot->time + 1;
-                parts->pos[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                parts->pos[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->translation[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                parts->translation[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
-                parts->pos[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->translation[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 break;
             case 4: {
                 s16 sx, sy, sz;
-                sx = (slot->u.value[3] - parts->pos[0]) / slot->duration;
-                sy = (slot->u.value[4] - parts->pos[1]) / slot->duration;
-                sz = (slot->u.value[5] - parts->pos[2]) / slot->duration;
+                sx = (slot->u.values[3] - parts->translation[0]) / slot->duration;
+                sy = (slot->u.values[4] - parts->translation[1]) / slot->duration;
+                sz = (slot->u.values[5] - parts->translation[2]) / slot->duration;
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    parts->pos[0] = slot->u.value[3];
-                    parts->pos[1] = slot->u.value[4];
-                    parts->pos[2] = slot->u.value[5];
+                    parts->translation[0] = slot->u.values[3];
+                    parts->translation[1] = slot->u.values[4];
+                    parts->translation[2] = slot->u.values[5];
                 } else {
-                    parts->pos[0] += sx;
-                    parts->pos[1] += sy;
-                    parts->pos[2] += sz;
+                    parts->translation[0] += sx;
+                    parts->translation[1] += sy;
+                    parts->translation[2] += sz;
                     slot->time = 0;
                 }
                 break;
             }
             case 5:
-                slot->u.value[0] += slot->u.value[3];
-                parts->pos[0] += slot->u.value[0];
-                slot->u.value[1] += slot->u.value[4];
-                parts->pos[1] += slot->u.value[1];
-                slot->u.value[2] += slot->u.value[5];
+                slot->u.values[0] += slot->u.values[3];
+                parts->translation[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                parts->translation[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
                 last = slot;
-                parts->pos[2] += slot->u.value[2];
+                parts->translation[2] += slot->u.values[2];
                 break;
             }
             if (++slot->time >= slot->duration) {
-                if (!slot->flag) {
+                if (!slot->field1) {
                     if (slot->tag == tag) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, slot);
-                    parts->attachments[1] = NULL;
+                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    parts->effects[1] = NULL;
                 } else {
                     if (slot->tag == tag) {
                         result |= 4;
@@ -1025,13 +1025,13 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     result |= 0x400;
                     if ((pos_kind & 0xF) < 3) {
                         slot->time = 0;
-                        slot->u.track.pos = slot->u.track.start;
+                        slot->u.track.cursor = slot->u.track.start;
                     } else {
                         slot->time = -1;
                         if ((pos_kind & 0xF) == 5) {
-                            last->u.value[3] = 0;
-                            last->u.value[4] = 0;
-                            last->u.value[5] = 0;
+                            last->u.values[3] = 0;
+                            last->u.values[4] = 0;
+                            last->u.values[5] = 0;
                         }
                     }
                 }
@@ -1043,57 +1043,57 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
             }
             parts->dirty = 1;
         }
-        if (parts->attachments[2] != NULL) {
-            slot = parts->attachments[2];
+        if (parts->effects[2] != NULL) {
+            slot = (Tween *)parts->effects[2];
             mode = slot->kind & 0xF;
             switch (mode) {
             case 3:
                 time = slot->time + 1;
-                parts->scale[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                parts->scale[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->scale[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                parts->scale[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
-                parts->scale[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->scale[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 break;
             case 4: {
                 s16 sx, sy, sz;
-                sx = (slot->u.value[3] - slot->u.value[0]) / slot->duration;
-                sy = (slot->u.value[4] - slot->u.value[1]) / slot->duration;
-                sz = (slot->u.value[5] - slot->u.value[2]) / slot->duration;
+                sx = (slot->u.values[3] - slot->u.values[0]) / slot->duration;
+                sy = (slot->u.values[4] - slot->u.values[1]) / slot->duration;
+                sz = (slot->u.values[5] - slot->u.values[2]) / slot->duration;
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    parts->scale[0] = slot->u.value[3];
-                    parts->scale[1] = slot->u.value[4];
-                    parts->scale[2] = slot->u.value[5];
+                    parts->scale[0] = slot->u.values[3];
+                    parts->scale[1] = slot->u.values[4];
+                    parts->scale[2] = slot->u.values[5];
                 } else {
-                    last->u.value[0] += sx;
-                    last->u.value[1] += sy;
-                    last->u.value[2] += sz;
-                    parts->scale[0] = last->u.value[0];
-                    parts->scale[1] = last->u.value[1];
-                    parts->scale[2] = last->u.value[2];
+                    last->u.values[0] += sx;
+                    last->u.values[1] += sy;
+                    last->u.values[2] += sz;
+                    parts->scale[0] = last->u.values[0];
+                    parts->scale[1] = last->u.values[1];
+                    parts->scale[2] = last->u.values[2];
                     slot->time = 0;
                 }
                 break;
             }
             case 5:
-                slot->u.value[0] += slot->u.value[3];
-                parts->scale[0] += slot->u.value[0];
-                slot->u.value[1] += slot->u.value[4];
-                parts->scale[1] += slot->u.value[1];
-                slot->u.value[2] += slot->u.value[5];
+                slot->u.values[0] += slot->u.values[3];
+                parts->scale[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                parts->scale[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
                 last = slot;
-                parts->scale[2] += slot->u.value[2];
+                parts->scale[2] += slot->u.values[2];
                 break;
             }
             if (++slot->time >= slot->duration) {
-                if (!slot->flag) {
+                if (!slot->field1) {
                     if (slot->tag == tag) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, slot);
-                    parts->attachments[2] = NULL;
+                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    parts->effects[2] = NULL;
                 } else {
                     if (slot->tag == tag) {
                         result |= 4;
@@ -1101,9 +1101,9 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     result |= 0x400;
                     slot->time = -1;
                     if (mode == 5) {
-                        last->u.value[3] = 0;
-                        last->u.value[4] = 0;
-                        last->u.value[5] = 0;
+                        last->u.values[3] = 0;
+                        last->u.values[4] = 0;
+                        last->u.values[5] = 0;
                     }
                 }
             } else {
@@ -1144,7 +1144,7 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
     if (i == 0) {
         data += (rot_count + 1) * 3;
     }
-    count = parts->count - 1;
+    count = parts->index - 1;
     for (i = 0; i < count; i++) {
         parts++;
         if (!(flags & 1) && rotations < rot_count) {
@@ -1152,11 +1152,11 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
             y = *data++;
             z = *data++;
             rotations++;
-            if ((parts->rot.vx != x || parts->rot.vy != y || parts->rot.vz != z) &&
-                (parts->attachments[0] == NULL || parts->attachments[0]->tag != 0xFF)) {
-                parts->rot.vx = x;
-                parts->rot.vy = y;
-                parts->rot.vz = z;
+            if ((parts->rotation.vx != x || parts->rotation.vy != y || parts->rotation.vz != z) &&
+                (parts->effects[0] == NULL || parts->effects[0]->tag != 0xFF)) {
+                parts->rotation.vx = x;
+                parts->rotation.vy = y;
+                parts->rotation.vz = z;
                 parts->dirty = 1;
                 parts->rotate = 1;
             }
@@ -1166,11 +1166,11 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
             y = *data++;
             z = *data++;
             positions++;
-            if ((parts->pos[0] != x || parts->pos[1] != y || parts->pos[2] != z) &&
-                (parts->attachments[1] == NULL || parts->attachments[1]->tag != 0xFF)) {
-                parts->pos[0] = x;
-                parts->pos[1] = y;
-                parts->pos[2] = z;
+            if ((parts->translation[0] != x || parts->translation[1] != y || parts->translation[2] != z) &&
+                (parts->effects[1] == NULL || parts->effects[1]->tag != 0xFF)) {
+                parts->translation[0] = x;
+                parts->translation[1] = y;
+                parts->translation[2] = z;
                 parts->dirty = 1;
             }
         }
@@ -1183,9 +1183,9 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
  * shortest angle differences (mode 1: to the absolute angles), each changed
  * position one of its movement (mode 1: to the absolute position); kept
  * tweens (tag 0xff) stay, other nodes lose theirs. Returns the node count. */
-u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode,
+u16 func_801DF0B4(EffectPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode,
                   s32 smooth, s32 tag) {
-    PoolSlot *tween;
+    EffectEntry *tween;
     u16 rot_count;
     u16 rotations;
     u16 pos_count;
@@ -1212,7 +1212,7 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
     if (i == 0) {
         data += (rot_count + 1) * 3;
     }
-    count = parts->count - 1;
+    count = parts->index - 1;
     for (i = 0; i < count; i++) {
         parts++;
         if (!(flags & 1) && rotations < rot_count) {
@@ -1220,9 +1220,9 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
             y = *data++;
             z = *data++;
             rotations++;
-            if (parts->rot.vx != x || parts->rot.vy != y || parts->rot.vz != z) {
-                if (parts->attachments[0] != NULL) {
-                    tween = parts->attachments[0];
+            if (parts->rotation.vx != x || parts->rotation.vy != y || parts->rotation.vz != z) {
+                if (parts->effects[0] != NULL) {
+                    tween = parts->effects[0];
                     if (tween->tag == 0xFF) {
                         goto positions; /* a kept tween stays */
                     }
@@ -1231,42 +1231,42 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
                 }
                 if (tween != NULL) {
                     tween->used = 1;
-                    tween->flag = smooth;
+                    tween->field1 = smooth;
                     tween->kind = mode + 3;
                     tween->tag = tag;
-                    tween->u.value[0] = parts->rot.vx;
-                    tween->u.value[1] = parts->rot.vy;
-                    tween->u.value[2] = parts->rot.vz;
-                    x = (x - parts->rot.vx) & 0xFFF;
+                    tween->params[0] = parts->rotation.vx;
+                    tween->params[1] = parts->rotation.vy;
+                    tween->params[2] = parts->rotation.vz;
+                    x = (x - parts->rotation.vx) & 0xFFF;
                     if (x >= 0x800) {
                         x -= 0x1000;
                     }
-                    tween->u.value[3] = x;
-                    y = (y - parts->rot.vy) & 0xFFF;
+                    tween->params[3] = x;
+                    y = (y - parts->rotation.vy) & 0xFFF;
                     if (y >= 0x800) {
                         y -= 0x1000;
                     }
-                    tween->u.value[4] = y;
-                    z = (z - parts->rot.vz) & 0xFFF;
+                    tween->params[4] = y;
+                    z = (z - parts->rotation.vz) & 0xFFF;
                     if (z >= 0x800) {
                         z -= 0x1000;
                     }
-                    tween->u.value[5] = z;
+                    tween->params[5] = z;
                     if (mode) {
-                        tween->u.value[3] += parts->rot.vx;
-                        tween->u.value[4] += parts->rot.vy;
-                        tween->u.value[5] += parts->rot.vz;
+                        tween->params[3] += parts->rotation.vx;
+                        tween->params[4] += parts->rotation.vy;
+                        tween->params[5] += parts->rotation.vz;
                     }
                     tween->time = 0;
                     tween->duration = duration;
-                    parts->attachments[0] = tween;
+                    parts->effects[0] = tween;
                     goto positions;
                 }
             }
         }
-        if (parts->attachments[0] != NULL && parts->attachments[0]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->attachments[0]);
-            parts->attachments[0] = NULL;
+        if (parts->effects[0] != NULL && parts->effects[0]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->effects[0]);
+            parts->effects[0] = NULL;
         }
     positions:
         if (!(flags & 2) && positions < pos_count) {
@@ -1274,9 +1274,9 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
             y = *data++;
             z = *data++;
             positions++;
-            if (parts->pos[0] != x || parts->pos[1] != y || parts->pos[2] != z) {
-                if (parts->attachments[1] != NULL) {
-                    tween = parts->attachments[1];
+            if (parts->translation[0] != x || parts->translation[1] != y || parts->translation[2] != z) {
+                if (parts->effects[1] != NULL) {
+                    tween = parts->effects[1];
                     if (tween->tag == 0xFF) {
                         continue; /* a kept tween stays */
                     }
@@ -1285,31 +1285,31 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
                 }
                 if (tween != NULL) {
                     tween->used = 1;
-                    tween->flag = smooth;
+                    tween->field1 = smooth;
                     tween->kind = mode + 3;
                     tween->tag = tag;
-                    tween->u.value[0] = parts->pos[0];
-                    tween->u.value[1] = parts->pos[1];
-                    tween->u.value[2] = parts->pos[2];
+                    tween->params[0] = parts->translation[0];
+                    tween->params[1] = parts->translation[1];
+                    tween->params[2] = parts->translation[2];
                     if (mode) {
-                        tween->u.value[3] = x;
-                        tween->u.value[4] = y;
-                        tween->u.value[5] = z;
+                        tween->params[3] = x;
+                        tween->params[4] = y;
+                        tween->params[5] = z;
                     } else {
-                        tween->u.value[3] = x - parts->pos[0];
-                        tween->u.value[4] = y - parts->pos[1];
-                        tween->u.value[5] = z - parts->pos[2];
+                        tween->params[3] = x - parts->translation[0];
+                        tween->params[4] = y - parts->translation[1];
+                        tween->params[5] = z - parts->translation[2];
                     }
                     tween->time = 0;
                     tween->duration = duration;
-                    parts->attachments[1] = tween;
+                    parts->effects[1] = tween;
                     continue;
                 }
             }
         }
-        if (parts->attachments[1] != NULL && parts->attachments[1]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->attachments[1]);
-            parts->attachments[1] = NULL;
+        if (parts->effects[1] != NULL && parts->effects[1]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->effects[1]);
+            parts->effects[1] = NULL;
         }
     }
     return count;
@@ -1317,29 +1317,29 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32
 
 /* Release the attachments of node `index` selected by `mask` (bit 0: w70,
  * bit 1: w74, bit 2: w78) back to `pool`. */
-void func_801DF52C(SlotPool *pool, ModelPart *part, s32 index, s32 mask) {
-    if (index < part->count) {
+void func_801DF52C(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
+    if (index < part->index) {
         part += index;
-        if (part->attachments[0] != NULL && (mask & 1)) {
-            func_801DF7A8(pool, part->attachments[0]);
-            part->attachments[0] = NULL;
+        if (part->effects[0] != NULL && (mask & 1)) {
+            func_801DF7A8(pool, part->effects[0]);
+            part->effects[0] = NULL;
         }
-        if (part->attachments[1] != NULL && (mask & 2)) {
-            func_801DF7A8(pool, part->attachments[1]);
-            part->attachments[1] = NULL;
+        if (part->effects[1] != NULL && (mask & 2)) {
+            func_801DF7A8(pool, part->effects[1]);
+            part->effects[1] = NULL;
         }
-        if (part->attachments[2] != NULL && (mask & 4)) {
-            func_801DF7A8(pool, part->attachments[2]);
-            part->attachments[2] = NULL;
+        if (part->effects[2] != NULL && (mask & 4)) {
+            func_801DF7A8(pool, part->effects[2]);
+            part->effects[2] = NULL;
         }
     }
 }
 
 /* Allocate `capacity` 0x14-byte slots for a pool, all free. */
-SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity) {
+EffectPool *func_801DF5F4(EffectPool *pool, s32 capacity) {
     if (capacity <= 0 ||
-        (pool->capacity = capacity, func_80032498(4, 0),
-         (pool->slots = func_80031BDC(capacity * sizeof(PoolSlot), 0)) == NULL)) {
+        (pool->count = capacity, func_80032498(4, 0),
+         (pool->entries = func_80031BDC(capacity * sizeof(EffectEntry), 0)) == NULL)) {
         return NULL;
     }
     func_801DF6A8(pool);
@@ -1347,23 +1347,23 @@ SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity) {
 }
 
 /* Release a pool's slots. */
-void func_801DF668(SlotPool *pool) {
+void func_801DF668(EffectPool *pool) {
     pool->next = 0;
-    if (pool->slots != NULL) {
-        func_800320E8(pool->slots);
+    if (pool->entries != NULL) {
+        func_800320E8(pool->entries);
     }
-    pool->slots = NULL;
+    pool->entries = NULL;
 }
 
 /* Mark every slot of a pool free. */
-void func_801DF6A8(SlotPool *pool) {
-    PoolSlot *slot;
+void func_801DF6A8(EffectPool *pool) {
+    EffectEntry *slot;
     s32 i;
 
-    if (pool->slots != NULL) {
-        slot = pool->slots;
+    if (pool->entries != NULL) {
+        slot = pool->entries;
         pool->next = 0;
-        for (i = 0; i < pool->capacity; i++) {
+        for (i = 0; i < pool->count; i++) {
             slot->used = 0;
             slot++;
         }
@@ -1372,18 +1372,18 @@ void func_801DF6A8(SlotPool *pool) {
 
 /* Take the first free slot (the caller marks it used) and advance the search
  * position past used slots; NULL when the pool is full. */
-PoolSlot *func_801DF6F0(SlotPool *pool) {
-    PoolSlot *slot;
+EffectEntry *func_801DF6F0(EffectPool *pool) {
+    EffectEntry *slot;
     u32 capacity;
 
-    if (pool->next < pool->capacity) {
-        slot = &pool->slots[pool->next];
+    if (pool->next < pool->count) {
+        slot = &pool->entries[pool->next];
         if (slot->used) {
             return NULL;
         }
         pool->next++;
-        capacity = pool->capacity;
-        while (pool->next < capacity && pool->slots[pool->next].used != 0) {
+        capacity = pool->count;
+        while (pool->next < capacity && pool->entries[pool->next].used != 0) {
             pool->next++;
         }
         return slot;
@@ -1393,13 +1393,13 @@ PoolSlot *func_801DF6F0(SlotPool *pool) {
 
 /* Free a slot, moving the search position back to it; returns its index or
  * -1 without a slot. */
-s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot) {
+s32 func_801DF7A8(EffectPool *pool, EffectEntry *slot) {
     s32 index;
 
     if (slot == NULL) {
         return -1;
     }
-    index = ((u32)slot - (u32)pool->slots) / sizeof(PoolSlot);
+    index = ((u32)slot - (u32)pool->entries) / sizeof(EffectEntry);
     if (index < pool->next) {
         pool->next = index;
     }
@@ -1411,10 +1411,10 @@ s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot) {
  * is applied at once): each node with a track gets a tween (unless it holds
  * a kept one), a node without one loses its tween. The keyframe is walked
  * with a u16 cursor. */
-s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
+s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *key;
     u8 *kind;
-    PoolSlot *tween;
+    Tween *tween;
     u8 *values;
     u16 count;
     u16 rot_count;
@@ -1430,7 +1430,7 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
         return 1;
     }
     rot_count = key->rotationCount;
-    count = parts->count;
+    count = parts->index;
     pos_count = key->translationCount;
     if (rot_count + 1 < count) {
         count = rot_count + 1;
@@ -1452,55 +1452,55 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     for (i = 0; i < count; i++) {
         kind = (u8 *)(data + 2);
         if (*data != 0xFFFF) {
-            if (parts->attachments[0] != NULL) {
-                tween = parts->attachments[0];
+            if (parts->effects[0] != NULL) {
+                tween = (Tween *)parts->effects[0];
                 if (tween->tag == 0xFF) {
                     goto kept0; /* a kept tween stays */
                 }
             } else {
-                tween = func_801DF6F0(pool);
+                tween = (Tween *)func_801DF6F0(pool);
             }
             if (tween != NULL) {
                 tween->used = 1;
-                tween->flag = mode;
+                tween->field1 = mode;
                 tween->kind = kind[0];
                 tween->tag = tag;
-                tween->u.track.pos = tween->u.track.start = values + *data;
+                tween->u.track.cursor = tween->u.track.start = values + *data;
                 tween->time = 0;
                 tween->duration = duration;
-                parts->attachments[0] = tween;
+                parts->effects[0] = (EffectEntry *)tween;
             }
         } else {
-            if (parts->attachments[0] != NULL && i != 0 && parts->attachments[0]->tag != 0xFF) {
-                func_801DF7A8(pool, parts->attachments[0]);
-                parts->attachments[0] = NULL;
+            if (parts->effects[0] != NULL && i != 0 && parts->effects[0]->tag != 0xFF) {
+                func_801DF7A8(pool, parts->effects[0]);
+                parts->effects[0] = NULL;
             }
         }
     kept0:
         data++;
         if (*data != 0xFFFF) {
-            if (parts->attachments[1] != NULL) {
-                tween = parts->attachments[1];
+            if (parts->effects[1] != NULL) {
+                tween = (Tween *)parts->effects[1];
                 if (tween->tag == 0xFF) {
                     goto kept1; /* a kept tween stays */
                 }
             } else {
-                tween = func_801DF6F0(pool);
+                tween = (Tween *)func_801DF6F0(pool);
             }
             if (tween != NULL) {
                 tween->used = 1;
-                tween->flag = mode;
+                tween->field1 = mode;
                 tween->kind = kind[1];
                 tween->tag = tag;
-                tween->u.track.pos = tween->u.track.start = values + *data;
+                tween->u.track.cursor = tween->u.track.start = values + *data;
                 tween->time = 0;
                 tween->duration = duration;
-                parts->attachments[1] = tween;
+                parts->effects[1] = (EffectEntry *)tween;
             }
         } else {
-            if (parts->attachments[1] != NULL && i != 0 && parts->attachments[1]->tag != 0xFF) {
-                func_801DF7A8(pool, parts->attachments[1]);
-                parts->attachments[1] = NULL;
+            if (parts->effects[1] != NULL && i != 0 && parts->effects[1]->tag != 0xFF) {
+                func_801DF7A8(pool, parts->effects[1]);
+                parts->effects[1] = NULL;
             }
         }
     kept1:
@@ -1512,10 +1512,10 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
 
 /* Like func_801DF7F4, but each node after the root first takes the
  * keyframe's start values for the tracks that are started. */
-s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
+s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *key;
     u8 *kind;
-    PoolSlot *tween;
+    Tween *tween;
     s16 *values;
     u8 *tracks;
     u16 rot_count;
@@ -1536,7 +1536,7 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     mode &= 1;
     rotations = 0;
     rot_count = key->rotationCount;
-    count = parts->count;
+    count = parts->index;
     positions = 0;
     pos_count = key->translationCount;
     if (rot_count + 1 < count) {
@@ -1559,31 +1559,31 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     for (i = 0; i < count; i++) {
         kind = (u8 *)(data + 2);
         if (*data != 0xFFFF) {
-            if (parts->attachments[0] != NULL) {
-                tween = parts->attachments[0];
+            if (parts->effects[0] != NULL) {
+                tween = (Tween *)parts->effects[0];
                 if (tween->tag == 0xFF) {
                     goto skip0; /* a kept tween stays */
                 }
             } else {
-                tween = func_801DF6F0(pool);
+                tween = (Tween *)func_801DF6F0(pool);
             }
             if (!(flags & 1) && i != 0 && rotations < rot_count) {
-                parts->rot.vx = *values++;
-                parts->rot.vy = *values++;
-                parts->rot.vz = *values++;
+                parts->rotation.vx = *values++;
+                parts->rotation.vy = *values++;
+                parts->rotation.vz = *values++;
                 rotations++;
                 parts->dirty = 1;
                 parts->rotate = 1;
             }
             if (tween != NULL) {
                 tween->used = 1;
-                tween->flag = mode;
+                tween->field1 = mode;
                 tween->kind = kind[0];
                 tween->tag = tag;
-                tween->u.track.pos = tween->u.track.start = tracks + *data;
+                tween->u.track.cursor = tween->u.track.start = tracks + *data;
                 tween->time = 0;
                 tween->duration = duration;
-                parts->attachments[0] = tween;
+                parts->effects[0] = (EffectEntry *)tween;
             }
         } else {
         skip0:
@@ -1594,30 +1594,30 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
         }
         data++;
         if (*data != 0xFFFF) {
-            if (parts->attachments[1] != NULL) {
-                tween = parts->attachments[1];
+            if (parts->effects[1] != NULL) {
+                tween = (Tween *)parts->effects[1];
                 if (tween->tag == 0xFF) {
                     goto skip1; /* a kept tween stays */
                 }
             } else {
-                tween = func_801DF6F0(pool);
+                tween = (Tween *)func_801DF6F0(pool);
             }
             if (!(flags & 2) && i != 0 && positions < pos_count) {
-                parts->pos[0] = *values++;
-                parts->pos[1] = *values++;
-                parts->pos[2] = *values++;
+                parts->translation[0] = *values++;
+                parts->translation[1] = *values++;
+                parts->translation[2] = *values++;
                 positions++;
                 parts->dirty = 1;
             }
             if (tween != NULL) {
                 tween->used = 1;
-                tween->flag = mode;
+                tween->field1 = mode;
                 tween->kind = kind[1];
                 tween->tag = tag;
-                tween->u.track.pos = tween->u.track.start = tracks + *data;
+                tween->u.track.cursor = tween->u.track.start = tracks + *data;
                 tween->time = 0;
                 tween->duration = duration;
-                parts->attachments[1] = tween;
+                parts->effects[1] = (EffectEntry *)tween;
             }
         } else {
         skip1:
@@ -1633,45 +1633,45 @@ s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
 }
 
 /* Release every node's attachments except those tagged 0xff. */
-void func_801DFE8C(SlotPool *pool, ModelPart *parts) {
+void func_801DFE8C(EffectPool *pool, ModelPart *parts) {
     u16 count;
     s32 i;
 
-    count = parts->count;
+    count = parts->index;
     for (i = 0; i < count; i++, parts++) {
-        if (parts->attachments[0] != NULL && parts->attachments[0]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->attachments[0]);
-            parts->attachments[0] = NULL;
+        if (parts->effects[0] != NULL && parts->effects[0]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->effects[0]);
+            parts->effects[0] = NULL;
         }
-        if (parts->attachments[1] != NULL && parts->attachments[1]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->attachments[1]);
-            parts->attachments[1] = NULL;
+        if (parts->effects[1] != NULL && parts->effects[1]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->effects[1]);
+            parts->effects[1] = NULL;
         }
-        if (parts->attachments[2] != NULL && parts->attachments[2]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->attachments[2]);
-            parts->attachments[2] = NULL;
+        if (parts->effects[2] != NULL && parts->effects[2]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->effects[2]);
+            parts->effects[2] = NULL;
         }
     }
 }
 
 /* Release every node's attachments tagged `tag`. */
-void func_801DFF78(SlotPool *pool, ModelPart *parts, u8 tag) {
+void func_801DFF78(EffectPool *pool, ModelPart *parts, u8 tag) {
     u16 count;
     s32 i;
 
-    count = parts->count;
+    count = parts->index;
     for (i = 0; i < count; i++, parts++) {
-        if (parts->attachments[0] != NULL && parts->attachments[0]->tag == tag) {
-            func_801DF7A8(pool, parts->attachments[0]);
-            parts->attachments[0] = NULL;
+        if (parts->effects[0] != NULL && parts->effects[0]->tag == tag) {
+            func_801DF7A8(pool, parts->effects[0]);
+            parts->effects[0] = NULL;
         }
-        if (parts->attachments[1] != NULL && parts->attachments[1]->tag == tag) {
-            func_801DF7A8(pool, parts->attachments[1]);
-            parts->attachments[1] = NULL;
+        if (parts->effects[1] != NULL && parts->effects[1]->tag == tag) {
+            func_801DF7A8(pool, parts->effects[1]);
+            parts->effects[1] = NULL;
         }
-        if (parts->attachments[2] != NULL && parts->attachments[2]->tag == tag) {
-            func_801DF7A8(pool, parts->attachments[2]);
-            parts->attachments[2] = NULL;
+        if (parts->effects[2] != NULL && parts->effects[2]->tag == tag) {
+            func_801DF7A8(pool, parts->effects[2]);
+            parts->effects[2] = NULL;
         }
     }
 }
@@ -2221,7 +2221,7 @@ void func_801E1880(Actor **actors) {
     for (i = 0; i < 2; i++) {
         if (D_801E8648[i].active) {
             if (D_801E8648[i].actor >= 0 && (actor = actors[D_801E8648[i].actor]) != NULL) {
-                CompMatrix(&actor->parts->local, &actor->parts[D_801E8648[i].node + 1].world, m);
+                CompMatrix(&actor->parts->transform, &actor->parts[D_801E8648[i].node + 1].world, m);
                 SetRotMatrix(m);
                 SetTransMatrix(m);
                 gte_ldv0(&D_801E8648[i].offset);
@@ -2679,7 +2679,7 @@ FrameCurve func_801E34BC(s32 type) {
     } while (0)
 
 /* Reset an actor's script state to run `entries` with the tables `locals`. */
-void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
+void func_801E3534(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals) {
     s16 none;
 
     none = -1;
@@ -2688,7 +2688,7 @@ void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
 
 /* Call script entry `entry` of `source` in `actor`: queued while the actor is
  * already in a call, else run at once from the entry. */
-void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
+void func_801E35D0(Actor *actor, Actor *source, EffectPool *pool, s32 entry) {
     if (actor != NULL && source != NULL) {
         if (actor->depth != 0) {
             if (actor->depth < 5) {
@@ -2716,7 +2716,7 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
 
 /* Run `ticks` steps of an actor: its hierarchy matrices, node tweens and
  * animation, then its script. Returns the tween changes. */
-s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4) {
+s32 func_801E36BC(Actor *actor, EffectPool *pool, s32 ticks, s32 arg3, s32 arg4) {
     s32 changed;
     s32 i;
 
@@ -2759,14 +2759,14 @@ void func_801E37D0(Actor *actor) {
                 } else {
                     m = &D_801E8670[actor->parent]->parts->world;
                 }
-                MulMatrix2(m, &actor->parts->local);
+                MulMatrix2(m, &actor->parts->transform);
                 MulMatrix2(m, &actor->parts->world);
             }
             if (actor->parent_node != 0) {
-                CompMatrix(&D_801E8670[actor->parent]->parts->local,
+                CompMatrix(&D_801E8670[actor->parent]->parts->transform,
                            &D_801E8670[actor->parent]->parts[actor->parent_node].world, m);
             } else {
-                m = &D_801E8670[actor->parent]->parts->local;
+                m = &D_801E8670[actor->parent]->parts->transform;
             }
             SetRotMatrix(m);
             SetTransMatrix(m);
@@ -2775,8 +2775,8 @@ void func_801E37D0(Actor *actor) {
             offset.vz = actor->offset[2];
             gte_ldv0(&offset);
             gte_rtv0tr();
-            gte_stlvnl(actor->parts->local.t);
-            gte_stlvnl(actor->parts->pos);
+            gte_stlvnl(actor->parts->transform.t);
+            gte_stlvnl(actor->parts->translation);
         }
     } else {
         actor->parent = 0xFF;
@@ -2816,7 +2816,7 @@ void func_801E37D0(Actor *actor) {
  * offsets survive the norm call for the heading. Case 0x6E consumes its
  * word even when the resolved actor is absent, and keeps the observed
  * actor pointer local to that wait. */
-void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
+void func_801E39F0(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
     Actor *other;
     ModelPart *part;
@@ -2857,16 +2857,16 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
         actor->drift[0] += actor->drift_accel[0];
         actor->drift[1] += actor->drift_accel[1];
         actor->drift[2] += actor->drift_accel[2];
-        actor->parts->rot.vx += actor->spin[0] >> 3;
-        actor->parts->rot.vy += actor->spin[1] >> 3;
-        actor->parts->rot.vz += actor->spin[2] >> 3;
+        actor->parts->rotation.vx += actor->spin[0] >> 3;
+        actor->parts->rotation.vy += actor->spin[1] >> 3;
+        actor->parts->rotation.vz += actor->spin[2] >> 3;
         step.vx = actor->drift[0] * actor->parts->scale[0] >> 12;
         step.vy = actor->drift[1] * actor->parts->scale[1] >> 12;
         step.vz = actor->drift[2] * actor->parts->scale[2] >> 12;
         ApplyMatrix(&actor->parts->world, &step, &moved);
-        actor->parts->pos[0] += actor->scale * moved.vx >> 12;
-        actor->parts->pos[1] += actor->scale * moved.vy >> 12;
-        actor->parts->pos[2] += actor->scale * moved.vz >> 12;
+        actor->parts->translation[0] += actor->scale * moved.vx >> 12;
+        actor->parts->translation[1] += actor->scale * moved.vy >> 12;
+        actor->parts->translation[2] += actor->scale * moved.vz >> 12;
     }
     running = 1;
     pc = (u16 *)actor->pc;
@@ -2878,12 +2878,12 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
             SVECTOR unused; /* unused in the original; reserves 8 bytes */
             SVECTOR probe;
 
-            probe.vx = actor->parts->pos[0];
+            probe.vx = actor->parts->translation[0];
             probe.vy = 0;
-            probe.vz = actor->parts->pos[2];
+            probe.vz = actor->parts->translation[2];
             probe.vy = actor->h60;
-            if (probe.vy < actor->parts->pos[1]) {
-                actor->parts->pos[1] = probe.vy;
+            if (probe.vy < actor->parts->translation[1]) {
+                actor->parts->translation[1] = probe.vy;
                 pc = (u16 *)actor->w54;
                 actor->w54 = 0;
                 goto aim;
@@ -2945,15 +2945,15 @@ aim:
 
             part = actor->parts;
             func_801DFE8C(pool, part);
-            count = part->count - 1;
+            count = part->index - 1;
             for (j = 0; j < count; j++) {
                 part++;
-                part->rot.vx = 0;
-                part->rot.vy = 0;
-                part->rot.vz = 0;
-                part->pos[0] = 0;
-                part->pos[1] = 0;
-                part->pos[2] = 0;
+                part->rotation.vx = 0;
+                part->rotation.vy = 0;
+                part->rotation.vz = 0;
+                part->translation[0] = 0;
+                part->translation[1] = 0;
+                part->translation[2] = 0;
                 part->dirty = 1;
                 part->rotate = 1;
             }
@@ -3071,17 +3071,17 @@ aim:
             copy->count10D = 0;
             copy->count10E = 0;
             func_801E8510(copy);
-            parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            parts = func_80031BDC(actor->parts->index * sizeof(ModelPart), 1);
             copy->parts = parts;
-            for (n = 0; n < actor->parts->count; n++) {
+            for (n = 0; n < actor->parts->index; n++) {
                 parts[n] = actor->parts[n];
                 if (actor->parts[n].parent != NULL) {
                     parts[n].parent =
                         parts + ((u32)actor->parts[n].parent - (u32)actor->parts) / sizeof(ModelPart);
                 }
                 parts[n].visible = 0;
-                parts[n].attachments[0] = NULL;
-                parts[n].attachments[1] = NULL;
+                parts[n].effects[0] = NULL;
+                parts[n].effects[1] = NULL;
             }
             func_801E6578(pool, word, actor->parts, parts);
             if (arg != 0xFF) {
@@ -3259,9 +3259,9 @@ aim:
                     gte_ldv0(&v);
                     gte_rtv0tr();
                     gte_stlvnl(&ez);
-                    d.vx = D_801E8670[n]->parts->pos[0] - node->world.t[0];
-                    d.vy = D_801E8670[n]->parts->pos[1] - node->world.t[1];
-                    d.vz = D_801E8670[n]->parts->pos[2] - node->world.t[2];
+                    d.vx = D_801E8670[n]->parts->translation[0] - node->world.t[0];
+                    d.vy = D_801E8670[n]->parts->translation[1] - node->world.t[1];
+                    d.vz = D_801E8670[n]->parts->translation[2] - node->world.t[2];
                     D_801E8670[n]->offset[0] = func_801E66BC(&d, &ey, &ez, actor->scale);
                     D_801E8670[n]->offset[1] = func_801E66BC(&d, &ez, &ex, actor->scale);
                     D_801E8670[n]->offset[2] = func_801E66BC(&d, &ex, &ey, actor->scale);
@@ -3305,9 +3305,9 @@ aim:
             entry = word >> 8;
             dist /= actor->h8E;
             found = 0;
-            if (tween->attachments[0] != NULL) {
-                found = entry == tween->attachments[0]->time;
-            } else if (tween->attachments[1] != NULL && tween->attachments[1]->time == entry) {
+            if (tween->effects[0] != NULL) {
+                found = entry == (s16)tween->effects[0]->time;
+            } else if (tween->effects[1] != NULL && (s16)tween->effects[1]->time == entry) {
                 found = 1;
             }
             if (found) {
@@ -3431,18 +3431,18 @@ aim:
             ry = *pc++;
             rz = *pc++;
             root = actor->parts;
-            rx = (s16)(root->rot.vx + rx);
-            ry = (s16)(root->rot.vy + ry);
-            rz = (s16)(root->rot.vz + rz);
+            rx = (s16)(root->rotation.vx + rx);
+            ry = (s16)(root->rotation.vy + ry);
+            rz = (s16)(root->rotation.vz + rz);
             func_801E59D4(pool, actor->parts, arg, (s16)rx, (s16)ry, (s16)rz);
             changed = -1;
             break;
         }
         case 0x42:
         case 0x43: /* turn the root toward the target (0x43: heading only) */
-            offset1 = actor->target[1] - actor->parts->pos[1];
-            offset2 = actor->target[0] - actor->parts->pos[0];
-            offset0 = actor->target[2] - actor->parts->pos[2];
+            offset1 = actor->target[1] - actor->parts->translation[1];
+            offset2 = actor->target[0] - actor->parts->translation[0];
+            offset0 = actor->target[2] - actor->parts->translation[2];
             if (op == 0x43) {
                 pitch = 0;
                 offset1 = 0;
@@ -3481,9 +3481,9 @@ aim:
             actor->b36 = arg;
             break;
         case 0x49: /* place the root */
-            actor->parts->pos[0] = (s16)*pc++;
-            actor->parts->pos[1] = (s16)*pc++;
-            actor->parts->pos[2] = (s16)*pc++;
+            actor->parts->translation[0] = (s16)*pc++;
+            actor->parts->translation[1] = (s16)*pc++;
+            actor->parts->translation[2] = (s16)*pc++;
             break;
         case 0x4A: /* (arg 0xfb) put the root at distance h8e from the target */
             if (arg != 0xFB) {
@@ -3492,13 +3492,13 @@ aim:
             {
                 s32 dx, dy, dz, dist;
 
-                dx = actor->parts->pos[0] - actor->target[0];
-                dy = actor->parts->pos[1] - actor->target[1];
-                dz = actor->parts->pos[2] - actor->target[2];
+                dx = actor->parts->translation[0] - actor->target[0];
+                dy = actor->parts->translation[1] - actor->target[1];
+                dz = actor->parts->translation[2] - actor->target[2];
                 dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-                actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
-                actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
-                actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+                actor->parts->translation[0] = actor->target[0] + dx * actor->h8E / dist;
+                actor->parts->translation[1] = actor->target[1] + dy * actor->h8E / dist;
+                actor->parts->translation[2] = actor->target[2] + dz * actor->h8E / dist;
             }
             break;
         case 0x4B: /* drift = three words */
@@ -3523,15 +3523,15 @@ aim:
             break;
         case 0x4F: { /* drift toward the target over `arg` frames */
             s32 dist_drift;
-            offset0 = actor->target[0] - actor->parts->pos[0];
-            dist = actor->target[1] - actor->parts->pos[1];
-            offset2 = actor->target[2] - actor->parts->pos[2];
+            offset0 = actor->target[0] - actor->parts->translation[0];
+            dist = actor->target[1] - actor->parts->translation[1];
+            offset2 = actor->target[2] - actor->parts->translation[2];
             if (arg == 0) {
                 arg = 1;
             }
             dist_drift = SquareRoot0(offset0 * offset0 + dist * dist + offset2 * offset2) / arg;
             actor->drift[2] = (dist_drift << 12) / (actor->scale * actor->parts->scale[2] >> 12) / 2;
-            if (((ratan2(-offset0, -offset2) - (u16)actor->parts->rot.vy + 0x400) & 0xFFF) < 0x800) {
+            if (((ratan2(-offset0, -offset2) - (u16)actor->parts->rotation.vy + 0x400) & 0xFFF) < 0x800) {
                 actor->drift[2] = -actor->drift[2];
             }
             break;
@@ -3576,14 +3576,14 @@ aim:
             return;
         case 0x5C: /* jump when at the target */
             word = *pc++;
-            if (actor->target[0] == actor->parts->pos[0] && actor->target[1] == actor->parts->pos[1] &&
-                actor->target[2] == actor->parts->pos[2]) {
+            if (actor->target[0] == actor->parts->translation[0] && actor->target[1] == actor->parts->translation[1] &&
+                actor->target[2] == actor->parts->translation[2]) {
                 pc = (u16 *)((u8 *)start + (s16)word);
             }
             break;
         case 0x5D: /* node (word)'s billboard mode = `arg` */
             word = *pc++;
-            actor->parts[(s16)word].billboard = arg;
+            actor->parts[(s16)word].field52 = arg;
             break;
         case 0x5E: /* scale = word */
             word = *pc++;
@@ -3690,48 +3690,48 @@ aim:
 /* Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
  * through its first attachment (a kind-3 tween of the shortest angle
  * differences over `duration` ticks), taking a pool slot if it has none. */
-void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz) {
-    PoolSlot *tween;
+void func_801E59D4(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz) {
+    EffectEntry *tween;
 
     if (duration < 2) {
-        part->rot.vx = rx;
-        part->rot.vy = ry;
-        part->rot.vz = rz;
+        part->rotation.vx = rx;
+        part->rotation.vy = ry;
+        part->rotation.vz = rz;
         part->rotate = 1;
         return;
     }
-    if (part->rot.vx != rx || part->rot.vy != ry || part->rot.vz != rz) {
-        if (part->attachments[0] != NULL) {
-            tween = part->attachments[0];
+    if (part->rotation.vx != rx || part->rotation.vy != ry || part->rotation.vz != rz) {
+        if (part->effects[0] != NULL) {
+            tween = part->effects[0];
         } else {
             tween = func_801DF6F0(pool);
         }
         if (tween != NULL) {
             tween->used = 1;
             tween->kind = 3;
-            tween->flag = 0;
+            tween->field1 = 0;
             tween->tag = 0xFE;
-            tween->u.value[0] = part->rot.vx;
-            tween->u.value[1] = part->rot.vy;
-            tween->u.value[2] = part->rot.vz;
-            rx = (rx - part->rot.vx) & 0xFFF;
+            tween->params[0] = part->rotation.vx;
+            tween->params[1] = part->rotation.vy;
+            tween->params[2] = part->rotation.vz;
+            rx = (rx - part->rotation.vx) & 0xFFF;
             if (rx >= 0x800) {
                 rx -= 0x1000;
             }
-            tween->u.value[3] = rx;
-            ry = (ry - part->rot.vy) & 0xFFF;
+            tween->params[3] = rx;
+            ry = (ry - part->rotation.vy) & 0xFFF;
             if (ry >= 0x800) {
                 ry -= 0x1000;
             }
-            tween->u.value[4] = ry;
-            rz = (rz - part->rot.vz) & 0xFFF;
+            tween->params[4] = ry;
+            rz = (rz - part->rotation.vz) & 0xFFF;
             if (rz >= 0x800) {
                 rz -= 0x1000;
             }
-            tween->u.value[5] = rz;
+            tween->params[5] = rz;
             tween->time = 0;
             tween->duration = duration;
-            part->attachments[0] = tween;
+            part->effects[0] = tween;
         }
     }
 }
@@ -3740,35 +3740,35 @@ void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry
  * towards (x, y, z) in its first attachment: each tick it turns by at most
  * value 1 + (distance + time) * value 2 / value 0 (the first distance + 1),
  * time growing by `duration`, until released. */
-void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
+void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
                    s32 x, s32 y, s32 z) {
-    PoolSlot *tween;
+    EffectEntry *tween;
     s32 dx;
     s32 dy;
     s32 dz;
 
-    if (part->attachments[0] != NULL) {
-        tween = part->attachments[0];
+    if (part->effects[0] != NULL) {
+        tween = part->effects[0];
     } else {
         tween = func_801DF6F0(pool);
     }
     if (tween != NULL) {
         tween->used = 1;
         tween->kind = type + 7;
-        tween->flag = 0;
+        tween->field1 = 0;
         tween->tag = 0xFE;
-        dx = x - part->pos[0];
-        dy = y - part->pos[1];
-        dz = z - part->pos[2];
-        tween->u.value[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-        tween->u.value[1] = arg3;
-        tween->u.value[2] = arg4;
-        tween->u.value[3] = x;
-        tween->u.value[4] = y;
-        tween->u.value[5] = z;
+        dx = x - part->translation[0];
+        dy = y - part->translation[1];
+        dz = z - part->translation[2];
+        tween->params[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+        tween->params[1] = arg3;
+        tween->params[2] = arg4;
+        tween->params[3] = x;
+        tween->params[4] = y;
+        tween->params[5] = z;
         tween->time = 0;
         tween->duration = duration;
-        part->attachments[0] = tween;
+        part->effects[0] = tween;
     }
 }
 
@@ -3811,7 +3811,7 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
  * counts them and anim_state is the frame. The call event (type 8) reads a
  * local the original never sets; it is spilled, so it is loaded from its
  * stack slot. */
-void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
+void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
     u16 unset;
     AnimEvent *event;
     AnimEvent *call;
@@ -3974,9 +3974,9 @@ s32 func_801E6338(Actor *actor) {
     s32 dz;
 
     root = actor->parts;
-    dx = actor->target[0] - root->pos[0];
-    dy = actor->target[1] - root->pos[1];
-    dz = actor->target[2] - root->pos[2];
+    dx = actor->target[0] - root->translation[0];
+    dy = actor->target[1] - root->translation[1];
+    dz = actor->target[2] - root->translation[2];
     return SquareRoot0(dx * dx + dy * dy + dz * dz);
 }
 
@@ -3985,7 +3985,7 @@ s32 func_801E6338(Actor *actor) {
  * index + 1), updating its target and a running movement tween. */
 void func_801E63A8(Actor *actor) {
     VECTOR world;
-    PoolSlot *tween;
+    EffectEntry *tween;
     Actor *other;
     MATRIX *m;
     s32 index;
@@ -4017,9 +4017,9 @@ void func_801E63A8(Actor *actor) {
     if (other != NULL && index != actor->index) {
         m = SCRATCH_MATRIX;
         if (actor->aim_node != 0) {
-            CompMatrix(&other->parts->local, &other->parts[actor->aim_node].world, SCRATCH_MATRIX);
+            CompMatrix(&other->parts->transform, &other->parts[actor->aim_node].world, SCRATCH_MATRIX);
         } else {
-            m = &other->parts->local;
+            m = &other->parts->transform;
         }
         SetRotMatrix(m);
         SetTransMatrix(m);
@@ -4029,37 +4029,37 @@ void func_801E63A8(Actor *actor) {
         actor->target[0] = world.vx;
         actor->target[1] = world.vy;
         actor->target[2] = world.vz;
-        tween = actor->parts->attachments[0];
+        tween = actor->parts->effects[0];
         if (tween != NULL && (u32)(tween->kind - 7) < 2) {
-            tween->u.value[3] = world.vx;
-            tween->u.value[4] = world.vy;
-            tween->u.value[5] = world.vz;
+            tween->params[3] = world.vx;
+            tween->params[4] = world.vy;
+            tween->params[5] = world.vz;
         }
     }
 }
 
 /* Hide node `index` of `parts` and its descendants, showing the same nodes of
  * `other`, and release their attachments. */
-void func_801E6578(SlotPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
+void func_801E6578(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
     ModelPart *child;
     s32 count;
     s32 i;
 
     child = parts;
-    count = parts->count;
+    count = parts->index;
     parts[index].visible = 0;
     other[index].visible = 1;
-    func_801DF7A8(pool, parts[index].attachments[0]);
-    parts[index].attachments[0] = NULL;
-    func_801DF7A8(pool, parts[index].attachments[1]);
-    parts[index].attachments[1] = NULL;
-    func_801DF7A8(pool, parts[index].attachments[2]);
-    parts[index].attachments[2] = NULL;
+    func_801DF7A8(pool, parts[index].effects[0]);
+    parts[index].effects[0] = NULL;
+    func_801DF7A8(pool, parts[index].effects[1]);
+    parts[index].effects[1] = NULL;
+    func_801DF7A8(pool, parts[index].effects[2]);
+    parts[index].effects[2] = NULL;
     for (i = 1; i < count;) {
         child++;
         i++;
         if (child->parent == &parts[index]) {
-            func_801E6578(pool, child->count, parts, other);
+            func_801E6578(pool, child->index, parts, other);
         }
     }
 }
@@ -4070,7 +4070,7 @@ void func_801E6668(ModelPart *parts, ModelPart *other) {
     u16 count;
     s32 i;
 
-    count = parts->count;
+    count = parts->index;
     for (i = 1; i < count; i++) {
         parts++;
         other++;
@@ -4147,9 +4147,9 @@ s32 func_801E6910(Actor *actor, u8 ref, s32 *flag) {
  * relative to the current values (flag bits 5 and 6; mode 0: the end is a
  * target, else a delta); modes below 2 also set the start at once. With
  * flag bit 7 the node's descendants get the same tween. */
-void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
                    u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration) {
-    PoolSlot *tween;
+    EffectEntry *tween;
     ModelPart *child;
     s16 bx;
     s16 by;
@@ -4162,26 +4162,26 @@ void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 m
 
     type = flags & 7;
     if (type == 0) {
-        tween = part->attachments[0];
+        tween = part->effects[0];
     } else if (type == 1) {
-        tween = part->attachments[1];
+        tween = part->effects[1];
     } else {
-        tween = part->attachments[2];
+        tween = part->effects[2];
     }
     if (tween != NULL || (tween = func_801DF6F0(pool)) != NULL) {
         tween->used = 1;
-        tween->flag = smooth;
+        tween->field1 = smooth;
         tween->kind = mode + 3;
         tween->tag = tag;
         if (flags & 0x20) {
             if (type == 0) {
-                bx = part->rot.vx;
-                by = part->rot.vy;
-                bz = part->rot.vz;
+                bx = part->rotation.vx;
+                by = part->rotation.vy;
+                bz = part->rotation.vz;
             } else if (type == 1) {
-                bx = part->pos[0];
-                by = part->pos[1];
-                bz = part->pos[2];
+                bx = part->translation[0];
+                by = part->translation[1];
+                bz = part->translation[2];
             } else {
                 bx = part->scale[0];
                 by = part->scale[1];
@@ -4194,13 +4194,13 @@ void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 m
         }
         if (flags & 0x40) {
             if (type == 0) {
-                ex = part->rot.vx;
-                ey = part->rot.vy;
-                ez = part->rot.vz;
+                ex = part->rotation.vx;
+                ey = part->rotation.vy;
+                ez = part->rotation.vz;
             } else if (type == 1) {
-                ex = part->pos[0];
-                ey = part->pos[1];
-                ez = part->pos[2];
+                ex = part->translation[0];
+                ey = part->translation[1];
+                ez = part->translation[2];
             } else {
                 ex = part->scale[0];
                 ey = part->scale[1];
@@ -4211,46 +4211,46 @@ void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 m
             ey = 0;
             ez = 0;
         }
-        tween->u.value[0] = x0 + bx;
-        tween->u.value[1] = y0 + by;
-        tween->u.value[2] = z0 + bz;
+        tween->params[0] = x0 + bx;
+        tween->params[1] = y0 + by;
+        tween->params[2] = z0 + bz;
         if (mode == 0) {
-            tween->u.value[3] = x1 + ex - tween->u.value[0];
-            tween->u.value[4] = y1 + ey - tween->u.value[1];
-            tween->u.value[5] = z1 + ez - tween->u.value[2];
+            tween->params[3] = x1 + ex - tween->params[0];
+            tween->params[4] = y1 + ey - tween->params[1];
+            tween->params[5] = z1 + ez - tween->params[2];
         } else {
-            tween->u.value[3] = x1 + ex;
-            tween->u.value[4] = y1 + ey;
-            tween->u.value[5] = z1 + ez;
+            tween->params[3] = x1 + ex;
+            tween->params[4] = y1 + ey;
+            tween->params[5] = z1 + ez;
         }
         tween->time = 0;
         tween->duration = duration;
         if (type == 0) {
             if (mode < 2) {
-                part->rot.vx = tween->u.value[0];
-                part->rot.vy = tween->u.value[1];
-                part->rot.vz = tween->u.value[2];
+                part->rotation.vx = tween->params[0];
+                part->rotation.vy = tween->params[1];
+                part->rotation.vz = tween->params[2];
             }
-            part->attachments[0] = tween;
+            part->effects[0] = tween;
         } else if (type == 1) {
             if (mode < 2) {
-                part->pos[0] = tween->u.value[0];
-                part->pos[1] = tween->u.value[1];
-                part->pos[2] = tween->u.value[2];
+                part->translation[0] = (s16)tween->params[0];
+                part->translation[1] = (s16)tween->params[1];
+                part->translation[2] = (s16)tween->params[2];
             }
-            part->attachments[1] = tween;
+            part->effects[1] = tween;
         } else {
             if (mode < 2) {
-                part->scale[0] = tween->u.value[0];
-                part->scale[1] = tween->u.value[1];
-                part->scale[2] = tween->u.value[2];
+                part->scale[0] = tween->params[0];
+                part->scale[1] = tween->params[1];
+                part->scale[2] = tween->params[2];
             }
-            part->attachments[2] = tween;
+            part->effects[2] = tween;
         }
     }
     if (flags & 0x80) {
         child = actor->parts;
-        for (i = 1; i < actor->parts->count; i++) {
+        for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
                 func_801E6974(actor, pool, child, flags, mode, tag, smooth, x0, y0, z0, x1, y1, z1,
@@ -4268,7 +4268,7 @@ void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
     part->visible = flags & 1;
     if (flags & 0x80) {
         child = actor->parts;
-        for (i = 1; i < actor->parts->count; i++) {
+        for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
                 func_801E6D94(actor, child, flags);
@@ -4310,9 +4310,9 @@ void func_801E6F64(SpriteTask *sprite) {
     link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
     m = SCRATCH_MATRIX;
     if (link->node != 0) {
-        CompMatrix(&link->actor->parts->local, &link->actor->parts[link->node].world, SCRATCH_MATRIX);
+        CompMatrix(&link->actor->parts->transform, &link->actor->parts[link->node].world, SCRATCH_MATRIX);
     } else {
-        m = &link->actor->parts->local;
+        m = &link->actor->parts->transform;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
@@ -4336,23 +4336,23 @@ void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z)
 
     if ((flags & 7) == 0) {
         if (flags & 0x20) {
-            part->rot.vx += x;
-            part->rot.vy += y;
-            part->rot.vz += z;
+            part->rotation.vx += x;
+            part->rotation.vy += y;
+            part->rotation.vz += z;
         } else {
-            part->rot.vx = x;
-            part->rot.vy = y;
-            part->rot.vz = z;
+            part->rotation.vx = x;
+            part->rotation.vy = y;
+            part->rotation.vz = z;
         }
     } else if ((flags & 7) == 1) {
         if (flags & 0x20) {
-            part->pos[0] += x;
-            part->pos[1] += y;
-            part->pos[2] += z;
+            part->translation[0] += x;
+            part->translation[1] += y;
+            part->translation[2] += z;
         } else {
-            part->pos[0] = x;
-            part->pos[1] = y;
-            part->pos[2] = z;
+            part->translation[0] = x;
+            part->translation[1] = y;
+            part->translation[2] = z;
         }
     } else {
         if (flags & 0x20) {
@@ -4369,7 +4369,7 @@ void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z)
     part->rotate = 1;
     if (flags & 0x80) {
         child = actor->parts;
-        for (i = 1; i < actor->parts->count; i++) {
+        for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
                 func_801E7094(actor, child, flags, x, y, z);
@@ -4385,7 +4385,7 @@ void func_801E7298(Actor *actor) {
 
     pos.vy = actor->h60;
     if (actor->b36 == 0) {
-        actor->parts->pos[1] = pos.vy;
+        actor->parts->translation[1] = pos.vy;
     }
 }
 
@@ -4398,9 +4398,9 @@ void func_801E72CC(MATRIX *out, s32 unused, s32 index, s32 node) {
     actor = D_801E8670[index];
     if (actor != NULL) {
         if (node != 0) {
-            CompMatrix(&actor->parts->local, &actor->parts[node].world, out);
+            CompMatrix(&actor->parts->transform, &actor->parts[node].world, out);
         } else {
-            *out = actor->parts->local;
+            *out = actor->parts->transform;
         }
     }
 }
@@ -4526,9 +4526,9 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         actor->parts = func_801DC2D0(actor->models, links, 0, 0, 0, 0, 0, 0);
     }
     if (pos != NULL) {
-        actor->parts->pos[0] = pos[0];
-        actor->parts->pos[1] = pos[1];
-        actor->parts->pos[2] = pos[2];
+        actor->parts->translation[0] = pos[0];
+        actor->parts->translation[1] = pos[1];
+        actor->parts->translation[2] = pos[2];
     }
     if (!(flags & 1)) {
         actor->h90 = x;
@@ -4642,9 +4642,9 @@ void func_801E7D14(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed) {
     D_801E8698 = (func_8003F8CC(D_801E869C) + 0x1000) / 800 + 4;
     for (i = 0; i < 10; i++) {
         if (D_801E8670[i] != NULL) {
-            D_801E8670[i]->previous[0] = D_801E8670[i]->parts->pos[0];
-            D_801E8670[i]->previous[1] = D_801E8670[i]->parts->pos[1];
-            D_801E8670[i]->previous[2] = D_801E8670[i]->parts->pos[2];
+            D_801E8670[i]->previous[0] = D_801E8670[i]->parts->translation[0];
+            D_801E8670[i]->previous[1] = D_801E8670[i]->parts->translation[1];
+            D_801E8670[i]->previous[2] = D_801E8670[i]->parts->translation[2];
             func_801E36BC(D_801E8670[i], &D_801E86A8, steps, buffer, 1);
         }
     }
@@ -4658,9 +4658,9 @@ void func_801E7D14(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed) {
     SetColorMatrix(D_801E8644);
     for (i = 0; i < 10; i++) {
         if (D_801E8670[i] != NULL) {
-            D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->pos[0];
-            D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->pos[1];
-            D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->pos[2];
+            D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->translation[0];
+            D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->translation[1];
+            D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->translation[2];
             func_801DCEC8(D_801E8670[i], m, light, 1, 1, ot, buffer);
         }
     }

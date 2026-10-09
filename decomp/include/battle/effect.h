@@ -37,8 +37,8 @@ typedef struct {
 typedef struct {
     u8 used;
     u8 field1;     /* +1: smooth / looping */
-    u8 field2;     /* +2: type: 3 rotation, 7 + n movement, 0-2 tracks */
-    u8 kind;       /* +3: 0xFF persistent */
+    u8 kind;       /* +2: 3 rotation, 7 + n movement, 0-2 tracks */
+    u8 tag;        /* +3: 0xFF persistent */
     union {
         s16 values[6]; /* +4 */
         struct {

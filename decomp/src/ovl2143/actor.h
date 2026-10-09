@@ -92,7 +92,7 @@ typedef struct {
 
 /* A scene actor: a model hierarchy with its script state. */
 typedef struct Actor {
-    GroupModels *models;    /* +0 */
+    ModelTable *models;    /* +0 */
     ModelPart *parts;       /* +4 */
     s32 *entries;           /* +8: script entry points */
     EntryTable *shared;     /* +c: entries 0x50- */
@@ -251,21 +251,21 @@ void func_800796F4(void);
 
 void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer);
 void func_801E1880(Actor **actors);
-void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
-void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
-s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4);
+void func_801E3534(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals);
+void func_801E35D0(Actor *actor, Actor *source, EffectPool *pool, s32 entry);
+s32 func_801E36BC(Actor *actor, EffectPool *pool, s32 ticks, s32 arg3, s32 arg4);
 void func_801E37D0(Actor *actor);
-void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
+void func_801E39F0(Actor *actor, EffectPool *pool, s32 arg2, s32 arg3, s32 arg4);
 void func_801E5C74(Actor *actor, Animation *anim, s32 loop);
 s32 func_801E5CD8(Actor *actor, s32 which);
-void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2);
+void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2);
 void func_801E632C(Actor *actor);
 void func_801E63A8(Actor *actor);
 s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor);
 s32 func_801E67F8(void);
 s32 func_801E6830(Actor *actor, u8 ref, u16 *mask);
 s32 func_801E6910(Actor *actor, u8 ref, s32 *flag);
-void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
                    u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration);
 void func_801E6D94(Actor *actor, ModelPart *part, s32 flags);
 void func_801E6F64(SpriteTask *sprite);

@@ -84,7 +84,7 @@ s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale);
 s32 func_800AF400(void);
 u8 func_800AF438(BattleObject *object, u8 slot, u16 *mask); /* the slot of a target code */
 u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag);
-void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 kind, u8 field1,
+void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
                    s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
 void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
@@ -96,8 +96,8 @@ void func_800B0060(BattleObject *object);
 void func_800B00D0(void);
 void func_800B00F4(EffectPool *pool);
 /* Called unprototyped by the VM (its halfwords passed sign-extended). */
-void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
-                   u16 p5, u16 field12);
+void func_800B0164(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+                   u16 p5, u16 duration);
 void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
 s16 func_800B0B14(s32 key);
 s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
@@ -117,7 +117,7 @@ static FileRequest *D_800C3B78; /* the file list being read */
 static s16 D_800C3B7C;
 static s16 D_800C3B80; /* pulse level of the highlight colour */
 /* The camera. */
-static u8 D_800C3B84;  /* the channel kind reported in D_800C3B88 */
+static u8 D_800C3B84;  /* the channel tag reported in D_800C3B88 */
 static u8 D_800C3B88;  /* bit 0: that channel runs, bit 1: it finished */
 static u8 D_800C3B8C;  /* snap: channels 7 and 8 start at their targets */
 static s16 D_800C3B90; /* orbit yaw */
@@ -367,14 +367,14 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
     index = 1;
     id = pair[0];
     parent = pair[1];
-    root->flag4 = 1;
-    root->flag5 = 1;
-    root->flag6 = 1;
+    root->dirty = 1;
+    root->rotate = 1;
+    root->yxz = 1;
     root->scale[0] = 0x1000;
     root->scale[1] = 0x1000;
     root->scale[2] = 0x1000;
     root->parent = NULL;
-    root->flag7 = 0;
+    root->visible = 0;
     root->modelId = 0xFFFF;
     root->index = count;
     root->packets[0] = NULL;
@@ -396,13 +396,13 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
         }
         part->index = index;
         index++;
-        part->flag4 = 1;
-        part->flag5 = 1;
-        part->flag7 = 1;
+        part->dirty = 1;
+        part->rotate = 1;
+        part->visible = 1;
         part->scale[0] = 0x1000;
         part->scale[1] = 0x1000;
         part->scale[2] = 0x1000;
-        part->flag6 = 0;
+        part->yxz = 0;
         part->field52 = 0;
         part->modelId = id;
         if (id != 0xFFFF) {
@@ -453,7 +453,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     root->world.t[0] = root->translation[0];
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
-    if (root->flag6) {
+    if (root->yxz) {
         func_8004A92C(&root->rotation, &root->world);
     } else {
         func_8003F738(&root->rotation, &root->world);
@@ -473,18 +473,18 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     part->transform.t[2] = part->world.t[2];
     for (i = 1; i < count; i++) {
         part++;
-        if (part->flag5) {
-            if (part->flag6) {
+        if (part->rotate) {
+            if (part->yxz) {
                 func_8004A92C(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
             }
-            part->flag5 = 0;
+            part->rotate = 0;
         }
-        if (part->parent != NULL && part->parent->flag4 == 1) {
-            part->flag4 = 1;
+        if (part->parent != NULL && part->parent->dirty == 1) {
+            part->dirty = 1;
         }
-        if (part->flag4) {
+        if (part->dirty) {
             part->transform.t[0] = part->translation[0];
             part->transform.t[1] = part->translation[1];
             part->transform.t[2] = part->translation[2];
@@ -497,7 +497,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     }
     for (i = 1; i < count; i++) {
         root++;
-        root->flag4 = 0;
+        root->dirty = 0;
     }
     return count;
 }
@@ -519,7 +519,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     root->world.t[0] = root->translation[0];
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
-    if (root->flag6) {
+    if (root->yxz) {
         func_8004A92C(&root->rotation, &root->world);
     } else {
         func_8003F738(&root->rotation, &root->world);
@@ -546,16 +546,16 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     for (i = 1; i < count; i++) {
         part++;
         if (part->parent != NULL) {
-            if (part->parent->flag5 == 1) {
-                part->flag5 = 1;
+            if (part->parent->rotate == 1) {
+                part->rotate = 1;
             }
-            if (part->parent->flag4 == 1) {
-                part->flag4 = 1;
+            if (part->parent->dirty == 1) {
+                part->dirty = 1;
             }
         }
-        if (part->flag5) {
+        if (part->rotate) {
             scratch = (MATRIX *)0x1F800000;
-            if (part->flag6) {
+            if (part->yxz) {
                 func_8004A92C(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
@@ -583,7 +583,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
                 MulMatrix0(scratch, &part->transform, &part->transform);
             }
         }
-        if (part->flag4) {
+        if (part->dirty) {
             part->transform.t[0] = part->translation[0];
             part->transform.t[1] = part->translation[1];
             part->transform.t[2] = part->translation[2];
@@ -596,8 +596,8 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     }
     for (i = 1; i < count; i++) {
         root++;
-        root->flag5 = 0;
-        root->flag4 = 0;
+        root->rotate = 0;
+        root->dirty = 0;
     }
     return count;
 }
@@ -817,7 +817,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         MulMatrix0(light, &part->world, lighting);
         part++;
         for (i = 1; i < count; i++, part++) {
-            if (part->modelId != 0xFFFF && part->flag7 != 0) {
+            if (part->modelId != 0xFFFF && part->visible != 0) {
                 MulMatrix0(lighting, &part->world, scratch);
                 SetLightMatrix(scratch);
                 CompMatrix(camera, &part->world, scratch);
@@ -1022,7 +1022,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     for (i = 0; i < count; i++, part++) {
         if (part->effects[0] != NULL) {
             slot = (Tween *)part->effects[0];
-            kind = slot->field2;
+            kind = slot->kind;
             switch (kind & 0xF) {
             case 0:
                 track = slot->u.track.cursor;
@@ -1145,14 +1145,14 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
             check_rot:
                 if (++slot->time >= slot->duration) {
                     if (!slot->field1) {
-                        if (slot->kind == tag) {
+                        if (slot->tag == tag) {
                             result |= 2;
                         }
                         result |= 0x200;
                         func_800A23E8(pool, (EffectEntry *)slot);
                         part->effects[0] = NULL;
                     } else {
-                        if (slot->kind == tag) {
+                        if (slot->tag == tag) {
                             result |= 4;
                         }
                         result |= 0x400;
@@ -1169,7 +1169,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                         }
                     }
                 } else {
-                    if (slot->kind == tag) {
+                    if (slot->tag == tag) {
                         result |= 1;
                     }
                     result |= 0x100;
@@ -1177,12 +1177,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 break;
             }
         rot_done:
-            part->flag5 = 1;
-            part->flag4 = 1;
+            part->rotate = 1;
+            part->dirty = 1;
         }
         if (part->effects[1] != NULL) {
             slot = (Tween *)part->effects[1];
-            type = slot->field2;
+            type = slot->kind;
             switch (type & 0xF) {
             case 0:
                 track = slot->u.track.cursor;
@@ -1281,14 +1281,14 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
             }
             if (++slot->time >= slot->duration) {
                 if (!slot->field1) {
-                    if (slot->kind == tag) {
+                    if (slot->tag == tag) {
                         result |= 2;
                     }
                     result |= 0x200;
                     func_800A23E8(pool, (EffectEntry *)slot);
                     part->effects[1] = NULL;
                 } else {
-                    if (slot->kind == tag) {
+                    if (slot->tag == tag) {
                         result |= 4;
                     }
                     result |= 0x400;
@@ -1305,16 +1305,16 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     }
                 }
             } else {
-                if (slot->kind == tag) {
+                if (slot->tag == tag) {
                     result |= 1;
                 }
                 result |= 0x100;
             }
-            part->flag4 = 1;
+            part->dirty = 1;
         }
         if (part->effects[2] != NULL) {
             slot = (Tween *)part->effects[2];
-            mode = slot->field2 & 0xF;
+            mode = slot->kind & 0xF;
             switch (mode) {
             case 3:
                 time = slot->time + 1;
@@ -1358,14 +1358,14 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
             }
             if (++slot->time >= slot->duration) {
                 if (!slot->field1) {
-                    if (slot->kind == tag) {
+                    if (slot->tag == tag) {
                         result |= 2;
                     }
                     result |= 0x200;
                     func_800A23E8(pool, (EffectEntry *)slot);
                     part->effects[2] = NULL;
                 } else {
-                    if (slot->kind == tag) {
+                    if (slot->tag == tag) {
                         result |= 4;
                     }
                     result |= 0x400;
@@ -1377,13 +1377,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     }
                 }
             } else {
-                if (slot->kind == tag) {
+                if (slot->tag == tag) {
                     result |= 1;
                 }
                 result |= 0x100;
             }
-            part->flag5 = 1;
-            part->flag4 = 1;
+            part->rotate = 1;
+            part->dirty = 1;
         }
     }
     return result;
@@ -1428,12 +1428,12 @@ u16 func_800A1B50(ModelPart *root, s16 *data) {
             z = *data++;
             rotations++;
             if ((part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z)
-                && (part->effects[0] == NULL || part->effects[0]->kind != 0xFF)) {
+                && (part->effects[0] == NULL || part->effects[0]->tag != 0xFF)) {
                 part->rotation.vx = x;
                 part->rotation.vy = y;
                 part->rotation.vz = z;
-                part->flag4 = 1;
-                part->flag5 = 1;
+                part->dirty = 1;
+                part->rotate = 1;
             }
         }
         if (!(flags & 2) && translations < translationCount) {
@@ -1442,11 +1442,11 @@ u16 func_800A1B50(ModelPart *root, s16 *data) {
             z = *data++;
             translations++;
             if ((part->translation[0] != x || part->translation[1] != y || part->translation[2] != z)
-                && (part->effects[1] == NULL || part->effects[1]->kind != 0xFF)) {
+                && (part->effects[1] == NULL || part->effects[1]->tag != 0xFF)) {
                 part->translation[0] = x;
                 part->translation[1] = y;
                 part->translation[2] = z;
-                part->flag4 = 1;
+                part->dirty = 1;
             }
         }
     }
@@ -1499,7 +1499,7 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
                 if (part->effects[0] != NULL) {
                     entry = part->effects[0];
-                    if (entry->kind == 0xFF) {
+                    if (entry->tag == 0xFF) {
                         goto translation;
                     }
                 } else {
@@ -1508,8 +1508,8 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                 if (entry != NULL) {
                     entry->used = 1;
                     entry->field1 = smooth;
-                    entry->field2 = mode + 3;
-                    entry->kind = tag;
+                    entry->kind = mode + 3;
+                    entry->tag = tag;
                     entry->params[0] = part->rotation.vx;
                     entry->params[1] = part->rotation.vy;
                     entry->params[2] = part->rotation.vz;
@@ -1533,14 +1533,14 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         entry->params[4] += part->rotation.vy;
                         entry->params[5] += part->rotation.vz;
                     }
-                    entry->field10 = 0;
-                    entry->field12 = duration;
+                    entry->time = 0;
+                    entry->duration = duration;
                     part->effects[0] = entry;
                     goto translation;
                 }
             }
         }
-        if (part->effects[0] != NULL && part->effects[0]->kind != 0xFF) {
+        if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
             func_800A23E8(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
@@ -1553,7 +1553,7 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             if (part->translation[0] != x || part->translation[1] != y || part->translation[2] != z) {
                 if (part->effects[1] != NULL) {
                     entry = part->effects[1];
-                    if (entry->kind == 0xFF) {
+                    if (entry->tag == 0xFF) {
                         continue;
                     }
                 } else {
@@ -1562,8 +1562,8 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                 if (entry != NULL) {
                     entry->used = 1;
                     entry->field1 = smooth;
-                    entry->field2 = mode + 3;
-                    entry->kind = tag;
+                    entry->kind = mode + 3;
+                    entry->tag = tag;
                     entry->params[0] = part->translation[0];
                     entry->params[1] = part->translation[1];
                     entry->params[2] = part->translation[2];
@@ -1576,14 +1576,14 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         entry->params[4] = y - part->translation[1];
                         entry->params[5] = z - part->translation[2];
                     }
-                    entry->field10 = 0;
-                    entry->field12 = duration;
+                    entry->time = 0;
+                    entry->duration = duration;
                     part->effects[1] = entry;
                     continue;
                 }
             }
         }
-        if (part->effects[1] != NULL && part->effects[1]->kind != 0xFF) {
+        if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
             func_800A23E8(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
@@ -1733,7 +1733,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         if (*data != 0xFFFF) {
             if (part->effects[0] != NULL) {
                 entry = (Tween *)part->effects[0];
-                if (entry->kind == 0xFF) {
+                if (entry->tag == 0xFF) {
                     goto translation;
                 }
             } else {
@@ -1742,15 +1742,15 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
-                entry->field2 = types[0];
-                entry->kind = tag;
+                entry->kind = types[0];
+                entry->tag = tag;
                 entry->u.track.cursor = entry->u.track.start = tracks + *data;
                 entry->time = 0;
                 entry->duration = duration;
                 part->effects[0] = (EffectEntry *)entry;
             }
         } else {
-            if (part->effects[0] != NULL && i != 0 && part->effects[0]->kind != 0xFF) {
+            if (part->effects[0] != NULL && i != 0 && part->effects[0]->tag != 0xFF) {
                 func_800A23E8(pool, part->effects[0]);
                 part->effects[0] = NULL;
             }
@@ -1760,7 +1760,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         if (*data != 0xFFFF) {
             if (part->effects[1] != NULL) {
                 entry = (Tween *)part->effects[1];
-                if (entry->kind == 0xFF) {
+                if (entry->tag == 0xFF) {
                     goto next;
                 }
             } else {
@@ -1769,15 +1769,15 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
-                entry->field2 = types[1];
-                entry->kind = tag;
+                entry->kind = types[1];
+                entry->tag = tag;
                 entry->u.track.cursor = entry->u.track.start = tracks + *data;
                 entry->time = 0;
                 entry->duration = duration;
                 part->effects[1] = (EffectEntry *)entry;
             }
         } else {
-            if (part->effects[1] != NULL && i != 0 && part->effects[1]->kind != 0xFF) {
+            if (part->effects[1] != NULL && i != 0 && part->effects[1]->tag != 0xFF) {
                 func_800A23E8(pool, part->effects[1]);
                 part->effects[1] = NULL;
             }
@@ -1840,7 +1840,7 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         if (*data != 0xFFFF) {
             if (part->effects[0] != NULL) {
                 entry = (Tween *)part->effects[0];
-                if (entry->kind == 0xFF) {
+                if (entry->tag == 0xFF) {
                     goto skipRotation;
                 }
             } else {
@@ -1851,14 +1851,14 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                 part->rotation.vy = *values++;
                 part->rotation.vz = *values++;
                 rotations++;
-                part->flag4 = 1;
-                part->flag5 = 1;
+                part->dirty = 1;
+                part->rotate = 1;
             }
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
-                entry->field2 = types[0];
-                entry->kind = tag;
+                entry->kind = types[0];
+                entry->tag = tag;
                 entry->u.track.cursor = entry->u.track.start = tracks + *data;
                 entry->time = 0;
                 entry->duration = duration;
@@ -1875,7 +1875,7 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         if (*data != 0xFFFF) {
             if (part->effects[1] != NULL) {
                 entry = (Tween *)part->effects[1];
-                if (entry->kind == 0xFF) {
+                if (entry->tag == 0xFF) {
                     goto skipTranslation;
                 }
             } else {
@@ -1886,13 +1886,13 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                 part->translation[1] = *values++;
                 part->translation[2] = *values++;
                 translations++;
-                part->flag4 = 1;
+                part->dirty = 1;
             }
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
-                entry->field2 = types[1];
-                entry->kind = tag;
+                entry->kind = types[1];
+                entry->tag = tag;
                 entry->u.track.cursor = entry->u.track.start = tracks + *data;
                 entry->time = 0;
                 entry->duration = duration;
@@ -1917,36 +1917,36 @@ void func_800A2ACC(EffectPool *pool, ModelPart *part) {
     s32 i;
 
     for (i = 0; i < count; i++, part++) {
-        if (part->effects[0] != NULL && part->effects[0]->kind != 0xFF) {
+        if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
             func_800A23E8(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
-        if (part->effects[1] != NULL && part->effects[1]->kind != 0xFF) {
+        if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
             func_800A23E8(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
-        if (part->effects[2] != NULL && part->effects[2]->kind != 0xFF) {
+        if (part->effects[2] != NULL && part->effects[2]->tag != 0xFF) {
             func_800A23E8(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
     }
 }
 
-/* Release every part's attached effects of kind. */
-void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 kind) {
+/* Release every part's attached effects tagged `tag`. */
+void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 tag) {
     u16 count = part->index;
     s32 i;
 
     for (i = 0; i < count; i++, part++) {
-        if (part->effects[0] != NULL && part->effects[0]->kind == kind) {
+        if (part->effects[0] != NULL && part->effects[0]->tag == tag) {
             func_800A23E8(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
-        if (part->effects[1] != NULL && part->effects[1]->kind == kind) {
+        if (part->effects[1] != NULL && part->effects[1]->tag == tag) {
             func_800A23E8(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
-        if (part->effects[2] != NULL && part->effects[2]->kind == kind) {
+        if (part->effects[2] != NULL && part->effects[2]->tag == tag) {
             func_800A23E8(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
@@ -2601,7 +2601,7 @@ void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, 
     count = part++->index - 1;
     shift = D_80050100;
     for (i = 0; i < count; i++, part++) {
-        if (part->modelId != 0xFFFF && part->flag7) {
+        if (part->modelId != 0xFFFF && part->visible) {
             CompMatrix(view, &part->world, m);
             if ((u16)(part->field52 - 1) < 2) {
                 m->m[0][0] = 0x1000;
@@ -4848,8 +4848,8 @@ chosen:
                     part->translation[0] = 0;
                     part->translation[1] = 0;
                     part->translation[2] = 0;
-                    part->flag4 = 1;
-                    part->flag5 = 1;
+                    part->dirty = 1;
+                    part->rotate = 1;
                 }
             }
             break;
@@ -4979,7 +4979,7 @@ chosen:
                         parts[i].parent =
                             &parts[((u8 *)object->hierarchy[i].parent - (u8 *)object->hierarchy) / sizeof(ModelPart)];
                     }
-                    parts[i].flag7 = 0;
+                    parts[i].visible = 0;
                     parts[i].effects[0] = NULL;
                     parts[i].effects[1] = NULL;
                 }
@@ -5280,8 +5280,8 @@ chosen:
                 frames = distance / object->field8E;
                 found = 0;
                 if (part->effects[0] != NULL) {
-                    found = b1 == (s16)part->effects[0]->field10;
-                } else if (part->effects[1] != NULL && (s16)part->effects[1]->field10 == b1) {
+                    found = b1 == (s16)part->effects[0]->time;
+                } else if (part->effects[1] != NULL && (s16)part->effects[1]->time == b1) {
                     found = 1;
                 }
                 if (found) {
@@ -5923,7 +5923,7 @@ chosen:
             break;
         case 0x6B:
             word = *pc++;
-            object->hierarchy[(s16)word].flag6 = arg;
+            object->hierarchy[(s16)word].yxz = arg;
             break;
         case 0x6C:
             if (func_800286CC() != 0) {
@@ -6011,7 +6011,7 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
         part->rotation.vx = x;
         part->rotation.vy = y;
         part->rotation.vz = z;
-        part->flag5 = 1;
+        part->rotate = 1;
         return;
     }
     if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
@@ -6022,9 +6022,9 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
         }
         if (entry != NULL) {
             entry->used = 1;
-            entry->field2 = 3;
+            entry->kind = 3;
             entry->field1 = 0;
-            entry->kind = 0xFE;
+            entry->tag = 0xFE;
             entry->params[0] = part->rotation.vx;
             entry->params[1] = part->rotation.vy;
             entry->params[2] = part->rotation.vz;
@@ -6043,8 +6043,8 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
                 z -= 0x1000;
             }
             entry->params[5] = z;
-            entry->field10 = 0;
-            entry->field12 = duration;
+            entry->time = 0;
+            entry->duration = duration;
             part->effects[0] = entry;
         }
     }
@@ -6068,9 +6068,9 @@ void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 
     }
     if (entry != NULL) {
         entry->used = 1;
-        entry->field2 = type + 7;
+        entry->kind = type + 7;
         entry->field1 = 0;
-        entry->kind = 0xFE;
+        entry->tag = 0xFE;
         dx = x - part->translation[0];
         dy = y - part->translation[1];
         dz = z - part->translation[2];
@@ -6080,8 +6080,8 @@ void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 
         entry->params[3] = x;
         entry->params[4] = y;
         entry->params[5] = z;
-        entry->field10 = 0;
-        entry->field12 = field12;
+        entry->time = 0;
+        entry->duration = field12;
         part->effects[0] = entry;
     }
 }
@@ -6321,7 +6321,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     object->animationStart += 4;
                     break;
                 case 7: /* draw part (byte 4) = byte 5 bit 0 (6 bytes) */
-                    object->hierarchy[event->header.arg4].flag7 = event->header.arg5 & 1;
+                    object->hierarchy[event->header.arg4].visible = event->header.arg5 & 1;
                     object->animationStart += 6;
                     break;
                 case 8: /* start effect scripts on the object's slots (SlotEvent) */
@@ -6492,7 +6492,7 @@ void func_800AEF68(BattleObject *object) {
         object->position[1] = position.vy;
         object->position[2] = position.vz;
         entry = object->hierarchy->effects[0];
-        if (entry != NULL && (u32)(entry->field2 - 7) < 2) {
+        if (entry != NULL && (u32)(entry->kind - 7) < 2) {
             entry->params[3] = position.vx;
             entry->params[4] = position.vy;
             entry->params[5] = position.vz;
@@ -6514,8 +6514,8 @@ void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) 
 
     child = from;
     count = child->index;
-    from[index].flag7 = 0;
-    to[index].flag7 = 1;
+    from[index].visible = 0;
+    to[index].visible = 1;
     func_800A23E8(pool, from[index].effects[0]);
     from[index].effects[0] = NULL;
     func_800A23E8(pool, from[index].effects[1]);
@@ -6539,9 +6539,9 @@ void func_800AF270(ModelPart *from, ModelPart *to) {
     for (i = 1; i < count; i++) {
         from++;
         to++;
-        if (from->flag7) {
-            from->flag7 = 0;
-            to->flag7 = 1;
+        if (from->visible) {
+            from->visible = 0;
+            to->visible = 1;
         }
     }
 }
@@ -6631,7 +6631,7 @@ u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag) {
  * values with flag 0x20 (start) or 0x40 (end); mode 0 keeps the end as a
  * difference and modes 0 and 1 put the part at the start at once. With flag
  * 0x80 the part's children get the same effect. */
-void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 kind, u8 field1,
+void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
                    s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration) {
     EffectEntry *entry;
     u8 channel = flags & 7;
@@ -6654,8 +6654,8 @@ void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 f
     if (entry != NULL || (entry = func_800A2330(pool)) != NULL) {
         entry->used = 1;
         entry->field1 = field1;
-        entry->field2 = mode + 3;
-        entry->kind = kind;
+        entry->kind = mode + 3;
+        entry->tag = tag;
         if (flags & 0x20) {
             if (channel == 0) {
                 baseX = part->rotation.vx;
@@ -6706,8 +6706,8 @@ void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 f
             entry->params[4] = endY + offsetY;
             entry->params[5] = endZ + offsetZ;
         }
-        entry->field10 = 0;
-        entry->field12 = duration;
+        entry->time = 0;
+        entry->duration = duration;
         if (channel == 0) {
             if (mode < 2) {
                 part->rotation.vx = entry->params[0];
@@ -6736,7 +6736,7 @@ void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 f
         for (i = 1; i < object->hierarchy->index; i++) {
             child++;
             if (child->parent == part) {
-                func_800AF678(object, pool, child, flags, mode, kind, field1, startX, startY, startZ, endX, endY, endZ,
+                func_800AF678(object, pool, child, flags, mode, tag, field1, startX, startY, startZ, endX, endY, endZ,
                               duration);
             }
         }
@@ -6749,7 +6749,7 @@ void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
     ModelPart *child;
     s32 i;
 
-    part->flag7 = flags & 1;
+    part->visible = flags & 1;
     if (flags & 0x80) {
         child = object->hierarchy;
         for (i = 1; i < object->hierarchy->index; i++) {
@@ -6848,8 +6848,8 @@ void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y,
         part->scale[1] = y;
         part->scale[2] = z;
     }
-    part->flag4 = 1;
-    part->flag5 = 1;
+    part->dirty = 1;
+    part->rotate = 1;
     if (mode & 0x80) {
         child = object->hierarchy;
         for (i = 1; i < object->hierarchy->index; i++) {
@@ -6918,8 +6918,8 @@ void func_800B00F4(EffectPool *pool) {
 
 /* Start effect index (D_800C3BAC, taken from pool when unset) with its kind
  * and parameters, unless effects are disabled (D_800C37C8). */
-void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
-                   u16 p5, u16 field12) {
+void func_800B0164(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+                   u16 p5, u16 duration) {
     EffectEntry **slots;
     EffectEntry **slot;
     EffectEntry *entry;
@@ -6934,16 +6934,16 @@ void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 
         if (entry != NULL) {
             entry->used = 1;
             entry->field1 = 0;
-            entry->field2 = field2;
-            entry->kind = kind;
+            entry->kind = mode;
+            entry->tag = tag;
             entry->params[0] = p0;
             entry->params[1] = p1;
             entry->params[2] = p2;
             entry->params[3] = p3;
             entry->params[4] = p4;
             entry->params[5] = p5;
-            entry->field10 = 0;
-            entry->field12 = field12;
+            entry->time = 0;
+            entry->duration = duration;
         }
     }
 }
@@ -6956,7 +6956,7 @@ void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 
  * at the look-at distance, angle and height) and 8 the camera position (at
  * the orbit distance and angles, kept off the objects and above the
  * ground). Finished channels 0-6 are released; D_800C3B88 tells whether the
- * channel of kind D_800C3B84 is running (1) or has finished (2). */
+ * channel tagged D_800C3B84 is running (1) or has finished (2). */
 void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
     s32 step;
     s32 i;
@@ -6988,7 +6988,7 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
             }
             entry = D_800C3BAC[i];
             channel = (CameraChannel *)entry;
-            mode = entry->field2;
+            mode = entry->kind;
             if ((mode & 0xF) < 2) {
                 slot = (s16)entry->params[3];
                 if (D_800D3368[slot] != NULL) {
@@ -7048,42 +7048,42 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
             }
             switch (mode & 1) {
             case 0:
-                t = entry->field10 + 1;
-                valueX = channel->current[0] + (x - channel->current[0]) * t / (s16)entry->field12;
-                valueY = channel->current[1] + (y - channel->current[1]) * t / (s16)entry->field12;
-                valueZ = channel->current[2] + (z - channel->current[2]) * t / (s16)entry->field12;
+                t = entry->time + 1;
+                valueX = channel->current[0] + (x - channel->current[0]) * t / (s16)entry->duration;
+                valueY = channel->current[1] + (y - channel->current[1]) * t / (s16)entry->duration;
+                valueZ = channel->current[2] + (z - channel->current[2]) * t / (s16)entry->duration;
                 break;
             case 1:
-                dx = (x - channel->current[0]) / (s16)entry->field12;
-                dy = (y - channel->current[1]) / (s16)entry->field12;
-                dz = (z - channel->current[2]) / (s16)entry->field12;
+                dx = (x - channel->current[0]) / (s16)entry->duration;
+                dy = (y - channel->current[1]) / (s16)entry->duration;
+                dz = (z - channel->current[2]) / (s16)entry->duration;
                 valueX = channel->current[0];
                 valueY = channel->current[1];
                 valueZ = channel->current[2];
                 if (dx == 0 && dy == 0 && dz == 0) {
-                    entry->field10 = (s16)entry->field12;
+                    entry->time = (s16)entry->duration;
                 } else {
                     valueX += dx;
                     valueY += dy;
                     valueZ += dz;
-                    entry->field10 = 0;
+                    entry->time = 0;
                 }
                 channel->current[0] = valueX;
                 channel->current[1] = valueY;
                 channel->current[2] = valueZ;
                 break;
             }
-            if ((s16)++entry->field10 >= (s16)entry->field12) {
+            if ((s16)++entry->time >= (s16)entry->duration) {
                 if (i >= 7) {
-                    entry->field10 = (s16)entry->field12 - 1;
+                    entry->time = (s16)entry->duration - 1;
                 } else {
-                    if (entry->kind == D_800C3B84) {
+                    if (entry->tag == D_800C3B84) {
                         D_800C3B88 |= 2;
                     }
                     func_800A23E8(pool, entry);
                     D_800C3BAC[i] = NULL;
                 }
-            } else if (entry->kind == D_800C3B84) {
+            } else if (entry->tag == D_800C3B84) {
                 D_800C3B88 |= 1;
             }
             switch (i) {
