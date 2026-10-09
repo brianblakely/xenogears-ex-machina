@@ -652,8 +652,8 @@ void func_801C6F30(s32 x, s32 y, s32 height, s32 count, s32 top) {
 
     offset = 0;
     if (D_800625A0->flags->scroll_shown == 0) {
-        D_800625A0->scroll = func_80031BDC(sizeof(ScrollBar), 0);
-        bzero(D_800625A0->scroll, sizeof(ScrollBar));
+        D_800625A0->scroll = func_80031BDC(sizeof(MenuScrollBar), 0);
+        bzero(D_800625A0->scroll, sizeof(MenuScrollBar));
     }
     if (count < 9) {
         height = 100;
@@ -663,7 +663,7 @@ void func_801C6F30(s32 x, s32 y, s32 height, s32 count, s32 top) {
     }
     func_8002675C(D_800625A0->sheet, 0x107, D_800625A0->scroll, D_800625A0->buffer_index, x, y,
                   0x1000);
-    func_801C6E90(D_800625A0->scroll->quad, x, y + offset, 8, height);
+    func_801C6E90(D_800625A0->scroll->verts, x, y + offset, 8, height);
     D_800625A0->scroll->buffer = D_800625A0->buffer_index;
     D_800625A0->flags->scroll_shown = 1;
 }
@@ -676,8 +676,8 @@ void func_801C70B8(void) {
 
 /* Create marker `index`, starting on its first frame. */
 void func_801C70FC(u8 index) {
-    D_800625A0->cursors[index] = func_80031BDC(sizeof(Marker), 0);
-    bzero(D_800625A0->cursors[index], sizeof(Marker));
+    D_800625A0->cursors[index] = func_80031BDC(sizeof(MenuCursor), 0);
+    bzero(D_800625A0->cursors[index], sizeof(MenuCursor));
     D_800625A0->cursors[index]->frame = 4;
     D_800625A0->cursors[index]->timer = 0;
 }
@@ -685,7 +685,7 @@ void func_801C70FC(u8 index) {
 /* Animate marker `index` beside row `row`. Both shop callers pass fixed = 0;
  * the original leaves the row offset uninitialized for a nonzero fixed value. */
 void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
-    Marker *marker;
+    MenuCursor *marker;
     POLY_FT4 *poly;
     s32 visible;
     s32 y;
@@ -706,8 +706,8 @@ void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     if (visible) {
         func_8002675C(D_800625A0->sheet, marker->frame + 0x15B, marker, D_800625A0->buffer_index, 0,
                       0, 0x1000);
-        poly = &marker->sprite[D_800625A0->buffer_index];
-        func_801C6E90(marker->quad, poly->x0 + 0x1C, poly->y0 + y, poly->x1 - poly->x0,
+        poly = &marker->polys[D_800625A0->buffer_index];
+        func_801C6E90(marker->verts, poly->x0 + 0x1C, poly->y0 + y, poly->x1 - poly->x0,
                       poly->y3 - poly->y0);
         marker->buffer = D_800625A0->buffer_index;
         D_800625A0->flags->marker_shown[index] = 1;
@@ -994,13 +994,13 @@ void func_801C88E0(u8 index) {
 /* Open panel `index` at (x, y, w, h): at once, or growing from its centre when `grow`. */
 void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry,
                    u8 has_bar) {
-    PanelGrowth *growth;
+    MenuGrowth *growth;
 
     if (index >= 2) {
         D_800625A0->panels[index] = func_80031BDC(sizeof(Panel), 0);
         bzero(D_800625A0->panels[index], sizeof(Panel));
-        D_800625A0->growth[index] = func_80031BDC(sizeof(PanelGrowth), 0);
-        bzero(D_800625A0->growth[index], sizeof(PanelGrowth));
+        D_800625A0->growth[index] = func_80031BDC(sizeof(MenuGrowth), 0);
+        bzero(D_800625A0->growth[index], sizeof(MenuGrowth));
         func_801C7370(index);
     }
     growth = D_800625A0->growth[index];
@@ -1023,7 +1023,7 @@ void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 o
 
 /* Grow each opening panel by 20h in both directions until it reaches its size. */
 void func_801C8AF0(void) {
-    PanelGrowth *growth;
+    MenuGrowth *growth;
     s32 i;
     u8 finished;
 
@@ -1048,7 +1048,7 @@ void func_801C8AF0(void) {
             }
             func_801C875C(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
                           growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
-                          growth->cur_h, growth->flat, growth->ot_entry, growth->has_bar);
+                          growth->cur_h, growth->flat, growth->ot_entry, growth->framed);
         }
     }
 }
@@ -1078,11 +1078,11 @@ void func_801C8D58(s32 count, POLY_FT4 *packets, s32 first) {
 
 /* Draw the scroll bar when shown. */
 void func_801C8DDC(void) {
-    ScrollBar *scroll;
+    MenuScrollBar *scroll;
 
     if (D_800625A0->flags->scroll_shown != 0) {
         scroll = D_800625A0->scroll;
-        func_801C8C3C(1, scroll->quad, scroll->sprite, scroll->buffer);
+        func_801C8C3C(1, scroll->verts, scroll->polys, scroll->buffer);
     }
 }
 
@@ -1282,25 +1282,25 @@ void func_801C9C2C(void) {
         for (i = 0; i < 4; i++) {
             if (D_800625A0->markers->shown[i] != 0) {
                 if (D_800625A0->markers->at_cursor[i] != 0) {
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->x0 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x0 =
                         D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 8;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->y0 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y0 =
                         D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] - 6;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->x1 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x1 =
                         D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 0x18;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->y1 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y1 =
                         D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] - 6;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->x2 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x2 =
                         D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 8;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->y2 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y2 =
                         D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] + 0xA;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->x3 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x3 =
                         D_801D2094[D_801D201C[D_800625A0->card->cursor_slot]] + 0x18;
-                    (D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]))->y3 =
+                    (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y3 =
                         D_801D2114[D_801D201C[D_800625A0->card->cursor_slot]] + 0xA;
                 }
                 AddPrim(&D_800625A0->current->ot[4],
-                              D_800625A0->markers->packets + (i * 2 + D_800625A0->markers->buffer[i]));
+                              D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]));
             }
         }
     }
@@ -1460,7 +1460,7 @@ void func_801CAB80(void) {
 
     for (i = 0; i < 2; i++) {
         if (D_800625A0->flags->marker_shown[i] != 0) {
-            func_801C8C3C(1, D_800625A0->cursors[i]->quad, D_800625A0->cursors[i]->sprite,
+            func_801C8C3C(1, D_800625A0->cursors[i]->verts, D_800625A0->cursors[i]->polys,
                           D_800625A0->cursors[i]->buffer);
         }
     }
@@ -1644,8 +1644,8 @@ void func_801CB014(void) {
 void func_801CB13C(u8 mode) {
     s32 i;
 
-    D_800625A0->markers = func_80031BDC(sizeof(MarkerBlock), 0);
-    bzero(D_800625A0->markers, sizeof(MarkerBlock));
+    D_800625A0->markers = func_80031BDC(sizeof(MenuMarkers), 0);
+    bzero(D_800625A0->markers, sizeof(MenuMarkers));
     switch (mode) {
     case 0:
         D_800625A0->flags->marks_shown = 1;
@@ -1653,13 +1653,13 @@ void func_801CB13C(u8 mode) {
         D_800625A0->markers->at_cursor[1] = 1;
     case 2:
         for (i = 0; i < 4; i++) {
-            func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->packets[i * 2],
+            func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->polys[i * 2],
                           D_800625A0->buffer_index, D_801D1FF8[i], D_801D2008[i], 0x800);
             D_800625A0->markers->buffer[i] = D_800625A0->buffer_index;
         }
         break;
     case 3:
-        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->packets, D_800625A0->buffer_index,
+        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys, D_800625A0->buffer_index,
                       0, 0, 0x800);
         D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
         D_800625A0->flags->marks_shown = 1;
@@ -1689,7 +1689,7 @@ void func_801CB370(void) {
 
 /* Open the message panel and show three lines of label text from entry `first`. */
 void func_801CB384(u8 first) {
-    PanelGrowth *growth;
+    MenuGrowth *growth;
     MenuLabel *label;
     s32 i;
     s32 x;

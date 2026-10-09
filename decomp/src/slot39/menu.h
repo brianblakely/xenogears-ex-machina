@@ -22,6 +22,8 @@
 #include "resident/sprite.h"
 #include "resident/stream.h"
 #include "resident/text.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -329,16 +331,6 @@ typedef struct MenuSpriteLists {
     u8 pad140A[0x2];
 } MenuSpriteLists;
 
-/* An image block (*(state + 444)): quads and sprite list. */
-typedef struct MenuCursor {
-    POLY_FT4 polys[2]; /* 0 */
-    SVECTOR verts[4]; /* 50 */
-    s32 frame; /* 70: animation frame, counts down from 4 */
-    u8 timer; /* 74: frames shown of the current animation frame */
-    u8 count; /* 75 */
-    u8 pad76[0x2];
-} MenuImageBlock;
-
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {
     s32 time; /* 0: play time in frames */
@@ -423,15 +415,6 @@ typedef struct MenuEquipLabels {
     u8 pad29A[0x2];
     u8 parts[3][5]; /* 29C: equipment kept from the character or gear */
 } MenuLabels360;
-
-/* The marker block (*(state + 428)): two quads per marker. */
-typedef struct MenuMarkers {
-    POLY_FT4 polys[8]; /* 0 */
-    u8 visible[4]; /* 140 */
-    u8 unk144[2]; /* 144 */
-    u8 pad146[0x2];
-    u8 current[4]; /* 148 */
-} MenuMarkers;
 
 /* The save/load screen block (*(state + 42c)). */
 typedef struct MenuItemList {
@@ -623,38 +606,6 @@ typedef struct MenuFieldBlock {
     u8 count0; /* 1279 */
     u8 pad127A[0x2];
 } MenuFieldBlock;
-
-/* A one-quad sprite (*(state + 43c)). */
-typedef struct MenuScrollBar {
-    POLY_FT4 polys[2]; /* 0 */
-    SVECTOR verts[4]; /* 50 */
-    u8 buffer; /* 70 */
-    u8 pad71[0x3];
-} MenuBlock43C;
-
-/* A four-quad sprite (*(state + 440)). */
-typedef struct MenuMarkerQuads {
-    POLY_FT4 polys[8]; /* 0 */
-    SVECTOR verts[16]; /* 140 */
-    u8 buffer; /* 1C0 */
-    u8 pad1C1[0x3];
-} MenuBlock440;
-
-/* A portrait mark growing to its size (*(state + 380)). */
-typedef struct MenuGrowth {
-    u16 x; /* 0 */
-    u16 y; /* 2 */
-    u16 w; /* 4 */
-    u16 h; /* 6 */
-    u16 curW; /* 8 */
-    u16 curH; /* A */
-    s32 unkC; /* C */
-    u8 image; /* 10 */
-    u8 done; /* 11 */
-    u8 unk12; /* 12 */
-    u8 unk13; /* 13 */
-    u8 pad14[0x4];
-} MenuMark;
 
 /* A list screen block (*(state + 434)). */
 typedef struct MenuEquipList {

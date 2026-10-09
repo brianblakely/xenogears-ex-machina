@@ -18,6 +18,8 @@
 #include "resident/sound.h"
 #include "resident/sprite.h"
 #include "resident/text.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 
 /* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
 typedef struct MenuPrims {
@@ -31,14 +33,6 @@ typedef struct MenuPrims {
     u8 pad_158[3];
     u8 b_15B;            /* 0x15B */
 } Backdrop;
-
-/* The cursor/confirmation markers: two quads per marker. */
-typedef struct MenuMarkers {
-    POLY_FT4 poly[8];
-    u8 shown[4];  /* 0x140 */
-    u8 follow[4]; /* 0x144: placed at the file cursor */
-    u8 buffer[4]; /* 0x148 */
-} Markers;
 
 /* The 0x1194-byte block at state + 0x350. */
 typedef struct MenuImages {
@@ -91,19 +85,6 @@ typedef struct MenuPanel {
     u8 framed;                /* 0x71D: frame sprites built */
     u8 pad_71E[2];
 } Panel;
-
-/* A panel's opening animation (0x18 bytes). */
-typedef struct MenuGrowth {
-    u16 x, y, w, h; /* final rectangle */
-    u16 cur_w;      /* 0x8 */
-    u16 cur_h;      /* 0xA */
-    s32 param;      /* 0xC */
-    u8 index;       /* 0x10 */
-    u8 open;        /* 0x11: fully grown */
-    u8 style;       /* 0x12 */
-    u8 framed;      /* 0x13 */
-    u8 pad_14[4];
-} PanelGrowth;
 
 /* The menu flag block (0x6C bytes): per-window/panel state bytes and the
  * party being edited. */

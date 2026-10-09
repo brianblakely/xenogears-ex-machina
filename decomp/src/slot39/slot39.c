@@ -1939,8 +1939,8 @@ u8 func_801C93A8(void) {
             D_800625A0->flags->unkB = 1;
         }
         state = D_800625A0;
-        if (state->flags->unk2F != 0 && state->markers->unk144[0] != 0) {
-            setXY4(&state->markers->polys[state->markers->current[0]],
+        if (state->flags->unk2F != 0 && state->markers->at_cursor[0] != 0) {
+            setXY4(&state->markers->polys[state->markers->buffer[0]],
                    D_801E9894[D_801E981C[state->card->cursor]][0] + 8, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
                    D_801E9894[D_801E981C[state->card->cursor]][0] + 0x18, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
                    D_801E9894[D_801E981C[state->card->cursor]][0] + 8, D_801E9914[D_801E981C[state->card->cursor]][0] + 0xa,
@@ -2344,8 +2344,8 @@ u8 func_801CAA38(u8 watch) {
     timer = 0xb4;
     do {
         if (!watch) {
-            D_800625A0->markers->visible[2] = 0;
-            D_800625A0->markers->visible[3] = 0;
+            D_800625A0->markers->shown[2] = 0;
+            D_800625A0->markers->shown[3] = 0;
             if (D_800625A0->input != 8 || --timer == 0) {
                 break;
             }
@@ -2372,19 +2372,19 @@ u8 func_801CAA38(u8 watch) {
             D_801EA8FC = 1;
             break;
         case 2:
-            D_800625A0->markers->visible[2] = 1;
+            D_800625A0->markers->shown[2] = 1;
             yes = 1;
-            D_800625A0->markers->visible[3] = 0;
+            D_800625A0->markers->shown[3] = 0;
             break;
         case 0:
-            D_800625A0->markers->visible[2] = 0;
+            D_800625A0->markers->shown[2] = 0;
             yes = 0;
-            D_800625A0->markers->visible[3] = 1;
+            D_800625A0->markers->shown[3] = 1;
             break;
         }
     } while (waiting);
-    D_800625A0->markers->visible[2] = 0;
-    D_800625A0->markers->visible[3] = 0;
+    D_800625A0->markers->shown[2] = 0;
+    D_800625A0->markers->shown[3] = 0;
     D_800625A0->card->mode = 0;
     return yes;
 }
@@ -2396,12 +2396,12 @@ s32 func_801CACF8(u8 message, u8 confirm, u8 arg) {
     u8 answer;
 
     func_801D2F4C(message);
-    D_800625A0->markers->visible[3] = 1;
+    D_800625A0->markers->shown[3] = 1;
     answer = func_801CAA38(arg);
     func_801D32B4();
     if (confirm != 0xff && answer) {
         func_801D2F4C(confirm);
-        D_800625A0->markers->visible[3] = 1;
+        D_800625A0->markers->shown[3] = 1;
         answer = func_801CAA38(arg);
         func_801D32B4();
     }
@@ -2572,7 +2572,7 @@ u8 func_801CB304(void) {
                 func_801D32B4();
             }
             first = 0;
-            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->markers->shown[0] = 1;
         }
         if (!func_801C9BCC(1) && (D_800625A0->card->cursor = func_801C9D34(1)) == 0xff) {
             D_800625A0->flags->unk2F = 0;
@@ -2586,7 +2586,7 @@ u8 func_801CB304(void) {
         D_800625A0->flags->unk2F = 1;
         switch (func_801CA750(1)) {
         case 1:
-            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->markers->at_cursor[0] = 0;
             D_800625A0->card->mode = 0;
             port = 0;
             if (D_800625A0->card->cursor < 15) {
@@ -2635,7 +2635,7 @@ u8 func_801CB304(void) {
                 D_800625A0->card->unk4F8C[0] = 0xff;
                 D_800625A0->card->unk4F8C[1] = 0xff;
             }
-            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->markers->at_cursor[0] = 1;
             break;
         case 2:
             again = 0;
@@ -2793,7 +2793,7 @@ u8 func_801CBD90(u8 kind) {
                 func_801D32B4();
             }
             first = 0;
-            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->markers->shown[0] = 1;
         }
         if (!func_801C9BCC(2) && (D_800625A0->card->cursor = func_801C9D34(2)) == 0xff) {
             func_801CACF8(0xac, 0xff, 0);
@@ -2802,7 +2802,7 @@ u8 func_801CBD90(u8 kind) {
         D_800625A0->flags->unk2F = 1;
         switch (func_801CA750(2)) {
         case 1:
-            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->markers->at_cursor[0] = 0;
             D_800625A0->card->mode = 0;
             proceed = 1;
             if (D_800625A0->card->cursor < 15) {
@@ -2814,7 +2814,7 @@ u8 func_801CBD90(u8 kind) {
             }
             if (D_800625A0->card->result[port] == -2) {
                 if (!func_801CB8AC(port)) {
-                    D_800625A0->markers->unk144[0] = 1;
+                    D_800625A0->markers->at_cursor[0] = 1;
                     continue;
                 }
                 func_801D2F4C(0x26);
@@ -2844,7 +2844,7 @@ u8 func_801CBD90(u8 kind) {
                         }
                     } else {
                         func_801CACF8(0xc4, 0xff, 0);
-                        D_800625A0->markers->unk144[0] = 1;
+                        D_800625A0->markers->at_cursor[0] = 1;
                         continue;
                     }
                 } else if (!(u8)func_801CACF8(0x5f, 0xff, 1)) {
@@ -2973,7 +2973,7 @@ u8 func_801CBD90(u8 kind) {
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
             }
-            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->markers->at_cursor[0] = 1;
             D_800625A0->sounds = 1;
             if (kind) {
                 break;
@@ -3037,10 +3037,10 @@ u8 func_801CC6D8(void) {
                 func_801D32B4();
             }
             first = 0;
-            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->markers->shown[0] = 1;
         }
         if (!func_801C9BCC(0) && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
-            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->markers->shown[0] = 0;
             D_800625A0->flags->unkB = 0;
             func_801CACF8(0x62, 0xff, 0);
             break;
@@ -3048,7 +3048,7 @@ u8 func_801CC6D8(void) {
         D_800625A0->flags->unk2F = 1;
         switch (func_801CA750(0)) {
         case 1:
-            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->markers->at_cursor[0] = 0;
             D_800625A0->card->mode = 0;
             dest = D_800625A0->card->cursor / 15 == 0;
             proceed = 1;
@@ -3105,7 +3105,7 @@ u8 func_801CC6D8(void) {
                             proceed = 0;
                         }
                     } else {
-                        D_800625A0->markers->unk144[0] = 1;
+                        D_800625A0->markers->at_cursor[0] = 1;
                         continue;
                     }
                 }
@@ -3276,7 +3276,7 @@ u8 func_801CC6D8(void) {
                 D_800625A0->card->scanned[1] = 0;
                 D_801E9778 = 1;
             }
-            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->markers->at_cursor[0] = 1;
             D_800625A0->sounds = 1;
             /* fallthrough */
         case 2:
@@ -3313,10 +3313,10 @@ u8 func_801CD2AC(void) {
             if (D_800625A0->flags->messageShown != 0) {
                 func_801D32B4();
             }
-            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->markers->shown[0] = 1;
         }
         if (func_801C9BCC(0) == 0 && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
-            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->markers->shown[0] = 0;
             D_800625A0->flags->unkB = 0;
             func_801CACF8(0x62, 0xff, 0);
             break;
@@ -3324,7 +3324,7 @@ u8 func_801CD2AC(void) {
         D_800625A0->flags->unk2F = 1;
         switch (func_801CA750(0)) {
         case 1:
-            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->markers->at_cursor[0] = 0;
             D_800625A0->card->mode = 0;
             if ((u8)func_801CACF8(0x56, 0x59, 1)) {
                 func_801D2F4C(0x50);
@@ -3359,7 +3359,7 @@ u8 func_801CD2AC(void) {
                 D_800625A0->card->unk4F8C[1] = 0xff;
                 D_801E9778 = 1;
             }
-            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->markers->at_cursor[0] = 1;
             /* fallthrough */
         case 2:
             again = 0;
@@ -3572,9 +3572,9 @@ void func_801CE3C8(void) {
 
     if (D_800625A0->flags->unk2F != 0) {
         for (i = 0; i < 4; i++) {
-            if (D_800625A0->markers->visible[i] != 0) {
+            if (D_800625A0->markers->shown[i] != 0) {
                 AddPrim(&D_800625A0->current->ot[4],
-                              &D_800625A0->markers->polys[i * 2 + D_800625A0->markers->current[i]]);
+                              &D_800625A0->markers->polys[i * 2 + D_800625A0->markers->buffer[i]]);
             }
         }
     }
@@ -4270,7 +4270,7 @@ void func_801D13F8(void) {
 
 /* While party flag +49 is set, draw the sprites of the block at +43c. */
 void func_801D1464(void) {
-    MenuBlock43C *block;
+    MenuScrollBar *block;
 
     if (D_800625A0->flags->unk49 != 0) {
         block = D_800625A0->scroll;
@@ -4280,7 +4280,7 @@ void func_801D1464(void) {
 
 /* While party flag +53 is set, draw the sprites of the block at +440. */
 void func_801D14B0(void) {
-    MenuBlock440 *block;
+    MenuMarkerQuads *block;
 
     if (D_800625A0->flags->unk53 != 0) {
         block = D_800625A0->marks;
@@ -4397,12 +4397,12 @@ void func_801D1914(void) {
 /* Draw the sprites of the two image blocks (+444) whose party flags are set. */
 void func_801D1AAC(void) {
     s32 i;
-    MenuImageBlock *block;
+    MenuCursor *block;
 
     for (i = 0; i < 2; i++) {
         if (D_800625A0->flags->unk50[i] != 0) {
             block = D_800625A0->cursors[i];
-            func_801CE198(1, block->verts, block->polys, block->count);
+            func_801CE198(1, block->verts, block->polys, block->buffer);
         }
     }
 }
@@ -4582,18 +4582,18 @@ void func_801D22F4(u8 mode) {
     switch (mode) {
     case 0:
         D_800625A0->flags->unk2F = 1;
-        D_800625A0->markers->unk144[0] = 1;
-        D_800625A0->markers->unk144[1] = 1;
+        D_800625A0->markers->at_cursor[0] = 1;
+        D_800625A0->markers->at_cursor[1] = 1;
     case 2:
         for (i = 0; i < 4; i++) {
             func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->polys[i * 2], D_800625A0->buffer_index,
                           D_801E9A58[i], D_801E9A68[i], 0x800);
-            D_800625A0->markers->current[i] = D_800625A0->buffer_index;
+            D_800625A0->markers->buffer[i] = D_800625A0->buffer_index;
         }
         break;
     case 3:
         func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys, D_800625A0->buffer_index, 0, 0, 0x800);
-        D_800625A0->markers->current[0] = D_800625A0->buffer_index;
+        D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
     case 1:
         break;
     }
@@ -4800,7 +4800,7 @@ void func_801D2EC0(u8 slot, u8 mode) {
  * rendered into VRAM and laid out as quads. */
 void func_801D2F4C(u8 message) {
     s32 x;
-    MenuMark *mark;
+    MenuGrowth *mark;
     MenuLabel *line;
     s32 i;
 
@@ -4960,7 +4960,7 @@ void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode) {
 /* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
  * lay it out at once. Windows from 2 get their own blocks. */
 void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 arg7, u8 arg8) {
-    MenuMark *mark;
+    MenuGrowth *mark;
     void *block;
 
     if (index >= 2) {
@@ -4974,17 +4974,17 @@ void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 a
     }
     mark = D_800625A0->growth[index];
     if (grow) {
-        mark->image = index;
+        mark->index = index;
         mark->done = 0;
         mark->x = x;
         mark->y = y;
         mark->w = w;
         mark->h = h;
-        mark->curW = 0;
-        mark->curH = 0;
+        mark->cur_w = 0;
+        mark->cur_h = 0;
         D_800625A0->flags->unk27[index] = 1;
-        mark->unk12 = arg6;
-        mark->unkC = arg7;
+        mark->flat = arg6;
+        mark->ot_entry = arg7;
         return;
     }
     func_801D4D1C(index, x, y, w, h, arg6, arg7, arg8);
@@ -4994,31 +4994,31 @@ void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 a
  * (centred), marking it done when both sides are full, and draw it. */
 void func_801D3B00(void) {
     s32 i;
-    MenuMark *mark;
+    MenuGrowth *mark;
     u8 full;
 
     for (i = 0; i < 7; i++) {
         mark = D_800625A0->growth[i];
         if (D_800625A0->flags->unk27[i] != 0 && mark->done == 0) {
             full = 0;
-            if (mark->curW + 0x20 >= mark->w) {
-                mark->curW = mark->w;
+            if (mark->cur_w + 0x20 >= mark->w) {
+                mark->cur_w = mark->w;
                 full = 1;
             } else {
-                mark->curW = mark->curW + 0x20;
+                mark->cur_w = mark->cur_w + 0x20;
             }
-            if (mark->curH + 0x20 >= mark->h) {
-                mark->curH = mark->h;
+            if (mark->cur_h + 0x20 >= mark->h) {
+                mark->cur_h = mark->h;
                 full++;
             } else {
-                mark->curH = mark->curH + 0x20;
+                mark->cur_h = mark->cur_h + 0x20;
             }
             if (full == 2) {
                 mark->done = 1;
             }
-            func_801D4D1C(mark->image, mark->x + (mark->w >> 1) - (mark->curW >> 1),
-                          mark->y + (mark->h >> 1) - (mark->curH >> 1), mark->curW, mark->curH, mark->unk12,
-                          mark->unkC, mark->unk13);
+            func_801D4D1C(mark->index, mark->x + (mark->w >> 1) - (mark->cur_w >> 1),
+                          mark->y + (mark->h >> 1) - (mark->cur_h >> 1), mark->cur_w, mark->cur_h, mark->flat,
+                          mark->ot_entry, mark->framed);
         }
     }
 }
@@ -6829,7 +6829,7 @@ void func_801DB02C(u8 index) {
  * scroll row `row`, hidden when off the page, 2 two-column list, 3 one
  * column). */
 void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index) {
-    MenuImageBlock *cursor;
+    MenuCursor *cursor;
     POLY_FT4 *poly;
     s32 x;
     s32 y;
@@ -6870,7 +6870,7 @@ void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index) {
         func_8002675C(D_800625A0->sheet, cursor->frame + 0x15b, cursor, D_800625A0->buffer_index, 0, 0, 0x1000);
         poly = &cursor->polys[D_800625A0->buffer_index];
         func_801C851C(cursor->verts, poly->x0 + x, poly->y0 + y, poly->x1 - poly->x0, poly->y3 - poly->y0);
-        cursor->count = D_800625A0->buffer_index;
+        cursor->buffer = D_800625A0->buffer_index;
         D_800625A0->flags->unk50[index] = 1;
     } else {
         D_800625A0->flags->unk50[index] = 0;
@@ -6901,7 +6901,7 @@ void func_801DB39C(u8 mode) {
         i++;
     } while (i < 16);
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->cursors[i]->polys[D_800625A0->cursors[i]->count], mode);
+        func_801E8EAC(&D_800625A0->cursors[i]->polys[D_800625A0->cursors[i]->buffer], mode);
     }
     func_801E8EAC(&D_800625A0->item_list->extra[0].polys[D_800625A0->item_list->extra[0].buffer], mode);
     func_801E8EAC(&D_800625A0->item_list->extra[1].polys[D_800625A0->item_list->extra[1].buffer], mode);
@@ -6961,14 +6961,14 @@ void func_801DB5E4(u8 mode) {
     }
     D_800625A0->flags->unk46 = 1;
     for (i = 0; i < 3; i++) {
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x0 = 0x90;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y0 = i * 0x38 + 0x30;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x1 = 0xa0;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y1 = i * 0x38 + 0x30;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x2 = 0x90;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y2 = i * 0x38 + 0x40;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x3 = 0xa0;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y3 = i * 0x38 + 0x40;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x0 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y0 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x1 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y1 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x2 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y2 = i * 0x38 + 0x40;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->x3 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->buffer[i]))->y3 = i * 0x38 + 0x40;
     }
 }
 
@@ -7015,17 +7015,17 @@ u8 func_801DB920(s32 row, s32 entry) {
                 func_801DB5E4(0);
             }
             marks = 0;
-            D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+            D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
             if (all) {
                 for (i = 0; i < 3; i++) {
                     if (D_800625A0->flags->ids[i] != 0xff) {
                         marks |= 1 << i;
-                        D_800625A0->markers->visible[i] = 1;
+                        D_800625A0->markers->shown[i] = 1;
                     }
                 }
             } else {
                 marks = 1 << slot;
-                D_800625A0->markers->visible[slot] = 1;
+                D_800625A0->markers->shown[slot] = 1;
             }
             D_800625A0->flags->unk2F = 1;
             if (D_8006D634.itemCounts[row * 2 + entry] == 0) {
@@ -7067,7 +7067,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 break;
             }
         }
-        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
         func_801DB39C(0);
         D_800625A0->flags->unk46 = 0;
         func_801C7BF4();

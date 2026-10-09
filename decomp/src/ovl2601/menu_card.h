@@ -18,6 +18,8 @@
 #include "resident/sound.h"
 #include "resident/sprite.h"
 #include "resident/text.h"
+#include "menu/panel.h"
+#include "menu/screen.h"
 
 /* A save file name prefix (13 bytes with its terminator). */
 typedef struct {
@@ -133,21 +135,6 @@ typedef struct ModelParts {
     u8 unk12;    /* 12 */
 } ModelParts;
 
-/* Projected markers (ovl2602, menu state + 440). */
-typedef struct MenuMarkerQuads {
-    POLY_FT4 packets[8]; /* 000 */
-    SVECTOR quads[16];   /* 140 */
-    u8 buffer;           /* 1c0 */
-} MarkerQuads;
-
-/* Cursor and yes/no markers (menu state + 428). */
-typedef struct MenuMarkers {
-    POLY_FT4 packets[8]; /* 000: two per marker */
-    u8 shown[4];         /* 140 */
-    u8 at_cursor[4];     /* 144: follows the file cursor */
-    u8 buffer[4];        /* 148 */
-} MarkerBlock;
-
 /* Cursor block (menu state + 348, 15ch bytes), per draw buffer. */
 typedef struct MenuPrims {
     POLY_FT4 sprite[2];     /* 00 */
@@ -162,24 +149,6 @@ typedef struct MenuPrims {
     u8 unk15A;
     u8 width;               /* 15b */
 } CursorBlock;
-
-/* Scroll bar (menu state + 43c, 74h bytes). */
-typedef struct MenuScrollBar {
-    POLY_FT4 sprite[2]; /* 00 */
-    SVECTOR quad[4];    /* 50 */
-    u8 buffer;          /* 70 */
-    u8 unk71[3];
-} ScrollBar;
-
-/* Animated marker (menu state + 444 + n * 4, 78h bytes). */
-typedef struct MenuCursor {
-    POLY_FT4 sprite[2]; /* 00 */
-    SVECTOR quad[4];    /* 50 */
-    s32 frame;          /* 70: 4..0 */
-    u8 timer;           /* 74 */
-    u8 buffer;          /* 75 */
-    u8 unk76[2];
-} Marker;
 
 /*
  * A framed 3D panel (menu state + 364 + n * 4, 720h bytes). Its sprite parts
@@ -201,18 +170,6 @@ typedef struct MenuPanel {
     u8 has_bar;          /* 71d */
     u8 unk71E[2];
 } Panel;
-
-/* A panel opening from its centre (menu state + 380 + n * 4, 18h bytes). */
-typedef struct MenuGrowth {
-    u16 x, y, w, h;      /* 00: final rectangle */
-    u16 cur_w, cur_h;    /* 08: current size */
-    s32 ot_entry;        /* 0c */
-    u8 index;            /* 10 */
-    u8 done;             /* 11 */
-    u8 flat;             /* 12 */
-    u8 has_bar;          /* 13 */
-    u8 unk14[4];
-} PanelGrowth;
 
 /*
  * Card state block (menu state + 32c, 5034h bytes): the directory scan, the

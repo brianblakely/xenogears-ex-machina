@@ -754,7 +754,7 @@ void func_801C76FC(u8 index) {
  * start its growth animation toward (x, y, w, h) or lay it out at once. */
 void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s32 param,
                    u8 framed) {
-    PanelGrowth *growth;
+    MenuGrowth *growth;
 
     if (index >= 2) {
         D_800625A0->panels[index] = func_80031BDC(0x720, 0);
@@ -766,7 +766,7 @@ void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
     growth = D_800625A0->growth[index];
     if (animate) {
         growth->index = index;
-        growth->open = 0;
+        growth->done = 0;
         growth->x = x;
         growth->y = y;
         growth->w = w;
@@ -774,8 +774,8 @@ void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
         growth->cur_w = 0;
         growth->cur_h = 0;
         D_800625A0->flags->panel_27[index] = 1;
-        growth->style = style;
-        growth->param = param;
+        growth->flat = style;
+        growth->ot_entry = param;
     } else {
         func_801C7578(index, x, y, w, h, style, param, framed);
     }
@@ -785,12 +785,12 @@ void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
  * reaches its size, laying it out centred on its final rectangle. */
 void func_801C790C(void) {
     s32 i;
-    PanelGrowth *growth;
+    MenuGrowth *growth;
     u8 done;
 
     for (i = 0; i < 7; i++) {
         growth = D_800625A0->growth[i];
-        if (D_800625A0->flags->panel_27[i] && !growth->open) {
+        if (D_800625A0->flags->panel_27[i] && !growth->done) {
             done = 0;
             if (growth->cur_w + 32 >= growth->w) {
                 growth->cur_w = growth->w;
@@ -805,11 +805,11 @@ void func_801C790C(void) {
                 growth->cur_h = growth->cur_h + 32;
             }
             if (done == 2) {
-                growth->open = 1;
+                growth->done = 1;
             }
             func_801C7578(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
                           growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
-                          growth->cur_h, growth->style, growth->param, growth->framed);
+                          growth->cur_h, growth->flat, growth->ot_entry, growth->framed);
         }
     }
 }
@@ -824,26 +824,26 @@ void func_801C7A58(void) {
         for (i = 0; i < 4; i++) {
             state = D_800625A0;
             if (state->markers->shown[i]) {
-                if (state->markers->follow[i]) {
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x0 =
+                if (state->markers->at_cursor[i]) {
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->x0 =
                         D_801CB47C[D_801CB404[state->card->cursor]] + 8;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y0 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->y0 =
                         D_801CB4FC[D_801CB404[state->card->cursor]] - 6;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x1 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->x1 =
                         D_801CB47C[D_801CB404[state->card->cursor]] + 24;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y1 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->y1 =
                         D_801CB4FC[D_801CB404[state->card->cursor]] - 6;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x2 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->x2 =
                         D_801CB47C[D_801CB404[state->card->cursor]] + 8;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y2 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->y2 =
                         D_801CB4FC[D_801CB404[state->card->cursor]] + 10;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x3 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->x3 =
                         D_801CB47C[D_801CB404[state->card->cursor]] + 24;
-                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y3 =
+                    (state->markers->polys + (i * 2 + state->markers->buffer[i]))->y3 =
                         D_801CB4FC[D_801CB404[state->card->cursor]] + 10;
                 }
                 AddPrim(&D_800625A0->current->ot[4],
-                              &D_800625A0->markers->poly[i * 2 + D_800625A0->markers->buffer[i]]);
+                              &D_800625A0->markers->polys[i * 2 + D_800625A0->markers->buffer[i]]);
             }
         }
     }
@@ -1568,11 +1568,11 @@ void func_801CA810(u8 list, s32 row, u8 marker) {
     s32 base = list ? 3 : 0;
 
     if (marker == 0) {
-        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->poly,
+        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys,
                       D_800625A0->buffer_index, D_801CB1A0[base + row], D_801CB1C4[base + row],
                       0x800);
     } else {
-        func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->poly[2],
+        func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->polys[2],
                       D_800625A0->buffer_index, D_801CB1A0[base + row], D_801CB1C4[base + row],
                       0x800);
     }
@@ -1586,24 +1586,24 @@ void func_801CA810(u8 list, s32 row, u8 marker) {
  * builds the first at the origin and turns them on, 1 leaves them empty. */
 void func_801CA944(u8 mode) {
     s32 i;
-    Markers *markers = func_80031BDC(0x14C, 0);
+    MenuMarkers *markers = func_80031BDC(0x14C, 0);
 
     D_800625A0->markers = markers;
     bzero(markers, 0x14C);
     switch (mode) {
     case 0:
         D_800625A0->flags->markers_on = 1;
-        D_800625A0->markers->follow[0] = 1;
-        D_800625A0->markers->follow[1] = 1;
+        D_800625A0->markers->at_cursor[0] = 1;
+        D_800625A0->markers->at_cursor[1] = 1;
     case 2:
         for (i = 0; i < 4; i++) {
-            func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->poly + i * 2,
+            func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys + i * 2,
                           D_800625A0->buffer_index, D_801CB180[i], D_801CB190[i], 0x800);
             D_800625A0->markers->buffer[i] = D_800625A0->buffer_index;
         }
         break;
     case 3:
-        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->poly,
+        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys,
                       D_800625A0->buffer_index, 0, 0, 0x800);
         D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
         D_800625A0->flags->markers_on = 1;
@@ -1695,7 +1695,7 @@ void func_801CAD14(void) {
     shown_page = 0xFF;
     list = 0;
     picking = 0;
-    while (D_800625A0->growth[2]->open == 0) {
+    while (D_800625A0->growth[2]->done == 0) {
         func_801C94A0();
     }
     while (running) {

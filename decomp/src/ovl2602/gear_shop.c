@@ -133,17 +133,17 @@ void func_801C7604();
 /* Draw the two second-marker sprites and set their four quads. */
 void func_801CE1D0(void) {
     POLY_FT4 *poly;
-    MarkerQuads *marks;
+    MenuMarkerQuads *marks;
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        func_8002675C(D_800625A0->sheet, i + 0x164, &D_800625A0->marks->packets[i * 4],
+        func_8002675C(D_800625A0->sheet, i + 0x164, &D_800625A0->marks->polys[i * 4],
                       D_800625A0->buffer_index, D_801D6FD0[i], 0x64, 0x1000);
     }
     for (i = 0; i < 4; i++) {
         marks = D_800625A0->marks;
-        poly = &marks->packets[i * 2 + D_800625A0->buffer_index];
-        func_801C7604(&D_800625A0->marks->quads[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
+        poly = &marks->polys[i * 2 + D_800625A0->buffer_index];
+        func_801C7604(&D_800625A0->marks->verts[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
                       poly->y3 - poly->y0);
     }
     D_800625A0->marks->buffer = D_800625A0->buffer_index;

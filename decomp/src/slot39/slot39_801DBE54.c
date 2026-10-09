@@ -494,7 +494,7 @@ void func_801DD5E8(u8 mode) {
             func_801E8EAC(&D_800625A0->file_list->values[i].polys[D_800625A0->file_list->values[i].buffer], mode);
         }
     }
-    func_801E8EAC(&D_800625A0->cursors[0]->polys[D_800625A0->cursors[0]->count], mode);
+    func_801E8EAC(&D_800625A0->cursors[0]->polys[D_800625A0->cursors[0]->buffer], mode);
     func_801E8EAC(&D_800625A0->file_list->headA.polys[D_800625A0->file_list->headA.buffer], mode);
     for (i = 0; i < 2; i++) {
         func_801E8EAC(&D_800625A0->file_list->extra[i].polys[D_800625A0->file_list->extra[i].buffer], mode);
@@ -546,17 +546,17 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             redraw = 0;
         }
         targets = 0;
-        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
         if (all) {
             for (i = 0; i < 3; i++) {
                 if (D_800625A0->flags->ids[i] != 0xff) {
                     targets |= 1 << i;
-                    D_800625A0->markers->visible[i] = 1;
+                    D_800625A0->markers->shown[i] = 1;
                 }
             }
         } else {
             targets = 1 << cursor;
-            D_800625A0->markers->visible[cursor] = 1;
+            D_800625A0->markers->shown[cursor] = 1;
         }
         D_800625A0->flags->unk2F = 1;
         if (kind != 2) {
@@ -623,7 +623,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             break;
         }
     }
-    D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+    D_800625A0->markers->shown[0] = D_800625A0->markers->shown[1] = D_800625A0->markers->shown[2] = 0;
     func_801DD5E8(0);
     D_800625A0->flags->unk46 = 0;
     func_801C7BF4();
@@ -1370,7 +1370,7 @@ void func_801E0434(u8 slot, u8 gear) {
     do {                                               \
         func_801DF5D0(slot, gear);                     \
         cursor = 0;                                    \
-        D_800625A0->markers->visible[0] = 1;           \
+        D_800625A0->markers->shown[0] = 1;             \
         reset = 1;                                     \
         func_801DB0A8(0, top, 3, 0);                   \
     } while (0)
@@ -1464,16 +1464,16 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
         }
         if (part != drawnPart || slot != drawnSlot) {
             func_801DFF5C(part, row, top, special, gear, 1, slot);
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x0 = 0x8c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y0 = D_801E9DBC[special * 4 + part];
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x1 = 0x9c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y1 = D_801E9DBC[special * 4 + part];
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x2 = 0x8c;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y2 = D_801E9DBC[special * 4 + part] + 0x10;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x3 = 0x9c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x0 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y0 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x1 = 0x9c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y1 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x2 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y2 = D_801E9DBC[special * 4 + part] + 0x10;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->x3 = 0x9c;
             drawnPart = part;
             drawnSlot = slot;
-            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y3 = D_801E9DBC[special * 4 + part] + 0x10;
+            (D_800625A0->markers->polys + D_800625A0->markers->buffer[0])->y3 = D_801E9DBC[special * 4 + part] + 0x10;
         }
         if (first) {
             func_801D397C(2, 0x94, 0xa, 0x94, 0x74, 0, 1, 4, 1);
@@ -1486,7 +1486,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                     func_801C7BF4();
                 }
             }
-            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->markers->shown[0] = 1;
             D_800625A0->flags->redraw6 = 0;
             first = 0;
             D_800625A0->flags->unk20[1] = 0;
@@ -1507,7 +1507,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 top = 0;
                 drawnTop = 0xff;
                 drawnRow = 0xff;
-                D_800625A0->markers->visible[0] = 0;
+                D_800625A0->markers->shown[0] = 0;
                 panel = 1;
                 cursor = 1;
                 row = 0;
@@ -1559,7 +1559,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
             case 5:
                 func_801DF890(slot, gear);
                 cursor = 0;
-                D_800625A0->markers->visible[0] = 1;
+                D_800625A0->markers->shown[0] = 1;
                 reset = 1;
                 func_801DB0A8(0, top, 3, 0);
                 row = 0;
