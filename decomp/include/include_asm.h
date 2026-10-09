@@ -53,6 +53,19 @@
 #define INCLUDE_ORIGINAL(SECTION, NAME, VRAM, SIZE)                            \
     INCLUDE_ASSET(SECTION, NAME, VRAM, SIZE)
 
+/*
+ * INCLUDE_ORIGINAL for an object GCC aligns to a byte (a u8 flag ahead of
+ * its padding), which follows the object before it directly: no .align.
+ */
+#define INCLUDE_ORIGINAL_UNALIGNED(SECTION, NAME, VRAM, SIZE)                  \
+    __asm__(".section " SECTION "\n"                                          \
+            "\t.globl " #NAME "\n"                                            \
+            #NAME ":\n"                                                        \
+            "\t.incbin \"" ORIGINAL_IMAGE "\", " #VRAM " - "                  \
+            INCLUDE_ASSET_XSTR(ORIGINAL_BASE) ", " #SIZE "\n"                 \
+            "\t.size " #NAME ", " #SIZE "\n"                                  \
+            "\t.previous")
+
 __asm__(".include \"macro.inc\"\n");
 
 #endif

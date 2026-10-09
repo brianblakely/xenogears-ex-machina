@@ -112,8 +112,8 @@ by its exact text in the cc1 output, which must be one of include_asm.h's:
   (``nonmatching`` or ``asm`` where the file defines none, like the resident's
   SDK data tag in .text, which its range makes ``sdk``)
 * INCLUDE_RODATA: its functions are assembly, its other bytes ``included``
-* INCLUDE_ASSET/INCLUDE_ORIGINAL: ``included`` (or a range's class) outside
-  .text
+* INCLUDE_ASSET/INCLUDE_ORIGINAL (also INCLUDE_ORIGINAL_UNALIGNED, which
+  emits no ``.align 2``): ``included`` (or a range's class) outside .text
 * the macro.inc include, which emits nothing
 
 or, written inside a compiled function, one of the original-style macros the
@@ -206,8 +206,8 @@ TEMPLATES = {
         r"\.set reorder # maspsx-keep\n\.set at # maspsx-keep\n"
     ),
     "rodata": re.compile(r"\.section \.rodata\n\.include \"[^\"\n]+\"\n\.section \.text"),
-    "asset": re.compile(
-        r"\.section \S+\n\.align 2\n\.globl (?P<name>\w+)\n(?P=name):\n"
+    "asset": re.compile(  # also INCLUDE_ORIGINAL_UNALIGNED, without the .align
+        r"\.section \S+\n(?:\.align 2\n)?\.globl (?P<name>\w+)\n(?P=name):\n"
         r"\.incbin \"[^\"\n]+\", \w+ - \w+, (?P<size>\w+)\n\.size (?P=name), (?P=size)\n"
         r"\.previous"
     ),
