@@ -534,6 +534,7 @@ docs/scripts/battle-effect-vm.md
 docs/scripts/battle-event-vm.md
 docs/scripts/dispatch-tables.md
 docs/scripts/field-events.md
+docs/scripts/formations.md
 docs/scripts/interpreters.md
 docs/scripts/sound-sequence.md
 docs/scripts/sprite-vm.md
@@ -772,6 +773,7 @@ tests/test_field_script.cpp
 tests/test_field_sprite.cpp
 tests/test_field_sprite_factory.cpp
 tests/test_fingerprint_survey.py
+tests/test_formations.py
 tests/test_gpu_packets.py
 tests/test_host_slots.py
 tests/test_index_survey.py
@@ -850,6 +852,7 @@ tools/analysis/events.py
 tools/analysis/execution.py
 tools/analysis/field.py
 tools/analysis/field_control.py
+tools/analysis/formations.py
 tools/analysis/ghidra/ExportOriginalAnalysis.java
 tools/analysis/ghidra/PrepareOriginalProgram.java
 tools/analysis/ghidra_project.py
