@@ -196,12 +196,15 @@ Outside the libraries the game itself uses:
 ### Disc and files
 
 The resident disc unit (main_8002709C.c, 80028230-8002c3e8, API in
-`resident/cd.h`) reads every file. Outside it, three shipped parts issue drive
-commands themselves: the world-map terrain reader, the movie library (mdec) and
-the disc check of the swap (and the movie overlay's development tools). Each of
-them, like the unit, branches on func_8002C3D8 (D_8004FE48) to a host-file path,
-so the original development build replaced the drive at these four places (PC
-file server, below). A port can take the same cut: serve the unit's reads,
+`resident/cd.h`) holds the file index and reads every file except the world-map
+terrain and the movie streams, whose readers (below) issue their own drive
+commands at sectors taken from that index (func_800289D0 at
+worldmap_80094A5C.c:1589/1966 and mdec.c:424). Outside the unit, three
+shipped parts issue drive commands themselves: the world-map terrain reader,
+the movie library (mdec) and the disc check of the swap (and the movie
+overlay's development tools). Each of them, like the unit, branches on
+func_8002C3D8 (D_8004FE48) to a host-file path, so the original development
+build replaced the drive at these four places (PC file server, below). A port can take the same cut: serve the unit's reads,
 rings and image streams, the world map's request lists, the movie ring and the
 swap's disc check from the imported discs. Raw sector reads are part of it,
 which the host path does not serve (func_8002954C returns -1 there): the
@@ -270,16 +273,16 @@ restore (Memory card and saves) and the dormant CdMix.
 
   | Command | Issued by |
   | --- | --- |
-  | Setloc (2) | every resident read and seek (func_80029690, func_80029AFC, func_80029EB0, func_8002A2D0, func_8002A394), retries and list gaps (func_8002A68C, func_8002AC24); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
+  | Setloc (2) | every resident read and seek (func_80029690, func_80029AFC, func_80029EB0, func_8002A2D0, func_8002A394), retries and list gaps (func_8002A68C, at a gap once func_8002AC24's Pause completes); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
   | ReadN (6) | func_8002A68C after Setloc: every resident read |
   | ReadS (0x1B) | the world-map reader (func_80096A6C); CdRead2 for movies (movie_restart) |
   | SeekL (0x15) | func_8002A68C after a seek's Setloc; the swap |
-  | Pause (9) | the end of every shipped resident read, func_8002A428 after Setmode, retries; soft reset (func_800283D4); the world-map reader at a list's end and in recovery; movie_stop |
+  | Pause (9) | the end of every shipped resident read, func_8002A428 after Setmode, list gaps (func_8002AC24), retries; soft reset (func_800283D4); the world-map reader at a list's end and in recovery; movie_stop |
   | Stop (8) | retry reason 4; the swap's preparation (func_801E92CC) |
   | Standby (7) | func_80028230 through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
   | Setmode (0x0E) | func_8002A428: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
   | Setfilter (0x0D) | movie_start: file 1 and the movie's channel, when its select bit 0 is set |
-  | Nop (1, Getstat) | retries (func_8002A68C, func_80096A6C, func_80096C0C); the swap's lid and motor polling |
+  | Nop (1, Getstat) | retries (func_8002A68C and the sector callbacks func_8002AC24, func_8002B084, func_8002B2F0 and func_8002B5D0; the world-map reader's func_80096A6C, func_80096C0C); the swap's lid and motor polling |
   | GetTN (0x13) | retries, once the drive status shows the lid closed; the swap |
 
 - **Modes and sectors** (Setmode bits after psx-spx: 0x80 double speed, 0x40
@@ -292,11 +295,14 @@ restore (Memory card and saves) and the dormant CdMix.
   world map's in D_8009CCA0), the sector is not taken and the read restarts
   there (Retries). Movies read 2048-byte sectors in the low byte of
   movie_cd_mode | 0x80: 0xC8 with XA audio, 0x88 when select bit 1 clears the
-  ADPCM bit again (field movies with their own sound bank, field
-  func_800A7218), 0x80 without. CdRead2 issues that Setmode, installs the St
-  ring's callbacks (StCdInterrupt2, data_ready_callback) for bit 0x100 and
-  sends ReadS (mdec CdRead2). Setmode 0 is "NORMAL SPEED" in the development
-  test (movie.c func_80072480).
+  ADPCM bit again (field movies with their own sound bank or whose event set
+  bit 0x40 of D_800ADB80, which fe a0 play_movie_sound always does and fe 60
+  and fe 67 take from their mode operand; field func_800A7218,
+  field_800854D0.c func_8008EA58, func_8008EC30, func_8008EE14), 0x80
+  without. CdRead2 issues that Setmode, installs the St ring's callbacks
+  (StCdInterrupt2, data_ready_callback) for bit 0x100 and sends ReadS (mdec
+  CdRead2). Setmode 0 is "NORMAL SPEED" in the development test (movie.c
+  func_80072480).
 - **Retries.** func_8002A68C (state D_8004FE1C, reason D_8004FE20): a command
   that does not complete (status other than Complete, 2), or a sector that
   fails, arrives out of place or finds no free ring slot, makes it poll Getstat
@@ -310,11 +316,18 @@ restore (Memory card and saves) and the dormant CdMix.
   (func_8002804C's bars run only on the PC server's paths). States 12 and 8
   (Setmode, then Setfilter with file 1 and the low byte of D_8004FE38) are
   entered only through reason 5, which only they set, so the resident never
-  selects an XA channel. The read statistics D_8005A488-D_8005A4B4 feed only
-  the movie overlay's development monitor (func_800704E8). The world-map reader
-  recovers the same way under its own state D_8009CD44 (Getstat while the lid
-  is open, GetTN, Pause, Setloc and ReadS), while the world-map loop spins
-  VSync(0) (worldmap.c func_800712D0).
+  selects an XA channel. The read statistics, which func_80028230 zeroes
+  (D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C,
+  which nothing increments, D_8005A4A4, D_8005A4A8 and D_8005A4B4; the blocks
+  D_8005A4A0, D_8005A4AC and D_8005A4B0 among them are other data), feed only
+  the movie overlay's development screens (movie.c func_800704E8, and
+  func_800737EC, which prints and clears D_8005A49C, D_8005A4A4, D_8005A4A8
+  and D_8005A4B4). On a stalled movie, movie_poll overwrites D_8005A4A8 and
+  D_8005A4B4 for those screens with the resume position StGetBackloc gives and
+  the movie's starting sector in its file (mdec.c:387-388). The world-map
+  reader recovers the same way under its own state D_8009CD44 (Getstat while
+  the lid is open, GetTN, Pause, Setloc and ReadS), while the world-map loop
+  spins VSync(0) (worldmap.c func_800712D0).
 - **Streams.**
   - Music: the field streams a music's wave file (0x13 + 2 * wave of directory
     (0x1C, 0), field func_80085B20) through an eight-slot ring
@@ -449,10 +462,14 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
 - The vblank handler's h:m:s clock (main2.c func_80035E44) counts blanks in
   D_80059370 (60 to the second), then seconds in D_80059418, minutes in
-  D_80059420 and hours in D_80059484; D_800501F8 stops it at 100 h. It lives in
-  BSS, so it starts at zero at boot and after a soft reset. It counts through
-  pauses, because only D_80059488 is restored, and saves do not store it (the
-  payload keeps D_80059488). Scripts can read it: in each field frame
+  D_80059420 and hours in D_80059484; D_800501F8 stops it at 100 h. The
+  counters live in BSS, so they start at zero at boot and after a soft reset.
+  The stop flag is initialised data (main2.c:68) that only func_80035E44 tests
+  and sets and nothing clears, and a soft reset keeps .data: once the clock has
+  reached 100 h it stays stopped, at 00:00:00 after a soft reset, until the
+  program is loaded again. It counts through pauses, because only D_80059488
+  is restored, and saves do not store it (the payload keeps D_80059488).
+  Scripts can read it: in each field frame
   (func_80077DAC) func_800A31E8 copies it into event variables 0xC (seconds |
   minutes << 8) and 0xE (hours) (field_800854D0.c:11067-11068). The kernel
   menu also prints it (main.c func_8001A344). Decoding all 935 maps
@@ -510,7 +527,10 @@ The next frame consumes them:
 - frameTicks itself. Those effect scripts integrate the object's motion
   frameTicks + 1 times (func_800AAD54). Image animations advance by speed x
   (frameTicks + 1) (func_800A3E98), both for every drawn object (func_8009F844)
-  and for the stage object (func_800A4654, from func_800BB9D4 each frame).
+  and for the stage object (func_800A4654, which func_800BB9D4 calls each
+  frame while the stage is drawn, D_800C372C == 0; sprite command 0x12 of
+  func_800B3F04 sets it as it clears both draw buffers to black, and 0x14
+  clears it).
 - Not scaled. The highlight pulse (D_800C3B7C += 0x80), the push-apart of the
   acting object (func_800B10EC) and the placement of child objects
   (func_800AAB34) run once per stage update.
@@ -573,9 +593,12 @@ Waits on the sound driver. A host that does not run the tick and the transfer
 callback never leaves these:
 
 - **Effect ends.** The tick ends an effect channel when its data reaches opcode
-  90 end or FF stop_when_silent (sound.c func_8003CD8C, func_8003E54C).
-  Otherwise a channel ends only through a stop call or a new effect that takes
-  it. The stop calls are func_80039FF8 (all), func_8003A094 (a bank),
+  90 end with no loop point set, or FF stop_when_silent once the voice's
+  envelope level is 0 (sound.c func_8003CD8C, func_8003E54C). A loop point
+  (91 loop_point, func_8003CE04, or 8D loop_point_if when its selector matches,
+  func_8003CD54; effect starts clear it, func_8003B644) makes 90 continue there,
+  so a looping effect never ends by itself. Otherwise a channel ends only
+  through a stop call or a new effect that takes it. The stop calls are func_80039FF8 (all), func_8003A094 (a bank),
   func_8003A14C (an effect) and func_8003A20C (a channel pair); the channel
   choice for a new effect is func_8003A65C.
   - Field event fe 64 (func_8008F5E4) yields while any effect channel in the
