@@ -2246,7 +2246,7 @@ void func_8007FD38(u8 member) {
         }
         func_8008AB94();
         D_800D367C = (void *)func_8008ABB8(func_800288EC(file), 0);
-        func_800295D8(file, (s32)D_800D367C, 0, 0x80);
+        func_800295D8(file, D_800D367C, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unkAE = 1;
     }
@@ -2266,7 +2266,7 @@ void func_8007FE3C(void) {
         func_8008AC50();
         func_8008AB94();
         D_800C3DE8 = (void *)func_8008ABB8(func_800288EC(3), 0);
-        func_800295D8(3, (s32)D_800C3DE8, 0, 0x80);
+        func_800295D8(3, D_800C3DE8, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unk96 = 1;
     }

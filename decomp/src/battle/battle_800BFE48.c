@@ -44,7 +44,7 @@ s32 D_800C37E8[40][4] = {
     {0x5, 0x162, 0x13B8, 0x2AE0},
 };
 s32 (*D_800C3A68)[4] = D_800C37E8;
-s32 D_800C3A6C = 0;
+SoundSequence *D_800C3A6C = NULL;
 
 /* Return the slots' sprites to their places after an action: sprites in a
  * hit motion leave it, sprites away from their slot walk back, then each
@@ -496,10 +496,10 @@ void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out) {
 
 /* Release the transferred sound bank. */
 void func_800C0F70(void) {
-    if (D_800C3A6C != 0) {
+    if (D_800C3A6C != NULL) {
         func_80038310(D_800C3A6C);
     }
-    D_800C3A6C = 0;
+    D_800C3A6C = NULL;
 }
 
 /* Set up a command file's parts: transfer its wave bank (freeing the file
@@ -527,9 +527,9 @@ SoundBank *func_800C0FAC(s32 *file) {
             D_800C3620 = 0;
             D_800C3622 = 0;
             {
-                s32 *waves = &D_800C3A6C;
+                SoundSequence **waves = &D_800C3A6C;
 
-                *waves = func_80037FD8(entry, 0);
+                *waves = func_80037FD8((SoundSequence *)entry, 0);
             }
             while (func_8003BDFC(0) != 0) {
                 if (*(s32 *)0x80010000 != -1) {
@@ -537,7 +537,7 @@ SoundBank *func_800C0FAC(s32 *file) {
                 }
             }
             if (n == 1) {
-                func_80031F70(file, *offsets);
+                func_80031F70((u8 *)file, *offsets);
             }
             break;
         default:
@@ -561,7 +561,7 @@ void func_800C1140(s32 *file) {
     for (n = *offsets - 3, offsets += 4; n > 0; n--, offsets++) {
         entry = (s32 *)(*offsets + (s32)file);
         if (*entry == 0x73646573) { /* "seds" */
-            func_8003852C(entry);
+            func_8003852C((SoundBank *)entry);
         }
     }
 }

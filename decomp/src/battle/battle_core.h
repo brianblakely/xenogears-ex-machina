@@ -389,7 +389,7 @@ typedef struct ListPrims {
 } ListPrims;
 
 extern ListPrims *D_800D2DB4;
-extern s32 D_800D2DAC;
+extern Window *D_800D2DAC; /* the message text window */
 
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). The
  * script pointers come from the enemy's table in the enemy data file

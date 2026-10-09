@@ -17,7 +17,6 @@
 /* Resident sprite engine. */
 void func_800242F4(Sprite *sprite, s32 a, s16 b, s16 c, s32 d, s32 e, s32 f, s32 g);
 
-extern u8 D_800591AF;
 
 extern u8 D_800C3664;  /* sprite updates paused */
 extern s32 D_800C367C;

@@ -283,7 +283,7 @@ void func_80070E2C(void) {
         block = func_8008ABB8(4, 1);
         D_800D3284 = block;
         D_800D328C = func_8008ABB8(block - 0x801E5000, 1);
-        func_800295D8(1, 0x801E5000, 0, 0x80);
+        func_800295D8(1, (void *)0x801E5000, 0, 0x80);
         func_8008AC50();
         func_801E5160();
     }
@@ -305,7 +305,7 @@ void func_80070EDC(void) {
         handled = func_801E563C();
     }
     if ((handled & 0xFF) == 0 && D_800C48EA == 0x81) {
-        func_8003A89C(D_800C3E54, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_800C3E54, 0, 0xF0);
     }
 }
 
@@ -336,7 +336,7 @@ void func_80070F40(void) {
         D_80059508 = D_8005947C - 1;
         if (D_80059180 != 0) {
             D_80059180 = 0;
-            func_8003A89C(D_80062528, 0x7F, 0x3C);
+            func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0x3C);
         }
         if (D_800594F8 == 0) {
             D_8005947C = 0;
@@ -346,7 +346,7 @@ void func_80070F40(void) {
         func_80028470(0x10, 2);
         block = func_8008ABB8(4, 1);
         span = func_8008ABB8(block - 0x801E0000, 1);
-        func_800295D8(1, 0x801E0000, 0, 0x80);
+        func_800295D8(1, (void *)0x801E0000, 0, 0x80);
         func_80028A60(0);
         func_800320E8((void *)block);
         func_800320E8((void *)span);
@@ -359,7 +359,7 @@ void func_80070F40(void) {
     }
     if (*D_8005917C != -1) {
         func_80028470(0x10, 2);
-        func_800295D8(6, 0x80280000, 0, 0x80);
+        func_800295D8(6, (void *)0x80280000, 0, 0x80);
         func_80028A60(0);
     }
     memmove(D_8006F9DC, D_800658DC[D_80059508], 0x20);
@@ -374,8 +374,8 @@ void func_80070F40(void) {
     if (D_800594F8 != 0) {
         D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
     }
-    D_800D3364 = D_8005949C;
-    D_800C3EB0.formation = D_8005949C;
+    D_800D3364 = (Formation *)D_8005949C;
+    D_800C3EB0.formation = (Formation *)D_8005949C;
     func_80077990();
     D_800D3298 = 1;
     func_800BC404(D_800D39DC);
@@ -460,7 +460,7 @@ void func_80070F40(void) {
     func_80028470(0x10, 0);
     D_800D2D3C = func_8008ABB8(4, 1);
     D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
-    func_800295D8(4, 0x801DE000, 0, 0x80);
+    func_800295D8(4, (void *)0x801DE000, 0, 0x80);
     func_800B853C(mode);
     while (D_800CCC58 != 0) {
         func_800716D8();
@@ -1449,7 +1449,7 @@ void func_80074F70(void) {
         AddPrim(D_800CCB04.ot + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
     }
     if (D_800D2D28->unkC9 != 0) {
-        func_80034888(D_800D2DAC, D_800CCB04.ot + 1, D_800CCB04.buffer);
+        func_80034888(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);
     }
 }
 

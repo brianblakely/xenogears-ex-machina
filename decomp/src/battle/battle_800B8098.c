@@ -167,7 +167,7 @@ void func_800B838C(s32 index, s32 variant) {
     FileRequest banks[4]; /* the sound bank, the wave bank, the end, one unused */
     SoundBank *system;
     void *waves;
-    s32 waveBank;
+    SoundSequence *waveBank;
     s32 sound;
 
     func_800C0F70();
@@ -251,7 +251,7 @@ void func_800B853C(s32 mode) {
     func_800B8354();
     func_80028470(0x2C, 0);
     waves = func_80031BDC(func_800288EC(5), 1);
-    func_800295D8(5, (s32)waves, 0, 0x80);
+    func_800295D8(5, waves, 0, 0x80);
     func_800B8354();
     D_800595AC = func_80037FD8(waves, 0);
     while (func_8003BDFC(0) != 0) {
@@ -276,7 +276,7 @@ void func_800B8774(void) {
     }
     func_80024FB8();
     func_8001C8DC();
-    func_8003852C(D_8005919C);
+    func_8003852C((SoundBank *)D_8005919C);
     func_800320E8(D_8005919C);
     D_800591AD = 0;
     DrawSync(0);
@@ -383,7 +383,7 @@ void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
                 func_800B8354();
                 func_80028470(0x2C, 0);
                 waves = func_80031BDC(func_800288EC(7), 0);
-                func_800295D8(7, (s32)waves, 0, 0x80);
+                func_800295D8(7, waves, 0, 0x80);
                 func_800B8354();
                 func_800C0F70();
                 D_800C3A6C = func_80037FD8(waves, 0);
@@ -489,7 +489,7 @@ void func_800B8EBC(void) {
         func_800BEDE8();
         func_800BA4E0(slot);
         if (D_800C35D4) {
-            func_8003A89C(D_800C3E54, 0x7F, 0x50);
+            func_8003A89C((SoundSeq *)D_800C3E54, 0x7F, 0x50);
         }
         D_800C35D4 = 0;
         for (i = 0; i != 11; i++) {
@@ -689,7 +689,7 @@ void func_800B9508(Sprite *sprite) {
         ((SpriteSequencer *)sprite->sequencer)->size = ((SpriteSequencer *)other->sequencer)->size;
         sprite->render.word |= 0x40000000;
         func_800320E8(sprite->renderer->parts[0]);
-        sprite->renderer->parts[1] = sprite->renderer->parts[0] = func_80031BDC(func_80031894(other->renderer->parts[0]), 0);
+        sprite->renderer->parts[1] = sprite->renderer->parts[0] = func_80031BDC(func_80031894((u8 *)other->renderer->parts[0]), 0);
         D_800C360C++;
         return;
     default:
@@ -714,7 +714,7 @@ void func_800B9508(Sprite *sprite) {
                 if (!D_800D3350 && D_800C3618 != NULL) {
                     func_800B8354();
                     sprite->word50 = func_800BF354();
-                    func_80021BF0(sprite, D_800C3618);
+                    func_80021BF0(sprite, (s32)D_800C3618);
                 }
                 if (D_800C3610->turnSlot == SPRITE_SLOT(sprite)) {
                     motion = ~motion;
@@ -1236,8 +1236,8 @@ void func_800BAEB8(s32 slot) {
 
     if ((s8)sprite->motion.bytes[3] != 0x15) {
         direction = (BATTLE_AREA.slots[slot].targetCode != 0) << 11;
-        func_800223B0(&sprite->x, direction);
-        func_80021FE0(&sprite->x, direction);
+        func_800223B0(sprite, direction);
+        func_80021FE0(sprite, direction);
     }
 }
 
@@ -1432,7 +1432,7 @@ void func_800BB620(SlotTask *task) {
 void func_800BB690(SlotTask *task) {
     func_800A9540(task->slot);
     D_800C3CB8++;
-    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB620);
+    func_8001CD6C(&task->task, (void (*)(Task *))func_800BB620);
 }
 
 /* Task step: once the disc and the file reads are idle, run 800BB690 on a
@@ -1456,8 +1456,8 @@ void func_800BB760(s32 slot) {
 
     D_800591AC = 0;
     D_800591AF = 1;
-    task = func_8001CD08(NULL, 4);
-    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB6E0);
+    task = (SlotTask *)func_8001CD08(NULL, 4);
+    func_8001CD6C(&task->task, (void (*)(Task *))func_800BB6E0);
     task->slot = slot;
     D_800591AF = 0;
     D_800C35D8++;
@@ -1724,8 +1724,8 @@ void func_800BC158(SpriteTask *task) {
     } else {
         sprite->direction = 0;
     }
-    func_8001CD74(task, func_800BBEE0);
-    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BC018);
+    func_8001CD74(&task->task, func_800BBEE0);
+    func_8001CD6C(&task->task, func_800BC018);
     func_800BC2F0(2);
 }
 
@@ -2001,7 +2001,7 @@ void func_800BCB54(Task *task) {
 
     if (pulse != NULL) {
         pulse->sprite->colour_flags |= 1;
-        func_8001CD94(pulse);
+        func_8001CD94(&pulse->task);
         func_800320E8(pulse);
         D_800C3748 = NULL;
     }
@@ -2048,10 +2048,10 @@ void func_800BCC60(void) {
     if (BATTLE_AREA.tasks[AREA_ACTING_SLOT] == NULL) {
         return;
     }
-    pulse = func_8001CD08(BATTLE_AREA.tasks[AREA_ACTING_SLOT], sizeof(SlotPulse) - sizeof(Task));
+    pulse = (SlotPulse *)func_8001CD08(&BATTLE_AREA.tasks[AREA_ACTING_SLOT]->task, sizeof(SlotPulse) - sizeof(Task));
     D_800C3748 = pulse;
-    func_8001CD6C(pulse, func_800BCBB4);
-    func_8001CD74(pulse, func_800BCB54);
+    func_8001CD6C(&pulse->task, func_800BCBB4);
+    func_8001CD74(&pulse->task, func_800BCB54);
     if (D_800591AC) {
         D_80059464--;
     }
@@ -2141,7 +2141,7 @@ void func_800BD024(Task *task) {
 
     sprite->colour_flags |= 1;
     func_8001F6B0(sprite);
-    func_80025180(ring->vertices[0]);
+    func_80025180((u32)ring->vertices[0]);
     func_8001CE74(task);
     func_8001CD94(task);
     func_800320E8(ring);

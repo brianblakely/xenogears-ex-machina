@@ -27,7 +27,7 @@ typedef struct {
     u16 clut;
 } WindowLine;
 
-typedef struct {
+typedef struct Window {
     s16 x;          /* cursor column */
     s16 y;          /* cursor row */
     s16 unk4;

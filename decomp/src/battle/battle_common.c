@@ -102,7 +102,7 @@ struct GearRecord *D_800D2D6C; /* attacker's gear record */
 s16 D_800D2D70[11];            /* running result amount per slot */
 u8 D_800D2D88[5];              /* name glyph codes */
 struct WindowRect *D_800D2D90[7];
-s32 D_800D2DAC;
+struct Window *D_800D2DAC; /* the message text window */
 u32 *D_800D2DB0; /* blank text image */
 struct ListPrims *D_800D2DB4;
 u8 D_800D2DB8;  /* resolve status returned to the caller */

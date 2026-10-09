@@ -164,7 +164,7 @@ typedef struct Sprite {
         unsigned mirror : 1;     /* mirror every frame */
         unsigned frame_flip : 1; /* the current frame is mirrored */
         unsigned unknown4 : 1;
-        unsigned owns_children : 1; /* its child tasks end with it (the battle's) */
+        unsigned owns_children : 1; /* the tasks it created end with it (80022eb8) */
         unsigned double_step : 1;
         unsigned divisor : 12;   /* gravity divisor */
         unsigned unknown19 : 13;

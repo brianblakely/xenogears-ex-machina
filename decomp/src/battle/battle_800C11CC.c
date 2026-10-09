@@ -116,7 +116,7 @@ next:
                 u8 *animation = sprite->script + VM_S16(args, 0);
 
                 target->motion.bytes[3] = 0x3F;
-                func_80023538(target, animation);
+                func_80023538(target, (u16 *)animation);
             }
             break;
         /* fb s16 u8: go on; once the sprite comes nearer its target point (+a0) than u8 * 2,
@@ -331,7 +331,7 @@ next:
          * the effect entry at the operand + s24, else drop them. */
         case 0xF3:
             if (sprite->renderer->parts[0] != NULL) {
-                func_80025180(sprite->renderer->parts[0]);
+                func_80025180((u32)sprite->renderer->parts[0]);
             }
             offset = ((s8)args[2] << 16) + (args[1] << 8) + args[0];
             data = (u8 *)(offset + (s32)args);
@@ -344,7 +344,7 @@ next:
                 func_800B1720(func_800B168C(data, 0), buffer, ((u8 *)&sprite->render)[0] >> 5, sprite->colour_flags & 1);
                 part = buffer + size;
                 memcpy(part, buffer, size);
-                sprite->renderer->parts[0] = buffer;
+                sprite->renderer->parts[0] = (SpritePart *)buffer;
                 sprite->renderer->parts[1] = (SpritePart *)part;
                 sprite->renderer->pointer34 = (SpriteRendererEntry *)func_800B168C(data, 0);
             } else {
@@ -398,7 +398,7 @@ next:
             {
                 s32 jump = args[0] + (s16)(args[1] << 8);
 
-                func_80021CF8(sprite, sprite->script + 3);
+                func_80021CF8(sprite, (s32)(sprite->script + 3));
                 sprite->script += (s16)jump;
             }
             goto next;

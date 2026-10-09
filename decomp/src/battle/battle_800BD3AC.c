@@ -57,7 +57,8 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
             popup->task.destroy(&popup->task);
         }
     }
-    popup = func_8001D1D8(sizeof(DamagePopup), NULL, func_800BDC78, func_800BDA1C, func_800BD7A0);
+    popup = (DamagePopup *)func_8001D1D8(sizeof(DamagePopup), NULL, (void (*)(Task *))func_800BDC78, func_800BDA1C,
+                                         func_800BD7A0);
     popup->sprite = sprite;
     popup->timer = 8;
     popup->next = D_800C3750;
@@ -86,7 +87,7 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
         popup->timer = 0x40;
         popup->glyphCount = func_80026DCC(D_800D2F5C, 0x7C, popup->glyphs, -0x14, -0x10);
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] & ~1) | 2;
-        func_8001CD6C(popup, func_800BDB08);
+        func_8001CD6C(&popup->task, (void (*)(Task *))func_800BDB08);
         break;
     case 5:
         popup->colour.rgbc[0] = 0x80;
@@ -274,7 +275,7 @@ void func_800BDC14(DamagePopup *popup) {
     if (--popup->timer < 0) {
         popup->timer = 16;
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] | 2) & ~1;
-        func_8001CD6C(popup, func_800BDB74);
+        func_8001CD6C(&popup->task, func_800BDB74);
     }
 }
 
@@ -289,7 +290,7 @@ void func_800BDC78(DamagePopup *popup) {
     }
     if (--popup->timer < 0) {
         popup->timer = 16;
-        func_8001CD6C(popup, func_800BDC14);
+        func_8001CD6C(&popup->task, (void (*)(Task *))func_800BDC14);
     }
 }
 
@@ -297,7 +298,7 @@ void func_800BDC78(DamagePopup *popup) {
 void func_800BDCF8(TotalPopup *total) {
     D_800D2D68 = NULL;
     func_8001CB48(&total->draw);
-    func_8001CD94(total);
+    func_8001CD94(&total->task);
 }
 
 void func_800BDD34(void) {
@@ -337,11 +338,11 @@ void func_800BDD3C(Task *draw) {
 void func_800BDE58(void) {
     if (D_800D2D68 == NULL && D_800C3780 == 0) {
         D_800D2D68 = &D_800D30EC;
-        func_8001CC18(0, &D_800D30EC);
-        func_8001CA58(&D_800D30EC, &D_800D30EC.draw);
-        func_8001CD6C(&D_800D30EC, func_800BDD34);
+        func_8001CC18(NULL, &D_800D30EC.task);
+        func_8001CA58(&D_800D30EC.task, &D_800D30EC.draw);
+        func_8001CD6C(&D_800D30EC.task, (void (*)(Task *))func_800BDD34);
         func_8001CD64(&D_800D30EC.draw, func_800BDD3C);
-        func_8001CD74(&D_800D30EC, func_800BDCF8);
+        func_8001CD74(&D_800D30EC.task, (void (*)(Task *))func_800BDCF8);
         D_800D30EC.x = 0x90;
         D_800D30EC.y = 0x2A;
         D_800D30EC.task.data = &D_800D30EC;
@@ -483,7 +484,8 @@ void func_800BE330(s32 value) {
     s32 i;
     s32 x;
 
-    popup = func_8001D1D8(sizeof(NumberPopup), 0, func_800BE11C, func_800BE1C4, 0);
+    popup = (NumberPopup *)func_8001D1D8(sizeof(NumberPopup), NULL, (void (*)(Task *))func_800BE11C,
+                                         (void (*)(Task *))func_800BE1C4, NULL);
     popup->spin = -(((rand() & 3) - 2) * 8);
     if (popup->spin == 0) {
         popup->spin = 6;
@@ -649,9 +651,9 @@ void func_800BE790(void) {
     func_800BBAB8();
     func_800BB9D4();
     func_80024FF4(&D_800D309C.matrix);
-    func_80024FE4(frame->ot);
+    func_80024FE4((s32)frame->ot);
     if (D_80010000 != -1) {
-        func_80037324(frame->ot);
+        func_80037324((u_long *)frame->ot);
     }
     func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, (u32 *)D_8005956C, frame->buffer);
     SPAD_STACK_ENTER();
@@ -720,7 +722,7 @@ void func_800BEB04(void) {
         func_800B8354();
         func_800284B4(&saved0, &saved1);
         func_80028470(0xC, 2);
-        func_800295D8(module + 2, 0x801FC000, 0, 0x80);
+        func_800295D8(module + 2, (void *)0x801FC000, 0, 0x80);
         func_800B8354();
         func_80028470(saved0, saved1);
         DrawSync(0);
@@ -903,8 +905,8 @@ void func_800BF1EC(Sprite *sprite, s32 mode) {
     to.x = sprite->target_x;
     to.z = sprite->target_z;
     D_800C3610->field44 = func_800C07CC(from, to);
-    func_80021FE0((s32 *)sprite, func_800BEF8C(sprite));
-    func_800223B0((s32 *)sprite, func_800BEF8C(sprite));
+    func_80021FE0(sprite, func_800BEF8C(sprite));
+    func_800223B0(sprite, func_800BEF8C(sprite));
     func_800245D8(sprite, mode);
     func_800BF0B4(6);
 }
@@ -959,9 +961,9 @@ void func_800BF3E8(Sprite *sprite) {
     slot = SPRITE_SLOT(target);
     D_800C3610->target = first;
     D_800C3610->targetSlot = slot;
-    func_800223B0((s32 *)sprite, func_800BEF24(sprite, sprite->partner));
+    func_800223B0(sprite, func_800BEF24(sprite, sprite->partner));
     if ((s8)target->motion.bytes[3] != 0x15) {
-        func_800223B0((s32 *)target, func_800BEF24(sprite->partner, sprite));
+        func_800223B0(target, func_800BEF24(sprite->partner, sprite));
     }
 }
 
@@ -1036,7 +1038,7 @@ void func_800BF730(s32 value) {
 
 /* Watch a sprite's value; on a rise or a fall under the threshold call back
  * and end. */
-void func_800BF73C(EffectSprite *task) {
+void func_800BF73C(Task *task) {
     SlotWatch *watch = (SlotWatch *)task;
     s32 last = watch->value;
 
@@ -1049,9 +1051,9 @@ void func_800BF73C(EffectSprite *task) {
 
 /* Start watching sprite's value against threshold with callback. */
 void func_800BF7C8(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)) {
-    SlotWatch *watch = func_8001CD08(sprite->block, sizeof(SlotWatch) - 0x1C);
+    SlotWatch *watch = (SlotWatch *)func_8001CD08(sprite->block, sizeof(SlotWatch) - 0x1C);
 
-    func_8001CD6C((EffectSprite *)watch, func_800BF73C);
+    func_8001CD6C((Task *)watch, func_800BF73C);
     watch->callback = callback;
     watch->sprite = sprite;
     watch->mode = (s8)sprite->motion.bytes[3];
@@ -1118,7 +1120,7 @@ void func_800BF9EC(void) {
         func_800B8354();
         func_80028470(0x2C, 0);
         file = func_80031BDC(func_800288EC(1), 0);
-        func_800295D8(1, (s32)file, 0, 0x80);
+        func_800295D8(1, file, 0, 0x80);
         func_800B8354();
         func_8002DDE4(file, 0, 0, 0, 0, 0, 0);
         func_800BE790();
@@ -1158,11 +1160,11 @@ void func_800BFBA0(void) {
         func_800B8354();
         func_80028470(0x2C, 0);
         file = func_80031BDC(func_800288EC(5), 0);
-        func_800295D8(5, (s32)file, 0, 0x80);
+        func_800295D8(5, file, 0, 0x80);
         func_800B8354();
         if (func_800383EC(*(u16 *)(file + 0x20)) == 0) {
             func_800C0F70();
-            D_800C3A6C = func_80037FD8(file, 0);
+            D_800C3A6C = func_80037FD8((SoundSequence *)file, 0);
             while (func_8003BDFC(0) != 0) {
                 func_800BE790();
             }
@@ -1214,7 +1216,7 @@ void func_800BFDA8(Sprite *sprite, s32 mode) {
         void *motion = (void *)(SPRITE_SOURCE->animations[mode + 1] + (s32)SPRITE_SOURCE->animations);
         saved = D_800591AC;
         D_800591AC = 0;
-        child = func_80023B84(sprite, motion, D_8006BE10);
+        child = func_80023B84(sprite, motion, (SpriteSource *)D_8006BE10);
         child->motion.bytes[3] = mode;
         child->partner = sprite;
         D_800591AC = saved;

@@ -941,7 +941,7 @@ void func_800B3358(Quake *quake) {
 
 /* End the quake task. */
 void func_800B3588(Quake *quake) {
-    func_8001CD94(quake);
+    func_8001CD94(&quake->task);
     func_800320E8(quake);
     D_800C3548 = NULL;
 }
@@ -951,9 +951,9 @@ Quake *func_800B35C0(void) {
     Quake *quake;
 
     if (D_800C3548 == NULL) {
-        quake = func_8001CD08(0, sizeof(Quake) - sizeof(Task));
-        func_8001CD6C(quake, func_800B3358);
-        func_8001CD74(quake, func_800B3588);
+        quake = (Quake *)func_8001CD08(NULL, sizeof(Quake) - sizeof(Task));
+        func_8001CD6C(&quake->task, (void (*)(Task *))func_800B3358);
+        func_8001CD74(&quake->task, (void (*)(Task *))func_800B3588);
         quake->from.vx = 0;
         quake->from.vy = 0;
         quake->from.vz = 0;
@@ -1013,7 +1013,7 @@ void func_800B36BC(Task *task) {
 /* End the screen fade tasks. */
 void func_800B383C(ScreenFade *fade) {
     func_8001CB48(&fade->draw);
-    func_8001CD94(fade);
+    func_8001CD94(&fade->task);
     D_800C3558 = NULL;
 }
 
@@ -1087,15 +1087,15 @@ void func_800B39C0(frames, blend, r, g, b)
             goto resume;
         }
     }
-    func_8001CC18(0, fade);
-    func_8001CA58(fade, &fade->draw);
+    func_8001CC18(NULL, &fade->task);
+    func_8001CA58(&fade->task, &fade->draw);
     fade->task.link.word &= 0x7FFFFFFF;
     if (D_800591AC != 0) {
         D_80059464--;
     }
-    func_8001CD6C(fade, func_800B36BC);
+    func_8001CD6C(&fade->task, func_800B36BC);
     func_8001CD64(&fade->draw, func_800B3878);
-    func_8001CD74(fade, func_800B383C);
+    func_8001CD74(&fade->task, (void (*)(Task *))func_800B383C);
     fade->task.data = fade;
     fade->draw.data = fade;
     fade->field40 = 0;
@@ -1152,7 +1152,7 @@ void func_800B3B94(Task *task) {
 /* End the light fade tasks and restore the stage lights (800A6F98). */
 void func_800B3C2C(LightFade *fade) {
     func_8001CB48(&fade->draw);
-    func_8001CD94(fade);
+    func_8001CD94(&fade->task);
     func_800320E8(fade);
     D_800C3560 = NULL;
     func_800A6F98();
@@ -1184,7 +1184,8 @@ void func_800B3CD4(to, frames, red, blue, field4C, field4E)
     u8 *stack;
 
     if (D_800C3560 == NULL) {
-        D_800C3560 = fade = func_8001D1D8(sizeof(LightFade), 0, func_800B3B94, func_800B3C74, func_800B3C2C);
+        D_800C3560 = fade = (LightFade *)func_8001D1D8(sizeof(LightFade), NULL, func_800B3B94, func_800B3C74,
+                                                    (void (*)(Task *))func_800B3C2C);
         stack = func_80031BDC(0x1000, 1);
         STACK_ENTER(stack + 0xC00);
         func_800A5EB4();

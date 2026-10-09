@@ -78,7 +78,7 @@ void func_800B8284(void);
 void func_800B88C4(void);
 void func_800B8840(void);
 void func_800A5E9C(u8 *first, u8 *second); /* the two buffers' background colours */
-u8 func_801E7210(Formation **formation, s32 a, s32 b, u8 *c, u8 *d, u8 *colour);
+u8 func_801E7210(u8 **scene, s32 unused, u8 *stage, u8 *origin, u8 *colours, u8 *tint); /* set up the stage (ovl2615) */
 void func_801E62E0(s32 arg0);
 void func_801E8588(void);
 void func_801E893C(void);
@@ -148,7 +148,7 @@ extern u8 D_800C3620;            /* the sound bank of file 5 is loaded */
 extern u8 D_800C3621;            /* upload the images of file 1 */
 extern u8 D_800C3622;            /* wave bank 7 is loaded (a gear frame's turn) */
 extern u8 D_800C362C;            /* restart the party's gears (2: all but the acting) */
-extern s32 D_800C3A6C;
+extern SoundSequence *D_800C3A6C; /* the transferred wave bank of a command file */
 
 s32 func_800383EC(u16 id);
 s16 func_8003BDFC(s32 wait);             /* sound transfer busy */

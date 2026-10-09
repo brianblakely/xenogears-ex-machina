@@ -74,12 +74,12 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     case 0x6A:
         D_800C492A = 1;
         D_800C35D4 = 0;
-        func_8003A89C(D_800C3E54, 0, 0x78);
+        func_8003A89C((SoundSeq *)D_800C3E54, 0, 0x78);
         break;
     /* 69: rebind the block idle bit 10 names: +4c when set, else +48 (bit 10 kept). */
     case 0x69:
         if ((sprite->b0.wordb0 >> 10) & 1) {
-            func_800222BC(sprite, sprite->resource);
+            func_800222BC(sprite, (s32 *)sprite->resource);
             sprite->b0.wordb0 |= 0x400;
         } else {
             func_800222BC(sprite, sprite->animations);
@@ -89,7 +89,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 68: bind +4c (idle bit 10 set) for a negative animation, else +48. */
     case 0x68:
         if ((s8)sprite->motion.bytes[3] < 0) {
-            func_800222BC(sprite, sprite->resource);
+            func_800222BC(sprite, (s32 *)sprite->resource);
             sprite->b0.wordb0 |= 0x400;
         } else {
             func_800222BC(sprite, sprite->animations);
@@ -189,19 +189,19 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 4f u8: play sound u8 of the sprite's bank on the last two effect voices (80039db8). */
     case 0x4F:
-        if (sprite->word50 != NULL) {
+        if (sprite->word50 != 0) {
             func_80039DB8(args[0] | (((SoundBank *)sprite->word50)->id << 16));
         }
         break;
     /* 52 u8 v: play sound u8 of the sprite's bank on effect voices (v & fe) ^ 8 (80039ec4). */
     case 0x52:
-        if (sprite->word50 != NULL) {
+        if (sprite->word50 != 0) {
             func_80039EC4(args[0] | (((SoundBank *)sprite->word50)->id << 16), args[1]);
         }
         break;
     /* 4d u8: stop effect u8 of the sprite's bank (8003a14c). */
     case 0x4D:
-        if (sprite->word50 != NULL) {
+        if (sprite->word50 != 0) {
             func_8003A14C(args[0] | (((SoundBank *)sprite->word50)->id << 16));
         }
         break;
@@ -874,7 +874,7 @@ void func_800B56E4(Task *draw) {
 /* Give sprite a trail in colours (the first byte the colour count, 0 for
  * 4). */
 void func_800B572C(Sprite *sprite, u8 *colours) {
-    SpriteTrail *trail = func_8001D1D8(0xB8, sprite->block, func_800B5588, func_800B56E4, NULL);
+    SpriteTrail *trail = (SpriteTrail *)func_8001D1D8(0xB8, sprite->block, func_800B5588, func_800B56E4, NULL);
 
     trail->sprite = sprite;
     trail->frame = sprite->frame;
@@ -933,9 +933,9 @@ void func_800B5854(Task *task) {
 
 /* Watch sprite approach its target (800B5854), resuming at the given script. */
 SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume) {
-    SpriteApproach *approach = func_8001CD08(sprite->block, sizeof(SpriteApproach) - sizeof(Task));
+    SpriteApproach *approach = (SpriteApproach *)func_8001CD08(sprite->block, sizeof(SpriteApproach) - sizeof(Task));
 
-    func_8001CD6C(approach, func_800B5854);
+    func_8001CD6C(&approach->task, func_800B5854);
     approach->sprite = sprite;
     approach->distance = func_800B57E4(sprite);
     approach->near = near;
@@ -994,9 +994,9 @@ void func_800B5B3C(SpriteLink *link) {
 /* Link sprite's partner to it at anchors (low nibble the sprite's, high
  * nibble the partner's). */
 SpriteLink *func_800B5C18(Sprite *sprite, u8 *anchors) {
-    SpriteLink *link = func_8001CD08(sprite->block, sizeof(SpriteLink) - sizeof(Task));
+    SpriteLink *link = (SpriteLink *)func_8001CD08(sprite->block, sizeof(SpriteLink) - sizeof(Task));
 
-    func_8001CD6C(link, func_800B5B3C);
+    func_8001CD6C(&link->task, (void (*)(Task *))func_800B5B3C);
     link->sprite = sprite;
     link->partner = sprite->partner;
     link->frame = sprite->frame;

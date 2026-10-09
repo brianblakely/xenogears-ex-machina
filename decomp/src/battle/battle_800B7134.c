@@ -92,13 +92,14 @@ void func_800B7330(void *block) {
 /* Shatter destroy: end the draw task, the task and its sprites. */
 void func_800B7364(ScreenShatter *shatter) {
     func_8001CB48(&shatter->draw);
-    func_8001CD94(shatter);
-    func_80025180(shatter);
+    func_8001CD94(&shatter->task);
+    func_80025180((u32)shatter);
 }
 
 /* Shatter the screen copied to VRAM (0x2C0, 0x100). */
 void func_800B73A0(void) {
-    func_800B7424(func_8001D1D8(sizeof(ScreenShatter), 0, func_800B6F0C, func_800B7134, func_800B7364));
+    func_800B7424((ScreenShatter *)func_8001D1D8(sizeof(ScreenShatter), NULL, func_800B6F0C, func_800B7134,
+                                                 (void (*)(Task *))func_800B7364));
 }
 
 /* Set up a shattered screen in a heap block (not run as a task). */
@@ -357,7 +358,7 @@ void func_800B7C34(s32 index) {
     D_800C3CEC = 1;
     D_800D2FDC = 1;
     D_800594F0 = func_80031BDC(func_800288EC(file), 0);
-    func_800295D8(file, (s32)D_800594F0, 0, 0x80);
+    func_800295D8(file, D_800594F0, 0, 0x80);
     func_800B8354();
     restart = (*(u16 *)(D_800594F0[1] + (s32)D_800594F0) >> 12) & 3;
     if (restart != 0) {
@@ -416,13 +417,13 @@ u8 func_800B7E94(void) {
     } else {
         own = 1;
         runner = D_800C3E1C;
-        func_80021BF0(runner, D_800594F0);
+        func_80021BF0(runner, (s32)D_800594F0);
         func_800245D8(runner, -1);
     }
     actor->word50 = runner->word50 = (s32)func_800C0FAC(D_800594F0);
     D_800D3350 = 1;
     D_800C35D4 = 1;
-    func_8003A89C(D_800C3E54, 0x60, 0x78);
+    func_8003A89C((SoundSeq *)D_800C3E54, 0x60, 0x78);
     func_8001CD94(&wait);
     return own;
 }

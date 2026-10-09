@@ -4676,7 +4676,7 @@ chosen:
                 func_80028470(0x28, 2);
                 file = arg + D_800C3530[(s16)word];
                 object->extra = func_80031BDC(func_800288EC(file), 0);
-                func_800295D8(file, (s32)object->extra, 0, 0);
+                func_800295D8(file, object->extra, 0, 0);
                 func_80028470(savedA, savedB);
             }
             break;
@@ -4710,7 +4710,7 @@ chosen:
                         func_8003342C(animations);
                         object->moreAnimations = animations;
                         DrawSync(0);
-                        func_80031F70(object->extra, (u8 *)object->extraData->soundsEnd - (u8 *)object->extra);
+                        func_80031F70((u8 *)object->extra, (u8 *)object->extraData->soundsEnd - (u8 *)object->extra);
                         if (object->extraData->sounds != object->extraData->image) {
                             image.vx = 0x380;
                             image.vy = 0x100;
