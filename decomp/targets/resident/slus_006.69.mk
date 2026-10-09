@@ -22,7 +22,9 @@ GP_kernel_settings := 8
 GP_sprite_settings := 8
 # The heap report file unit (80032DCC-80032E7C) owns its file handle as a
 # $gp small common but addresses other units' small globals absolutely
-# (80032E04's stores of D_800592B8 match only so).
+# (80032E04's stores of D_800592B8 match only so). GCC 2.6.3 and 2.7.2 build
+# identical objects for it (2.7.2-cdk does not); it keeps the target's 2.7.2
+# of the heap unit before it.
 GP_heap_80032DCC := 8
 MASPSX_heap_80032DCC := --aspsx-version=2.34 --use-comm-section
 EXTERN_heap_80032DCC := absolute
@@ -31,7 +33,8 @@ CC_sound := 2.6.3
 # The sprite unit (8001C8DC-8002709C) is compiled by the Cygnus CDK GCC
 # 2.7.2 (only it reproduces 80021c20's two loads of the stack top, lb then
 # lbu, and 80022a70's register choice), assembles positive `li` as `addiu`
-# (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
+# (ASPSX 2.50+, set as maspsx 2.79, with which 2.56 builds identical objects;
+# the rest of the game code uses `ori`, the default 2.34) and
 # addresses the small globals it defines through $gp (as small commons, so
 # maspsx knows them). Other units' small globals it addresses absolutely
 # although GCC declares them small (`.extern name, size`), and it takes
@@ -60,7 +63,9 @@ CC_main_8002709C := 2.6.3
 MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
 # The battle-mode entry owns 8005959C, while its setup flags are owned by
 # the following menu-support unit. This split preserves those GP/absolute
-# accesses with the same qualified GCC 2.6.3 small-common pipeline.
+# accesses with that unit's small-common pipeline. GCC 2.6.3 and 2.7.2 build
+# identical objects for it (2.7.2-cdk does not), so its bytes do not decide
+# between them; its setting follows the GCC 2.6.3 menu-support unit.
 CC_battle_mode := 2.6.3
 GP_battle_mode := 8
 MASPSX_battle_mode := --aspsx-version=2.34 --use-comm-section

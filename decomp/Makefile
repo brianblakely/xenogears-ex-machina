@@ -39,7 +39,9 @@ include $(CONFIG)
 $(foreach var,ORIGINAL ORIGINAL_SHA256 IMAGE LINKER_SCRIPT SPLAT_CONFIG BUILD CC_VERSION,$(if $($(var)),,$(error $(var) must be set by $(CONFIG))))
 
 # Qualified original-compatible compilation (docs/matching.md): GCC 2.6.3/2.7.2/2.7.2-cdk cc1
-# for the R3000, ASPSX 2.34 behaviour through maspsx, GNU as for the object.
+# (decompals/old-gcc 0.17) for the R3000, ASPSX behaviour through maspsx 7686f845 (2.34,
+# or 2.56/2.79 for the later units, which evidence only ASPSX >= 2.50), GNU binutils 2.46
+# as and ld for the objects and the link.
 CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx \
 	-D_PSYQ -D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C \
 	-lang-c -nostdinc -I$(ROOT)/decomp/include -DORIGINAL_IMAGE='"$(ORIGINAL)"' $(TARGET_CPPFLAGS)
@@ -80,12 +82,14 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
 # Stsector_offset alone at 801e89bc; the ASPSX 2.79 world map's u16 at
 # 8009bd10-8009bd1c, shared by three units), which the commons units
-# reproduce. Under the qualified ASPSX versions, 2.34 and 2.79 (no 2.79 unit
+# reproduce. Under 2.34 and the world map's setting 2.79 (no 2.79 unit
 # allocates any in C yet), this filter gives each object a whole number of
 # words at a word boundary; under any other (2.56 units define only words so
-# far) it rejects a smaller one, whose placement nothing evidences. Only the
-# .sbss/.bss that maspsx appends are touched: any other section directive ends
-# them.
+# far) it rejects a smaller one, whose placement nothing evidences. The 2.79
+# setting stands for the world map's assembler, which its code shows only to
+# be ASPSX >= 2.50: maspsx 2.56 and 2.79 build identical objects for every
+# unit set to either. Only the .sbss/.bss that maspsx appends are touched:
+# any other section directive ends them.
 SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
 bss_filter_of = | awk -v slots=$(if $(filter $(SLOT_ASPSX),$(call maspsx_of,$(1))),1,0) \
 	'$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { bss = $$0 ~ /^\.section \.s?bss$$/ } \

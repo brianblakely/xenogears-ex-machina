@@ -10,7 +10,8 @@ LINKER_EXTRA := .local/decomp/ovl3087/undefined_syms_auto.txt .local/decomp/ovl3
 SOURCE_DIRS := decomp/src/ovl3087
 # 801e93e8-801e9b58 (script_actor) is a 2.7.2-cdk unit (docs/matching.md):
 # %hi bases kept in registers, positive li as addiu (ASPSX >= 2.56), load
-# delay nops and unfilled epilogue jr slots; neither 2.6.3 nor 2.7.2
-# reproduces its functions, 2.7.2-cdk reproduces all but 801e9700.
+# delay nops and unfilled epilogue jr slots. 2.7.2-cdk reproduces all 15 of
+# its functions; neither 2.6.3 nor 2.7.2 builds 13 of them (801e9700 among
+# them).
 CC_script_actor := 2.7.2-cdk
 MASPSX_script_actor := --aspsx-version=2.56
