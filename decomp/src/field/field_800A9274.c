@@ -885,13 +885,11 @@ s32 func_800AB748(u32 which) {
  * row advances the buffer by the width rounded down to words, rereading the
  * width after the copy.
  *
- * PsyQ's MEMORY.H declares memcpy without a prototype, which keeps GCC's
- * builtin; the prototype in psyq/libc.h drops it (cc1 warns of conflicting
- * types), so the copy names the builtin. The builtin expands the source
- * address as a sum, giving the original's `addu a1,a1,v0`. The guard tests
- * the zeroed row counter, not the height: combine folds that compare into
- * the branch and leaves its result a stack slot nothing accesses, the
- * original's unused sp+64. */
+ * PsyQ's MEMORY.H (and psyq/libc.h) declares memcpy without a prototype,
+ * which keeps GCC's built-in: it expands the source address as a sum, giving
+ * the original's `addu a1,a1,v0`. The guard tests the zeroed row counter,
+ * not the height: combine folds that compare into the branch and leaves its
+ * result a stack slot nothing accesses, the original's unused sp+64. */
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -916,7 +914,7 @@ void func_800AB808(void) {
                 if (row < height_base[i * 4]) {
                     do {
                         column = ((s16 *)D_800AF5C0)[i * 4] / 4;
-                        __builtin_memcpy(
+                        memcpy(
                             row_pixels,
                             tim.paddr + ((((s16 *)D_800AF5C0)[i * 4 + 1] + row) * 0x50 + column),
                             ((s16 *)D_800AF5C0)[i * 4 + 2]);

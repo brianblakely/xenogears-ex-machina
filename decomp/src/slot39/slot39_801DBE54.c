@@ -2974,6 +2974,10 @@ void func_801E4998(MenuTables *tables, u8 gear) {
     art->gearCost = art->gearCost / 10 * 10;
 }
 
+/* Not GCC's built-in memcpy, which psyq/libc.h keeps: under it the two 0xa38-byte
+ * copies below are inline block moves, where the original calls memcpy. */
+void *memcpy(void *dest, void *src, int n);
+
 /* Copy the game data into save buffer `save`: characters, gears (their
  * kept fields), names and the other blocks. */
 void func_801E4A28(SaveData *save) {
