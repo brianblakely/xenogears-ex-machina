@@ -1,22 +1,63 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+/* menu5: text 80081ECC-80088BFC, rodata 800701B0-80070284, data
+ * 8009178C-80091964, variables 80092768-800927F0 and 80095580-80096D88.
+ * The arena (the backdrop, ground heights, stage colours, floor, wall,
+ * shadows and map), the idle and pair cameras, the drawing of the 3D
+ * views, the actors' model setup, the menu task (func_800852C4) and its
+ * exits, the HUD and map overlay, debug lines and path markers, vector
+ * helpers, and the progress flags and option settings kept in the game
+ * data. Its jump tables lie at 0 mod 8 (800701C0, 80070260); its first
+ * function is the first reading its variables, and its data opens with
+ * the stage colours D_8009178C, which only its func_80082A70 reads. */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "camera.h"
+#include "debug.h"
+#include "display.h"
+#include "effects.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "hud.h"
+#include "menus.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
+#include "sound.h"
+#include "stage.h"
+#include "task.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
-static SVector D_80092768; /* stored map position */
+static SVECTOR D_80092768; /* stored map position */
 static s32 D_80092770;
 static s32 D_80092774;
 static s32 D_80092778; /* unreferenced */
 static s32 D_8009277C; /* framing heading */
 static s16 D_80092780; /* fade level */
 static s32 D_80092784;
-static PolyFT4 *D_80092788[2]; /* floor quad pools: template, working copy */
+static POLY_FT4 *D_80092788[2]; /* floor quad pools: template, working copy */
 static s32 D_80092790;
 static s32 D_80092794; /* scene mode */
 static s32 D_80092798; /* first actor's model id */
@@ -43,13 +84,13 @@ static u8 D_800927EC;
  * after every unit's small ones (menu.mk). Nothing addresses the words
  * marked unreferenced; each is the size of one more per-buffer pair of the
  * array before it. */
-static PolyG4 D_80095580[2]; /* sky gradient, one per buffer */
-static DrawTPage D_800955C8[4]; /* backdrop texture pages: two, one per buffer each */
+static POLY_G4 D_80095580[2]; /* sky gradient, one per buffer */
+static DR_TPAGE D_800955C8[4]; /* backdrop texture pages: two, one per buffer each */
 static s32 D_800955E8[4]; /* unreferenced */
-static Sprite D_800955F8[6]; /* backdrop sprites: three parts, one per buffer each */
+static SPRT D_800955F8[6]; /* backdrop sprites: three parts, one per buffer each */
 static s32 D_80095670[10]; /* unreferenced */
 static Hud D_80095698;
-static DrawTPage D_80095918[4]; /* HUD texture page modes, two per buffer */
+static DR_TPAGE D_80095918[4]; /* HUD texture page modes, two per buffer */
 static Line3D D_80095938[100];
 
 /* Stage colours, read by func_80082A70 alone. */
@@ -60,11 +101,11 @@ Environment D_8009178C[] = {
 };
 
 /* Files of the menu mode, loaded by func_80029AFC up to the zero file. */
-Resource D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
+FileRequest D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
 
 s32 D_800917F0 = 0;
 
-DVector D_800917F4[8] = {
+DVECTOR D_800917F4[8] = {
     { 0, 1 }, { 0x7F, 1 }, { 0x77, 0x10 }, { 0x40, 0x10 },
     { 0x34, 8 }, { -4, 8 }, { 0x48, 1 }, { 0x38, 1 },
 };
@@ -111,13 +152,13 @@ MapTable D_80091934 = {
  * texture pages, the six backdrop sprites; scale the map heights and set
  * up the map drawing pools. */
 void func_80081ECC(void) {
-    PolyG4 *sky;
+    POLY_G4 *sky;
     s16 *height;
     s32 i;
 
     func_800875EC();
     sky = &D_80095580[0];
-    ((PacketTag *)sky)->len = 8;
+    setlen(sky, 8);
     sky->code = 0x38;
     sky->r0 = 0x10;
     sky->g0 = 0x60;
@@ -137,14 +178,14 @@ void func_80081ECC(void) {
     SetDrawTPage(&D_800955C8[1], 0, 0, GetTPage(2, 2, 0, 0));
     SetDrawTPage(&D_800955C8[2], 0, 0, GetTPage(2, 2, 0x100, 0x100));
     SetDrawTPage(&D_800955C8[3], 0, 0, GetTPage(2, 2, 0x100, 0));
-    ((PacketTag *)&D_800955F8[0])->len = 4;
+    setlen(&D_800955F8[0], 4);
     *(u32 *)&D_800955F8[0].r0 = 0x64707070;
     D_800955F8[0].code &= ~1; /* texture not shaded */
     D_800955F8[0].code |= 2;  /* semi-transparent */
     *(u32 *)&D_800955F8[0].x0 = 0;
     *(u16 *)&D_800955F8[0].u0 = 0;
     *(u32 *)&D_800955F8[0].w = 0xDB0080;
-    func_800732AC(&D_800955F8[1], &D_800955F8[0], sizeof(Sprite) * 5);
+    func_800732AC(&D_800955F8[1], &D_800955F8[0], sizeof(SPRT) * 5);
     D_800955F8[3].u0 = 0x80;
     D_800955F8[2].u0 = 0x80;
     D_800955F8[3].x0 = 0x80;
@@ -222,7 +263,7 @@ void func_80082300(s32 x, s32 z, s32 direction) {
 }
 
 /* Copy the stored map position. */
-void func_80082458(SVector *out) {
+void func_80082458(SVECTOR *out) {
     *out = D_80092768;
 }
 
@@ -240,17 +281,17 @@ void func_80082458(SVector *out) {
  * square's kind); the plane's normal is kept in D_80092768.
  * Once the triangle is copied, its wide plane point reuses the last
  * corner's scratch slot and the following eight bytes. */
-s32 func_80082488(Vector *pos, s32 lift) {
+s32 func_80082488(VECTOR *pos, s32 lift) {
     struct {
         s32 unused0[2];
         union {
-            SVector corner[5]; /* four corners and room for the later Vector */
+            SVECTOR corner[5]; /* four corners and room for the later VECTOR */
             struct {
-                SVector unused[3];
-                Vector point;
+                SVECTOR unused[3];
+                VECTOR point;
             } plane;
         } geometry;
-        SVector tri[3];
+        SVECTOR tri[3];
         s32 unused1[2];
     } scratch;
     GroundSquare *square;
@@ -312,8 +353,8 @@ s32 func_80082488(Vector *pos, s32 lift) {
 }
 
 /* Ground height of the map cell under a position (cells of 256 units). */
-s32 func_80082880(SVector *pos) {
-    Vector unused[3]; /* the original frame has 0x30 unused bytes */
+s32 func_80082880(SVECTOR *pos) {
+    VECTOR unused[3]; /* the original frame has 0x30 unused bytes */
     s16 x, z;
 
     x = pos->vx >> 8;
@@ -322,7 +363,7 @@ s32 func_80082880(SVector *pos) {
 }
 
 /* The map cell word under a position (cells of 256 units). */
-s32 func_800828C4(Vector *pos) {
+s32 func_800828C4(VECTOR *pos) {
     s32 x = pos->vx >> 8;
     s32 z = pos->vz >> 8;
 
@@ -332,13 +373,13 @@ s32 func_800828C4(Vector *pos) {
 /* Keep a moving position inside the circular arena of the given radius
  * around the scene centre: when the step would leave it, turn the step
  * along the rim and shorten it until the end point is inside. */
-void func_800828F8(Vector *pos, Vector *step, s32 radius) {
-    Vector local;
-    Vector next;
-    Vector square;
-    Matrix rim;
-    Matrix back;
-    SVector dir;
+void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius) {
+    VECTOR local;
+    VECTOR next;
+    VECTOR square;
+    MATRIX rim;
+    MATRIX back;
+    SVECTOR dir;
     s32 distance;
 
     local.vx = pos->vx + step->vx - 0x3F80;
@@ -429,13 +470,13 @@ void func_80082A70(void) {
 /* Load the stage's floor texture (a TIM, palette made semi-transparent)
  * and build the two pools of 64 textured floor quads, alternating the two
  * halves of the texture. */
-void func_80082C4C(StageFiles *files) {
-    TimImage tim;
-    PolyFT4 *quad;
+void func_80082C4C(MenuImages *files) {
+    TIM_IMAGE tim;
+    POLY_FT4 *quad;
     s16 *clut;
     s32 i;
 
-    OpenTIM(files->floor_tim);
+    OpenTIM(files->floor);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     for (i = 0; i < 0x100; i++) {
@@ -450,9 +491,9 @@ void func_80082C4C(StageFiles *files) {
     D_80092788[1] = func_80031BDC(0xA00, 0);
     quad = D_80092788[0];
     for (i = 0; i < 0x40; i += 2) {
-        ((PacketTag *)&quad[0])->len = 9;
+        setlen(&quad[0], 9);
         quad[0].code = 0x2C;
-        ((PacketTag *)&quad[1])->len = 9;
+        setlen(&quad[1], 9);
         quad[1].code = 0x2C;
         quad->clut = D_800927A0;
         quad->tpage = D_800927A4;
@@ -484,17 +525,17 @@ void func_80082C4C(StageFiles *files) {
  * the scene centre, starting behind the given position, depth-cued and
  * skipped when too far away. The wall's corners are taken relative to the
  * camera as 16-bit offsets. */
-void func_80082E60(u32 *ot, Vector *pos) {
-    Vector centre;
-    SVector base0;
-    SVector base1;
-    SVector mid0;
-    SVector mid1;
-    SVector top0;
-    SVector top1;
+void func_80082E60(u32 *ot, VECTOR *pos) {
+    VECTOR centre;
+    SVECTOR base0;
+    SVECTOR base1;
+    SVECTOR mid0;
+    SVECTOR mid1;
+    SVECTOR top0;
+    SVECTOR top1;
     s32 z[4];
-    PolyFT4 *quad;
-    PolyFT4 *next;
+    POLY_FT4 *quad;
+    POLY_FT4 *next;
     s32 angle;
     s32 depth;
     s32 i;
@@ -521,7 +562,7 @@ void func_80082E60(u32 *ot, Vector *pos) {
         gte_rtpt();
         gte_dpcs();
         gte_stsxy3(&quad[0].x0, &quad[0].x1, &quad[0].x2);
-        gte_stsz3v(&z[0], &z[1], &z[2]);
+        gte_stsz3(&z[0], &z[1], &z[2]);
         gte_ldv3(&mid1, &top0, &top1);
         gte_rtpt();
         next = &quad[1];
@@ -544,9 +585,9 @@ void func_80082E60(u32 *ot, Vector *pos) {
             depth >>= 4;
             gte_strgb(&quad[0].r0);
             gte_strgb(&next->r0);
-            ((PacketTag *)&quad[0])->len = 9;
+            setlen(&quad[0], 9);
             quad[0].code = 0x2C;
-            ((PacketTag *)next)->len = 9;
+            setlen(next, 9);
             next->code = 0x2C;
             AddPrim(&ot[depth], &quad[0]);
             AddPrim(&ot[depth], next);
@@ -590,11 +631,11 @@ void func_800832C0(s32 buttons) {
  * when smoothing) and swing the look-at point around it, kept inside the
  * arena and above the ground. */
 void func_80083310(s32 smooth) {
-    Vector look;
-    Vector step;
-    Vector offset;
-    Vector unused;   /* the original frame has 0x18 unused bytes */
-    SVector unused2;
+    VECTOR look;
+    VECTOR step;
+    VECTOR offset;
+    VECTOR unused;   /* the original frame has 0x18 unused bytes */
+    SVECTOR unused2;
     Actor *subject;
     Actor *other;
     s32 value; /* the other actor's share, then the orbit angle, then the ground */
@@ -676,9 +717,9 @@ void func_8008369C(void) {
  * beside the pair (further back when they are far apart), kept inside the
  * arena and above the ground. */
 void func_80083738(Actor *first, Actor *second) {
-    Vector side;
-    Vector other_side;
-    Vector unused[2]; /* the original frame has 0x20 unused bytes */
+    VECTOR side;
+    VECTOR other_side;
+    VECTOR unused[2]; /* the original frame has 0x20 unused bytes */
     s32 heading;
     s32 distance;
     s32 angle;
@@ -733,14 +774,14 @@ void func_80083738(Actor *first, Actor *second) {
 }
 
 /* Read the camera's look-at point and eye. */
-void func_80083B54(Vector *look, Vector *eye) {
+void func_80083B54(VECTOR *look, VECTOR *eye) {
     *look = D_8009871C;
     *eye = D_8009867C;
 }
 
 /* Clear the display area (one or both 320-wide buffers) and wait. */
 void func_80083BB4(s32 both) {
-    Rect rect;
+    RECT rect;
 
     rect.x = 0;
     rect.y = 0;
@@ -798,7 +839,7 @@ void func_80083CE8(void) {
 /* Update an actor's glow light (fading it) at its position relative to its
  * opponent, and the spot light at its position relative to the camera. */
 void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
-    Matrix unused; /* unused in the original; reserves 32 bytes */
+    MATRIX unused; /* unused in the original; reserves 32 bytes */
     Node *light = rig->lights[index];
     u8 glow = actor->glow;
     s32 level = glow;
@@ -844,9 +885,9 @@ void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
 /* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
  * the actors and their shadows, the look-at marker and the sky. */
 s32 func_800840CC(LightRig *rig) {
-    Matrix floor;
-    Matrix camera;
-    Vector unused; /* unused in the original; reserves 16 bytes */
+    MATRIX floor;
+    MATRIX camera;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -908,9 +949,9 @@ s32 func_800840CC(LightRig *rig) {
 /* Draw the 3D scene: aim the camera, give both actors the camera matrix,
  * light and draw them, then the view's layer and the backdrop sprites. */
 s32 func_800846A0(LightRig *rig) {
-    Matrix unused0; /* unused in the original; reserves 32 bytes */
-    Matrix camera;
-    Vector unused1; /* unused in the original; reserves 16 bytes */
+    MATRIX unused0; /* unused in the original; reserves 32 bytes */
+    MATRIX camera;
+    VECTOR unused1; /* unused in the original; reserves 16 bytes */
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -1001,25 +1042,25 @@ void func_80084B48(void) {
 /* Attach an extra object (model D_80091FB0) to the actor's model, turned
  * by (0, 0xC00, 0x400). */
 void func_80084BEC(Actor *actor) {
-    void *parent = ((ModelNode *)actor->node)->next->next->unk30;
-    SceneObject *object = func_80089C54();
-    void *part = func_80089FC4();
+    Node *parent = ((ModelSet *)actor->node->data)->nodes[12];
+    Node *object = func_80089C54();
+    NodeModel *part = func_80089FC4();
 
     func_80089E2C(object, part);
-    func_8008A184(part, D_80091FB0);
+    func_8008A184(part, &D_80091FB0);
     func_80089C88(parent, object);
-    object->rotation.vy = 0xC00;
-    object->rotation.vx = 0;
-    object->rotation.vz = 0x400;
+    object->angles.vy = 0xC00;
+    object->angles.vx = 0;
+    object->angles.vz = 0x400;
 }
 
 /* Set up an actor from its loaded model file on one side of the scene:
  * opponent link, model object, kind flags from the model id, part counts,
  * and the palette/emblem images in VRAM (mirrored for side 0). */
-void func_80084C88(Actor *actor, ModelData *data, s32 side) {
-    Rect rect;
+void func_80084C88(Actor *actor, ModelFile *data, s32 side) {
+    RECT rect;
     void *block; /* the model object, later the mirrored emblem */
-    ModelHeader *header;
+    SceneHeader *header;
     u8 *source;
     s32 i;
     s32 j;
@@ -1067,7 +1108,7 @@ void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     header = data->header;
     actor->header = header;
     actor->unk7C = data->unk14;
-    actor->move_slots = (MoveSlot *)data->parts;
+    actor->move_slots = data->slots;
     actor->unk900 = (u8 *)header + 0x34;
     actor->visible = (u8 *)(header->unk30 + (s32)header);
     actor->visible_count = header->unkE;
@@ -1090,13 +1131,13 @@ void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     rect.y = side + 0x1F6;
     rect.w = row;
     rect.h = 1;
-    LoadImage(&rect, data->image);
+    LoadImage(&rect, (u_long *)data->image);
     rect.x = side * 16 + 0x380;
     rect.y = row;
     rect.w = 0xB;
     rect.h = 0x16;
     if (side) {
-        LoadImage(&rect, data->image + 0x200);
+        LoadImage(&rect, (u_long *)(data->image + 0x200));
     } else {
         source = data->image + 0x200;
         block = func_80031BDC(0x1E4, 0);
@@ -1114,7 +1155,7 @@ void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     rect.y = side * 8 + 0x100;
     rect.w = 0x10;
     rect.h = 8;
-    LoadImage(&rect, data->image + 0x3E4);
+    LoadImage(&rect, (u_long *)(data->image + 0x3E4));
 }
 
 /* The vertical-blank hook, run by the resident handler 8003634c: while the
@@ -1170,8 +1211,8 @@ void func_80085134(s32 which) {
 }
 
 /* Load a resource by its file number. */
-void func_8008518C(Resource *resource, s32 arg) {
-    resource->data = func_80031BDC(func_800288EC(resource->file), arg);
+void func_8008518C(FileRequest *resource, s32 arg) {
+    resource->destination = func_80031BDC(func_800288EC(resource->file), arg);
 }
 
 /* Leave the menu mode: stop its sound and streams, wait for drawing and
@@ -1206,7 +1247,7 @@ s32 func_80085264(void) {
  * themselves, one scene mode (D_80092790) per frame. */
 void func_800852C4(s32 arg) {
     LightRig *rig;
-    s32 *file;
+    void *file;
     void *model;
     s32 sequence;
     s32 step;
@@ -1217,15 +1258,15 @@ void func_800852C4(s32 arg) {
     D_80092920 |= 1;
     D_800928DC = func_80031BDC(0x10010, 0);
     rig = func_8008A3E0(func_8008A2B8(0x1000));
-    func_8002C59C(D_80091FB0);
+    func_8002C59C(&D_80091FB0);
     func_8008518C(&D_800917C0[0], 0);
     func_8008518C(&D_800917C0[1], 0);
     func_8008518C(&D_800917C0[2], 1);
     func_8008518C(&D_800917C0[3], 1);
     func_8008518C(&D_800917C0[4], 1);
     func_80029AFC(D_800917C0, 0, 0);
-    sequence = (s32)D_800917C0[0].data;
-    D_800927C4 = (s32)D_800917C0[1].data;
+    sequence = (s32)D_800917C0[0].destination;
+    D_800927C4 = (s32)D_800917C0[1].destination;
     func_8008976C(0x140, 0xDA);
     func_80088308();
     func_80030988(1, 1, 0x40, 0x40);
@@ -1249,17 +1290,17 @@ void func_800852C4(s32 arg) {
     } else {
         D_80092948 = D_80062528;
     }
-    func_80032EB4(D_800917C0[3].data, D_800928DC);
-    func_800320E8(D_800917C0[3].data);
+    func_80032EB4(D_800917C0[3].destination, D_800928DC);
+    func_800320E8(D_800917C0[3].destination);
     func_80081ECC();
-    file = func_80032E88(D_800917C0[2].data, 0);
-    func_800320E8(D_800917C0[2].data);
+    file = func_80032E88(D_800917C0[2].destination, 0);
+    func_800320E8(D_800917C0[2].destination);
     func_8003342C(file);
-    D_80092880 = file[1];
-    D_80092874 = (struct MoveList *)file[2];
+    D_80092880 = ((s32 *)file)[1];
+    D_80092874 = (MoveList *)((s32 *)file)[2];
     func_8007EEE8(D_8005061C == 1);
-    file = func_80032E88(D_800917C0[4].data, 1);
-    func_800320E8(D_800917C0[4].data);
+    file = func_80032E88(D_800917C0[4].destination, 1);
+    func_800320E8(D_800917C0[4].destination);
     func_8003342C(file);
     func_80082C4C(file);
     func_8007B388(file);
@@ -1515,14 +1556,14 @@ new_bout:
 }
 
 /* Screen position of the left-hand gauge for a layout point. */
-void func_80085E34(DVector *point, DVector *out) {
+void func_80085E34(DVECTOR *point, DVECTOR *out) {
     out->vx = point->vx + 0x18;
     out->vy = point->vy + 6;
     out->vx += 0x4F;
 }
 
 /* Screen position of the right-hand (mirrored) gauge for a layout point. */
-void func_80085E60(DVector *point, DVector *out) {
+void func_80085E60(DVECTOR *point, DVECTOR *out) {
     out->vx = 0x8B - point->vx;
     out->vy = 0x20 - point->vy;
     out->vx += 0x4F;
@@ -1564,83 +1605,83 @@ void func_80085EC8(OverlayBuffer *buf) {
 
     SetDrawTPage(&buf->tpage[0], 0, 1, GetTPage(0, 2, 0, 0));
     SetDrawTPage(&buf->tpage[1], 0, 0, GetTPage(0, 1, 0, 0));
-    ((PacketTag *)&buf->frame[0])->len = 6;
+    setlen(&buf->frame[0], 6);
     *(u32 *)&buf->frame[0].r0 = 0x4C000000;
     buf->frame[0].pad = 0x55555555;
-    ((PacketTag *)&buf->frame[1])->len = 6;
+    setlen(&buf->frame[1], 6);
     *(u32 *)&buf->frame[1].r0 = 0x4C000000;
     buf->frame[1].pad = 0x55555555;
-    ((PacketTag *)&buf->frame[2])->len = 6;
+    setlen(&buf->frame[2], 6);
     *(u32 *)&buf->frame[2].r0 = 0x4C000000;
     buf->frame[2].pad = 0x55555555;
-    ((PacketTag *)&buf->frame[3])->len = 6;
+    setlen(&buf->frame[3], 6);
     *(u32 *)&buf->frame[3].r0 = 0x4C000000;
     buf->frame[3].pad = 0x55555555;
-    func_80085E34(&D_800917F4[0], (DVector *)&buf->frame[0].x0);
-    func_80085E34(&D_800917F4[1], (DVector *)&buf->frame[0].x1);
-    func_80085E34(&D_800917F4[2], (DVector *)&buf->frame[0].x2);
-    func_80085E34(&D_800917F4[3], (DVector *)&buf->frame[0].x3);
-    func_80085E34(&D_800917F4[3], (DVector *)&buf->frame[1].x0);
-    func_80085E34(&D_800917F4[4], (DVector *)&buf->frame[1].x1);
-    func_80085E34(&D_800917F4[5], (DVector *)&buf->frame[1].x2);
-    func_80085E34(&D_800917F4[0], (DVector *)&buf->frame[1].x3);
-    func_80085E60(&D_800917F4[0], (DVector *)&buf->frame[2].x0);
-    func_80085E60(&D_800917F4[1], (DVector *)&buf->frame[2].x1);
-    func_80085E60(&D_800917F4[2], (DVector *)&buf->frame[2].x2);
-    func_80085E60(&D_800917F4[3], (DVector *)&buf->frame[2].x3);
-    func_80085E60(&D_800917F4[3], (DVector *)&buf->frame[3].x0);
-    func_80085E60(&D_800917F4[4], (DVector *)&buf->frame[3].x1);
-    func_80085E60(&D_800917F4[5], (DVector *)&buf->frame[3].x2);
-    func_80085E60(&D_800917F4[0], (DVector *)&buf->frame[3].x3);
+    func_80085E34(&D_800917F4[0], (DVECTOR *)&buf->frame[0].x0);
+    func_80085E34(&D_800917F4[1], (DVECTOR *)&buf->frame[0].x1);
+    func_80085E34(&D_800917F4[2], (DVECTOR *)&buf->frame[0].x2);
+    func_80085E34(&D_800917F4[3], (DVECTOR *)&buf->frame[0].x3);
+    func_80085E34(&D_800917F4[3], (DVECTOR *)&buf->frame[1].x0);
+    func_80085E34(&D_800917F4[4], (DVECTOR *)&buf->frame[1].x1);
+    func_80085E34(&D_800917F4[5], (DVECTOR *)&buf->frame[1].x2);
+    func_80085E34(&D_800917F4[0], (DVECTOR *)&buf->frame[1].x3);
+    func_80085E60(&D_800917F4[0], (DVECTOR *)&buf->frame[2].x0);
+    func_80085E60(&D_800917F4[1], (DVECTOR *)&buf->frame[2].x1);
+    func_80085E60(&D_800917F4[2], (DVECTOR *)&buf->frame[2].x2);
+    func_80085E60(&D_800917F4[3], (DVECTOR *)&buf->frame[2].x3);
+    func_80085E60(&D_800917F4[3], (DVECTOR *)&buf->frame[3].x0);
+    func_80085E60(&D_800917F4[4], (DVECTOR *)&buf->frame[3].x1);
+    func_80085E60(&D_800917F4[5], (DVECTOR *)&buf->frame[3].x2);
+    func_80085E60(&D_800917F4[0], (DVECTOR *)&buf->frame[3].x3);
     MargePrim(&buf->frame[0], &buf->frame[1]);
     MargePrim(&buf->frame[2], &buf->frame[3]);
     buf->frame[0].x0 = 0x1D;
     buf->frame[2].x0 = 0x121;
-    ((PacketTag *)&buf->bars[0])->len = 5;
+    setlen(&buf->bars[0], 5);
     *(u32 *)&buf->bars[0].r0 = 0x280000FF;
-    ((PacketTag *)&buf->bars[1])->len = 5;
+    setlen(&buf->bars[1], 5);
     *(u32 *)&buf->bars[1].r0 = 0x280000FF;
-    ((PacketTag *)&buf->bars[2])->len = 5;
+    setlen(&buf->bars[2], 5);
     *(u32 *)&buf->bars[2].r0 = 0x280000FF;
-    ((PacketTag *)&buf->bars[3])->len = 5;
+    setlen(&buf->bars[3], 5);
     *(u32 *)&buf->bars[3].r0 = 0x280000FF;
-    ((PacketTag *)&buf->bars[4])->len = 5;
+    setlen(&buf->bars[4], 5);
     *(u32 *)&buf->bars[4].r0 = 0x280000FF;
-    ((PacketTag *)&buf->bars[5])->len = 5;
+    setlen(&buf->bars[5], 5);
     *(u32 *)&buf->bars[5].r0 = 0x280000FF;
-    func_80085E34(&D_800917F4[0], (DVector *)&buf->bars[0].x0);
-    func_80085E34(&D_800917F4[7], (DVector *)&buf->bars[0].x1);
-    func_80085E34(&D_800917F4[5], (DVector *)&buf->bars[0].x2);
-    func_80085E34(&D_800917F4[4], (DVector *)&buf->bars[0].x3);
-    func_80085E34(&D_800917F4[7], (DVector *)&buf->bars[1].x0);
-    func_80085E34(&D_800917F4[6], (DVector *)&buf->bars[1].x1);
-    func_80085E34(&D_800917F4[4], (DVector *)&buf->bars[1].x2);
-    func_80085E34(&D_800917F4[3], (DVector *)&buf->bars[1].x3);
-    func_80085E34(&D_800917F4[6], (DVector *)&buf->bars[2].x0);
-    func_80085E34(&D_800917F4[1], (DVector *)&buf->bars[2].x1);
-    func_80085E34(&D_800917F4[3], (DVector *)&buf->bars[2].x2);
-    func_80085E34(&D_800917F4[2], (DVector *)&buf->bars[2].x3);
-    func_80085E60(&D_800917F4[0], (DVector *)&buf->bars[3].x0);
-    func_80085E60(&D_800917F4[7], (DVector *)&buf->bars[3].x1);
-    func_80085E60(&D_800917F4[5], (DVector *)&buf->bars[3].x2);
-    func_80085E60(&D_800917F4[4], (DVector *)&buf->bars[3].x3);
-    func_80085E60(&D_800917F4[7], (DVector *)&buf->bars[4].x0);
-    func_80085E60(&D_800917F4[6], (DVector *)&buf->bars[4].x1);
-    func_80085E60(&D_800917F4[4], (DVector *)&buf->bars[4].x2);
-    func_80085E60(&D_800917F4[3], (DVector *)&buf->bars[4].x3);
-    func_80085E60(&D_800917F4[6], (DVector *)&buf->bars[5].x0);
-    func_80085E60(&D_800917F4[1], (DVector *)&buf->bars[5].x1);
-    func_80085E60(&D_800917F4[3], (DVector *)&buf->bars[5].x2);
-    func_80085E60(&D_800917F4[2], (DVector *)&buf->bars[5].x3);
+    func_80085E34(&D_800917F4[0], (DVECTOR *)&buf->bars[0].x0);
+    func_80085E34(&D_800917F4[7], (DVECTOR *)&buf->bars[0].x1);
+    func_80085E34(&D_800917F4[5], (DVECTOR *)&buf->bars[0].x2);
+    func_80085E34(&D_800917F4[4], (DVECTOR *)&buf->bars[0].x3);
+    func_80085E34(&D_800917F4[7], (DVECTOR *)&buf->bars[1].x0);
+    func_80085E34(&D_800917F4[6], (DVECTOR *)&buf->bars[1].x1);
+    func_80085E34(&D_800917F4[4], (DVECTOR *)&buf->bars[1].x2);
+    func_80085E34(&D_800917F4[3], (DVECTOR *)&buf->bars[1].x3);
+    func_80085E34(&D_800917F4[6], (DVECTOR *)&buf->bars[2].x0);
+    func_80085E34(&D_800917F4[1], (DVECTOR *)&buf->bars[2].x1);
+    func_80085E34(&D_800917F4[3], (DVECTOR *)&buf->bars[2].x2);
+    func_80085E34(&D_800917F4[2], (DVECTOR *)&buf->bars[2].x3);
+    func_80085E60(&D_800917F4[0], (DVECTOR *)&buf->bars[3].x0);
+    func_80085E60(&D_800917F4[7], (DVECTOR *)&buf->bars[3].x1);
+    func_80085E60(&D_800917F4[5], (DVECTOR *)&buf->bars[3].x2);
+    func_80085E60(&D_800917F4[4], (DVECTOR *)&buf->bars[3].x3);
+    func_80085E60(&D_800917F4[7], (DVECTOR *)&buf->bars[4].x0);
+    func_80085E60(&D_800917F4[6], (DVECTOR *)&buf->bars[4].x1);
+    func_80085E60(&D_800917F4[4], (DVECTOR *)&buf->bars[4].x2);
+    func_80085E60(&D_800917F4[3], (DVECTOR *)&buf->bars[4].x3);
+    func_80085E60(&D_800917F4[6], (DVECTOR *)&buf->bars[5].x0);
+    func_80085E60(&D_800917F4[1], (DVECTOR *)&buf->bars[5].x1);
+    func_80085E60(&D_800917F4[3], (DVECTOR *)&buf->bars[5].x2);
+    func_80085E60(&D_800917F4[2], (DVECTOR *)&buf->bars[5].x3);
     SetDrawTPage(&buf->bar_tpage, 0, 1, GetTPage(0, 1, 0, 0));
     func_800732AC(buf->bars_dim, buf->bars, sizeof(buf->bars));
     func_800732AC(buf->bars_lit, buf->bars, sizeof(buf->bars));
     for (i = 0; i < 6; i++) {
-        ((PacketTag *)&buf->bars_dim[i])->len = 5;
+        setlen(&buf->bars_dim[i], 5);
         *(u32 *)&buf->bars_dim[i].r0 = 0x28806060;
     }
     for (i = 0; i < 6; i++) {
-        ((PacketTag *)&buf->bars_lit[i])->len = 5;
+        setlen(&buf->bars_lit[i], 5);
         *(u32 *)&buf->bars_lit[i].r0 = 0x280000FF;
     }
     *(u32 *)&buf->arrows[0][0].x0 = 0x200014;
@@ -1653,9 +1694,9 @@ void func_80085EC8(OverlayBuffer *buf) {
     *(u32 *)&buf->arrows[0][2].x1 = 0x2A0013;
     *(u32 *)&buf->arrows[0][2].x2 = 0x2A001B;
     for (i = 0; i < 6; i++) {
-        ((PacketTag *)&buf->arrows[0][i])->len = 4;
+        setlen(&buf->arrows[0][i], 4);
         *(u32 *)&buf->arrows[0][i].r0 = 0x2000FF00;
-        ((PacketTag *)&buf->arrows[1][i])->len = 4;
+        setlen(&buf->arrows[1][i], 4);
         *(u32 *)&buf->arrows[1][i].r0 = 0x2000FF00;
         buf->arrows[1][i].y0 = buf->arrows[0][i].y0;
         buf->arrows[1][i].y1 = buf->arrows[0][i].y1;
@@ -1666,9 +1707,9 @@ void func_80085EC8(OverlayBuffer *buf) {
     }
     buf->arrows[1][1].y0--;
     buf->arrows[1][1].x2--;
-    ((PacketTag *)&buf->marks[0])->len = 5;
+    setlen(&buf->marks[0], 5);
     *(u32 *)&buf->marks[0].r0 = 0x28000000;
-    ((PacketTag *)&buf->marks[1])->len = 5;
+    setlen(&buf->marks[1], 5);
     *(u32 *)&buf->marks[1].r0 = 0x28000000;
     buf->marks[0].x0 = buf->marks[0].x2 = 0x1E;
     buf->marks[0].x1 = 0x63;
@@ -1680,13 +1721,13 @@ void func_80085EC8(OverlayBuffer *buf) {
     buf->marks[1].x3 = 0xDE;
     buf->marks[1].y0 = buf->marks[1].y1 = 0x13;
     buf->marks[1].y2 = buf->marks[1].y3 = 0x1E;
-    ((PacketTag *)&buf->marks[2])->len = 5;
+    setlen(&buf->marks[2], 5);
     *(u32 *)&buf->marks[2].r0 = 0x280000FF;
     *(u32 *)&buf->marks[2].x0 = 0x320006;
     *(u32 *)&buf->marks[2].x1 = 0x36000A;
     *(u32 *)&buf->marks[2].x2 = 0x4C0006;
     *(u32 *)&buf->marks[2].x3 = 0x48000A;
-    ((PacketTag *)&buf->marks[3])->len = 5;
+    setlen(&buf->marks[3], 5);
     *(u32 *)&buf->marks[3].r0 = 0x280000FF;
     *(u32 *)&buf->marks[3].x0 = 0x32013A;
     *(u32 *)&buf->marks[3].x1 = 0x360136;
@@ -1697,7 +1738,7 @@ void func_80085EC8(OverlayBuffer *buf) {
 /* Build a textured quad (and its second-buffer copy) showing a whole TIM
  * image at (x, y); `depth` is the TIM colour mode (0 = 4-bit, 1 = 8-bit,
  * 2 = 16-bit), which sets how many pixels one VRAM word holds. */
-void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
+void func_800864B4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth) {
     s32 scale;
     s32 right;
 
@@ -1712,7 +1753,7 @@ void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
         scale = 1;
         break;
     }
-    ((PacketTag *)quad)->len = 9;
+    setlen(quad, 9);
     quad->code = 0x2D;
     quad->clut = GetClut(tim->crect->x, tim->crect->y);
     quad->tpage = GetTPage(depth, 0, tim->prect->x, tim->prect->y);
@@ -1734,7 +1775,7 @@ void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
 }
 
 /* The same quad mirrored horizontally (texture u runs right to left). */
-void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
+void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth) {
     s32 scale;
     s32 right;
 
@@ -1749,7 +1790,7 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
         scale = 1;
         break;
     }
-    ((PacketTag *)quad)->len = 9;
+    setlen(quad, 9);
     quad->code = 0x2D;
     quad->clut = GetClut(tim->crect->x, tim->crect->y);
     quad->tpage = GetTPage(depth, 0, tim->prect->x, tim->prect->y);
@@ -1771,15 +1812,15 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
  * pair pointer walks the icons and then the gauges (the original keeps it
  * in $s2). Each bar quad gets its colour/code word and then its length, and
  * the gauge sprite its length, code, size and texture position. */
-void func_800868E0(StageFiles *files) {
-    TimImage tim;
-    Rect rect;
+void func_800868E0(MenuImages *files) {
+    TIM_IMAGE tim;
+    RECT rect;
     s16 *clut;
     Hud *hud = &D_80095698;
     SpritePair *pair;
-    PolyFT4 *bar;
+    POLY_FT4 *bar;
 
-    OpenTIM(files->name_tim);
+    OpenTIM(files->name);
     ReadTIM(&tim);
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
@@ -1793,7 +1834,7 @@ void func_800868E0(StageFiles *files) {
     D_80095918[1] = D_80095918[0];
     SetDrawTPage(&D_80095918[2], 0, 1, GetTPage(0, 0, 0x380, 0x100));
     D_80095918[3] = D_80095918[2];
-    ((PacketTag *)&pair[0].s[0])->len = 4;
+    setlen(&pair[0].s[0], 4);
     pair[0].s[0].code = 0x65;
     *(u32 *)&pair[0].s[0].x0 = 0x90007;
     *(u16 *)&pair[0].s[0].u0 = 0;
@@ -1805,7 +1846,7 @@ void func_800868E0(StageFiles *files) {
     pair[0].s[0].u0 = 0x20;
     pair[0].s[0].clut = GetClut(0, 0x1F7);
     pair[1] = pair[0];
-    OpenTIM(files->bar_tim);
+    OpenTIM(files->bar);
     ReadTIM(&tim);
     bar = D_80095698.bar_l;
     pair = D_80095698.gauge;
@@ -1815,14 +1856,14 @@ void func_800868E0(StageFiles *files) {
     D_80092860 = D_80095698.bar_l[0].v0;
     D_80092864 = D_80095698.bar_r[0].v0;
     *(u32 *)&D_80095698.bar_l[0].r0 = 0x2C000080;
-    ((PacketTag *)&D_80095698.bar_l[0])->len = 9;
+    setlen(&D_80095698.bar_l[0], 9);
     *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
-    ((PacketTag *)&D_80095698.bar_l[1])->len = 9;
+    setlen(&D_80095698.bar_l[1], 9);
     *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
-    ((PacketTag *)&D_80095698.bar_r[0])->len = 9;
+    setlen(&D_80095698.bar_r[0], 9);
     *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
-    ((PacketTag *)&D_80095698.bar_r[1])->len = 9;
-    ((PacketTag *)&pair[0].s[0])->len = 4;
+    setlen(&D_80095698.bar_r[1], 9);
+    setlen(&pair[0].s[0], 4);
     pair[0].s[0].code = 0x65;
     *(u32 *)&pair[0].s[0].w = 0x80040;
     *(u16 *)&pair[0].s[0].u0 = 0x80;
@@ -1842,7 +1883,7 @@ void func_800868E0(StageFiles *files) {
     rect.y = 0x110;
     rect.w = 0x10;
     rect.h = 1;
-    LoadImage(&rect, D_80091814);
+    LoadImage(&rect, (u_long *)D_80091814);
 }
 
 /* Link this buffer's overlay packets into the overlay ordering table. */
@@ -1885,15 +1926,15 @@ void func_80086E70(void *ot, GaugeBar *bar, s32 value, s32 mirrored) {
 
 /* Colour a marker packet by an actor's state: none (returns 0),
  * yellow when set, red otherwise. */
-s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
+s32 func_80086FF8(Actor *actor, POLY_F4 *packet) {
     if (func_8008F530(actor, 0)) {
         return 0;
     }
     if (func_8008F530(actor, 1)) {
-        ((PacketTag *)packet)->len = 5;
+        setlen(packet, 5);
         *(u32 *)&packet->r0 = 0x2800FFFF;
     } else {
-        ((PacketTag *)packet)->len = 5;
+        setlen(packet, 5);
         *(u32 *)&packet->r0 = 0x280000FF;
     }
     return 1;
@@ -1906,7 +1947,7 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
  * original's moved invariants include a copy of the repeated green term). */
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
-    PolyFT4 *bar;
+    POLY_FT4 *bar;
     s32 n;
     s32 level;
 
@@ -2068,7 +2109,7 @@ void func_8008779C(u32 *ot, s32 originX, s32 originZ) {
 /* Set up the map row spans in the scratchpad and the two textured
  * triangle packet pools (0x708 triangles each). */
 void func_80087830(void) {
-    PolyFT3 *poly;
+    POLY_FT3 *poly;
     s32 i;
 
     D_800927CC = (u8 *)0x1F800000;
@@ -2077,7 +2118,7 @@ void func_80087830(void) {
     D_80092854[1] = func_80031BDC(0xE100, 0);
     poly = D_80092854[0];
     for (i = 0; i < 0x708; i++) {
-        ((PacketTag *)poly)->len = 7;
+        setlen(poly, 7);
         poly->code = 0x24;
         poly++;
     }
@@ -2087,21 +2128,21 @@ void func_80087830(void) {
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
  * first entry is transparent and the rest semi-transparent. */
-void func_800878DC(StageFiles *files) {
-    TimImage tim;
+void func_800878DC(MenuImages *files) {
+    TIM_IMAGE tim;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        OpenTIM(files->icon_tims[i]);
+        OpenTIM(files->icons[i]);
         ReadTIM(&tim);
         D_80091934.icons[i * 2 + 1] = GetClut(tim.crect->x, tim.crect->y);
         D_80091934.icons[i * 2] = GetTPage(1, 1, tim.prect->x, tim.prect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
     }
-    OpenTIM(files->backdrop_tim);
+    OpenTIM(files->backdrop);
     ReadTIM(&tim);
     D_800927D8 = GetClut(tim.crect->x, tim.crect->y);
     D_800927D4 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
@@ -2115,7 +2156,7 @@ void func_800878DC(StageFiles *files) {
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
     for (i = 0x1C; i < 0x25; i++) {
-        OpenTIM(files->extra_tims[i - 0x1C]);
+        OpenTIM(files->extra[i - 0x1C]);
         ReadTIM(&tim);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
@@ -2124,10 +2165,10 @@ void func_800878DC(StageFiles *files) {
 
 /* Build an actor's textured backdrop quad (64x64 texels) for both buffers. */
 void func_80087AB0(Actor *actor) {
-    PolyFT4 *quad = &actor->backdrop[0];
+    POLY_FT4 *quad = &actor->backdrop[0];
 
     *(u32 *)&quad->r0 = 0x2C101010;
-    ((PacketTag *)quad)->len = 9;
+    setlen(quad, 9);
     quad->code |= 2;
     quad->clut = D_800927D8;
     quad->tpage = D_800927D4;
@@ -2140,15 +2181,15 @@ void func_80087AB0(Actor *actor) {
 
 /* Draw an actor's ground shadow: a square sized by its height, centred
  * under it and tilted to the ground normal there. */
-void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
-    SVector corners[4];
-    Vector centre;
-    Vector unused; /* unused in the original; reserves 16 bytes */
-    SVector normal;
-    Matrix m;
+void func_80087B74(Actor *actor, u32 *ot, MATRIX *view) {
+    SVECTOR corners[4];
+    VECTOR centre;
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
+    SVECTOR normal;
+    MATRIX m;
     s32 otz;
     s32 z0, z1, z2, z3;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 size;
     s32 min;
 
@@ -2183,7 +2224,7 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
             gte_nclip();
             gte_stopz(&otz);
             if (otz >= 0) {
-                gte_stsz3v(&z0, &z1, &z2);
+                gte_stsz3(&z0, &z1, &z2);
                 gte_stsxy3_ft4(quad);
                 gte_ldv0(&corners[3]);
                 gte_rtps();
@@ -2207,14 +2248,14 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
 }
 
 /* Record a position in the path list (up to 31 entries). */
-void func_80087E38(Vector *pos) {
+void func_80087E38(VECTOR *pos) {
     s32 count = D_800928F8;
     s16 *base;
     s16 *at;
 
     if (count < 0x1F) {
         base = &D_8009A928[0].x;
-        at = base + count * (sizeof(PathPoint) / sizeof(s16));
+        at = base + count * (sizeof(PathMarker) / sizeof(s16));
         at[0] = pos->vx;
         at[1] = pos->vy;
         D_800928F8 = count + 1;
@@ -2225,8 +2266,8 @@ void func_80087E38(Vector *pos) {
 /* Draw the recorded path points as axis crosses (64 units long), then
  * clear the list. */
 void func_80087EA0(u32 *ot) {
-    SVector ends[6];
-    PathPoint *point;
+    SVECTOR ends[6];
+    PathMarker *point;
     s32 i;
     s32 j;
 
@@ -2279,7 +2320,7 @@ void func_80087EA0(u32 *ot) {
 /* Start a debug line between two points in one of eight colours (bit 0
  * blue, bit 1 red, bit 2 green). Returns the line, or NULL when all 100
  * are in use. */
-Line3D *func_8008820C(Vector *from, Vector *to, s32 colour) {
+Line3D *func_8008820C(VECTOR *from, VECTOR *to, s32 colour) {
     Line3D *line;
     s32 i;
 
@@ -2306,7 +2347,7 @@ Line3D *func_8008820C(Vector *from, Vector *to, s32 colour) {
 }
 
 /* Start a debug line that stays for the given number of frames. */
-void func_800882D4(Vector *from, Vector *to, s32 colour, s32 frames) {
+void func_800882D4(VECTOR *from, VECTOR *to, s32 colour, s32 frames) {
     Line3D *line = func_8008820C(from, to, colour);
 
     if (line != NULL) {
@@ -2325,7 +2366,7 @@ void func_80088308(void) {
 
 /* Project and link every live debug line, counting its frames down. */
 void func_8008832C(void *ot) {
-    SVector ends[2];
+    SVECTOR ends[2];
     Line3D *line;
     s32 i;
 
@@ -2344,8 +2385,8 @@ void func_8008832C(void *ot) {
             gte_ldv01(&ends[0], &ends[1]);
             gte_rtpt();
             gte_stsxy01(&line->packets[D_800928A0].x0, &line->packets[D_800928A0].x1);
-            ((PacketTag *)&line->packets[D_800928A0])->len = 3;
-            ((PacketTag *)&line->packets[D_800928A0])->code = 0x40;
+            setlen(&line->packets[D_800928A0], 3);
+            setcode(&line->packets[D_800928A0], 0x40);
             func_800316C0(ot, &line->packets[D_800928A0]);
         }
     }
@@ -2353,8 +2394,8 @@ void func_8008832C(void *ot) {
 
 /* Scale a vector down by the square root of its (absolute) length measure
  * and pass it on. */
-void func_800884E0(Vector *vector, void *out) {
-    Vector scaled = *vector;
+void func_800884E0(VECTOR *vector, void *out) {
+    VECTOR scaled = *vector;
     s32 square;
     s32 length;
 
@@ -2371,8 +2412,8 @@ void func_800884E0(Vector *vector, void *out) {
 
 /* Scale a vector down by the square root of its (absolute) length measure
  * and pass it to VectorNormalS. */
-void func_8008859C(Vector *vector, void *out) {
-    Vector scaled = *vector;
+void func_8008859C(VECTOR *vector, void *out) {
+    VECTOR scaled = *vector;
     s32 square;
     s32 length;
 
@@ -2388,8 +2429,8 @@ void func_8008859C(Vector *vector, void *out) {
 }
 
 /* The same for a short vector. */
-void func_80088658(SVector *vector, void *out) {
-    Vector scaled;
+void func_80088658(SVECTOR *vector, void *out) {
+    VECTOR scaled;
     s32 square;
     s32 length;
 
@@ -2408,8 +2449,8 @@ void func_80088658(SVector *vector, void *out) {
 }
 
 /* Length of a vector. */
-s32 func_800886FC(Vector *vector) {
-    Vector square;
+s32 func_800886FC(VECTOR *vector) {
+    VECTOR square;
 
     gte_ldlvl(vector);
     gte_sqr0();
@@ -2418,8 +2459,8 @@ s32 func_800886FC(Vector *vector) {
 }
 
 /* Horizontal (x/z) length of a vector. */
-s32 func_80088754(Vector *vector) {
-    Vector square;
+s32 func_80088754(VECTOR *vector) {
+    VECTOR square;
 
     gte_ldlvl(vector);
     gte_sqr0();
@@ -2428,8 +2469,8 @@ s32 func_80088754(Vector *vector) {
 }
 
 /* Distance between two points. */
-s32 func_800887A4(Vector *from, Vector *to) {
-    Vector delta;
+s32 func_800887A4(VECTOR *from, VECTOR *to) {
+    VECTOR delta;
 
     delta.vx = to->vx - from->vx;
     delta.vy = to->vy - from->vy;
@@ -2441,8 +2482,8 @@ s32 func_800887A4(Vector *from, Vector *to) {
 }
 
 /* Horizontal (x/z) distance between two points. */
-s32 func_80088838(Vector *from, Vector *to) {
-    Vector delta;
+s32 func_80088838(VECTOR *from, VECTOR *to) {
+    VECTOR delta;
 
     delta.vx = to->vx - from->vx;
     delta.vz = to->vz - from->vz;
@@ -2458,7 +2499,7 @@ void func_800888B0(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006F978.flags[flag >> 3] |= bit;
+    D_8006D634.progress[flag >> 3] |= bit;
 }
 
 /* Test a bit of the resident flag array. */
@@ -2467,7 +2508,7 @@ s32 func_800888E4(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    return D_8006F978.flags[flag >> 3] & bit;
+    return D_8006D634.progress[flag >> 3] & bit;
 }
 
 /* Clear a bit of the resident flag array. */
@@ -2476,20 +2517,18 @@ void func_80088908(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006F978.flags[flag >> 3] &= ~bit;
+    D_8006D634.progress[flag >> 3] &= ~bit;
 }
 
 /* Set bit 16 of the resident state word. */
 void func_80088940(void) {
-    s32 *state = &D_8006F980;
-
-    *state |= 0x10000;
+    D_8006D634.options.complete = 1;
 }
 
 /* Once bit 16 of the resident state word is set, queue list entry 22
  * (ARGENTO, only once). */
 void func_8008895C(void) {
-    if ((D_8006F980 & 0x10000) && D_800927EC == 0) {
+    if (D_8006D634.options.complete && D_800927EC == 0) {
         D_800927EC = 1;
         D_800928EC[D_80092888++] = &D_80091964[22];
     }
@@ -2505,7 +2544,7 @@ s32 func_800889C8(void) {
             return 0;
         }
     }
-    D_8006F978.options.complete = 1;
+    D_8006D634.options.complete = 1;
     func_8008895C();
     return 0;
 }
@@ -2513,11 +2552,11 @@ s32 func_800889C8(void) {
 /* Store the current option settings in the saved options word. */
 void func_80088A40(void) {
     if (D_8005061C) {
-        D_8006F978.options.version = 1;
-        D_8006F978.options.option4 = D_80099D98.option4;
-        D_8006F978.options.option5 = D_80099D98.option5;
-        D_8006F978.options.option6 = D_80099D98.option6;
-        D_8006F978.options.option13 = D_80099D98.level;
+        D_8006D634.options.version = 1;
+        D_8006D634.options.option4 = D_80099D98.option4;
+        D_8006D634.options.option5 = D_80099D98.option5;
+        D_8006D634.options.option6 = D_80099D98.option6;
+        D_8006D634.options.option13 = D_80099D98.level;
     }
 }
 
@@ -2528,14 +2567,14 @@ void func_80088AF8(void) {
 
     if (D_8005061C) {
         D_800927EC = 0;
-        if (D_8006F978.options.version == 1) {
-            D_80099D98.option4 = D_8006F978.options.option4;
-            D_80099D98.option5 = D_8006F978.options.option5;
-            D_80099D98.option6 = D_8006F978.options.option6;
-            D_80099D98.level = D_8006F978.options.option13;
-            if (D_8006F978.options.complete) {
+        if (D_8006D634.options.version == 1) {
+            D_80099D98.option4 = D_8006D634.options.option4;
+            D_80099D98.option5 = D_8006D634.options.option5;
+            D_80099D98.option6 = D_8006D634.options.option6;
+            D_80099D98.level = D_8006D634.options.option13;
+            if (D_8006D634.options.complete) {
                 for (i = 0; i < 8; i++) {
-                    D_8006F978.flags[i] = 0;
+                    D_8006D634.progress[i] = 0;
                 }
             }
         } else {

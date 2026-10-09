@@ -13,7 +13,7 @@
   +0x08.
 - **Format:** a list of 4-byte `FrameEvent {u8 first, u8 last, s16 spec}` records
   ending at first 0xFF. Each record whose range holds the frame runs the `HitSpec`
-  at header + spec (`menu.h`: kind, type, part_a, part_b, s16 vertex_a, s16
+  at header + spec (`actor.h`: kind, type, part_a, part_b, s16 vertex_a, s16
   vertex_b). Kinds 1, 3, 4 and 5 read only the first 4, 1, 2 and 2 bytes, and the
   files pack them that way. Hit records take 10 bytes, of which the code reads 8.
   There are no jumps.
@@ -45,7 +45,7 @@
 - **Tool:** `python3 -m tools.analysis.overlay_scripts --sweep` prints aggregates;
   `--list arena-events [--disc N]` prints every file's lists.
   `tests/test_overlay_scripts.py` checks the kinds against the switch cases and their
-  callees, and the layouts against `menu.h`.
+  callees, and the layouts against `actor.h`.
 
 Open: the code never reads the tails of the hit records. The other unread bytes are
 not split into records.

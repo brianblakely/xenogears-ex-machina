@@ -76,7 +76,7 @@ The libgte entries without a signature name, by their code:
 | Entry | What it computes |
 | --- | --- |
 | func_80048E94 | an orthonormal matrix from a matrix's first two rows: two outer products (OP), each row normalised by 80048DD8 (MatrixNormal form) |
-| func_8004901C | weighted sum of two SVECTORs, GPF then GPL (LoadAverageShort12, menu.h) |
+| func_8004901C | weighted sum of two SVECTORs, GPF then GPL (LoadAverageShort12, psyq/libgte.h) |
 | func_800495DC | SVECTOR times the rotation matrix, MVMVA sf=1 without translation, to a VECTOR |
 | func_8004998C | a 32-bit VECTOR times the rotation matrix, split into 15-bit halves (two MVMVAs) |
 | func_80049ACC | m0 = m0 x m1 through the rotation registers (MulMatrix form) |

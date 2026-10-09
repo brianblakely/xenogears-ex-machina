@@ -1,11 +1,42 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+/* menu2: text 800707A8-800732CC, rodata 8006FAF4-8006FBF8, data
+ * 80090F38-800910F4, variables 800925D4-80092638 and 80092954-80092A24.
+ * The camera's eye, look-at point and view modes; the scene script
+ * interpreter and its scenes (the opening, the scene list, the bout-end
+ * sequence, the winner screen); then the handwritten ground-map triangles
+ * and GTE helpers (80072D18-800732CC, the .s files beside it). Its jump
+ * tables lie at 4 mod 8 (8006FAF4-8006FB9C) and the next unit's at 0 mod 8;
+ * its first function already reads its variables (the overlay number's
+ * unit, menu.c, has no code), and it ends with the handwritten block. */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "camera.h"
+#include "display.h"
+#include "effects.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "menus.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
+#include "sound.h"
+#include "stage.h"
+#include "task.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -32,13 +63,13 @@ static s32 D_80092620;
 static s32 D_80092624;
 static s32 D_80092628;
 static s32 D_8009262C;
-static SVector D_80092630; /* model view angles */
+static SVECTOR D_80092630; /* model view angles */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static MenuWindow D_80092954; /* the opening text, then the scene list */
-static DrTpage D_800929E4[2];
-static Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
+static Window D_80092954; /* the opening text, then the scene list */
+static DR_TPAGE D_800929E4[2];
+static VECTOR D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
 
 /* Scene scripts, user-supplied bytecode run by func_8007107C (an asset in
  * menu.classification.txt; tools/analysis/overlay_scripts.py decodes them).
@@ -99,7 +130,7 @@ s32 func_800707D8(s32 target, s32 current, s32 steps) {
 
 /* Ease the camera eye toward target over the given number of steps; the
  * eye height is compared including the current lift. */
-void func_80070808(Vector *target, s32 steps) {
+void func_80070808(VECTOR *target, s32 steps) {
     D_8009867C.vx += func_800707D8(target->vx, D_8009867C.vx, steps);
     D_8009867C.vz += func_800707D8(target->vz, D_8009867C.vz, steps);
     D_8009867C.vy += func_800707D8(target->vy, D_8009867C.vy + D_800925F4, steps);
@@ -107,8 +138,8 @@ void func_80070808(Vector *target, s32 steps) {
 
 /* Ease the camera look-at point toward target, limited by the collision
  * step check. */
-void func_800708C4(Vector *target, s32 steps) {
-    Vector step;
+void func_800708C4(VECTOR *target, s32 steps) {
+    VECTOR step;
 
     step.vx = func_800707D8(target->vx, D_8009871C.vx, steps);
     step.vy = func_800707D8(target->vy, D_8009871C.vy, steps);
@@ -121,7 +152,7 @@ void func_800708C4(Vector *target, s32 steps) {
 
 /* Place the menu camera for one of the view modes. */
 void func_8007099C(u32 mode) {
-    Vector target;
+    VECTOR target;
     s32 top;
 
     switch (mode) {
@@ -173,10 +204,10 @@ void func_8007099C(u32 mode) {
  * the midpoint of the actors moves to the layout's anchor, actors on the
  * floor and the look-at point at a fixed height. */
 void func_80070C7C(s32 layout) {
-    Vector first = D_8009872C.pos;
-    Vector second = D_80097010.pos;
-    Vector look = D_8009871C;
-    Vector centre = first;
+    VECTOR first = D_8009872C.pos;
+    VECTOR second = D_80097010.pos;
+    VECTOR look = D_8009871C;
+    VECTOR centre = first;
 
     centre.vx += second.vx;
     centre.vy += second.vy;
@@ -247,7 +278,7 @@ void func_80070F80(u8 *script) {
 /* Walk an actor at stick speed 0xFF toward one of two fixed directions,
  * chosen by which side of the scene centre it stands. */
 s32 func_80070FD8(Actor *actor) {
-    Vector pos = actor->pos;
+    VECTOR pos = actor->pos;
 
     pos.vx -= 0x3F80;
     pos.vz -= 0x3F80;
@@ -550,7 +581,7 @@ s32 func_8007107C(void) {
 /* Link the marker sprite (16x16, at D_800925E0, D_800925E4) and this
  * frame's texture page packet. */
 void func_80071724(u32 *ot) {
-    Window *frame = D_80092868;
+    DisplayBuffer *frame = D_80092868;
 
     /* x0 and y0 of the sprite, stored as one word */
     *(u32 *)&frame->sprite.x0 = D_800925E0 | (D_800925E4 << 16);
@@ -560,12 +591,12 @@ void func_80071724(u32 *ot) {
 
 /* Upload the menu's sprite sheet TIM (its first CLUT colour made
  * transparent), build both texture page packets and the sprite template. */
-void func_80071794(u32 **resources) {
-    TimImage image;
-    Rect unused; /* the original frame reserves 8 more bytes */
+void func_80071794(MenuImages *files) {
+    TIM_IMAGE image;
+    RECT unused; /* the original frame reserves 8 more bytes */
     s16 *clut;
 
-    OpenTIM(resources[0x60 / 4]);
+    OpenTIM(files->sheet);
     ReadTIM(&image);
     clut = (s16 *)image.caddr;
     clut[2] = -0x8000;
@@ -595,10 +626,10 @@ void func_8007191C(s32 scene) {
     D_80092608 = scene == 0;
     if (scene == 0) {
         func_8008EB4C(0x37);
-        D_8009868C.unkC = 2;
+        D_8009868C.lines = 2;
         D_8009868C.unk6 = 0xB4;
     } else {
-        D_8009868C.unkC = 4;
+        D_8009868C.lines = 4;
         D_8009868C.unk6 = 0x9A;
     }
     func_80070F80(D_8009105C[scene]);
@@ -634,7 +665,7 @@ void func_800719F0(void) {
  * marker sprite (shown while D_800925F0 is set, blinking every 4 frames)
  * and its easing, the message window and the camera. */
 void func_80071AD0(void) {
-    MenuWindow *message;
+    Window *message;
 
     if (D_800925F0 != 0 && (D_800928E8 & 4)) {
         func_80071724(D_80092938);
@@ -689,14 +720,14 @@ void func_80071AD0(void) {
  * The direction table holds interleaved x/z words; each cursor follows
  * one column at the FloorStep stride. */
 void func_80071DA4(Actor *actor) {
-    Vector *pos = &actor->pos;
+    VECTOR *pos = &actor->pos;
     s32 tries = 0;
     u8 *steps_x = (u8 *)D_80091084;
     s32 best;
     s32 highest;
     s32 dir;
     s32 floor;
-    Vector probe;
+    VECTOR probe;
 
     do {
         u8 *steps_z;
@@ -789,8 +820,8 @@ void func_800720D4(void) {
  * then the caption when its text changed and the camera view. */
 void func_80072170(void) {
     Actor *actor;
-    MenuWindow *window;
-    Vector pos;
+    Window *window;
+    VECTOR pos;
     Node *part;
     s32 i;
     s32 count;
@@ -860,7 +891,7 @@ void func_80072170(void) {
             window->unk68 = 1;
             func_8003463C(window);
             func_80034714(window, func_80033728(D_80092880, D_800925D4));
-            window->unkC = 2;
+            window->lines = 2;
             window->unk6 = 0xB4;
             D_800925D8 = D_800925D4;
         }
@@ -869,6 +900,7 @@ void func_80072170(void) {
     }
 }
 
+/* Unreferenced, and empty. */
 void func_800725A8(void) {
 }
 
@@ -914,8 +946,8 @@ void func_800726B4(void) {
 
 /* Copy a model's matrix to out, rotated by the base matrix, with its
  * translation set to the model position relative to the scene origin. */
-void func_8007273C(Node *model, Matrix *matrix, Matrix *out) {
-    Matrix local;
+void func_8007273C(Node *model, MATRIX *matrix, MATRIX *out) {
+    MATRIX local;
 
     *out = *matrix;
     local = D_80091C0C;
@@ -933,9 +965,9 @@ void func_8007273C(Node *model, Matrix *matrix, Matrix *out) {
  * with 0x20; draw the record (name, level, matches, time) and the model
  * turning in front of the scene's lights. */
 void func_80072858(LightRig *rig) {
-    Matrix unused1; /* the original frame has 32 unused bytes on */
-    Matrix m;
-    Matrix unused2; /* either side of the matrix */
+    MATRIX unused1; /* the original frame has 32 unused bytes on */
+    MATRIX m;
+    MATRIX unused2; /* either side of the matrix */
     char text[64];
     Actor *winner = D_80092614;
     u8 y;
@@ -1008,7 +1040,7 @@ void func_80072858(LightRig *rig) {
     func_8008AC0C(rig->layer);
     func_8007B210(winner, 0);
     winner->node->position.vx = winner->node->position.vy = winner->node->position.vz = 0;
-    winner->node->unk44.vy = 0;
+    winner->node->angles.vy = 0;
     set = winner->node->data;
     set->scale[0] = set->scale[1] = set->scale[2] = D_8009262C;
     ((Node *)winner->object)->view = m;

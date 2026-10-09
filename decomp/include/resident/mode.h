@@ -107,7 +107,8 @@ void func_8001BB50(void);
 void func_80024F20(void);
 
 /* More of the mode dispatcher's calls and state. */
-void func_80019964(void);
+/* An empty debug print: the menu passes it a message. */
+void func_80019964();
 void func_80019CA0(void);
 void func_8001AC94(void);
 void func_8001ACA4(void);

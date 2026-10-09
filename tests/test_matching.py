@@ -150,11 +150,10 @@ class MatchingTests(unittest.TestCase):
         repo = Path(__file__).resolve().parents[1]
         worldmap = repo / "decomp/src/worldmap"
         menu = repo / "decomp/src/menu"
-        menu_includes = (menu / "menu2.c").read_text().split("\n\n", 1)[0]
-        menu_includes = re.sub(
-            r'#include "([^"]+)"',
-            lambda match: '#include "' + str(menu / match[1]) + '"', menu_includes,
-        ) + "\n"
+        # The menu's gte_SetTransMatrix (menu/gte.h, with psyq/inline_c.h's
+        # gte_SetRotMatrix).
+        menu_includes = ('#include "common.h"\n#include "psyq/libgte.h"\n'
+                         '#include "' + str(menu / "gte.h") + '"\n')
         (self.root / "decomp").mkdir()
         (self.root / "decomp/include").symlink_to(repo / "decomp/include")
         (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
@@ -195,9 +194,9 @@ class MatchingTests(unittest.TestCase):
              '#include "psyq/inline_c.h"\n', (("v0", v0),)),
             ("menu2", "menu", menu_includes,
              (
-                 ("rot", ("Matrix", "point->m[2][2]", "gte_SetRotMatrix(point)",
+                 ("rot", ("MATRIX", "point->m[2][2]", "gte_SetRotMatrix(point)",
                           "gte_SetRotMatrix(get_point())", 0x29, 16, (0x23,), 5)),
-                 ("trans", ("Matrix", "point->t[0]", "gte_SetTransMatrix(point)",
+                 ("trans", ("MATRIX", "point->t[0]", "gte_SetTransMatrix(point)",
                             "gte_SetTransMatrix(get_point())", 0x2b, 20, (0x23,), 3)),
              )),
         )
