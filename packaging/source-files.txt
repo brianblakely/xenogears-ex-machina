@@ -119,6 +119,7 @@ decomp/include/psyq/libcd.h
 decomp/include/psyq/libetc.h
 decomp/include/psyq/libgpu.h
 decomp/include/psyq/libgte.h
+decomp/include/psyq/libpress.h
 decomp/include/psyq/libsn.h
 decomp/include/psyq/libspu.h
 decomp/include/psyq/stdarg.h
