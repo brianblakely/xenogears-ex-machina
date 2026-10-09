@@ -24,22 +24,50 @@ It establishes tooling, not Xenogears compiler identity or game-source progress.
 ## Qualified configuration and targets
 
 GCC 2.6.3 and 2.7.2 (`psx-cc1-2.6.3`, `psx-cc1-2.7.2`; decompals/old-gcc 0.17
-PSX builds) with `-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.34
-behaviour through maspsx, and GNU as/ld reproduce original code exactly. The
+PSX builds) with `-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX
+behaviour through maspsx (7686f845) and GNU binutils 2.46 as/ld (the nixpkgs pin
+of nix/ghidra) reproduce original code exactly. The
 version is per translation unit: 2.7.2 can move the stack adjustment into the
 epilogue's `jr $ra` delay slot (`lw ra; move v0,0; jr ra; addiu sp`), which 2.6.3
 never does (`move v0,0; lw ra; addiu sp; jr ra; nop`, battle 800716d8); 2.7.2
 does not always fill it, and 2.6.3 also differs in commutative operand order and
-narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; 2.6.3 is
-established per unit by functions that only it reproduces. Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
-positive `li` to `ori` as the original does (resident, movie library). Qualification: resident
-`80028aac` (ring reset) matches only under 2.7.2 — 2.8.1 omits its empty
-8-byte frame and reschedules the stores. The small-data threshold is a
+narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; otherwise a
+code unit's version is the one that alone reproduces some of its functions
+(resident main 8001a344 and main2 80032f54 only under 2.7.2; the ring reset
+80028aac builds the same under 2.6.3 and 2.7.2, though not under 2.8.1, which
+omits its empty 8-byte frame). Rebuilt under each pinned cc1, 80 of the 99 C
+units match only under their own. Three small code units build identical objects
+under 2.6.3 and 2.7.2 and follow a neighbour (resident battle_mode and
+heap_80032DCC, debug2611 pages; their .mk comments say which). The 16 data-only
+or INCLUDE_ASM-only units (overlay numbers, commons, the resident header, settings
+and SDK units) are identical under all three, so their setting is immaterial.
+Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
+positive `li` to `ori` as the original does (resident, movie library, most units:
+maspsx `--aspsx-version=2.34`, the default). The world map and the 2.7.2-cdk units
+below expand it to `addiu`, which shows only ASPSX >= 2.50; they are set as 2.79
+(world map, resident sprite units) or 2.56 (the others), and maspsx builds
+identical objects for every one of these 35 units under either setting. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
 `GP_<file> := 8` in the target fragment. ASPSX loads and stores small data through
 `$gp` but forms every address (`la`) with `lui`/`addiu`, also of the unit's own
 small string constants (resident heap report), so such units expand `la` before GNU as.
+
+The ABI, the same under all three cc1, is GCC's o32 convention for little-endian
+MIPS I (R3000) with soft float: the first four argument words in `$a0`-`$a3`, the
+rest on the stack after 16 bytes the caller reserves for those four, results in
+`$v0`, every structure returned through a hidden pointer
+(`-fpcc-struct-return`, the default), unsigned plain `char` (`lbu`), 16-bit
+`short`, 32-bit `int`, `long` and pointers, 8-byte `long long` and `double`, both
+8-aligned, and `$gp` = 0x80059170 for `-G8` units.
+
+Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay out
+of the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to
+old-gcc 2.6.3 for saved whole units of movie, battle_8009E53C, slot39 and sound;
+CC1PSX 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
+field_8007A44C, menu5, worldmap_80083A00 and worldmap_80090A84; Psy-Q ASPSX 2.34
+assembles movie 800737ec, battle 800a7064 and sound 8003b424 to the text that
+maspsx `--aspsx-version=2.34` and GNU as give.
 
 Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
 assembler honoured it relative to the unit's own rodata section, and the
@@ -62,20 +90,23 @@ unit's rodata. spimdisasm emits `.align 3` only before 8-aligned tables, so a
 file whose rodata starts at 4 mod 8 cannot hold assembly tables of a
 0-mod-8 unit.
 
-A third compiler builds the later battle code: the Cygnus CDK build of GCC
-2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`, cdk-gcc b18) at `-O2`
-with a later ASPSX (positive `li` as `addiu`; maspsx `--aspsx-version=2.56`).
+A third compiler builds the later battle code and the resident sprite units: the
+Cygnus CDK build of GCC 2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`,
+cdk-gcc b18, banner `cygnus-2.7.2-970404 SN32.3.7.0004 (SonyPSX)`) at `-O2` with a
+later ASPSX (positive `li` as `addiu`).
 It keeps a symbol's `%hi` in a register and addresses members from it, leaves
 load-delay `nop`s and the epilogue `jr` slot of ovl3381 `801fc000`/`801fc278`
-unfilled, and fills other `jr` slots (debug2611 `802818c4`). Units: the six
-0x801fc000 battle modules (ovl3381, ovl3383-ovl3387), debug2611's tools unit
-(80280844-end) and ovl2615's battle_loader and load_modes. Qualification: of
+unfilled, and fills other `jr` slots (debug2611 `802818c4`). Its 22 units: the
+0x801fc000 battle modules (ovl3381, ovl3383-ovl3387), battle 800b15d8-end (seven
+units), ovl2615's battle_loader, load_modes and burst_modes, ovl3087's
+script_actor, debug2611's tools unit (80280844-end) and the four resident sprite
+units (8001c8dc-8002709c). Qualification: of
 cc1 2.5.7, 2.6.0, 2.6.3, 2.7.2, 2.7.2-cdk, 2.8.0, 2.8.1, 2.91.66 and 2.95.2
 (`-O1`/`-O2`/`-O3`, `-fno-delayed-branch`, `-fno-schedule-insns[2]`) under
 ASPSX 2.34-2.86, only 2.7.2-cdk `-O2`/`-O3` with ASPSX >= 2.56 reproduces
-ovl3381 `801fc000` and `801fc278`; over the nine units' existing C, `-O2`
-reproduces 21 functions that 2.6.3/2.7.2 do not (`-O3` 18, `-O1` 1), and the
-units' previously matching C still matches. ASPSX 2.56-2.86 give identical
+ovl3381 `801fc000` and `801fc278`. Across the 22 units, 293 functions build only
+under 2.7.2-cdk, not under 2.6.3 or 2.7.2 (compared with relocated fields masked);
+245 of them also build at `-O3`, 21 at `-O1`. ASPSX 2.56-2.86 give identical
 bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
@@ -85,13 +116,23 @@ Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
 byte-identical on both discs. `tools/extraction/disc_files.py` and
 `tools/extraction/overlays.py` write the local inputs; splat writes the local
-assembly. `tools/extraction/code_census.py` scans every file of both discs for
-MIPS function structure and fails unless each code-bearing file is the boot
-executable or byte-identical to a target image (MDEC streams are reported
-apart). Distinct overlays at the same address keep separate targets and symbol
-files.
+assembly. `tools/extraction/code_census.py` checks that the targets hold all the
+code on both discs. It counts every aligned `jr $ra`, leaf returns too, in each
+file's raw bytes and in every packed block the original decoder completes from
+any byte offset, checks that each movie stream's sectors are video, XA audio or
+empty and that no sector outside the files holds code, and fails unless every
+form holding code is the image of a `decomp/targets` .mk and all 26 occur. On the
+user's discs it decodes 74,925 (Disc 1) and 42,383 (Disc 2) packed blocks and
+finds code only in the targets (116 file entries and the boot programs); the
+other `jr $ra` words are compressed bytes inside packed blocks (the world map
+containers, Disc 1 file 732) and samples of the `wds ` wave bank in Disc 1 file
+3039 / Disc 2 file 3034. Distinct overlays at the same address keep separate
+targets and symbol files.
 
 ```sh
+# the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis -c \
+  chdman extractcd -i 'discs/Xenogears disc 1.chd' -o .local/discs/disc1.cue -ob .local/discs/disc1.bin
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
 python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
 python3 tools/extraction/overlays.py
@@ -161,7 +202,11 @@ python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 
 lists those resident in it. Across the ten retained routes (forest/encounter/
 menu on both discs, the two painting-room smokes, the movie and Mono/Stereo/Wide
 routes) the resident images, field, slot39 and the ovl3384 battle module are
-loaded exactly as rebuilt, apart from the guard and SDK variables above.
+loaded exactly as rebuilt, apart from the guard and SDK variables above. Their
+155 RAM snapshots add the battle overlay, ovl2596 and ovl2615, exact in the
+forest/encounter routes, and mdec's first 6,760 bytes (801d30c4-801d4b2c, the
+rest overwritten) in the movie routes. The other 17 targets are resident in no
+retained capture; the image comparison and the census stand for them.
 
 ```sh
 python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --targets
@@ -264,7 +309,8 @@ the audit; they are never counted as matches. This diagnostic does not replace
   note encodings, opcode lengths) are source.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
-- Unit compiler settings are qualified per unit; compiling every remaining draft under
+- Unit compiler settings are qualified per code unit (Qualified configuration, above,
+  names the units whose bytes leave it open); compiling every remaining draft under
   single-flag variants (`-fno-schedule-insns[2]`, `-fno-strength-reduce`, CSE and loop
   options, `-O1`) produced no match, so do not change an existing unit's flags to fix
   one function. A match under another compiler or flag that the neighbours do not
@@ -405,10 +451,11 @@ converted to C per unit. What converting the targets' `.data` established:
   801ea8e4), evidenced separately for ASPSX 2.34's `.lcomm` statics (mdec
   801e8958-801e8968: five u8, stored and loaded bytewise; menu3 80092678-800926a0;
   slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
-  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
-  map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
-  object whole words at a word boundary under the qualified ASPSX 2.34 and 2.79 (no
-  2.79 unit allocates any in C yet) and rejects a smaller one under any other version
+  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the world map's four
+  u16 at 8009bd10-8009bd1c, which three units share). The build gives each object
+  whole words at a word boundary under ASPSX 2.34 and the world map's setting 2.79
+  (no 2.79 unit allocates any in C yet; it stands for an assembler evidenced only as
+  >= 2.50, above) and rejects a smaller one under any other setting
   (decomp/Makefile); no target or unit setting selects it. Variables that share a word
   are therefore one object, also in the resident's generated `.bss`: the sprite
   position D_800592E8 is a DVECTOR. The window colour D_800594D4, the overlays'

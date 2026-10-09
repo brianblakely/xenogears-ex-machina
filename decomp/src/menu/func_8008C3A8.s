@@ -6,6 +6,8 @@
 # Products and sums wrap to 32 bits before signed division, and stores
 # truncate to 16 bits. A zero denominator leaves that work record intact.
 # work.vy/pad are always preserved. The pipeline reads one extra input.
+# Handwritten: a leaf on t0-t9 alone that never uses v0/v1; a plain-C probe
+# under GCC 2.7.2 and 2.6.3 allocates from v0 up.
 
 # Signed division keeps the original divide-by-zero and overflow traps.
 # t0 is the numerator/result, t2 the denominator; at is scratch.

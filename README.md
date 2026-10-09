@@ -11,13 +11,16 @@ ported into a host-side ownership model. See [the plan](plan.md) and the short
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
 make -C decomp smoke
+make -C decomp all-split all-verify all-coverage
 ```
 
 That smoke test exercises MIPS assembly/linking and exact comparison on an authored
-fixture, not Xenogears decompilation. The original-compatible C compiler and game
-build targets still need qualification. Source recovery and binary matching must
-be reported separately; existing C++ comparisons imply neither a PS1 match nor a
-complete decomp.
+fixture, not Xenogears decompilation. The game targets need the user's discs (the
+matching workflow's clean build); `all-verify` then compares every rebuilt resident
+executable and overlay with the original byte for byte, and `all-coverage` reports
+source coverage by class. Those reports, not this file, own the status. Source
+recovery and binary matching are reported separately; existing C++ comparisons
+imply neither a PS1 match nor a complete decomp.
 
 The existing `xem-reconstruction` library, original scenarios, findings and tests
 remain useful reference/portability assets. Its state declarations are separated

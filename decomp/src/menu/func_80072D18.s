@@ -7,6 +7,8 @@
 # Rows 0..126 use the following row's heights. Each accepted span adds
 # its cell count to D_800595C0; emitted packets add to D_80059578.
 # Return the emitted triangle count. No OT bounds or GTE flag test is made.
+# Handwritten: callee saves below the unchanged sp without a frame, a
+# trapping add and GTE stores (swc2) in branch delay slots.
 glabel func_80072D18
     # This leaf saves registers below the caller's unchanged stack pointer.
     # Preserve its unused s0 save and the gap at sp-12 as well.

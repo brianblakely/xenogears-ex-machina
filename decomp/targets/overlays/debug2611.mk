@@ -10,7 +10,10 @@ LINKER_EXTRA := .local/decomp/debug2611/undefined_syms_auto.txt .local/decomp/de
 SOURCE_DIRS := decomp/src/debug2611
 # The tools unit (80280844-end) is Cygnus CDK GCC 2.7.2 with a later ASPSX
 # (positive li as addiu), like the 0x801fc000 battle modules; the state pages
-# unit is GCC 2.6.3 keeping li as ori (ASPSX 2.34).
+# unit keeps li as ori (ASPSX 2.34). GCC 2.6.3 and 2.7.2 build identical
+# objects for the pages unit (2.7.2-cdk does not), so its bytes do not decide
+# between them; its setting follows the GCC 2.6.3 battle overlay whose state
+# it prints.
 MASPSX_FLAGS := --aspsx-version=2.56
 MASPSX_pages := --aspsx-version=2.34
 CC_pages := 2.6.3

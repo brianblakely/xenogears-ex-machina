@@ -1,6 +1,8 @@
 # Transform SVector *a0 with the loaded GTE rotation matrix, then scale
 # the result through IR0 (a2). Store the three saturated IR components in
 # SVector *a1. Translation is disabled by mvmva's cv=3 selector.
+# Handwritten: t0-t2 temporaries; a plain-C probe under GCC 2.7.2 and 2.6.3
+# uses v0/v1/a0.
 glabel func_8008DDFC
     lwc2    $0, 0($a0)           # VXY0
     lwc2    $1, 4($a0)           # VZ0

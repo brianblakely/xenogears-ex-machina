@@ -1,13 +1,18 @@
 # START END CLASS NOTE (hex VRAM, END exclusive). handwritten: reviewed
-# assembly that is not recoverable game C, original hand-written code. GCC
-# allocates $v0/$v1/$a* temporaries first and never emits the $t-register-only
-# leaf code, frameless negative-offset register saves or raw coprocessor moves
-# seen here. asset: game data embedded in the image in a format the game parses.
+# assembly that is not recoverable game C, original hand-written code. The
+# evidence is code GCC 2.6.3/2.7.2 does not emit (docs/matching.md): trapping
+# add/addi, callee saves below $sp without a frame, GTE instructions in branch
+# delay slots (reorg never puts an asm there) and branch targets inside them,
+# the $k0/$k1/$sp context switch, a return that leaves $sp lowered, and $t
+# temporaries with unfilled jr slots where a plain-C probe compile under both
+# allocates $v0/$v1 first and fills the slot. Raw cop2 moves are no evidence.
+# Each routine's .s file names its own. asset: game data embedded in the image
+# in a format the game parses.
 # text_data NAME: a data object a C unit places in .text, with the evidence
 # that the original keeps it there; it counts as bytes, never as C code.
-80072d18 800732cc handwritten scratchpad ground-map triangle batch (80072D18: callee saves below $sp without a frame, $t registers, `add`) and GTE vector/colour/matrix helpers 80073064-800732AC (mtc2/gpf/mfc2 on $t0-$t2, a word-copy loop)
+80072d18 800732cc handwritten scratchpad ground-map triangle batch (80072D18: callee saves below $sp without a frame, trapping `add`, GTE stores in delay slots) and GTE vector/colour/matrix helpers 80073064-800732AC ($t temporaries and unfilled `jr` slots a plain-C probe does not produce, trapping add/addi in the colour filter, a word-copy loop on $t0)
 80088bfc 80088c00 text_data D_80088BFC menu6's mode-task table: the pointer to func_800852C4 that func_80088E90 loads by the resident mode word D_80050618 (80088ECC). The original keeps it in .text: the word lies between func_80088BD4's return and func_80088C00, inside the overlay's code (800707a8-80090f38), which the original linker filled only with its units' .text
-8008bb00 8008bcc8 handwritten task context switch: context save/restore to D_80096D88/D_80096D8C in $t0/$t1, and full register-file save/resume through $at including $k0/$k1/$gp/$sp/$fp
-8008c3a8 8008c7c0 handwritten GTE mesh transform (mvmva loop with lwc2/mfc2 on $t registers) and two packet builders that keep every resident pointer in $a2/$a3/$t7/$t8/$v0/$v1
-8008ddfc 8008df30 handwritten GTE vector transform (lwc2/mtc2/mvmva/gpf on $t0-$t2) and a separate packet stub, which builds its stack vector through $t0/$t1, reads the existing projection FIFO without RTPS and returns without restoring $sp
+8008bb00 8008bcc8 handwritten task context switch: context save/restore to D_80096D88/D_80096D8C in $t0/$t1 (a plain-C probe uses $v0/$v1), and full register-file save/resume through $at including $k0/$k1/$gp/$sp/$fp, with caller saves below $sp
+8008c3a8 8008c7c0 handwritten GTE mesh shadow projection (a leaf on $t registers that never uses $v0/$v1, unlike a plain-C probe) and two flat packet builders with GTE moves and commands in branch delay slots and branch targets inside delay slots
+8008ddfc 8008df30 handwritten GTE vector transform ($t0-$t2 temporaries a plain-C probe does not use) and a separate packet stub, which builds its stack vector through $t0/$t1, reads the existing projection FIFO without RTPS, overwrites an offset it computes and returns without restoring $sp
 80091fb0 800925a4 asset sprite model D_80091FB0 (1524 bytes; resident SpriteModel format, decomp/src/resident/model.h): header with self-relative offsets (41 vertices, 70 primitives in one group, texture coordinate block), relocated by resident 8002C59C and attached to the actor model by menu5 80084BEC

@@ -7,6 +7,8 @@
 # Bound tests accept any packed SXY below the y limit and any unsigned x
 # below the x limit, independently. No depth/flag test or OT depth sort.
 # The pipeline reads an extra face even when the requested count is zero.
+# Handwritten: rtpt and lwc2 in branch delay slots (reorg never puts an asm
+# there), and branch targets inside delay slots.
 glabel func_8008C620
     mesh_packet_state 5
     mesh_face_vectors 1

@@ -7,6 +7,8 @@
 # and some unsigned x is below the x limit. The two bound tests need not
 # be satisfied by the same vertex. The counter advances after the first
 # test, including backfaces and triangles rejected by the x test.
+# Handwritten: an mfc2 in a branch delay slot (reorg never puts an asm
+# there), and branch targets inside delay slots.
 glabel func_8008C4B0
     mesh_packet_state 4
     mesh_face_vectors

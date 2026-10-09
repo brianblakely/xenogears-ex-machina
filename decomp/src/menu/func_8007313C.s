@@ -3,6 +3,7 @@
 # IRGB unpacks each colour into IR1..3, and ORGB packs the quarter sum.
 # Bit 15 is discarded. There is no width-boundary or empty-range guard.
 # The next pair is loaded before the end test, including at the end cursor.
+# Handwritten: trapping add/addi throughout, where GCC emits addu/addiu.
 glabel func_8007313C
     # Seed the two left-hand colours for the sliding window.
     lhu     $t0, 0($a0)

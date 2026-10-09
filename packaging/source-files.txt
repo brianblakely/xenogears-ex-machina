@@ -718,6 +718,7 @@ tests/test_battle_event_vm.py
 tests/test_battle_loader.cpp
 tests/test_battle_request.py
 tests/test_battle_setup.cpp
+tests/test_code_census.py
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_disc_read.cpp

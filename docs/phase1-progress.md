@@ -1,13 +1,13 @@
 # Phase 1 checkpoint
 
-The goal is now the complete both-disc matching decomp in plan.md. No original-
-compatible C compiler or whole-game matching build is claimed by this reorientation.
-The new public MIPS fixture checks tooling only; source coverage is not inferred.
-
-Next implementation: qualify representative compiler matches, establish incremental
-resident/overlay targets, then replace original assembly continuously. Keep target
-configuration and generated source/match counts authoritative rather than copying
-hundreds of statuses into this file.
+The goal is the complete both-disc matching decomp in plan.md, whose checklist
+records the exit items. The qualified compilers, every resident and overlay target
+and their settings live under decomp/ (docs/matching.md). The build owns the status
+rather than this file: `make -C decomp all-verify` compares every rebuilt image with
+its original byte for byte, `all-coverage` reports source coverage by class
+(remaining assembly, placeholders, SDK and handwritten code) and `all-container`
+the packed containers. The public MIPS fixture (`make -C decomp smoke`) checks
+tooling only.
 
 Existing host-reference recovery and original comparisons remain available in
 analysis/findings/ and src/reconstruction/. EVID-REF-047 is the bounded menu/ownership

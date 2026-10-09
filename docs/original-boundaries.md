@@ -78,6 +78,14 @@ Outside the libraries the game itself uses:
   0x801e0000, ovl2615 at 0x801e4000, ovl3087 at 0x801e5000, the battle modules
   ovl3381-3387 at 0x801fc000 (loaded by battle `800beb04`), and the debug
   overlays at 0x80280000 (development-kit RAM only).
+- Minigames and optional content: the Battling arena is mode 4's overlay, the
+  target named `menu` (Disc 1 file 35, docs/scripts/arena-scene.md), while the
+  in-game menu and saves are mode 5's slot39 with its party, name and shop
+  screens (ovl2598, ovl2600, ovl2601, ovl2602); the debug content is
+  debug595 (field monitor), debug2611 (battle state pages and tools), ovl2606
+  (battle-scene selector) and the resident kernel menu with its Game of Life
+  screen. No other disc file holds code (`tools/extraction/code_census.py`): the
+  other minigames run as field event scripts on the field overlay.
 
 ## Presentation and sound modes
 
