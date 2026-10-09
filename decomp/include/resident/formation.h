@@ -33,8 +33,8 @@ typedef struct BattleFormation {
     u8 enemyIds[8];    /* 0x08: per enemy, & 0x7f: its id in the enemy file (0x7f
                         * none); 0x80: it fights in a gear, slot byte 4 (func_801E4160) */
     u8 enemyFlags[8];  /* 0x10: per enemy: 0x80 to slot byte 3 (BattleSlot.hidden),
-                        * 0x01 to slot byte 5 (func_801E4160); no reader of slot byte
-                        * 5 is known */
+                        * 0x01 to slot byte 5 (func_801E4160), which no reader is
+                        * known to read; bits 0x02-0x40 unread */
     u8 enemyGroups[8]; /* 0x18: per enemy, & 0x7f: its formation group. Bit 7 of byte
                         * 0x18 + s goes to slot byte 6 for s = 3-10 (bytes 0x1b-0x22,
                         * past the record for slots 8-10, func_801E4160); setup phase
