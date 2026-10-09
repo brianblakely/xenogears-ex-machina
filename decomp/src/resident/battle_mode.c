@@ -6,6 +6,7 @@
 #include "resident/mode.h"
 
 u8 D_8005959C;
+extern u8 D_8005947C;
 extern u8 D_800594F8;
 extern u8 D_800C48EA;
 extern u8 D_800D3338;
