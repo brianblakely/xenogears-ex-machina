@@ -260,8 +260,16 @@ Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
 reconstruction (search `src/reconstruction` for the address), then compile,
 `make verify`, and read `matching_diff.py -f` for the first difference. Keep
 functions in original order; the function's jump tables and strings move with
-it (splat migrated them into the function's assembly). Shared structures go in
-small headers beside the source. A function that is understood but does not yet
+it (splat migrated them into the function's assembly). A unit's structures go in
+small headers beside the source; what several targets share has one definition in
+`decomp/include`: `psyq/` (the SDK's types and prototypes, members the symbol file
+leaves unnamed under their `func_` names), `resident/` (one header per resident
+subsystem with its types, variables and calls; `gamedata.h` holds the game data
+D_8006D634) and `battle/` (the battle area D_800C3EB0 and its work area D_800CCCE8,
+which the battle modules and overlays use). A resident function whose callers in
+other targets were built with other argument or result conversions (narrow
+parameters, another count) stays out of them: each target declares it, the resident
+in `own_declarations.h`. A function that is understood but does not yet
 match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
 INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 
