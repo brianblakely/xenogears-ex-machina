@@ -1,10 +1,9 @@
 #ifndef MOVIE_MODE_H
 #define MOVIE_MODE_H
 
-/* Mode 6, the movie mode: its display buffers and sector header, the movie
- * library's entries (disc file 19 at 0x801d3000, decomp/src/mdec), the
- * resident objects no shared header declares and the unit's own functions
- * and forward-declared data. */
+/* Mode 6, the movie mode: its display buffers and sector header, its view of
+ * the movie library's start (mdec/player.h), the resident objects no shared
+ * header declares and the unit's own functions and forward-declared data. */
 
 #include "common.h"
 #include "psyq/libcd.h"
@@ -20,6 +19,7 @@
 #include "resident/pad.h"
 #include "resident/sound.h"
 #include "resident/stream.h"
+#include "mdec/player.h"
 
 /* Callers convert arguments/result differently from the resident definition
  * (u8 mode; u16 stream parameters; the result read as s16). */
@@ -57,18 +57,12 @@ typedef struct MovieSector {
 } MovieSector;
 
 /* Movie playback. */
-extern s32 D_801D68B4;          /* movie library: split display */
-extern s32 D_801E89D4;          /* movie library: frames skipped */
-extern const RECT D_800704E0;   /* the screen area */
+extern const RECT D_800704E0; /* the screen area */
 
-/* Movie library (disc file 19 at 0x801d3000, see decomp/src/mdec). */
-s32 func_801D3538(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 limit, u16 mode);
-void func_801D37CC(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
-                   u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, s16 rows,
-                   void (*callback)(u16 frame, u16 x, u16 y));
-void func_801D3F7C(void); /* poll */
-void func_801D4318(void); /* stop */
-void func_801D43B0(void); /* close */
+/* The library's start (mdec/player.h): u16 rows would load D_800773A0 lhu, not lh. */
+void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
+                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, s16 rows,
+                 void (*callback)(u16 frame, u16 x, u16 y));
 
 s32 func_80076488(void);
 void func_800768D8(u16 frame, u16 x, u16 y);

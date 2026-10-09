@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "resident/sound.h"
+#include "mdec/player.h"
 
 /* The movie request block at 800c3a20, one object: the instructions that
  * fill it keep their stores ahead of loads through the actor pointer, and
@@ -60,13 +61,9 @@ void func_80085788(void);      /* load the request's bank, seek its timeline */
 void func_80085678(void);      /* play the effects whose time has come */
 void func_80085738(void);      /* release the bank */
 
-/* The movie library (file 0xa9, at 801d0000). */
-extern s32 D_801D68B4;
-extern s32 D_801E89E0;         /* 1 lets it present frames itself */
-void func_801D3538(s32 w, s32 h, s32, s32, s32, s32, s32 rgb24);
-void func_801D37CC(s32 file, s32, s32, s32, s32, s32 mode, s32, s32, s32, s32, s32, s32 h,
-                   void (*callback)(u16, s32, u16));
-void func_801D3F7C(void);
-void func_801D43B0(void);      /* close */
+/* The movie library's start, which each caller declares (mdec/player.h). */
+void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
+                 u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows,
+                 void (*callback)(u16 frame, u16 x, u16 y));
 
 #endif

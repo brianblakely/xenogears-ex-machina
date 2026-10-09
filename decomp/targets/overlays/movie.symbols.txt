@@ -1,2 +1,10 @@
 D_80070394 = 0x80070394; // size:0x28 force_not_migration:True
 D_800704D4 = 0x800704D4; // size:0xC force_not_migration:True
+// The movie library's player (mdec.symbols.txt, mdec/player.h), by its names.
+movie_open = 0x801D3538; // type:func
+movie_start = 0x801D37CC; // type:func
+movie_poll = 0x801D3F7C; // type:func
+movie_stop = 0x801D4318; // type:func
+movie_close = 0x801D43B0; // type:func
+movie_split_display = 0x801D68B4; // size:0x4
+movie_skipped_frames = 0x801E89D4; // size:0x4

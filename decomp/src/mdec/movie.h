@@ -14,6 +14,7 @@
 #include "resident/heap.h"
 #include "resident/sound.h"
 #include "resident/stream.h"
+#include "mdec/player.h"
 
 /* Callers convert arguments/result differently from the resident definition
  * (u8 there): the resident read mode. */
@@ -32,9 +33,8 @@ typedef struct MovieSectorHeader {
     u32 unused[3];
 } MovieSectorHeader;
 
-/* The player's own functions. */
+/* The player's own functions (the entries others call: mdec/player.h). */
 void movie_slice_decoded(void);
-void movie_stop(void);
 void movie_decode(void);
 u_long *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
@@ -59,10 +59,9 @@ typedef struct MovieDecoder {
     RECT slice[2];           /* the slice each buffer loads next */
 } MovieDecoder;
 
-/* Player commons, placed among libcd's (commons/). */
+/* Player commons, placed among libcd's (commons/; movie_skipped_frames and
+ * movie_load_restart in mdec/player.h). */
 extern u16 movie_slice_width;      /* 16 or 24 */
-extern s32 movie_skipped_frames;
-extern s32 movie_load_restart;
 extern s32 movie_previous_frame;
 extern s32 movie_stall_count;      /* polls without a ring frame */
 
