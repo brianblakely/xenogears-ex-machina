@@ -821,21 +821,15 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * outlines and gauge quads of both sides (left from the corner layout,
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
- * which are set afterwards. The two decrements load into s16 temporaries
- * (set twice, so not register births that sched1 would move down to the
- * decrement), which gives the original's late decrement stores.
- * Does not match: the two loads (arrows[1][1].y0 at 0x292, .x2 at 0x298)
- * are hoisted to the top of the block by sched1 (they have no dependences
- * here: buf+offset accesses are told apart), where the original keeps them
- * at their source positions, after the marks[1].y0/y1 stores and after the
- * 0x1E stores; so here the 0x1E and length constants take $v0 instead of
- * $v1/$a0 and the marks[2].x0 / marks[3].x3 constants swap $t2/$t3.
- * Plain `--` (load pseudos set once) moves the loads below the length
- * stores instead; a pointer to the arrow is worse. */
-#ifdef NON_MATCHING
+ * which are set afterwards; the second mirrored arrow then gets its first
+ * corner one pixel up and its third one pixel left. The marks are written
+ * after their packet heads, one shared coordinate at a time (x0 = x2, x1,
+ * x3, y0 = y1, y2 = y3). So the length 5 and the 0x1E of both marks live
+ * across the other coordinates and take $a0/$v1, while the two decrement
+ * loads, register births that sched1 puts late, take $v0/$v1; sched2 then
+ * lifts each load to just after the last use of its register. */
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
-    s16 x, y;
 
     SetDrawTPage(&buf->tpage[0], 0, 1, GetTPage(0, 2, 0, 0));
     SetDrawTPage(&buf->tpage[1], 0, 0, GetTPage(0, 1, 0, 0));
@@ -939,7 +933,13 @@ void func_80085EC8(OverlayBuffer *buf) {
         buf->arrows[1][i].x1 = 0x140 - buf->arrows[0][i].x1;
         buf->arrows[1][i].x2 = 0x140 - buf->arrows[0][i].x2;
     }
-    *(u32 *)&buf->marks[1].r0 = *(u32 *)&buf->marks[0].r0 = 0x28000000;
+    buf->arrows[1][1].y0--;
+    buf->arrows[1][1].x2--;
+    ((PacketTag *)&buf->marks[0])->len = 5;
+    *(u32 *)&buf->marks[0].r0 = 0x28000000;
+    ((PacketTag *)&buf->marks[1])->len = 5;
+    *(u32 *)&buf->marks[1].r0 = 0x28000000;
+    buf->marks[0].x0 = buf->marks[0].x2 = 0x1E;
     buf->marks[0].x1 = 0x63;
     buf->marks[0].x3 = 0x5E;
     buf->marks[0].y0 = buf->marks[0].y1 = 9;
@@ -948,15 +948,8 @@ void func_80085EC8(OverlayBuffer *buf) {
     buf->marks[1].x1 = 0xE3;
     buf->marks[1].x3 = 0xDE;
     buf->marks[1].y0 = buf->marks[1].y1 = 0x13;
-    y = buf->arrows[1][1].y0;
-    y--;
-    buf->arrows[1][1].y0 = y;
-    buf->marks[1].y2 = buf->marks[1].y3 = buf->marks[0].x0 = buf->marks[0].x2 = 0x1E;
-    x = buf->arrows[1][1].x2;
-    x--;
-    buf->arrows[1][1].x2 = x;
-    ((PacketTag *)&buf->marks[2])->len = ((PacketTag *)&buf->marks[1])->len =
-        ((PacketTag *)&buf->marks[0])->len = 5;
+    buf->marks[1].y2 = buf->marks[1].y3 = 0x1E;
+    ((PacketTag *)&buf->marks[2])->len = 5;
     *(u32 *)&buf->marks[2].r0 = 0x280000FF;
     *(u32 *)&buf->marks[2].x0 = 0x320006;
     *(u32 *)&buf->marks[2].x1 = 0x36000A;
@@ -969,9 +962,6 @@ void func_80085EC8(OverlayBuffer *buf) {
     *(u32 *)&buf->marks[3].x2 = 0x4C013A;
     *(u32 *)&buf->marks[3].x3 = 0x480136;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80085EC8);
-#endif
 
 /* Build a textured quad (and its second-buffer copy) showing a whole TIM
  * image at (x, y); `depth` is the TIM colour mode (0 = 4-bit, 1 = 8-bit,
