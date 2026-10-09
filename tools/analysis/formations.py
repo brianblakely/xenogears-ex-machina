@@ -29,8 +29,8 @@ set the next battle (ovl3087 func_801E7700, taken by 80070f40).
 `--sweep` decodes every set on both discs, prints aggregate counts and
 cross-checks the (battle, enemy id) pairs the formations place against the
 enemy AI blocks (tools.analysis.battle_ai), the event script sets against the
-battle event archive (tools.analysis.battle_event_vm) and the scene selectors
-against directory (12, 3). `--list field|worldmap|debug [--item N] [--disc D]`
+battle event archive (tools.analysis.battle_event_vm) and the stages against
+directory (12, 3). `--list field|worldmap|debug [--item N] [--disc D]`
 prints the formations of every map, area file or debug file (or one); keep
 listings under .local/.
 """
@@ -835,7 +835,7 @@ def disc_report(census: Census) -> list[str]:
         f" {census.script_sets} (none names {unnamed_sets}, debug sets name {debug_sets});"
         f" outside the archive: {len(check.bad_script_sets)}",
         *_listed(check.bad_script_sets, 6),
-        f"    scene selectors used: {len(check.stages)}, highest {highest};"
+        f"    stages used: {len(check.stages)}, highest {highest};"
         f" at or past the {census.stages} stage pairs of (12, 3): {len(check.bad_stages)}",
         *_listed(check.bad_stages, 6),
         f"  undecodable: {len(census.undecodable)}",

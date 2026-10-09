@@ -9,7 +9,7 @@
  * script and results overlays read it there. Party members take battle slots
  * 0-2, enemies slots 3-10 (battle/area.h BattleSlot); "slot byte n" below is
  * byte n of a slot's BattleSlot record. The places of each formation group
- * come from the stage (battle's Formation, D_8005949C), not from here. */
+ * come from the stage's scene data (D_8005949C), not from here. */
 
 /* A battle formation (0x20 bytes). */
 typedef struct BattleFormation {
@@ -23,8 +23,9 @@ typedef struct BattleFormation {
                         * (func_801E5014 sets D_800C3D48); 0x40 and 0x80 give every
                         * member command 7 and 8 (func_801E5014). No reader tests
                         * 0x01, 0x02 or 0x04. */
-    u8 stage;          /* 0x02: s, the scene selector: stage files (12, 3) 6 + 2s
-                        * and 7 + 2s (resident func_8001BB0C, func_800379D8) */
+    u8 stage;          /* 0x02: s, the battle stage: its stage file (12, 3) 6 + 2s
+                        * and scene data 7 + 2s (resident func_8001BB0C,
+                        * func_800379D8; ovl2615 func_801E7210 sets them up) */
     u8 scriptSet;      /* 0x03: the event script set, read under flag 0x20 (ovl3087
                         * func_801E5160) */
     u8 partyGroups[3]; /* 0x04: per member, & 0x7f: its formation group unless it

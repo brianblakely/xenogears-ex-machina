@@ -17,7 +17,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 | --- | --- | --- |
 | 0x00 | `battle` | n: enemy file (12, 1) 2n + 2 and enemy set file 2n + 3 (ovl2615 `func_801E5384`); [battle-ai.md](battle-ai.md) decodes the enemy file. |
 | 0x01 | `flags` | 0x08: no result screens (ovl2596 `func_801E2280` skips `func_801E1FB8`, whose spoils list adds the drops, `func_801E1690`) and no fade after them (battle `func_80070F40`). 0x10: the party is party slot 0's character and character 10 twice, with gear 17 (ovl2615 `func_801E5384`). 0x20: the battle event script runs (`func_801E5014` sets `D_800C3D48`; [battle-event-vm.md](battle-event-vm.md)). 0x40, 0x80: every member gets command 7, 8 (`func_801E5014`). No reader tests 0x01, 0x02 or 0x04. |
-| 0x02 | `stage` | s, the scene selector: resident `func_8001BB0C` passes it to `func_800379D8`, which loads the stage files (12, 3) 6 + 2s and 7 + 2s (s must be below half the file count of entry 5). The stage holds each formation group's standing places (battle's `Formation`, `D_8005949C`). |
+| 0x02 | `stage` | s, the battle stage: resident `func_8001BB0C` passes it to `func_800379D8`, which loads the stage file (12, 3) 6 + 2s into `D_80059470` and the scene data 7 + 2s, after its size word, into `D_8005949C` and `D_800658C8` (s must be below half the file count of entry 5). ovl2615 `func_801E7210` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `func_801E4160`; battle's `Formation`) and the cameras (`func_800B81BC`). |
 | 0x03 | `scriptSet` | the battle event script set, read only under flag 0x20 (ovl3087 `func_801E5160`). |
 | 0x04 | `partyGroups[3]` | per member, & 0x7f: its formation group, unless it fights in its gear (then its slot number; ovl2615 `func_801E4160`). |
 | 0x07 | `unk7` | no reader. |
@@ -77,11 +77,11 @@ formation of the same set.
 
 `python3 -m tools.analysis.formations --sweep` reads `.local/extract` and
 `.local/discs` and prints the counts below. `--list field|worldmap|debug [--item N]
-[--disc D]` prints each formation with its weights: battle, scene selector, script
-set, flags, party groups, and per enemy its id, group and flags; for a field map also
-its battle requests, its f7s and whether it arms the draw. Keep listings under
-`.local/`. `tests/test_formations.py` checks the decoder against `formation.h` on
-invented sets, bundles, area files and discs. On the user's discs:
+[--disc D]` prints each formation with its weights: battle, stage, script set, flags,
+party groups, and per enemy its id, group and flags; for a field map also its battle
+requests, its f7s and whether it arms the draw. Keep listings under `.local/`.
+`tests/test_formations.py` checks the decoder against `formation.h` on invented sets,
+bundles, area files and discs. On the user's discs:
 
 - Disc 1: 730 map bundles, 635 with a set and 95 with an empty component 6; 17 area
   files, 12 with 16 tables (192); 49 debug files. The field and world map sets hold
@@ -121,8 +121,8 @@ invented sets, bundles, area files and discs. On the user's discs:
 - **Script sets** (`tools.analysis.battle_event_vm`): formations with flag 0x20 name 44
   of the archive's 48 sets, none past it. Only the debug files name sets 25, 36, 43
   and 47.
-- **Scene selectors:** 73 are used, the highest 74; directory (12, 3) holds 75 stage
-  pairs.
+- **Stages:** 73 are used, the highest 74; directory (12, 3) holds 75 pairs of a stage
+  file and its scene data.
 
 ## Open
 

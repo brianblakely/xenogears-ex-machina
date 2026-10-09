@@ -35,9 +35,9 @@ typedef struct {
 
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
-extern u8 *D_80059470;  /* the scene music sequence */
+extern u8 *D_80059470;  /* the battle stage file (func_800379D8; ovl2615 func_801E7210) */
 extern s32 D_80059520;
-extern u8 *D_8005949C;  /* the scene music instrument data */
+extern u8 *D_8005949C;  /* the battle scene data (func_800379D8; ovl2615 func_801E7210) */
 
 /* Game state reset by 8001aadc. */
 extern s32 D_8004F2F4, D_8004F2F8, D_8004F2FC, D_8004F300, D_8004F304, D_8004F308;

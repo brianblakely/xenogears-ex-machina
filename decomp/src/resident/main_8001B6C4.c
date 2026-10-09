@@ -122,7 +122,7 @@ void func_8001B970(void) {
     D_8005947C = 0;
 }
 
-/* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
+/* Load the battle stage that the formation's byte 2 (8006f9de) names (800379d8). */
 void func_8001BB0C(void) {
     func_800379D8(D_8006F9DC.stage, 0, &D_80059470, &D_80059520, &D_8005949C);
 }

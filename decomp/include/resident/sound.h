@@ -451,7 +451,7 @@ void func_8003AAC4(SoundSeq *seq, u32 mask);
 extern u16 D_80059454;
 extern u8 D_8005954C;
 extern s32 D_8005A408[3];
-extern u8 *D_800658C8; /* the loaded music's instrument data */
+extern u8 *D_800658C8; /* the battle scene data (func_800379D8, ovl2615 func_801E7210) */
 extern struct SoundBank *D_800595D0;
 
 extern struct SoundBank *D_8006259C; /* the effect sound bank of the field, the world map and the menus */
