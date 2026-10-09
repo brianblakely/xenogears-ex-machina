@@ -2,9 +2,13 @@
  * 0x801E4000 by the resident battle entry 8001bbac together with the effect
  * header and archive files 2 and 3). It places the formation, builds the
  * combatant records and turn tables, sets up the stage, gauges and intro,
- * and runs as the battle's setup task (801e5840 phases, 801e7098 task). */
+ * and runs as the battle's setup task (801e5840 phases, 801e7098 task).
+ *
+ * The image holds five units: this one (text 801E4048-801E62E0, GCC 2.6.3),
+ * battle_loader.c, stage.c, load_modes.c and burst_modes.c. The change to
+ * the Cygnus CDK GCC 2.7.2 and its later ASPSX (positive li as addiu) at
+ * 801e62e0 ends this unit (ovl2615.mk). */
 #include "battle_setup.h"
-
 
 /* Clear the battle outcome flags, publish the party ids and reset every
  * slot's flags (demo battles place everyone alone). */
@@ -21,19 +25,19 @@ void func_801E4048(void) {
     D_8005941C = 0;
     D_8005942C = 0;
     for (i = 0; i < 3; i++) {
-        D_80059468[i] = D_800CCCE8.party_ids[i];
-        D_800C3EB4.slot[i].id = D_800CCCE8.party_ids[i];
+        D_80059468[i] = D_800CCCE8_setup.partyIds[i];
+        D_800C3EB0.slots[i].field2 = D_800CCCE8_setup.partyIds[i];
     }
     for (i = 0; i < SLOT_COUNT; i++) {
-        D_800C3EB4.slot[i].flag3 = 0;
+        D_800C3EB0.slots[i].hidden = 0;
         if (D_800D3294 == 0) {
-            D_800C3EB4.slot[i].in_gear = D_8006F8E5[i];
+            D_800C3EB0.slots[i].gear = D_8006F8E5[i];
         } else {
-            D_800C3EB4.slot[i].in_gear = 1;
+            D_800C3EB0.slots[i].gear = 1;
         }
-        D_800C3EB4.slot[i].flag5 = 0;
+        D_800C3EB0.slots[i].field5 = 0;
     }
-    D_800C48EA = 0;
+    D_800C3EB0.outcome = 0;
     D_800D2DC0 = 0;
 }
 
@@ -45,96 +49,96 @@ void func_801E4160(void) {
     u8 id;
 
     D_800D3280 = 0;
-    D_800D3364 = D_8005949C;
-    D_800C3EB0.scene = D_8005949C;
+    D_800D3364 = (BattleScene *)D_8005949C;
+    D_800C3EB0.formation = (struct Formation *)D_8005949C;
     for (i = 0; i < 3; i++) {
-        if ((D_800C3EB4.slot[i].id & 0x7F) != NO_COMBATANT) {
+        if ((D_800C3EB0.slots[i].field2 & 0x7F) != NO_COMBATANT) {
             D_800D2DCC.present[i] = 1;
             D_800D3280++;
         } else {
             D_800D2DCC.present[i] = 0;
         }
-        if (D_800C3EB4.slot[i].in_gear == 0) {
-            D_800C3EB4.slot[i].group = FORMATION_PARTY_GROUP(i) & 0x7F;
+        if (D_800C3EB0.slots[i].gear == 0) {
+            D_800C3EB0.slots[i].group = FORMATION_PARTY_GROUP(i) & 0x7F;
         } else {
-            D_800C3EB4.slot[i].group = i;
+            D_800C3EB0.slots[i].group = i;
         }
     }
     D_800D3280 += 0xFF; /* one less */
     for (i = 0; i < 8; i++) {
         id = FORMATION_ENEMY_ID(i) & 0x7F;
         if (id != NO_COMBATANT) {
-            D_800C3EB4.slot[i + 3].id = id;
-            D_800C3EB4.slot[i + 3].flag3 = FORMATION_ENEMY_FLAGS(i) & 0x80;
-            D_800C3EB4.slot[i + 3].in_gear = FORMATION_ENEMY_ID(i) & 0x80;
-            D_800C3EB4.slot[i + 3].flag5 = FORMATION_ENEMY_FLAGS(i) & 1;
+            D_800C3EB0.slots[i + 3].field2 = id;
+            D_800C3EB0.slots[i + 3].hidden = FORMATION_ENEMY_FLAGS(i) & 0x80;
+            D_800C3EB0.slots[i + 3].gear = FORMATION_ENEMY_ID(i) & 0x80;
+            D_800C3EB0.slots[i + 3].field5 = FORMATION_ENEMY_FLAGS(i) & 1;
             D_800D2DCC.present[i + 3] = 1;
-            D_800C3EB4.slot[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
+            D_800C3EB0.slots[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
         } else {
-            D_800CCCE8.record[i + 3].pos4E = 0;
-            D_800CCCE8.record[i + 3].pos4C = 0;
-            D_800C3EB4.slot[i + 3].id = NO_COMBATANT;
-            D_800C3EB4.slot[i + 3].flag3 = 0;
-            D_800C3EB4.slot[i + 3].in_gear = 0;
+            D_800CCCE8_setup.work.records[i + 3].pilot.maxHp = 0;
+            D_800CCCE8_setup.work.records[i + 3].pilot.hp = 0;
+            D_800C3EB0.slots[i + 3].field2 = NO_COMBATANT;
+            D_800C3EB0.slots[i + 3].hidden = 0;
+            D_800C3EB0.slots[i + 3].gear = 0;
             D_800D2DCC.present[i + 3] = 0;
         }
-        D_800C3E3D[i + 3] = D_800C3EB4.slot[i + 3].id + 1;
+        D_800C3E3D[i + 3] = D_800C3EB0.slots[i + 3].field2 + 1;
     }
     for (i = 0; i < 32; i++) {
         D_800D301C[i].count = 0;
         D_800D301C[i].mask = 0;
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            if (D_800C3EB4.slot[i].in_gear == 0) {
-                D_800C3EB4.slot[i].index = D_800D301C[D_800C3EB4.slot[i].group].count;
-                D_800D301C[D_800C3EB4.slot[i].group].mask |= func_80089C08(D_800C3EB4.slot[i].index);
-                D_800D301C[D_800C3EB4.slot[i].group].count++;
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            if (D_800C3EB0.slots[i].gear == 0) {
+                D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group].count;
+                D_800D301C[D_800C3EB0.slots[i].group].mask |= func_80089C08(D_800C3EB0.slots[i].member);
+                D_800D301C[D_800C3EB0.slots[i].group].count++;
             } else {
-                D_800C3EB4.slot[i].index = 0;
-                D_800D301C[D_800C3EB4.slot[i].group + 16].mask = 1;
-                D_800D301C[D_800C3EB4.slot[i].group + 16].count = 1;
+                D_800C3EB0.slots[i].member = 0;
+                D_800D301C[D_800C3EB0.slots[i].group + 16].mask = 1;
+                D_800D301C[D_800C3EB0.slots[i].group + 16].count = 1;
             }
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            if (D_800C3EB4.slot[i].in_gear == 0) {
-                D_800C3EB4.slot[i].index = D_800D301C[D_800C3EB4.slot[i].group + 8].count;
-                D_800D301C[D_800C3EB4.slot[i].group + 8].mask |= func_80089C08(D_800C3EB4.slot[i].index);
-                D_800D301C[D_800C3EB4.slot[i].group + 8].count++;
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            if (D_800C3EB0.slots[i].gear == 0) {
+                D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group + 8].count;
+                D_800D301C[D_800C3EB0.slots[i].group + 8].mask |= func_80089C08(D_800C3EB0.slots[i].member);
+                D_800D301C[D_800C3EB0.slots[i].group + 8].count++;
             } else {
-                D_800C3EB4.slot[i].index = 0;
-                D_800D301C[D_800C3EB4.slot[i].group + 24].mask = 1;
-                D_800D301C[D_800C3EB4.slot[i].group + 24].count = 1;
+                D_800C3EB0.slots[i].member = 0;
+                D_800D301C[D_800C3EB0.slots[i].group + 24].mask = 1;
+                D_800D301C[D_800C3EB0.slots[i].group + 24].count = 1;
             }
         }
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            if (D_800C3EB4.slot[i].in_gear == 0) {
-                D_800C3EB4.slot[i].x =
-                    D_800D3364->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].x;
-                D_800C3EB4.slot[i].z =
-                    D_800D3364->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].z;
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            if (D_800C3EB0.slots[i].gear == 0) {
+                D_800C3EB0.slots[i].x =
+                    D_800D3364->group[D_800C3EB0.slots[i].group].party[D_800C3EB0.slots[i].member].x;
+                D_800C3EB0.slots[i].z =
+                    D_800D3364->group[D_800C3EB0.slots[i].group].party[D_800C3EB0.slots[i].member].z;
             } else {
-                D_800C3EB4.slot[i].x = D_800D3364->gear[D_800C3EB4.slot[i].group].party.x;
-                D_800C3EB4.slot[i].z = D_800D3364->gear[D_800C3EB4.slot[i].group].party.z;
+                D_800C3EB0.slots[i].x = D_800D3364->gear[D_800C3EB0.slots[i].group].party.x;
+                D_800C3EB0.slots[i].z = D_800D3364->gear[D_800C3EB0.slots[i].group].party.z;
             }
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            if (D_800C3EB4.slot[i].in_gear == 0) {
-                D_800C3EB4.slot[i].x =
-                    D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].x;
-                D_800C3EB4.slot[i].z =
-                    D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].z;
-                D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            if (D_800C3EB0.slots[i].gear == 0) {
+                D_800C3EB0.slots[i].x =
+                    D_800D3364->group[D_800C3EB0.slots[i].group].enemy[D_800C3EB0.slots[i].member].x;
+                D_800C3EB0.slots[i].z =
+                    D_800D3364->group[D_800C3EB0.slots[i].group].enemy[D_800C3EB0.slots[i].member].z;
+                D_800C3EB0.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
             } else {
-                D_800C3EB4.slot[i].x = D_800D3364->gear[D_800C3EB4.slot[i].group].enemy.x;
-                D_800C3EB4.slot[i].z = D_800D3364->gear[D_800C3EB4.slot[i].group].enemy.z;
-                D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
+                D_800C3EB0.slots[i].x = D_800D3364->gear[D_800C3EB0.slots[i].group].enemy.x;
+                D_800C3EB0.slots[i].z = D_800D3364->gear[D_800C3EB0.slots[i].group].enemy.z;
+                D_800C3EB0.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
             }
         }
     }
@@ -148,16 +152,16 @@ void func_801E4870(void) {
     s32 i;
     s32 j;
 
-    D_800C3EB4.w48E8 = 0;
+    D_800C3EB0.knockedOut = 0;
     D_800D39E0 = 0;
     records = D_800C3DD0 + 0x32;
     D_800C3DDC = D_800C3DD0 + ((u16 *)D_800C3DD0)[0x18];
     for (i = 3; i < SLOT_COUNT; i++) {
         D_800C3D0C.enemy[i - 3].b3 = 0;
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            memmove(&D_800CCCE8.record[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
-                          sizeof(CombatantRecord));
-            scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB4.slot[i].id]);
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            memmove(&D_800CCCE8_setup.work.records[i], records + D_800C3EB0.slots[i].field2 * sizeof(Combatant),
+                          sizeof(Combatant));
+            scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB0.slots[i].field2]);
             D_800D3400[i - 3].main = (u8 *)scripts + scripts[0];
             D_800D3400[i - 3].sub = (u8 *)scripts + scripts[1];
             if (scripts[2] != 0xFFFF) {
@@ -182,7 +186,7 @@ void func_801E4870(void) {
                 D_800D3400[i - 3].bvars[j] = 0;
             }
         } else {
-            bzero((u8 *)&D_800CCCE8.record[i], sizeof(CombatantRecord));
+            bzero((u8 *)&D_800CCCE8_setup.work.records[i], sizeof(Combatant));
             D_800C3D0C.enemy[i - 3].script_armed = 0;
             D_800C3D0C.enemy[i - 3].reaction_armed = 0;
         }
@@ -199,27 +203,27 @@ void func_801E4AC0(void) {
         func_8009B098();
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
             D_800C3EA4->member_panel[i].state = 1;
-            if (D_800C3EB4.slot[i].in_gear != 0) {
+            if (D_800C3EB0.slots[i].gear != 0) {
                 D_800D32A1.party[i].in_gear = 1;
-                D_800CCCE8.record[i].state |= 0x80;
-                if (D_800C3EB4.slot[i].id != 7) {
+                D_800CCCE8_setup.work.records[i].flags15A |= 0x80;
+                if (D_800C3EB0.slots[i].field2 != 7) {
                     D_800C3EA4->member_panel[i].state = 2;
                 }
             } else {
                 D_800D32A1.party[i].in_gear = 0;
-                D_800CCCE8.record[i].state &= 0x7F;
+                D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
             }
         } else {
             D_800D32A1.party[i].in_gear = 0;
-            D_800CCCE8.record[i].state &= 0x7F;
+            D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
             D_800C3EA4->member_panel[i].state = 0;
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            if (D_800C3EB4.slot[i].in_gear != 0) {
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
+            if (D_800C3EB0.slots[i].gear != 0) {
                 D_800D32A1.enemy[i - 3].in_gear = 1;
             } else {
                 D_800D32A1.enemy[i - 3].in_gear = 0;
@@ -229,8 +233,8 @@ void func_801E4AC0(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1.party[i].stat62 = D_800CCCE8.record[i].stat62;
-        D_800D32A1.party[i].stat63 = D_800CCCE8.record[i].stat63;
+        D_800D32A1.party[i].stat62 = D_800CCCE8_setup.work.records[i].pilot.level;
+        D_800D32A1.party[i].stat63 = D_800CCCE8_setup.work.records[i].pilot.level2;
     }
 }
 
@@ -256,28 +260,28 @@ void func_801E4CD0(void) {
         D_800D2CB0[i] = 0;
         D_800D2FE4[i] = 0;
     }
-    for (i = 0, count = D_8006F5C4; i < INVENTORY_SLOTS; i++) {
+    for (i = 0, count = D_8006D634.itemCounts; i < INVENTORY_SLOTS; i++) {
         if (*count >= 100) {
             *count = 99;
         }
         if (*count++ == 0) {
-            D_8006F65A[i] = 0;
+            D_8006D634.itemIds[i] = 0;
         }
     }
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
-        if (D_8006F65A[i] != 0 && D_8006F65A[i] < 49) {
-            LIST_ITEM(D_800D2CE0, listed, D_8006F65A[i]);
-            D_800D2CB0[listed] = D_8006F5C4[i];
-            D_800D2FE4[listed] = D_8006F65A[i];
+        if (D_8006D634.itemIds[i] != 0 && D_8006D634.itemIds[i] < 49) {
+            LIST_ITEM(D_800D2CE0, listed, D_8006D634.itemIds[i]);
+            D_800D2CB0[listed] = D_8006D634.itemCounts[i];
+            D_800D2FE4[listed] = D_8006D634.itemIds[i];
             listed++;
         }
     }
     D_800C3EAC->last_item = 47;
     for (i = 0, listed = 0; i < 100; i++) {
-        if (D_8006F3D0[i] >= 50 && D_8006F3D0[i] < 73) {
-            LIST_ITEM(D_800C3D70, listed, D_8006F3D0[i]);
-            D_800D3688[listed] = D_8006F36C[i];
+        if (D_8006D634.weaponIds[i] >= 50 && D_8006D634.weaponIds[i] < 73) {
+            LIST_ITEM(D_800C3D70, listed, D_8006D634.weaponIds[i]);
+            D_800D3688[listed] = D_8006D634.weaponCounts[i];
             listed++;
         }
     }
@@ -310,7 +314,7 @@ void func_801E4E7C(void) {
     } while (i < SLOT_COUNT);
     D_800D2DCC.order_pos = 0;
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8.record[i].flags & 0x200)) {
+        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8_setup.work.records[i].pilot.flags34 & 0x200)) {
             D_800D2DCC.timer_reset[i] = D_800D2DCC.timer[i] = 1;
         }
     }
@@ -343,12 +347,12 @@ void func_801E5014(void) {
         D_800C3D48 = 1;
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1.party[i].character_b = D_8006ED0B[D_800CCCE8.party_ids[i]][0];
+        D_800D32A1.party[i].character_b = D_8006D634.skills[D_800CCCE8_setup.partyIds[i]].tier;
         for (j = 0; j < 8; j++) {
-            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8.record[i].menu_layout][j];
+            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
         }
         for (j = 0; j < 4; j++) {
-            if (D_800CCCE8.party_ids[i] != 7) {
+            if (D_800CCCE8_setup.partyIds[i] != 7) {
                 D_800C3EAC->slot[i].menu8[j] = D_800C2130[j];
             } else {
                 D_800C3EAC->slot[i].menu8[j] = D_800C2138[j];
@@ -356,22 +360,22 @@ void func_801E5014(void) {
             D_800C3EAC->slot[i].menuC[j] = D_800C2134[j];
         }
         D_800C3EAC->slot[i].target = func_800841E0(i);
-        D_800C3EB4.slot[i].flag6 = func_80085310(i, D_800C3EAC->slot[i].target);
+        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slot[i].target);
         for (k = 0; k < 16; k++) {
-            D_800C3EAC->slot[i].commands[k] = D_800CCCE8.record[i].commands & D_800C3234[k];
+            D_800C3EAC->slot[i].commands[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & D_800C3234[k];
         }
-        if (D_800CCCE8.record[i].bA0 == 0xFF || (FORMATION_FLAGS & 0x40)) {
+        if (D_800CCCE8_setup.work.records[i].pilot.gearId == 0xFF || (FORMATION_FLAGS & 0x40)) {
             D_800C3EAC->slot[i].commands[7] = D_800C3234[7];
-            D_800CCCE8.record[i].commands |= D_800C3234[7];
+            D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[7];
         }
         if (FORMATION_FLAGS & 0x80) {
             D_800C3EAC->slot[i].commands[8] = D_800C3234[8];
-            D_800CCCE8.record[i].commands |= D_800C3234[8];
+            D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[8];
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
         D_800C3EAC->slot[i].target = func_800841E0(i);
-        D_800C3EB4.slot[i].flag6 = func_80085310(i, D_800C3EAC->slot[i].target);
+        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slot[i].target);
     }
 }
 
@@ -381,7 +385,7 @@ void func_801E5014(void) {
 void func_801E5384(void) {
     s32 count;
     s32 i;
-    u32 *archive;
+    void **archive;
     void *block;
     u16 mask;
     u8 gear;
@@ -392,49 +396,52 @@ void func_801E5384(void) {
     } else {
         D_800D3294 = 0;
     }
-    mask = (D_8006F364.available & D_8006F364.available2) & 0x7FF;
+    mask = (D_8006D634.joined & D_8006D634.available) & 0x7FF;
     if (D_800D3294 == 0) {
         count = 0;
         for (i = 0; i < 3; i++) {
-            if (func_80089C9C(mask, D_8006F364.party[i])) {
-                D_800CCCE8.party_ids[count] = D_8006F364.party[i] & 0x7F;
+            if (func_80089C9C(mask, D_8006D634.party[i])) {
+                D_800CCCE8_setup.partyIds[count] = D_8006D634.party[i] & 0x7F;
                 count++;
             }
         }
         for (; count < 3; count++) {
-            D_800CCCE8.party_ids[count] = NO_COMBATANT;
+            D_800CCCE8_setup.partyIds[count] = NO_COMBATANT;
         }
     } else {
-        D_800CCCE8.party_ids[1] = 10;
-        D_800CCCE8.party_ids[2] = 10;
-        D_800CCCE8.party_ids[0] = D_8006F364.party[0] & 0x7F;
+        D_800CCCE8_setup.partyIds[1] = 10;
+        D_800CCCE8_setup.partyIds[2] = 10;
+        D_800CCCE8_setup.partyIds[0] = D_8006D634.party[0] & 0x7F;
     }
     func_8003342C(D_800595A8);
     archive = D_800595A8;
     for (i = 0; i < 3; i++) {
-        if (D_800CCCE8.party_ids[i] != NO_COMBATANT) {
-            memmove(&D_800CCCE8.record[i], D_8006D8A0[D_800CCCE8.party_ids[i]], 0xA4);
+        if (D_800CCCE8_setup.partyIds[i] != NO_COMBATANT) {
+            memmove(&D_800CCCE8_setup.work.records[i].pilot, &D_8006D634.characters[D_800CCCE8_setup.partyIds[i]], 0xA4);
             if (D_800D3294 != 0 && (u32)(i - 1) < 2) {
-                D_800CCCE8.record[i].bA0 = 0x11;
+                D_800CCCE8_setup.work.records[i].pilot.gearId = 0x11;
             }
-            gear = D_800CCCE8.record[i].bA0;
+            gear = D_800CCCE8_setup.work.records[i].pilot.gearId;
             if (gear == 0xFF) {
                 gear = 0;
             }
-            memmove(D_800CCCE8.record[i].gear, D_8006DFAC[gear], 0xA4);
-            block = func_80032E88(archive[5 + D_800CCCE8.party_ids[i]], 1);
-            memmove(D_800CCCE8.member_data[i], block, 0x5F0);
+            memmove(&D_800CCCE8_setup.work.records[i].gear, &D_8006D634.gears[gear], 0xA4);
+            block = func_80032E88(archive[5 + D_800CCCE8_setup.partyIds[i]], 1);
+            memmove(D_800CCCE8_setup.work.partyCommands[i], block, 0x5F0);
             func_800320E8(block);
             block = func_80032E88(archive[0x11 + gear], 1);
-            memmove(D_800CCCE8.member_gear[i], block, 0x690);
+            memmove(D_800CCCE8_setup.work.gearCommands[i], block, 0x690);
             func_800320E8(block);
         }
     }
+    /* The setup archive fills the work area from the enemy command table
+     * (0x35D8, 0x1F40 bytes of item 4) to 0x5B18 (items 3 and 0x25 at 0x5518
+     * and 0x5818). */
     block = func_80032E88(archive[4], 1);
-    memmove(D_800CCCE8.data35D8, block, 0x1F40);
+    memmove(D_800CCCE8_setup.work.enemyCommands, block, 0x1F40);
     func_800320E8(block);
     block = func_80032E88(archive[3], 1);
-    memmove(D_800CCCE8.data5518, block, 0x300);
+    memmove((u8 *)&D_800CCCE8_setup + 0x5518, block, 0x300);
     func_800320E8(block);
     block = func_80032E88(archive[2], 1);
     func_8002DDE4(block, 0, 0, 0, 0, 0, 0);
@@ -446,7 +453,7 @@ void func_801E5384(void) {
     func_80078310(block, 0x61);
     func_800320E8(block);
     block = func_80032E88(archive[0x25], 1);
-    memmove(D_800CCCE8.data5818, (u8 *)block + 0x320, 0x300);
+    memmove((u8 *)&D_800CCCE8_setup + 0x5818, (u8 *)block + 0x320, 0x300);
     func_800320E8(block);
     D_800D39F0 = func_80032E88(archive[0x26], 0);
     func_800320E8(D_800595A8);
@@ -460,7 +467,7 @@ void func_801E5384(void) {
     D_800D33F8 = 0;
     D_800D33FC = NULL;
     D_800D33F0 = D_8006F9DC[0] * 2 + 3;
-    func_80029AFC(list, 0, 0x80);
+    func_80029AFC((FileRequest *)list, 0, 0x80);
 }
 
 /* Run one battle setup phase: 0 the party, 1 the formation and combatant
@@ -583,7 +590,7 @@ void func_801E5EE8(void) {
     s32 k;
 
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
             D_800D2D28->gauge_parts[i] += func_80076A6C(
                 0x52, &D_800C3EA4->member_gauge[i].prim[D_800D2D28->gauge_parts[i] * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
@@ -593,7 +600,7 @@ void func_801E5EE8(void) {
                 0x53, &D_800C3EA4->member_gauge[i].prim[part * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
             for (k = first; k < D_800D2D28->gauge_parts[i] * 2; k += 2) {
-                func_80076C34(&D_800C3EA4->member_gauge[i].prim[k + D_800CCB34]);
+                func_80076C34(&D_800C3EA4->member_gauge[i].prim[k + D_800C3EB0.buffer]);
             }
             func_80076A10(0x61 + i, D_800C3EA4->portrait[i],
                           i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x1C), 0x14);
@@ -603,11 +610,11 @@ void func_801E5EE8(void) {
             D_800C3EA4->member_panel[i].digit_parts[1] =
                 func_80076A10(0x91, D_800C3EA4->member_panel[i].digit[1],
                               i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x3C), 0x27);
-            D_800C3EA4->member_panel[i].buffer = D_800CCB34;
+            D_800C3EA4->member_panel[i].buffer = D_800C3EB0.buffer;
         }
     }
-    D_800D2D28->bA2 = D_800CCB34;
-    D_800D2D28->b83 = D_800CCB34;
+    D_800D2D28->bA2 = D_800C3EB0.buffer;
+    D_800D2D28->b83 = D_800C3EB0.buffer;
 }
 
 /* Setup phase 3, first frame: the gauge panels and each member's glyphs. */

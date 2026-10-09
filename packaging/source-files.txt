@@ -285,8 +285,13 @@ decomp/src/ovl2615/battle_loader.c
 decomp/src/ovl2615/battle_setup.h
 decomp/src/ovl2615/burst_modes.c
 decomp/src/ovl2615/load_modes.c
+decomp/src/ovl2615/loader.h
 decomp/src/ovl2615/ovl2615.c
+decomp/src/ovl2615/ovl2615.h
+decomp/src/ovl2615/scene.h
 decomp/src/ovl2615/stage.c
+decomp/src/ovl2615/stage.h
+decomp/src/ovl2615/transitions.h
 decomp/src/ovl3087/ovl3087.c
 decomp/src/ovl3087/ovl3087.h
 decomp/src/ovl3087/script_actor.c
@@ -464,6 +469,7 @@ decomp/targets/overlays/ovl2606.symbols.txt
 decomp/targets/overlays/ovl2606.yaml
 decomp/targets/overlays/ovl2615.classification.txt
 decomp/targets/overlays/ovl2615.mk
+decomp/targets/overlays/ovl2615.resident.ld
 decomp/targets/overlays/ovl2615.symbols.txt
 decomp/targets/overlays/ovl2615.yaml
 decomp/targets/overlays/ovl3087.mk

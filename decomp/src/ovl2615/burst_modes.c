@@ -1,9 +1,10 @@
 /* The burst load modes the battle overlay dispatches (800b8098 modes 2
- * and 3: 801e91e8, 801e9594) and their helpers. A unit of its own after
- * load_modes: its jump table follows func_801E8588's at 4 mod 8 without the
- * pad one unit would give it. Built by the Cygnus CDK GCC 2.7.2 like
- * load_modes (see ovl2615.mk). */
-#include "battle_setup.h"
+ * and 3: 801e91e8, 801e9594) and their helpers (rodata 801E4034-801E4048,
+ * text 801E8964-801E95BC, data 801E9680-801E96B4, its pointer at 801E96BC).
+ * A unit of its own after load_modes: its jump table follows
+ * func_801E8588's at 4 mod 8 without the pad one unit would give it. Built
+ * by the Cygnus CDK GCC 2.7.2 like load_modes (see ovl2615.mk). */
+#include "transitions.h"
 
 u8 D_801E9680 = 0;
 SVECTOR D_801E9684[3] = {{-80, -80, 0}, {176, -80, 0}, {-80, 176, 0}};
@@ -30,9 +31,9 @@ u32 *D_801E96BC;
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
  * loops over the 2x14x20 grid are left from removed work. */
-void func_801E8964(TaskNode *node) {
+void func_801E8964(Task *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
-    BurstTask *burst = node->object;
+    BurstTask *burst = node->data;
     s32 frame;
     s32 growing;
     s32 speed;
@@ -66,8 +67,8 @@ void func_801E8964(TaskNode *node) {
 /* Burst drawing: each corner rises by the sine (variant 1: of the angle
  * plus its distance; otherwise the cosine of its distance) scaled by the
  * twist and lights up with it; projected with a 512 screen distance. */
-void func_801E8A64(TaskNode *node) {
-    BurstTask *burst = node->object;
+void func_801E8A64(Task *node) {
+    BurstTask *burst = node->data;
     BurstCell *cell;
     POLY_GT3 *prim;
     SVECTOR *corner;
@@ -146,18 +147,18 @@ void func_801E8D48(void *block) {
 }
 
 /* Unlink a task-registered burst and release it after the frame. */
-void func_801E8D7C(TaskNode *node) {
+void func_801E8D7C(Task *node) {
     func_8001CB48(node + 1);
     func_8001CD94(node);
-    func_80025180(node);
+    func_80025180((u32)node);
 }
 
 /* Allocate and set up the burst. */
 BurstTask *func_801E8DB8(void) {
     BurstTask *task = func_80031BDC(sizeof(BurstTask), 1);
 
-    task->task.object = task;
-    task->draw.object = task;
+    task->task.data = task;
+    task->draw.data = task;
     return func_801E8DF0(task);
 }
 
@@ -260,8 +261,8 @@ void func_801E91E8(void) {
     u16 *screen;
     u16 *pixel;
     BattleArea *work;
-    DrawBuffer *first;
-    DrawBuffer *next;
+    FrameBuffer *first;
+    FrameBuffer *next;
     BurstTask *burst;
     s32 frames;
     u32 state;
@@ -301,14 +302,14 @@ void func_801E91E8(void) {
     ClearOTagR((u_long *)next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
-    work->buffers[0].draw.isbg = 1;
-    work->buffers[1].draw.isbg = 1;
-    work->buffers[0].draw.r0 = 0;
-    work->buffers[1].draw.r0 = 0;
-    work->buffers[0].draw.g0 = 0;
-    work->buffers[1].draw.g0 = 0;
-    work->buffers[0].draw.b0 = 0;
-    work->buffers[1].draw.b0 = 0;
+    work->buffers[0].drawEnv.isbg = 1;
+    work->buffers[1].drawEnv.isbg = 1;
+    work->buffers[0].drawEnv.r0 = 0;
+    work->buffers[1].drawEnv.r0 = 0;
+    work->buffers[0].drawEnv.g0 = 0;
+    work->buffers[1].drawEnv.g0 = 0;
+    work->buffers[0].drawEnv.b0 = 0;
+    work->buffers[1].drawEnv.b0 = 0;
     burst = func_801E8DB8();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
@@ -335,24 +336,21 @@ void func_801E91E8(void) {
             }
         }
         func_80019CA0();
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
         /* Run the burst on a stack at the top of the scratchpad. */
-        __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                         :
-                         : "r"(0x1F8003FC)
-                         : "$8", "memory");
+        STACK_ENTER(0x1F8003FC);
         func_801E8964(&burst->task);
         func_801E8A64(&burst->task);
-        __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+        STACK_LEAVE();
         DrawSync(0);
         VSync(2);
-        PutDispEnv(&D_800C3EB0.current->disp);
-        PutDrawEnv(&D_800C3EB0.current->draw);
+        PutDispEnv(&D_800C3EB0.current->dispEnv);
+        PutDrawEnv(&D_800C3EB0.current->drawEnv);
         DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     func_801E8D48(burst);

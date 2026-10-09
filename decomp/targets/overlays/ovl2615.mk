@@ -6,7 +6,7 @@ ORIGINAL_SHA256 := 4300fdd99d19805a7a68ded0b21db49e1261688e90bf58e10dead9b978b52
 BUILD := .local/decomp/build/ovl2615
 IMAGE := .local/decomp/build/ovl2615.bin
 LINKER_SCRIPT := .local/decomp/ovl2615/ovl2615.ld
-LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2615/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2615/undefined_funcs_auto.txt decomp/targets/overlays/ovl2615.resident.ld
 SOURCE_DIRS := decomp/src/ovl2615
 # The reasons its included objects stay original (coverage class included).
 CLASSIFICATION := decomp/targets/overlays/ovl2615.classification.txt

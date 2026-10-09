@@ -1,43 +1,50 @@
 #ifndef OVL2615_BATTLE_SETUP_H
 #define OVL2615_BATTLE_SETUP_H
 
+/* The battle setup unit (ovl2615.c): the battle overlay's turn, menu, AI,
+ * gauge and UI state as the setup fills them, the formation record, the
+ * setup archive and the enemy files' read list. The battle area, the work
+ * area and the game data come from battle/area.h, battle/work.h and
+ * resident/gamedata.h, the scene data from scene.h. */
+
 #include "common.h"
 #include "psyq/libc.h"
-#include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "battle/area.h"
+#include "battle/work.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "ovl2615.h"
+#include "scene.h"
 
-/* Combatant slots: 0-2 party members, 3-10 enemies. */
-#define SLOT_COUNT 11
-#define NO_COMBATANT 0x7F
+/* Callers convert arguments/result differently from the resident definition
+ * (a narrow result, u16 coordinates or another parameter count there):
+ * random numbers, text rendering and the text palettes. */
+s32 func_8001BD40(s32 low, s32 high); /* random number in [low, high] */
+void func_80034EAC(void *text, void *image, s32 mode, s32 flags);
+void func_80033698(s32 x, s32 y);     /* upload the text palettes */
 
-/* Per-slot battle placement (0x800C3EB4, 0x1C bytes per slot). */
-typedef struct {
-    u8 group;       /* formation group */
-    u8 index;       /* index within the group */
-    u8 id;          /* character/enemy id, 0x7F for none */
-    u8 flag3;
-    u8 in_gear;     /* fights in a gear: D_8006F8E5 per party member, the
-                     * formation id's bit 7 per enemy; its own group */
-    u8 flag5;
-    u8 flag6;
-    u8 pad7[3];
-    s16 x;
-    s16 z;
-    u8 padE[0x1C - 0xE];
-} SlotInfo;
-
-/* Battle combatant block (0x800C3EB4): slot placements and more. */
-typedef struct {
-    SlotInfo slot[SLOT_COUNT]; /* 0x000 */
-    u8 pad134[0xA34 - 0x134];
-    u16 w48E8;                 /* 0xA34 (0x800C48E8) */
-} BattleSlots;
-
-extern BattleSlots D_800C3EB4;
-
-extern u8 D_80059468[3];  /* battle party ids published to resident code */
+/* The game data's inGear bytes (+0x22B1) as the setup reads them, one per
+ * slot: past the three party entries they are the bytes that follow. */
 extern u8 D_8006F8E5[SLOT_COUNT];
+/* The work area as the setup declares it: BattleWork, then (past it) the
+ * battle overlay's item lists and more, to the party's character ids at
+ * 0x603C (D_800D2D24, 0x7F none). The setup addresses the ids as members of
+ * the work area, from its symbol or a register holding part of it, which
+ * neither the separate symbol nor a cast of BattleWork reproduces, so this
+ * view of the whole object shares the work area's assembler name. */
+typedef struct {
+    BattleWork work;           /* 0x0000 */
+    u8 pad5FC8[0x603C - 0x5FC8];
+    u8 partyIds[3];            /* 0x603C */
+} SetupWork;
+extern SetupWork D_800CCCE8_setup __asm__("D_800CCCE8");
 extern u8 D_800D3294;     /* demo party: formation flag 0x10 */
 
 extern u8 D_800D3338;
@@ -47,36 +54,13 @@ extern u8 D_800D2FC4;
 extern u8 D_800C3D5C;
 extern u8 D_800D2D44;
 extern u8 D_800C492A;
-extern u16 D_8005941C;
-extern u8 D_8005942C;
-extern u8 D_800C48EA;
 extern u8 D_800D2DC0;
 
 extern void *D_800C3E5C[10]; /* battle message text images */
 
 void *func_8008AC00(s32 kind);
-void *func_800338D8(s32 message);
-void func_80034EAC(void *text, void *image, s32 mode, s32 flags);
-
-void func_801E5924(void);
-void func_801E5D2C(void);
-void func_801E5E78(void);
-void func_801E5EE8(void);
-
-/* Stage light entry (0x0E bytes). */
-typedef struct {
-    u8 pad0[0xD];
-    u8 active;
-} StageLight;
-
-extern void *D_800D3344;        /* stage actors */
-extern StageLight *D_800D39CC;  /* stage light entries */
-extern s32 D_800D3348;          /* stage light count */
-extern u8 D_800D2F64;
-
-extern void *D_800C3E24; /* direction arrow state (0xEC bytes) */
-
 void *func_8008ABB8(s32 size, s32 flags); /* heap allocation */
+extern void *D_800C3E24; /* direction arrow state (0xEC bytes) */
 
 void func_801E4048(void);
 void func_801E4160(void);
@@ -86,15 +70,15 @@ void func_801E4CD0(void);
 void func_801E4E7C(void);
 void func_801E5014(void);
 void func_801E5384(void);
+void func_801E5924(void);
+void func_801E5D2C(void);
+void func_801E5E78(void);
+void func_801E5EE8(void);
 void func_801E6290(void);
 void func_801E62B8(void);
 
-/* Game inventory (resident game data). */
+/* The game data's inventory as the item lists read it. */
 #define INVENTORY_SLOTS 150
-extern u8 D_8006F5C4[INVENTORY_SLOTS]; /* item counts */
-extern u8 D_8006F65A[INVENTORY_SLOTS]; /* item ids */
-extern u8 D_8006F3D0[100];             /* key item ids */
-extern u8 D_8006F36C[100];
 
 /* Battle item lists. */
 #define BATTLE_ITEMS 48
@@ -124,45 +108,6 @@ typedef struct {
 
 extern TurnState *D_800C3EAC;
 
-/* Combatant record (0x800CCCE8, 0x170 bytes per slot). */
-typedef struct {
-    u8 pad0[0x34];
-    u16 flags;  /* 0x34: 0x200 acts first */
-    u8 pad36[0x4C - 0x36];
-    s16 pos4C;  /* 0x4C */
-    s16 pos4E;  /* 0x4E */
-    u8 pad50[0x56 - 0x50];
-    u8 menu_layout; /* 0x56 */
-    u8 pad57[0x62 - 0x57];
-    u8 stat62;  /* 0x62 */
-    u8 stat63;  /* 0x63 */
-    u8 pad64[0x7A - 0x64];
-    u16 commands; /* 0x7A: available command mask */
-    u8 pad7C[0xA0 - 0x7C];
-    u8 bA0;     /* 0xA0: gear record index; 0xFF none, forces command 7 */
-    u8 padA1[3];
-    u8 gear[0xA4]; /* 0xA4: the gear record */
-    u8 pad148[0x15A - 0x148];
-    u8 state;   /* 0x15A: 0x80 placed alone */
-    u8 pad15B[0x170 - 0x15B];
-} CombatantRecord;
-
-/* Battle data (0x800CCCE8): combatant records, the members' battle data
- * blocks from the setup archive and the party. */
-typedef struct {
-    CombatantRecord record[SLOT_COUNT]; /* 0x0000 */
-    u8 padFD0[0x1058 - 0xFD0];
-    u8 member_data[3][0x5F0];           /* 0x1058 */
-    u8 member_gear[3][0x690];           /* 0x2228 */
-    u8 data35D8[0x1F40];                /* 0x35D8 */
-    u8 data5518[0x300];                 /* 0x5518 */
-    u8 data5818[0x300];                 /* 0x5818 */
-    u8 pad5B18[0x603C - 0x5B18];
-    u8 party_ids[3];                    /* 0x603C: party character ids (0x7F none) */
-} BattleData;
-
-extern BattleData D_800CCCE8;
-
 /* Slot presence and the turn order and timers (0x800D2DCC). */
 typedef struct {
     u8 present[SLOT_COUNT];     /* 0x00 */
@@ -180,7 +125,6 @@ extern TurnOrder D_800D2DCC;
 extern u8 D_800D2CAA;
 
 void func_80078508(u8 *drawn); /* initial turn timers; clears the drawn flags */
-s32 func_8001BD40(s32 low, s32 high); /* random number in [low, high] */
 
 /* A glyph's primitives, double-buffered (0x28 bytes per buffer). */
 typedef struct {
@@ -231,13 +175,6 @@ typedef struct {
 
 extern GraphicsState *D_800C3EA4;
 
-extern s16 D_800D2D30; /* stage texture bounds: left */
-extern s16 D_800D2D34; /* top */
-extern s16 D_800D2D2C; /* width */
-extern s16 D_800C3EA8; /* height */
-
-void func_8003342C(s32 *table); /* relocate an offset table in place */
-
 /* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
 typedef struct {
     u8 in_gear; /* the slot fights in a gear (battle: D_800D32A0.unk1) */
@@ -266,7 +203,7 @@ typedef struct {
     u8 b3;
 } EnemyAiFlags;
 
-typedef struct {
+typedef struct BattleAiFlags {
     EnemyAiFlags party[3];
     EnemyAiFlags enemy[8];
 } BattleAiFlags;
@@ -292,11 +229,8 @@ extern u8 *D_800C3DD0;
 extern u8 *D_800C3DDC;
 extern s16 D_800D39E0;
 
-
-/* The battle formation record (resident game data at 0x8006F9DC). Its
+/* The battle formation record (the resident's D_8006F9DC). Its
  * per-combatant bytes are laid out relative to the slot number. */
-extern u8 D_8006F9DC[];
-
 #define FORMATION_FLAGS D_8006F9DC[1] /* 0x20 alternate module, 0x40/0x80 commands 7/8 */
 #define FORMATION_PARTY_GROUP(member) D_8006F9DC[4 + (member)]
 #define FORMATION_ENEMY_ID(enemy) D_8006F9DC[8 + (enemy)] /* 0x80: placed alone */
@@ -304,7 +238,6 @@ extern u8 D_8006F9DC[];
 #define FORMATION_ENEMY_GROUP(enemy) D_8006F9DC[0x18 + (enemy)]
 #define FORMATION_FLAG6(slot) D_8006F9DC[0x18 + (slot)]
 extern u8 D_800C3D48;
-extern u8 D_8006ED0B[][0x20];   /* character table (+0xB) */
 extern u8 *D_800C20F0[];        /* command menu layouts */
 extern u8 *D_800C2130;          /* command menu sources */
 extern u8 *D_800C2134;
@@ -314,72 +247,7 @@ extern u16 D_800C3234[16];      /* command masks */
 u8 func_800841E0(u8 slot);            /* default target */
 u8 func_80085310(u8 slot, u8 target); /* facing towards the target */
 
-/* Battle scene data (resident pointer 0x8005949C): standing positions of
- * each formation group, then the positions of the members placed alone. */
-typedef struct {
-    u16 x, z;
-} ScenePos;
-
-typedef struct {
-    u8 pad0[4];
-    ScenePos party[3];  /* 0x04 */
-    ScenePos enemy[4];  /* 0x10 */
-} SceneGroup;
-
-/* The standing places of the slots that fight in a gear, one per group. */
-typedef struct {
-    ScenePos party;
-    ScenePos enemy;
-} SceneGear;
-
-/* A stage object (0x28 bytes): lights (types 1, 2), the backdrop (3), fog
- * (5) and animated stage parts (7). */
-typedef struct {
-    s32 position[4];      /* 0x00: a VECTOR */
-    s16 v10;              /* 0x10 */
-    s16 v12;              /* 0x12 */
-    s16 v14;              /* 0x14 */
-    s16 v16;              /* 0x16 */
-    u16 type;             /* 0x18 */
-    s16 v1A;              /* 0x1A */
-    s16 v1C;              /* 0x1C */
-    s16 v1E;              /* 0x1E */
-    s16 v20;              /* 0x20 */
-    s16 v22;              /* 0x22 */
-    s16 v24;              /* 0x24 */
-    s16 v26;              /* 0x26 */
-} StageObject;
-
-/* The scene's stage description (scene data + 0x340). */
-typedef struct {
-    u8 flags[4];          /* 0x000: published to 800d2d10 */
-    u8 pad4[0x1A];
-    u8 fog;               /* 0x01E: set by a fog object */
-    u8 pad1F;
-    StageObject objects[6]; /* 0x020 */
-    s16 backdrop[4];      /* 0x110: backdrop tiling and texture position */
-    u8 fogColour[4];      /* 0x118: a CVECTOR */
-} StageInfo;
-
-typedef struct {
-    SceneGroup group[8];  /* 0x000 */
-    SceneGear gear[8];    /* 0x100 */
-    u8 pad140[0x340 - 0x140];
-    StageInfo info;       /* 0x340 */
-    u8 pad45C[0x464 - 0x45C];
-    s16 origin[3];        /* 0x464 */
-    u8 pad46A[2];
-    s16 colours[3];       /* 0x46C: the colour matrix's first column */
-    u8 pad472[2];
-    u8 back[3];           /* 0x474: the GTE back colour */
-    u8 pad477[0x50C - 0x477];
-    s32 actors;           /* 0x50C: offsets in the scene data (0: none) */
-    s32 lights;           /* 0x510 */
-    s32 motion;           /* 0x514 */
-} BattleScene;
-
-extern BattleScene *D_8005949C;
-extern BattleScene *D_800D3364;
+extern BattleScene *D_800D3364; /* the scene data (the resident's 8005949c) */
 
 /* Formation groups: member count and member bits (party 0-7, enemies 8-15,
  * members placed alone 16-23 and 24-31). */
@@ -395,18 +263,6 @@ extern u8 D_800C3E3D[SLOT_COUNT];
 
 u16 func_80089C08(s32 index); /* bit of a group member index */
 
-/* Game data party (0x8006F364): availability masks and the party order. */
-typedef struct {
-    u16 available;
-    u16 available2;
-    u8 party[3];
-} GameParty;
-
-extern GameParty D_8006F364;
-extern u8 D_8006D8A0[][0xA4]; /* game data character records */
-extern u8 D_8006DFAC[][0xA4]; /* game data gear records */
-
-extern u32 *D_800595A8;   /* the setup archive (file 3) */
 extern void *D_800D2F5C;  /* glyph sprite table */
 extern void *D_800D329C;
 extern void *D_800D39F0;
@@ -422,14 +278,7 @@ extern u16 D_800D33F8;
 extern void *D_800D33FC;
 
 u16 func_80089C9C(u16 mask, u8 id);             /* the character's bit within a mask */
-void *func_80032E88(u32 item, s32 unpack);      /* unpack an archive item */
-void func_800320E8(void *block);                /* heap release */
-void func_8002DDE4(void *images, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6);
-void func_80033698(s32 x, s32 y);               /* upload the text palettes */
 void func_80078310(void *portraits, s32 glyph);
-void func_80028470(s32 directory, s32 mode);    /* select a disc directory */
-s32 func_800288EC(s32 file);                    /* a file's size */
-void func_80029AFC(u16 *list, s32 a1, s32 a2); /* read a file list */
 
 /* Battle UI state (pointer 0x800D2D28). */
 typedef struct {
@@ -445,365 +294,9 @@ typedef struct {
 
 extern UiState *D_800D2D28;
 
-void func_80026338(void *glyphs, s32 glyph, s32 *a, s32 *tp, s32 *clut_x, s32 *clut_y,
-                   s32 *tpage_x, s32 *tpage_y); /* a glyph's texture fields */
-
 extern u16 D_800C3254[]; /* member panel columns, three per party layout */
-extern s32 D_800CCB34;      /* the draw buffer index */
-
 s32 func_80076A6C(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* half-scale glyph */
 s32 func_80076A10(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* glyph; returns its parts */
 void func_80076C34(GlyphPrim *prim);                          /* dim a glyph part */
-
-/* Stage setup (stage.c). */
-void func_80032498(s32 tag, s32 arg1);          /* select the heap tag */
-void *func_80031BDC(s32 size, s32 top);         /* heap allocation */
-void func_800320B8(void *block);                /* drop a block's keep flag */
-
-/* A model part (0x7c bytes); the first part heads the model and holds the
- * part count. */
-typedef struct {
-    u8 pad0[0xA];
-    u16 count;            /* 0x0A */
-    u8 padC[0x52 - 0xC];
-    u16 rotation;         /* 0x52 */
-    u8 pad54[0x5C - 0x54];
-    s32 x;                /* 0x5C */
-    s32 y;                /* 0x60 */
-    s32 z;                /* 0x64 */
-    u8 pad68[0x7C - 0x68];
-} ModelPart;
-
-/* The stage model record. */
-typedef struct {
-    void *model;          /* 0x00 */
-    ModelPart *parts;     /* 0x04 */
-    u8 pad8[0x1C - 8];
-    s16 pose;             /* 0x1C */
-} StageModel;
-/* The battle object list (800d3368); its last entry is the stage model. */
-extern StageModel *D_800D3368[32];
-#define STAGE_MODEL 31
-
-/* The stage file: its texture image list and part positions. */
-typedef struct {
-    s16 x, y, z;
-    u16 rotation;
-} PartPosition;
-
-typedef struct {
-    u8 pad0[4];
-    s32 *images;          /* 0x04 */
-    u8 pad8[0x14 - 8];
-    PartPosition *positions; /* 0x14 */
-} StageFile;
-
-/* Stage part animations (0x18 bytes). */
-typedef struct {
-    u8 pad0[0x14];
-    void *motion;         /* 0x14: nonzero when in use */
-} StageAnimation;
-
-extern ModelPart *D_800C3E38;   /* the stage model's parts */
-extern void *D_800C3E48;
-extern void *D_800C3EA0;        /* the stage backdrop */
-extern void *D_800C3D50[2];     /* stage lights */
-extern StageAnimation D_800C3DA0[2];
-extern s16 D_800D361A;
-extern u8 *D_800D2FD0;
-extern u16 D_800D2FC8;
-extern s16 *D_800D2FC0;         /* the stage colour matrix */
-extern u8 D_800D2D10[4];
-extern BattleScene *D_800658C8; /* the scene data */
-void func_800A8BF0(s32 a0, s32 a1, void *a2, void *a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8);
-void func_800AA898(StageModel *model, void *state, void *motion, s32 a3);
-void func_800AA934(StageModel *model, StageModel *model2, void *state, s32 a3);
-void func_8009EF3C(ModelPart *parts, s32 pose);
-void *func_8002709C(u16 a0, u16 a1, u16 a2, u16 a3, u16 a4, u16 a5, u16 a6, u16 a7,
-                    StageObject *object, void *colour, s32 a10, s32 a11, s32 a12);
-void func_80027D64(StageAnimation *animation, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5,
-                   s32 a6, s32 a7, void *motion);
-
-/* The stage backdrop (func_801E7914, 0x17cc bytes): a floor grid of 9 x 9
- * vertices and 128 tiles, and the fills and fades around it. */
-typedef struct {
-    s16 x;                    /* 0x00 */
-    s16 y;                    /* 0x02 */
-    s16 width;                /* 0x04 */
-    s16 height;               /* 0x06 */
-    s16 v08;                  /* 0x08 */
-    s16 v0A;                  /* 0x0A */
-    s16 v0C;                  /* 0x0C */
-    s16 v0E;                  /* 0x0E */
-    s16 v10;                  /* 0x10 */
-    s16 v12;                  /* 0x12 */
-    s16 position[3];          /* 0x14: the object's position */
-    s16 pad1A;
-    CVECTOR colours[2];       /* 0x1C */
-    DR_MODE modes[4];         /* 0x24 */
-    SVECTOR grid[81];         /* 0x54 */
-    POLY_FT4 tiles[128];      /* 0x2DC */
-    POLY_F4 fills[4];         /* 0x16DC */
-    POLY_G4 fades[4];         /* 0x173C */
-} StageBackdrop;
-
-StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
-                             s16 v0A, s16 clutX, s16 clutY, s16 v10, s16 v12, VECTOR *position,
-                             CVECTOR *colour, s16 v0C, s16 v0E);
-void func_801E7EC4(void *actors, StageLight *lights, s32 count);
-
-/* The later-compiler units (battle_loader.c, load_modes.c, burst_modes.c). */
-/* Resident task system: a task node (update) followed by its drawing node;
- * both callbacks receive their node, whose +4 names the task's object. */
-typedef struct TaskNode {
-    u32 unk0;
-    void *object;
-    void (*update)(struct TaskNode *node);
-    void (*destroy)(struct TaskNode *node);
-    u32 unk10;
-    u32 unk14;
-    struct TaskNode *next;
-} TaskNode;
-
-/* One battle display buffer (0x4070 bytes). */
-typedef struct {
-    DRAWENV draw;      /* +0000 */
-    DISPENV disp;      /* +005c */
-    u32 ot[0x1000];    /* +0070: reverse ordering table */
-} DrawBuffer;
-
-/* A slot's sprite source: its data, image position and variant. */
-typedef struct {
-    void *data;        /* +0 */
-    s16 x;             /* +4: image column */
-    s16 y;             /* +6: image row */
-    s32 variant;       /* +8 */
-} SpriteRow;
-
-/* A sprite's renderer; only its part block. */
-typedef struct {
-    u8 pad0[0x2C];
-    void *parts;       /* +2c */
-} SpriteRenderer;
-
-/* A battle sprite; only the members the loader uses. */
-typedef struct {
-    s16 pad0;
-    s16 x;             /* +02: whole parts of 16.16 coordinates */
-    s16 pad4;
-    s16 y;             /* +06 */
-    s16 pad8;
-    s16 z;             /* +0a */
-    u8 padC[0x14];
-    SpriteRenderer *renderer; /* +20 */
-    u16 *binding;      /* +24: +4 image x, +6 image y */
-    u8 pad28[0x54];
-    u32 *sequence;     /* +7c: +0 sequencer word, +e image position */
-    u8 pad80[4];
-    s16 ground;        /* +84: resting height */
-    u8 pad86[0x18];
-    s16 v9E;           /* +9e */
-    s16 home[3];       /* +a0 */
-    u8 padA6[2];
-    u32 flagsA8 : 30;  /* +a8 */
-    u32 slotLow : 2;   /* +a8 bits 30-31: the slot's low bits */
-    u32 slotHigh : 2;  /* +ac bits 0-1: the slot's high bits */
-    u32 flagsAC : 30;
-} BattleSprite;
-
-/* Battle overlay work area (800c3eb0) at battle setup. */
-typedef struct {
-    BattleScene *scene;          /* +0000 */
-    SlotInfo slots[SLOT_COUNT];  /* +0004 (also D_800C3EB4) */
-    u8 pad138[0xB70 - 0x138];
-    DrawBuffer buffers[2];       /* +0b70 */
-    DrawBuffer *current;         /* +8c50 */
-    u32 *ot;                     /* +8c54 */
-    u8 pad8C58[0x2C];
-    s32 buffer;                  /* +8c84: double-buffer index being drawn */
-    u8 pad8C88[4];
-    BattleSprite *sprites[SLOT_COUNT]; /* +8c8c */
-    TaskNode *tasks[SLOT_COUNT]; /* +8cb8 */
-    u8 pad8CE4[0x40];
-    SpriteRow rows[SLOT_COUNT];  /* +8d24 */
-    u8 loaded;                   /* +8da8: set when loading ends */
-} BattleArea;
-extern BattleArea D_800C3EB0;
-
-/* A file list entry for the disc reader (ended by file 0). */
-typedef struct {
-    u16 file;
-    void *dest;
-} FileEntry;
-
-/* The loading task (801e7098), run once per frame until the sprites, the
- * battle images and the effect bank are loaded. */
-typedef struct {
-    TaskNode task;       /* +00 */
-    u32 unk1C;
-    u8 *data;            /* +20: the enemy set file */
-    void *shared;        /* +24: battle file 2 */
-    void *images;        /* +28: battle file 1 */
-    void *effects;       /* +2c: battle file 3 */
-    FileEntry members[4]; /* +30: the members' sprite files */
-    FileEntry files[4];  /* +50: battle files 1-3 */
-    u8 pad70[0x20];
-    s32 timer;           /* +90: frames before the settle check */
-} LoaderTask;
-
-/* An enemy set file entry (12 bytes). */
-typedef struct {
-    s32 offset;          /* +0: sprite data offset */
-    u32 images;          /* +4: image list offset, or an earlier list's index */
-    u8 model;            /* +8: nonzero for a 3D model */
-    u8 pad9[2];
-    u8 variant;          /* +b */
-} EnemyEntry;
-
-/* Member sprite files by type (directory 2c). */
-typedef struct {
-    s32 file;
-    u32 sequence;        /* the sprite's sequencer word */
-} MemberFile;
-
-extern u8 D_800591AF;           /* battle setup running */
-extern void *D_8005919C;        /* the effect bank */
-extern u8 D_8006BE10[];         /* resident binding of battle file 2 */
-extern s32 D_800C35D8;          /* members still moving */
-extern void *D_800D2D54;        /* battle file 2 */
-extern u8 D_800D36B8;
-extern void *D_800D39C8;        /* the enemy set data copy */
-extern MemberFile D_801E95BC[]; /* 8 per type */
-extern u8 D_801E962C[];         /* image columns per type */
-extern u16 D_801E9638;          /* the next member image column */
-extern void *D_801E96B4;        /* the images 801e6dc8 uploads */
-
-typedef struct {
-    s16 x, y;
-} Point;
-
-void *func_8001CD08(s32 owner, s32 size);                  /* create a task */
-void func_8001CD6C(TaskNode *node, void (*update)(TaskNode *)); /* next task state */
-void func_8001CE44(TaskNode *node);                        /* end a task */
-void func_8001CB48(TaskNode *node);                        /* unlink a drawing node */
-void func_8001CD94(TaskNode *node);                        /* unlink a task */
-void func_80025180(void *block);                           /* release after the frame */
-s32 func_800286CC(void);                                   /* disc busy */
-s32 func_80022A00(void *images);                           /* image count */
-void func_80022A70(void *images, s32 x, s32 y);            /* upload an image list */
-BattleSprite **func_800BA984(void *data, s32 a1, s32 palette, s16 x, s16 y, s32 a5, s32 a6,
-                             s32 a7, s32 a8, s32 animation, s32 a10, s32 a11, s32 a12,
-                             s32 variant); /* a sprite task (its +4 the sprite) */
-void func_80021D3C(BattleSprite *sprite, s16 x, s16 z);   /* place a sprite */
-void func_800223B0(BattleSprite *sprite, s32 angle);       /* sprite orientation */
-void func_80021FE0(BattleSprite *sprite, s32 angle);       /* sprite heading */
-void func_800BB350(s32 slot);
-void func_800BB760(s32 slot);
-void func_800BA8F4(BattleSprite *sprite);                  /* place on the stage floor */
-void func_800245D8(BattleSprite *sprite, s32 animation);
-s16 func_8003BDFC(s32 arg);                                /* sound transfer busy */
-void func_80022224(void *binding, void *data, Point image, Point clut, s32 a4);
-void func_80038428(void *bank);                            /* link an effect bank */
-void func_800B14B8(void);
-
-/* Screen transitions (load_modes.c, burst_modes.c): the screen split into
- * cells that fly apart (shatter, 801e8588) or ripple (burst, 801e91e8). */
-typedef struct {
-    SVECTOR rot;         /* +00 */
-    u8 pad8[8];
-    VECTOR trans;        /* +10 */
-    u8 pad20[4];
-    POLY_FT3 prim[2];    /* +24: per display buffer */
-    u8 pad64[0x18];
-} ShatterCell;           /* 0x7c */
-
-typedef struct {
-    TaskNode task;       /* +00 */
-    TaskNode draw;       /* +1c */
-    s32 frame;           /* +38 */
-    ShatterCell cells[2][7][10]; /* +3c: two triangles per 32x32 cell */
-} ShatterTask;           /* 0x440c */
-
-typedef struct {
-    u32 pad0;
-    POLY_GT3 prim[2];    /* +04 */
-    SVECTOR corner[3];   /* +54 */
-    s32 distance[3];     /* +6c */
-    u32 pad78;
-} BurstCell;             /* 0x7c */
-
-typedef struct {
-    TaskNode task;       /* +00 */
-    TaskNode draw;       /* +1c */
-    s32 brightness;      /* +38 */
-    s32 angle;           /* +3c */
-    s32 twist;           /* +40 */
-    s32 frame;           /* +44 */
-    s32 speed;           /* +48 */
-    VECTOR trans;        /* +4c */
-    SVECTOR rot;         /* +5c */
-    BurstCell cells[2][14][20]; /* +64: two triangles per 16x16 cell */
-} BurstTask;             /* 0x10fa4 */
-
-extern u8 D_801E963C;           /* shatter variant */
-extern SVECTOR D_801E9640[3];   /* shatter triangles */
-extern SVECTOR D_801E9658[3];
-extern u8 D_801E9680;           /* burst variant */
-extern SVECTOR D_801E9684[3];   /* burst triangles */
-extern SVECTOR D_801E969C[3];
-extern u32 *D_801E96B8;         /* shatter ordering table */
-extern u32 *D_801E96BC;         /* burst ordering table */
-extern u32 *D_8005956C;         /* current ordering table */
-
-void func_8001C944(void);
-void func_8001BB0C(void);
-void func_80019CA0(void);                                  /* soft reset check */
-s32 func_80028A60(s32 mode);                               /* wait for the disc */
-u8 func_80021AD8(u8 value, s32 delta);                     /* add, clamped to 0..255 */
-MATRIX *func_8003F738(SVECTOR *rotation, MATRIX *m); /* RotMatrix */
-s32 func_8003F8B0(s32 angle);                       /* sine (4096 = 1.0) */
-s32 func_8003F8CC(s32 angle);                       /* cosine (4096 = 1.0) */
-void func_801E5840(u8 phase);
-
-void func_801E6314(u8 *data);
-void func_801E6710(u8 *data);
-void func_801E67A4(s32 slot, s32 row, s32 animation);
-void func_801E693C(FileEntry *list);
-void func_801E6A4C(void);
-void func_801E6AC4(void);
-void func_801E6C80(TaskNode *node);
-void func_801E6D34(TaskNode *node);
-void func_801E6D6C(TaskNode *node);
-void func_801E6DC8(void);
-void func_801E6E48(TaskNode *node);
-void func_801E6F00(TaskNode *node);
-void func_801E6FEC(TaskNode *node);
-void func_801E7098(u8 *data);
-void func_801E7F4C(TaskNode *node);
-void func_801E80B4(TaskNode *node);
-void func_801E827C(void *block);
-ShatterTask *func_801E82EC(void);
-ShatterTask *func_801E8320(ShatterTask *task);
-void func_801E8588(void);
-void func_801E8964(TaskNode *node);
-void func_801E8A64(TaskNode *node);
-void func_801E8D48(void *block);
-BurstTask *func_801E8DB8(void);
-BurstTask *func_801E8DF0(BurstTask *task);
-void func_801E91E8(void);
-
-/* Load modes (load_modes.c, burst_modes.c): flip to the other display
- * buffer and clear its ordering table. */
-static inline void swap_buffers(void) {
-    BattleArea *work = &D_800C3EB0;
-    DrawBuffer *next = &work->buffers[0];
-
-    if (work->current == next) {
-        next = &work->buffers[1];
-    }
-    work->current = next;
-    work->ot = next->ot;
-    ClearOTagR((u_long *)next->ot, 0x1000);
-}
 
 #endif

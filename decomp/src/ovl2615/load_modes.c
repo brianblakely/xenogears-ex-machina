@@ -1,9 +1,11 @@
 /* The shatter load modes the battle overlay dispatches (800b8098 modes 1
  * and 4: 801e8588, 801e893c) and their helpers: a screen transition run in
- * its own frame loop while the battle setup phases load. A separate unit
- * built by the Cygnus CDK GCC 2.7.2 (see ovl2615.mk); the burst modes
- * follow in burst_modes.c. */
-#include "battle_setup.h"
+ * its own frame loop while the battle setup phases load (rodata
+ * 801E4020-801E4034, text 801E7F4C-801E8964, data 801E963C-801E9680, its
+ * pointer at 801E96B8). A separate unit built by the Cygnus CDK GCC 2.7.2
+ * after the GCC 2.6.3 stage.c (see ovl2615.mk); the burst modes follow in
+ * burst_modes.c. */
+#include "transitions.h"
 
 u8 D_801E963C = 0;
 SVECTOR D_801E9640[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
@@ -14,9 +16,9 @@ VECTOR D_801E9670 = {0, 0, -1536 << 16};
 u32 *D_801E96B8;
 
 /* Shatter update: fade every cell and (variant 0) push it away. */
-void func_801E7F4C(TaskNode *node) {
+void func_801E7F4C(Task *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
-    ShatterTask *task = node->object;
+    ShatterTask *task = node->data;
     ShatterCell *cell;
     POLY_FT3 *prim;
     s32 half, row, col;
@@ -39,16 +41,16 @@ void func_801E7F4C(TaskNode *node) {
 }
 
 /* Shatter drawing callback: into the current ordering table. */
-void func_801E8088(TaskNode *node) {
-    D_801E96B8 = D_8005956C;
+void func_801E8088(Task *node) {
+    D_801E96B8 = (u32 *)D_8005956C;
     func_801E80B4(node);
 }
 
 /* Shatter drawing: each cell still in front (z >= 0x40) as its triangle,
  * rotated and moved by the cell, projected with a 512 screen distance
  * about the screen centre. */
-void func_801E80B4(TaskNode *node) {
-    ShatterTask *task = node->object;
+void func_801E80B4(Task *node) {
+    ShatterTask *task = node->data;
     ShatterCell *cell;
     POLY_FT3 *prim;
     long ofx, ofy;
@@ -94,18 +96,18 @@ void func_801E827C(void *block) {
 }
 
 /* Unlink a task-registered shatter and release it after the frame. */
-void func_801E82B0(TaskNode *node) {
+void func_801E82B0(Task *node) {
     func_8001CB48(node + 1);
     func_8001CD94(node);
-    func_80025180(node);
+    func_80025180((u32)node);
 }
 
 /* Allocate and set up the shatter. */
 ShatterTask *func_801E82EC(void) {
     ShatterTask *task = func_80031BDC(sizeof(ShatterTask), 1);
 
-    task->task.object = task;
-    task->draw.object = task;
+    task->task.data = task;
+    task->draw.data = task;
     return func_801E8320(task);
 }
 
@@ -185,8 +187,8 @@ void func_801E8588(void) {
     u16 *screen;
     u16 *pixel;
     BattleArea *work;
-    DrawBuffer *first;
-    DrawBuffer *next;
+    FrameBuffer *first;
+    FrameBuffer *next;
     ShatterTask *shatter;
     s32 frames;
     u32 state;
@@ -225,14 +227,14 @@ void func_801E8588(void) {
     ClearOTagR((u_long *)next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
-    work->buffers[0].draw.isbg = 1;
-    work->buffers[1].draw.isbg = 1;
-    work->buffers[0].draw.r0 = 0;
-    work->buffers[1].draw.r0 = 0;
-    work->buffers[0].draw.g0 = 0;
-    work->buffers[1].draw.g0 = 0;
-    work->buffers[0].draw.b0 = 0;
-    work->buffers[1].draw.b0 = 0;
+    work->buffers[0].drawEnv.isbg = 1;
+    work->buffers[1].drawEnv.isbg = 1;
+    work->buffers[0].drawEnv.r0 = 0;
+    work->buffers[1].drawEnv.r0 = 0;
+    work->buffers[0].drawEnv.g0 = 0;
+    work->buffers[1].drawEnv.g0 = 0;
+    work->buffers[0].drawEnv.b0 = 0;
+    work->buffers[1].drawEnv.b0 = 0;
     shatter = func_801E82EC();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
@@ -260,23 +262,20 @@ void func_801E8588(void) {
         }
         func_80019CA0();
         /* Run the shatter on a stack at the top of the scratchpad. */
-        __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                         :
-                         : "r"(0x1F8003FC)
-                         : "$8", "memory");
+        STACK_ENTER(0x1F8003FC);
         func_801E7F4C(&shatter->task);
         func_801E80B4(&shatter->task);
-        __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+        STACK_LEAVE();
         DrawSync(0);
         VSync(2);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].draw.b0, -12);
-        PutDispEnv(&D_800C3EB0.current->disp);
-        PutDrawEnv(&D_800C3EB0.current->draw);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
+            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
+        PutDispEnv(&D_800C3EB0.current->dispEnv);
+        PutDrawEnv(&D_800C3EB0.current->drawEnv);
         DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     func_801E827C(shatter);
