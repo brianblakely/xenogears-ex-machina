@@ -33,16 +33,9 @@ s16 D_8009B23C[4] = {-176, -480, -696, -936};
 /* Cell diagonal normals, per diagonal direction. */
 VECTOR D_8009B244[2] = {{2896, 0, -2896}, {2896, 0, 2896}};
 
-/* Terrain slope plane per type (16 bytes). */
-typedef struct {
-    s32 nx;
-    s32 unk4;
-    s32 nz;
-    s32 unkC;
-} SlopeNormal;
-
-/* Per terrain type: the slope plane, and the split plane's normal and point. */
-SlopeNormal D_8009B264[16] = {
+/* Per terrain type: the slope's normal, and the split plane's normal and
+ * point. */
+VECTOR D_8009B264[16] = {
     {-1832, 0, 3664}, {1832, 0, 3664}, {1832, 0, 3664}, {-1832, 0, 3664},
     {-3664, 0, 1832}, {3664, 0, 1832}, {3664, 0, 1832}, {-3664, 0, 1832},
     {-2896, 0, 2896}, {2896, 0, 2896}, {0, 0, 4096}, {4096, 0, 0},
@@ -1413,18 +1406,18 @@ s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
     s32 dot;
 
     type = (s16)func_80093FE4(position);
-    dot = direction->vx * D_8009B264[type].nx + direction->vz * D_8009B264[type].nz;
+    dot = direction->vx * D_8009B264[type].vx + direction->vz * D_8009B264[type].vz;
     if (dot == 0) {
         out->vx = direction->vx;
         out->vz = direction->vz;
         return 0;
     }
     if (dot < 0) {
-        out->vx = -D_8009B264[type].nx;
-        out->vz = -D_8009B264[type].nz;
+        out->vx = -D_8009B264[type].vx;
+        out->vz = -D_8009B264[type].vz;
     } else {
-        out->vx = D_8009B264[type].nx;
-        out->vz = D_8009B264[type].nz;
+        out->vx = D_8009B264[type].vx;
+        out->vz = D_8009B264[type].vz;
     }
     return 1;
 }
