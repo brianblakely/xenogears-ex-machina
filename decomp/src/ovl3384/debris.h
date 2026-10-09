@@ -30,8 +30,8 @@ extern void *D_8005956C;  /* current ordering table */
 typedef struct {
     u8 unk0[0x8C84];
     s32 buffer; /* +8c84: double-buffer index being drawn */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* Resident task system: a task node (update) followed by its drawing node;
  * both callbacks receive their node, whose +4 names the task's object. */

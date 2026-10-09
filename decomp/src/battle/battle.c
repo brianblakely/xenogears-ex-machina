@@ -19,7 +19,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
-#include "area.h"
+#include "battle/area.h"
 
 /* The unit's own uninitialized variables, each in a slot of whole words
  * (decomp/Makefile). Its .bss opens the overlay's at 800c3a70, where the

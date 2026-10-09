@@ -108,6 +108,8 @@ analysis/templates/finding.json
 cmake/ProjectOptions.cmake
 decomp/Makefile
 decomp/README.md
+decomp/include/battle/area.h
+decomp/include/battle/work.h
 decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
@@ -141,7 +143,6 @@ decomp/include/resident/window.h
 decomp/src/battle/action_file.h
 decomp/src/battle/action_resolve.h
 decomp/src/battle/actor.h
-decomp/src/battle/area.h
 decomp/src/battle/battle.c
 decomp/src/battle/battle_80070E2C.c
 decomp/src/battle/battle_800792F8.c

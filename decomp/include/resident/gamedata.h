@@ -61,7 +61,7 @@ typedef struct {
     u16 ep;               /* 0x50 */
     u16 maxEp;            /* 0x52 */
     u8 field54;           /* 0x54 */
-    u8 pad55;
+    u8 field55;
     u8 characterId;       /* 0x56 */
     u8 pad57;
     u8 attack;            /* 0x58: the base values */
