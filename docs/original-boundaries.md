@@ -107,10 +107,11 @@ Outside the libraries the game itself uses:
   (undone by `addiu $29, $29, 4; lw $29, 0($29)`). Matching that sequence in
   the linked images finds 23 switches:
   - Eight go to the scratchpad top 0x1F8003FC, in seven functions. These are
-    field func_800739C0 (twice, around the camera updates) and func_8007554C
-    (the frame); battle func_800BE790 (the frame), func_800A4654 (the stage
-    update) and func_800B7870 (the intro swirl); and ovl2615's shatter and
-    burst load modes func_801E8588 and func_801E91E8. In the C they are the
+    field func_800739C0 (twice: the camera update func_80073230 and the view
+    composition func_800722F4) and func_8007554C (the frame); battle
+    func_800BE790 (the frame), func_800A4654 (the stage update) and
+    func_800B7870 (the intro swirl); and ovl2615's shatter and burst load
+    modes func_801E8588 and func_801E91E8. In the C they are the
     `SPAD_STACK_ENTER()` and `"r"(0x1F8003FC)` sites.
   - The other 15 go to the top of a heap block: the 11
     `STACK_ENTER(stack + size)` sites of the resident sprite code (3) and
@@ -299,7 +300,7 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
-| vblank handler func_8003634C (main2.c) | VSyncCallback at boot (func_80019578) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | D_80059488++; pad words D_80059570/D_80059574, D_8005948C/D_80059490, D_800594A4/D_800594A8 and the sticks; the input ring D_8005A0FC-D_8005A19C; the h:m:s clock D_80059370/D_80059418/D_80059420/D_80059484 (stops at 100 h, D_800501F8); actuators D_8005A1BC; then the hook D_800501FC. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs D_80010000 != -1 and D_80059390 set, and D_80059390's only setter, func_800363E0, has no caller | input readers, including the battle pause, which spins on the queue |
+| vblank handler func_8003634C (main2.c) | VSyncCallback at boot (func_80019578) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | D_80059488++; pad words D_80059570/D_80059574, D_8005948C/D_80059490, D_800594A4/D_800594A8 and the sticks; the input ring D_8005A0FC-D_8005A19C; the h:m:s clock D_80059370/D_80059418/D_80059420/D_80059484 (stops at 100 h, D_800501F8); actuators D_8005A1BC; then the hook D_800501FC. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs D_80010000 != -1 and D_80059390 set. Only func_800363E0 can set D_80059390 (func_80036288 clears it), and nothing calls or references func_800363E0 | input readers, including the battle pause, which spins on the queue |
 | BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c func_80036288); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | D_800625FC[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (func_800358BC). Main-thread readers: the pad check func_80035734, which the battle and menu missing-pad loops spin on without VSync; the button read func_8003569C in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read func_800BEC18; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump func_800365FC |
 | vblank hook D_800501FC | the arena (menu5.c func_800852C4: func_80084FD0); cleared by the dispatcher | every vertical blank | on odd blanks while D_80092784 is set, func_8008E120 steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
 | sound tick func_8003C020 (sound.c) | func_80037B88: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, func_80037EE4, and func_80037E8C clears it) | D_80059504 (tick count, stamps effect voices); every other tick the master and CD fades (D_8005A3C0), every tick the sequence slides and beats (D_80059564, which links the effect channels too), staged voice registers written through D_800508E4 (func_8003E900, func_8003EB5C), SpuSetCommonAttr, SPU IRQ re-enable (D_8005955C) | the effect-end waits (below); the main loop reads the same driver state between ticks |
@@ -372,8 +373,8 @@ callback never leaves these:
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     func_800753B8 and func_8007548C.
   - ovl2615 func_801E6D6C polls the flag once per task step.
-  - Outside a transfer callback, func_8003BCA0 spins while six of the eight
-    ring entries are queued (func_8003BDBC).
+  - Outside a transfer callback, func_8003BCA0 spins while at least six of the
+    eight ring entries are queued (func_8003BDBC).
   - Not a wait: the world map's `while (D_8005957C & 0x10) {}` in
     func_80072238 (worldmap_80072238.c:300), and its
     `if (debug) while (debug)` form in func_8007D918, func_80080D00 and
