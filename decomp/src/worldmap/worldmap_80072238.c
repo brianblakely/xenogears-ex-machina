@@ -1428,12 +1428,14 @@ void func_80075B58(void) {
     func_80075D4C();
 }
 
-/* Apply party slots that joined or left since the last update, then pick the
- * movement mode from the members present. */
+/* Apply the party slots' in-gear changes since the last update: a member who
+ * left the gear (actor slots 4-6) stands where it is (slots 1-3), and one who
+ * boarded marks its gear's spot parked and brings the gear to the member.
+ * Then pick the movement mode from the members present. */
 void func_80075D4C(void) {
     WorldmapActor *actors;
-    u8 *applied;  /* state last applied per slot (2-byte records) */
-    s16 *timers;  /* per-slot timer (6-byte records) */
+    u8 *applied;  /* state last applied per slot: the low bytes of the saved
+                   * in-gear flags (worldmap.unk70-unk74) */
     s32 i;
     s32 count;
     u8 state;
@@ -1441,7 +1443,6 @@ void func_80075D4C(void) {
     i = 0;
     actors = D_8009BE24;
     applied = (u8 *)&D_8006D634.worldmap.unk70;
-    timers = (s16 *)(applied + 0x11E);
     do {
         state = D_8006D634.inGear[i];
         if (state != applied[i * 2]) {
@@ -1451,7 +1452,7 @@ void func_80075D4C(void) {
                 actors[i + 1].position.vz = actors[i + 4].position.vz;
                 actors[i + 1].unk58 = actors[i + 4].unk58;
             } else {
-                timers[i * 3] = 0x400;
+                VEHICLE_SPOTS[i].flags = 0x400;
                 actors[i + 4].unk24 = 0;
                 actors[i + 4].position.vx = actors[i + 1].position.vx;
                 actors[i + 4].position.vy = actors[i + 1].position.vy;
