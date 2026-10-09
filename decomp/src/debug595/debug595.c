@@ -5,7 +5,11 @@
  * would alias low RAM, so only development hardware runs it. Its screens
  * print player/scene/camera/event/memory/CPU-time state, edit particle
  * emitters, the encounter timer and fog colours, play sound banks, and draw
- * debug lines. */
+ * debug lines.
+ *
+ * The whole image is this one unit (rodata 80280000-802811EC, text
+ * 802811EC-8028596C, data 8028596C-802861C8), built by GCC 2.7.2
+ * (debug595.mk); nothing in it marks another unit. */
 #include "debug595.h"
 
 /* Monitor statics (all zero in the image). */
@@ -97,7 +101,7 @@ void func_80281450(void) {
 }
 
 /* Project a debug line's end points with `m` and link its primitive for `buffer`. */
-void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer) {
+void func_802814D4(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer) {
     LINE_G2 *prim;
     SVECTOR unused;
     long sxy2;
@@ -116,7 +120,7 @@ void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer) {
 /* Rebuild each debug line's matrix from its rotation and translation in the camera frame. */
 void func_802815B0(void) {
     s32 i;
-    SVECTOR moved;
+    long flag;
 
     if (D_800C268C == 0) {
         for (i = 0; i < 16; i++) {
@@ -124,7 +128,7 @@ void func_802815B0(void) {
             PushMatrix();
             MulMatrix2(&D_800AFA64, &D_80285B48[i].matrix);
             PopMatrix();
-            func_8004A6DC(&D_80285B48[i].trans, D_80285B48[i].matrix.t, &moved);
+            func_8004A6DC(&D_80285B48[i].trans, (VECTOR *)D_80285B48[i].matrix.t, &flag);
         }
     }
 }
@@ -235,7 +239,7 @@ void func_80281B00(char *name) {
  * 6 event variables, 7 particle editor, 8 items, 9 accessories, 10
  * encounters, 11 fog colours, 12 CPU/GPU summary, 13 RGB calculation.
  * Returns the screen shown. */
-s32 func_80281B90(u32 *ot) {
+s32 func_80281B90(u_long *ot) {
     void *seq;
     MonitorActor *actor;
     s32 i, n;
@@ -260,13 +264,13 @@ s32 func_80281B90(u32 *ot) {
     seq = D_80059558;
 sequences:
     if (seq != NULL) {
-        seq = *(void **)((u8 *)seq + 0x2C);
+        seq = ((SoundSequence *)seq)->next;
         goto sequences;
     }
     seq = D_80059440;
 channels:
     if (seq != NULL) {
-        seq = *(void **)((u8 *)seq + 0x1C);
+        seq = ((SoundBank *)seq)->next;
         goto channels;
     }
     if (D_80285984 >= 14) {
@@ -319,10 +323,10 @@ channels:
                 D_8028597C = 0;
             }
         }
-        if (D_80065850 != 8) {
+        if (D_80065848[2] != 8) {
             step = 0;
         } else {
-            step = D_80065858;
+            step = D_80065848[4];
         }
         if (D_8028597C == 0) {
             D_80285978 += step;
@@ -361,10 +365,10 @@ channels:
                 D_8028597C = 0;
             }
         }
-        if (D_80065850 != 8) {
+        if (D_80065848[2] != 8) {
             step = 0;
         } else {
-            step = D_80065858;
+            step = D_80065848[4];
         }
         if (D_8028597C == 0) {
             func_800379C8(">NearColor R=%d\n", D_800B2190[0] += step);
@@ -460,12 +464,12 @@ free_size:
         func_800379C8("System Time=%d:%d:%d\n", func_800A3018(14), func_800A3018(12) >> 8,
                       func_800A3018(12) & 0xFF);
         for (; i < 11; i++) {
-            func_800379C8("Num=%x HP=%3d MP=%2d\n", i, D_8005A39C->slots[i].hp, D_8005A39C->slots[i].mp);
+            func_800379C8("Num=%x HP=%3d MP=%2d\n", i, D_8005A39C->characters[i].hp, D_8005A39C->characters[i].ep);
         }
         func_800379C8("Gold=%d\n", D_8005A39C->gold);
         func_800379C8("SinarioFlag=%d\n", D_800C3A68);
         func_800379C8("Party=%d %d %d\n", D_80062590[0], D_80062590[1], D_80062590[2]);
-        n = D_8005A39C->members;
+        n = D_8005A39C->joined;
         func_800379C8("Member ");
         i = 0;
         while (i < 11) {
@@ -476,7 +480,7 @@ free_size:
             i++;
         }
         func_800379C8("\n");
-        n = D_8005A39C->unmasked;
+        n = D_8005A39C->available;
         func_800379C8("FrMask ");
         i = 0;
         while (i < 11) {
@@ -498,14 +502,14 @@ free_size:
             i++;
         }
         func_800379C8("\n");
-        func_800379C8("GearRide=%d %d %d\n", D_8005A39C->ride[0], D_8005A39C->ride[1], D_8005A39C->ride[2]);
+        func_800379C8("GearRide=%d %d %d\n", D_8005A39C->inGear[0], D_8005A39C->inGear[1], D_8005A39C->inGear[2]);
         func_800379C8("GearNum=");
         for (i = 0; i < 3; i++) {
             party = D_80062590[i];
             if (party == 0xFF) {
                 break;
             }
-            func_800379C8(" %d", D_8005A39C->slots[party].gear);
+            func_800379C8(" %d", D_8005A39C->characters[party].gearId);
         }
         func_800379C8("\nTYPE=");
         for (i = 0; i < 3; i++) {
@@ -621,11 +625,11 @@ free_size:
     case 8:
         func_800379C8("---------- ITEM -------------\n");
         for (i = D_8028597C, n = 0; i < 0x96; i += 4, n++) {
-            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->item_id[i],
-                          D_8005A39C->item_count[i], D_8005A39C->item_id[i + 1],
-                          D_8005A39C->item_count[i + 1], D_8005A39C->item_id[i + 2],
-                          D_8005A39C->item_count[i + 2], D_8005A39C->item_id[i + 3],
-                          D_8005A39C->item_count[i + 3]);
+            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->itemIds[i],
+                          D_8005A39C->itemCounts[i], D_8005A39C->itemIds[i + 1],
+                          D_8005A39C->itemCounts[i + 1], D_8005A39C->itemIds[i + 2],
+                          D_8005A39C->itemCounts[i + 2], D_8005A39C->itemIds[i + 3],
+                          D_8005A39C->itemCounts[i + 3]);
             if (n >= 16) {
                 break;
             }
@@ -640,11 +644,11 @@ free_size:
     case 9:
         func_800379C8("---------- ACC --------------\n");
         for (i = D_8028597C, n = 0; i < 0xC8; i += 4, n++) {
-            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->acc_id[i],
-                          D_8005A39C->acc_count[i], D_8005A39C->acc_id[i + 1],
-                          D_8005A39C->acc_count[i + 1], D_8005A39C->acc_id[i + 2],
-                          D_8005A39C->acc_count[i + 2], D_8005A39C->acc_id[i + 3],
-                          D_8005A39C->acc_count[i + 3]);
+            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->accessoryIds[i],
+                          D_8005A39C->accessoryCounts[i], D_8005A39C->accessoryIds[i + 1],
+                          D_8005A39C->accessoryCounts[i + 1], D_8005A39C->accessoryIds[i + 2],
+                          D_8005A39C->accessoryCounts[i + 2], D_8005A39C->accessoryIds[i + 3],
+                          D_8005A39C->accessoryCounts[i + 3]);
             if (n >= 16) {
                 break;
             }
@@ -1184,20 +1188,20 @@ void func_80284EA4(void) {
     s32 zoom;
 
     if ((D_800AFE9C & 1) && (D_800AFE9C & 0x40)) {
-        if (D_80065850 == 4) {
+        if (D_80065848[2] == 4) {
             D_800ADB98 = 1;
-            D_800ADB94 += D_80065858;
-        } else if (D_80065850 == 8) {
+            D_800ADB94 += D_80065848[4];
+        } else if (D_80065848[2] == 8) {
             zoom = D_800AF9FC;
-            zoom += ((u32)D_80065858 << 4) >> 5;
+            zoom += ((u32)D_80065848[4] << 4) >> 5;
             D_800AF9FC = zoom;
             D_800AF984 = 1;
             D_800AF988 = 1;
         } else {
             D_800AF984 = 1;
             D_800AF988 = 1;
-            D_800AF9FE += D_80065858 << 4;
-            D_800AF9F0 += D_80065854 << 18;
+            D_800AF9FE += D_80065848[4] << 4;
+            D_800AF9F0 += D_80065848[3] << 18;
             D_800AF9E6 = D_800AF9F0 >> 16;
         }
     }

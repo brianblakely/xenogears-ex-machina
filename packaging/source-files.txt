@@ -417,6 +417,7 @@ decomp/targets/overlays/debug2611.symbols.txt
 decomp/targets/overlays/debug2611.yaml
 decomp/targets/overlays/debug595.field.ld
 decomp/targets/overlays/debug595.mk
+decomp/targets/overlays/debug595.resident.ld
 decomp/targets/overlays/debug595.symbols.txt
 decomp/targets/overlays/debug595.yaml
 decomp/targets/overlays/field.bss.ld
