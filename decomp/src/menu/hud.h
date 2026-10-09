@@ -53,7 +53,7 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y);
 void func_80085EC8(OverlayBuffer *buf);
 void func_800864B4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
 void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
-void func_800868E0(MenuImages *files);
+void func_800868E0(MenuImageFile *files);
 void func_80086E24(void);
 void func_80087068(Actor *left, Actor *right);
 

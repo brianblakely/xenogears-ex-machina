@@ -9,6 +9,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "field/monitor.h"
 
 /* One particle: its state, motion and quad per draw buffer. */
 typedef struct {
@@ -64,10 +65,9 @@ typedef struct Record78 {
     u16 unk76;       /* 76: particle angle */
 } Record78;
 
-/* The templates, set up by the events. */
+/* The templates, set up by the events (the edited and the selected one,
+ * D_800B0044 and D_800ADB40, are in field/monitor.h). */
 extern Record78 D_800B02CC[8]; /* the eight template emitters */
-extern s32 D_800B0044;         /* cleared with them */
-extern s32 D_800ADB40;         /* the selected template's +52 (80089004), 0xff none */
 void func_800A94A4(s32 value); /* reset the templates */
 void func_80088D38(s32 first); /* set the current template's +30 pairs from operands */
 
@@ -82,7 +82,8 @@ typedef struct FieldLaunch {
 
 extern FieldLaunch D_800B2374;
 
-/* The effect slots. */
+/* The effect slots (starting and stopping an owner's effects, func_800A99A8
+ * and func_800A98E8, are in field/monitor.h). */
 extern u8 D_800B14B0[64];      /* effect slot states */
 extern s16 D_800B0108[64];     /* effect slot owners, -1 free */
 extern Record78 *D_800C3918[64]; /* effect slot emitters */
@@ -90,8 +91,6 @@ extern s32 D_800ADB44;         /* last effect owner */
 void func_800A9274(void);      /* free all slots */
 void func_800A9460(void);      /* release all slots */
 void func_800A92AC(s32 slot);  /* release a slot and its particles */
-s32 func_800A99A8(s32 owner);  /* start an effect; -1 when no slot */
-void func_800A98E8(s32 owner, s32 release); /* stop an owner's effects */
 void func_800A9688(void);      /* run the slots for a frame */
 
 /* Particles. */

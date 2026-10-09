@@ -12,6 +12,7 @@
  * The module is one unit, its whole file (801fc000-801fc728), built by the
  * Cygnus CDK GCC 2.7.2 with a later ASPSX (see ovl3381.mk). */
 #include "common.h"
+#include "psyq/abs.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
@@ -19,8 +20,6 @@
 #include "resident/sprite.h"
 #include "battle/area.h"
 #include "tiles.h"
-
-#define ABS(x) ((x) >= 0 ? (x) : -(x))
 
 /* The two triangles of a cell (as in ovl3387's burst effect); this module
  * keeps them but never reads them. */

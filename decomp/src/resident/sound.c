@@ -1746,7 +1746,7 @@ s32 func_8003C020(void) {
     s16 count;
     SoundSeqChannel *channels;
     s16 volume;
-    SoundFixed value;
+    Fixed value;
 
     if (D_8005957C & 0x40) {
         return 0;

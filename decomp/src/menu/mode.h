@@ -12,7 +12,7 @@
 
 /* The menu's image file (D_800917C0[4], unpacked): pointers to its TIM
  * images, named by their readers. */
-typedef struct MenuImages {
+typedef struct MenuImageFile {
     u_long *unk0;
     u_long *sparkle0[12];  /* 0x04: sparkle kind 0's frames */
     u_long *sparkle1;      /* 0x34: kind 1 (and 3) */
@@ -28,7 +28,7 @@ typedef struct MenuImages {
     u_long *sparkle4;      /* 0x68: kind 4 */
     u_long *floor;         /* 0x6C */
     u_long *extra[9];      /* 0x70 */
-} MenuImages;
+} MenuImageFile;
 
 /* Current option settings (0x80099d98). */
 typedef struct Settings {

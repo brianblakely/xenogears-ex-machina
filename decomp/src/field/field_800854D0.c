@@ -27,9 +27,9 @@
 #include "resident/sprite.h"
 #include "resident/stream.h"
 #include "resident/text.h"
+#include "field/monitor.h"
 #include "field.h"
 #include "field_camera.h"
-#include "field_debug.h"
 #include "field_dialogue.h"
 #include "field_draw.h"
 #include "field_effect.h"
@@ -2286,6 +2286,8 @@ void func_8008B894(void) {
     D_800B00C0 = 1;
     D_800B0078->pc--;
 }
+
+void func_8008D380(s32 to, s32 from);
 
 /* Run the join event of party member `member`: the first event actor whose
  * event 0 starts with instruction 0x16 for that member is initialised and
@@ -4854,8 +4856,6 @@ void func_80092EA0(void) {
     }
 }
 
-s32 func_8009744C(void);
-
 /* Publish the current field id and two values in variables 4, 6 and 8 and
  * count variable 0x12 up. */
 void func_80092F44(void) {
@@ -5133,7 +5133,8 @@ void func_80093A04(void) {
     D_800B0078->pc += 3;
 }
 
-/* Clear the camera hold flag (0x8000). */
+/* Clear the camera hold flag (0x8000, which stops 800726e8's shoulder-button
+ * turns). */
 void func_80093A68(void) {
     D_800AF880.flags &= 0x7FFF;
     D_800B0078->pc += 1;
@@ -5146,7 +5147,9 @@ void func_80093A98(void) {
 }
 
 /* Release script control: clear the encounter inhibition, both control
- * bytes and the camera hold flags. */
+ * bytes and the camera's hold (0x8000) and eye unclamp (0x4000) flags; with
+ * 0x4000 clear the follow camera (80073230) keeps its eye goal from sinking
+ * below the floor of the last collision layer. */
 void func_80093AC8(void) {
     D_800B2078.encounter_inhibition = 0;
     D_800B2078.script_control[0] = 0;
@@ -5155,8 +5158,8 @@ void func_80093AC8(void) {
     D_800B0078->pc += 1;
 }
 
-/* Take script control (both control bytes, camera hold flags); re-runs
- * while the field is not ready. */
+/* Take script control (both control bytes, the camera's hold and eye unclamp
+ * flags); re-runs while the field is not ready. */
 void func_80093B10(void) {
     D_800B2078.encounter_inhibition = -1;
     D_800B2078.script_control[0] = 1;
@@ -6761,8 +6764,8 @@ s32 func_80097A50(s32 speed) {
         if (func_8009CDB4(1) == 0xFF) {
             return 0;
         }
-        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.s.whole +
-                              (u16)D_800B0078->gravity.s.whole);
+        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.part.whole +
+                              (u16)D_800B0078->gravity.part.whole);
         x = D_800B0078->target[0];
         z = D_800B0078->target[2];
         y = func_8009CF78(2, EVENT_OPERAND_BYTE(4));
@@ -7395,7 +7398,7 @@ s32 func_80099AC0(s32 speed) {
         model = (Sprite *)D_800AF880.components.descriptors;
         other = ((FieldDescriptor *)model)[index].actor;
         MOVE_TRACE_TARGET(other);
-        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)((FieldActor *)value)->gravity.s.whole);
+        extra = func_80099A8C((u16)other->gravity.part.whole + (u16)((FieldActor *)value)->gravity.part.whole);
         x = WHOLE(other->position[0]);
         z = WHOLE(other->position[2]);
         if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
@@ -8171,6 +8174,9 @@ void func_8009BA7C(void) {
     D_800B0078->pc += 7;
 }
 
+s32 func_8009CD18(s32 *window);
+void func_800A1B70(void);
+
 /* Wait for this actor's dialogue window to close. While it has an open one
  * yield without advancing; once that window's speaker has layer flag 0x200
  * and bit 0 of the actor's window style (+84) is clear, close the window
@@ -8237,8 +8243,6 @@ void func_8009BC98(void) {
 s32 func_8009BE58(void) {
     return ((((s32)(D_800B0078->state.word >> 9) & 7) - (func_8009A514() & 0xFFFF)) & 7) < 5;
 }
-
-s32 func_8009CD18(s32 *window);
 
 /* With byte 1 zero close this actor's open dialogue window (if any);
  * otherwise clear its window overrides (+82, +83, +84, +88, +8a). Advances
@@ -9355,13 +9359,13 @@ void func_8009E83C(void) {
         D_800B0078->unk18 = EVENT_OPERAND_BYTE(1) * 2;
     }
     if (EVENT_OPERAND_BYTE(2) != 0) {
-        D_800B0078->gravity.s.fraction = EVENT_OPERAND_BYTE(2) * 2;
+        D_800B0078->gravity.part.fraction = EVENT_OPERAND_BYTE(2) * 2;
     }
     if (EVENT_OPERAND_BYTE(3) != 0) {
         D_800B0078->height = EVENT_OPERAND_BYTE(3) * 2;
     }
     if (EVENT_OPERAND_BYTE(4) != 0) {
-        D_800B0078->gravity.s.whole = EVENT_OPERAND_BYTE(4) * 2;
+        D_800B0078->gravity.part.whole = EVENT_OPERAND_BYTE(4) * 2;
     }
     D_800B0078->pc += 5;
 }

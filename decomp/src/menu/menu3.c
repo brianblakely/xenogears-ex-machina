@@ -3156,7 +3156,7 @@ void func_8007B270(CVECTOR *first, CVECTOR *second) {
 /* Load the effect textures from the scene file table: the twelve frames
  * of sparkle kind 0, the textures of kinds 1-4 (kind 3 is kind 1 drawn
  * additively), the sparkle packets, and the two other effect textures. */
-void func_8007B388(MenuImages *files) {
+void func_8007B388(MenuImageFile *files) {
     TIM_IMAGE tim;
     RECT unused; /* the original frame has 8 unused bytes */
     s16 *clut;

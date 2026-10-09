@@ -11,17 +11,10 @@
 #include "psyq/types.h"
 #include "resident/model.h"
 #include "resident/sprite.h"
+#include "field/monitor.h"
 
-/* A 16.16 fixed-point value; code also reads its whole part alone. */
-typedef union {
-    s32 value;
-    struct {
-        u16 fraction;
-        s16 whole;
-    } s;
-} Fixed;
-
-#define WHOLE(value) (((Fixed *)&(value))->s.whole)
+/* The whole part of a 16.16 value (common.h's Fixed) held in an s32. */
+#define WHOLE(value) (((Fixed *)&(value))->part.whole)
 
 /* One of the two draw-buffer blocks (800b249c, 800ba590). */
 typedef struct FieldDrawBlock {
@@ -416,7 +409,7 @@ extern FieldWork D_800B2078;         /* the work block */
  * members of the block, 800815f0, 80081c54, 80085738, 8008848c and 800859dc
  * compile differently), and the launch fields from 800b2374. */
 extern FieldDrawBlock D_800B249C[2]; /* the two draw blocks */
-extern FieldDrawBlock *D_800C426C;   /* the current draw block */
-extern s32 D_800ADB08;               /* the current draw buffer (0 or 1) */
+extern FieldDrawBlock *D_800C426C;   /* the current draw block (the buffer,
+                                      * D_800ADB08, is in field/monitor.h) */
 
 #endif

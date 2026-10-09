@@ -147,9 +147,9 @@ s16 D_800C3A68[0x400];
 s32 D_800C4268; /* dialogue windows opened this pass */
 struct FieldDrawBlock *D_800C426C; /* current draw block */
 
+#include "field/monitor.h"
 #include "field.h"
 #include "field_camera.h"
-#include "field_debug.h"
 #include "field_dialogue.h"
 #include "field_draw.h"
 #include "field_effect.h"

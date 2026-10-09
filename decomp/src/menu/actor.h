@@ -356,6 +356,7 @@ void func_80076424(Actor *actor);
 void func_8007661C(Actor *actor);
 s32 func_800767C8(Actor *actor);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
+s32 func_800776A8(Actor *actor, s32 arg); /* start the side's pad vibration */
 void func_80078154(Actor *actor);
 void func_80078ED4(s16 *params);
 void func_80078F00(Actor *actor);

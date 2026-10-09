@@ -336,31 +336,34 @@ reconstruction (search `src/reconstruction` for the address), then compile,
 functions in original order; the function's jump tables and strings move with
 it (splat migrated them into the function's assembly). A unit's structures go in
 small headers beside the source; what several targets share has one definition in
-`decomp/include`: `psyq/` (the SDK's types and prototypes, members the symbol file
-leaves unnamed under their `func_` names), `resident/` (one header per resident
-subsystem with its types, variables and calls; `gamedata.h` holds the game data
-D_8006D634), `battle/` (one header per battle overlay subsystem whose types,
-variables or calls its modules and overlays use, with the battle area D_800C3EB0
-and its work area D_800CCCE8; each function sits in the header of the subsystem
-that defines it; also the screen burst that ovl2615 and ovl3387 both carry),
-`menu/` (the blocks the menu mode's screens, slot39 and ovl2598-ovl2602, keep
-behind the menu state of `resident/menu.h`) and `mdec/` (the movie library's
-player, which the movie mode and the field call). Another image's functions and
-variables keep their definer's names, which the importing overlay's symbol file
-gives its link (movie and field name the library's entries, ovl3087 the battle's
-callbacks it passes, the world map the resident's VSync callback). A resident or
-battle function whose callers in other targets were built with other argument or
-result conversions (narrow parameters, another count) stays out of them: each
-target declares it, the resident and the battle in their `own_declarations.h`. So
-does a variable some target declares with another qualifier (the vertical blank
-count, volatile in the mode 4 menu), and a target keeps its own view of an object
-whose members its code reads with other types (ovl2615 reads the scene data's
-positions unsigned); a second declaration of one object takes its assembler name
-(the world map's sequence header over D_80062648, whose address cse would
-otherwise keep from the copy before it). A unit declares what only it uses itself,
-before the first use. A function that is understood but does not yet match stays
-linked as assembly inside `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`;
-the coverage report counts it separately.
+`decomp/include`: `psyq/` (the SDK's types, prototypes and macros, the inline GTE
+ones in `inline_c.h`; members the symbol file leaves unnamed under their `func_`
+names), `resident/` (one header per resident subsystem with its types, variables and
+calls; `gamedata.h` holds the game data D_8006D634), `battle/` (one header per
+battle overlay subsystem whose types, variables or calls its modules and overlays
+use, with the battle area D_800C3EB0 and its work area D_800CCCE8; each function
+sits in the header of the subsystem that defines it; also the screen burst that
+ovl2615 and ovl3387 both carry), `menu/` (the blocks the menu mode's screens, slot39
+and ovl2598-ovl2602, keep behind the menu state of `resident/menu.h`), `mdec/` (the
+movie library's player, which the movie mode and the field call) and `field/`
+(`monitor.h`: the field state and calls that its debug monitor, debug595, also uses,
+and the monitor's entries and debug-lines flag, which the field calls and sets).
+Another image's functions and variables keep their definer's names, which the
+importing overlay's symbol file gives its link (movie and field name the library's
+entries, ovl3087 the battle's callbacks it passes, the world map the resident's
+VSync callback). A resident or battle function whose callers in other targets were
+built with other argument or result conversions (narrow parameters, another count)
+stays out of them: each target declares it, the resident and the battle in their
+`own_declarations.h`. So does a variable some target declares with another qualifier
+(the vertical blank count, volatile in the mode 4 menu), and a target keeps its own
+view of an object whose members its code reads with other types (ovl2615 reads the
+scene data's positions unsigned); a second declaration of one object takes its
+assembler name (the world map's sequence header over D_80062648, whose address cse
+would otherwise keep from the copy before it). A unit declares what only it uses
+itself, before the first use. A function that is understood but does not yet match
+stays linked as assembly inside
+`#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report counts
+it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at

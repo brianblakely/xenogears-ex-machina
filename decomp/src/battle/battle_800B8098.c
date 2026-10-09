@@ -10,6 +10,7 @@
  * 0x80070AB8) is followed directly by 800BD3AC's at 0x80070ADC (4 mod 8), so
  * the unit ends before 800BD3AC. */
 #include "common.h"
+#include "psyq/inline_c.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
@@ -39,7 +40,6 @@
 #include "battle/turn.h"
 #include "battle/windows.h"
 #include "files.h"
-#include "gte.h"
 #include "overlays.h"
 #include "own_declarations.h"
 #include "popup.h"

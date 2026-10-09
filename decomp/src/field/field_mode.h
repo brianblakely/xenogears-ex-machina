@@ -7,6 +7,7 @@
  * (field_800854D0.c). */
 
 #include "common.h"
+#include "field/monitor.h"
 #include "field.h"
 
 /* The field loop's control words; an event that requests a transition waits
@@ -37,9 +38,7 @@ extern u8 D_800ADB04;          /* random encounters enabled */
 extern u8 D_800ADB05;          /* 1 while character drawing is off */
 extern s16 D_800ADB54;         /* 1 once an event switched to the 640-wide screen */
 extern s32 D_800ADB4C;         /* set while the second ordering tables are drawn */
-extern s32 D_800ADB9C;         /* frame start time */
-extern s32 D_800ADBA0;         /* frame draw (CPU) time */
-extern s32 D_800ADBA4;         /* GPU time (the VSync counter, 8007781c) */
+/* The frame times D_800ADB9C-D_800ADBA4 are in field/monitor.h. */
 extern s32 D_800B14A4;         /* only cleared (800705dc) */
 
 void func_80078D44(void);      /* the field entry */
@@ -66,8 +65,8 @@ void func_800A28D4(void);      /* rebuild the actors after a return (D_8004F30C 
  * (D_8005A4E4) when it leaves (800a3f4c) and reads back on return
  * (800a3474), through a cursor. */
 extern u8 *D_800AFC50;         /* the snapshot cursor */
-void func_800A3F4C(void);      /* write the snapshot */
-void func_800A3474(void);      /* read it back */
+void func_800A3474(void);      /* read it back (the write, func_800A3F4C, is in
+                                * field/monitor.h) */
 
 /* The view's world block (800afa54, 0x74 bytes) as copied byte-wise. */
 typedef struct {

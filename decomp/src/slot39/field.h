@@ -290,6 +290,7 @@ u8 func_801E23CC(void);
 u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
 void func_801E35BC();
+void func_801E36D4(MenuTables *tables, u8 id);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E3C2C(MenuTables *tables, u8 gear);
 void func_801E3ECC(MenuTables *tables, u8 gear);

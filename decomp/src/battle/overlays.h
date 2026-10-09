@@ -17,16 +17,6 @@ void func_801DF270(void); /* build each present member's first numbers */
 void func_801DF4C0(void); /* build their seven-digit numbers */
 void func_801E252C(void); /* leave the battle */
 
-/* A party member's result screen block (the 801DE000 module's). */
-typedef struct ResultPanel {
-    u8 pad0[0x15F8];
-    u8 unk15F8;   /* the second value is counted too */
-    u8 counting;  /* +0x15F9 */
-    u8 done[2];   /* +0x15FA per value */
-} ResultPanel;
-
-extern ResultPanel *D_800D32F8[3];
-
 /* The battle's start from the scene select (ovl2606, 801E0000). */
 void func_801E0A34(void);
 

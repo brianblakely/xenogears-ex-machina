@@ -141,6 +141,7 @@ decomp/include/battle/ui.h
 decomp/include/battle/windows.h
 decomp/include/battle/work.h
 decomp/include/common.h
+decomp/include/field/monitor.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
 decomp/include/mdec/player.h
@@ -149,6 +150,7 @@ decomp/include/menu/panel.h
 decomp/include/menu/screen.h
 decomp/include/menu/shop.h
 decomp/include/menu/tables.h
+decomp/include/psyq/abs.h
 decomp/include/psyq/inline_c.h
 decomp/include/psyq/kernel.h
 decomp/include/psyq/libapi.h
@@ -221,13 +223,11 @@ decomp/src/field/field_800A4748.c
 decomp/src/field/field_800A9274.c
 decomp/src/field/field_camera.h
 decomp/src/field/field_common.c
-decomp/src/field/field_debug.h
 decomp/src/field/field_dialogue.h
 decomp/src/field/field_draw.h
 decomp/src/field/field_effect.h
 decomp/src/field/field_event.h
 decomp/src/field/field_glyph.h
-decomp/src/field/field_gte.h
 decomp/src/field/field_layer.h
 decomp/src/field/field_load.h
 decomp/src/field/field_mode.h

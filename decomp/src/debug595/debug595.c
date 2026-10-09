@@ -24,14 +24,14 @@ s32 D_80285988 = 0; /* debug lines shown (set by the field overlay) */
 s32 D_8028598C = 0; /* encounter notice shown */
 s32 D_80285990 = 0; /* encounter notice frames */
 s32 D_80285994 = 0; /* encounters counted */
-s32 D_80285998 = 0; /* last encounter number */
+s32 D_80285998 = 0; /* the last encounter's formation */
 s32 D_8028599C = 0; /* particle editor row */
 s32 D_802859A0 = 0; /* particle editor column */
 s16 D_802859A4 = 0; /* CPU-time marks this frame */
 /* The CPU-time marks: 32 records of 12 bytes exactly fill 802859a8-80285b28;
  * the code addresses their time (+4) and name (+8). */
 CpuMark D_802859A8[32] = {0};
-s16 D_80285B28[16] = {0}; /* encounters per number */
+s16 D_80285B28[16] = {0}; /* encounters per formation */
 DebugLine D_80285B48[16] = {0}; /* the debug lines */
 
 /* Reset the two frame counters. */
@@ -40,12 +40,13 @@ void func_802811EC(void) {
     D_8028597C = 0;
 }
 
-/* Count one event of `kind` and restart the 60-frame display timer. */
-void func_80281204(s32 kind) {
+/* Count an encounter of `formation` (of the map's set, as the field's
+ * func_80079288 draws it) and restart the 60-frame notice. */
+void func_80281204(s32 formation) {
     D_8028598C = 1;
     D_80285990 = 60;
-    D_80285998 = kind;
-    D_80285B28[kind]++;
+    D_80285998 = formation;
+    D_80285B28[formation]++;
     D_80285994++;
 }
 
@@ -467,7 +468,7 @@ free_size:
             func_800379C8("Num=%x HP=%3d MP=%2d\n", i, D_8005A39C->characters[i].hp, D_8005A39C->characters[i].ep);
         }
         func_800379C8("Gold=%d\n", D_8005A39C->gold);
-        func_800379C8("SinarioFlag=%d\n", D_800C3A68);
+        func_800379C8("SinarioFlag=%d\n", (u16)D_800C3A68[0]);
         func_800379C8("Party=%d %d %d\n", D_80062590[0], D_80062590[1], D_80062590[2]);
         n = D_8005A39C->joined;
         func_800379C8("Member ");

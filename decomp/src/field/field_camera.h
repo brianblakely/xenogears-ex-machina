@@ -3,17 +3,18 @@
 
 /* The field camera: its initial state, look-at and follow helpers, the angle
  * steps and octants, and the matrix utilities of field.c. The camera state
- * itself is the view D_800AF880 (field.h). */
+ * itself is the view D_800AF880 (field.h); its distance D_800ADB94 and the
+ * octant func_8009A514 are in field/monitor.h. */
 
 #include "common.h"
 #include "psyq/libgte.h"
+#include "field/monitor.h"
 #include "field.h"
 
 extern MATRIX D_800AF85C;  /* the composed view, kept across frames */
 extern MATRIX D_800AFC30;  /* sprite view rotation matrix */
 extern MATRIX D_800B00E8;  /* instance view: the rotation with its translation */
 extern s32 D_800B00B4;     /* camera pitch */
-extern s32 D_800ADB94;     /* camera distance */
 extern s32 D_800ADBA8;     /* 1 while the target goal is held at the walkable edge */
 extern s32 D_800ADBAC;     /* camera frames settling */
 extern s32 D_800ADBB0;     /* camera frames releasing */
@@ -28,7 +29,6 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out); /* intersection of two
 s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment); /* walk the top layer toward `point` */
 s32 func_80073930(s32 angle, s32 goal, s32 step);        /* turn toward `goal` by `step` */
 s32 func_80073988(s32 angle, s32 goal, s32 step);        /* the same, or jump there on a cut */
-s32 func_8009A514(void);                                 /* camera octant (0..7) */
 void func_80072254(s32 index);                           /* rebuild descriptor `index`'s matrix */
 
 /* Matrix utilities. */

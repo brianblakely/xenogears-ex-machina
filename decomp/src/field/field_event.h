@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "psyq/libgte.h"
+#include "field/monitor.h"
 #include "field.h"
 
 /* The event package (field component 5, *800adbf8). */
@@ -18,10 +19,8 @@ typedef struct {
 } EventPackage;
 
 extern EventPackage *D_800ADBF8;
-extern s32 D_800ADBFC;         /* event actor count */
 extern u8 *D_800ADC00;         /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
-extern s16 D_800C3A68[0x400];  /* event variable bank */
 extern FieldActor *D_800B0078; /* current event actor */
 extern s32 D_800AFD1C;         /* current actor index */
 extern FieldDescriptor *D_800B06B8; /* descriptor of the running actor */
@@ -34,8 +33,8 @@ s32 func_800A1EC8(s32 limit);  /* run the current actor's instructions */
 s32 func_800A3090(s32 actor, s32 event); /* entry PC of an actor's event */
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot carries `tag` */
 
-/* Variables: a reference is a byte offset into the bank. */
-s32 func_800A3018(s32 reference);          /* read */
+/* Variables: a reference is a byte offset into the bank (the actor count,
+ * the bank and its read, func_800A3018, are in field/monitor.h). */
 void func_800A3074(s32 reference, s32 value); /* write */
 s32 func_800A2FE0(s32 reference);          /* -1 when read unsigned */
 
@@ -58,11 +57,11 @@ s32 func_8009D0CC(s32 offset, s32 flags); /* bit 0x04 */
 s32 func_8009D110(s32 offset, s32 flags); /* bit 0x02 */
 s32 func_8009D154(s32 offset, s32 flags); /* bit 0x01 */
 
-/* Instruction helpers. */
+/* Instruction helpers (the random picks, func_8008E718, are in
+ * field/monitor.h). */
 void func_8008E0DC(s32 flags); /* continue past 5 bytes when `flags` has a bit of op1, else jump */
 void func_8008E148(s32 flags); /* the same past 4 bytes */
 void func_8008E498(s32 value); /* store `value` in variable op1 */
-void func_8008E718(void);      /* draw distinct random numbers into the work block */
 void func_8008A93C(void);      /* event fe 4d: the current actor's animation override */
 void func_80092F44(void);      /* publish the field id in variables 4, 6 and 8 */
 void func_800A0D3C(void);      /* give the current actor the field's first sprite */

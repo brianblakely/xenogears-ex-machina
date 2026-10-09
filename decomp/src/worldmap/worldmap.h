@@ -9,17 +9,16 @@
  * scripted scene modes), effect.h (particles and drifting clouds), party.h
  * (the party and its vehicles), terrain.h (terrain, paths and movement),
  * screen.h (the fade and the name windows), stream.h (the terrain stream
- * reader) and gte.h (GTE macros). */
+ * reader) and gte.h (the cloud drawing's screen point reads). */
 
 #include "common.h"
+#include "psyq/abs.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/cd.h"
 #include "resident/formation.h"
 #include "resident/gamedata.h"
 #include "resident/sprite.h"
-
-#define ABS(x) ((x) < 0 ? -(x) : (x))
 
 /* World-map modes (D_8009A058): 0-7 the open map, 8-18 the scripted scenes.
  * The overlay entry enters the mode, then starts it and runs the frame loop

@@ -143,6 +143,10 @@ u8 D_801D70F4[20] = {0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 15, 15, 
  * (zero there); the overlay's commons follow (ovl2602_common.c). */
 static u16 D_801D904C; /* count of the item last looked up */
 
+/* This unit passes quad coordinates as words; ovl2602.c defines the helper
+ * with u16 parameters, and that prototype here would mask them (four more
+ * 16-bit masks: two in func_801CE1D0, one each in func_801D18F8 and
+ * func_801D2B74). */
 void func_801C7604();
 
 /* Draw the two second-marker sprites and set their four quads. */

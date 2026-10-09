@@ -8,6 +8,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "field/monitor.h"
 #include "field.h"
 
 void func_80073F50(void);      /* switch draw blocks, clear the overlay table */
@@ -15,11 +16,11 @@ void func_80073FE0(void);      /* swap the draw buffer, clear its tables */
 void func_80075910(void);      /* finish the frame */
 
 /* The model pass (800748e8): instances are culled by their bounding square
- * against the screen widened by the margins. */
+ * against the screen widened by the margins (the instances' refresh,
+ * func_80073E38, is in field/monitor.h). */
 extern s32 D_800C3A5C;         /* screen margin x */
 extern s32 D_800C3A60;         /* screen margin y */
 void func_800748E8(void);      /* draw the models */
-void func_80073E38(void);      /* refresh the instances' bounds and modes */
 s32 func_8007469C(void);       /* whether a shown descriptor has flag 0x8000 */
 void func_800AA9DC(FieldInstance *instance); /* bounds from the mesh */
 s32 func_800AAA74(FieldInstance *instance);  /* 0 when on screen, else -1 */
@@ -50,7 +51,8 @@ extern RECT D_800B004C;        /* compass colour strip */
 void func_8007A5C4(void);      /* build the four letters */
 void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style); /* build a grid quad */
 
-/* Screen fades: two channels in the work block (FadeChannel). */
+/* Screen fades: two channels in the work block (FadeChannel); a fade starts
+ * with func_80071D08 (field/monitor.h). */
 extern s32 D_800ADC04;         /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08;         /* fade started */
 extern DR_MODE D_800AFE24[2];  /* fade draw mode per buffer */
@@ -59,7 +61,6 @@ extern RECT D_800AFE4C;        /* fade copy source */
 extern TILE D_800AFE54[2];     /* fade tile per buffer */
 void func_80071A64(void);          /* set both channels' primitives up */
 void func_8007D93C(s32 channel);   /* prepare a channel */
-void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr); /* start a fade */
 void func_80071DCC(s32 steps);     /* fade channel 0 out to white, once */
 void func_80071E58(s32 steps);     /* fade it back in, once */
 void func_80071CB4(void *ot, s32 buffer); /* step and draw both channels */

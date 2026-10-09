@@ -21,7 +21,6 @@
 #include "battle/screen.h"
 #include "battle/sprite.h"
 #include "battle/stage.h"
-#include "gte.h"
 #include "own_declarations.h"
 #include "resident_views.h"
 
