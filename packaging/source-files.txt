@@ -128,6 +128,7 @@ decomp/include/psyq/stdarg.h
 decomp/include/psyq/types.h
 decomp/include/resident/cd.h
 decomp/include/resident/console.h
+decomp/include/resident/formation.h
 decomp/include/resident/gamedata.h
 decomp/include/resident/gpu.h
 decomp/include/resident/heap.h
@@ -466,6 +467,7 @@ decomp/targets/overlays/ovl2615.mk
 decomp/targets/overlays/ovl2615.symbols.txt
 decomp/targets/overlays/ovl2615.yaml
 decomp/targets/overlays/ovl3087.mk
+decomp/targets/overlays/ovl3087.resident.ld
 decomp/targets/overlays/ovl3087.symbols.txt
 decomp/targets/overlays/ovl3087.yaml
 decomp/targets/overlays/ovl3381.mk

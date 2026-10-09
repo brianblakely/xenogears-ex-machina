@@ -334,7 +334,7 @@ void func_801E0A34(void) {
     data = func_8008ABB8(size, 1);
     func_800295D8(i, data, 0, 0x80);
     func_80028A60(0);
-    memmove(D_800658DC, data, 0x200);
+    memmove(&D_800658DC, data, sizeof(EncounterSet));
     func_800320E8(data);
     func_8001B66C();
     func_8008AB70();

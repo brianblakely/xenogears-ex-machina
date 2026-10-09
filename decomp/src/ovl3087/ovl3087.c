@@ -71,8 +71,8 @@ void func_801E5160(void) {
     func_8008AC50();
     func_8003342C(archive);
     func_8003342C(D_801E9C38);
-    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->script, 0);
-    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->data, 0);
+    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->script, 0);
+    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->data, 0);
     func_800320E8(archive);
     D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
     bzero(D_800D3278, sizeof(ScriptState));

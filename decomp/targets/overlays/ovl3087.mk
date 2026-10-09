@@ -6,7 +6,7 @@ ORIGINAL_SHA256 := 64668d85bf48dea46cf6d5f04b38e38ca887877cfef53961f0c26cd2d363b
 BUILD := .local/decomp/build/ovl3087
 IMAGE := .local/decomp/build/ovl3087.bin
 LINKER_SCRIPT := .local/decomp/ovl3087/ovl3087.ld
-LINKER_EXTRA := .local/decomp/ovl3087/undefined_syms_auto.txt .local/decomp/ovl3087/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/ovl3087/undefined_syms_auto.txt .local/decomp/ovl3087/undefined_funcs_auto.txt decomp/targets/overlays/ovl3087.resident.ld
 SOURCE_DIRS := decomp/src/ovl3087
 # 801e93e8-801e9b58 (script_actor) is a 2.7.2-cdk unit (docs/matching.md):
 # %hi bases kept in registers, positive li as addiu (ASPSX >= 2.56), load
