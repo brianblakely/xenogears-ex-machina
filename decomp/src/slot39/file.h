@@ -2,10 +2,9 @@
 #define SLOT39_FILE_H
 
 #include "common.h"
-#include "psyq/libapi.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
-#include "resident/menu.h"
+#include "resident/gamedata.h"
 #include "menu/tables.h"
 
 /* The menu overlay's memory card and file screen (slot39): the card scan
@@ -156,16 +155,6 @@ typedef struct SaveData {
     SaveWords100 unk1024; /* 1024: game data 1820 */
     u8 unk1124[0xA38]; /* 1124: game data 1920 */
 } SaveData;
-
-/* libapi directory entry (firstfile/nextfile). */
-struct DIRENTRY {
-    char name[20];
-    s32 attr;
-    s32 size;
-    struct DIRENTRY *next;
-    s32 head;
-    char system[4];
-};
 
 /* The summary at the start of a save payload (801cba4c). */
 typedef struct MenuSavePayload {

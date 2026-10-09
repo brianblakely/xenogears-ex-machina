@@ -12,7 +12,7 @@
 #include "resident/heap.h"
 #include "resident/menu.h"
 #include "resident/stream.h"
-#include "menu/card.h"
+#include "menu/panel.h"
 #include "menu/screen.h"
 #include "menu.h"
 #include "file.h"

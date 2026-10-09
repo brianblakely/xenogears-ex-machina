@@ -5,8 +5,6 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/menu.h"
-#include "menu/panel.h"
-#include "menu/tables.h"
 
 /* The menu overlay's screen framework (slot39; the field menu, kind 0, the
  * title screen's file screen, kind 2, and the CD change, kind 6): the menu
