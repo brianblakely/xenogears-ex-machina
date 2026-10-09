@@ -142,8 +142,10 @@ class TableTests(unittest.TestCase):
                 " (the window stalls)",
             ],
         )
-        self.assertEqual(table_listing(struct.pack("<HHI", 0xFFFF, 0, 0), THRESHOLD),
-                         ["  no messages (count 0xFFFF)"])
+        self.assertEqual(
+            table_listing(struct.pack("<HHI", 0xFFFF, 0, 0), THRESHOLD),
+            ["  no messages (count 0xFFFF)"],
+        )
 
     def test_archive_entries(self):
         text = table([b"\x41\x42\x43\x00"])

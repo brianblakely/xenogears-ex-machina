@@ -94,7 +94,8 @@ maps are identical to Disc 1's.
 - Only the three-digit map selectors load map 489. No immediate field operand
   names it, the new-game state names map 490 (directory 0x10 file 3, +0x231a),
   and no world-map exit names it (the path regions of every area file and the
-  scripted exits). The variable operands are the previous field (`v0004`, set by
+  scripted exits; `python3 -m tools.analysis.dispatch_tables --sweep --only
+  modes`). The variable operands are the previous field (`v0004`, set by
   `80092f44` at each change; map 317 also stores 312), the field `800a30fc`
   saved in `v003c` (maps 488 and 723), 319 with bit 15 (maps 316, 318, 320), map
   317's `v0420` (310, 312-315, 318, 319), and the selectors of maps 0 (`v0408`),
@@ -102,11 +103,12 @@ maps are identical to Disc 1's.
   whose own scripts also list maps 720-729, is entered by the field's debug key
   only when 80010000 is not -1 (`func_80077E88`; both retail executables hold
   -1) and by maps 96, 722 and 728 (map 96 from a choice whose message 0x2e its
-  retail table lacks). Map 723 is one of the listed maps. In map 488 (Shakhan
-  and Bart's scene) actor 56's idle event (event 1) opens a menu whose first
-  choice is the selector while port 1 holds exactly button bit 1 (0x0002); its
-  messages 13 and 18 are missing from the retail table, and its flag `v0050` is
-  written only by maps 0, 721, 723, 728 and that menu.
+  retail table lacks) and world-map path regions with scene 0 in the scripted
+  modes' area files. Map 723 is one of the listed maps. In map 488 (Shakhan and
+  Bart's scene) actor 56's idle event (event 1) opens a menu whose first choice
+  is the selector while port 1 holds exactly button bit 1 (0x0002); its messages
+  13 and 18 are missing from the retail table, and its flag `v0050` is written
+  only by maps 0, 721, 723, 728 and that menu.
 - Map 222 +0x2186: `fc` names party slot 0 and is followed by the 2-byte `a9`,
   so its 6-byte skip would land inside it. Not followed.
 - `8008d808` and `8008da04` write instructions into the bytecode, but nothing
