@@ -35,7 +35,6 @@
 #include "menu/panel.h"
 #include "menu/screen.h"
 #include "menu/shop.h"
-#include "menu/tables.h"
 #include "gear_shop.h"
 
 const CardPrefix D_801C5000 = {"BISLPS-00800"};

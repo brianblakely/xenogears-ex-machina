@@ -2307,6 +2307,8 @@ void func_8008B894(void) {
     D_800B0078->pc--;
 }
 
+void func_8008D380(s32 to, s32 from);
+
 /* Run the join event of party member `member`: the first event actor whose
  * event 0 starts with instruction 0x16 for that member is initialised and
  * run (with the member's own actor while 8004f34c has 0xc000); the running
@@ -8191,6 +8193,9 @@ void func_8009BA7C(void) {
     D_800B0078->pc += 7;
 }
 
+s32 func_8009CD18(s32 *window);
+void func_800A1B70(void);
+
 /* Wait for this actor's dialogue window to close. While it has an open one
  * yield without advancing; once that window's speaker has layer flag 0x200
  * and bit 0 of the actor's window style (+84) is clear, close the window
@@ -8257,8 +8262,6 @@ void func_8009BC98(void) {
 s32 func_8009BE58(void) {
     return ((((s32)(D_800B0078->state.word >> 9) & 7) - (func_8009A514() & 0xFFFF)) & 7) < 5;
 }
-
-s32 func_8009CD18(s32 *window);
 
 /* With byte 1 zero close this actor's open dialogue window (if any);
  * otherwise clear its window overrides (+82, +83, +84, +88, +8a). Advances

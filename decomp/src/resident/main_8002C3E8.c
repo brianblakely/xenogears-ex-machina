@@ -15,7 +15,6 @@
 #include "psyq/libgte.h"
 #include "psyq/inline_c.h"
 #include "resident/heap.h"
-#include "resident/mode.h"
 #include "resident/model.h"
 #include "own_declarations.h"
 
