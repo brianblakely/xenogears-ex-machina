@@ -1,8 +1,10 @@
-"""Validate the current recovery inventory and diagnose incomplete dependencies.
+"""Validate the host reconstruction's inventory and diagnose its missing dependencies.
 
-This is an analysis coverage check, not an instruction interpreter. Inventory
-membership, an observed subset and an authored library never grant a proof pass.
-The existing slice gate evaluates independently reviewed, scoped original proof.
+The inventory (analysis/recovery.json, docs/recovery-inventory.md) records what
+the host reference reconstruction implements and compares, not the recovery of
+the original program, which is matching C under decomp/. This is a coverage
+check, not an instruction interpreter: inventory membership, an observed subset
+and an authored library never grant a proof pass.
 """
 
 from __future__ import annotations
@@ -142,8 +144,9 @@ def entries(
                 "analysis_status": analysis,
                 "native_status": native,
                 "table_value": target,
-                "detail": "Full instruction behavior remains unverified; a shared table value "
-                "does not establish aliases or no-ops. Consult the finding's bounded scope.",
+                "detail": "The host library's status only; the original handler is matching C "
+                "in decomp/src. A shared table value does not make entries aliases or no-ops; "
+                "consult the finding's bounded scope.",
                 "evidence": references,
             }
         expected_hash = table.get("table_sha256" if namespace == "sprite" else "sha256")
@@ -188,7 +191,7 @@ def diagnose(data: dict, dependencies: list[str], coverage: str) -> dict:
             item = {
                 "dependency": key,
                 "analysis_status": "unlisted",
-                "detail": "No qualified inventory entry; add original-source analysis before use.",
+                "detail": "No inventory entry: the host reconstruction records no status for it.",
                 "evidence": [],
             }
         blockers.append({**item, "blocked_coverage": coverage})
