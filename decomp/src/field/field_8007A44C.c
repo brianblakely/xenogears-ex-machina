@@ -2256,9 +2256,9 @@ s32 func_80080A18(void) {
 /* Reset event actor `index` to its defaults and settle it on the floor of
  * each collision layer under its descriptor's position. The +75 store follows
  * the +ea store: its 0xff byte then stays live across the halfword 0xff and
- * takes the other register, as in the original. The (point + i)-> and
- * (normal + layer)-> forms keep the point clears off the call argument as
- * the original does.
+ * takes the other register, as in the original. The (point + i)-> clears keep
+ * the point clears off the call argument as the original does; the
+ * (normal + layer)-> form orders the unk50 address sums.
  */
 void func_80080A74(s32 index) {
     VECTOR normal[4];

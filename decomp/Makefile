@@ -46,8 +46,8 @@ ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 # GP default of 0 and its CC_VERSION.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
 cc_of = $(or $(CC_$(basename $(notdir $(1)))),$(CC_VERSION))
-# CC1FLAGS_<file> adds unit-specific cc1 options (qualified per unit, e.g. the
-# card-refresh unit's -fno-rerun-cse-after-loop).
+# CC1FLAGS_<file> adds unit-specific cc1 options, qualified per unit (no unit
+# needs one at present).
 cc1flags_of = $(CC1FLAGS_$(basename $(notdir $(1))))
 # ASPSX behaviour (maspsx flags): 2.34 by default; MASPSX_FLAGS per target and
 # MASPSX_<file> per unit (e.g. --expand-div where division checks are inline).
