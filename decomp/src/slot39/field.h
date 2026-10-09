@@ -118,12 +118,13 @@ typedef struct MenuFieldMenu2 {
     u8 pad371[0x3];
 } MenuFieldMenu2;
 
-/* The detail panel block (*(state + 358)): a frame, a portrait, the layout
- * parts and the digit lists of the numbers shown, two quads per part (one per
- * draw buffer) with a screen quad each. */
+/* The detail panel block (*(state + 358)): the party slot's portrait (sheet
+ * 14b + slot) and name image, the layout parts and the digit lists of the
+ * numbers shown, two quads per part (one per draw buffer) with a screen quad
+ * each. */
 typedef struct MenuDetail {
-    POLY_FT4 frame[2];           /* 0 */
-    POLY_FT4 portrait[2];        /* 50 */
+    POLY_FT4 portrait[2];        /* 0: 48x48 */
+    POLY_FT4 name[2];            /* 50: 13 high */
     POLY_FT4 parts[66];          /* A0: layout parts (801d6194) */
     POLY_FT4 level[6];           /* AF0: record +62 */
     POLY_FT4 level2[6];          /* BE0: record +63 */
@@ -137,8 +138,8 @@ typedef struct MenuDetail {
     POLY_FT4 epMax[10];          /* 1AE0 */
     POLY_FT4 list1C70[10];       /* 1C70 */
     POLY_FT4 tabs[4];            /* 1E00: two tabs */
-    SVECTOR frameAt[4];          /* 1EA0 */
-    SVECTOR portraitAt[4];       /* 1EC0 */
+    SVECTOR portraitAt[4];       /* 1EA0 */
+    SVECTOR nameAt[4];           /* 1EC0 */
     SVECTOR partsAt[33][4];      /* 1EE0 */
     SVECTOR levelAt[3][4];       /* 2300 */
     SVECTOR level2At[3][4];      /* 2360 */
@@ -197,7 +198,7 @@ typedef struct MenuEquipPanel {
 /* A position record passed to the panel builders (+28 base). */
 typedef struct MenuAnchor {
     s32 parts[9]; /* 0: layout sprite positions */
-    s32 frame; /* 24: frame sprite */
+    s32 face; /* 24: the portrait (sheet 14b + row) */
     s32 base; /* 28: level digits */
     s32 unk2C; /* 2C */
     s32 hp; /* 30 */
@@ -207,10 +208,11 @@ typedef struct MenuAnchor {
     s32 label; /* 40: name label */
 } MenuAnchor;
 
-/* A field-menu block (*(state + 39c)): frame quads and part lists. */
+/* A field-menu block (*(state + 39c)): the party member's portrait (sheet
+ * 14b + index) and name image, and part lists. */
 typedef struct MenuFieldBlock {
-    POLY_FT4 frameA[2]; /* 0 */
-    POLY_FT4 frameB[2]; /* 50 */
+    POLY_FT4 portrait[2]; /* 0 */
+    POLY_FT4 name[2]; /* 50 */
     POLY_FT4 list0[54]; /* A0 */
     POLY_FT4 list6[6]; /* 910 */
     POLY_FT4 list8[6]; /* A00 */

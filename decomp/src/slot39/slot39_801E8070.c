@@ -270,7 +270,7 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->b0 = shade;
 }
 
-/* Set the blending of portrait `index`'s quads of the current buffer: plain
+/* Set the blending of panel `index`'s quads of the current buffer: plain
  * (2), or dim (3) when the dim flag `mode` is set. Every edge list is walked
  * four pairs deep, so each pass also covers the list after it, as the
  * original does. */

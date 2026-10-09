@@ -774,7 +774,7 @@ void func_801DE2C8(u8 page) {
     func_801D3488(1, page);
 }
 
-/* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
+/* Close the 801ddf24 screen: panels 2-5, its labels and block (+434); view 17. */
 void func_801DE36C(void) {
     D_800625A0->flags->equip_list_shown = 0;
     func_801D4EA0(2);
@@ -3140,14 +3140,14 @@ void func_801E5178(void) {
     D_8006D634.skills[10].tier = 7;
 }
 
-/* Set up portrait `index`: hide it and its mark, set the grey covers and
+/* Set up panel `index`: hide it and stop its opening, set the grey fills and
  * their draw modes, and the four edge lists' quads (sheet records 0-3). */
 void func_801E53CC(u8 index) {
-    MenuPanel *portrait;
+    MenuPanel *panel;
     RECT window;
     u8 i;
 
-    portrait = D_800625A0->panels[index];
+    panel = D_800625A0->panels[index];
     window.y = 0;
     window.x = 0;
     window.h = 0x100;
@@ -3155,56 +3155,56 @@ void func_801E53CC(u8 index) {
     D_800625A0->flags->panels_shown[index] = 0;
     D_800625A0->flags->panels_growing[index] = 0;
     for (i = 0; i < 2; i++) {
-        SetPolyG4(&portrait->fill[i]);
-        (portrait->fill + i)->r0 = 0x68;
-        (portrait->fill + i)->g0 = 0x68;
-        (portrait->fill + i)->b0 = 0x68;
-        (portrait->fill + i)->r1 = 0x68;
-        (portrait->fill + i)->g1 = 0x68;
-        (portrait->fill + i)->b1 = 0x68;
-        (portrait->fill + i)->r2 = 0x68;
-        (portrait->fill + i)->g2 = 0x68;
-        (portrait->fill + i)->b2 = 0x68;
-        (portrait->fill + i)->r3 = 0x68;
-        (portrait->fill + i)->g3 = 0x68;
-        (portrait->fill + i)->b3 = 0x68;
-        SetSemiTrans(&portrait->fill[i], 1);
-        SetDrawMode(&portrait->fill_mode[i], 0, 0,
+        SetPolyG4(&panel->fill[i]);
+        (panel->fill + i)->r0 = 0x68;
+        (panel->fill + i)->g0 = 0x68;
+        (panel->fill + i)->b0 = 0x68;
+        (panel->fill + i)->r1 = 0x68;
+        (panel->fill + i)->g1 = 0x68;
+        (panel->fill + i)->b1 = 0x68;
+        (panel->fill + i)->r2 = 0x68;
+        (panel->fill + i)->g2 = 0x68;
+        (panel->fill + i)->b2 = 0x68;
+        (panel->fill + i)->r3 = 0x68;
+        (panel->fill + i)->g3 = 0x68;
+        (panel->fill + i)->b3 = 0x68;
+        SetSemiTrans(&panel->fill[i], 1);
+        SetDrawMode(&panel->fill_mode[i], 0, 0,
                     GetTPage(0, 0, D_800625A0->sheet_entries[0].page_x, D_800625A0->sheet_entries[0].page_y), &window);
     }
     for (i = 0; i < 4; i++) {
-        SetPolyFT4(&portrait->edge[0][i]);
-        SetShadeTex(&portrait->edge[0][i], 1);
-        (portrait->edge[0] + i)->r0 = 0xff;
-        (portrait->edge[0] + i)->g0 = 0xff;
-        (portrait->edge[0] + i)->b0 = 0xff;
-        portrait->edge[0][i].tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0, D_800625A0->sheet_entries[0].page_x,
+        SetPolyFT4(&panel->edge[0][i]);
+        SetShadeTex(&panel->edge[0][i], 1);
+        (panel->edge[0] + i)->r0 = 0xff;
+        (panel->edge[0] + i)->g0 = 0xff;
+        (panel->edge[0] + i)->b0 = 0xff;
+        panel->edge[0][i].tpage = GetTPage(D_800625A0->sheet_entries[0].mode, 0, D_800625A0->sheet_entries[0].page_x,
                                             D_800625A0->sheet_entries[0].page_y);
-        portrait->edge[0][i].clut = GetClut(D_800625A0->sheet_entries[0].clut_x, D_800625A0->sheet_entries[0].clut_y);
-        SetPolyFT4(&portrait->edge[1][i]);
-        SetShadeTex(&portrait->edge[1][i], 1);
-        (portrait->edge[1] + i)->r0 = 0xff;
-        (portrait->edge[1] + i)->g0 = 0xff;
-        (portrait->edge[1] + i)->b0 = 0xff;
-        portrait->edge[1][i].tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0, D_800625A0->sheet_entries[1].page_x,
+        panel->edge[0][i].clut = GetClut(D_800625A0->sheet_entries[0].clut_x, D_800625A0->sheet_entries[0].clut_y);
+        SetPolyFT4(&panel->edge[1][i]);
+        SetShadeTex(&panel->edge[1][i], 1);
+        (panel->edge[1] + i)->r0 = 0xff;
+        (panel->edge[1] + i)->g0 = 0xff;
+        (panel->edge[1] + i)->b0 = 0xff;
+        panel->edge[1][i].tpage = GetTPage(D_800625A0->sheet_entries[1].mode, 0, D_800625A0->sheet_entries[1].page_x,
                                             D_800625A0->sheet_entries[1].page_y);
-        portrait->edge[1][i].clut = GetClut(D_800625A0->sheet_entries[1].clut_x, D_800625A0->sheet_entries[1].clut_y);
-        SetPolyFT4(&portrait->edge[2][i]);
-        SetShadeTex(&portrait->edge[2][i], 1);
-        (portrait->edge[2] + i)->r0 = 0xff;
-        (portrait->edge[2] + i)->g0 = 0xff;
-        (portrait->edge[2] + i)->b0 = 0xff;
-        portrait->edge[2][i].tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0, D_800625A0->sheet_entries[2].page_x,
+        panel->edge[1][i].clut = GetClut(D_800625A0->sheet_entries[1].clut_x, D_800625A0->sheet_entries[1].clut_y);
+        SetPolyFT4(&panel->edge[2][i]);
+        SetShadeTex(&panel->edge[2][i], 1);
+        (panel->edge[2] + i)->r0 = 0xff;
+        (panel->edge[2] + i)->g0 = 0xff;
+        (panel->edge[2] + i)->b0 = 0xff;
+        panel->edge[2][i].tpage = GetTPage(D_800625A0->sheet_entries[2].mode, 0, D_800625A0->sheet_entries[2].page_x,
                                             D_800625A0->sheet_entries[2].page_y);
-        portrait->edge[2][i].clut = GetClut(D_800625A0->sheet_entries[2].clut_x, D_800625A0->sheet_entries[2].clut_y);
-        SetPolyFT4(&portrait->edge[3][i]);
-        SetShadeTex(&portrait->edge[3][i], 1);
-        (portrait->edge[3] + i)->r0 = 0xff;
-        (portrait->edge[3] + i)->g0 = 0xff;
-        (portrait->edge[3] + i)->b0 = 0xff;
-        portrait->edge[3][i].tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0, D_800625A0->sheet_entries[3].page_x,
+        panel->edge[2][i].clut = GetClut(D_800625A0->sheet_entries[2].clut_x, D_800625A0->sheet_entries[2].clut_y);
+        SetPolyFT4(&panel->edge[3][i]);
+        SetShadeTex(&panel->edge[3][i], 1);
+        (panel->edge[3] + i)->r0 = 0xff;
+        (panel->edge[3] + i)->g0 = 0xff;
+        (panel->edge[3] + i)->b0 = 0xff;
+        panel->edge[3][i].tpage = GetTPage(D_800625A0->sheet_entries[3].mode, 0, D_800625A0->sheet_entries[3].page_x,
                                             D_800625A0->sheet_entries[3].page_y);
-        portrait->edge[3][i].clut = GetClut(D_800625A0->sheet_entries[3].clut_x, D_800625A0->sheet_entries[3].clut_y);
+        panel->edge[3][i].clut = GetClut(D_800625A0->sheet_entries[3].clut_x, D_800625A0->sheet_entries[3].clut_y);
     }
 }
 

@@ -42,8 +42,8 @@ typedef struct MenuDataArchive {
 } MenuDataArchive;
 
 extern s32 D_801EA1EC[]; /* per command: four choices of cursor and label images */
-/* Sheet positions of label images, x / 4 and y: per row pair, from entry 3
- * the portrait per slot (characters, then gears), from 6 the view names. */
+/* Sheet positions (u / 4, v) of the name images 801e8da8 renders: 0-2 the
+ * party slots' characters, 3-5 their gears, from 6 the file views. */
 extern s32 D_801EA578[19];
 extern s32 D_801EA5C4[19];
 extern s32 D_801E9A00[]; /* highlight positions: x */
@@ -99,7 +99,7 @@ void func_801CE338(void);
 void func_801CE3C8(void);
 void func_801CEC40(void);
 void func_801CF308(void);
-void func_801D09F0(s32 index, u8 full);
+void func_801D09F0(s32 index, u8 has_bar);
 void func_801D0C78(void);
 void func_801D0D90(void);
 void func_801D0E20(void);
@@ -127,7 +127,7 @@ void func_801D3344(s32 x, s32 y, s32 h);
 void func_801D3444(void);
 void func_801D3674(void);
 void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode);
-void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 arg7, u8 arg8);
+void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801D3B00(void);
 void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h);
 void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h);
@@ -135,7 +135,7 @@ void func_801D3FF8(u8 index, u16 x, u16 y, u16 w);
 void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h);
 void func_801D4688(u8 index, u16 x, u16 y, u16 h);
 void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h);
-void func_801D4D1C(u8 image, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 arg7);
+void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801D4EA0(u8 slot);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);

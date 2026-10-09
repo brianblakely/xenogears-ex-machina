@@ -147,7 +147,7 @@ s32 D_801E9B48 = 0x88; /* exp */
 s32 D_801E9B4C = 0x20;
 s32 D_801E9B50 = 0x88; /* exp to next level */
 s32 D_801E9B54 = 0x28;
-s32 D_801E9B58 = 0x30; /* field block portrait offset: x */
+s32 D_801E9B58 = 0x30; /* field block name image offset: x */
 s32 D_801E9B5C = 0x11; /* y */
 /* detail panel part positions, 24 per layout: x */
 s32 D_801E9B60[48] = {
@@ -186,7 +186,7 @@ s32 D_801E9D28 = 0xB8; /* exp to next level */
 s32 D_801E9D2C = 0x16;
 s32 D_801E9D30 = 0x50; /* +77..79 value */
 s32 D_801E9D34 = 0x46;
-s32 D_801E9D38 = 0x48; /* detail panel portrait position: x */
+s32 D_801E9D38 = 0x48; /* detail panel name image position: x */
 s32 D_801E9D3C = 0x20; /* y */
 s32 D_801E9D40[7] = { 8, 8, 8, 8, 8, 8, 8 }; /* stat name positions per row: x */
 s32 D_801E9D5C[7] = { 0, 8, 0x10, 0x18, 0x20, 0x28, 0x30 }; /* y */
@@ -259,8 +259,8 @@ MenuAnchor D_801EA120[1] = {
 };
 s32 D_801EA164[2] = { 0, 0x114 }; /* party window sprite x */
 s32 D_801EA16C[4] = { 0x66, 0x76, 0x76, 0xC }; /* party window sprite y per row */
-s32 D_801EA17C[4] = { 0x34, 0xA0, 0x24, 0xA0 }; /* portrait panel x per mode */
-s32 D_801EA18C[4] = { 0x80, 0xC2, 0x20, 0x5A }; /* portrait panel y per mode */
+s32 D_801EA17C[4] = { 0x34, 0xA0, 0x24, 0xA0 }; /* name label position per mode (801d36e0): x */
+s32 D_801EA18C[4] = { 0x80, 0xC2, 0x20, 0x5A }; /* y */
 /* field menu command cursor images */
 MenuCommandImages D_801EA19C[7] = {
     { 0x109, 0x131 }, { 0x10A, 0x130 }, { 0x10B, 0x12F }, { 0x10C, 0x12E },
@@ -2519,12 +2519,6 @@ void func_801CB28C(s32 *save) {
     func_801CB184();
 }
 
-/* The load: refresh the cards (no card returns), find a slot with this
- * game's file (none: message 62 and return 0), then run the cursor until
- * cancel (return 0) or confirm: ask (message 65); on yes read the file in
- * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
- * its last byte, apply it; message 5c ends the load, a failure shows message
- * 3e and continues. */
 /* Read the save file in 100h chunks into a 2100h block (a failed read
  * closes the file and frees the block) and apply it when its sum
  * matches (a statement macro). */
@@ -2568,6 +2562,12 @@ void func_801CB28C(s32 *save) {
         }                                                    \
     } while (0)
 
+/* The load: refresh the cards (no card returns), find a slot with this
+ * game's file (none: message 62 and return 0), then run the cursor until
+ * cancel (return 0) or confirm: ask (message 65); on yes read the file in
+ * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
+ * its last byte, apply it; message 5c ends the load, a failure shows message
+ * 3e and continues. */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -3450,8 +3450,8 @@ void func_801CD81C(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnc
                                            x->parts[i], row * 56 + y->parts[i], 0x1000);
         }
     }
-    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->face, D_800625A0->buffer_index, x->frame,
-                  row * 56 + y->frame, 0x1000);
+    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->face, D_800625A0->buffer_index, x->face,
+                  row * 56 + y->face, 0x1000);
     func_801E927C(&panel->label[D_800625A0->buffer_index]);
     panel->label[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
     if (layout == 0) {
@@ -3626,8 +3626,8 @@ void func_801CE540(void) {
     for (i = 0; i < 3; i++) {
         block = D_800625A0->field_blocks[i];
         if (D_800625A0->flags->field_blocks_shown[i] != 0) {
-            AddPrim(&D_800625A0->current->ot[4], &block->frameA[block->buffer]);
-            AddPrim(&D_800625A0->current->ot[4], &block->frameB[block->buffer]);
+            AddPrim(&D_800625A0->current->ot[4], &block->portrait[block->buffer]);
+            AddPrim(&D_800625A0->current->ot[4], &block->name[block->buffer]);
             func_801CE2B4(block->count0, block->list0, block->buffer);
             func_801CE2B4(block->count1, block->list1, block->buffer);
             func_801CE2B4(block->count2, block->list2, block->buffer);
@@ -3639,13 +3639,13 @@ void func_801CE540(void) {
     }
 }
 
-/* While party flag +7 is set, draw the detail panel: frame, portrait, tabs,
+/* While party flag +7 is set, draw the detail panel: portrait, name, tabs,
  * layout parts and the number lists (level2, value40 and expNext are not
  * drawn here). */
 void func_801CE660(void) {
     if (D_800625A0->flags->detail_shown != 0) {
-        func_801CE198(1, D_800625A0->detail->frameAt, D_800625A0->detail->frame, D_800625A0->detail->buffer);
         func_801CE198(1, D_800625A0->detail->portraitAt, D_800625A0->detail->portrait, D_800625A0->detail->buffer);
+        func_801CE198(1, D_800625A0->detail->nameAt, D_800625A0->detail->name, D_800625A0->detail->buffer);
         func_801CE198(D_800625A0->detail->tabCount, D_800625A0->detail->tabsAt[0], D_800625A0->detail->tabs, D_800625A0->detail->tabBuffer);
         func_801CE198(D_800625A0->detail->count, D_800625A0->detail->partsAt[0], D_800625A0->detail->parts, D_800625A0->detail->buffer);
         func_801CE198(D_800625A0->detail->hpCount, D_800625A0->detail->hpAt[0], D_800625A0->detail->hp, D_800625A0->detail->buffer);
@@ -4063,42 +4063,42 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
-/* Draw portrait window `index`: its corners, the frame sprites when
- * `framed`, the edges and the fill. */
-void func_801D09F0(s32 index, u8 framed) {
-    MenuPanel *portrait;
+/* Draw panel `index`: its corners, the scroll bar with `has_bar`, the edges
+ * and the fill. */
+void func_801D09F0(s32 index, u8 has_bar) {
+    MenuPanel *panel;
     s32 i;
     s32 p;
     s32 flag;
 
-    portrait = D_800625A0->panels[index];
+    panel = D_800625A0->panels[index];
     for (i = 0; i < 4; i++) {
-        func_801D0954(&portrait->corner_at[i * 4], &portrait->corner[i * 2], portrait->buffer, portrait->ot_entry);
+        func_801D0954(&panel->corner_at[i * 4], &panel->corner[i * 2], panel->buffer, panel->ot_entry);
     }
-    if (framed) {
+    if (has_bar) {
         for (i = 0; i < 2; i++) {
-            func_801D0954(&portrait->ends_at[i * 4], &portrait->bar_ends[i * 2], portrait->buffer, portrait->ot_entry);
+            func_801D0954(&panel->ends_at[i * 4], &panel->bar_ends[i * 2], panel->buffer, panel->ot_entry);
         }
-        func_801D0954(portrait->side_at, portrait->bar_side, portrait->buffer, portrait->ot_entry);
+        func_801D0954(panel->side_at, panel->bar_side, panel->buffer, panel->ot_entry);
     }
-    func_801D0954(portrait->edge_at[0][0], &portrait->edge[0][0], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[0][1], &portrait->edge[0][2], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[1][0], &portrait->edge[1][0], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[1][1], &portrait->edge[1][2], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[2][0], &portrait->edge[2][0], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[2][1], &portrait->edge[2][2], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[3][0], &portrait->edge[3][0], portrait->buffer, portrait->ot_entry);
-    func_801D0954(portrait->edge_at[3][1], &portrait->edge[3][2], portrait->buffer, portrait->ot_entry);
-    RotTransPers4(&portrait->fill_at[0], &portrait->fill_at[1], &portrait->fill_at[2], &portrait->fill_at[3],
-                  (s32 *)&portrait->fill[portrait->buffer].x0, (s32 *)&portrait->fill[portrait->buffer].x1,
-                  (s32 *)&portrait->fill[portrait->buffer].x2, (s32 *)&portrait->fill[portrait->buffer].x3, &p,
+    func_801D0954(panel->edge_at[0][0], &panel->edge[0][0], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[0][1], &panel->edge[0][2], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[1][0], &panel->edge[1][0], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[1][1], &panel->edge[1][2], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[2][0], &panel->edge[2][0], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[2][1], &panel->edge[2][2], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[3][0], &panel->edge[3][0], panel->buffer, panel->ot_entry);
+    func_801D0954(panel->edge_at[3][1], &panel->edge[3][2], panel->buffer, panel->ot_entry);
+    RotTransPers4(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
+                  (s32 *)&panel->fill[panel->buffer].x0, (s32 *)&panel->fill[panel->buffer].x1,
+                  (s32 *)&panel->fill[panel->buffer].x2, (s32 *)&panel->fill[panel->buffer].x3, &p,
                   &flag);
-    AddPrim(&D_800625A0->current->ot[portrait->ot_entry], &portrait->fill[portrait->buffer]);
-    AddPrim(&D_800625A0->current->ot[portrait->ot_entry], &portrait->fill_mode[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill[panel->buffer]);
+    AddPrim(&D_800625A0->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
 
-/* Draw the shown portrait windows; those of style 0 are drawn under an
- * identity rotation at depth 0x200. */
+/* Draw the shown panels; those not flat are drawn under an identity
+ * rotation at depth 0x200. */
 void func_801D0C78(void) {
     s32 i;
     SVECTOR angles;
@@ -4282,7 +4282,7 @@ void func_801D12D4(MenuStatusPanel *panel, u8 extra) {
     }
 }
 
-/* While party flag +46 is set, draw the three portrait panels (+1e08). */
+/* While party flag +46 is set, draw the three party status panels (+1e08). */
 void func_801D13F8(void) {
     s32 i;
 
@@ -4774,7 +4774,7 @@ void func_801D29A8(u8 open, u8 keep) {
     func_801C7BF4();
 }
 
-/* Open the field menu: the two top portraits, then each party member's and
+/* Open the field menu: the first two panels, then each party member's and
  * gear's name image, the command cursor, panels and money window. */
 void func_801D2D38(void) {
     s32 i;
@@ -4820,7 +4820,7 @@ void func_801D2EC0(u8 slot, u8 mode) {
     func_801D8EA4(slot, 0, 0, mode);
 }
 
-/* Open the notice window (portrait 2) and show three lines of label text
+/* Open the notice window (panel 2) and show three lines of label text
  * from entry `message`: four line labels (pairs share one render buffer)
  * rendered into VRAM and laid out as quads. */
 void func_801D2F4C(u8 message) {
@@ -4870,7 +4870,7 @@ void func_801D2F4C(u8 message) {
     func_801C7BF4();
 }
 
-/* Close the notice when open (party +22): free portrait 2 and its four
+/* Close the notice when open (party +22): free panel 2 and its four
  * blocks (+1de0), then finish a frame. */
 void func_801D32B4(void) {
     s32 i;
@@ -4956,8 +4956,8 @@ void func_801D3674(void) {
     }
 }
 
-/* Lay out `label` as the portrait of party slot `slot` (its character, or
- * its gear when `gear`) at the panel position of `mode`. */
+/* Lay out `label` as the name image of party slot `slot` (its character's,
+ * or its gear's when `gear`) at the position of `mode`. */
 void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode) {
     s32 x;
     s32 w;
@@ -4982,9 +4982,10 @@ void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode) {
     label->buffer = D_800625A0->buffer_index;
 }
 
-/* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
- * lay it out at once. Windows from 2 get their own blocks. */
-void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 arg7, u8 arg8) {
+/* Open panel `index` at (x, y) of w x h: from its centre (`grow`; the
+ * opening keeps no scroll bar) or laid out at once. Panels from 2 get their
+ * own blocks (801d2d38 allocates the first two). */
+void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar) {
     MenuGrowth *mark;
     void *block;
 
@@ -5008,15 +5009,15 @@ void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 a
         mark->cur_w = 0;
         mark->cur_h = 0;
         D_800625A0->flags->panels_growing[index] = 1;
-        mark->flat = arg6;
-        mark->ot_entry = arg7;
+        mark->flat = flat;
+        mark->ot_entry = ot_entry;
         return;
     }
-    func_801D4D1C(index, x, y, w, h, arg6, arg7, arg8);
+    func_801D4D1C(index, x, y, w, h, flat, ot_entry, has_bar);
 }
 
-/* Grow each shown portrait mark by 32 per frame towards its full size
- * (centred), marking it done when both sides are full, and draw it. */
+/* Grow each opening panel by 32 per frame towards its full size (centred),
+ * marking it done when both sides are full, and lay it out. */
 void func_801D3B00(void) {
     s32 i;
     MenuGrowth *mark;
@@ -5048,193 +5049,193 @@ void func_801D3B00(void) {
     }
 }
 
-/* Lay out portrait `slot`'s frame at (x, y), `h` high: the top, the flipped
- * bottom and the side pieces. */
+/* Lay out panel `slot`'s scroll bar at (x, y), `h` high: the top end, the
+ * flipped bottom end and the side piece. */
 void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
-    MenuPanel *portrait;
+    MenuPanel *panel;
 
-    portrait = D_800625A0->panels[slot];
-    func_8002675C(D_800625A0->sheet, 0x105, portrait->bar_ends, D_800625A0->buffer_index, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, &portrait->bar_ends[2], D_800625A0->buffer_index, x, y + h - 8, 0x1000,
+    panel = D_800625A0->panels[slot];
+    func_8002675C(D_800625A0->sheet, 0x105, panel->bar_ends, D_800625A0->buffer_index, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, &panel->bar_ends[2], D_800625A0->buffer_index, x, y + h - 8, 0x1000,
                   0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, portrait->bar_side, D_800625A0->buffer_index, x, y + 8, 0x1000);
-    func_801C851C(&portrait->ends_at[0], x, y, 8, 8);
-    func_801C851C(&portrait->ends_at[4], x, y + h, 8, -8);
-    func_801C851C(portrait->side_at, x, y + 8, 8, h - 8);
+    func_8002675C(D_800625A0->sheet, 0x106, panel->bar_side, D_800625A0->buffer_index, x, y + 8, 0x1000);
+    func_801C851C(&panel->ends_at[0], x, y, 8, 8);
+    func_801C851C(&panel->ends_at[4], x, y + h, 8, -8);
+    func_801C851C(panel->side_at, x, y + 8, 8, h - 8);
 }
 
-/* Build portrait window `index`'s four corner sprites (sheet fd, ff, 102,
+/* Build panel `index`'s four corner sprites (sheet fd, ff, 102,
  * 104) for this buffer and place them around the w x h rectangle at (x, y),
  * mirrored by negative extents; make them semi-transparent. */
 void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPanel *portrait = D_800625A0->panels[index];
+    MenuPanel *panel = D_800625A0->panels[index];
     s32 i;
 
-    portrait->corner_parts = 0;
-    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0xfd, portrait->corner, D_800625A0->buffer_index, 0, 0,
+    panel->corner_parts = 0;
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0xfd, panel->corner, D_800625A0->buffer_index, 0, 0,
                                            0x1000);
-    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0xff, &portrait->corner[portrait->corner_parts * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0xff, &panel->corner[panel->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0x102, &portrait->corner[portrait->corner_parts * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0x102, &panel->corner[panel->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    portrait->corner_parts += func_8002675C(D_800625A0->sheet, 0x104, &portrait->corner[portrait->corner_parts * 2],
+    panel->corner_parts += func_8002675C(D_800625A0->sheet, 0x104, &panel->corner[panel->corner_parts * 2],
                                            D_800625A0->buffer_index, 0, 0, 0x1000);
-    func_801C851C(&portrait->corner_at[0], x - 8, y + 8, 16, -16);
-    func_801C851C(&portrait->corner_at[4], x + w + 8, y + 8, -16, -16);
-    func_801C851C(&portrait->corner_at[8], x - 8, y + h - 8, 16, 16);
-    func_801C851C(&portrait->corner_at[12], x + w + 8, y + h - 8, -16, 16);
+    func_801C851C(&panel->corner_at[0], x - 8, y + 8, 16, -16);
+    func_801C851C(&panel->corner_at[4], x + w + 8, y + 8, -16, -16);
+    func_801C851C(&panel->corner_at[8], x - 8, y + h - 8, 16, 16);
+    func_801C851C(&panel->corner_at[12], x + w + 8, y + h - 8, -16, 16);
     for (i = 0; i < 4; i++) {
-        func_801E91C4(&portrait->corner[i * 2 + D_800625A0->buffer_index]);
+        func_801E91C4(&panel->corner[i * 2 + D_800625A0->buffer_index]);
     }
 }
 
-/* Map portrait window `index`'s top edge pieces for this buffer and place them in two
+/* Map panel `index`'s top edge pieces for this buffer and place them in two
  * halves along the top of (x, y, w). */
 void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
-    MenuPanel *portrait = D_800625A0->panels[index];
+    MenuPanel *panel = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
-    (portrait->edge[0] + D_800625A0->buffer_index)->u0 = 0;
-    (portrait->edge[0] + D_800625A0->buffer_index)->v0 = 0x84;
-    (portrait->edge[0] + D_800625A0->buffer_index)->u1 = 7;
-    (portrait->edge[0] + D_800625A0->buffer_index)->v1 = 0x84;
-    (portrait->edge[0] + D_800625A0->buffer_index)->u2 = 0;
-    (portrait->edge[0] + D_800625A0->buffer_index)->v2 = 0x94;
-    (portrait->edge[0] + D_800625A0->buffer_index)->u3 = 7;
-    (portrait->edge[0] + D_800625A0->buffer_index)->v3 = 0x94;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->u0 = 0;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->v0 = 0x84;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->u1 = 7;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->v1 = 0x84;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->u2 = 0;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->v2 = 0x94;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->u3 = 7;
-    (portrait->edge[0] + D_800625A0->buffer_index + 2)->v3 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 16) / 2;
-    func_801C851C(portrait->edge_at[0][0], x + 8, y - 8, half, 16);
-    func_801C851C(portrait->edge_at[0][1], x + (half + 8), y - 8, half, 16);
+    func_801C851C(panel->edge_at[0][0], x + 8, y - 8, half, 16);
+    func_801C851C(panel->edge_at[0][1], x + (half + 8), y - 8, half, 16);
     for (i = 0; i < 2; i++) {
-        func_801E91C4(&portrait->edge[0][i * 2 + D_800625A0->buffer_index]);
+        func_801E91C4(&panel->edge[0][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
-/* Map portrait window `index`'s bottom edge pieces for this buffer and place them in
+/* Map panel `index`'s bottom edge pieces for this buffer and place them in
  * two halves along the bottom of (x, y, w, h). */
 void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPanel *portrait = D_800625A0->panels[index];
+    MenuPanel *panel = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
-    (portrait->edge[1] + D_800625A0->buffer_index)->u0 = 8;
-    (portrait->edge[1] + D_800625A0->buffer_index)->v0 = 0x84;
-    (portrait->edge[1] + D_800625A0->buffer_index)->u1 = 0xF;
-    (portrait->edge[1] + D_800625A0->buffer_index)->v1 = 0x84;
-    (portrait->edge[1] + D_800625A0->buffer_index)->u2 = 8;
-    (portrait->edge[1] + D_800625A0->buffer_index)->v2 = 0x94;
-    (portrait->edge[1] + D_800625A0->buffer_index)->u3 = 0xF;
-    (portrait->edge[1] + D_800625A0->buffer_index)->v3 = 0x94;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->u0 = 8;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->v0 = 0x84;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->u1 = 0xF;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->v1 = 0x84;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->u2 = 8;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->v2 = 0x94;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->u3 = 0xF;
-    (portrait->edge[1] + D_800625A0->buffer_index + 2)->v3 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v3 = 0x94;
     half = (w - 16) / 2;
-    func_801C851C(portrait->edge_at[1][0], x + 8, y + h - 8, half, 16);
-    func_801C851C(portrait->edge_at[1][1], x + (half + 8), y + h - 8, half, 16);
+    func_801C851C(panel->edge_at[1][0], x + 8, y + h - 8, half, 16);
+    func_801C851C(panel->edge_at[1][1], x + (half + 8), y + h - 8, half, 16);
     for (i = 0; i < 2; i++) {
-        func_801E91C4(&portrait->edge[1][i * 2 + D_800625A0->buffer_index]);
+        func_801E91C4(&panel->edge[1][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
-/* Map portrait window `index`'s left edge pieces for this buffer and place them in two
+/* Map panel `index`'s left edge pieces for this buffer and place them in two
  * halves down the left of (x, y, h). */
 void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
-    MenuPanel *portrait = D_800625A0->panels[index];
+    MenuPanel *panel = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
-    (portrait->edge[2] + D_800625A0->buffer_index)->u0 = 0x10;
-    (portrait->edge[2] + D_800625A0->buffer_index)->v0 = 0x84;
-    (portrait->edge[2] + D_800625A0->buffer_index)->u1 = 0x20;
-    (portrait->edge[2] + D_800625A0->buffer_index)->v1 = 0x84;
-    (portrait->edge[2] + D_800625A0->buffer_index)->u2 = 0x10;
-    (portrait->edge[2] + D_800625A0->buffer_index)->v2 = 0x8B;
-    (portrait->edge[2] + D_800625A0->buffer_index)->u3 = 0x20;
-    (portrait->edge[2] + D_800625A0->buffer_index)->v3 = 0x8B;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->u0 = 0x10;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->v0 = 0x84;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->u1 = 0x20;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->v1 = 0x84;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->u2 = 0x10;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->v2 = 0x8B;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->u3 = 0x20;
-    (portrait->edge[2] + D_800625A0->buffer_index + 2)->v3 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v3 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v3 = 0x8B;
     half = (h - 16) / 2;
-    func_801C851C(portrait->edge_at[2][0], x - 8, y + 8, 16, half);
-    func_801C851C(portrait->edge_at[2][1], x - 8, y + (half + 8), 16, half);
+    func_801C851C(panel->edge_at[2][0], x - 8, y + 8, 16, half);
+    func_801C851C(panel->edge_at[2][1], x - 8, y + (half + 8), 16, half);
     for (i = 0; i < 2; i++) {
-        func_801E91C4(&portrait->edge[2][i * 2 + D_800625A0->buffer_index]);
+        func_801E91C4(&panel->edge[2][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
-/* Map portrait window `index`'s right edge pieces for this buffer and place them in two
+/* Map panel `index`'s right edge pieces for this buffer and place them in two
  * halves down the right of (x, y, w, h). */
 void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
-    MenuPanel *portrait = D_800625A0->panels[index];
+    MenuPanel *panel = D_800625A0->panels[index];
     s32 half;
     s32 i;
 
-    (portrait->edge[3] + D_800625A0->buffer_index)->u0 = 0x10;
-    (portrait->edge[3] + D_800625A0->buffer_index)->v0 = 0x8C;
-    (portrait->edge[3] + D_800625A0->buffer_index)->u1 = 0x20;
-    (portrait->edge[3] + D_800625A0->buffer_index)->v1 = 0x8C;
-    (portrait->edge[3] + D_800625A0->buffer_index)->u2 = 0x10;
-    (portrait->edge[3] + D_800625A0->buffer_index)->v2 = 0x93;
-    (portrait->edge[3] + D_800625A0->buffer_index)->u3 = 0x20;
-    (portrait->edge[3] + D_800625A0->buffer_index)->v3 = 0x93;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->u0 = 0x10;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->v0 = 0x8C;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->u1 = 0x20;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->v1 = 0x8C;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->u2 = 0x10;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->v2 = 0x93;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->u3 = 0x20;
-    (portrait->edge[3] + D_800625A0->buffer_index + 2)->v3 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v3 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v3 = 0x93;
     half = (h - 16) / 2;
-    func_801C851C(portrait->edge_at[3][0], x + w - 8, y + 8, 16, half);
-    func_801C851C(portrait->edge_at[3][1], x + w - 8, y + (half + 8), 16, half);
+    func_801C851C(panel->edge_at[3][0], x + w - 8, y + 8, 16, half);
+    func_801C851C(panel->edge_at[3][1], x + w - 8, y + (half + 8), 16, half);
     for (i = 0; i < 2; i++) {
-        func_801E91C4(&portrait->edge[3][i * 2 + D_800625A0->buffer_index]);
+        func_801E91C4(&panel->edge[3][i * 2 + D_800625A0->buffer_index]);
     }
 }
 
-/* Lay out portrait window `index` at (x, y) of w x h and show it. */
-void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8 framed) {
-    MenuPanel *portrait;
+/* Lay out panel `index` at (x, y) of w x h and show it. */
+void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar) {
+    MenuPanel *panel;
 
-    portrait = D_800625A0->panels[index];
+    panel = D_800625A0->panels[index];
     D_800625A0->flags->panels_shown[index] = 0;
-    func_801C851C(portrait->fill_at, x, y, w, h);
+    func_801C851C(panel->fill_at, x, y, w, h);
     func_801D3DB0(index, x, y, w, h);
     func_801D3FF8(index, x, y, w);
     func_801D433C(index, x, y, w, h);
     func_801D4688(index, x, y, h);
     func_801D49D0(index, x, y, w, h);
-    if (framed) {
+    if (has_bar) {
         func_801D3C4C(index, x, y, w, h);
     }
-    portrait->has_bar = framed;
-    portrait->flat = style;
-    portrait->ot_entry = depth;
-    portrait->buffer = D_800625A0->buffer_index;
+    panel->has_bar = has_bar;
+    panel->flat = flat;
+    panel->ot_entry = ot_entry;
+    panel->buffer = D_800625A0->buffer_index;
     D_800625A0->flags->panels_shown[index] = 1;
 }
 
-/* Hide and free portrait `slot`. */
+/* Hide and free panel `slot` and its opening record. */
 void func_801D4EA0(u8 slot) {
     D_800625A0->flags->panels_shown[slot] = 0;
     D_800625A0->flags->panels_growing[slot] = 0;
@@ -5242,16 +5243,16 @@ void func_801D4EA0(u8 slot) {
     func_800320E8(D_800625A0->growth[slot]);
 }
 
-/* Build field block `index`'s frame (sheet 14b + index) at (x, y) and its
- * character portrait quad. */
+/* Build field block `index`'s portrait (sheet 14b + index) at (x, y) and its
+ * character's name image quad. */
 void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y) {
     MenuFieldBlock *block = D_800625A0->field_blocks[index];
 
-    func_8002675C(D_800625A0->sheet, index + 0x14b, block->frameA, D_800625A0->buffer_index, x, y, 0x1000);
-    func_801E927C(&block->frameB[D_800625A0->buffer_index]);
-    block->frameB[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
-    block->frameB[D_800625A0->buffer_index].clut = (D_800625A0->flags->party[index] & 1) ? D_80059414 : D_800595D4;
-    func_801E920C(&block->frameB[D_800625A0->buffer_index], (u16)(D_801E9B58 + x), (u16)(D_801E9B5C + y),
+    func_8002675C(D_800625A0->sheet, index + 0x14b, block->portrait, D_800625A0->buffer_index, x, y, 0x1000);
+    func_801E927C(&block->name[D_800625A0->buffer_index]);
+    block->name[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
+    block->name[D_800625A0->buffer_index].clut = (D_800625A0->flags->party[index] & 1) ? D_80059414 : D_800595D4;
+    func_801E920C(&block->name[D_800625A0->buffer_index], (u16)(D_801E9B58 + x), (u16)(D_801E9B5C + y),
                   (u8)(D_801EA578[index] * 4), (u8)D_801EA5C4[index], 0x48, 13);
 }
 
@@ -5461,30 +5462,31 @@ void func_801D5CF8(s32 x, s32 y) {
     D_800625A0->field_menu2->start = D_800625A0->buffer_index;
 }
 
-/* Lay out the detail panel's frame (sheet 14b + slot) and the portrait of
- * party slot `slot`: its character, or its gear (further left) when `gear`. */
+/* Lay out the detail panel's portrait (sheet 14b + slot) and the name image
+ * of party slot `slot`: its character's, or its gear's (further left) when
+ * `gear`. */
 void func_801D5ED4(u8 slot, u8 gear) {
     s32 shift;
     s32 w;
 
     shift = gear ? 0x18 : 0;
-    func_8002675C(D_800625A0->sheet, slot + 0x14b, D_800625A0->detail->frame, D_800625A0->buffer_index,
+    func_8002675C(D_800625A0->sheet, slot + 0x14b, D_800625A0->detail->portrait, D_800625A0->buffer_index,
                   0x18 - shift, 0xe, 0x1000);
-    func_801C851C(D_800625A0->detail->frameAt, D_800625A0->detail->frame[D_800625A0->buffer_index].x0,
-                  D_800625A0->detail->frame[D_800625A0->buffer_index].y0, 0x30, 0x30);
-    func_801E927C(&D_800625A0->detail->portrait[D_800625A0->buffer_index]);
-    D_800625A0->detail->portrait[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
+    func_801C851C(D_800625A0->detail->portraitAt, D_800625A0->detail->portrait[D_800625A0->buffer_index].x0,
+                  D_800625A0->detail->portrait[D_800625A0->buffer_index].y0, 0x30, 0x30);
+    func_801E927C(&D_800625A0->detail->name[D_800625A0->buffer_index]);
+    D_800625A0->detail->name[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
     if (!gear) {
-        D_800625A0->detail->portrait[D_800625A0->buffer_index].clut =
+        D_800625A0->detail->name[D_800625A0->buffer_index].clut =
             (D_800625A0->flags->party[slot] & 1) ? D_80059414 : D_800595D4;
     } else {
-        D_800625A0->detail->portrait[D_800625A0->buffer_index].clut =
+        D_800625A0->detail->name[D_800625A0->buffer_index].clut =
             ((D_8006D634.characters[D_800625A0->flags->party[slot]].gearId + 11) & 1) ? D_80059414 : D_800595D4;
     }
     w = gear * 0x18 + 0x48;
-    func_801E920C(&D_800625A0->detail->portrait[D_800625A0->buffer_index], 0, 0,
+    func_801E920C(&D_800625A0->detail->name[D_800625A0->buffer_index], 0, 0,
                   (u8)(D_801EA578[gear * 3 + slot] * 4), (u8)D_801EA5C4[gear * 3 + slot], (u16)w, 13);
-    func_801C851C(D_800625A0->detail->portraitAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
+    func_801C851C(D_800625A0->detail->nameAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
 }
 
 /* Build the detail panel's parts of `layout` from the sheet and place each
@@ -6178,7 +6180,7 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
 /* Draw the part panel of party slot `slot` on the equipment screen: rows of
  * part names (weapon and accessories for `mode` 0, the special parts in rows
  * of four for 1 and 2), from the kept parts with `kept` and from the gear
- * with `gear`; a character's row 4 shows its portrait instead. */
+ * with `gear`; a character's row 4 shows its gear's name instead. */
 void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
     RECT rect;
     s32 rows;

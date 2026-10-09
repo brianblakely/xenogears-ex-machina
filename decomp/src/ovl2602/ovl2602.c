@@ -1505,6 +1505,7 @@ void func_801CAA7C(void) {
     }
 }
 
+/* The full-screen fade link (ovl2601's 801ca388), empty in the Gear shop. */
 void func_801CABD8(void) {
 }
 
@@ -1585,7 +1586,8 @@ void func_801CB35C(void) {
     }
 }
 
-/* Build the frame's packets: every element while the screen is drawn, then the screen quad. */
+/* Build the frame's packets: every element while the screen is drawn, then
+ * the fade link, which is empty here (801cabd8). */
 void func_801CB3D0(void) {
     if (D_800625A0->drawing != 0) {
         func_801C9264();
@@ -1971,9 +1973,13 @@ void func_801CC4DC() {
     func_800320E8(D_800625A0->markers);
 }
 
+/* The view zoom-out of ovl2601's 801cb340, empty in the Gear shop (which
+ * moves its own camera) and called by nothing. */
 void func_801CC520(void) {
 }
 
+/* The view zoom-in of ovl2601's 801cb370, empty here; a command that redraws
+ * its screen still calls it. */
 void func_801CC528(void) {
 }
 
