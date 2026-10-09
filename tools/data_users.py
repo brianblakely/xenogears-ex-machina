@@ -5,12 +5,17 @@
     data_users.py --range START:END [CONFIG.mk ...]   # users across images
 
 Run after `make -C decomp all-verify`: it reads each target's rebuilt image
-(byte-identical to the original), link map and ELF. Every function is
-scanned for the data addresses it forms: `lui` bases (and `$gp`, 0x80059170)
-resolved by `addiu`/`ori` or by a load/store offset, kept through `addu` (an
-indexed access) and dropped by any other write or a call's clobber. This is
-a static, linear lower bound, not an execution trace: data reached only
-through pointers is not seen.
+(byte-identical to the original), link map and ELF. It scans code only:
+each function's instructions, for the data addresses they form, with the
+base tracking of tools/service_calls.py (`constant_bases`): `lui` bases and
+`$gp` (0x80059170) resolved by `addiu`/`ori` or by a load/store offset, kept
+through `addu` (an indexed access), dropped by another write or by a call
+(after its delay slot). It is a heuristic, not an execution trace, and no
+bound in either direction: one linear pass keeps register values across
+branches and jumps, so a base set on one path can be paired with an offset
+on another, and an address the code reaches through a pointer or a computed
+base is missed. Data-word references are not seen at all: a pointer table or
+an initialized pointer holding an address is no user here.
 
 With a target, each .bss/.sbss input section lists the units forming
 addresses in it. A unit with code whose own variables another unit's code
@@ -24,7 +29,8 @@ the owner of a lower address. `+` marks an address only formed (`addiu`,
 
 With `--range`, every function of the given targets (default: all) that
 forms an address in [START, END) is listed with its instructions (`@gp`:
-through `$gp`): the check to run before calling shared data unreferenced.
+through `$gp`): the code side of the check to run before calling shared data
+unreferenced; the data words (pointer tables) are the other.
 """
 
 from __future__ import annotations
@@ -35,18 +41,13 @@ import re
 import sys
 from pathlib import Path
 
-import rabbitizer
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from matching_diff import config, functions, load_offset  # noqa: E402
+from service_calls import LOADS_STORES, constant_bases  # noqa: E402
 
 GP = 0x80059170
 BSS_SECTION = re.compile(r"\.s?bss\b|COMMON\b|\.scommon\b")
-LOADS_STORES = {
-    "lb", "lbu", "lh", "lhu", "lw", "lwl", "lwr", "sb", "sh", "sw", "swl", "swr", "lwc2", "swc2",
-}
-VOLATILE = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31)
 
 
 def input_sections(map_path: Path) -> list[tuple[str, int, int, str]]:
@@ -74,41 +75,10 @@ def input_sections(map_path: Path) -> list[tuple[str, int, int, str]]:
 
 def formed_addresses(code: bytes, address: int) -> dict[int, set[str]]:
     """Data addresses one function forms: {address: instructions}."""
-    regs: dict[int, int] = {28: GP}
     found: dict[int, set[str]] = {}
-    clobber = 0
-    for offset in range(0, len(code) - 3, 4):
-        word = int.from_bytes(code[offset : offset + 4], "little")
-        ins = rabbitizer.Instruction(word, vram=address + offset)
-        name = ins.getOpcodeName()
-        if clobber:
-            clobber -= 1
-            if not clobber:
-                for reg in VOLATILE:
-                    regs.pop(reg, None)
-        if name in LOADS_STORES and ins.rs.value in regs:
-            target = (regs[ins.rs.value] + ins.getProcessedImmediate()) & 0xFFFFFFFF
+    for ins, name, target in constant_bases(code, address, gp=GP, indexed=True):
+        if target is not None:
             found.setdefault(target, set()).add(name + ("@gp" if ins.rs.value == 28 else ""))
-        if name == "lui":
-            regs[ins.rt.value] = (ins.getProcessedImmediate() << 16) & 0xFFFFFFFF
-            continue
-        if name in ("addiu", "ori") and ins.rs.value in regs:
-            value, immediate = regs[ins.rs.value], ins.getProcessedImmediate()
-            value = (value + immediate if name == "addiu" else value | immediate) & 0xFFFFFFFF
-            if ins.rt.value != 28:  # setting $gp itself (the start code) forms no data address
-                found.setdefault(value, set()).add(name + ("@gp" if ins.rs.value == 28 else ""))
-            regs[ins.rt.value] = value
-            continue
-        if name == "addu" and (ins.rs.value in regs) != (ins.rt.value in regs):
-            regs[ins.rd.value] = regs.get(ins.rs.value, regs.get(ins.rt.value))
-            continue
-        if ins.modifiesRt():
-            regs.pop(ins.rt.value, None)
-        if ins.modifiesRd():
-            regs.pop(ins.rd.value, None)
-        if name in ("jal", "jalr"):
-            clobber = 2  # after the delay slot
-        regs[28] = GP
     return found
 
 

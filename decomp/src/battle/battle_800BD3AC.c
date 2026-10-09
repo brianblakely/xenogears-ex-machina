@@ -617,8 +617,8 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
 /* Run one battle frame: swap the display buffers, read the controllers,
  * update the sprites, the stage and the effects (the skipped frames once
  * more each) with the stack in the scratchpad, draw, time the frame and
- * present it; the outermost frame also runs the battle menu, a pending sound
- * request and the deferred free of the objects' extra files. */
+ * present it; the outermost frame also runs the battle menu, a requested
+ * single action and the deferred free of the objects' extra files. */
 void func_800BE790(void) {
     BattleArea *frame;
     FrameBuffer *buffer;
@@ -691,10 +691,10 @@ void func_800BE790(void) {
             D_800C3610->update(D_800C3610);
         }
         if (D_800591B4 != 0) {
-            s32 sound = D_800591B4;
+            s32 action = D_800591B4;
 
             D_800591B4 = 0;
-            func_800B8068(sound);
+            func_800B8068(action);
         }
         if (D_800C37CC != 0 && func_800286CC() == 0) {
             D_800C37CC = 0;

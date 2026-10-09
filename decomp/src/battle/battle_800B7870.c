@@ -247,16 +247,16 @@ void func_800B8048(BattleSprite *sprite) {
     D_800C3E1C = sprite;
 }
 
-/* Request sound (run by the frame loop, 800B8068). */
-void func_800B8054(s32 sound) {
-    D_800591B4 = sound;
+/* Request single action `action`; the frame loop runs it (800B8068). */
+void func_800B8054(s32 action) {
+    D_800591B4 = action;
     D_800591B1 = 0;
 }
 
 /* Run a requested single action: load its command file (800B7C34) and
  * start it (800B7E94); mark it done. */
-void func_800B8068(s32 sound) {
-    func_800B7C34(sound);
+void func_800B8068(s32 action) {
+    func_800B7C34(action);
     func_800B7E94();
     D_800591B1 = 1;
 }

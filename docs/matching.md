@@ -413,11 +413,12 @@ converted to C per unit. What converting the targets' `.data` established:
   accesses to `$gp`.
 - A unit's own variables come first, in unit order, as statics where the commons
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
-  reports every FOREIGN reference into a unit's own `.bss` (none in any target) and,
-  with `--end`, the order of variables still extern. That places menu 800707A8 and
-  8007E528 exactly, the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, and
-  slot39's after 801CD2AC and at or before 801DBDB4 (an earlier one moves the `.bss`
-  boundary with it); the latest is kept. The commons, which the original linker
+  reports every FOREIGN reference, another unit's code forming an address in a unit's
+  own `.bss` (none in any target), and, with `--end`, the order of variables still
+  extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
+  80081E00, 80081E6C or 80081ECC, and slot39's after 801CD2AC and at or before
+  801DBDB4 (an earlier one moves the `.bss` boundary with it); the latest is kept.
+  The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
   (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
@@ -446,18 +447,21 @@ converted to C per unit. What converting the targets' `.data` established:
   (80059170-80059184, 80059198-800591b8) is defined by data-only `-G8` units there,
   the simplest owners that fit (kernel_settings.c, sprite_settings.c; their compiler
   is immaterial: the three give identical `.sdata` and relocations). Before calling
-  shared data unreferenced, check every image (`tools/data_users.py --range
-  START:END`): four of the resident's fillers are battle and ovl2596 flags, and the
-  battle-entry flag at 80059179 sat in what was taken for padding.
+  shared data unreferenced, check the code of every image (`tools/data_users.py
+  --range START:END`) and its data words, which that scan does not read (pointer
+  tables; no image holds a word in 80059170-800591b8): four of the resident's fillers
+  are battle and ovl2596 flags, and the battle-entry flag at 80059179 sat in what was
+  taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
   80076f38, counters at 80076f3c; field's RECT ring).
 - Embedded game data stays generated and is classified `asset` with its format
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
-  function, so coverage counted libpress/libcd messages as C until they became a
-  generated rodata segment classified `sdk`. Name data only by what its readers show
-  (the libcd commons).
+  function's `.s` file, and coverage counts it with the function (the resident's
+  library strings and jump tables as `sdk`, field's jtbl_8006FD30 as `nonmatching`);
+  mdec's libpress/libcd messages are a generated rodata segment classified `sdk`.
+  Name data only by what its readers show (the libcd commons).
 
 ## Recover incrementally
 
@@ -481,12 +485,20 @@ input section and, where an image holds its uninitialized variables as zeros, ea
 .bss/.sbss input section of a loaded output section (NOLOAD .bss is not in the image;
 alignment gaps and a packer's tail belong to no input section). A byte is compiled C
 (`c`, or `bss` for C-defined loaded .bss), original bytes INCLUDE_RODATA'd or
-INCLUDE_ORIGINAL'd in C (`included`), authored assembly, a classified `sdk`/`asset`
-range, or a generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss
-included). Every INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name in a target's C
-units and headers must resolve to one sized, section-relative ELF symbol, an
-INCLUDE_ASSET object must lie in an `asset` range, and no macro may wrap them;
-otherwise the report fails rather than count original bytes as C. `asset` marks
+INCLUDE_ORIGINAL'd in C (`included`, also the resident's libcd/libgpu/libspu strings
+that several library functions share), data an INCLUDE_ASM'd `.s` file carries
+(under its function's class: `sdk`, `handwritten`, or `nonmatching`/`asm`, totalled in
+`remaining_data_asm_bytes`), authored assembly, a classified `sdk`/`asset` range, or a
+generated `placeholder` (`remaining_data_placeholder_bytes`, loaded .bss included).
+Each INCLUDE_* use in a target's C units and headers must be spelled as the report
+reads it and not be wrapped in a macro, each data line of an included `.s` file must
+lie in a `dlabel`...`enddlabel` object, and each such object and
+INCLUDE_RODATA/INCLUDE_ORIGINAL/INCLUDE_ASSET name must resolve to one sized,
+section-relative ELF symbol (an INCLUDE_ASSET object inside an `asset` range);
+otherwise the report fails rather than count original bytes as C. Two limits remain:
+the alignment padding ahead of an included file's first object counts with its
+section (field's 7 bytes ahead of jtbl_8006FD30, as C), and data written in inline
+`__asm__` outside these macros is not checked (no unit has any). `asset` marks
 user-supplied game data or bytecode that is parsed and documented rather than
 rewritten as source.
 GCC emits a static initializer's string literals last to first once the initializer

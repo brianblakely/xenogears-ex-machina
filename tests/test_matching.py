@@ -460,10 +460,17 @@ class MatchingTests(unittest.TestCase):
             (".data", 0x80010068, 0x30), (".sdata", 0x80010098, 8),
         ])
         ranges = [(0x80010070, 0x80010078, "sdk", ""), (0x80010090, 0x800100a0, "asset", "")]
-        totals = data_coverage(sections, [(0x80010004, 0x80010010)], ranges, self.root)
+        # An included object, a jump table an INCLUDE_ASM'd SDK function
+        # carries, and an included object inside the asset range: the range
+        # takes those bytes and none counts twice.
+        objects = [
+            (0x80010004, 0x80010010, "included"), (0x80010010, 0x80010018, "sdk"),
+            (0x80010098, 0x8001009C, "included"),
+        ]
+        totals = data_coverage(sections, objects, ranges, self.root)
         self.assertEqual(totals, {
-            "c": 0x20 - 12 + 8 + 8 - 8, "included": 12,
-            "placeholder": 0x30 - 8 - 8, "sdk": 8, "asset": 8 + 8,
+            "c": 0x20 - 12 - 8 + 8 + 8 - 8, "included": 12,
+            "placeholder": 0x30 - 8 - 8, "sdk": 8 + 8, "asset": 8 + 8,
         })
 
     def build_fixture_unit(self, source, settings=()):
@@ -501,14 +508,18 @@ class MatchingTests(unittest.TestCase):
         subprocess.run(["psx-objcopy", "-O", "binary", "-j", section, str(obj), str(out)], check=True)
         return out.read_bytes()
 
-    def cover_linked_fixture(self, image, settings=()):
-        """Link the fixture unit's .data and .bss (loaded) at 0x80010000 with the
-        target Makefile, then run the coverage report on its ELF and map."""
+    def cover_linked_fixture(self, image, settings=(), sections=(".data", ".bss"), arguments=()):
+        """Link the fixture unit's `sections` (loaded, .text between splat's
+        boundary symbols) at 0x80010000 with the target Makefile, then run the
+        coverage report on its ELF and map."""
         repo = Path(__file__).resolve().parents[1]
+        inputs = "".join(
+            "    t_TEXT_START = .;\n    build/decomp/src/t/unit.o(.text)\n    t_TEXT_END = .;\n"
+            if section == ".text" else f"    build/decomp/src/t/unit.o({section})\n"
+            for section in sections
+        )
         (self.root / "fixture.ld").write_text(
-            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n"
-            "    build/decomp/src/t/unit.o(.data)\n    build/decomp/src/t/unit.o(.bss)\n"
-            "  }\n  /DISCARD/ : { *(*) }\n}\n"
+            "SECTIONS {\n  .fixture 0x80010000 : AT(0) {\n" + inputs + "  }\n  /DISCARD/ : { *(*) }\n}\n"
         )
         build = subprocess.run(
             ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
@@ -519,7 +530,7 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
         return subprocess.run(
             [sys.executable, str(repo / "tools/matching_coverage.py"), image + ".elf",
-             "--map", image + ".map", "--src", "decomp/src"],
+             "--map", image + ".map", "--src", "decomp/src", *arguments],
             cwd=self.root, text=True, capture_output=True, check=False,
         )
 
@@ -552,7 +563,7 @@ class MatchingTests(unittest.TestCase):
         symbols = subprocess.run(["psx-readelf", "-sW", str(obj)], check=True,
                                  capture_output=True, text=True).stdout
         self.assertRegex(symbols, r"\s4 NOTYPE\s+GLOBAL\s+DEFAULT\s+\d+ D_80010004\n")
-        _asm, _nonmatching, included, assets = source_names([self.root / "decomp/src"])
+        _asm, _nonmatching, included, assets, _files = source_names([self.root / "decomp/src"])
         self.assertEqual((included, assets), ({"D_80010004"}, set()))
         # The report on the link resolves the name through the ELF and counts
         # every loaded byte, the loaded .bss included.
@@ -594,6 +605,122 @@ class MatchingTests(unittest.TestCase):
         header.write_text('#define PALETTE(name) \\\n    INCLUDE_ASSET(".data", name, 0x80010020, 8)\n')
         with self.assertRaisesRegex(SystemExit, "wrap.h: a macro wrapping"):
             source_names([self.root / "decomp/src"])
+
+    def test_include_spellings_the_scan_cannot_read_fail(self):
+        from tools.matching_coverage import source_names
+
+        unit = self.root / "decomp/src/t/unit.c"
+        unit.parent.mkdir(parents=True)
+        # Comments may name the macros; their text is not scanned.
+        unit.write_text(
+            '/* INCLUDE_ASSET (".data", D_comment, 0x80010000, 4) */\n'
+            '// INCLUDE_ASM ("asm", in_comment)\n'
+            'INCLUDE_ASM("asm", func_a);\n'
+            'INCLUDE_ORIGINAL(\n    ".data", D_80010004, 0x80010004, 4);\n'
+        )
+        asm_names, _nonmatching, included, assets, files = source_names([self.root / "decomp/src"])
+        self.assertEqual((asm_names, included, assets), ({"func_a"}, {"D_80010004"}, set()))
+        self.assertEqual(files, [("ASM", Path("asm/func_a.s"), "func_a")])
+        # Spellings the preprocessor accepts but the patterns would miss: the
+        # function would count as C, the object's original bytes as C.
+        for line in (
+            'INCLUDE_ORIGINAL (".data", D_x, 0x80010004, 4);',
+            "INCLUDE_ORIGINAL(SECTION, D_x, 0x80010004, 4);",
+            'INCLUDE_ASSET\t(".data", D_x, 0x80010004, 4);',
+            "INCLUDE_RODATA(FOLDER, D_x);",
+            'INCLUDE_ASM (".local/asm", func_b);',
+        ):
+            unit.write_text('#include "include_asm.h"\n' + line + "\n")
+            with self.subTest(line=line), self.assertRaisesRegex(SystemExit, r"unit\.c:2: INCLUDE_\w+ is not spelled"):
+                source_names([self.root / "decomp/src"])
+        # A macro wrapping INCLUDE_ASM would hide the function's name too.
+        unit.write_text('#define ASM(name) INCLUDE_ASM("asm", name)\nASM(func_c);\n')
+        with self.assertRaisesRegex(SystemExit, "unit.c: a macro wrapping"):
+            source_names([self.root / "decomp/src"])
+
+    def test_included_assembly_data_must_be_labelled_objects(self):
+        from tools.matching_coverage import asm_data_objects
+
+        good = self.root / "good.s"
+        good.write_text(
+            ".section .rodata\n.align 3\nnonmatching jtbl_a\n\ndlabel jtbl_a\n"
+            "    /* 0 80010000 */ .word .L1\nenddlabel jtbl_a\n"
+            '.align 2\ndlabel D_b\n    /* 4 80010004 */ .asciz "a#b /* c"\n.align 2\nenddlabel D_b\n'
+            ".section .text\nglabel f\n.L1:\n    jr $ra\n    nop\nendlabel f\n"
+        )
+        self.assertEqual(asm_data_objects(good, ".text"), [(".rodata", "jtbl_a"), (".rodata", "D_b")])
+        # An INCLUDE_RODATA file is read from .rodata on.
+        string = self.root / "D_c.s"
+        string.write_text('dlabel D_c\n    .asciz "c"\nenddlabel D_c\n')
+        self.assertEqual(asm_data_objects(string, ".rodata"), [(".rodata", "D_c")])
+        # Data the objects would not cover fails the report.
+        for body, message in (
+            (".section .rodata\n    .word 1\n", "no labelled object's data"),
+            (".section .rodata\ntable_macro D_d\n", "no labelled object's data"),
+            ('.section .rodata\n.include "more.s"\n', "no labelled object's data"),
+            (".section .data\ndlabel D_d\n    .word 1\n", "D_d has no enddlabel"),
+            (".section .rodata\ndlabel D_d\n.section .text\n", "before the section changes"),
+            (".pushsection .rodata\n", "not followed"),
+        ):
+            bad = self.root / "bad.s"
+            bad.write_text(body)
+            with self.subTest(body=body), self.assertRaisesRegex(SystemExit, message):
+                asm_data_objects(bad, ".text")
+
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as",
+            "psx-ld", "psx-objcopy", "psx-readelf",
+        )),
+        "enter the matching Nix shell to test data carried by assembly",
+    )
+    def test_data_of_included_assembly_counts_under_its_function_class(self):
+        # splat moves rodata that only one function uses into the function's
+        # .s file, so INCLUDE_ASM carries it into the C unit's .rodata.
+        asm = self.root / "asm"
+        asm.mkdir()
+
+        def function(name, rodata):
+            (asm / f"{name}.s").write_text(
+                ".section .rodata\n" + rodata + ".section .text\n"
+                f"glabel {name}\n.L{name}:\n    jr $ra\n    nop\nendlabel {name}\n"
+            )
+
+        function("func_sdk",
+                 '.align 2\nnonmatching D_sdk\ndlabel D_sdk\n    .asciz "sdk"\nenddlabel D_sdk\n'
+                 ".align 3\ndlabel jtbl_sdk\n    .word .Lfunc_sdk\n    .word .Lfunc_sdk\nenddlabel jtbl_sdk\n")
+        function("func_draft",
+                 ".align 2\ndlabel jtbl_draft\n    .word .Lfunc_draft\n    .word .Lfunc_draft\nenddlabel jtbl_draft\n")
+        function("func_asm", ".align 2\ndlabel D_asm\n    .word 0\nenddlabel D_asm\n")
+        (asm / "D_shared.s").write_text(
+            '.section .rodata\n.align 2\ndlabel D_shared\n    .asciz "both"\n.align 2\nenddlabel D_shared\n'
+        )
+        self.build_fixture_unit(
+            '#include "include_asm.h"\n'
+            'INCLUDE_ASM("asm", func_sdk);\n'
+            'const char *name(void) { return "c strin"; }\n'
+            '#ifdef NON_MATCHING\nint func_draft(int i) { return i; }\n'
+            '#else\nINCLUDE_ASM("asm", func_draft);\n#endif\n'
+            'INCLUDE_ASM("asm", func_asm);\n'
+            'INCLUDE_RODATA("asm", D_shared);\n'
+        )
+        # .text is linked first: func_sdk is at 0x80010000.
+        (self.root / "classification.txt").write_text("80010000 80010008 sdk a library function\n")
+        result = self.cover_linked_fixture(
+            "image.bin", sections=(".text", ".rodata"),
+            arguments=["--classification", "classification.txt"],
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        # Only the compiler's string counts as C. The SDK function's string,
+        # the padding before its 8-aligned jump table and the table count as
+        # sdk; the draft's table, the unrecovered function's word and the
+        # INCLUDE_RODATA'd string under their classes.
+        self.assertEqual(report["data_classes"],
+                         {"c": 8, "sdk": 16, "nonmatching": 8, "asm": 4, "included": 8})
+        self.assertEqual(report["remaining_data_asm_bytes"], 12)
+        self.assertEqual({k: v["bytes"] for k, v in report["classes"].items() if k != "c"},
+                         {"sdk": 8, "nonmatching": 8, "asm": 8})
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (
@@ -649,6 +776,20 @@ class MatchingTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no slot rule", result.stderr)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in ("make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as")),
+        "enter the matching Nix shell to test the object rule",
+    )
+    def test_a_failing_stage_of_the_object_pipeline_fails_the_rule(self):
+        # cpp feeds cc1 and maspsx feeds the BSS slot filter through pipes:
+        # either failing must fail the object rather than leave a partial one.
+        source = '#include "include_asm.h"\nint value = 1;\n'
+        _obj, result = self.make_fixture_unit(source, ["MASPSX=false"])
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        _obj, result = self.make_fixture_unit('#include "missing.h"\n' + source)
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("missing.h", result.stderr)
+
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
         from tools.service_calls import scan_function
@@ -662,15 +803,17 @@ class MatchingTests(unittest.TestCase):
             0xACC00100,  # sw    zero, 0x100(a2)  (scratchpad)
             0x3C028005,  # lui   v0, 0x8005
             0x8C4208E4,  # lw    v0, 0x8e4(v0)   (hardware pointer global)
-            0x0C010000,  # jal   0x80040000
             0x4A280030,  # rtpt
+            0x0C010000,  # jal   0x80040000
+            0xACC00200,  # sw    zero, 0x200(a2)  (the delay slot runs before the call)
+            0xACC00300,  # sw    zero, 0x300(a2)  (a2 clobbered by the call)
             0x0040F809,  # jalr  v0
             0x03E00008,  # jr    ra
         ]
         blob = b"".join(w.to_bytes(4, "little") for w in words)
         found = scan_function(blob, 0x80010000, {0x800508E4: 0x1F801C00})
         self.assertEqual(found["io"], [0x1F801814, 0x1F801824])
-        self.assertEqual(found["scratchpad"], [0x1F800100])
+        self.assertEqual(found["scratchpad"], [0x1F800100, 0x1F800200])
         self.assertEqual(found["hardware_pointers"], [0x800508E4])
         self.assertEqual(found["calls"], [0x80040000])
         self.assertEqual((found["gte"], found["indirect"]), (1, 1))

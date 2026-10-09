@@ -10,6 +10,10 @@ MASPSX := maspsx
 .SUFFIXES:
 .SECONDARY:
 MAKEFLAGS += --no-builtin-rules
+# Recipes run in bash with pipefail: a failing stage of a pipe (cpp into cc1,
+# maspsx into the filters) fails its rule instead of leaving a partial object.
+SHELL := bash
+.SHELLFLAGS := -o pipefail -c
 .PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container
 TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
 

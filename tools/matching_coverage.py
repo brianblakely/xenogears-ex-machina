@@ -25,23 +25,43 @@ section, where an image holds its uninitialized variables as zeros. NOLOAD
                    .bss/.sbss (zero in the file)
 * ``included``     original bytes INCLUDE_RODATA'd (strings) or INCLUDE_ORIGINAL'd
                    (.data objects) in a C unit: objects whose padding holds
-                   stray assembler bytes (docs/matching.md)
+                   stray assembler bytes, or rodata several assembly functions
+                   share (docs/matching.md)
+* ``nonmatching``/``asm``/``sdk``/``handwritten``  data that an INCLUDE_ASM'd
+                   .s file defines (splat moves rodata only one function uses,
+                   its jump tables and strings, into the function's file),
+                   under that function's class
 * ``handwritten``  an authored assembly unit under decomp/src
 * ``sdk``/``asset``/``handwritten``  generated data inside a classified range
                    (``asset``: user-supplied game data/bytecode, not source)
 * ``placeholder``  generated data or loaded .bss from the original image
                    (remaining work)
 
-Bytes outside every input section (alignment gaps, a packer's zero tail) are
-not counted. Each INCLUDE_RODATA, INCLUDE_ORIGINAL and INCLUDE_ASSET name in
-the sources (.c and .h; a macro wrapping one is rejected) must resolve to
+Within a C unit's input section a classified range takes precedence, then
+the original objects the unit links (the classes above), then the unit's own
+class; each byte counts once. Bytes outside every input section (alignment
+gaps, a packer's zero tail) are not counted.
+
+Original data reaches a C unit through the INCLUDE_* macros, and the report
+fails rather than count it as C where it cannot attribute it: each
+INCLUDE_ASM, INCLUDE_RODATA, INCLUDE_ORIGINAL and INCLUDE_ASSET token of the
+sources (.c and .h, outside comments) must be spelled as the patterns read
+it, ``INCLUDE_X("...", NAME...)``, and not be wrapped in a macro; each data
+object of an included .s file (a ``dlabel``...``enddlabel`` pair in a
+section other than .text, where any other line fails) and each
+INCLUDE_RODATA, INCLUDE_ORIGINAL and INCLUDE_ASSET name must resolve to
 exactly one sized, section-relative ELF symbol (a linker-script assignment
-would make it absolute), and an INCLUDE_ASSET object must lie inside an
-``asset`` range; otherwise the report fails rather than count original bytes
-as C. Instruction counts are static MIPS words (four bytes each) in the same
-ELF function ranges as the byte totals, including nops and branch delay
-slots. Paths in the map are relative to the working directory, the
-repository root.
+would make it absolute); an INCLUDE_ASSET object must lie inside an
+``asset`` range. A .s file's objects in one section are assembled back to
+back, so the alignment padding between them counts with them; the padding
+its first ``.align`` puts after the unit's preceding data is no object's and
+counts with the section (field's 7 zero bytes ahead of jtbl_8006FD30, as C).
+Inline ``__asm__`` data outside these macros is not checked; no unit has any.
+
+Instruction counts are static MIPS words (four bytes each) in the same ELF
+function ranges as the byte totals, including nops and branch delay slots.
+Paths in the map and the INCLUDE_ASM/INCLUDE_RODATA folders are relative to
+the working directory, the repository root.
 """
 
 from __future__ import annotations
@@ -56,10 +76,25 @@ INCLUDE_ASM = re.compile(r"INCLUDE_ASM\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
 INCLUDE_RODATA = re.compile(r"INCLUDE_RODATA\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*\)")
 INCLUDE_ORIGINAL = re.compile(r"INCLUDE_ORIGINAL\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*,")
 INCLUDE_ASSET = re.compile(r"INCLUDE_ASSET\(\s*\"[^\"]*\"\s*,\s*(\w+)\s*,")
-WRAPPER = re.compile(r"^[ \t]*#[ \t]*define\b.*\bINCLUDE_(RODATA|ORIGINAL|ASSET)\b", re.M)
+STRICT = {"ASM": INCLUDE_ASM, "RODATA": INCLUDE_RODATA, "ORIGINAL": INCLUDE_ORIGINAL, "ASSET": INCLUDE_ASSET}
+INCLUDE_TOKEN = re.compile(r"\bINCLUDE_(ASM|RODATA|ORIGINAL|ASSET)\b")
+# The .s file an INCLUDE_ASM or INCLUDE_RODATA links: (macro, folder, name).
+INCLUDED_FILE = re.compile(r"INCLUDE_(ASM|RODATA)\(\s*\"([^\"]*)\"\s*,\s*(\w+)\s*\)")
+WRAPPER = re.compile(r"^[ \t]*#[ \t]*define\b.*\bINCLUDE_(ASM|RODATA|ORIGINAL|ASSET)\b", re.M)
+COMMENT_OR_LITERAL = re.compile(r"\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'|/\*.*?\*/|//[^\n]*", re.S)
 DATA_SECTION = re.compile(r"\.(rodata|data|sdata|sbss|bss)\b")
 BSS_SECTION = re.compile(r"\.s?bss\b")
 NON_MATCHING = re.compile(r"#ifdef\s+NON_MATCHING(.*?)#else(.*?)#endif", re.DOTALL)
+# Lines of a data section in an included .s file (splat's output): an object
+# opens with `dlabel NAME` and closes with `enddlabel NAME` (its ELF size);
+# alignment and splat's `nonmatching` marker emit no object bytes.
+ASM_COMMENT = re.compile(r"/\*.*?\*/")
+ASM_SECTION = {".text", ".data", ".rdata", ".sdata", ".bss", ".sbss"}
+ASM_NEUTRAL = {".align", ".balign", ".p2align", "nonmatching"}
+ASM_DATA = {
+    ".byte", ".half", ".hword", ".short", ".2byte", ".word", ".4byte", ".int", ".long",
+    ".ascii", ".asciz", ".string", ".space", ".skip", ".zero", ".fill", ".incbin", ".float", ".double",
+}
 
 
 def symbols(elf: Path) -> list[tuple[int, int, str, str, str]]:
@@ -126,13 +161,17 @@ def map_sections(path: Path) -> list[tuple[str, int, int, str]]:
 
 def data_coverage(
     sections: list[tuple[str, int, int, str]],
-    included: list[tuple[int, int]],
+    objects: list[tuple[int, int, str]],
     ranges: list[tuple[int, int, str, str]],
     root: Path,
 ) -> dict[str, int]:
     """Bytes per data class; generated data is split at classified range edges.
 
-    `sections` holds loaded input sections only (filter NOLOAD .bss first)."""
+    `sections` holds loaded input sections only (filter NOLOAD .bss first);
+    `objects` the (start, end, class) of the original data C units link
+    (original_objects, assembly_data). In a decomp/src unit's section the
+    classified ranges come first (INCLUDE_ASSET bytes count as `asset`), then
+    the objects, then the unit's own class; each byte counts once."""
     totals: dict[str, int] = {}
 
     def add(cls: str, count: int) -> None:
@@ -143,21 +182,22 @@ def data_coverage(
         end = start + size
         if "/decomp/src/" in obj:
             unit = Path(obj.split("/decomp/src/", 1)[1]).with_suffix("")
-            authored = root / "decomp/src" / unit
-            inside = sum(max(0, min(e, end) - max(s, start)) for s, e in included)
-            # INCLUDE_ASSET bytes inside an authored unit count under their class.
-            classified = 0
-            for s, e, cls, _note in ranges:
-                overlap = max(0, min(e, end) - max(s, start))
-                if overlap:
-                    add(cls, overlap)
-                    classified += overlap
-            if not authored.with_suffix(".c").exists():
+            if not (root / "decomp/src" / unit).with_suffix(".c").exists():
                 kind = "handwritten"
             else:
                 kind = "bss" if BSS_SECTION.match(name) else "c"
-            add(kind, size - inside - classified)
-            add("included", inside)
+            free = [(start, end)]
+            for lo, hi, cls in [(s, e, k) for s, e, k, _note in ranges] + objects:
+                left = []
+                for a, b in free:
+                    cut_lo, cut_hi = max(a, lo), min(b, hi)
+                    if cut_lo >= cut_hi:
+                        left.append((a, b))
+                        continue
+                    add(cls, cut_hi - cut_lo)
+                    left += [part for part in ((a, cut_lo), (cut_hi, b)) if part[0] < part[1]]
+                free = left
+            add(kind, sum(b - a for a, b in free))
             continue
         cursor = start
         for s, e, kind, _note in sorted(ranges):
@@ -170,27 +210,100 @@ def data_coverage(
     return totals
 
 
-def source_names(roots: list[Path]) -> tuple[set[str], set[str], set[str], set[str]]:
+def strip_comments(text: str) -> str:
+    """C text without its comments (each becomes a space or its line breaks)."""
+
+    def blank(match: re.Match[str]) -> str:
+        found = match.group(0)
+        return found if found[0] in "\"'" else "\n" * found.count("\n") or " "
+
+    return COMMENT_OR_LITERAL.sub(blank, text)
+
+
+def source_names(
+    roots: list[Path],
+) -> tuple[set[str], set[str], set[str], set[str], list[tuple[str, Path, str]]]:
     """Names linked as assembly and reviewed nonmatching candidates in the C units
-    under roots, and the original data objects of their C units and headers:
-    INCLUDE_RODATA/INCLUDE_ORIGINAL (`included`) and INCLUDE_ASSET (assets)."""
+    and headers under roots, their original data objects: INCLUDE_RODATA/
+    INCLUDE_ORIGINAL (`included`) and INCLUDE_ASSET (assets), and the (macro,
+    path, name) of each .s file an INCLUDE_ASM or INCLUDE_RODATA links. Fails
+    on a use the patterns would miss: a wrapping macro or another spelling."""
     asm_names: set[str] = set()
     nonmatching: set[str] = set()
     included: set[str] = set()
     assets: set[str] = set()
+    files: list[tuple[str, Path, str]] = []
     for root in roots:
         for source in sorted(root.rglob("*.[ch]")):
-            text = source.read_text()
+            text = strip_comments(source.read_text())
             if WRAPPER.search(text.replace("\\\n", " ")):
-                raise SystemExit(f"{source}: a macro wrapping INCLUDE_RODATA/ORIGINAL/ASSET hides its names")
-            if source.suffix == ".c":
-                for _block, fallback in NON_MATCHING.findall(text):
-                    nonmatching.update(INCLUDE_ASM.findall(fallback))
-                asm_names.update(INCLUDE_ASM.findall(text))
+                raise SystemExit(f"{source}: a macro wrapping INCLUDE_ASM/RODATA/ORIGINAL/ASSET hides its names")
+            for token in INCLUDE_TOKEN.finditer(text):
+                if not STRICT[token.group(1)].match(text, token.start()):
+                    macro = token.group(0)
+                    line = text.count("\n", 0, token.start()) + 1
+                    raise SystemExit(f'{source}:{line}: {macro} is not spelled {macro}("...", NAME...) as the report reads it')
+            for _block, fallback in NON_MATCHING.findall(text):
+                nonmatching.update(INCLUDE_ASM.findall(fallback))
+            asm_names.update(INCLUDE_ASM.findall(text))
             included.update(INCLUDE_RODATA.findall(text))
             included.update(INCLUDE_ORIGINAL.findall(text))
             assets.update(INCLUDE_ASSET.findall(text))
-    return asm_names, nonmatching, included, assets
+            files += [(macro, Path(folder) / f"{name}.s", name) for macro, folder, name in INCLUDED_FILE.findall(text)]
+    return asm_names, nonmatching, included, assets, files
+
+
+def asm_data_objects(path: Path, section: str) -> list[tuple[str, str]]:
+    """(section, name) of each data object an included .s file defines, read from
+    `section` on (the macro's: .text for INCLUDE_ASM, .rodata for INCLUDE_RODATA).
+    Every line of a section other than .text must be alignment, splat's
+    `nonmatching` marker, or an object's `dlabel`, data and `enddlabel`."""
+    objects: list[tuple[str, str]] = []
+    current = None
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        words = ASM_COMMENT.sub(" ", line).split("#", 1)[0].replace(",", " ").split()
+        if not words:
+            continue
+        head, where = words[0], f"{path}:{number}"
+        if head == ".section" or head in ASM_SECTION:
+            if current:
+                raise SystemExit(f"{where}: {current} has no enddlabel before the section changes")
+            section = words[1] if head == ".section" and len(words) > 1 else head
+        elif head in (".previous", ".pushsection", ".popsection", ".subsection"):
+            raise SystemExit(f"{where}: {head} is not followed by the coverage report")
+        elif section.startswith(".text"):
+            continue
+        elif head == "dlabel" and len(words) == 2 and not current:
+            current = words[1]
+            objects.append((section, current))
+        elif head == "enddlabel" and words[1:] == [current]:
+            current = None
+        elif not (head in ASM_NEUTRAL or head in ASM_DATA and current):
+            raise SystemExit(f"{where}: {line.strip()!r} in {section} is no labelled object's data")
+    if current:
+        raise SystemExit(f"{path}: {current} has no enddlabel")
+    return objects
+
+
+def resolve(table: list[tuple[int, int, str, str, str]], names: set[str]) -> dict[str, tuple[int, int]]:
+    """{name: (start, end)} of each name's one sized, section-relative ELF symbol;
+    fails on a name that cannot be trusted."""
+    found: dict[str, list[tuple[int, int, str]]] = {}
+    for address, size, _kind, section, name in table:
+        if name in names:
+            found.setdefault(name, []).append((address, size, section))
+    result = {}
+    for name in sorted(names):
+        entries = found.get(name, [])
+        if len(entries) != 1:
+            raise SystemExit(f"{name}: {'no' if not entries else len(entries)} ELF symbols, expected one")
+        address, size, section = entries[0]
+        if section == "ABS":
+            raise SystemExit(f"{name}: an absolute symbol (a linker-script assignment shadows it)")
+        if not size:
+            raise SystemExit(f"{name}: the ELF symbol has no size")
+        result[name] = (address, address + size)
+    return result
 
 
 def original_objects(
@@ -200,27 +313,33 @@ def original_objects(
     ranges: list[tuple[int, int, str, str]],
 ) -> list[tuple[int, int]]:
     """[start, end) of each included object; fails on a name that cannot be trusted."""
-    found: dict[str, list[tuple[int, int, str]]] = {}
-    for address, size, _kind, section, name in table:
-        if name in included_names or name in asset_names:
-            found.setdefault(name, []).append((address, size, section))
-
-    def bounds(name: str) -> tuple[int, int]:
-        entries = found.get(name, [])
-        if len(entries) != 1:
-            raise SystemExit(f"{name}: {'no' if not entries else len(entries)} ELF symbols, expected one")
-        address, size, section = entries[0]
-        if section == "ABS":
-            raise SystemExit(f"{name}: an absolute symbol (a linker-script assignment shadows it)")
-        if not size:
-            raise SystemExit(f"{name}: the ELF symbol has no size")
-        return address, address + size
-
-    for name in sorted(asset_names):
-        start, end = bounds(name)
+    for name, (start, end) in resolve(table, asset_names).items():
         if not any(s <= start and end <= e for s, e, kind, _ in ranges if kind == "asset"):
             raise SystemExit(f"{name}: INCLUDE_ASSET object {start:08x}-{end:08x} outside every asset range")
-    return [bounds(name) for name in sorted(included_names)]
+    return list(resolve(table, included_names).values())
+
+
+def assembly_data(
+    table: list[tuple[int, int, str, str, str]],
+    files: list[tuple[str, Path, str]],
+    classes: dict[str, str],
+) -> list[tuple[int, int, str]]:
+    """(start, end, class) of the data each included .s file defines, per section
+    from its first object to its last: `included` for an INCLUDE_RODATA file,
+    the class of the function (`classes`) for an INCLUDE_ASM file."""
+    result = []
+    for macro, path, name in files:
+        objects = asm_data_objects(path, ".text" if macro == "ASM" else ".rodata")
+        if not objects:
+            continue
+        cls = "included" if macro == "RODATA" else classes.get(name)
+        if cls is None:
+            raise SystemExit(f"{path}: defines data, but {name} is no function of the image")
+        bounds = resolve(table, {label for _section, label in objects})
+        for section in dict.fromkeys(s for s, _label in objects):
+            spans = [bounds[label] for s, label in objects if s == section]
+            result.append((min(a for a, _ in spans), max(b for _, b in spans), cls))
+    return result
 
 
 def main() -> None:
@@ -232,7 +351,7 @@ def main() -> None:
     parser.add_argument("--list", choices=["c", "nonmatching", "sdk", "handwritten", "asm"])
     args = parser.parse_args()
 
-    asm_names, nonmatching, included_names, asset_names = source_names(args.src)
+    asm_names, nonmatching, included_names, asset_names, files = source_names(args.src)
     ranges = classification(args.classification)
 
     table = symbols(args.elf)
@@ -243,6 +362,13 @@ def main() -> None:
         for name in bounds
         if name.endswith("_TEXT_START") and name.replace("_START", "_END") in bounds
     ]
+    classes = {}
+    for address, _size, kind, _section, name in table:
+        if kind == "FUNC":
+            if name in nonmatching:
+                classes[name] = "nonmatching"
+            elif name in asm_names:
+                classes[name] = next((k for s, e, k, _ in ranges if s <= address < e), "asm")
     totals: dict[str, list[int]] = {}
     listing = []
     for address, size, kind, _section, name in table:
@@ -252,12 +378,7 @@ def main() -> None:
             continue
         if address % 4 or size % 4:
             raise SystemExit(f"unaligned MIPS function range: {name} at {address:08x}, size {size}")
-        if name in nonmatching:
-            cls = "nonmatching"
-        elif name in asm_names:
-            cls = next((k for s, e, k, _ in ranges if s <= address < e), "asm")
-        else:
-            cls = "c"
+        cls = classes.get(name, "c")
         entry = totals.setdefault(cls, [0, 0])
         entry[0] += 1
         entry[1] += size
@@ -285,16 +406,20 @@ def main() -> None:
         "remaining_asm_instructions": remaining[1] // 4,
     }
     if args.map:
-        included = original_objects(table, included_names, asset_names, ranges)
+        objects = [(s, e, "included") for s, e in original_objects(table, included_names, asset_names, ranges)]
+        objects += assembly_data(table, files, classes)
         loaded = loaded_ranges(args.elf)
         sections = [
             s for s in map_sections(args.map)
             if not BSS_SECTION.match(s[0]) or any(lo <= s[1] and s[1] + s[2] <= hi for lo, hi in loaded)
         ]
-        data = data_coverage(sections, included, ranges, Path.cwd())
+        data = data_coverage(sections, objects, ranges, Path.cwd())
         report["data_bytes"] = sum(data.values())
         report["data_classes"] = dict(sorted(data.items()))
         report["remaining_data_placeholder_bytes"] = data.get("placeholder", 0)
+        # Data that unrecovered or nonmatching assembly carries: the compiler
+        # emits it once the function is C.
+        report["remaining_data_asm_bytes"] = data.get("asm", 0) + data.get("nonmatching", 0)
     print(json.dumps(report, sort_keys=True))
 
 
