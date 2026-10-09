@@ -45,7 +45,7 @@ s32 func_801E36BC(Actor *actor, EffectPool *pool, s32 ticks, s32 arg3, s32 arg4)
 void func_801E37D0(Actor *actor);
 void func_801E39F0(Actor *actor, EffectPool *pool, s32 arg2, s32 arg3, s32 arg4);
 void func_801E5C74(Actor *actor, Animation *anim, s32 loop);
-s32 func_801E5CD8(Actor *actor, s32 which);
+s32 func_801E5CD8(Actor *actor, s32 source);
 void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2);
 void func_801E632C(Actor *actor);
 void func_801E63A8(Actor *actor);

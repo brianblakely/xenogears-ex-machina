@@ -70,7 +70,7 @@ s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s
 void func_800AAB34(BattleObject *object);
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
 void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z);
-void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x, s32 y,
+void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x, s32 y,
                    s32 z);
 void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop);
 s32 func_800AE220(BattleObject *object, s32 source);
@@ -439,10 +439,10 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
     return root;
 }
 
-/* Pose a model hierarchy: the root's rotation (YXZ order when flag6 is set)
+/* Pose a model hierarchy: the root's rotation (YXZ order when yxz is set)
  * with its translation, scaled by scale (4.12) per axis into its transform;
- * each changed part (flag5) its rotation, and each part marked (flag4, or
- * under a marked parent) its translation and world matrix. Clears the marks
+ * each part to rotate (rotate) its rotation, and each dirty part (dirty, or
+ * under a dirty parent) its translation and world matrix. Clears both marks
  * and returns the part count. */
 u16 func_8009EF3C(ModelPart *part, s32 scale) {
     MATRIX *diagonal = (MATRIX *)0x1F800000;
@@ -6054,8 +6054,8 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
 /* Attach a homing turn (kind 0xFE) toward (x, y, z) to a part's rotation: type
  * 0 (step type 7) turns pitch and yaw, 1 (8) the yaw only. Each frame 800A0838
  * turns by at most param1 + (distance + time) * param2 / params[0] (the first
- * distance plus one), time growing by field12; it runs until released. */
-void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x,
+ * distance plus one), time growing by duration; it runs until released. */
+void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x,
                    s32 y, s32 z) {
     EffectEntry *entry;
     s32 dx;
@@ -6082,7 +6082,7 @@ void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 
         entry->params[4] = y;
         entry->params[5] = z;
         entry->time = 0;
-        entry->duration = field12;
+        entry->duration = duration;
         part->effects[0] = entry;
     }
 }
@@ -6531,7 +6531,7 @@ void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) 
     }
 }
 
-/* Move the parts' marks (flag7) of a hierarchy to another of the same
+/* Move the parts' visible flags of a hierarchy to another of the same
  * shape. */
 void func_800AF270(ModelPart *from, ModelPart *to) {
     s32 count = from->index;

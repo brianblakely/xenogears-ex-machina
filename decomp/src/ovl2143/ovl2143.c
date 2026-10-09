@@ -12,18 +12,26 @@
  * and ASPSX-style checked divisions.
  *
  * Most of its functions are the battle's model and effect library (8009E53C's
- * unit) linked again, the same instructions apart from addresses: 801DC22C-
- * 801DCE18 (the battle's 8009EBA8-8009F794), 801DDBF8-801E1880 (800A0838-
- * 800A44C0; 801E011C sets other texture coordinates than 800A2D5C),
- * 801E1A14-801E3438 (800A7064-800A8A88), 801E34BC-801E37D0 (800AA820-
- * 800AAB34), 801E59D4-801E5C74 (800ADF1C-800AE1BC), 801E632C/801E6338
- * (800AEEEC/800AEEF8), 801E6578-801E66BC (800AF180-800AF2C4), 801E6974-
- * 801E7094 (800AF678-800AFD98), 801E8330 (800AA320) and 801E8394-801E8510
- * (800AA564-800AA6E0). They use the battle's records (battle/model.h,
- * battle/effect.h) as the battle's copies do. The module's own are the actor
- * draw 801DCEC8, the effect VM 801E39F0, the event runner 801E5D44, the aim
- * and reference helpers 801E63A8 and 801E67F8-801E6910, and the entries
- * 801E7298-801E8030.
+ * unit) linked again. 64 are the same instructions apart from addresses (54
+ * of them apart from jal/j targets only): 801DC22C-801DCE18 (the battle's
+ * 8009EBA8-8009F794), 801DDBF8-801E1880 (800A0838-800A44C0) but for
+ * 801E011C, 801E1A14-801E3438 (800A7064-800A8A88), 801E34BC-801E37D0
+ * (800AA820-800AAB34), 801E59D4-801E5C74 (800ADF1C-800AE1BC),
+ * 801E632C/801E6338 (800AEEEC/800AEEF8), 801E6578-801E66BC (800AF180-
+ * 800AF2C4), 801E6974-801E7094 (800AF678-800AFD98), 801E8330 (800AA320) and
+ * 801E8394-801E8510 (800AA564-800AA6E0). 801E67F8, 801E6830 and 801E7FD4 are
+ * 800AF400, 800AF438 and 800A9F94 with the module's counts (10 actors, 8 in
+ * the reference mask, where the battle has 31 objects and 13 slots), and
+ * 801E011C is 800A2D5C with another texture page and row. Shorter versions
+ * take the places of 8009F844 (the actor draw 801DCEC8), 800AAD54 (the effect
+ * VM 801E39F0), 800AE220 (801E5CD8, without its fourth bank source), 800AE2A4
+ * (the event runner 801E5D44), 800AEF68 (801E63A8), 800AF518 (801E6910,
+ * without its choice by gear warnings), 800AFF9C (801E7298, without the
+ * scene's ground) and 800A9FF0 (801E8030). The entries 801E72CC-801E7D14 are
+ * the module's own. The copies use the battle's records (battle/model.h,
+ * battle/effect.h); their C keeps its own local names and, where it compiles
+ * alike, some views of its own (the Actor where the battle has BattleObject,
+ * integer widths, statement shapes).
  *
  * The whole image is this one unit: rodata 801DC000-801DC22C, text
  * 801DC22C-801E8590, data 801E8590-801E85CC and the module state to
@@ -207,9 +215,9 @@ ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
 }
 
 /* Recompose a hierarchy's matrices: the root's world matrix from its rotation
- * and position, its local one scaled by `scale`; each other node's local
- * matrix from its rotation when flagged and its world matrix from its parent
- * when it or its parent changed. Returns the node count. */
+ * and position, its transform scaled by `scale`; each other node's transform
+ * from its rotation when flagged and its world matrix from its parent when it
+ * or its parent changed. Returns the node count. */
 u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     MATRIX *scaling = (MATRIX *)0x1F800000;
     ModelPart *part;
@@ -279,7 +287,7 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     return count;
 }
 
-/* Like func_801DC5C0, with scaled nodes: a rebuilt local matrix takes the
+/* Like func_801DC5C0, with scaled nodes: a rebuilt transform takes the
  * node's own scale and the inverse of its parent's, and a parent's rebuild or
  * change propagates to its children. Clears both flags afterwards. */
 u32 func_801DC848(ModelPart *parts, s32 scale) {
@@ -3419,8 +3427,8 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* fade sound (word low byte) of view `arg`'s bank to silence over
-                    * (high byte) frames (8003a3b8) */
+        case 0x3C: /* fade sound (word low byte) of bank source `arg` (801e5cd8) to
+                    * silence over (high byte) frames (8003a3b8) */
             word = *pc++;
             reference = word;
             entry = word >> 8;
@@ -3814,13 +3822,14 @@ void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
     actor->anim_state = -1;
 }
 
-/* The +14 value of view `which` (0: the resident one, 1/2: the actor's) in
- * 16.16. */
-s32 func_801E5CD8(Actor *actor, s32 which) {
-    if (which == 0) {
+/* The sound bank id (in the high half) of source: 0 the system bank, 1 and 2
+ * those of the actor's sound blocks (800AE220 without its source 3, the bank
+ * D_800C4924). */
+s32 func_801E5CD8(Actor *actor, s32 source) {
+    if (source == 0) {
         return D_8005919C->bank << 16;
-    } else if (which != 1) {
-        if (which == 2) {
+    } else if (source != 1) {
+        if (source == 2) {
             return actor->ownerB4->bank->id << 16;
         }
     } else {
@@ -4412,8 +4421,8 @@ void func_801E7298(Actor *actor) {
     }
 }
 
-/* The world matrix of node `node` of actor `index` (its root's local matrix
- * for node 0). */
+/* The world matrix of node `node` of actor `index` (its root's transform for
+ * node 0). */
 void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node) {
     MATRIX m;
     Actor *actor;
