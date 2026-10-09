@@ -130,7 +130,7 @@ extern MATRIX D_80059F64; /* light directions, one per row */
 extern MATRIX D_80059F84; /* light colors, one per column */
 
 /* Renderer output packet header. */
-typedef struct {
+typedef struct RenderPacket {
     u8 unk0[3];
     u8 code;
     s32 value;
@@ -151,7 +151,7 @@ u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 /* A primitive group: its type (an index into D_8004FE50) and count; the
  * primitive records follow. */
-typedef struct {
+typedef struct PrimitiveGroup {
     u8 type;
     u8 unk1;
     s16 count;

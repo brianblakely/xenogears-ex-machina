@@ -17,6 +17,13 @@
 #include "heap.h"
 #include "mode.h"
 
+/* This unit's own variables of up to 8 bytes (its .sbss, 80059394, as the
+ * original assembler placed them); the larger format defaults D_8005A1CC
+ * and music file list D_8005A1DC follow in its .bss (slus_006.64.yaml). */
+static Console *D_80059394;
+static RECT D_80059398;   /* the console font CLUTs' VRAM rectangle */
+static s32 D_800593A0;    /* the console block is not owned (not released) */
+
 void func_800370DC(s32 c);
 
 /* The built-in console font, packed: its unpacked size and the LZSS stream
@@ -298,8 +305,6 @@ void func_80036DC8(s32 r, s32 g, s32 b) {
         D_80059394->mode |= 1;
     }
 }
-
-extern RECT D_80059398;    /* their VRAM rectangle */
 
 /* Build and upload the console font CLUTs: four 16-color rows of
  * foreground/background stripes 1, 2, 4 and 8 entries wide. */
@@ -724,7 +729,7 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
 }
 
 /* A voice whose volume pair follows the output mode (D_80059518). */
-typedef struct {
+typedef struct SoundModeVoice {
     u16 flags;         /* bit 0: in use */
     u8 unk2[0x10];
     u16 volume;
@@ -739,10 +744,9 @@ typedef struct {
 } SoundModeVoice;
 
 extern SoundModeVoice *D_80059518;
-extern u8 D_8005940A, D_8005940B; /* reverb delay and feedback */
 extern SpuVolume D_8005940C;                   /* reverb depth */
 extern SoundTrack *D_80059564;
-extern s16 D_8005A3EE;
+extern s16 D_8005A3EE; /* the CD request of D_8005A3C0 (link.ld) */
 s32 func_80038824(void);
 void func_8003885C(s32 volume);
 void func_80038DF4(void);
@@ -759,7 +763,6 @@ extern u8 D_80065B0C[0x6300]; /* the driver memory pool */
 extern u8 D_8006FAC8[];      /* the SPU memory management table */
 extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
 extern s32 D_800595A4;       /* the zeroed transfer buffer */
-extern u8 D_80059409;        /* reverb type */
 s32 func_8003C020(void);    /* the driver tick */
 void func_8003BB64(void);    /* SPU transfer callback */
 void func_8003BFA0(void);    /* SPU interrupt callback */
@@ -823,7 +826,7 @@ void func_80037B88(s32 flags) {
     D_80059544 = 8;
     D_800594D8 = -1;
     D_800595A4 = 0;
-    D_80059409 = 0xFF;
+    D_80059408.type = 0xFF;
     func_80038934(4, 0, 0, 0);
     SpuSetReverb(1);
     D_80059500 = 0;
@@ -1231,7 +1234,8 @@ s32 func_80038824(void) {
     return mode;
 }
 
-/* These fixed, contiguous attenuation bytes form CdMix's CdlATV argument. */
+/* These fixed, contiguous attenuation bytes form CdMix's CdlATV argument
+ * (one object; the names of its last three are in link.ld). */
 extern u8 D_80059530, D_80059531, D_80059532, D_80059533;
 
 /* Remember CD volume; Mono halves it into both channels, while stereo
@@ -1294,7 +1298,7 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         delay = 0;
         depth = 0;
     } else if (type == -1) {
-        type = D_80059409;
+        type = D_80059408.type;
     }
     SpuGetReverbModeType(&current);
     if (current != type || type == 0) {
@@ -1314,10 +1318,10 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
             depth = 0;
         }
     }
-    D_80059409 = type;
+    D_80059408.type = type;
     D_8005A3C0.unk2C = depth;
-    D_8005940A = delay;
-    D_8005940B = feedback;
+    D_80059408.delay = delay;
+    D_80059408.feedback = feedback;
     func_80038DF4();
     if (changed) {
         SpuSetReverbModeDepth(0, 0);
@@ -1360,8 +1364,8 @@ void func_80038B4C(void) {
         func_80039144((void *)D_800595A4);
         D_800595A4 = 0;
         SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
-        SpuSetReverbModeDelayTime(D_8005940A);
-        SpuSetReverbModeFeedback(D_8005940B);
+        SpuSetReverbModeDelayTime(D_80059408.delay);
+        SpuSetReverbModeFeedback(D_80059408.feedback);
         D_8005957C &= ~0x20;
         return;
     }

@@ -62,8 +62,9 @@ CC_sprite_80025C04 := 2.7.2-cdk
 GP_sprite_80025C04 := 8
 MASPSX_sprite_80025C04 := --aspsx-version=2.79 --use-comm-section
 EXTERN_sprite_80025C04 := absolute
-# The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
-# 2.6.3 with inline division checks.
+# The texture-scroll, disc, CD read callback, stream and model buffer unit
+# (8002709C-8002C3E8) is compiled by GCC 2.6.3 with inline division checks
+# (its code from 8002A260 on has no division).
 CC_main_8002709C := 2.6.3
 MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
 # The battle-mode entry owns 8005959C, while its setup flags are owned by
@@ -82,9 +83,6 @@ CC_main_8001B6C4 := 2.6.3
 GP_main_8001B6C4 := 8
 MASPSX_main_8001B6C4 := --aspsx-version=2.34 --use-comm-section
 EXTERN_main_8001B6C4 := absolute
-# The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
-# is compiled by GCC 2.6.3.
-CC_main_8002A260 := 2.6.3
 # Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
 # whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800
