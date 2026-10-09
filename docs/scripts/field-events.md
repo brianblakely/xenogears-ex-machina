@@ -161,17 +161,19 @@ maps are identical to Disc 1's.
   50 (slot39 `801de5cc`), the battle lists weapon ids 50-72 (ovl2615
   `801e4cd0`) and copies weapon records 50-97 (`801e5384`). The two name
   tables, system texts 23 and 51 (`80033848`, `80033a5c`; `python3 -m
-  tools.analysis.text_control --list system --item 23`, the same on both
-  discs), end the name of every id 50-72 in the glyphs `20 49 49 4b`, "Ammo"
-  in the order the disc's own letters follow: `--chars` places all 25 of them
-  at their alphabet positions, `B` 21 to `V` 35 and `a` 3d to `z` 56, with
-  `l` 48, `n` 4a and `o` 4b. Ids 73-99 have no kind, and the tables end at 98
-  with the text `ffff` for 73-98. Only character 4 (weapon users 0x10) and
-  gears 5 and 13 (gear part users 0x2020) can use ids 50-72, and the new game
-  gives character 4 weapons 31, 35, 35, 37 with special parts 50, 67, 69, 57,
-  and gears 5 and 13 weapons 31 and 37 with 50 and 57 (`python3 -m
-  tools.analysis.special_parts --sweep`). Each id's
-  byte (`ammo`, `gearAmmo`) counts its rounds: the field menu sets it to 100
+  tools.analysis.text_control --list system --item 23 --chars`, the same on
+  both discs), end the name of every id 50-72 in the glyphs `20 49 49 4b`,
+  which `--chars` spells "Ammo" by the method of
+  [text-control.md](text-control.md): `o` (4b) is one of the 25 letters the
+  memory card titles give, and `A` (20) and `m` (49) are two of the 27 that
+  the name entry grid's alphabet runs name, an inference from the grid's
+  order that those 25 letters confirm. Ids 73-99 have no kind, and the
+  tables end at 98 with the text `ffff` for 73-98. Only character 4 (weapon
+  users 0x10) and gears 5 and 13 (gear part users 0x2020) can use ids 50-72,
+  and the new game gives character 4 weapons 31, 35, 35, 37 with special
+  parts 50, 67, 69, 57, and gears 5 and 13 weapons 31 and 37 with 50 and 57
+  (`python3 -m tools.analysis.special_parts --sweep`). Each id's byte
+  (`ammo`, `gearAmmo`) counts its rounds: the field menu sets it to 100
   when the id is loaded (slot39 `801df0d4`), each action takes one from the
   slots its command number names (battle `8009afd8`, `8009e788`), a command
   whose descriptor names a slot at 0 misses (`itemKinds` 0x80 the first, 0x10
