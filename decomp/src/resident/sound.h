@@ -45,7 +45,7 @@ typedef struct {
 
 /* A channel's claim on a hardware SPU voice and its staged register
  * values (D_8006252C holds the owner of each hardware voice). */
-typedef struct {
+typedef struct SoundChannel {
     u16 voice;         /* hardware voice */
     u16 mode;          /* 0x10 pitch modulation, 0x20 noise, 0x40 reverb */
     s16 priority;
@@ -203,7 +203,7 @@ typedef struct {
 
 /* The driver's SPU common attributes and the volumes they are built from
  * (D_8005A3C0). */
-typedef struct {
+typedef struct SoundVolumes {
     SpuCommonAttr attr;
     s16 master;
     s16 cd;
@@ -344,7 +344,7 @@ typedef struct SoundBlock {
 
 /* An entry of the SPU memory map (12 entries, chained by index from the
  * first). */
-typedef struct {
+typedef struct SpuMemBlock {
     u8 flags;          /* 0: unused */
     u8 unk1;
     s16 next;          /* index of the next entry, 0 at the end */

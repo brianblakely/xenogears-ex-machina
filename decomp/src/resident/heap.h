@@ -26,23 +26,6 @@ typedef struct DelayedFree {
     s32 frames;
 } DelayedFree;
 
-/* Heap state ($gp-relative in the heap unit). */
-extern u16 D_80059318;     /* allocation class of the next block */
-extern u16 D_8005931C;     /* owner tag of the next block */
-extern u8 *D_80059320;     /* data address of the first block */
-extern s32 D_8005932C;     /* free blocks await coalescing */
-extern s32 D_80059330;     /* failures return NULL instead of stopping */
-/* Loaded host symbols: the complete "SYM1" file and its byte limit. They
- * are separate scalars: func_80031A68 clears them ahead of its block-header
- * stores, which GCC's alias rules allow for scalars but not for members of a
- * global struct. */
-extern u8 *D_80059334;
-extern u8 *D_80059338;
-extern s32 D_8005933C;     /* size of the last request */
-extern s32 D_80059340;     /* caller of the last request */
-extern s32 D_80059FA4[];   /* per-tag words */
-extern DelayedFree *D_80059FCC[]; /* one list head; not small data */
-extern s32 D_80059348;     /* host file of the heap report */
 extern void (*D_800592B8)(char *line); /* heap report output */
 
 /* Heap blocks (0x80031894-0x80032e7c). */

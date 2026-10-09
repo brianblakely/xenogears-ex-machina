@@ -20,6 +20,14 @@
 #include "console.h"
 #include "sound.h"
 
+/* This unit's own variables of up to 8 bytes (its .sbss, 80059308, as the
+ * original assembler placed them); the larger light matrices D_80059F64 and
+ * D_80059F84 follow in its .bss (slus_006.64.yaml). */
+static u16 D_80059308; /* the primitive's texture page, overridden */
+static u16 D_8005930C; /* the primitive's CLUT, overridden */
+static s32 D_80059310; /* the texture page override */
+static s32 D_80059314; /* the CLUT override */
+
 /* The handwritten renderers with their alternate entries (model_draw.s) and
  * the C routines that prepare one record's packets. */
 void func_8002E010(), func_8002E024(), func_8002E038(), func_8002E04C(),
@@ -381,9 +389,6 @@ void func_8002CBBC(ModelBuffer *buffer) {
     }
 }
 
-extern s32 D_80059310;
-extern s32 D_80059314;
-
 /* Override model texture pages with the page at (x, y). */
 void func_8002CC10(u16 x, u16 y) {
     D_80059310 = GetTPage(0, 0, x, y) & 0x1F;
@@ -405,9 +410,6 @@ void func_8002CCAC(void) {
     D_80050108 = 0;
     D_8005010C = 1;
 }
-
-extern u16 D_80059308;
-extern u16 D_8005930C;
 
 /* Apply the texture page override to a primitive's page. */
 void func_8002CCC8(u16 *tpage) {

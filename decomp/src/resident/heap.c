@@ -8,6 +8,30 @@
 #include "heap.h"
 #include "mode.h"
 
+/* The heap state, this unit's own variables. GCC emits them after its small
+ * data and the assembler allocates those of up to 8 bytes in the unit's
+ * .sbss ($gp-relative, 80059318), the larger in its .bss (80059fa4), each
+ * in a slot of whole words. */
+static u16 D_80059318;     /* allocation class of the next block */
+static u16 D_8005931C;     /* owner tag of the next block */
+static u8 *D_80059320;     /* data address of the first block */
+static s32 D_80059324;     /* unreferenced */
+static s32 D_80059328;     /* unreferenced */
+static s32 D_8005932C;     /* free blocks await coalescing */
+static s32 D_80059330;     /* failures return NULL instead of stopping */
+/* Loaded host symbols: the complete "SYM1" file and its byte limit. They
+ * are separate scalars: func_80031A68 clears them ahead of its block-header
+ * stores, which GCC's alias rules allow for scalars but not for members of a
+ * global struct. */
+static u8 *D_80059334;
+static u8 *D_80059338;
+static s32 D_8005933C;     /* size of the last request */
+static s32 D_80059340;     /* caller of the last request */
+static s32 D_80059344;     /* unreferenced */
+static s32 D_80059FA4[10]; /* per-tag words */
+/* The delayed releases: one list head, but not small data. */
+static DelayedFree *D_80059FCC[3];
+
 /* Nothing reads this pointer; its string opens the unit's small data. */
 char *D_800591C8 = " ";
 

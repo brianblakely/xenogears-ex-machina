@@ -31,12 +31,13 @@ u8 D_8004FCC0[0x80] = {
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 };
 
-/* The unit's own small data and small commons, $gp-relative. */
+/* The unit's own small data and statics ($gp-relative; the statics take
+ * the unit's .sbss, 800592ec). */
 s32 D_800591B8 = 0;
 s16 D_800591BC[4] = {0x400, -0x200, 0, 0}; /* nothing references it */
-s32 D_800592EC;
-RECT *D_800592F0;             /* LoadImage area for 80022a0c */
-u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
+static s32 D_800592EC;
+static RECT *D_800592F0;      /* LoadImage area for 80022a0c */
+static u_long *D_800592F4;    /* LoadImage pixels for 80022a0c */
 
 /* Rebuild a sprite renderer's matrix: rotation by its angles, scaled by
  * its scales (flag bit 0: scale before rotating), then halved by the

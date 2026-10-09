@@ -17,6 +17,13 @@
 #include "heap.h"
 #include "mode.h"
 
+/* This unit's own variables of up to 8 bytes (its .sbss, 80059394, as the
+ * original assembler placed them); the larger format defaults D_8005A1CC
+ * and music file list D_8005A1DC follow in its .bss (slus_006.64.yaml). */
+static Console *D_80059394;
+static RECT D_80059398;   /* the console font CLUTs' VRAM rectangle */
+static s32 D_800593A0;    /* the console block is not owned (not released) */
+
 void func_800370DC(s32 c);
 
 /* The built-in console font, packed: its unpacked size and the LZSS stream
@@ -298,8 +305,6 @@ void func_80036DC8(s32 r, s32 g, s32 b) {
         D_80059394->mode |= 1;
     }
 }
-
-extern RECT D_80059398;    /* their VRAM rectangle */
 
 /* Build and upload the console font CLUTs: four 16-color rows of
  * foreground/background stripes 1, 2, 4 and 8 entries wide. */
@@ -724,7 +729,7 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
 }
 
 /* A voice whose volume pair follows the output mode (D_80059518). */
-typedef struct {
+typedef struct SoundModeVoice {
     u16 flags;         /* bit 0: in use */
     u8 unk2[0x10];
     u16 volume;

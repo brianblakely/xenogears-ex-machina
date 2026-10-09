@@ -15,16 +15,6 @@ typedef struct {
     u8 second;
 } CharPair;
 
-extern s32 D_8005934C;  /* font: first byte of a two-byte character */
-extern s32 D_80059350;
-extern s32 D_80059354;
-extern s32 D_80059358;
-extern u8 *D_8005935C;  /* font glyph data */
-extern u8 **D_80059360; /* system data: resource table */
-extern s32 D_80059364;
-extern u8 *D_80059368;  /* system data block */
-extern u16 *D_8005936C; /* font block: halfword 1 glyph offset, 2 first
-                         * byte of a two-byte character */
 extern u16 D_8005A0C8[12]; /* number character codes: color, 10 digits, 0xFFFF */
 extern u8 D_8005A0E4[]; /* decoded text */
 extern u16 D_80059414;  /* text CLUTs */

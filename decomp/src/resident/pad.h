@@ -4,7 +4,7 @@
 #include "common.h"
 
 /* Controller receive buffer of one port (PsyQ libpad layout). */
-typedef struct {
+typedef struct PadBuffer {
     u8 status;     /* 0 on a successful read, 0xFF without a controller */
     u8 type;       /* high nibble: controller kind */
     u8 buttons[2]; /* active low */
@@ -26,8 +26,6 @@ extern u16 D_800594A4;    /* pad buttons repeated */
 extern u8 D_80059484;     /* play time hours */
 extern u8 D_80059420;     /* play time minutes */
 extern u8 D_80059418;     /* play time seconds */
-extern u8 D_8005938C;
-extern u8 D_80059388;     /* kind of the last read controller */
 extern u16 D_800501E8[8]; /* button bits */
 extern u8 D_80050238[8];  /* button assignment */
 extern u8 D_8005020C[16];

@@ -48,8 +48,6 @@ typedef struct {
     u8 texture_v;    /* font sheet row in its texture page */
 } Console;
 
-extern Console *D_80059394;
-extern s32 D_800593A0; /* the console block is not owned (not released) */
 
 /* A conversion's settings (defaults at D_8005A1CC). */
 typedef struct {

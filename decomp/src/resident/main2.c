@@ -14,6 +14,29 @@
 #include "heap.h"
 #include "mode.h"
 
+/* This unit's own variables of up to 8 bytes (its .sbss, 8005934c, as the
+ * original assembler placed them); the larger window, text and controller
+ * queue buffers (80059fd8-8005a1cc) follow in its .bss (slus_006.64.yaml). */
+static s32 D_8005934C;  /* font: first byte of a two-byte character */
+static s32 D_80059350;
+static s32 D_80059354;
+static s32 D_80059358;
+static u8 *D_8005935C;  /* font glyph data */
+static u8 **D_80059360; /* system data: resource table */
+static s32 D_80059364;
+static u8 *D_80059368;  /* system data block */
+static u16 *D_8005936C; /* font block: halfword 1 glyph offset, 2 first
+                         * byte of a two-byte character */
+static u8 D_80059370;   /* play time frames */
+static u32 D_80059374;  /* held pad buttons of the last frame */
+static u32 D_80059378;
+static u32 D_8005937C;  /* queued controller states */
+static u32 D_80059380;  /* queue write index */
+static u32 D_80059384;  /* queue read index */
+static u8 D_80059388;   /* kind of the last read controller */
+static u8 D_8005938C;
+static s32 D_80059390;  /* the vertical-blank callback polls the host */
+
 /* The text palette: two 16-colour CLUTs. */
 u16 D_80050190[32] = {
     0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
@@ -1225,8 +1248,6 @@ extern u16 D_80059574;       /* held pad buttons, second port */
 extern u16 D_80059490;       /* pad buttons pressed, second port */
 extern u16 D_800594A8;       /* pad buttons repeated, second port */
 extern s32 D_80059488;       /* vertical blank count */
-extern u32 D_80059374;       /* held pad buttons of the last frame */
-extern u32 D_80059378;
 extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
 extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
 
@@ -1316,9 +1337,6 @@ void func_800358BC(void) {
 }
 
 /* Queued controller states (16 entries of the six state words). */
-extern u32 D_8005937C; /* queued count */
-extern u32 D_80059380; /* write index */
-extern u32 D_80059384; /* read index */
 extern u16 D_8005A0FC[16];
 extern u16 D_8005A11C[16];
 extern u16 D_8005A13C[16];
@@ -1398,8 +1416,6 @@ void func_80035DB0(void) {
     D_80059574 = 0;
     D_80059570 = 0;
 }
-
-extern u8 D_80059370; /* frames */
 
 /* Advance the play time by one frame. */
 void func_80035E44(void) {
@@ -1521,8 +1537,6 @@ void func_80036258(s32 port, s16 frames) {
 void func_80036270(s32 port, u8 disabled) {
     D_8005A1BC[port].disabled = disabled;
 }
-
-extern s32 D_80059390;
 
 /* Start the controllers and reset the queue, actuators and assignment. */
 void func_80036288(void) {

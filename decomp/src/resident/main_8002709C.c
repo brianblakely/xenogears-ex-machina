@@ -21,10 +21,45 @@
 #include "console.h"
 #include "sound.h"
 
-/* The CD mode byte, first of the CdlSetmode parameter (main_8002A260.c
- * declares the whole 4-byte parameter). Read as a scalar: an array or
- * aggregate view makes GCC keep its address in a register. */
-extern u8 D_80059F18;
+/* The texture-scroll, disc, CD read callback, stream and model buffer unit
+ * (8002709C-8002C3E8; GCC 2.6.3 with inline division checks, which its code
+ * from 8002A260 on, having no division, does not show). Functions on both
+ * sides of 8002A260 read the disc and stream state below, the unit's own
+ * statics: its one .bss, in declaration order (800596f8-80059f64, among the
+ * units' larger variables). */
+static u8 D_800596F8[0x800];  /* sector buffer; the PC file server's subheader opens it */
+static s32 D_80059EF8[3];     /* read status words */
+static s32 D_80059F04;        /* PC file server handle of the stream */
+static CdlCB D_80059F08;      /* ready callback saved while retrying */
+static s32 D_80059F0C;        /* the file being read */
+static CdlLOC D_80059F10;     /* CD position of the current read */
+static CdlFILTER D_80059F14;  /* CdlSetfilter parameter */
+/* The CD mode byte, the first of the 4-byte CdlSetmode parameter, which
+ * takes the whole word (decomp/Makefile, slots). A scalar: 80028f30's tests
+ * of it match only so (an array or aggregate view makes GCC keep its
+ * address in a register); 8002a428 stores and passes the parameter through
+ * a pointer. */
+static u8 D_80059F18;
+static u8 D_80059F1C[8];      /* CD command result */
+/* Image stream parameters set by 80029eb0: for images of type 0x1200 and
+ * 0x1201, a placement mode (1: base + offset, 2: base + origin + offset,
+ * otherwise origin + offset) and a base position. */
+static s16 D_80059F24;
+static u16 D_80059F28;
+static u16 D_80059F2C;
+static s16 D_80059F30;
+static u16 D_80059F34;
+static u16 D_80059F38;
+static s32 D_80059F3C;        /* images left in the stream */
+static s16 D_80059F40;        /* next strip: x */
+static s16 D_80059F44;        /* y */
+static s16 D_80059F48;        /* width */
+static u16 *D_80059F4C;       /* heights of the remaining strips */
+static s32 D_80059F50;        /* strips left in the current image */
+static u8 *D_80059F54;        /* sector headers of the frame being read */
+static u8 *D_80059F58;        /* payloads of the frame being read */
+static s16 D_80059F5C;        /* sectors of the frame being read */
+static s16 D_80059F60;        /* sector of the frame being read from the PC file server */
 
 /* Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
  * sky, horizon, ground) enables the fills, NULL leaves them off. */
@@ -1313,4 +1348,938 @@ s32 func_80029EB0(s32 file, StreamRing *ring, s32 mode, s32 unused, u16 a, u16 b
     D_8005A488++;
     CdControlF(2, (u8 *)&D_80059F10);
     return 0;
+}
+
+/* The unit's initialized disc access and stream state (cd.h, stream.h). */
+s32 D_8004FDE0 = 0x10;
+s32 D_8004FDE4 = 0;
+s32 D_8004FDE8 = 0;
+s32 D_8004FDEC = 0;
+u8 *D_8004FDF0 = NULL;
+u16 *D_8004FDF4 = NULL;
+s32 D_8004FDF8 = 0;
+s32 D_8004FDFC = 0;
+s32 D_8004FE00 = 0;
+s32 D_8004FE04 = 0;
+void *D_8004FE08 = NULL;
+FileRequest *D_8004FE0C = NULL;
+s32 D_8004FE10 = 0;
+s32 D_8004FE14 = 0;
+s32 D_8004FE18 = 0;
+s32 D_8004FE1C = 0;
+s32 D_8004FE20 = 0;
+u16 D_8004FE24 = 0;
+u16 D_8004FE26 = 0;
+u16 D_8004FE28 = 0;
+StreamSlot *D_8004FE2C = NULL;
+StreamRing *D_8004FE30 = NULL;
+s32 D_8004FE34 = 0;
+s32 D_8004FE38 = 0;
+s32 D_8004FE3C = 0;
+s32 D_8004FE40 = 0;
+u8 D_8004FE44 = 0xFF;
+u8 D_8004FE45 = 0;
+u8 D_8004FE46 = 0;
+u8 D_8004FE47 = 0;
+char *D_8004FE48 = NULL;
+s32 D_8004FE4C = 0;
+
+/* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
+ * header), then select and reset it. Returns the ring or NULL. */
+StreamRing *func_8002A260(s32 count, s32 mode) {
+    StreamRing *ring;
+
+    if (count > 0) {
+        ring = func_80031BDC(count * 0x808 + 0x24, mode);
+        if (ring == NULL) {
+            return NULL;
+        }
+        ring->count = count;
+        func_80028A94(ring);
+        func_80028AAC();
+        return ring;
+    }
+    return NULL;
+}
+
+/* Unless a read is already running, seek to `file` (or pause for a
+ * nonpositive file) with the resident CD ready callback installed. */
+void func_8002A2D0(s32 file) {
+    if (D_8004FE48 == 0 && func_800286CC() == 0) {
+        D_8004FE18 = D_8004FE14;
+        if (file > 0) {
+            CdIntToPos(func_800289D0(file), &D_80059F10);
+            D_8004FE1C = 3;
+            CdSyncCallback(func_8002A68C);
+            CdControlF(2, (u8 *)&D_80059F10);
+        } else {
+            D_8004FE1C = 5;
+            CdSyncCallback(func_8002A68C);
+            CdControlF(9, NULL);
+        }
+    }
+}
+
+/* Seek to `file` (or pause) unconditionally. */
+void func_8002A394(s32 file) {
+    if (file > 0) {
+        CdIntToPos(func_800289D0(file), &D_80059F10);
+        D_8004FE1C = 3;
+        CdSyncCallback(func_8002A68C);
+        CdControlF(2, (u8 *)&D_80059F10);
+    } else {
+        D_8004FE1C = 5;
+        CdSyncCallback(func_8002A68C);
+        CdControlF(9, NULL);
+    }
+}
+
+/* Issue CdlSetmode with `mode`, stored and passed through a pointer to the
+ * parameter (8002a470: its address is formed once for the store and the
+ * call, as for an array; the unit's mode byte is a scalar for 80028f30). */
+void func_8002A428(u8 mode) {
+    u8 *param;
+    u8 *setmode;
+    s32 i;
+
+    D_8004FE1C = 9;
+    CdSyncCallback(func_8002A68C);
+    for (i = 3, param = &D_80059F18 + 3; i >= 0; i--) {
+        *param-- = 0;
+    }
+    setmode = &D_80059F18;
+    *setmode = mode;
+    CdControlF(0xE, setmode);
+}
+
+/* Request a stop with `reason`; when a read is active, drop it and close the
+ * open host file handle (retrying a few transient results). */
+void func_8002A498(s32 reason) {
+    s32 result;
+
+    D_8004FE34 = 1;
+    D_8004FE38 = reason;
+    if (D_8004FE48 != 0) {
+        D_8004FDF8 = 0;
+        D_8004FDFC = 0;
+        if (D_8004FE4C != -1) {
+            do {
+                result = PCclose(D_8004FE4C);
+            } while (result != 0 && result + 1 < 4);
+            D_8004FE4C = -1;
+        }
+    }
+}
+
+/* Free every loaded file's data in a zero-terminated file table. */
+void func_8002A524(FileEntry *table) {
+    FileEntry *entry;
+    void *data;
+
+    if (table->id != 0) {
+        entry = table;
+        do {
+            data = entry->data;
+            entry++;
+            if (data != NULL) {
+                func_800320E8(data);
+            }
+        } while (entry->id != 0);
+    }
+}
+
+/* Load the files following `first` into `table` (allocated when NULL). On an
+ * allocation failure everything loaded is freed and NULL returned.
+ * The original recomputes &table[i] and first + i each pass, as GCC does
+ * for a loop the loop optimizer does not see (here a goto loop under the
+ * count guard); the terminator is written through the index. */
+FileEntry *func_8002A57C(s32 first, FileEntry *table) {
+    u8 unused[8]; /* unused in the original; reserves 8 bytes */
+    s32 count;
+    s32 owned = 0;
+    s32 i;
+
+    count = func_80028928(first);
+    if (count > 0) {
+        if (table == NULL) {
+            table = func_80031BDC((count + 1) * 8, 0);
+            owned = 1;
+            if (table == NULL) {
+                return NULL;
+            }
+        }
+        i = 0;
+        if (count > 0) {
+        next:
+            table[i].id = first + i + 1;
+            table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
+            if (table[i].data == NULL) {
+                func_8002A524(table);
+                if (owned > 0) {
+                    func_800320E8(table);
+                }
+                return NULL;
+            }
+            if (++i < count) {
+                goto next;
+            }
+        }
+        i = count;
+        table[i].id = 0;
+        table[i].data = NULL;
+    } else {
+        table = NULL;
+    }
+    return table;
+}
+
+/* CD command-complete callback: advance the seek/read state machine
+ * (D_8004FE1C). Status 2 is success; on failure the retry reason is kept in
+ * D_8004FE20 and the drive status is polled (state 10) until it can retry. */
+void func_8002A68C(u8 status, u8 *result) {
+    switch (D_8004FE1C) {
+    case 0:
+        break;
+    case 1:
+        if (status == 2) {
+            D_8005A48C++;
+            D_8004FE1C++;
+            CdControlF(6, NULL);
+        } else {
+            D_8005A490++;
+            D_80059F08 = CdReadyCallback(NULL);
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 2:
+        if (status == 2) {
+            D_8005A48C++;
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8005A490++;
+            D_80059F08 = CdReadyCallback(NULL);
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 3:
+        if (status == 2) {
+            D_8004FE1C++;
+            CdControlF(0x15, NULL);
+        } else {
+            D_8004FE20 = 1;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 4:
+        if (status == 2) {
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8004FE20 = 1;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 5:
+        if (status == 2) {
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8004FE20 = 2;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 6:
+        if (status == 2) {
+            D_8004FE1C = 1;
+            D_8005A488++;
+            D_8005A494++;
+            CdReadyCallback(D_80059F08);
+            CdControlF(2, (u8 *)&D_80059F10);
+        } else {
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            D_8005A498++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 7:
+        if (status == 2) {
+            D_8004FE1C = 6;
+            D_8005A4A8++;
+            CdControlF(9, NULL);
+        } else {
+            D_8004FE20 = 4;
+            D_8004FE1C = 10;
+            D_8005A4B4++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 12:
+        if (status == 2) {
+            D_8004FE1C = 8;
+            D_80059F14.file = 1;
+            D_80059F14.chan = *(u8 *)&D_8004FE38; /* the mode's channel byte */
+            CdControlF(0xD, (u8 *)&D_80059F14);
+        } else {
+            D_8004FE20 = 5;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 8:
+        if (status == 2) {
+            D_8004FE1C = 1;
+            D_8005A488++;
+            D_8005A494++;
+            CdReadyCallback(D_80059F08);
+            CdControlF(2, (u8 *)&D_80059F10);
+        } else {
+            D_8004FE20 = 5;
+            D_8004FE1C = 10;
+            D_8005A498++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 9:
+        if (status == 2) {
+            D_8004FE1C = 5;
+            CdControlF(9, NULL);
+        } else {
+            D_8004FE20 = 6;
+            D_8004FE1C = 10;
+            D_8005A4B4++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 10:
+        if (status == 2 && !(result[0] & 0x10)) {
+            D_8004FE1C = 11;
+            CdControlF(0x13, NULL);
+        } else {
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 11:
+        if (status == 2) {
+            switch (D_8004FE20) {
+            case 1:
+                D_8004FE1C = 3;
+                CdControlF(2, (u8 *)&D_80059F10);
+                break;
+            case 2:
+                D_8004FE1C = 5;
+                CdControlF(9, NULL);
+                break;
+            case 3:
+                D_8004FE1C = 6;
+                CdControlF(9, NULL);
+                break;
+            case 4:
+                D_8004FE1C = 7;
+                CdControlF(8, NULL);
+                break;
+            case 5:
+                D_8004FE1C = 12;
+                CdControlF(0xE, &D_80059F18);
+                break;
+            case 6:
+                D_8004FE1C = 9;
+                CdControlF(0xE, &D_80059F18);
+                break;
+            }
+        } else {
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    }
+}
+
+/* CD data callback of list reads: copy each sector of the current file of
+ * the list (D_8004FE0C) to its destination, move on to the next file (reading
+ * on through a short gap, or seeking), and retry through the command state
+ * machine when a sector fails or arrives out of order. */
+void func_8002AC24(u8 status, u8 *result) {
+    FileRequest *request;
+    u16 file;
+    u32 first;
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 > 0) {
+            CdReadyCallback(NULL);
+            CdDataCallback(NULL);
+            D_8004FDF8 = 0;
+            func_8002A394(D_8004FE38);
+            D_8004FE00 = 0;
+            D_8004FDFC = 0;
+            return;
+        }
+        if (D_8004FDF8 >= 0x800) {
+            if (D_8004FE3C == 0) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, 0x200);
+            }
+        } else if (D_8004FDF8 > 0 && D_8004FE3C == 0) {
+            CdGetSector(D_80059EF8, 3);
+            CdGetSector(D_8004FE08, (D_8004FDF8 + 3) / 4);
+            CdGetSector(D_800596F8, 0x200 - (D_8004FDF8 + 3) / 4);
+        }
+        if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04 && D_8004FE3C == 0) {
+            D_8004FDE8++;
+            goto failed;
+        }
+        D_8004FE08 = (u8 *)D_8004FE08 + 0x800;
+        D_8004FDF8 -= 0x800;
+        D_8004FE04++;
+        if (D_8004FDF8 > 0) {
+            return;
+        }
+        D_8004FE10++;
+        file = D_8004FE0C[D_8004FE10].file;
+        D_8004FE08 = D_8004FE0C[D_8004FE10].destination;
+        if (file != 0 && D_8004FE08 != NULL) {
+            first = func_80028A18(file);
+            D_8004FDF8 = func_80028808(file);
+            if (D_8004FE04 < first && D_8004FE04 + D_8004FDE0 >= first) {
+                /* Close ahead: read on, discarding the sectors between. */
+                D_8004FE3C = 1;
+                D_8004FDF8 = (D_8004FE04 - first) << 11;
+                D_8004FE10--;
+                return;
+            }
+            if (first == D_8004FE04) {
+                D_8004FE3C = 0;
+                D_8004FE00--;
+                return;
+            } else {
+                D_8004FE3C = 0;
+                D_8004FE04 = first;
+                D_80059F08 = CdReadyCallback(NULL);
+                CdIntToPos(D_8004FE04, &D_80059F10);
+                D_8004FE1C = 6;
+                CdSyncCallback(func_8002A68C);
+                CdControlF(9, NULL);
+            }
+            D_8004FE00--;
+            return;
+        }
+        D_8004FDF8 = 0;
+        CdReadyCallback(NULL);
+        func_8002A394(D_8004FE38);
+        D_8004FE00 = 0;
+        D_8004FDFC = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+
+/* CD data callback of single-file reads: copy each sector to the
+ * destination (the tail of a short last sector to D_800596F8), finish the
+ * read after the last one, and retry through the command state machine when
+ * a sector fails or arrives out of order. */
+void func_8002B084(u8 status, u8 *result) {
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 <= 0) {
+            if (D_8004FDF8 >= 0x800) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, 0x200);
+            } else if (D_8004FDF8 > 0) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, (D_8004FDF8 + 3) / 4);
+                CdGetSector(D_800596F8, 0x200 - (D_8004FDF8 + 3) / 4);
+            }
+            if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04) {
+                D_8004FDE4++;
+                goto failed;
+            }
+            D_8004FE04++;
+            D_8004FE08 = (u8 *)D_8004FE08 + 0x800;
+            D_8004FDF8 -= 0x800;
+            if (D_8004FDF8 > 0) {
+                return;
+            }
+        }
+        CdReadyCallback(NULL);
+        D_8004FDF8 = 0;
+        func_8002A394(D_8004FE38);
+        D_8004FDFC = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+
+/* CD data callback of stream reads: store each sector in the next free slot
+ * of the stream ring (numbering it with D_8004FE26), stop after the last one,
+ * and retry through the command state machine when a sector arrives out of
+ * order or no slot is free. The slot's sequence and state are written as
+ * halfwords, the sequence first, which keeps the original's reload of
+ * D_8004FE26 for the increment after the state store. */
+void func_8002B2F0(u8 status, u8 *result) {
+    StreamSlot *slot;
+    s32 index;
+    s32 tried;
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 > 0) {
+            CdReadyCallback(NULL);
+            CdDataCallback(NULL);
+            D_8004FDF8 = 0;
+            func_8002A394(D_8004FE38);
+            D_8004FDFC = 0;
+            return;
+        }
+        if (D_8004FDF8 > 0) {
+            for (tried = 0; tried < D_8004FE40; tried++) {
+                slot = &D_8004FE2C[D_8004FE10];
+                index = D_8004FE10;
+                D_8004FE10++;
+                if (D_8004FE10 >= D_8004FE40) {
+                    D_8004FE10 = 0;
+                }
+                if (slot->state == 0) {
+                    break;
+                }
+            }
+            if (slot->state != 0) {
+                goto retry;
+            }
+            CdGetSector(D_80059EF8, 3);
+            if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04) {
+                D_8004FDEC++;
+                CdGetSector(D_800596F8, 0x200);
+                goto failed;
+            }
+            ((u16 *)slot)[1] = D_8004FE26;
+            ((u16 *)slot)[0] = 1;
+            D_8004FE26++;
+            CdGetSector((u8 *)D_8004FE08 + index * 0x800, 0x200);
+            D_8004FDF8 -= 0x800;
+            D_8004FE04++;
+            if (D_8004FDF8 > 0) {
+                return;
+            }
+        }
+        CdReadyCallback(NULL);
+        D_8004FDF8 = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+retry:
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+
+/* A second, identical copy of the stream data callback 8002B2F0. */
+void func_8002B5D0(u8 status, u8 *result) {
+    StreamSlot *slot;
+    s32 index;
+    s32 tried;
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 > 0) {
+            CdReadyCallback(NULL);
+            CdDataCallback(NULL);
+            D_8004FDF8 = 0;
+            func_8002A394(D_8004FE38);
+            D_8004FDFC = 0;
+            return;
+        }
+        if (D_8004FDF8 > 0) {
+            for (tried = 0; tried < D_8004FE40; tried++) {
+                slot = &D_8004FE2C[D_8004FE10];
+                index = D_8004FE10;
+                D_8004FE10++;
+                if (D_8004FE10 >= D_8004FE40) {
+                    D_8004FE10 = 0;
+                }
+                if (slot->state == 0) {
+                    break;
+                }
+            }
+            if (slot->state != 0) {
+                goto retry;
+            }
+            CdGetSector(D_80059EF8, 3);
+            if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04) {
+                D_8004FDEC++;
+                CdGetSector(D_800596F8, 0x200);
+                goto failed;
+            }
+            ((u16 *)slot)[1] = D_8004FE26;
+            ((u16 *)slot)[0] = 1;
+            D_8004FE26++;
+            CdGetSector((u8 *)D_8004FE08 + index * 0x800, 0x200);
+            D_8004FDF8 -= 0x800;
+            D_8004FE04++;
+            if (D_8004FDF8 > 0) {
+                return;
+            }
+        }
+        CdReadyCallback(NULL);
+        D_8004FDF8 = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+retry:
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+
+/* Stream data step of PC file server reads, called in place of the CD
+ * data callback: read a sector from the file server into the next free ring slot
+ * (up to four read attempts); stop the read when no slot is free or after
+ * the last sector.
+ * Slots are four halfwords: state, sequence, free-run length and reserved.
+ * Accessing the state and sequence as halfwords preserves the original
+ * store-before-counter-read order. */
+void func_8002B8B0(void) {
+    u16 *slot;
+    s32 index;
+    s16 i;
+
+    if (D_8004FDF8 > 0) {
+        for (i = 0; i < D_8004FE40; i++) {
+            slot = (u16 *)&D_8004FE2C[D_8004FE10];
+            index = D_8004FE10;
+            D_8004FE10++;
+            if (D_8004FE10 >= D_8004FE40) {
+                D_8004FE10 = 0;
+            }
+            if (slot[0] == 0) {
+                break;
+            }
+        }
+        if (slot[0] == 0) {
+            slot[0] = 1;
+            slot[1] = D_8004FE26;
+            D_8004FE26++;
+            for (i = 0; i < 4; i++) {
+                if (func_8004C398(D_80059F04, (u8 *)D_8004FE08 + index * 0x800, 0x800) != 0) {
+                    break;
+                }
+                func_8002804C(i, 0, 0xFF, 0);
+            }
+            D_8004FDF8 -= 0x800;
+            D_8004FE04++;
+        } else {
+            D_8004FDF8 = 0;
+        }
+        if (D_8004FDF8 > 0) {
+            return;
+        }
+    }
+    D_8004FDF8 = 0;
+}
+
+
+void func_8002BA40(void) {
+    D_8004FDFC = D_8004FE00;
+}
+
+/* Mark the ring slot holding the next sector in order (D_8004FE28) as
+ * complete; once the read has ended, stop the data callback and seek on. */
+void func_8002BA58(void) {
+    StreamSlot *slot = D_8004FE2C;
+    s16 i;
+
+    for (i = 0; i < D_8004FE40; i++, slot++) {
+        if (slot->state == 1 && slot->sequence == D_8004FE28) {
+            break;
+        }
+    }
+    if (i != D_8004FE40) {
+        slot->state = 3;
+        D_8004FE28++;
+        if (D_8004FDF8 <= 0 && D_8004FDFC < 2) {
+            D_8004FDF8 = 0;
+            CdDataCallback(NULL);
+            func_8002A394(D_8004FE38);
+            D_8004FDFC = 0;
+        }
+    }
+}
+
+/* Image stream step: take the ring slot holding the next sector in order.
+ * A sector starting an image (type 0x1200/0x1201) gives its placement,
+ * width and strip heights; each following sector is one strip, loaded to
+ * VRAM. After the last strip of the last image the read is stopped. */
+void func_8002BB50(void) {
+    StreamSlot *slot = D_8004FE2C;
+    s16 i;
+    u32 *p;
+    s32 type;
+    u16 *pos;
+    RECT rect;
+
+    for (i = 0; i < D_8004FE40; i++, slot++) {
+        if (slot->state == 1 && slot->sequence == D_8004FE28) {
+            break;
+        }
+    }
+    if (i == D_8004FE40) {
+        return;
+    }
+    slot->state = 2;
+    p = (u32 *)((u8 *)D_8004FE08 + i * 0x800);
+    if (D_80059F50 == 0) {
+        type = *p++;
+        pos = (u16 *)p;
+        if (type != 0x1200 && type != 0x1201) {
+            goto end;
+        }
+        if (type == 0x1200) {
+            switch (D_80059F24) {
+            case 1:
+                D_80059F40 = D_80059F28 + pos[2];
+                D_80059F44 = D_80059F2C + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F28 + pos[0] + pos[2];
+                D_80059F44 = D_80059F2C + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        if (type == 0x1201) {
+            switch (D_80059F30) {
+            case 1:
+                D_80059F40 = D_80059F34 + pos[2];
+                D_80059F44 = D_80059F38 + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F34 + pos[0] + pos[2];
+                D_80059F44 = D_80059F38 + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        p += 2;
+        D_80059F48 = *(u16 *)p;
+        p += 2;
+        if (D_80059F3C == 0) {
+            D_80059F3C = *p;
+        }
+        p++;
+        D_80059F50 = *p++;
+        D_80059F4C = (u16 *)p;
+    } else {
+        rect.x = D_80059F40;
+        rect.y = D_80059F44;
+        rect.w = D_80059F48;
+        rect.h = *D_80059F4C;
+        LoadImage(&rect, (u_long *)p);
+        D_80059F44 += *D_80059F4C++;
+        if (--D_80059F50 <= 0) {
+            D_80059F50 = 0;
+            D_80059F3C--;
+            for (i = 0; i < D_8004FE40; i++) {
+                D_8004FE2C[i].state = 0;
+                D_8004FE2C[i].sequence = 0;
+            }
+            if (D_80059F3C <= 0) {
+            end:
+                D_8004FDF8 = 0;
+                CdDataCallback(NULL);
+                func_8002A394(D_8004FE38);
+                D_8004FDFC = 0;
+                return;
+            }
+        }
+        slot->state = 0;
+    }
+    D_8004FE28++;
+}
+
+/* Image stream step of PC file server reads (80029EB0): as 8002BB50, but
+ * each strip load is waited for and the read simply ends. */
+void func_8002BF38(void) {
+    StreamSlot *slot = D_8004FE2C;
+    s16 i;
+    u32 *p;
+    s32 type;
+    u16 *pos;
+    RECT rect;
+
+    for (i = 0; i < D_8004FE40; i++, slot++) {
+        if (slot->state == 1 && slot->sequence == D_8004FE28) {
+            break;
+        }
+    }
+    if (i == D_8004FE40) {
+        return;
+    }
+    slot->state = 2;
+    p = (u32 *)((u8 *)D_8004FE08 + i * 0x800);
+    if (D_80059F50 == 0) {
+        type = *p++;
+        pos = (u16 *)p;
+        if (type != 0x1200 && type != 0x1201) {
+            return;
+        }
+        if (type == 0x1200) {
+            switch (D_80059F24) {
+            case 1:
+                D_80059F40 = D_80059F28 + pos[2];
+                D_80059F44 = D_80059F2C + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F28 + pos[0] + pos[2];
+                D_80059F44 = D_80059F2C + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        if (type == 0x1201) {
+            switch (D_80059F30) {
+            case 1:
+                D_80059F40 = D_80059F34 + pos[2];
+                D_80059F44 = D_80059F38 + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F34 + pos[0] + pos[2];
+                D_80059F44 = D_80059F38 + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        p += 2;
+        D_80059F48 = *(u16 *)p;
+        p += 2;
+        if (D_80059F3C == 0) {
+            D_80059F3C = *p;
+        }
+        p++;
+        D_80059F50 = *p++;
+        D_80059F4C = (u16 *)p;
+    } else {
+        rect.x = D_80059F40;
+        rect.y = D_80059F44;
+        rect.w = D_80059F48;
+        rect.h = *D_80059F4C;
+        LoadImage(&rect, (u_long *)p);
+        DrawSync(0);
+        D_80059F44 += *D_80059F4C++;
+        if (--D_80059F50 <= 0) {
+            D_80059F50 = 0;
+            D_80059F3C--;
+            for (i = 0; i < D_8004FE40; i++) {
+                D_8004FE2C[i].state = 0;
+                D_8004FE2C[i].sequence = 0;
+            }
+            if (D_80059F3C <= 0) {
+                D_8004FDF8 = 0;
+                D_8004FDFC = 0;
+                return;
+            }
+        }
+        slot->state = 0;
+    }
+    D_8004FE28++;
+}
+
+/* Print the image stream state (debug report). */
+void func_8002C310(void) {
+    func_800379C8("F%8x A%8x S%8x\n", D_8004FDF0, D_8004FE08, D_8004FE2C);
+    func_800379C8("%d %d %d %d\n", D_8004FE40, D_8004FE10, D_80059F3C, D_80059F50);
+    func_800379C8("%d %d %d %8x\n", D_80059F40, D_80059F44, D_80059F48, D_80059F4C);
+    func_800379C8("%d %d %d\n", D_80059F4C[0], D_80059F4C[1], D_80059F4C[2]);
+}
+
+/* Nonzero when files come from the PC file server (its name table). */
+s32 func_8002C3D8(void) {
+    return (s32)D_8004FE48;
 }

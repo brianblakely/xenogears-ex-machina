@@ -73,13 +73,16 @@ void func_8001B94C(DRAWENV *env) {
 }
 
 extern u8 D_8006D635[]; /* the second byte of the saved name slots */
-extern u16 D_8005A3C6;  /* last of the twenty battle setup counters */
+/* The twenty halfwords 8001b970 clears back from D_8005A3C6 are the 16
+ * battle script variables D_8005A3A0 and the first 8 bytes of the sound
+ * driver's SPU attributes D_8005A3C0 that follow them (link.ld). */
+extern u16 D_8005A3C6;
 u8 D_800594CC;
 u8 D_8005947C; /* pending scene + 1 */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
- * 31 twenty-byte name slots, and reset the battle setup counters. */
+ * 31 twenty-byte name slots, and clear the battle script variables. */
 void func_8001B970(void) {
     u16 codes[12]; /* 24-byte workspace; at most ten codes per name */
     u8 decoded[20];
@@ -130,8 +133,8 @@ u8 D_8005946C;
  * the slot rule no other variable shares its word. ASPSX 2.34 addressed a
  * common at an offset absolutely, so only [0] went through $gp (maspsx
  * models that), but GNU as moves a small common's offset accesses to $gp
- * as well, so the array cannot be declared and its last two bytes stay
- * extern until that is modelled. */
+ * as well, so the array cannot be declared here and its last two bytes are
+ * names of their own (link.ld). */
 u8 D_800594D4;
 extern u8 D_800594D5;
 extern u8 D_800594D6;
@@ -151,8 +154,8 @@ void func_8001BB50(void) {
     D_800595A0 = 2;
 }
 
-/* This unit's small commons merge with the original BSS labels and are
- * addressed through $gp. */
+/* This unit's small commons, addressed through $gp; they merge with
+ * commons/common_80059404.c's definitions. */
 void *D_80059480; /* heap marker for the high-memory reservation */
 void *D_800594AC; /* reservation below the heap marker */
 SoundBank *D_800595D0;

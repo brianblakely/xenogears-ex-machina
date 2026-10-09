@@ -14,7 +14,7 @@ typedef struct {
     u32 unknown;
 } MenuBuffer;
 
-typedef struct {
+typedef struct MenuWork {
     u8 unknown0[0x6C];
     MenuBuffer buffers[2];      /* +0x6c */
     MenuBuffer *current;        /* +0x1d4 */
