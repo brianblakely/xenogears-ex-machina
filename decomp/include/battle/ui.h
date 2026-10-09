@@ -40,7 +40,7 @@ typedef struct BattleUi {
     u8 statusBuffer[4]; /* +0x84 draw buffer of the status glyphs, [3] party-wide */
     u8 unk88[0x8E - 0x88];
     u8 unk8E;
-    u8 unk8F;
+    u8 showSkill;      /* +0x8F the result screens' learnt skill message (ovl2596) */
     u8 unk90[3];       /* per party member */
     u8 unk93[3];
     u8 unk96;          /* file 3 block loaded */
@@ -51,8 +51,8 @@ typedef struct BattleUi {
     u8 unk9D;
     u8 cursorShown;    /* +0x9E the cursor glyph (graphics +0x27c8) is shown */
     u8 unk9F;
-    u8 unkA0;          /* the result screen counts */
-    u8 unkA1;
+    u8 showCards;      /* +0xA0 the result screens' member cards, which count up */
+    u8 showSummary;    /* +0xA1 their summary window */
     u8 gaugeBuffer;    /* +0xA2 */
     u8 unkA3;
     u8 unkA4;
@@ -63,7 +63,7 @@ typedef struct BattleUi {
     u8 unkA9;
     u8 unkAA;          /* frame counter */
     u8 unkAB;
-    u8 unkAC;
+    u8 showSpoils;     /* +0xAC their spoils window */
     u8 unkAD;
     u8 unkAE;          /* menu module block loaded */
     u8 unkAF;
@@ -77,7 +77,8 @@ typedef struct BattleUi {
     u8 messageShown;   /* +0xC9 the message text window D_800D2DAC is drawn */
     u8 scriptLoaded;   /* +0xCA the event script is set up: its threads' waits count down */
     u8 unkCB;
-    u8 unkCC[4];
+    u8 unkCC[3];       /* per party member: its panel and gauge are drawn */
+    u8 waitingCross;   /* +0xCF a prompt waits for a key: the input is kept */
     s32 unkD0[2];
     u8 unkD8[0xE0 - 0xD8];
     s32 unkE0[3];

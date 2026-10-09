@@ -48,7 +48,7 @@ struct CommandDescriptor *D_800C3DFC; /* current command descriptor */
 struct Combatant *D_800C3E00;         /* attacker record */
 u8 D_800C3E04;                        /* attacker slot */
 u8 D_800C3E08[3];                     /* panel value digits */
-struct MemberMasks D_800C3E0C[3];
+struct KnownSkills D_800C3E0C[3];
 u8 D_800C3E18;
 struct Sprite *D_800C3E1C;
 s32 D_800C3E20;

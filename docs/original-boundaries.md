@@ -188,8 +188,8 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   field frame (field.c func_8007554C) and of the battle frame
   (battle_800BD3AC.c func_800BE790).
 - VSync(1) feeds only profiling values (field D_800ADB9C/D_800ADBA0/D_800ADBA4
-  read by debug595, battle D_800D309C.drawn/synced, arena D_800927F0 and the
-  movie monitor's D_800773B8).
+  read by debug595, battle D_800D309C.cpu/gpu read by debug2611, arena
+  D_800927F0 and the movie monitor's D_800773B8).
 - GetRCnt: the sound tick times itself on root counter 2 (D_800595C4,
   D_80059540; profiling); the arena compacts its ordering table while root
   counter 1 (horizontal blanks) stays within a budget (menu7.c func_8008AC8C,

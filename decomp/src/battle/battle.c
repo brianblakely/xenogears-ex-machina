@@ -3578,7 +3578,7 @@ void func_8008A3EC(u8 member) {
         }
     }
     do {
-        if (D_800D2D28->unkCC[3] == 0) {
+        if (D_800D2D28->waitingCross == 0) {
             D_800D3014 = 0xFF;
         }
         if (func_80036410()) {
@@ -3646,7 +3646,7 @@ void func_8008A684(u8 member) {
             }
         }
     } while (waiting);
-    if (D_800D2D28->unkCC[3] == 0) {
+    if (D_800D2D28->waitingCross == 0) {
         D_800D3014 = 0xFF;
     }
     do {
@@ -3675,7 +3675,7 @@ void func_8008A684(u8 member) {
             }
         }
     } while (D_800C3444 != 0);
-    if (D_800D2D28->unkA0 != 0 && D_800D32F8[0]->counting != 0) {
+    if (D_800D2D28->showCards != 0 && D_800D32F8[0]->counting != 0) {
         for (i = 0; i < 3; i++) {
             if (D_800D32F8[i]->done[0] == 0) {
                 if (D_800CCCE8.toCount[i][0] == 0) {

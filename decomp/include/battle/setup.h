@@ -19,7 +19,7 @@ extern u8 D_800C492A;      /* keep the battle's resources at its end (the battle
 extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
 extern u8 D_800D2D50;
-extern u8 D_800D2FC4;      /* battle exit requested */
+extern u8 D_800D2FC4;      /* battle exit requested; the results then skip the rewards */
 /* The battle overlay's entry, which the resident's battle mode (2) runs, and
  * the flag the event script (with a movie request, ovl3087 opcode 27), the
  * result screens and the loader overlays set for it: the battle then
@@ -27,13 +27,15 @@ extern u8 D_800D2FC4;      /* battle exit requested */
 void func_80070F40(void);
 extern u8 D_800D3338;
 
-/* Party members' battle masks (from the character battle data). */
-typedef struct MemberMasks {
-    u16 mask0;
-    u16 mask2;
-} MemberMasks;
+/* The skills each party member knew at the battle's start (80070E2C's unit
+ * copies them from the game data): the result screens (ovl2596) show those
+ * it learnt since. */
+typedef struct KnownSkills {
+    u16 counterSkills;
+    u16 levelSkills;
+} KnownSkills;
 
-extern MemberMasks D_800C3E0C[3];
+extern KnownSkills D_800C3E0C[3];
 
 void func_80076544(void);              /* end the battle by its outcome state */
 void func_8009892C(void);              /* the party's adjustments at battle start */

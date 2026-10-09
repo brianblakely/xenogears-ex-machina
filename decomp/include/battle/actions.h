@@ -48,6 +48,7 @@ extern u8 D_800D2CE0[0x30];       /* D_800D2C94.itemIds: item ids */
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];
+extern u8 D_800D2FE4[0x30];       /* battle item ids: the setup (ovl2615) lists them, the results (ovl2596) read them */
 
 /* The per-slot results of the battle work area (battle.data.ld). */
 extern s32 D_800D2C54[12]; /* per-slot damage */

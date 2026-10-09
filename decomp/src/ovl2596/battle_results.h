@@ -1,16 +1,29 @@
 #ifndef OVL2596_BATTLE_RESULTS_H
 #define OVL2596_BATTLE_RESULTS_H
 
-/* The post-battle module: the battle overlay's result screen primitives,
- * UI state and digit buffer as it reads them, the growth data file, the
- * module's own functions, and the battle overlay and resident calls no
- * shared header declares. The battle area, the work area and the game data
- * come from battle/area.h, battle/work.h and resident/gamedata.h. */
+/* The post-battle module: the battle overlay's result screen primitives and
+ * digit buffer as it reads them, the growth data file, the module's own
+ * functions, and the battle overlay and resident calls no shared header
+ * declares. The battle overlay's other objects and calls (its area, work
+ * area, UI state, turn state, item lists and the set-up and exit state) come
+ * from the shared battle headers, the game data from resident/gamedata.h. */
 
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
+#include "battle/actions.h"
 #include "battle/area.h"
+#include "battle/combatant.h"
+#include "battle/event_script.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/lists.h"
+#include "battle/menu_pages.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
 #include "battle/work.h"
 #include "resident/cd.h"
 #include "resident/gamedata.h"
@@ -103,28 +116,6 @@ typedef struct {
 
 extern ResultSummary *D_800D334C;
 
-/* The battle UI state block (pointer 800d2d28). */
-typedef struct {
-    u8 pad0[0x7F];
-    u8 unk7F;             /* 0x7F */
-    u8 unk80;             /* 0x80 */
-    u8 unk81;             /* 0x81 */
-    u8 pad82[0xD];
-    u8 show8F;            /* 0x8F */
-    u8 pad90[0x10];
-    u8 showCards;         /* 0xA0 */
-    u8 showSummary;       /* 0xA1 */
-    u8 padA2[0xA];
-    u8 showSpoils;        /* 0xAC */
-    u8 padAD[3];
-    u8 unkB0;             /* 0xB0 */
-    u8 unkB1;             /* 0xB1 */
-    u8 unkB2;             /* 0xB2 */
-    u8 padB3[0x1C];
-    u8 waitingCross;      /* 0xCF: the prompt waits for Cross */
-} BattleUi;
-
-extern BattleUi *D_800D2D28;
 extern MemberCard *D_800D32F8[3];
 
 /* func_8008AAA0 writes a value's nine decimal digits to 800c3cf4, leading
@@ -138,7 +129,6 @@ extern u8 D_800C3CFB[];
 extern u8 D_800C3CDF[];
 extern u8 D_800C3CD7[];
 extern u8 D_800C3CDC[];     /* the spoils window's */
-void func_8008AAA0(u32 value);
 
 /* Battle slot levels (8 bytes per slot). */
 typedef struct {
@@ -148,7 +138,6 @@ typedef struct {
 } SlotLevels;
 
 extern SlotLevels D_800D32A5[3];
-extern u8 D_800D2D24[3];    /* battle party character ids */
 
 /* The summary window's text: 27 glyph entries of three bytes (glyph, 0xff:
  * none; shaded flag; index into the shading colours) and their positions. */
@@ -166,20 +155,14 @@ extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
 extern s16 D_800C32A0[18];
 
-void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
-s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6); /* open a window */
 void func_8008FA60(s32 id);     /* close a window */
 void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
-void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 width);
 void *func_8008AC00(s32 kind);                  /* allocate a text image */
-void func_800769E8(RECT *rect, void *image);   /* load an image to VRAM */
 void func_800716D8(void);       /* run one battle frame */
 
-extern u8 D_800D3014;           /* decoded input command, 4 = Cross */
 extern u8 D_800D2F90[8];        /* two icon records: arg5, -, arg3, arg4 */
 extern u8 D_800D2FA0[4];        /* the skill mark icon: width, -, u, v */
-extern void *D_800D2F5C;        /* glyph sprite table */
 extern void *D_800D2C08[1];     /* the results text; the original addresses it as a table */
 
 void func_801DE1C4(void);
@@ -218,14 +201,6 @@ typedef struct GrowthFile {
     s32 experience[99];       /* 0xBB0: experience to the next level, per level - 1 */
 } GrowthFile;
 
-/* The skills each member knew before the battle (counter, level bits). */
-typedef struct {
-    u16 counterSkills;
-    u16 levelSkills;
-} KnownSkills;
-extern KnownSkills D_800C3E0C[3];
-u16 func_80089C6C(u16 bits, u8 k);              /* bit k of a skill set */
-
 void func_801E2794(void);
 void func_801E2ACC(void);
 void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
@@ -249,35 +224,19 @@ void func_801E2888(void);
 
 /* --- Rewards, the results resources and the battle exit ------------------ */
 
-extern u8 D_800D2FC4;           /* rewards are skipped */
-extern u8 D_800D2DCC[11];       /* per slot: present */
 extern u8 D_800C3D1B[8][4];     /* per enemy: [0] nonzero, no rewards */
-extern u8 D_800D3294;
-extern u8 D_800D2D50;
-extern u8 D_800D2FE4[48];       /* battle item ids */
-extern u8 D_800D2CB0[48];       /* battle item counts */
 u16 func_80089C08(u8 enemy);
 void func_800BCD98(s32 arg);
 void func_801E1FB8(u32 experience);
 void func_801E211C(void);
 void func_801E24B0(void);
 
-/* The battle state (pointer 800c3eac), only the field this module uses. */
-typedef struct {
-    u8 pad0[0x2DB];
-    u8 unk2DB;
-} BattleState;
-extern BattleState *D_800C3EAC;
-extern u8 D_800C3E4C;
-
 /* The results archive (directory 0x10 file 2): a count, then its items. */
 typedef struct {
     s32 count;
     void *items[4];
 } ResultArchive;
-void func_8008AC50(void);
 void func_80078310(void *portraits, s32 glyph);
-void func_80076EA4(void);
 void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
 
 /* Battle exit (func_801E252C). */
@@ -286,20 +245,6 @@ typedef struct {
     u8 pad[0x5C];
 } BattleBlock;
 extern BattleBlock D_800D3720[8]; /* every other one is released */
-typedef struct {
-    void *data;
-} BattleHandle;
-extern BattleHandle D_800C3E5C[10];
-extern u8 D_800C3D48;
-extern void *D_800D3284;
-extern void *D_800D328C;
-extern void *D_800D329C;
-extern void *D_800C3E24;
-extern void *D_800D39F0;
-extern void *D_800C3EA4;
-extern u8 D_800D3338;
-extern SoundSeq *D_800C3E54;    /* the battle music */
-void func_800BFBA0(void);
 void func_800B8774(void);     /* levels A and B per slot before the battle */
 
 #endif

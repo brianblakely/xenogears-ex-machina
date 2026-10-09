@@ -76,7 +76,7 @@ void func_801DE1C4(void) {
         }
     }
     i = 0;
-    if (D_800D2D28->show8F != 0) {
+    if (D_800D2D28->showSkill != 0) {
         func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
         for (; i < 2; i++) {
             AddPrim(D_800C3EB0.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
@@ -693,7 +693,7 @@ void func_801E0ACC(u8 member) {
     if (newCounter == 0 && newLevel == 0) {
         return;
     }
-    if (D_800D2D28->unkB1 == 0) {
+    if (D_800D2D28->windows[1] == 0) {
         func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
     }
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
@@ -718,7 +718,7 @@ void func_801E0ACC(u8 member) {
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->show8F = 1;
+            D_800D2D28->showSkill = 1;
             func_801E0A4C();
         }
     }
@@ -738,11 +738,11 @@ void func_801E0ACC(u8 member) {
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->show8F = 1;
+            D_800D2D28->showSkill = 1;
             func_801E0A4C();
         }
     }
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
 }
 
 
@@ -949,7 +949,7 @@ void func_801E196C(void) {
         case 0:
             func_801DE5C4();
             D_800D2D28->showCards = 1;
-            D_800C3EAC->unk2DB = 0;
+            D_800C3EAC->eventsDone = 0;
             break;
         case 1:
             func_801DE69C();
@@ -1021,13 +1021,13 @@ void func_801E1C10(void) {
     D_800D2D28->waitingCross = 0;
     func_800716D8();
     func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 0);
-    D_800D2D28->unkB1 = 0;
+    D_800D2D28->windows[1] = 0;
     for (i = 0; i < 3; i++) {
         shown = 0;
         if (D_800C3EB0.slots[i].field2 != 0x7F) {
             if (D_800CCCE8.levelGains[i][0] != 0) {
                 member = i;
-                D_800D2D28->unkB1 = 1;
+                D_800D2D28->windows[1] = 1;
                 func_801DFAA8(member);
                 func_801E03B8(member);
                 func_801E03FC(member);
@@ -1045,7 +1045,7 @@ void func_801E1C10(void) {
             func_800716D8();
             func_801E0ACC(i);
             D_800D2D28->waitingCross = 0;
-            D_800D2D28->unkB1 = 0;
+            D_800D2D28->windows[1] = 0;
         }
     }
 }
@@ -1054,7 +1054,7 @@ void func_801E1C10(void) {
 void func_801E1E10(u32 experience) {
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     func_800716D8();
     func_8008F8F4(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
     func_8008F8F4(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
@@ -1071,9 +1071,9 @@ void func_801E1E10(u32 experience) {
     }
     D_800D2D28->waitingCross = 0;
     D_800D2D28->showSpoils = 0;
-    D_800D2D28->unkB0 = 0;
-    D_800D2D28->unkB1 = 0;
-    D_800D2D28->unkB2 = 0;
+    D_800D2D28->windows[0] = 0;
+    D_800D2D28->windows[1] = 0;
+    D_800D2D28->windows[2] = 0;
     func_800716D8();
     func_8008FA60(0);
     func_8008FA60(1);
@@ -1103,7 +1103,7 @@ void func_801E1FB8(u32 experience) {
     func_801E1E10(experience);
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     func_800716D8();
     for (i = 0; i < 3; i++) {
         func_800320E8(D_800D32F8[i]);
@@ -1124,9 +1124,9 @@ void func_801E211C(void) {
     D_800C3E4C = 0;
     D_800D2D28->showCards = 0;
     D_800D2D28->showSummary = 0;
-    D_800D2D28->show8F = 0;
+    D_800D2D28->showSkill = 0;
     D_800D2D28->showSpoils = 0;
-    D_800D2D28->unk7F = D_800D2D28->unk80 = D_800D2D28->unk81 = 0;
+    D_800D2D28->barShown[0] = D_800D2D28->barShown[1] = D_800D2D28->barShown[2] = 0;
     func_800716D8();
     func_800716D8();
     func_800320E8(D_800D2F5C);
@@ -1160,7 +1160,7 @@ void func_801E2280(void) {
     D_800CCCE8.defeated = 0;
     if (D_800D2FC4 == 0) {
         for (i = 0; i < 8; i++) {
-            if (D_800D2DCC[i + 3] != 0 && D_800C3EB0.slots[i + 3].hidden == 0
+            if (D_800D2DCC.present[i + 3] != 0 && D_800C3EB0.slots[i + 3].hidden == 0
                 && (D_800CCCE8.records[i + 3].pilot.status7C & 0x8000) && D_800C3D1B[i][0] == 0) {
                 D_800CCCE8.experience += D_800CCCE8.records[i + 3].field14C;
                 gold += D_800CCCE8.records[i + 3].field156;
@@ -1216,8 +1216,8 @@ void func_801E252C(void) {
 
     func_801E211C();
     if (D_800C3D48 != 0) {
-        func_800320E8(D_800D3284);
-        func_800320E8(D_800D328C);
+        func_800320E8((void *)D_800D3284);
+        func_800320E8((void *)D_800D328C);
     }
     if (D_800594F8 == 0) {
         if (D_800D3338 != 0) {
@@ -1243,7 +1243,7 @@ void func_801E252C(void) {
         func_800320E8(D_800D3720[i].data);
     }
     for (i = 0; i < 10; i++) {
-        func_800320E8(D_800C3E5C[i].data);
+        func_800320E8(D_800C3E5C[i].pixels);
     }
     func_800320E8(D_800D329C);
     func_800320E8(D_800C3E24);
@@ -1258,7 +1258,7 @@ void func_801E252C(void) {
     func_8003218C(2);
     if (D_800594F8 != 0) {
         func_80039C4C((SoundTrack *)D_800C3E54);
-        func_800399D4(D_800C3E54);
+        func_800399D4((SoundSeq *)D_800C3E54);
     }
     func_800B8774();
 }
