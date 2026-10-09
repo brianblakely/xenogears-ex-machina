@@ -212,7 +212,7 @@ next:
     /* 98: with a creator (+70) running this sprite's wait animation (+8d) in state 2, retry
      * each frame; then go on after a frame (at once without a creator). */
     case 0x98:
-        creator = (Sprite *)sprite->word70;
+        creator = (Sprite *)sprite->parent;
         if (creator == NULL) {
             break;
         }
@@ -437,7 +437,7 @@ void func_80025258(Task *task) {
         }
     } else {
         if ((sprite->render.word >> 29) & 1) {
-            depth = ((Sprite *)sprite->word70)->depth;
+            depth = ((Sprite *)sprite->parent)->depth;
         }
         if (depth > 0 && depth < 0x1000) {
             func_8001E298(sprite, (u_long *)(D_8005956C + depth * 4));

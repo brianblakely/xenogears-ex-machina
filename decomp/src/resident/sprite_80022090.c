@@ -341,7 +341,7 @@ void func_80022B2C(Sprite *sprite) {
 
     if (!((sprite->render.word >> 26) & 1)) {
         func_800BA8F4(sprite);
-        if (sprite->speed_y > 0 && sprite->word1c > 0) {
+        if (sprite->speed_y > 0 && sprite->gravity > 0) {
             if ((sprite->y >> 16) == sprite->ground) {
                 return;
             }
@@ -355,7 +355,7 @@ void func_80022B2C(Sprite *sprite) {
                 }
                 speed >>= 8;
                 sprite->speed_y = speed;
-                gravity = sprite->word1c;
+                gravity = sprite->gravity;
                 if (abs(speed) < abs(gravity)) {
                     sprite->speed_y = 0;
                 }
@@ -367,10 +367,10 @@ void func_80022B2C(Sprite *sprite) {
                 sprite->y = sprite->ground << 16;
             }
         }
-        sprite->speed_y += sprite->word1c;
+        sprite->speed_y += sprite->gravity;
     } else {
         sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
-        sprite->speed_y += sprite->word1c;
+        sprite->speed_y += sprite->gravity;
     }
 }
 
@@ -656,11 +656,11 @@ void func_80023538(Sprite *sprite, u16 *animation) {
         weight |= ~0x3F;
     }
     skip = D_80059198 + 1;
-    sprite->word1c = weight << 10;
-    sprite->word1c *= skip * skip * (s16)sprite->word82 / 4096;
+    sprite->gravity = weight << 10;
+    sprite->gravity *= skip * skip * (s16)sprite->word82 / 4096;
     step = 0x10000 / sprite->motion.bits.divisor;
-    sprite->word1c *= step * step / 256;
-    sprite->word1c /= 256;
+    sprite->gravity *= step * step / 256;
+    sprite->gravity /= 256;
     if (!((animation[0] >> 11) & 1)) {
         sprite->speed_z = 0;
         sprite->speed_y = 0;
@@ -737,9 +737,9 @@ void func_80023804(Sprite *sprite) {
     gravity = D_80059198 + 1;
     sprite->frame_bits.step = 0;
     sprite->motion.bits.divisor = 0x100;
-    sprite->word1c = gravity * (gravity << 14) * (s16)sprite->word82 / 4096;
+    sprite->gravity = gravity * (gravity << 14) * (s16)sprite->word82 / 4096;
     sprite->script = NULL;
-    sprite->word70 = 0;
+    sprite->parent = 0;
     sprite->resource_block = NULL;
     sprite->callback = NULL;
     sprite->word80 = 0;
@@ -893,10 +893,10 @@ Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
     } else {
         child->sequencer = NULL;
     }
-    child->word70 = parent;
+    child->parent = parent;
     child->resource_block = parent->resource_block;
     child->animations = parent->animations;
-    child->word74 = parent->word74;
+    child->partner = parent->partner;
     child->word82 = parent->word82;
     child->word50 = parent->word50;
     child->unknown8d = parent->motion.bytes[3];
@@ -944,12 +944,12 @@ SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s3
     task->task.link.bits.flag29 = 1;
     child = &task->sprite;
     source = child->image; /* kept across the actor copy */
-    child->word70 = 0;
-    child->word74 = 0;
+    child->parent = 0;
+    child->partner = 0;
     if (D_800591AD != 0 && (actor = D_800C3E1C) != NULL) {
         child->resource_block = actor->resource_block;
         child->animations = actor->animations;
-        child->word74 = actor->word74;
+        child->partner = actor->partner;
         child->speed = actor->speed;
         child->direction = actor->direction;
         child->flags = (child->flags & ~0x1F00) | (actor->flags & 0x1F00);

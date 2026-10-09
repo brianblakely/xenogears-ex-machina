@@ -90,7 +90,7 @@ typedef struct Sprite {
     s32 x, y, z;                /* +0x0: position (16.16) */
     s32 speed_x, speed_y, speed_z; /* +0xc */
     s32 speed;                  /* +0x18: walking speed */
-    s32 word1c;                 /* +0x1c */
+    s32 gravity;                /* +0x1c: 16.16, added to speed_y per step */
     SpriteRenderer *renderer;   /* +0x20 */
     void *image;                /* +0x24 */
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
@@ -132,8 +132,8 @@ typedef struct Sprite {
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void (*callback)(struct Sprite *sprite); /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
-    struct Sprite *word70;   /* +0x70: the sprite this one is attached to */
-    struct Sprite *word74;   /* +0x74: the sprite this one aims at */
+    struct Sprite *parent;   /* +0x70: the sprite this one is attached to */
+    struct Sprite *partner;  /* +0x74: the sprite this one aims at */
     s32 word78;              /* +0x78 */
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80: facing angle */

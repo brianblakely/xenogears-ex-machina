@@ -15,7 +15,7 @@ struct SoundChannel *D_8006252C[24]; /* channel of each voice */
 struct SoundSequence *D_8006258C; /* the transferred wave bank */
 s32 D_80062590[3]; /* party members */
 struct SoundBank *D_8006259C; /* the effect sound bank: field, world map and the menus */
-struct MenuWork *D_800625A0;
+struct MenuState *D_800625A0;
 struct FileRequest D_800625A4[4]; /* party file list, zero-terminated */
 s32 D_800625C4[14]; /* unreferenced */
 struct PadBuffer D_800625FC[2]; /* controller receive buffers */

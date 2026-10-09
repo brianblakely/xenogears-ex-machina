@@ -324,7 +324,7 @@ void func_8001D034(Task *owner) {
 
     for (task = D_8005958C; task != NULL; task = task->next) {
         if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && ((task->link.word >> 29) & 1)) {
-            ((Sprite *)task->data)->word70 = NULL;
+            ((Sprite *)task->data)->parent = NULL;
         }
     }
 }
@@ -1632,7 +1632,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* 8c: turn (direction and facing) to the target (+74) on the ground plane. */
     case 0x8C:
-        other = sprite->word74;
+        other = sprite->partner;
         from.vx = sprite->x >> 16;
         from.vy = sprite->z >> 16;
         to.vx = other->x >> 16;
@@ -1643,7 +1643,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* 94: model sprites (render kind 2): renderer y angle = the creator's direction. */
     case 0x94:
-        other = sprite->word70;
+        other = sprite->parent;
         if ((sprite->render.word & 3) == 2) {
             sprite->renderer->angle_y = other->direction;
             sprite->render.bits.dirty = 1;
@@ -1886,7 +1886,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 22: the creator's position. */
             case 22:
-                other = sprite->word70;
+                other = sprite->parent;
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 transform = 0;
@@ -1907,7 +1907,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 goto focus_half_depth;
             /* 18: the target's top (y - height). */
             case 18:
-                other = sprite->word74;
+                other = sprite->partner;
             focus_top:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
@@ -1916,7 +1916,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 19: the target's middle (y - height + (height - depth) / 2). */
             case 19:
-                other = sprite->word74;
+                other = sprite->partner;
             focus_middle:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
@@ -1925,7 +1925,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 20: the target's y - depth. */
             case 20:
-                other = sprite->word74;
+                other = sprite->partner;
             focus_depth:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
@@ -1934,7 +1934,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 21: the target's y - (depth - depth / 2). */
             case 21:
-                other = sprite->word74;
+                other = sprite->partner;
             focus_half_depth:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
@@ -1974,13 +1974,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             case 15:
             case 16:
             case 17:
-                other = sprite->word70;
+                other = sprite->parent;
                 if (other == NULL) {
                     break;
                 }
                 goto group_place;
             own_group:
-                other = sprite->word74;
+                other = sprite->partner;
             group_place:
                 if (other->renderer == NULL) {
                     break;
@@ -2017,7 +2017,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 goto group_place;
             /* 0: the target's position. */
             case 0:
-                other = sprite->word74;
+                other = sprite->partner;
             focus_position:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
@@ -2108,7 +2108,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         } else {
             s32 dx, dy;
 
-            other = sprite->word70;
+            other = sprite->parent;
             if (other != NULL && other->renderer != NULL && (other->render.word & 3) == 1) {
                 if (other->renderer->pointer34 != NULL) {
                     dy = other->renderer->pointer34[arg].byte1;
@@ -2194,7 +2194,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* a4 s8: the target (+74) plays animation s8 (800245d8). */
     case 0xA4:
-        func_800245D8(sprite->word74, (s8)code[0]);
+        func_800245D8(sprite->partner, (s8)code[0]);
         break;
     /* df var u8: a = u8. */
     case 0xDF:
@@ -2229,7 +2229,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0x93: {
         s32 i;
 
-        other = sprite->word70;
+        other = sprite->parent;
         if (other != NULL && (sprite->render.word & 3)) {
             if (func_8001EE68((u8 *)((SpriteSource *)sprite->image)->frames) == 0) {
                 sprite->flags = (sprite->flags & ~0x1E000) | 0x1C000;
@@ -2536,13 +2536,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
      * 256 * (skip + 1)^2, or the own sequencer's word 4 when nonzero. */
     case 0xA3:
         if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word4 != 0) {
-            sprite->word1c = ((SpriteSequencer *)sprite->sequencer)->word4;
+            sprite->gravity = ((SpriteSequencer *)sprite->sequencer)->word4;
         } else {
-            sprite->word1c = (((s8)code[0] << 6) * (s16)sprite->word82 / 4096) << 5;
+            sprite->gravity = (((s8)code[0] << 6) * (s16)sprite->word82 / 4096) << 5;
             n = 0x10000 / sprite->motion.bits.divisor;
-            sprite->word1c *= n * n / 256;
-            sprite->word1c /= 256;
-            sprite->word1c *= (D_80059198 + 1) * (D_80059198 + 1);
+            sprite->gravity *= n * n / 256;
+            sprite->gravity /= 256;
+            sprite->gravity *= (D_80059198 + 1) * (D_80059198 + 1);
         }
         break;
     /* a5 s8: walking speed += s8 * 16 * (skip + 1) * (+82) / 4096 << 8; the velocity
@@ -2732,7 +2732,7 @@ void func_80021D50(Sprite *sprite, SpriteState *state) {
         sprite->x += sprite->speed_x;
         sprite->z += sprite->speed_z;
         sprite->y += sprite->speed_y;
-        sprite->speed_y += sprite->word1c;
+        sprite->speed_y += sprite->gravity;
     }
     sprite->x = state->x;
     sprite->y = state->y;

@@ -252,7 +252,7 @@ void func_8001BE14(void) {
 
 /* Reset the menu's two views to the origin at distance 0x800. */
 void func_8001BEEC(void) {
-    MenuWork *work = D_800625A0;
+    MenuState *work = D_800625A0;
 
     work->offset.vz = 0x800;
     work->offset2.vz = 0x800;
@@ -316,7 +316,7 @@ void func_8001BF38(void) {
 
 /* Menu frame: decode input, flip buffers, clear the ordering table, draw the debug overlays, then present. */
 void func_8001C074(void) {
-    MenuWork *work;
+    MenuState *work;
 
     func_8001BF38();
     work = D_800625A0;

@@ -14,7 +14,7 @@ typedef struct {
     u32 unknown;
 } MenuBuffer;
 
-typedef struct MenuWork {
+typedef struct MenuState {
     u8 unknown0[0x6C];
     MenuBuffer buffers[2];      /* +0x6c */
     MenuBuffer *current;        /* +0x1d4 */
@@ -38,9 +38,9 @@ typedef struct MenuWork {
     u8 unknown32a[0x1B6A];
     u8 debug_show;              /* +0x1e94 */
     u8 debug_value;             /* +0x1e95 */
-} MenuWork;
+} MenuState;
 
-extern MenuWork *D_800625A0;
+extern MenuState *D_800625A0;
 
 extern u8 D_80059178;       /* debug start: choose the menu screen */
 extern u8 D_80059460;       /* menu screen */
