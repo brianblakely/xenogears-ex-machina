@@ -1019,12 +1019,14 @@ def main() -> None:
     # a stray byte in its string's padding or a reviewed classification line.
     reasoned: set[int] = set()
     for lo, hi, obj in included:
-        if not any(cls == "included" for _, _, cls in split(lo, hi, "included")):
-            continue
         named = labels(lo, hi)
         start, name = named[0] if named else (lo, "")
         if any(image(lo, start)):
             start = lo
+        # The zero alignment fill an INCLUDE_* statement emits ahead of its label
+        # (`.align 2`) needs no reason of its own; the object starts at the label.
+        if not any(cls == "included" for _, _, cls in split(start, hi, "included")):
+            continue
         names = {label for value, label in named if value == start} or {"-"}
         if start in reasons and reasons[start][0] == hi and reasons[start][1] in names:
             reasoned.add(start)

@@ -52,6 +52,7 @@ The decoders are `python3 -m tools.analysis.<decoder> --sweep`.
 | `D_80091C74`, `D_80091CC4`, `D_80091CDC` | menu | an emitter's shape and placement, constants at both callers of `func_8008D3F4` (1, 0 and 3, 0); its one update | code |
 | `D_80099E8C` | worldmap | the actors every area starts, a list ended by kind 0 | code |
 | `D_80099F0C`, `D_80099F24`, `D_80099F3C`, `D_80099F74`, `D_80099FAC`, `D_80099FEC` | worldmap | the area's actor list, `D_8009A034[D_8009C610]`; the area index comes from the position against `D_8009B564`, whose last threshold is 0xffff | code |
+| `D_8001808C` | resident | the mode number (0-6) the dispatcher `func_80019ACC` runs, set by `func_8001996C` from code and from the movie's next-mode word `D_8004FE44`; rows {entry, BSS start, BSS end, loaded} | [original-boundaries.md](../original-boundaries.md) |
 | `exe_header` | resident | the PS-X EXE header's entry point, not a dispatch | none |
 
 ## Data-selected switches
