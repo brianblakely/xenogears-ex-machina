@@ -95,7 +95,7 @@ POLY_G3 D_8009C664[8];
 POLY_FT4 D_8009C744[2][2]; /* textured horizon quads, per buffer */
 void *D_8009C7E4; /* free memory block kept while away */
 s32 D_8009C7E8;
-struct TerrainTexture *D_8009C7EC;
+struct BillboardList *D_8009C7EC;
 VECTOR D_8009C7F0;
 void *D_8009C800; /* saved VRAM area */
 s32 D_8009C804; /* unreferenced */

@@ -971,9 +971,9 @@ void func_80085CDC(void) {
     }
 }
 
-/* Resolve the terrain texture offsets and create the terrain CLUTs. */
+/* Resolve the billboard lists' offsets and create the billboard CLUTs. */
 void func_80085F58(void) {
-    TerrainTexture *texture;
+    BillboardList *texture;
     s32 i;
 
     texture = D_8009C7EC;
@@ -987,6 +987,7 @@ void func_80085F58(void) {
     }
 }
 
+/* The billboard quads, copied between display buffers as a whole. */
 typedef struct {
     POLY_FT4 quads[0x200];
 } QuadBlock512;
@@ -1039,7 +1040,7 @@ typedef struct {
  * CLUTs, then submit each visible block's billboard list (func_80099BFC)
  * into this display buffer's quads. */
 void func_8008615C(void) {
-    TerrainTexture *textures;
+    BillboardList *textures;
     s32 index;
     s32 i;
     s32 row;
@@ -1068,8 +1069,8 @@ void func_8008615C(void) {
         for (i = 0; i < 5; i++) {
             if (D_8009D618[row * 5 + i] != -1) {
                 index = D_8009D570.cells[(row + D_8009C838.vz) * 9 + i + D_8009C838.vx];
-                if (textures[index].unk4 != 0) {
-                    func_80099BFC(textures[index].data, textures[index].unk4, D_8009BE3C->ot,
+                if (textures[index].count != 0) {
+                    func_80099BFC(textures[index].data, textures[index].count, D_8009BE3C->ot,
                                   (POLY_FT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
                 }
             }
@@ -1114,6 +1115,7 @@ void func_80086568(void) {
     func_800320E8(D_8009D150);
 }
 
+/* The cloud quads, copied between display buffers as a whole. */
 typedef struct {
     POLY_FT4 quads[0x120];
 } QuadBlock288;
@@ -2140,6 +2142,7 @@ void func_80088FF4(void) {
     func_800320E8(D_8009BDF4);
 }
 
+/* The particle quads, copied between display buffers as a whole. */
 typedef struct {
     POLY_FT4 quads[256];
 } EffectQuads;

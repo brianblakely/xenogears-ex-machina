@@ -6,10 +6,11 @@
  * models placed in the world and linked into hierarchies; the solid ones
  * carry collision meshes. Each open map area starts actors of its own (the
  * spinning objects, the ferry, the airship). The scene modes 8-18 each start
- * a set of actors: the screen fade, a cue sequencer (the director) and the
- * camera and object actors it commands; the text split leaves each mode's
- * set-up and leave handlers and its director's sequence start at the end of
- * the unit before the director's (worldmap_8007DE98). */
+ * a set of actors: the screen fade, a cue sequencer (the director) or an
+ * actor script, and the camera and object actors they command. The text
+ * split leaves the set-up and leave handlers of each mode with a director,
+ * and the director's sequence start, at the end of the unit before the
+ * director's (worldmap_8007DE98). */
 
 #include "worldmap.h"
 #include "resident/model.h"
@@ -40,7 +41,7 @@ extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
 void func_8008440C(void); /* upload the area image, build its faded CLUTs */
 void func_80084580(void); /* build the scene objects */
 void func_80084818(void); /* free them */
-void func_800848B4(s32 parent, s32 child);
+void func_800848B4(s32 parent, s32 child); /* link `child` to `parent` */
 void func_800848F4(void); /* draw them */
 
 /* A resident model call the world map declares itself: it passes the scene

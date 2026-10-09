@@ -108,8 +108,15 @@ extern struct SoundSeqHeader D_80062648_sequence;
 /* The area data's header (file 1): section offsets from its start. */
 typedef struct {
     s32 unk0;
-    s32 spots; /* spot block */
-    s32 off8, offC, off10, off14, off18, off1C, off20, off24;
+    s32 spots;          /* spot block */
+    s32 models;         /* sprite models */
+    s32 meshes;         /* their collision meshes */
+    s32 placements;     /* scene object placements */
+    s32 billboards;     /* the terrain blocks' billboard lists */
+    s32 emitters;       /* area objects */
+    s32 names;          /* path and destination names */
+    s32 animations;     /* texture animations */
+    s32 animations2;    /* the second set */
     s32 unk28;
     s32 encounters[16]; /* encounter sets, per terrain kind */
 } AreaHeader;
@@ -129,11 +136,11 @@ typedef struct WorldmapSpot {
 } WorldmapSpot;
 
 /* The area data's sections (func_80073530). */
-extern void *D_8009CD48;          /* sprite models (off8) */
-extern void *D_8009D308;          /* their collision meshes (offC) */
-extern void *D_8009BD30;          /* scene object placements (off10) */
-extern void *D_8009D784;          /* path and destination names (off1C) */
-extern s32 *D_8009D77C, *D_8009D7C8; /* texture animations (off20, off24) */
+extern void *D_8009CD48;          /* sprite models */
+extern void *D_8009D308;          /* their collision meshes */
+extern void *D_8009BD30;          /* scene object placements */
+extern void *D_8009D784;          /* path and destination names */
+extern s32 *D_8009D77C, *D_8009D7C8; /* texture animations, both sets */
 extern void *D_8009D73C[16];      /* encounter sets, per terrain kind */
 extern s32 *D_8009BD00;           /* the four path tables */
 extern WorldmapSpot *D_8009D3F4;  /* arrival points */
@@ -165,8 +172,8 @@ extern s32 D_8009CC9C, D_8009CD64; /* animations of each set */
 void func_80074E58(void), func_80074F04(void), func_80074F2C(void); /* create, free, advance */
 void func_80075030(void), func_800750DC(void), func_80075104(void); /* the second set */
 
-/* The player: movement mode (1-2 on foot, 4-7 vehicles), position (20.12)
- * and heading. */
+/* The player: movement mode (1-3 on foot, 4-7 in a vehicle, 6-7 flying),
+ * position (20.12) and heading. */
 extern s32 D_8009BE10;
 extern VECTOR D_8009C5AC;
 extern s32 D_8009C584;
@@ -201,7 +208,7 @@ extern u8 D_8009BB48[3];         /* background colour */
 void func_8007369C(void); /* allocate the ordering tables */
 void func_80072BB0(void); /* set up the display */
 void func_80072DB4(s32 a, s32 b, s32 c, s32 d); /* fade the saved screen */
-void func_800762FC(void); /* settle the GPU and the caches */
+void func_800762FC(void); /* wait for the GPU, flush the cache */
 
 /* A resident display call the world map declares itself: its calls pass
  * words where the resident's definition takes bytes. */

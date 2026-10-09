@@ -66,14 +66,14 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
 
 extern s16 D_8009B180[]; /* per landing kind: may stand there */
 
-s32 func_8008BEC8(WorldmapActor *actor);
-void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
-void func_8008C28C(WorldmapActor *actor, s32 member);
-s32 func_8008C364(WorldmapActor *actor, s32 kind);
+s32 func_8008BEC8(WorldmapActor *actor); /* step towards the target */
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch); /* on terrain type 3 */
+void func_8008C28C(WorldmapActor *actor, s32 member); /* create a member's gear sprite */
+s32 func_8008C364(WorldmapActor *actor, s32 member); /* place a member's vehicle */
 void func_8008DFF4(VECTOR *position); /* restore the saved vehicle position */
 void func_8008E034(VECTOR *position); /* save it */
-void func_8008E078(void);
-s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range);
+void func_8008E078(void); /* the path table of scenes 15 and 16 */
+s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range); /* the first heading a probe hits in */
 void func_80090A18(void); /* latch the two-button combination (D_8009BD34) */
 
 /* Pad steering per movement mode: on foot, vehicle, flying and free

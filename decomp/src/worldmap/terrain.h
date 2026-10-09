@@ -102,14 +102,14 @@ void func_80098CC0(void);
 void func_8009932C(u32 *ot, s32, Camera *);
 
 /* The billboards standing on the terrain blocks (worldmap_80083A00): each
- * block's list (data and count) of the area data's billboard section, their
- * quads per display buffer and CLUTs. */
-typedef struct TerrainTexture {
-    u8 *data;
-    s32 unk4;
-} TerrainTexture;
+ * of the 256 blocks' list in the area data's billboard section,
+ * their quads per display buffer and their CLUTs. */
+typedef struct BillboardList {
+    u8 *data;  /* from the section, a null list empty */
+    s32 count;
+} BillboardList;
 
-extern TerrainTexture *D_8009C7EC;
+extern BillboardList *D_8009C7EC;
 extern void *D_8009D7E8[2]; /* billboard quads, per display buffer */
 extern s16 D_8009BE04;     /* quads used this frame; a word in 80099BFC */
 extern u16 D_8009D478[16]; /* billboard CLUTs */

@@ -637,14 +637,14 @@ void func_80073530(void) {
     base = D_8009C180;
     area = (AreaHeader *)base;
     block = base + area->spots;
-    D_8009CD48 = base + area->off8;
-    D_8009D308 = base + area->offC;
-    D_8009BD30 = base + area->off10;
-    D_8009C7EC = (TerrainTexture *)(base + area->off14);
-    D_8009BCC0 = (AreaObject *)(base + area->off18);
-    D_8009D784 = base + area->off1C;
-    D_8009D77C = base + area->off20;
-    D_8009D7C8 = base + area->off24;
+    D_8009CD48 = base + area->models;
+    D_8009D308 = base + area->meshes;
+    D_8009BD30 = base + area->placements;
+    D_8009C7EC = (BillboardList *)(base + area->billboards);
+    D_8009BCC0 = (AreaObject *)(base + area->emitters);
+    D_8009D784 = base + area->names;
+    D_8009D77C = base + area->animations;
+    D_8009D7C8 = base + area->animations2;
     for (i = 0; i < 16; i++) {
         D_8009D73C[i] = D_8009C180 + area->encounters[i];
     }
@@ -1572,7 +1572,8 @@ void func_80076098(void) {
     }
 }
 
-/* Reset the GPU and sound state before leaving. */
+/* Wait for drawing and the vertical blank, then flush the instruction
+ * cache inside a critical section. */
 void func_800762FC(void) {
     DrawSync(0);
     VSync(0);
@@ -1719,13 +1720,13 @@ void func_80076954(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off8;
-    D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->offC;
-    D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off10;
-    D_8009C7EC = (TerrainTexture *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off14);
-    D_8009BCC0 = (AreaObject *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off18);
-    D_8009D77C = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off20);
-    D_8009D7C8 = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off24);
+    D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->models;
+    D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->meshes;
+    D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->placements;
+    D_8009C7EC = (BillboardList *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->billboards);
+    D_8009BCC0 = (AreaObject *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->emitters);
+    D_8009D77C = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->animations);
+    D_8009D7C8 = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->animations2);
 }
 
 /* Mode step that has nothing to do; always reports done. */
