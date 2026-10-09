@@ -811,6 +811,7 @@ tests/test_sector_survey.py
 tests/test_sound_driver.cpp
 tests/test_sound_output.cpp
 tests/test_sound_sequence.py
+tests/test_special_parts.py
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
 tests/test_sprite_model.cpp
@@ -870,6 +871,7 @@ tools/analysis/query_trace.py
 tools/analysis/replay_trace.py
 tools/analysis/return_case.py
 tools/analysis/sound_sequence.py
+tools/analysis/special_parts.py
 tools/analysis/sprite_animation.py
 tools/analysis/sprite_creation.py
 tools/analysis/sprite_matrix.py
