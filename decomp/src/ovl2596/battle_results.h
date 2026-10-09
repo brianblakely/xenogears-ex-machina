@@ -52,32 +52,8 @@ void *func_80033A5C(u8 id);
 /* A glyph-table sprite part, one primitive per draw buffer. */
 typedef POLY_FT4 Glyph[2];
 
-/* A run of glyphs drawn together: how many parts, and the draw buffer they
- * were built for. */
-typedef struct {
-    u8 count;
-    u8 buffer;
-} GlyphRun;
-
-/* Per party member result card (pointers 800d32f8, one per slot). Each
- * glyph part is two primitives, one per draw buffer. */
-typedef struct {
-    POLY_FT4 portrait[8];    /* 0x0000 */
-    POLY_FT4 labels[40];  /* 0x0140, two per glyph (one per buffer) */
-    POLY_FT4 field780[6];    /* 0x0780 */
-    POLY_FT4 field870[6];    /* 0x0870 */
-    POLY_FT4 field960[6];    /* 0x0960 */
-    POLY_FT4 fieldA50[6];    /* 0x0A50 */
-    POLY_FT4 fieldB40[4];    /* 0x0B40 */
-    POLY_FT4 fieldBE0[4];    /* 0x0BE0 */
-    POLY_FT4 fieldC80[16];    /* 0x0C80 */
-    POLY_FT4 fieldF00[16];    /* 0x0F00 */
-    POLY_FT4 field1180[14];   /* 0x1180 */
-    POLY_FT4 field13B0[14];   /* 0x13B0 */
-    GlyphRun runs[12];    /* 0x15E0 */
-    u8 flag15F8;          /* 0x15F8 */
-    u8 flag15F9;          /* 0x15F9 */
-} MemberCard;
+/* The member cards and their glyph runs (GlyphRun, MemberCard, D_800D32F8)
+ * are in battle/ui.h: the battle counts them up. */
 
 /* The result summary windows' primitives (pointer 800d334c). */
 typedef struct {
@@ -115,8 +91,6 @@ typedef struct {
 } ResultSummary;
 
 extern ResultSummary *D_800D334C;
-
-extern MemberCard *D_800D32F8[3];
 
 /* func_8008AAA0 writes a value's nine decimal digits to 800c3cf4, leading
  * zeros as 0xff; the screens read the last digits through these views. */

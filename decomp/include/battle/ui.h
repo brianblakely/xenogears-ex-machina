@@ -93,6 +93,42 @@ typedef struct BattleUi {
 
 extern BattleUi *D_800D2D28;
 
+/* A run of glyphs drawn together: how many parts, and the draw buffer they
+ * were built for. */
+typedef struct {
+    u8 count;
+    u8 buffer;
+} GlyphRun;
+
+/* A party member's result card (pointers 800d32f8, one per slot), which the
+ * result screens (ovl2596) allocate and build: its glyph parts, each two
+ * primitives (one per draw buffer), and the count the battle steps while
+ * showCards is set (8008a684). */
+typedef struct MemberCard {
+    POLY_FT4 portrait[8];    /* 0x0000 */
+    POLY_FT4 labels[40];     /* 0x0140, two per glyph (one per buffer) */
+    POLY_FT4 field780[6];    /* 0x0780 */
+    POLY_FT4 field870[6];    /* 0x0870 */
+    POLY_FT4 field960[6];    /* 0x0960 */
+    POLY_FT4 fieldA50[6];    /* 0x0A50 */
+    POLY_FT4 fieldB40[4];    /* 0x0B40 */
+    POLY_FT4 fieldBE0[4];    /* 0x0BE0 */
+    POLY_FT4 fieldC80[16];   /* 0x0C80 */
+    POLY_FT4 fieldF00[16];   /* 0x0F00 */
+    POLY_FT4 field1180[14];  /* 0x1180 */
+    POLY_FT4 field13B0[14];  /* 0x13B0 */
+    GlyphRun runs[12];       /* 0x15E0 */
+    u8 secondValue;          /* 0x15F8 (first card) the second value is shown with
+                              * its markers and counted: option flag 0x8000 clear */
+    u8 counting;             /* 0x15F9 (first card) set while the battle counts the
+                              * values; 801e1aa4 waits for it to clear */
+    u8 done[2];              /* 0x15FA each value counted out */
+} MemberCard;
+
+LAYOUT_CHECK(MemberCardSize, sizeof(MemberCard) == 0x15FC);
+
+extern MemberCard *D_800D32F8[3];
+
 /* Battle drawing state (800ccb04, the battle area's ordering table pointer
  * on). The battle work area (800ccce8) follows it within one aggregate: some
  * code addresses the work area from here. */

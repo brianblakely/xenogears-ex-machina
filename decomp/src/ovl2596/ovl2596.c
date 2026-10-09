@@ -134,7 +134,7 @@ void func_801DE69C(void) {
             for (j = 0; j < 18; j++) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(D_800C3268[j], &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], D_800C327C[j], D_800C32A0[j] + i * 0x20);
             }
-            if (D_800D32F8[0]->flag15F8 != 0) {
+            if (D_800D32F8[0]->secondValue != 0) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
                 SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800C3EB0.buffer], 0);
@@ -227,7 +227,7 @@ void func_801DEDC0(u8 fromGameData) {
                 }
             }
             D_800D32F8[i]->runs[2].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->flag15F8 != 0) {
+            if (D_800D32F8[0]->secondValue != 0) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
                 } else {
@@ -275,7 +275,7 @@ void func_801DF270(void) {
                 }
             }
             D_800D32F8[i]->runs[8].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->flag15F8 != 0) {
+            if (D_800D32F8[0]->secondValue != 0) {
                 func_8008AAA0(D_800CCCE8.expTotals[i][1]);
                 for (j = 0; j < 8; j++) {
                     n = j + 22;
@@ -310,7 +310,7 @@ void func_801DF4C0(void) {
                 }
             }
             D_800D32F8[i]->runs[10].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->flag15F8 != 0) {
+            if (D_800D32F8[0]->secondValue != 0) {
                 func_8008AAA0(D_800CCCE8.toCount[i][1]);
                 for (j = 0; j < 7; j++) {
                     n = j + 31;
@@ -985,8 +985,8 @@ void func_801E1AA4(void) {
 
     func_800716D8();
     D_800D2D28->waitingCross = 1;
-    D_800D32F8[0]->flag15F9 = 1;
-    while (D_800D32F8[0]->flag15F9 != 0) {
+    D_800D32F8[0]->counting = 1;
+    while (D_800D32F8[0]->counting != 0) {
         if (D_800D3014 == 4) {
             break;
         }
@@ -994,7 +994,7 @@ void func_801E1AA4(void) {
         func_800716D8();
     }
     D_800D2D28->waitingCross = 0;
-    D_800D32F8[0]->flag15F9 = 0;
+    D_800D32F8[0]->counting = 0;
     for (i = 0; i < 3; i++) {
         D_800CCCE8.expTotals[i][0] = D_8006D634.characters[D_800D2D24[i]].expTotalA;
         D_800CCCE8.expTotals[i][1] = D_8006D634.characters[D_800D2D24[i]].expTotalB;
@@ -1094,7 +1094,7 @@ void func_801E1FB8(u32 experience) {
     }
     D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
     bzero((u8 *)D_800D334C, sizeof(ResultSummary));
-    D_800D32F8[0]->flag15F8 = (D_8006D634.flags >> 15) ^ 1;
+    D_800D32F8[0]->secondValue = (D_8006D634.flags >> 15) ^ 1;
     func_800716D8();
     D_800C3EB0.outcome = 0;
     func_801E196C();

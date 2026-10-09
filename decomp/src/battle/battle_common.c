@@ -146,7 +146,7 @@ u8 D_800D3294;
 u8 D_800D3298;    /* ATB enabled */
 void *D_800D329C; /* item name table */
 struct SlotFlags D_800D32A0[11];
-struct ResultPanel *D_800D32F8[3];
+struct MemberCard *D_800D32F8[3];
 struct Tracker D_800D3304[2];
 s32 D_800D332C; /* unreferenced */
 s16 D_800D3330; /* panel member maximum HP */

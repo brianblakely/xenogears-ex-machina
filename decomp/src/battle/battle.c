@@ -3694,7 +3694,7 @@ void func_8008A684(u8 member) {
                 }
             }
             done &= D_800D32F8[i]->done[0];
-            if (D_800D32F8[0]->unk15F8 != 0) {
+            if (D_800D32F8[0]->secondValue != 0) {
                 done &= D_800D32F8[i]->done[1];
             }
         }
