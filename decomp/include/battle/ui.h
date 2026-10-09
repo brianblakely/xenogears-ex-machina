@@ -118,8 +118,10 @@ typedef struct MemberCard {
     POLY_FT4 field1180[14];  /* 0x1180 */
     POLY_FT4 field13B0[14];  /* 0x13B0 */
     GlyphRun runs[12];       /* 0x15E0 */
-    u8 secondValue;          /* 0x15F8 (first card) the second value is shown with
-                              * its markers and counted: option flag 0x8000 clear */
+    u8 secondValue;          /* 0x15F8 (first card) option flag 0x8000 clear: the
+                              * second value and its markers are shown, and the
+                              * count waits for it too (done[1]); the battle
+                              * steps it either way */
     u8 counting;             /* 0x15F9 (first card) set while the battle counts the
                               * values; 801e1aa4 waits for it to clear */
     u8 done[2];              /* 0x15FA each value counted out */
