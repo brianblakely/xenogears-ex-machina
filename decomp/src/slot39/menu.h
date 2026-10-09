@@ -1243,7 +1243,7 @@ extern s32 D_801E9F28[2];     /* label y per row (mode 2) */
 extern s32 D_801E9F30[];      /* label y per row (mode 3) */
 extern s32 D_801E9F68[2];     /* label x (mode 6) */
 extern s32 D_801E9F70[];      /* label y (mode 6) */
-extern u8 D_801E97AC[];       /* 801e1544 screen: five sheet images per row, ff none */
+extern u8 D_801E97AC[13 * 5]; /* 801e1544 screen: five sheet images per row, ff none */
 extern s32 D_801E9F48[];      /* status command label x offsets (page 0 and 6) */
 extern u8 D_80059179;         /* forbids the status command toggle */
 extern u8 D_801E9808[20];      /* pilot character of each gear */

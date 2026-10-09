@@ -373,8 +373,9 @@ the audit; they are never counted as matches. This diagnostic does not replace
   mark the symbol `force_not_migration:True` (with `size:` and a symbol after it where
   splat would join the strings that follow, menu6's `D_800705F0`), link it with
   INCLUDE_RODATA beside the function and reference it as `extern char[]`; never spell
-  the stray bytes in a C initializer. A .data object whose padding holds
-  such bytes (a byte flag followed by `04`, a halfword table ending in `"Mt"`) is
+  the stray bytes in a C initializer, also not as invented trailing elements
+  (Recovering data). A .data object whose padding holds such bytes (a byte flag
+  followed by `04`, a halfword table ending in `"Mt"`) is
   linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
   among the unit's definitions, from the pristine input as INCLUDE_ASSET does; use it
   only where the padding is non-zero and nothing reads it. Both count as `included`.
@@ -520,9 +521,46 @@ converted to C per unit. What converting the targets' `.data` established:
 - Unreferenced objects are shipped data: define them at their offsets (movie's unread
   words, ovl3381's unused copy of the cell triangles). Two units whose data opens with
   the same table include it as a `static` from a shared header (field_music.h).
+- A table's readers, not the span to the next symbol, give its extent, and stray fill
+  after it is not an element. Four tables spelled theirs as extra elements and are
+  INCLUDE_ORIGINAL objects with `included` lines now, their externs declaring the
+  true extent: the world map's flame sizes D_8009A68C (5 u16 for flame actors 4-8,
+  func_8007F8AC and func_8007F968; fill 65 79) and gear parameters D_8009B1A4 (3 s16
+  for the members 0-2 func_8008C364 passes; fill 00 3c), slot39's sheet images
+  D_801E97AC (13 rows of 5 u8, func_801E1544 for the rows of func_801E1AC8; fill 00 07
+  2e) and battle's combo flags D_800C34CC (15 u8: func_80086B88, func_80086C88 and
+  func_80086F98 index at most 14 from combo steps 0-2, or 0xff at attack level 4;
+  fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
+  object whose last elements, narrower than a word by its definition, would be
+  alignment fill before the next object and hold a non-zero byte that no
+  constant-offset access reads (`tail`, noted `text` or `outlier` where they look
+  stray), that nothing references (`unref`), that is declared wider than every access
+  with a byte none touches (`wide`), or whose string holds bytes after its terminator
+  (`string`). After the four it reports `2310 C data objects, 194 to review; objects
+  per flag: tail 157, tail read 6, unref 44` (175 distinct, 146 with a tail and 35
+  unreferenced; the second executable repeats the resident's), each reviewed against
+  its readers. None other spells stray fill: the tails are read (masks `& 7` and
+  `& 3`, the frame counts 0x10, the count passed with each label list, the 18-, 7-
+  and 16-entry glyph label loops of ovl2596 and battle) or complete their structure
+  (single-bit masks, permutations of the eight facings, a CLUT LoadImage'd 16 wide,
+  the round map's 128th row continuing both column curves, frame rates 60/n for
+  n = 2-60 dividing 60, the party panels' per-member pattern, a pilot per gear of the
+  20, lamp frames, per-character and per-gear tables), or are the sentinels their
+  loops stop at (-1, 0xffff); the unreferenced ones are words, structures, strings,
+  documented unread tables and copies, or tables read through a base formed before
+  them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
+  list_cursor]`). Two stay open. slot39's D_801E96A6 is a byte 08, then 00, between
+  the flag bytes D_801E96A4/D_801E96A5 and the word-aligned D_801E96A8; no image's
+  code or data reaches it, so it may be fill like that after battle's byte flags
+  (08 00 71, 08 00 00) or an unused variable, and INCLUDE_ORIGINAL places an object at
+  a word boundary only. ovl2143's unread copy D_801E85A4 of battle's gear file table
+  D_800C3508 ends with the pair 66 00 where battle's has 00 00; the bases of gears
+  0-18 chain (each is the previous gear's base plus 2 plus that gear's variant count,
+  the files func_800A9540 reads), the twentieth pair continues the chain in neither,
+  and no reader decides between 19 entries and fill or 20 entries.
 - splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
   entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
-  Define the real object and index it as the code does (`D_8009A68C[index - 4]`,
+  Declare the real object and index it as the code does (`D_8009A68C[index - 4]`,
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are

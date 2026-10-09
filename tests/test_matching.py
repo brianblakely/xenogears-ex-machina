@@ -1745,6 +1745,39 @@ class MatchingTests(unittest.TestCase):
         })
 
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
+    def test_stray_padding_flags_tails_unreferenced_bytes_and_strings(self):
+        from tools.stray_padding import c_objects, flags
+
+        gas = "\n".join([
+            ".section .data", ".align 2", ".globl D_1", "D_1:", ".byte\t0", ".byte\t1,2",
+            ".byte\t53", ".section .data", ".align 2", ".globl D_2", "D_2:",
+            '.incbin ".local/x.bin", 0x10 - 0x0, 4', ".size D_2, 4", ".previous",
+            ".section .rodata", ".align 2", "$LC0:", '.ascii "ab\\000k\\000"', ".text", "func:",
+            "jr\t$31",
+        ])
+        objects = c_objects(gas)
+        self.assertEqual(sorted(objects), ["$LC0", "D_1"])  # INCLUDE_* labels are not C
+        self.assertEqual(objects["D_1"]["elements"], [1, 1, 1, 1])
+        self.assertEqual(objects["$LC0"]["strings"], [b"ab\0k\0"])
+
+        # battle's combo flags as they were: 15 indexed bytes, then '5' in the fill
+        table = {"bytes": bytes(range(15)) + b"5", "elements": [1] * 16, "strings": [], "size": 1,
+                 "start": 0x800C34CC, "next": 0x800C34DC, "pointers": 0,
+                 "access": [(0, "indexed", "lbu", "func_80086B88")]}
+        self.assertEqual(flags(table)[0], ("tail", 1, "35", ["text", "outlier"]))
+        table["access"] = [(15, "exact", "lbu", "f")]  # a constant-offset read dismisses it
+        self.assertTrue(all("read" in f[3] for f in flags(table)))
+        table.update(size=16, access=[], pointers=1)  # a struct object: no element boundary
+        self.assertEqual(flags(table), [])
+        byte = {"bytes": b"\x08", "elements": [1], "strings": [], "size": 1, "start": 0x801E96A6,
+                "next": 0x801E96A8, "pointers": 0, "access": []}
+        self.assertEqual(flags(byte), [("unref", 1, "08", ["slot"])])
+        string = {"bytes": b"ab\0k\0", "elements": [1] * 5, "strings": [b"ab\0k\0"], "size": 1,
+                  "start": 0x80010000, "next": 0x80010008, "pointers": 0,
+                  "access": [(0, "formed", "addiu", "f")]}
+        self.assertEqual(flags(string), [("string", 2, "6b 00", [])])
+
+    @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_instruction_differences_keep_immediates_and_absent_words(self):
         from tools.nonmatching_score import instruction_differences
 
