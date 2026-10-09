@@ -1,7 +1,22 @@
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 #include "worldmap.h"
-
-/* Declared here only: other units call it without a prototype. */
-void func_80093354(VECTOR *position);
+#include "camera.h"
+#include "effect.h"
+#include "gte.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Scene object draw mode, by the object's flags (func_800848F4). */
 s16 D_8009AD2C[10] = {4, 4, 5, 5, 0, 0, 2, 2, 3, 3};
@@ -60,6 +75,11 @@ u16 D_8009AFF0[10 * 4] = {
     0x8000, 0x801F, 0xDF00, 0xDF1F,
     0xB020, 0xB05F, 0xEF20, 0xEF5F,
 };
+/* Particle shapes and texture coordinates, per kind. */
+typedef struct {
+    SVECTOR v[4];
+} ParticleShape;
+
 ParticleShape D_8009B040[10] = {
     {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
     {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
@@ -365,6 +385,21 @@ void func_8008440C(void) {
     func_800320E8(source);
 }
 
+/* Scene object placement (16 bytes; the list follows a count halfword). */
+typedef struct {
+    u16 def;
+    u16 flags;
+    s16 x, y, z;
+    s16 ax, ay, az;
+} ScenePlacement;
+
+/* The area file's sprite models (a resident ModelGroup, whose models it
+ * relocates): a 16-byte header, then the models. */
+typedef struct {
+    u8 header[0x10];
+    SpriteModel defs[1];
+} SpriteDefTable;
+
 /* Build the scene objects from the area's placement list: resolve the
  * animation offsets, then place, orient and build each object's
  * primitives (two buffers) from its sprite definition. */
@@ -428,6 +463,20 @@ void func_800848B4(s32 parent, s32 child) {
     D_8009C620[child].parent = &D_8009C620[parent];
 }
 
+/* Scratchpad work area of the scene object pass. */
+typedef struct {
+    VECTOR offset;  /* 0x00 */
+    VECTOR scale;   /* 0x10 */
+    s32 flag;       /* 0x20 */
+    s32 pad24;
+    s32 sz;         /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin; /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX m;       /* 0xF0 */
+    MATRIX out;     /* 0x110 */
+} SceneScratch;
+
 /* Draw the visible scene objects: build each one's matrix through its
  * parent chain, place it relative to the camera target, and add its sprite
  * set to the ordering table when it projects in front and near enough. */
@@ -487,6 +536,8 @@ void func_800848F4(void) {
     }
 }
 
+s32 func_80084DB8(s32 probe, s32 index);
+
 /* Probe the solid scene objects; the first hit's result, with its index. */
 s16 func_80084D00(s32 probe, s16 *hit) {
     SceneObject *object;
@@ -508,6 +559,24 @@ s16 func_80084D00(s32 probe, s16 *hit) {
     }
     return 0;
 }
+
+/* Scratchpad work area of the face containment test. */
+typedef struct {
+    VECTOR p[3];    /* 0x00: transformed corners; p[0] first holds the scale */
+    union {
+        struct {
+            s32 edge[2];  /* 0x30: packed (x, z) corner pairs */
+            s32 point;    /* 0x38: packed (x, z) probe */
+            s32 pad3C;
+            VECTOR delta; /* 0x40: probe relative to the object */
+        } test;
+        VECTOR side[3];   /* 0x30: normalised edge directions */
+    } u;
+    u8 pad60[0x90];
+    MATRIX m;       /* 0xF0 */
+} FaceTestScratch;
+
+#define FACE_TEST_SCRATCH ((FaceTestScratch *)0x1F800000)
 
 /* Test the probe position against scene object `index`: transform its
  * collision faces flat (x, z) and record every face whose outline contains
@@ -579,6 +648,18 @@ s32 func_80084DB8(s32 probe, s32 index) {
     }
     return hits;
 }
+
+/* Scratchpad work area of the face probe. */
+typedef struct {
+    VECTOR p[3];      /* face corners; p[1] first holds the scale */
+    VECTOR normal;    /* 0x30 */
+    VECTOR side;      /* 0x40: probe ends against the plane */
+    u8 pad50[0xA0];
+    MATRIX m;         /* 0xF0 */
+    MATRIX probe;     /* 0x110: rows are the probe segment ends */
+} FaceScratch;
+
+#define FACE_SCRATCH ((FaceScratch *)0x1F800000)
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
@@ -797,6 +878,15 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     return sides;
 }
 
+/* Scratchpad work area of the actor sprite pass. */
+typedef struct {
+    SVECTOR vertex;
+    VECTOR offset;
+    s32 depth[64];
+} DepthScratch;
+
+#define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
+
 /* Draw the actors' model sprites: place each visible model relative to the
  * camera target, project it for its depth, then add it to the ordering
  * table and turn its facing towards the actor heading, 0x100 per frame. */
@@ -885,6 +975,10 @@ void func_80085F58(void) {
     }
 }
 
+typedef struct {
+    POLY_FT4 quads[0x200];
+} QuadBlock512;
+
 /* Allocate the two buffers of 512 opaque textured 32x48 quads on the
  * 0x380,0x100 page, the second a copy of the first. */
 void func_80085FE0(void) {
@@ -916,6 +1010,17 @@ void func_80086124(void) {
     func_800320E8(D_8009D7E8[1]);
     func_800320E8(D_8009D7E8[0]);
 }
+
+/* Scratchpad work area of the terrain pass. */
+typedef struct {
+    SVECTOR corner[4]; /* block quad */
+    u8 pad20[8];
+    MATRIX view;       /* 0x28 */
+    MATRIX roll;       /* 0x48 */
+    u16 clut[16];      /* 0x68 */
+} TerrainPassScratch;
+
+#define TERRAIN_PASS_SCRATCH ((TerrainPassScratch *)0x1F800000)
 
 /* Draw the 5x5 terrain blocks around the cursor: set up the scratchpad quad,
  * camera and roll matrices and CLUTs, then submit each present block's
@@ -995,6 +1100,10 @@ void func_80086568(void) {
     func_800320E8(D_8009CEB4);
     func_800320E8(D_8009D150);
 }
+
+typedef struct {
+    POLY_FT4 quads[0x120];
+} QuadBlock288;
 
 /* Allocate the two buffers of 0x120 semi-transparent grey textured quads
  * on the 0x3C0,0x100 page, the second a copy of the first. */
@@ -1495,8 +1604,6 @@ void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
-s32 func_800879E0(s32 index);
-
 /* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
  * scene objects. */
 s32 func_800879A8(s32 index) {
@@ -1573,6 +1680,21 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
 
 /* Compiled-out debug trace of the ferry's resumed position. */
 #define FERRY_TRACE_POSITION(actor) do { } while (0)
+
+/* Scratchpad work area of the ferry update. */
+typedef struct {
+    VECTOR work;
+    VECTOR up;           /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR wake;        /* 0xA0 */
+    SVECTOR wake_angle;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX m;            /* 0xF0 */
+    u8 pad110[0x40];
+    MATRIX m2;           /* 0x150 */
+} FerryScratch;
+
+#define FERRY_SCRATCH ((FerryScratch *)0x1F800000)
 
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
@@ -1788,6 +1910,19 @@ s32 func_8008868C(void) {
     return 1;
 }
 
+/* Scratchpad work area of the airship update. */
+typedef struct {
+    VECTOR work;
+    u8 pad10[0x90];
+    SVECTOR rotor;       /* 0xA0 */
+    SVECTOR tail;        /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX rotor_matrix; /* 0xF0 */
+    MATRIX tail_matrix;  /* 0x110 */
+} FlightScratch;
+
+#define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
+
 /* Fly the airship: spin its rotors, stop over the saved landing point when
  * low enough, move, place its shadow object and save the position. */
 s32 func_80088720(s32 index) {
@@ -1992,6 +2127,10 @@ void func_80088FF4(void) {
     func_800320E8(D_8009BDF4);
 }
 
+typedef struct {
+    POLY_FT4 quads[256];
+} EffectQuads;
+
 /* Allocate the two effect quad buffers: semi-transparent textured quads
  * on the 0x340,0x100 page, the second a copy of the first. */
 void func_8008901C(void) {
@@ -2016,6 +2155,9 @@ void func_80089128(void) {
     func_800320E8(D_8009BE1C[0]);
     func_800320E8(D_8009BE1C[1]);
 }
+
+/* Short vectors handled as a word (vx, vy) plus vz. */
+#define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
 
 /* Place the eight emitters of group `group` at `position` facing `angle`
  * (either may be NULL for zero); start them unless one is already live. */
@@ -2220,6 +2362,17 @@ void func_80089580(void) {
     }
 }
 
+/* Scratchpad work area of the emitters. */
+typedef struct {
+    VECTOR normal;  /* 0x00 */
+    VECTOR random;  /* 0x10 */
+    VECTOR offset;  /* 0x20 */
+    u8 pad30[0xC0];
+    MATRIX m;       /* 0xF0 */
+} EmitScratch;
+
+#define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
+
 /* Run the emitters: count down their timers and every interval spawn one
  * particle into a free effect slot, starting at a random point around the
  * emitter and flying towards a random point around its target. */
@@ -2337,6 +2490,22 @@ void func_80089748(void) {
     }
     func_80089580();
 }
+
+/* Scratchpad work area of the particle pass. */
+typedef struct {
+    SVECTOR v[4];       /* 0x00: quad corners */
+    SVECTOR centre;     /* 0x20 */
+    MATRIX view;        /* 0x28 */
+    MATRIX m;           /* 0x48 */
+    MATRIX identity;    /* 0x68 */
+    VECTOR offset;      /* 0x88 */
+    VECTOR scale;       /* 0x98 */
+    s32 padA8;
+    s32 flag;           /* 0xAC */
+    s32 sz;             /* 0xB0 */
+} ParticleScratch;
+
+#define PARTICLE_SCRATCH ((ParticleScratch *)0x1F800000)
 
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
@@ -2551,6 +2720,16 @@ s32 func_8008A5B8(s32 index) {
     D_8009D52C = actor->heading;
     return 1;
 }
+
+/* Scratchpad work area of the party leader. */
+typedef struct {
+    VECTOR target;  /* 0x00 */
+    u8 pad10[0x20];
+    VECTOR start;   /* 0x30 */
+    u8 pad40[0x50];
+    VECTOR probe;   /* 0x90: move probe result */
+    u16 heading;    /* 0xA0 */
+} LeaderScratch;
 
 /* Update the party leader on foot: walk by the pad and record the trail,
  * gather the others into a vehicle or let them out on command, walk out of

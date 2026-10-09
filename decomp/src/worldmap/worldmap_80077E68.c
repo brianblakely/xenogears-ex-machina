@@ -1,34 +1,19 @@
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
 #include "worldmap.h"
-
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_800923A8();
-s32 func_800925A0();
-s32 func_80078948();
-s32 func_80078950();
-s32 func_80078E2C();
-s32 func_80078EA4();
-s32 func_800794D8();
-s32 func_80079538();
-s32 func_800795E4();
-s32 func_80079778();
-s32 func_8007A144();
-s32 func_8007A1B4();
-s32 func_8007A410();
-s32 func_8007A430();
-s32 func_8007A568();
-s32 func_8007A570();
-s32 func_8007A9B4();
-s32 func_8007A9F8();
-s32 func_8007AD34();
-s32 func_8007ADD4();
-s32 func_8007B200();
-s32 func_8007B394();
-s32 func_8007B604();
-s32 func_8007B798();
-s32 func_8007BA08();
-s32 func_8007BA10();
-s32 func_8007BB60();
-s32 func_8007BBEC();
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The scene camera's flight path: control points, the last marked by pad -1. */
 SVECTOR D_8009A3F0[12] = {
@@ -36,6 +21,17 @@ SVECTOR D_8009A3F0[12] = {
     {-400, -625, 400}, {-577, -675, -577}, {0, -904, -946}, {96, -608, 0}, {0, -1157, 1106},
     {-793, -899, -771}, {0, 0, 0, -1},
 };
+
+/* Scratchpad work area of the camera path. */
+typedef struct {
+    VECTOR at;        /* 0x00: path point, then look-at */
+    VECTOR eye;       /* 0x10 */
+    s32 distance;     /* 0x20 */
+    u8 pad24[0x7C];
+    SVECTOR points[3]; /* 0xA0 */
+} PathScratch;
+
+#define PATH_SCRATCH ((PathScratch *)0x1F800000)
 
 /* Scene camera flight along the path: follow the path points, speed up and
  * slow down by state, fade out at the end, and set the engine volume from the
@@ -175,6 +171,17 @@ s32 func_8007828C(s32 index) {
     D_8009BE28.target = actor->position;
     return 1;
 }
+
+/* Scratchpad work area of the scene rigs. */
+typedef struct {
+    VECTOR position;   /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR angle[4];  /* 0xA0 */
+    u8 padC0[0x30];
+    MATRIX matrix[4];  /* 0xF0 */
+} RigScratch;
+
+#define RIG_SCRATCH ((RigScratch *)0x1F800000)
 
 /* Fly the scene rig forward: move the actor and the ground scroll, place scene
  * object 0 and the camera on it, spin the three rotors and share their

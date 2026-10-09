@@ -1,12 +1,39 @@
-#include "worldmap.h"
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 #include "psyq/libsn.h"
+#include "resident/cd.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "worldmap.h"
+#include "camera.h"
+#include "gte.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
-/* Declared here only: other units call it without a prototype. */
-void func_80093354(VECTOR *position);
 /* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
 s32 func_80084D00(s32 probe, s16 *hit);
 
+/* This unit's functions it calls or passes ahead of their definitions. */
+void func_800963E4(DiscReadRequest *list);
+void func_800964B0(HostReadRequest *list);
+void func_800966CC(HostReadRequest *request);
+s32 func_800968E0(void);
+void func_8009699C(DiscReadRequest *request);
+void func_80096A6C(s32 status, u8 *result);
+void func_80096C0C(s32 status, u8 *result);
+void func_80097DC0(void);
+s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
 void func_80099708(u32 *heights, u32 *ot, s32 packets, SVECTOR *origin);
+void func_8009980C(u32 *cells, u32 *ot, s32 packets); /* draw a terrain quarter block (assembly) */
 
 /* World tables of the whole overlay (this unit's .data): area selection,
  * per area scene objects, path regions, the map dots, terrain visibility
@@ -124,6 +151,24 @@ VECTOR D_8009BB9C = {0, 2170, 0};
 
 /* Grid corner cells. */
 s16 D_8009BBAC[4] = {0, 8, 72, 80};
+
+/* Scratchpad work area of the cell-crossing probe: step[0] result,
+ * step[1] target, step[2..4] corner test; cells crossed from and to. */
+typedef struct {
+    VECTOR step[5];
+    u8 pad50[0x50];
+    SVECTOR cell[2]; /* 0xA0 */
+} CellProbe;
+
+#define CELL_PROBE ((CellProbe *)0x1F800000)
+
+/* Scratchpad matrices of the angle and camera helpers. */
+#define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
+#define SCRATCH_MATRIX_B ((MATRIX *)0x1F800110)
+#define SCRATCH_MATRIX_C ((MATRIX *)0x1F800130)
+#define SCRATCH_MATRIX_D ((MATRIX *)0x1F800150)
+#define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
+#define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -392,9 +437,6 @@ typedef struct {
 } WalkScratch;
 
 #define WALK_SCRATCH ((WalkScratch *)0x1F800000)
-
-void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
-s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
 
 /* Move a walking position over the solid scene objects. Off a structure, look
  * for a face under the probe at about the current height and step onto it;
@@ -1238,6 +1280,13 @@ typedef struct {
 
 #define ORBIT_SCRATCH ((OrbitScratch *)0x1F800000)
 
+/* Camera placement: eye, target and up direction. */
+typedef struct {
+    SVECTOR eye;
+    SVECTOR target;
+    VECTOR up;
+} LookAt;
+
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
 void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
@@ -1284,6 +1333,18 @@ void func_80097070(MATRIX *m, SVECTOR *angle) {
         angle->vz = -ratan2(SCRATCH_MATRIX_A->m[1][0], SCRATCH_MATRIX_A->m[1][1]);
     }
 }
+
+/* Scratchpad work area of the look-at camera. */
+typedef struct {
+    VECTOR work;
+    VECTOR right;
+    VECTOR up;
+    VECTOR forward;
+    SVECTOR eye;
+    MATRIX view;
+} LookAtScratch;
+
+#define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
 
 /* Build the camera matrix looking from the eye to the target. */
 void func_80097244(void *arg) {
@@ -1714,6 +1775,21 @@ void func_800981C8(Camera *camera) {
     }
 }
 
+/* Scratchpad work area of the terrain visibility test. */
+typedef struct {
+    VECTOR view[4];  /* 0x00: the tested quad's corners after RT */
+    s32 x0;          /* 0x40: grid corner x */
+    s32 pad44;
+    s32 z0;          /* 0x48: grid corner z */
+    u8 pad4C[0x54];
+    SVECTOR v[9];    /* 0xA0: cell corners and midpoints */
+    u8 padE8[8];
+    MATRIX local;    /* 0xF0 */
+    MATRIX world;    /* 0x110 */
+} GridScratch;
+
+#define GRID_SCRATCH ((GridScratch *)0x1F800000)
+
 /* Classify the 5x5 terrain blocks around the camera: test each block's
  * quad for visibility, and its four quarters when partly visible; blocks
  * near the camera are always visible. The block pointer, row and column
@@ -2065,6 +2141,21 @@ void func_80098CC0(void) {
         func_800965A4();
     }
 }
+
+/* Scratchpad work area of the terrain draw. */
+typedef struct {
+    u8 pad0[0x288];
+    u16 clut[0x40];  /* 0x288 */
+    u16 tpage[8];    /* 0x308 */
+    s32 x0;          /* 0x318 */
+    s32 pad31C;
+    s32 z0;          /* 0x320 */
+    s32 pad324;
+    SVECTOR corner[4]; /* 0x328: quarter origins */
+    u8 pad348[8];
+    MATRIX local;    /* 0x350 */
+    MATRIX world;    /* 0x370 */
+} TerrainDrawScratch;
 
 /* Draw the visible 5x5 terrain blocks around the camera: all four quarters
  * of a block, or only the quarters whose flag differs when the combined

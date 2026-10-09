@@ -1,70 +1,31 @@
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 #include "worldmap.h"
-
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_800923A8();
-s32 func_800925A0();
-s32 func_80077DC8();
-s32 func_80077E68();
-s32 func_8007828C();
-s32 func_800783E8();
-s32 func_80078948();
-s32 func_80078950();
-s32 func_8007756C();
-s32 func_800776E0();
-s32 func_80087710();
-s32 func_80087734();
-s32 func_80071A50();
-s32 func_80071A58();
-s32 func_8008A52C();
-s32 func_8008B498();
-s32 func_8008BD1C();
-s32 func_8008C6EC();
-s32 func_8008D520();
-s32 func_8008DE9C();
-s32 func_8008E4F4();
-s32 func_800907C4();
-s32 func_80092BE4();
-s32 func_80092DF8();
-s32 func_8008868C();
-s32 func_800879E0();
-s32 func_80088C90();
-
-/* Actor handlers of the actor lists below (start, then update). */
-s32 func_8008A2C8(), func_8008A72C(), func_8008B2BC(), func_8008B644();
-s32 func_8008BB40(), func_8008C530(), func_8008C844(), func_8008D3F0();
-s32 func_8008D678(), func_8008DD6C(), func_8008E190(), func_8008E76C();
-s32 func_800906E0(), func_800907F4(), func_80091430(), func_800914D0();
-s32 func_80091B54(), func_80091C18(), func_80092234(), func_800922AC();
-s32 func_80092C70(), func_80092FD8(), func_80087C6C(), func_80087FD0();
-s32 func_80088570(), func_80088720(), func_800879A8(), func_80087A8C();
-s32 func_800877E0(), func_80087804(), func_80088B40(), func_80088D00();
-s32 func_80088EA0(), func_80088F1C(), func_80088F54(), func_80088F5C();
-s32 func_80088D64(), func_80088DE4(), func_80088E1C(), func_80088E68();
-
-/* Mode handlers (enter, start, leave) of the mode table below. */
-void func_80071CDC(void);
-void func_80072238(void);
-void func_8007299C(void);
-void func_80077214(void);
-void func_80077480(void);
-void func_80077A64(void);
-void func_80077CC0(void);
-void func_80078A60(void);
-void func_80078D24(void);
-void func_8007A5DC(void);
-void func_8007A8AC(void);
-void func_8007BF50(void);
-void func_8007C260(void);
-void func_8007D918(void);
-void func_8007DCE0(void);
-void func_8007FF70(void);
-void func_80080218(void);
-void func_80080D00(void);
-void func_8008106C(void);
-void func_80082324(void);
-void func_800826B4(void);
-void func_8008355C(void);
-void func_800837DC(void);
+#include "camera.h"
+#include "effect.h"
+#include "gte.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* Actor script commands (dispatched by func_80076B34). */
 s32 func_80076BC4(void);
@@ -79,6 +40,23 @@ s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b);
 s32 func_80076D1C(WorldmapActor *actor, s32 sound);
 s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c);
 s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b);
+
+/* Called by the open map's start and leave handlers ahead of their
+ * definitions. */
+void func_80073398(void);
+void func_80073448(s32 id);
+void func_80073530(void);
+void func_80073E30(void);
+void func_80074594(void);
+void func_8007474C(void);
+void func_80075460(void);
+void func_8007565C(void);
+
+/* Actor spawn list entry; a zero kind ends a list. */
+typedef struct {
+    s32 kind;
+    s32 update;
+} ActorSpawn;
 
 /* The actors started in every area (the world map's common actors). */
 ActorSpawn D_80099E8C[16] = {
@@ -203,6 +181,9 @@ SVECTOR D_8009A340[4][3] = {
 
 /* Terrain kind substitutes. */
 s16 D_8009A3A0[16] = {3, 3, 3, 3, 3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+
+/* Script opcode handler: returns the halfwords to advance, 0 to yield. */
+typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
 
 /* Actor script commands, by command number. */
 ScriptOp D_8009A3C0[12] = {
@@ -652,7 +633,7 @@ void func_80073530(void) {
     D_8009D77C = base + area->off20;
     D_8009D7C8 = base + area->off24;
     for (i = 0; i < 16; i++) {
-        D_8009D73C[i] = D_8009C180 + area->models[i];
+        D_8009D73C[i] = D_8009C180 + area->encounters[i];
     }
     D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
     D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
@@ -687,6 +668,17 @@ void func_800736DC(void) {
     setPolyG4(&D_8009D194[3][0]);
     setPolyG4(&D_8009D194[3][1]);
 }
+
+/* Scratchpad work area of the sky renderer. */
+typedef struct {
+    SVECTOR angle;
+    MATRIX view;
+    MATRIX rotation;
+    s32 p;
+    s32 flag;
+} SkyScratch;
+
+#define SKY_SCRATCH ((SkyScratch *)0x1F800000)
 
 /* Transform the four sky bands with the camera yaw and link them into the
  * ordering table. */
@@ -759,6 +751,18 @@ void func_800739B8(void) {
     window.h = 0;
     SetTexWindow(&D_8009D3D8[1], &window);
 }
+
+/* Scratchpad work area of the horizon renderer. */
+typedef struct {
+    SVECTOR angle;    /* 0x00 */
+    u8 pad8[0x10];
+    MATRIX view;      /* 0x18 */
+    MATRIX rotation;  /* 0x38 */
+    s32 p;            /* 0x58 */
+    s32 flag;         /* 0x5C */
+} HorizonScratch;
+
+#define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
 
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
@@ -838,6 +842,14 @@ void func_80073E30(void) {
     }
 }
 
+/* Scratchpad work area of the map overlay. */
+typedef struct {
+    u8 pad0[0xB8];
+    SVECTOR angle;    /* 0xB8 */
+    u8 padC0[0x30];
+    MATRIX matrix;    /* 0xF0 */
+} MapScratch;
+
 /* Draw the map overlay: the player marker (four triangles rotated by the camera
  * yaw at the player's map position) and one dot per set bit of the resident
  * map flags; bits 24-26 are the vehicles. */
@@ -910,6 +922,11 @@ void func_800740B8(void) {
     addPrim(D_8009BE3C->ot, &D_8009C5C0[D_8009D7F0]);
 }
 
+/* Sixteen footprint quads, copied between display buffers as a whole. */
+typedef struct {
+    POLY_FT4 quad[16];
+} QuadSet;
+
 /* Allocate the recent-position ring and the two buffers of 16 footprint quads,
  * and initialise them. */
 void func_80074594(void) {
@@ -962,6 +979,28 @@ void func_80074794(s16 id, VECTOR *position) {
     D_8009D30C[D_8009BE38].id = id;
     D_8009BE38 = (D_8009BE38 + 1) & 0xF;
 }
+
+/* Scratchpad work area of the footprint pass. */
+typedef struct {
+    u8 pad0[0x30];
+    VECTOR normal;     /* 0x30: ground normal */
+    VECTOR up;         /* 0x40 */
+    VECTOR side;       /* 0x50 */
+    VECTOR forward;    /* 0x60 */
+    VECTOR position;   /* 0x70 */
+    VECTOR scale;      /* 0x80: also a cross product and the corner depths */
+    u8 pad90[0x10];
+    SVECTOR corner[3]; /* 0xA0 */
+    u8 padB8[0x20];
+    SVECTOR corner3;   /* 0xD8 */
+    u8 padE0[0x10];
+    MATRIX local;      /* 0xF0 */
+    MATRIX screen;     /* 0x110 */
+    MATRIX view;       /* 0x130 */
+    MATRIX heading;    /* 0x150 */
+} FootprintScratch;
+
+#define FOOTPRINT_SCRATCH ((FootprintScratch *)0x1F800000)
 
 /* Draw the recorded footprints: lay a quad on the ground at each ring position
  * (sized by the spot id, turned with the vehicle for id 2) and add it to the
@@ -1464,6 +1503,22 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
     }
     return result;
 }
+
+/* Scratchpad work area of the distant landmark. */
+typedef struct {
+    VECTOR position;  /* 0x00 */
+    u8 pad10[0x10];
+    s32 flag;         /* 0x20 */
+    u8 pad24[4];
+    s32 depth;        /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin;   /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX local;     /* 0xF0 */
+    MATRIX view;      /* 0x110 */
+} LandmarkScratch;
+
+#define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
 
 /* Place the distant landmark model (drawn by the scene overlay) relative to
  * the camera and draw it when it is in front and nearer than depth 0xD00. */

@@ -10,9 +10,9 @@
  * word apart (8009bd10-8009bd1c, 8009bd24/8009bd28, 8009cd4c/8009cd50),
  * where a size-aligned allocation would leave two bytes. Nothing addresses
  * the words marked unreferenced. GCC emits tentative definitions in the
- * order of their first declaration, so they are defined ahead of
- * worldmap.h, which declares them, the world map's own types by their tags;
- * the header then completes and checks the types. */
+ * order of their first declaration, so they are defined ahead of the world
+ * map headers that declare them, the world map's own types by their tags;
+ * the headers then complete the types. */
 #include "common.h"
 #include "psyq/libcd.h"
 #include "psyq/libgpu.h"
@@ -202,3 +202,10 @@ s32 D_8009D808;
 s32 D_8009D80C;
 
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"

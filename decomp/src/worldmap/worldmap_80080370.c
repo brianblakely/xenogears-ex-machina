@@ -1,4 +1,20 @@
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 9 u16 states and 9 u16 waits (started by

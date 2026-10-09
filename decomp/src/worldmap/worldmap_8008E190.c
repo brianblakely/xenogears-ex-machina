@@ -1,4 +1,16 @@
+#include "common.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Scripted flight waypoints (x, z; -1 ends) of func_8008E76C. */
 SVECTOR D_8009B1AC[5] = {
@@ -244,6 +256,17 @@ s32 func_8008E680(s32 index) {
         scratch->spot.vy = (y) >> 12;                                        \
         scratch->spot.vz = actor->position.vz >> 12;                         \
     }
+
+/* Scratchpad work area of the flying vehicle. */
+typedef struct {
+    VECTOR target;     /* 0x00: waypoint */
+    u8 pad10[0x80];
+    VECTOR hit;        /* 0x90: move probe (SCRATCH_HIT) */
+    SVECTOR rotation;  /* 0xA0: model tilt/heading, or an effect spot */
+    SVECTOR spot;      /* 0xA8: effect spot */
+} VehicleScratch;
+
+#define VEHICLE_SCRATCH ((VehicleScratch *)0x1F800000)
 
 /* The flying vehicle (Gear transport): boarding, flight with terrain and
  * landing checks, the scripted take-offs and landings, and the scene exits.

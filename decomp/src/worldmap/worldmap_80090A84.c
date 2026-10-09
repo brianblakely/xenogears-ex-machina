@@ -1,6 +1,14 @@
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
 #include "worldmap.h"
-
-void func_80093354(VECTOR *position);
+#include "camera.h"
+#include "party.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* The orbit camera per pitch step (func_80091C18): its distance, and for
  * each of its two settings (commands 10 and 9) the pitch angles and the
@@ -13,6 +21,14 @@ s16 D_8009B23C[4] = {-176, -480, -696, -936};
 
 /* Cell diagonal normals, per diagonal direction. */
 VECTOR D_8009B244[2] = {{2896, 0, -2896}, {2896, 0, 2896}};
+
+/* Terrain slope plane per type (16 bytes). */
+typedef struct {
+    s32 nx;
+    s32 unk4;
+    s32 nz;
+    s32 unkC;
+} SlopeNormal;
 
 /* Per terrain type: the slope plane, and the split plane's normal and point. */
 SlopeNormal D_8009B264[16] = {
@@ -574,6 +590,8 @@ s32 func_80091B54(s32 index) {
     }
     return 1;
 }
+
+s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 /* Camera actor: on commands choose the pitch tables (9 vehicle, 10 on foot)
  * or zoom out (17); ease the distance and pitch towards the pitch that keeps
@@ -1150,6 +1168,17 @@ u8 *func_80093660(s32 x, s32 z) {
     return (u8 *)D_8009C184[block] + quadrant * 0x144 + cell * 4;
 }
 
+/* Scratchpad work area of the terrain normal and height. */
+typedef struct {
+    VECTOR edge0;
+    VECTOR edge1;
+    VECTOR normal;
+    u8 pad30[0x70];
+    SVECTOR corners[4]; /* 0xA0: wave-displaced cell corners */
+} TerrainScratch;
+
+#define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
+
 /* Unit normal of the terrain triangle under a position (cells split along one diagonal). */
 void func_80093740(VECTOR *normal, s32 x, s32 z) {
     u8 *cell;
@@ -1305,6 +1334,12 @@ s32 func_80093A5C(s32 x, s32 z) {
     func_800935DC(&scratch->edge1, &scratch->normal, &scratch->edge0);
     return scratch->edge1.vy << 12;
 }
+
+/* Terrain block: 16x16 cell attributes at 0x510. */
+typedef struct {
+    u8 pad0[0x510];
+    s16 attributes[256];
+} TerrainBlock;
 
 /* Terrain attribute of the cell under a position. */
 s32 func_80093E8C(VECTOR *position) {

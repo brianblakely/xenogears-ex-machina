@@ -1,4 +1,20 @@
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 8 u16 states and 8 u16 waits (started by
@@ -137,6 +153,13 @@ s32 func_8007C724(s32 index) {
     actor->u.step = 0;
     return 1;
 }
+
+/* Scratchpad work area of the camera shot director. */
+typedef struct {
+    VECTOR point;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR spot;     /* 0xA0 */
+} ShotScratch;
 
 /* Camera shot director: move the camera along a shot path (u.step, speed
  * unk58), keep the saved camera target, and shake the view by unk7C. */

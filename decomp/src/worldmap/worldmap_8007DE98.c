@@ -1,16 +1,19 @@
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/sound.h"
 #include "worldmap.h"
-
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_8008032C();
-s32 func_80080370();
-s32 func_80080578();
-s32 func_80080600();
-s32 func_80080900();
-s32 func_80080944();
-s32 func_80080A28();
-s32 func_80080AC4();
-s32 func_80076A14();
-s32 func_80076A1C();
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* Data of the scene this director runs; its mode handlers func_8007D918 and
  * func_8007DCE0 and sequence start func_8007DE14 precede this unit. Per
@@ -490,6 +493,19 @@ s32 func_8007ECA4(s32 index) {
     return 1;
 }
 
+/* Scratchpad work area of the flight-track actor. */
+typedef struct {
+    VECTOR axis[3];    /* 0x00: forward (or scale), up, side */
+    u8 pad30[0x70];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+    u8 pad130[0x20];
+    MATRIX frame;      /* 0x150 */
+} TrackScratch;
+
 /* Flying vehicle (scene object 1): commands place it on its approach track;
  * it flies along its motion vector, stops at the landing point, trails
  * effect 0x22 and faces its direction. */
@@ -742,6 +758,17 @@ s32 func_8007F8AC(s32 index) {
     actor->wait = 0x3C;
     return 1;
 }
+
+/* Scratchpad work area of the exhaust-flame actors. */
+typedef struct {
+    VECTOR scale;      /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+} FlameScratch;
 
 /* Exhaust flame on scene object `index`: commands 1-5 stop, start or restart
  * it; it follows actor 3, emits effects 0x23/0x24 and shrinks away; done (3)

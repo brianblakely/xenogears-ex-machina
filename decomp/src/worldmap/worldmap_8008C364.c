@@ -1,4 +1,13 @@
+#include "common.h"
+#include "psyq/libgte.h"
+#include "resident/gamedata.h"
+#include "resident/sprite.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "party.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
