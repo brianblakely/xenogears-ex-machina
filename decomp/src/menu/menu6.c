@@ -1,3 +1,10 @@
+/* menu6: text 80088BFC-800891C0, rodata 80070284-800706E8 (strings only),
+ * data 80091964-80091C0C, variables 800927F0-80092800. The menu mode's
+ * entry and frame loop: the mode-task table, the start-up, the debug
+ * meters, and the list of the 49 gears. Its .text opens with the task
+ * table D_80088BFC, a data word between menu5's last return and
+ * func_80088C00 that no other unit keeps in .text (menu.classification.txt),
+ * and the gear list's strings open its rodata. */
 #include "common.h"
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"

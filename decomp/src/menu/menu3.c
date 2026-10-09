@@ -1,3 +1,12 @@
+/* menu3: text 800732CC-8007E528, rodata 8006FBF8-8006FE1C, data
+ * 800910F4-80091230, variables 80092638-800926D4 and 80092A24-80095498.
+ * The two fighters (shots, trails, frame events, hits, input, status,
+ * action and motion), the bout (the referee, rounds, the replay and the
+ * results) with the camera framing it, and the scene's particle effects
+ * (the glow emitter, sparkles, bolts, ground particles, scene cells and
+ * lines). Its jump tables lie at 0 mod 8 (8006FBF8-8006FDE8); it starts
+ * after menu2's handwritten block, and 8007E3CC is the last function
+ * reading its variables (8007E528 reads menu4's). */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"
@@ -964,6 +973,7 @@ s32 func_80075738(Actor *actor, Actor *other) {
     return other->unk15EA - actor->unk15E8;
 }
 
+/* Unreferenced, and empty. */
 void func_80075748(void) {
 }
 
@@ -2562,6 +2572,7 @@ void func_80079A8C(void) {
     D_80099D98.unkC = 0x100;
 }
 
+/* Unreferenced, and empty. */
 void func_80079B04(void) {
 }
 
@@ -2983,6 +2994,7 @@ void func_8007AC3C(void) {
     }
 }
 
+/* func_8007AE10's caption, an original string linked after it (below). */
 extern char D_8006FDD8[];
 
 /* Update the bout-result view: finish its effects once, allow the selected

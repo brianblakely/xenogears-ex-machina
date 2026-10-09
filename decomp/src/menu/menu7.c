@@ -1,3 +1,15 @@
+/* menu7: text 800891C0-80090F38, rodata 800706E8-800707A8, data
+ * 80091C0C-800925D4, variables 80092800-8009284C and 80096D88-80096FA8.
+ * The display and its layers, the 3D scene graph (nodes, models, model
+ * sets, lights, animation players, instances and meshes), the task switch
+ * (handwritten, 8008BB00-8008BCC8), the spark emitters, the glow field,
+ * positional sound and the computer opponent. Its jump tables lie at 0 mod
+ * 8 (800706E8-80070748) after menu6's strings. Its variables place its
+ * start after menu6's last reader of theirs (80088E90) and at or before
+ * 8008A040, the first reader of its own; it is kept where the file and
+ * display code starts (800891C0). Its .bss opens with the task switch's
+ * two words, and its data ends with the embedded sprite model D_80091FB0
+ * and the combo inputs D_800925A4. */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libapi.h"
@@ -669,6 +681,7 @@ OtPair *func_8008A2B8(u16 length) {
     return pair;
 }
 
+/* Unreferenced, and empty. */
 void func_8008A3A0(void) {
 }
 
@@ -1612,6 +1625,7 @@ void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
     func_800316C0(ot + (otz >> 2), line);
 }
 
+/* Reset a tile spark: it keeps no trail. */
 void func_8008CD54(void) {
 }
 
@@ -1644,6 +1658,7 @@ void func_8008CE0C(SparkTile *spark, u32 *ot) {
     func_80031804(ot + (otz >> 2), tile);
 }
 
+/* Reset a dot spark: it keeps no trail. */
 void func_8008CED4(void) {
 }
 

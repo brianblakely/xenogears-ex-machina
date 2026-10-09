@@ -1,3 +1,12 @@
+/* menu4: text 8007E528-80081ECC, rodata 8006FE1C-800701B0, data
+ * 80091230-8009178C, variables 800926D4-80092768 and 80095498-80095580.
+ * The menu's text (the banner, font, cursor and colours), the selection
+ * screen (the entry list, portraits and the two sides' wheels), the
+ * settings, vibration and options pages, the choice menus and captions,
+ * and the screen fades. Its jump tables lie at 4 mod 8 (8006FE1C-
+ * 8007019C); its first function reads its variables and 80081D2C is the
+ * last that does, so its end lies at 80081E00, 80081E6C or 80081ECC (the
+ * two fades between touch only commons); the latest is kept. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
@@ -140,6 +149,7 @@ void func_8007E574(void *ot) {
     }
 }
 
+/* The text quads used this frame. */
 s32 func_8007E624(void) {
     return D_800926DC;
 }
@@ -190,6 +200,7 @@ void func_8007E634(MenuImages *files) {
     D_800954D8[1] = *banner;
 }
 
+/* Move the text cursor. */
 void func_8007E894(s32 x, s32 y) {
     D_800926E8 = x;
     D_800926EC = y;
@@ -232,6 +243,7 @@ Glyph *func_8007E8AC(s32 ch) {
     return &D_80091230[ch];
 }
 
+/* Set the text width scale (0x100 = 1). */
 void func_8007E954(s32 value) {
     D_800912DC = value;
 }
@@ -566,6 +578,7 @@ char *D_8009132C[] = {
 
 s32 D_80091364 = 0;
 
+/* Hide both captions and forget the selected line's caption. */
 void func_8007F834(void) {
     D_80092740 = 0;
     D_8009273C = 0;
@@ -585,6 +598,7 @@ void func_8007F854(void) {
     ACTOR_STANCE_BITS(&D_80097010)->prev_stance = 3;
 }
 
+/* Leave the menus: camera mode 1, no menu shown, the captions hidden. */
 void func_8007F8B4(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
@@ -593,6 +607,9 @@ void func_8007F8B4(void) {
     func_8007F834();
 }
 
+/* Close the system menu and go on: scene mode 3 when option 6 is set or
+ * the first round was played, else mode 6 with the round count stepped
+ * back (the round is played again). */
 void func_8007F8E4(void) {
     func_80080C48(0);
     if (D_80099D98.option6 != 0 || D_80092950 == 1) {
@@ -787,6 +804,10 @@ s32 func_8007FF70(s32 value, s32 max, s32 flags) {
     return value;
 }
 
+/* Menu line handlers: step one setting with left/right (func_8007FF70):
+ * the level, the speed, the frame rate, each port's vibration, each side's
+ * computer control, option 6, rubber band battle and the opponent's
+ * command. */
 void func_80080054(void) {
     D_80099D98.level = func_8007FF70(D_80099D98.level, 2, 0);
 }
@@ -970,11 +991,14 @@ void func_80080780(s32 mode) {
     func_80080964(5);
 }
 
+/* Menu line handler: hide the captions and end the menu screen (D_80092924). */
 void func_800808F4(void) {
     D_80092924 = 1;
     func_8007F834();
 }
 
+/* Menu line handler: end the menu screen, restart the opening and give
+ * both actor slots their first models again. */
 void func_80080920(void) {
     D_80092924 = 1;
     func_800719F0();
@@ -1016,6 +1040,7 @@ void func_800809D8(void) {
     D_800928D8 = func_800891C0(6);
 }
 
+/* Release the loaded portraits unless they were uploaded (once). */
 void func_80080A58(void) {
     if (D_80092940 == 0) {
         func_80028A60(0);
@@ -1095,6 +1120,7 @@ close:
     func_8007F8B4();
 }
 
+/* Drop this frame's text quads. */
 void func_80080D10(void) {
     D_800926DC = 0;
 }

@@ -1,3 +1,13 @@
+/* menu5: text 80081ECC-80088BFC, rodata 800701B0-80070284, data
+ * 8009178C-80091964, variables 80092768-800927F0 and 80095580-80096D88.
+ * The arena (the backdrop, ground heights, stage colours, floor, wall,
+ * shadows and map), the idle and pair cameras, the drawing of the 3D
+ * views, the actors' model setup, the menu task (func_800852C4) and its
+ * exits, the HUD and map overlay, debug lines and path markers, vector
+ * helpers, and the progress flags and option settings kept in the game
+ * data. Its jump tables lie at 0 mod 8 (800701C0, 80070260); its first
+ * function is the first reading its variables, and its data opens with
+ * the stage colours D_8009178C, which only its func_80082A70 reads. */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"
