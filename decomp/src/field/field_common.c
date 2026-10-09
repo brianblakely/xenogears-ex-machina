@@ -7,8 +7,9 @@
  * words (decomp/Makefile, uninitialized variables). Nothing addresses the
  * words marked unreferenced. GCC emits tentative definitions in the order of
  * their first declaration, so they are defined ahead of the field headers
- * that declare them, the field's own types by their tags; the headers then
- * complete and check the types. */
+ * that declare them, the field's own and the resident's structures by their
+ * tags (resident/gpu.h, which declares none of them, gives the untagged
+ * Panorama); the headers then complete and check the types. */
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"

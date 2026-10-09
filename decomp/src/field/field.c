@@ -9,6 +9,7 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/libsn.h"
 #include "psyq/types.h"
 #include "resident/cd.h"
 #include "resident/console.h"
@@ -1570,12 +1571,9 @@ void func_800739C0(void) {
     D_800B00B4 = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
                                       (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
                         (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16);
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_80073230();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     eye.vx = D_800AF880.eye.vx;
     eye.vy = D_800AF880.eye.vy;
     eye.vz = D_800AF880.eye.vz;
@@ -1595,12 +1593,9 @@ void func_800739C0(void) {
         D_800AF880.previous_view = D_800AF85C;
         func_80073750(&D_800AF85C, &eye, &target, &D_800AF880.up);
     }
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_800722F4();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     for (i = 0; i < D_800ADBFC; i++) {
         if ((D_800AF880.components.descriptors[i].flags & 0xF40) && !(D_800AF880.components.descriptors[i].flags & 0x20)) {
             actor = D_800AF880.components.descriptors[i].actor;
@@ -1669,12 +1664,12 @@ void func_80073E38(void) {
     }
 }
 
-/* Switch to the other draw block and clear its overlay ordering table.
- * Breaks (code 1 in the high field; maspsx places `break N` in the low
- * field, so it is written as 1024) when 800c268c is clear. */
+/* Switch to the other draw block and clear its overlay ordering table,
+ * polling the debugger host (pollhost, `break 1024`) when 800c268c is
+ * clear. */
 void func_80073F50(void) {
     if (D_800C268C == 0) {
-        __asm__ volatile("break 1024");
+        pollhost();
     }
     D_800ADB08 = (D_800ADB08 + 1) % 2;
     D_800C426C = &D_800B249C[D_800ADB08];
@@ -2122,10 +2117,7 @@ void func_8007554C(void) {
         func_80281B00("MESSAGE   ");
     }
     func_80074108();
-    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
-                     :
-                     : "r"(0x1F8003FC)
-                     : "$8", "memory");
+    STACK_ENTER(0x1F8003FC);
     func_800748E8();
     func_800752C8();
     func_800A9688();
@@ -2133,7 +2125,7 @@ void func_8007554C(void) {
         func_80281450();
     }
     func_800A4DAC();
-    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    STACK_LEAVE();
     func_800A84C0();
     func_80075484();
     func_8007520C();
@@ -2695,7 +2687,6 @@ void func_800775F8(void) {
     VSync(0);
 }
 
-
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
  * relocate its offset table, load its eight TIMs where 800adc44 places them
  * (x, y, palette x, y, w, h), read the compass colours back from VRAM (0, fb)
@@ -2960,7 +2951,7 @@ void func_80077E88(void) {
     func_8001B3A8();
     D_800ADB30 = (u32)func_80031BDC(4, 1);
     if (D_800C268C == 0) {
-        __asm__ volatile("break 1024");
+        pollhost();
         func_800A94A4(D_800B2078.controlled);
         D_800B02CC[0].unk00 = 1;
         D_800B02CC[0].count = 0x10;

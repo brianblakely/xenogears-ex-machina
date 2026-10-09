@@ -10870,8 +10870,6 @@ void func_800A30B4(void) {
     func_800A3074(0x42, D_80062590[2]);
 }
 
-s32 func_8009744C(void);
-
 /* Record the current map and camera in the game state and variables and
  * save the event variable bank. */
 void func_800A30FC(void) {
