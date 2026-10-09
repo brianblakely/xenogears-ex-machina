@@ -4,6 +4,10 @@ CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/resident/slus_006.69.yaml
 ORIGINAL := .local/extract/disc2/SLUS_006.69
 ORIGINAL_SHA256 := 3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35
+# Its uninitialized data ends at 8006faf0: the entry point (80019524) clears
+# the words after D_800592B8 through D_8006FAEC, the bounds of the mode
+# table's entries 0 and 5.
+BSS_END := 0x8006FAF0
 BUILD := .local/decomp/build/resident2
 IMAGE := .local/decomp/build/SLUS_006.69
 LINKER_SCRIPT := .local/decomp/resident2/slus_006.69.ld

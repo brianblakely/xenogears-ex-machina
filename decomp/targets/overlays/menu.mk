@@ -3,6 +3,9 @@ CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/menu.yaml
 ORIGINAL := .local/extract/overlays/menu.bin
 ORIGINAL_SHA256 := 3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea1575646e
+# Its uninitialized data ends at 8009b558: the resident's mode table entry 4
+# (800180cc) clears the words after 800925d0 through 8009b554 (80019560).
+BSS_END := 0x8009B558
 BUILD := .local/decomp/build/menu
 IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld

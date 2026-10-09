@@ -45,7 +45,12 @@ exact comparison separately.
 Every loaded data byte counts in one class: each .rodata/.data/.sdata input
 section of the GNU ld map, and the .bss/.sbss that lies in a loaded (PROGBITS)
 output section, where an image holds its uninitialized variables as zeros.
-NOLOAD .bss is not in the image and not counted.
+The uninitialized data past the loaded image (NOLOAD .bss, up to ``--bss-end``
+where the target declares the end its loader clears) counts apart, in
+``bss_noload_classes``: a C unit's .bss/.sbss as ``bss``, and as
+``bss_placeholder`` (remaining work) a generated assembly unit's .bss and
+every byte no input section holds, a variable placed only by a linker-script
+name (``remaining_bss_placeholder_bytes``).
 
 * ``c``            emitted by cc1 in a data section of its decomp/src unit
 * ``bss``          the same in .bss/.sbss (uninitialized, zero in the file)
@@ -73,7 +78,19 @@ Each such line must name an included object.
 
 ``--list CLASS`` prints the class's ranges instead of the report: its
 functions, its .text bytes outside every function and its data ranges, each
-data range with its section and object (an included one with its label).
+data range with its section and object (an included one with its label);
+``bss_placeholder`` ranges are split at each symbol, so each placeholder
+variable shows with its extent.
+
+``--script-symbols warn|strict`` checks the link instead (decomp/Makefile runs
+it in ``verify``): a symbol a linker script given with ``--script`` assigns
+(splat's undefined_syms_auto.txt as PROVIDE, where the link used it, a
+``.data.ld`` or any other fragment) must not lie inside the target's own
+loaded image or uninitialized data, where an address copied from the original
+stands in for an object the link should place. A script named with
+``--views`` may define names there only as views, expressions of symbols
+the link places (``D_800C3EB4 = D_800C3EB0 + 0x4``), and must define one.
+``warn`` reports and passes; ``strict`` fails.
 
 A C unit's bytes are attributed by where GAS put them, not by source
 spellings. ``make coverage`` compiles each C unit again with a label line at
@@ -513,6 +530,123 @@ def map_sections(path: Path) -> list[tuple[str, int, int, str]]:
     return result
 
 
+def extent(sections: list[Section], bss_end: int | None) -> tuple[int, int, int]:
+    """The target's own address range: the start and end of its loaded image
+    and the end of its uninitialized data (the no-load sections the link
+    places and the declared bss_end). Fails where a no-load section lies
+    inside the image or past bss_end."""
+    loaded = [(s.address, s.address + s.size) for s in sections
+              if s.type == SHT_PROGBITS and s.flags & SHF_ALLOC and s.size]
+    noload = [(s.address, s.address + s.size, s.name) for s in sections
+              if s.type == SHT_NOBITS and s.flags & SHF_ALLOC and s.size]
+    if not loaded:
+        raise SystemExit("no loaded section")
+    lo, hi = min(start for start, _ in loaded), max(end for _, end in loaded)
+    end = max([hi] + [stop for _, stop, _ in noload])
+    for start, stop, name in noload:
+        if start < hi:
+            raise SystemExit(f"no-load section {name} ({start:08x}-{stop:08x}) inside the image")
+    if bss_end is not None:
+        if bss_end < end:
+            raise SystemExit(f"the link places the target up to {end:08x}, past its declared"
+                             f" end {bss_end:08x} (BSS_END)")
+        end = bss_end
+    return lo, hi, end
+
+
+# A linker script's symbol assignments, `NAME = EXPR;` and `PROVIDE(NAME = EXPR);`.
+SCRIPT_ASSIGNMENT = re.compile(
+    r"^[ \t]*(PROVIDE(?:_HIDDEN)?[ \t]*\([ \t]*)?([A-Za-z_.$][\w.$]*)[ \t]*=(?!=)[ \t]*"
+    r"([^;]*?)[ \t]*;", re.M)
+SCRIPT_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+# A PROVIDE the link used (its value) or not (`[!provide]`), in the map.
+MAP_PROVIDE = re.compile(
+    r"^\s+(0x[0-9a-fA-F]+|\[!provide\])\s+PROVIDE(?:_HIDDEN)? \(([A-Za-z_.$][\w.$]*) = ", re.M)
+EXPRESSION_TOKEN = re.compile(r"0[xX][0-9a-fA-F]+|\d+|[A-Za-z_.$][\w.$]*")
+LD_FUNCTIONS = {
+    "ABSOLUTE", "ADDR", "ALIGN", "ALIGNOF", "BLOCK", "CONSTANT", "DEFINED", "LENGTH",
+    "LOADADDR", "LOG2CEIL", "MAX", "MIN", "NEXT", "ORIGIN", "SEGMENT_START", "SIZEOF",
+    "SIZEOF_HEADERS",
+}
+
+
+def script_assignments(path: Path) -> list[tuple[str, str, bool]]:
+    """(name, expression, provide) of each symbol assignment of a linker
+    script, in order."""
+    text = SCRIPT_COMMENT.sub(" ", path.read_text())
+    result = []
+    for match in SCRIPT_ASSIGNMENT.finditer(text):
+        provide, expression = bool(match.group(1)), match.group(3)
+        if provide and expression.endswith(")"):
+            expression = expression[:-1].rstrip()  # the PROVIDE's own parenthesis
+        result.append((match.group(2), expression, provide))
+    return result
+
+
+def check_script_symbols(elf: Path, map_path: Path, scripts: list[Path], views: list[Path],
+                         bss_end: int | None, strict: bool) -> int:
+    """Report each symbol the scripts define inside the target's own image or
+    uninitialized data; a views script may define views there. Returns the
+    exit status: 1 for a strict failure."""
+    sections, symbols = read_elf(elf)
+    lo, hi, end = extent(sections, bss_end)
+    value = {s.name: s.value for s in symbols if s.name and s.section and s.kind != STT_SECTION}
+    known = {str(path) for path in scripts}
+    for path in views:
+        if str(path) not in known:
+            raise SystemExit(f"{path}: a views script that is not among the link's scripts")
+    used = {match.group(2) for match in MAP_PROVIDE.finditer(map_path.read_text())
+            if match.group(1) != "[!provide]"}
+    # Each name the scripts define in the link: the last plain assignment
+    # wins (also over an object's definition); a PROVIDE only where used.
+    defined: dict[str, tuple[Path, str]] = {}
+    provided: dict[str, tuple[Path, str]] = {}
+    for path in scripts:
+        for name, expression, provide in script_assignments(path):
+            if not provide:
+                defined[name] = (path, expression)
+            elif name in used:
+                provided.setdefault(name, (path, expression))
+    defined = {**{n: p for n, p in provided.items() if n not in defined}, **defined}
+    view_scripts = {str(path) for path in views}
+
+    def view(name: str, seen: frozenset[str] = frozenset()) -> bool:
+        """Whether the name is a view: a views script's expression of symbols
+        the link places, objects' or other views."""
+        path, expression = defined[name]
+        names = [token for token in EXPRESSION_TOKEN.findall(expression)
+                 if not token[0].isdigit() and not token.startswith(".")
+                 and token not in LD_FUNCTIONS]
+        inner = seen | {name}
+        return str(path) in view_scripts and bool(names) and all(
+            other in value and (other not in defined
+                                or (other not in inner and view(other, inner)))
+            for other in names)
+
+    found: dict[tuple[str, str], list[tuple[int, str]]] = {}
+    allowed: set[str] = set()
+    for name, (path, _expression) in defined.items():
+        address = value.get(name)
+        if address is None or not lo <= address < end:
+            continue
+        if view(name):
+            allowed.add(str(path))
+            continue
+        region = "image" if address < hi else "uninitialized data"
+        found.setdefault((str(path), region), []).append((address, name))
+    level = "error" if strict else "warning"
+    for (path, region), names in sorted(found.items()):
+        names.sort()
+        shown = ", ".join(name for _, name in names[:4]) + (", ..." if len(names) > 4 else "")
+        span = f"{lo:08x}-{hi:08x}" if region == "image" else f"{hi:08x}-{end:08x}"
+        print(f"{level}: {elf}: {len(names)} name(s) that {path} assigns lie inside the"
+              f" target's own {region} ({span}): {shown}", file=sys.stderr)
+    for path in sorted(view_scripts - allowed):
+        print(f"{level}: {elf}: views script {path} defines no view inside the target's own"
+              " image or uninitialized data", file=sys.stderr)
+    return 1 if strict and (found or view_scripts - allowed) else 0
+
+
 def strip_comments(text: str) -> str:
     """C text without its comments (each becomes a space or its line breaks)."""
 
@@ -755,9 +889,19 @@ def main() -> None:
     parser.add_argument("--classification", type=Path)
     parser.add_argument("--list", choices=[
         "c", "nonmatching", "sdk", "handwritten", "asm", "included", "asset", "text_data",
-        "bss", "placeholder",
+        "bss", "placeholder", "bss_placeholder",
     ], help="list the class's functions, its .text bytes outside every function and its"
             " data ranges (each with its section and object)")
+    parser.add_argument("--bss-end", type=lambda text: int(text, 0), help=(
+        "the end of the target's uninitialized data past its image (the bound its loader"
+        " clears), where the link does not place all of it"))
+    parser.add_argument("--script-symbols", choices=["warn", "strict"], help=(
+        "check the link instead: symbols the --script files assign inside the target's own"
+        " image or uninitialized data"))
+    parser.add_argument("--script", type=Path, action="append", default=[],
+                        help="a linker script of the link (repeatable)")
+    parser.add_argument("--views", type=Path, action="append", default=[], help=(
+        "a --script whose names inside the target are views of linked symbols (repeatable)"))
     parser.add_argument("--mark-asm", action="store_true", help=(
         "coverage build: label each asm statement of preprocessed C (stdin to stdout)"))
     parser.add_argument("--mark-gas", action="store_true", help=(
@@ -770,6 +914,9 @@ def main() -> None:
         return
     if args.elf is None or args.map is None:
         parser.error("the ELF and --map are required")
+    if args.script_symbols:
+        sys.exit(check_script_symbols(args.elf, args.map, args.script, args.views,
+                                      args.bss_end, args.script_symbols == "strict"))
 
     nonmatching = nonmatching_names(args.src)
     ranges = classification(args.classification)
@@ -790,6 +937,7 @@ def main() -> None:
         return lo >= hi
 
     elf_sections, elf_symbols = read_elf(args.elf)
+    _image_start, image_end, bss_end = extent(elf_sections, args.bss_end)
     inputs = map_sections(args.map)
     units: dict[str, Unit] = {}
     # The defined symbols by address (an absolute one too: a linker script
@@ -989,17 +1137,47 @@ def main() -> None:
             else:
                 listing.append((lo, hi - lo, label))
 
+    # The uninitialized data past the image, apart: each input section by its
+    # object, then every byte no input section holds (bss_placeholder: a
+    # variable only a linker-script name places), each listed range split at
+    # its symbols.
+    noload: dict[str, int] = {}
+    held: list[tuple[int, int]] = []
+
+    def tally_noload(cls: str, lo: int, hi: int, section: str | None, obj: str | None) -> None:
+        handwritten(cls, lo, hi, f"{section} of {obj}" if obj else "uninitialized data")
+        noload[cls] = noload.get(cls, 0) + hi - lo
+        if cls != args.list:
+            return
+        label = f"({section} {Path(obj).name})" if obj else "(no object)"
+        if cls != "bss_placeholder":
+            if listing and listing[-1][0] + listing[-1][1] == lo and listing[-1][2] == label:
+                listing[-1] = (listing[-1][0], hi - listing[-1][0], label)
+            else:
+                listing.append((lo, hi - lo, label))
+            return
+        cuts = sorted({lo} | {value for value, _ in labels(lo, hi)}) + [hi]
+        names = dict(reversed(labels(lo, hi)))  # the first name at each address
+        for start, stop in pairwise(cuts):
+            listing.append((start, stop - start,
+                            f"{names[start]} {label}" if start in names else label))
+
     for name, address, size, obj in inputs:
         if name == ".text":
             continue
         if not DATA_SECTION.match(name):
             raise SystemExit(f"{obj}: input section {name} is not counted")
-        if BSS_SECTION.match(name) and not any(lo <= address and address + size <= hi
-                                               for lo, hi in loaded):
-            continue
+        unloaded = bool(BSS_SECTION.match(name)) and not any(
+            lo <= address and address + size <= hi for lo, hi in loaded)
+        if unloaded:
+            if not image_end <= address <= address + size <= bss_end:
+                raise SystemExit(f"{obj}: no-load {name} ({address:08x}-{address + size:08x})"
+                                 " outside the target's uninitialized data")
+            held.append((address, address + size))
         kind, unit = unit_of(obj)
         if unit is None:
-            own = "handwritten" if kind == "handwritten" else "placeholder"
+            own = ("handwritten" if kind == "handwritten" else
+                   "bss_placeholder" if unloaded else "placeholder")
             pieces = split(address, address + size, own)
         else:
             rows = unit.spans.get(name)
@@ -1013,7 +1191,20 @@ def main() -> None:
                     included.append((address + start, address + end, obj))
                 pieces += split(address + start, address + end, own)
         for start, end, cls in pieces:
-            tally(cls, start, end, name, obj)
+            (tally_noload if unloaded else tally)(cls, start, end, name, obj)
+    # The bytes no input section holds: outside every no-load output section
+    # (the link places nothing there) or named by a symbol, a variable that
+    # only a linker-script name places; alignment fill between input
+    # sections, as in the image, is not counted.
+    sections_noload = [(s.address, s.address + s.size) for s in elf_sections
+                       if s.type == SHT_NOBITS and s.flags & SHF_ALLOC and s.size]
+    cuts = sorted({image_end, bss_end} | {x for span in held + sections_noload for x in span})
+    for start, end in pairwise(cuts):
+        if start < image_end or end > bss_end or any(a <= start < b for a, b in held):
+            continue
+        if any(a <= start and end <= b for a, b in sections_noload) and not labels(start, end):
+            continue
+        tally_noload("bss_placeholder", start, end, None, None)
 
     # Every included object a classified range does not cover needs a reason:
     # a stray byte in its string's padding or a reviewed classification line.
@@ -1067,6 +1258,10 @@ def main() -> None:
         # Data that unrecovered or nonmatching assembly carries: the compiler
         # emits it once the function is C.
         "remaining_data_asm_bytes": data.get("asm", 0) + data.get("nonmatching", 0),
+        # The uninitialized data past the image, which the file does not hold.
+        "bss_noload_bytes": sum(noload.values()),
+        "bss_noload_classes": dict(sorted(noload.items())),
+        "remaining_bss_placeholder_bytes": noload.get("bss_placeholder", 0),
     }
     print(json.dumps(report, sort_keys=True))
 

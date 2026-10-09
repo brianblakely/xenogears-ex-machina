@@ -199,14 +199,32 @@ $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(R
 	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(pad_to) $(IMAGE).elf $(IMAGE)
 	$(if $(PACKER_TAIL),cd $(ROOT) && head -c $(PACKER_TAIL) /dev/zero >> $(IMAGE))
 
+# A symbol that a linker script (LINKER_EXTRA: splat's generated lists, a
+# .data.ld or .resident.ld fragment) defines inside the target's own loaded
+# image or uninitialized data is an address copied from the original where the
+# link should place an object, so the comparison cannot see that object move.
+# verify reports each one. BSS_END declares where the target's uninitialized
+# data ends past its image (the bound its loader clears) while the link does
+# not place all of it. LINK_VIEWS names the scripts whose names there are
+# views, expressions of symbols the link places, each with its reason in the
+# target. SCRIPT_SYMBOLS=warn, the default while the remaining uninitialized
+# data is converted to C, reports and passes; SCRIPT_SYMBOLS=strict (on the
+# make command line or in the environment) fails, and becomes the default here
+# once verify reports none.
+SCRIPT_SYMBOLS ?= warn
+$(if $(filter warn strict,$(SCRIPT_SYMBOLS)),,$(error SCRIPT_SYMBOLS must be warn or strict))
+
 verify: $(ROOT)/$(IMAGE)
-	cd $(ROOT) && $(PYTHON) tools/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map \
+		--script-symbols $(SCRIPT_SYMBOLS) $(addprefix --script ,$(LINKER_SCRIPTS)) \
+		$(addprefix --views ,$(LINK_VIEWS)) $(if $(BSS_END),--bss-end $(BSS_END))
 
 # The coverage builds of the C units among the objects.
 COVERAGE_OBJECTS = $(foreach object,$(OBJECTS),$(if $(wildcard $(patsubst $(ROOT)/$(BUILD)/%.o,$(ROOT)/%.c,$(object))),$(object:.o=.cov.o)))
 
 coverage: $(ROOT)/$(IMAGE) $(COVERAGE_OBJECTS)
-	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION)) $(if $(BSS_END),--bss-end $(BSS_END))
 
 audit: coverage
 	cd $(ROOT) && $(PYTHON) tools/nonmatching_score.py $(abspath $(CONFIG)) --exact

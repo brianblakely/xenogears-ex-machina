@@ -53,9 +53,13 @@ segments:
     vram: 0x80010000
     bss_size: 0x16830
     subsegments:
-      # Disc-specific copies of the sector-24 file index and sector-40
-      # directory table (EVID-REF-007); user-supplied disc data, not code.
-      - [0x800, rodatabin, disc2_index]
+      # Disc data ahead of the code (EVID-REF-007), user-supplied, not code:
+      # the boot mode word (-1, booting from CD), the 0x8000-byte buffer of
+      # the sector-24 file index and the sector-40 directory table, which
+      # the boot code passes to the disc initialiser 80028230 one by one.
+      - [0x800, rodatabin, disc2_mode]
+      - [0x804, rodatabin, disc2_files]
+      - [0x8804, rodatabin, disc2_directories]
       - [0x8880, .rodata, main]
       - [0x8B3C, .rodata, main_8001B6C4]
       # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and

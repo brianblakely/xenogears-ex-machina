@@ -3,6 +3,10 @@ CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/field.yaml
 ORIGINAL := .local/extract/overlays/field.bin
 ORIGINAL_SHA256 := 38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc
+# Its uninitialized data ends at 800c4270: the resident's mode table entry 1
+# (8001809c) clears the words after 800af5e4 through 800c426c (80019560).
+# field.bss.ld asserts that the linked .bss is this span.
+BSS_END := 0x800C4270
 BUILD := .local/decomp/build/field
 IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
