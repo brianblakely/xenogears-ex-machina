@@ -402,9 +402,17 @@ decomp/src/slot39/slot39.c
 decomp/src/slot39/slot39_801DBE54.c
 decomp/src/slot39/slot39_801E8070.c
 decomp/src/slot39/slot39_common.c
+decomp/src/worldmap/camera.h
+decomp/src/worldmap/effect.h
 decomp/src/worldmap/func_8009980C.s
 decomp/src/worldmap/func_80099BFC.s
+decomp/src/worldmap/gte.h
+decomp/src/worldmap/party.h
+decomp/src/worldmap/scene.h
+decomp/src/worldmap/screen.h
 decomp/src/worldmap/screen_bounds.s
+decomp/src/worldmap/stream.h
+decomp/src/worldmap/terrain.h
 decomp/src/worldmap/worldmap.c
 decomp/src/worldmap/worldmap.h
 decomp/src/worldmap/worldmap_80072238.c
@@ -508,6 +516,7 @@ decomp/targets/overlays/slot39.yaml
 decomp/targets/overlays/worldmap.classification.txt
 decomp/targets/overlays/worldmap.data.ld
 decomp/targets/overlays/worldmap.mk
+decomp/targets/overlays/worldmap.resident.ld
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
 decomp/targets/resident/classification.txt

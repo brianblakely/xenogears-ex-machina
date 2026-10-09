@@ -1,10 +1,9 @@
 // The copied music buffer is also consumed as the resident sequence header.
 D_80062648 = 0x80062648; // allow_duplicated:True
 D_80062648_sequence = 0x80062648; // allow_duplicated:True
-// Saved gear flags are also addressed individually by the frame loop.
-D_8006EE70 = 0x8006EE70;
-D_8006EE72 = 0x8006EE72;
-D_8006EE74 = 0x8006EE74;
+// The resident's VSync callback (resident/pad.h), which the overlay entry
+// installs again.
+func_8003634C = 0x8003634C; // type:func
 // Sizes of C data objects whose interior the code addresses at unaligned
 // offsets: splat would otherwise name each such address and list it in
 // undefined_syms_auto.txt.

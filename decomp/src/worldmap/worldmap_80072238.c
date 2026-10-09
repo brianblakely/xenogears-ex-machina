@@ -1,72 +1,48 @@
+/* World map unit 80072238-80077E68 (rodata 8006FAF4-8006FB40, data
+ * 80099E8C-8009A3F0): the open map's start and leave handlers with its actor
+ * lists and the mode table, the display set-up and screen fade, the player's
+ * placement, the area data's sections, the sky, the horizon, the map overlay,
+ * the footprints, the texture animations, the encounters, the state saved
+ * across another scene, the pause screens, the actor script interpreter,
+ * the scripted camera helpers and the set-up of scene modes 8, 9 and 11.
+ *
+ * GCC aligns jump tables to 8 within a unit's rodata (docs/matching.md).
+ * func_80072238's table sits at 8006faf4, 4 mod 8, right after the overlay
+ * number, where one unit holding both would have aligned it to 8006faf8;
+ * so this unit's rodata starts there and its text no later than
+ * func_80072238. */
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/types.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "gte.h"
+#include "party.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
-/* Actor handlers this unit installs by address (see func_80097718). */
-s32 func_800923A8();
-s32 func_800925A0();
-s32 func_80077DC8();
-s32 func_80077E68();
-s32 func_8007828C();
-s32 func_800783E8();
-s32 func_80078948();
-s32 func_80078950();
-s32 func_8007756C();
-s32 func_800776E0();
-s32 func_80087710();
-s32 func_80087734();
-s32 func_80071A50();
-s32 func_80071A58();
-s32 func_8008A52C();
-s32 func_8008B498();
-s32 func_8008BD1C();
-s32 func_8008C6EC();
-s32 func_8008D520();
-s32 func_8008DE9C();
-s32 func_8008E4F4();
-s32 func_800907C4();
-s32 func_80092BE4();
-s32 func_80092DF8();
-s32 func_8008868C();
-s32 func_800879E0();
-s32 func_80088C90();
-
-/* Actor handlers of the actor lists below (start, then update). */
-s32 func_8008A2C8(), func_8008A72C(), func_8008B2BC(), func_8008B644();
-s32 func_8008BB40(), func_8008C530(), func_8008C844(), func_8008D3F0();
-s32 func_8008D678(), func_8008DD6C(), func_8008E190(), func_8008E76C();
-s32 func_800906E0(), func_800907F4(), func_80091430(), func_800914D0();
-s32 func_80091B54(), func_80091C18(), func_80092234(), func_800922AC();
-s32 func_80092C70(), func_80092FD8(), func_80087C6C(), func_80087FD0();
-s32 func_80088570(), func_80088720(), func_800879A8(), func_80087A8C();
-s32 func_800877E0(), func_80087804(), func_80088B40(), func_80088D00();
-s32 func_80088EA0(), func_80088F1C(), func_80088F54(), func_80088F5C();
-s32 func_80088D64(), func_80088DE4(), func_80088E1C(), func_80088E68();
-
-/* Mode handlers (enter, start, leave) of the mode table below. */
-void func_80071CDC(void);
-void func_80072238(void);
-void func_8007299C(void);
-void func_80077214(void);
-void func_80077480(void);
-void func_80077A64(void);
-void func_80077CC0(void);
-void func_80078A60(void);
-void func_80078D24(void);
-void func_8007A5DC(void);
-void func_8007A8AC(void);
-void func_8007BF50(void);
-void func_8007C260(void);
-void func_8007D918(void);
-void func_8007DCE0(void);
-void func_8007FF70(void);
-void func_80080218(void);
-void func_80080D00(void);
-void func_8008106C(void);
-void func_80082324(void);
-void func_800826B4(void);
-void func_8008355C(void);
-void func_800837DC(void);
-
-/* Actor script commands (dispatched by func_80076B34). */
+/* Actor script commands (dispatched by func_80076B34), declared for their
+ * table D_8009A3C0 in this unit's data, ahead of their code. */
 s32 func_80076BC4(void);
 s32 func_80076BDC(WorldmapActor *actor, s16 frames);
 s32 func_80076C18(WorldmapActor *actor, s32 a, s32 b);
@@ -79,6 +55,23 @@ s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b);
 s32 func_80076D1C(WorldmapActor *actor, s32 sound);
 s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c);
 s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b);
+
+/* Called by the open map's start and leave handlers ahead of their
+ * definitions. */
+void func_80073398(void);
+void func_80073448(s32 id);
+void func_80073530(void);
+void func_80073E30(void);
+void func_80074594(void);
+void func_8007474C(void);
+void func_80075460(void);
+void func_8007565C(void);
+
+/* Actor spawn list entry; a zero kind ends a list. */
+typedef struct {
+    s32 kind;
+    s32 update;
+} ActorSpawn;
 
 /* The actors started in every area (the world map's common actors). */
 ActorSpawn D_80099E8C[16] = {
@@ -204,6 +197,9 @@ SVECTOR D_8009A340[4][3] = {
 /* Terrain kind substitutes. */
 s16 D_8009A3A0[16] = {3, 3, 3, 3, 3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
 
+/* Script opcode handler: returns the halfwords to advance, 0 to yield. */
+typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
+
 /* Actor script commands, by command number. */
 ScriptOp D_8009A3C0[12] = {
     (ScriptOp)func_80076BC4, (ScriptOp)func_80076BDC, (ScriptOp)func_80076C18, func_80076C3C,
@@ -217,7 +213,7 @@ ScriptOp D_8009A3C0[12] = {
 void func_80072238(void) {
     RECT rect;
     ActorSpawn *spawn;
-    void *seq;
+    SoundSeq *seq;
     void *data;
     s32 file;
     s32 i;
@@ -252,12 +248,12 @@ void func_80072238(void) {
         func_8001B66C();
     } else {
         func_80039CC4();
-        func_800399D4(D_80062528);
-        seq = D_8004F2FC;
-        D_8004F2FC = NULL;
-        D_80062528 = seq;
+        func_800399D4((SoundSeq *)D_80062528);
+        seq = (SoundSeq *)D_8004F2FC;
+        D_8004F2FC = 0;
+        D_80062528 = (s32)seq;
     }
-    if ((u16)D_8006EE54.unk6A != 0) {
+    if ((u16)D_8006D634.worldmap.unk6A != 0) {
         func_80073398();
     } else if (D_8009C894 == 0) {
         func_80073448(D_8009D3D4);
@@ -310,8 +306,8 @@ void func_80072238(void) {
         }
         memcpy(D_80062648, data, func_800288EC(file));
         seq = func_80039850(&D_80062648_sequence);
-        D_80062528 = seq;
-        func_80039A80(D_80062528, 0x7F, 0);
+        D_80062528 = (s32)seq;
+        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
     } else {
         func_800320E8(D_8009C88C);
         func_80038428(D_8006259C);
@@ -323,7 +319,7 @@ void func_80072238(void) {
             data = D_8009C884;
         }
         memcpy(D_80062648, data, func_800288EC(file));
-        func_80039B68(D_80062528, 0x7F, 0xF0);
+        func_80039B68((SoundSeq *)D_80062528, 0x7F, 0xF0);
     }
     switch (D_8009C894) {
     case 0:
@@ -396,20 +392,20 @@ void func_8007299C(void) {
     s32 i;
 
     if (D_8009D7CC == 0) {
-        func_8003A89C(D_80062528, 0, 0xF0);
+        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
     }
     func_80039FF8();
     func_8003852C(D_8006259C);
     func_800320E8(D_8006259C);
     for (i = 0; i < 0x40; i++) {
-        if (D_8009BE24[i].handle != 0) {
+        if (D_8009BE24[i].handle != NULL) {
             func_800230A8(D_8009BE24[i].handle);
-            D_8009BE24[i].handle = 0;
+            D_8009BE24[i].handle = NULL;
         }
     }
     if (D_8009D7CC == 1) {
         func_80075460();
-        D_8006F954[0] |= 0x8000;
+        D_8006D634.entry[2] |= 0x8000;
     }
     func_80092DD0();
     func_800931B0();
@@ -487,16 +483,16 @@ void func_80072BB0(void) {
  * textured quads under a translucent black quad whose level starts at `level`
  * and changes by `step`, blended with mode `abr`. */
 void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
-    PolyFT4 *quads;
-    PolyG4v *shades;
+    POLY_FT4 *quads;
+    POLY_G4 *shades;
     DR_TPAGE *mode;
     DisplayBuffer *buffer;
-    PolyG4v *shade;
+    POLY_G4 *shade;
     s32 side;
     s32 i;
 
-    quads = func_80031BDC(3 * sizeof(PolyFT4), 1);
-    shades = func_80031BDC(2 * sizeof(PolyG4v), 1);
+    quads = func_80031BDC(3 * sizeof(POLY_FT4), 1);
+    shades = func_80031BDC(2 * sizeof(POLY_G4), 1);
     mode = func_80031BDC(sizeof(DR_TPAGE), 1);
     for (i = 0; i < 3; i++) {
         setPolyFT4(&quads[i]);
@@ -536,7 +532,7 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
         addPrim(buffer->ot + 1, &quads[1]);
         addPrim(buffer->ot + 1, &quads[2]);
         side ^= 1;
-        shade = (PolyG4v *)(side * sizeof(PolyG4v) + (u32)shades);
+        shade = (POLY_G4 *)(side * sizeof(POLY_G4) + (u32)shades);
         setRGB0(shade, i, i, i);
         setRGB1(shade, i, i, i);
         setRGB2(shade, i, i, i);
@@ -561,8 +557,8 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
 /* Choose the movement mode from the saved state: a vehicle kind, or on foot
  * (1 when no party flag is set, else 2). */
 void func_80073300(void) {
-    if (D_8006EE54.flags & 0x4000) {
-        switch (D_8006EE54.flags & 0x1FFF) {
+    if (D_8006D634.worldmap.flags & 0x4000) {
+        switch (D_8006D634.worldmap.flags & 0x1FFF) {
         case 0:
             break;
         case 1:
@@ -578,7 +574,7 @@ void func_80073300(void) {
             D_8009BE10 = 7;
             break;
         }
-    } else if ((D_8006F8E5 | D_8006F8E6 | D_8006F8E7) == 0) {
+    } else if ((D_8006D634.inGear[0] | D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
         D_8009BE10 = 1;
     } else {
         D_8009BE10 = 2;
@@ -587,19 +583,19 @@ void func_80073300(void) {
 
 /* Restore the player position and heading for the current movement mode. */
 void func_80073398(void) {
-    D_8006EE54.unk6A = 0;
+    D_8006D634.worldmap.unk6A = 0;
     switch (D_8009BE10) {
     case 1:
     case 2:
-        D_8009C5AC.vx = D_8006EE54.x << 12;
-        D_8009C5AC.vz = D_8006EE54.z << 12;
-        D_8009C584 = D_8006EE54.heading;
+        D_8009C5AC.vx = D_8006D634.worldmap.x << 12;
+        D_8009C5AC.vz = D_8006D634.worldmap.z << 12;
+        D_8009C584 = D_8006D634.worldmap.heading;
         break;
     case 4:
     case 5:
     case 7:
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006EE54.vehicle_heading;
+        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
         break;
     }
 }
@@ -610,10 +606,10 @@ void func_80073448(s32 id) {
     s32 unused; /* unreferenced; the original frame reserves it */
     WorldmapSpot *spot;
 
-    if (D_8006EE54.flags & 0x2000) {
-        D_8006EE54.flags &= ~0x2000;
+    if (D_8006D634.worldmap.flags & 0x2000) {
+        D_8006D634.worldmap.flags &= ~0x2000;
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006EE54.vehicle_heading;
+        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
         return;
     }
     for (spot = D_8009D3F4; spot->id != -1; spot++) {
@@ -643,16 +639,16 @@ void func_80073530(void) {
     base = D_8009C180;
     area = (AreaHeader *)base;
     block = base + area->spots;
-    D_8009CD48 = base + area->off8;
-    D_8009D308 = base + area->offC;
-    D_8009BD30 = base + area->off10;
-    D_8009C7EC = (TerrainTexture *)(base + area->off14);
-    D_8009BCC0 = (AreaObject *)(base + area->off18);
-    D_8009D784 = base + area->off1C;
-    D_8009D77C = base + area->off20;
-    D_8009D7C8 = base + area->off24;
+    D_8009CD48 = base + area->models;
+    D_8009D308 = base + area->meshes;
+    D_8009BD30 = base + area->placements;
+    D_8009C7EC = (BillboardList *)(base + area->billboards);
+    D_8009BCC0 = (AreaObject *)(base + area->emitters);
+    D_8009D784 = base + area->names;
+    D_8009D77C = (s32 *)(base + area->animations);
+    D_8009D7C8 = (s32 *)(base + area->animations2);
     for (i = 0; i < 16; i++) {
-        D_8009D73C[i] = D_8009C180 + area->models[i];
+        D_8009D73C[i] = D_8009C180 + area->encounters[i];
     }
     D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
     D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
@@ -688,6 +684,17 @@ void func_800736DC(void) {
     setPolyG4(&D_8009D194[3][1]);
 }
 
+/* Scratchpad work area of the sky renderer. */
+typedef struct {
+    SVECTOR angle;
+    MATRIX view;
+    MATRIX rotation;
+    long p;
+    long flag;
+} SkyScratch;
+
+#define SKY_SCRATCH ((SkyScratch *)0x1F800000)
+
 /* Transform the four sky bands with the camera yaw and link them into the
  * ordering table. */
 void func_800737EC(void) {
@@ -722,7 +729,7 @@ void func_800737EC(void) {
 /* Initialise the four textured horizon quads and the two texture windows. */
 void func_800739B8(void) {
     RECT window;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     u16 tpage;
     u16 clut;
     s32 i;
@@ -760,6 +767,18 @@ void func_800739B8(void) {
     SetTexWindow(&D_8009D3D8[1], &window);
 }
 
+/* Scratchpad work area of the horizon renderer. */
+typedef struct {
+    SVECTOR angle;    /* 0x00 */
+    u8 pad8[0x10];
+    MATRIX view;      /* 0x18 */
+    MATRIX rotation;  /* 0x38 */
+    long p;           /* 0x58 */
+    long flag;        /* 0x5C */
+} HorizonScratch;
+
+#define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
+
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. Each texture coordinate pair is stored as one (v << 8 | u)
@@ -767,12 +786,12 @@ void func_800739B8(void) {
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 u;
     s32 right;
     s32 i;
     s32 otz;
-    u32 *ot;
+    u_long *ot;
 
     u = (D_8009BD38.vy >> 2) & 0x7F;
     right = u | 0x80;
@@ -794,8 +813,9 @@ void func_80073B04(void) {
     corners = D_8009A300[0];
     for (i = 0; i < 2; i++, corners += 4) {
         quad = &D_8009C744[i][D_8009D7F0];
-        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (long *)&quad->x0,
+                            (long *)&quad->x1, (long *)&quad->x2, (long *)&quad->x3, &scratch->p,
+                            &scratch->flag);
     }
     if (scratch->flag >= 0) {
         ot = &D_8009BE3C->ot[otz >> D_80050100];
@@ -809,8 +829,8 @@ void func_80073B04(void) {
 /* Initialise the overlay picture quad (both buffers), its texture page, eight
  * red Gouraud triangles and 64 small tiles. */
 void func_80073E30(void) {
-    PolyG3 *triangle;
-    Tile *tile;
+    POLY_G3 *triangle;
+    TILE *tile;
     s32 i;
 
     setPolyFT4(&D_8009C5C0[0]);
@@ -838,6 +858,14 @@ void func_80073E30(void) {
     }
 }
 
+/* Scratchpad work area of the map overlay. */
+typedef struct {
+    u8 pad0[0xB8];
+    SVECTOR angle;    /* 0xB8 */
+    u8 padC0[0x30];
+    MATRIX matrix;    /* 0xF0 */
+} MapScratch;
+
 /* Draw the map overlay: the player marker (four triangles rotated by the camera
  * yaw at the player's map position) and one dot per set bit of the resident
  * map flags; bits 24-26 are the vehicles. */
@@ -846,8 +874,8 @@ void func_800740B8(void) {
     MATRIX *matrix;
     VECTOR *target;
     SVECTOR *corners;
-    PolyG3 *marker;
-    Tile *dot;
+    POLY_G3 *marker;
+    TILE *dot;
     u32 bits;
     u16 *position_x;
     u16 *position_z;
@@ -879,7 +907,7 @@ void func_800740B8(void) {
     } while (i < 4);
     dot = &D_8009C898[D_8009D7F0 * 32];
     addPrim(D_8009BE3C->ot, &D_8009C5A0);
-    bits = STATE_U32(0x30C);
+    bits = MAP_FLAGS;
     /* Interleaved X/Z halfwords: index each coordinate with a stride of two. */
     position_x = D_8009B6F4;
     position_z = position_x + 1;
@@ -887,16 +915,16 @@ void func_800740B8(void) {
         if (bits & 1) {
             switch (i) {
             case 24:
-                dot->x0 = STATE_U16(0xC) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x10) / 341 + 0x77;
+                dot->x0 = D_8006D634.worldmap.unk60 / 315 + 0xCF;
+                dot->y0 = D_8006D634.worldmap.unk64 / 341 + 0x77;
                 break;
             case 25:
-                dot->x0 = STATE_U16(0x2E) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x32) / 341 + 0x77;
+                dot->x0 = (u16)D_8006D634.flight.x / 315 + 0xCF;
+                dot->y0 = (u16)D_8006D634.flight.z / 341 + 0x77;
                 break;
             case 26:
-                dot->x0 = STATE_U16(0x24) / 315 + 0xCF;
-                dot->y0 = STATE_U16(0x26) / 341 + 0x77;
+                dot->x0 = D_8006D634.unk1844[0] / 315 + 0xCF;
+                dot->y0 = D_8006D634.unk1844[1] / 341 + 0x77;
                 break;
             default:
                 dot->x0 = position_x[i * 2] + 0xD0;
@@ -910,11 +938,16 @@ void func_800740B8(void) {
     addPrim(D_8009BE3C->ot, &D_8009C5C0[D_8009D7F0]);
 }
 
+/* Sixteen footprint quads, copied between display buffers as a whole. */
+typedef struct {
+    POLY_FT4 quad[16];
+} QuadSet;
+
 /* Allocate the recent-position ring and the two buffers of 16 footprint quads,
  * and initialise them. */
 void func_80074594(void) {
     WorldmapSpot *spot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
 
     D_8009D30C = func_80031BDC(0x80, 0);
@@ -948,7 +981,7 @@ void func_80074594(void) {
     D_8009BE38 = 0;
 }
 
-/* Free the position ring and two work buffers. */
+/* Free the footprint ring and its two quad buffers. */
 void func_8007474C(void) {
     func_800320E8(D_8009BE18);
     func_800320E8(D_8009BE14);
@@ -963,13 +996,35 @@ void func_80074794(s16 id, VECTOR *position) {
     D_8009BE38 = (D_8009BE38 + 1) & 0xF;
 }
 
+/* Scratchpad work area of the footprint pass. */
+typedef struct {
+    u8 pad0[0x30];
+    VECTOR normal;     /* 0x30: ground normal */
+    VECTOR up;         /* 0x40 */
+    VECTOR side;       /* 0x50 */
+    VECTOR forward;    /* 0x60 */
+    VECTOR position;   /* 0x70 */
+    VECTOR scale;      /* 0x80: also a cross product and the corner depths */
+    u8 pad90[0x10];
+    SVECTOR corner[3]; /* 0xA0 */
+    u8 padB8[0x20];
+    SVECTOR corner3;   /* 0xD8 */
+    u8 padE0[0x10];
+    MATRIX local;      /* 0xF0 */
+    MATRIX screen;     /* 0x110 */
+    MATRIX view;       /* 0x130 */
+    MATRIX heading;    /* 0x150 */
+} FootprintScratch;
+
+#define FOOTPRINT_SCRATCH ((FootprintScratch *)0x1F800000)
+
 /* Draw the recorded footprints: lay a quad on the ground at each ring position
  * (sized by the spot id, turned with the vehicle for id 2) and add it to the
  * ordering table; then empty the ring. */
 void func_800747DC(void) {
     FootprintScratch *scratch;
     WorldmapSpot *spot;
-    PolyFT4 *quad;
+    POLY_FT4 *quad;
     s32 i;
     s32 z;
     s32 flag;
@@ -1023,7 +1078,7 @@ void func_800747DC(void) {
                 break;
             case 2:
                 scratch->heading = D_8009A180;
-                func_8004AFEC(D_8006EE66, &scratch->heading);
+                func_8004AFEC(D_8006D634.worldmap.vehicle_heading, &scratch->heading);
                 func_80049ACC(&scratch->local, &scratch->heading);
                 scratch->scale.vx = 0x1800;
                 scratch->scale.vy = 0x1000;
@@ -1104,7 +1159,8 @@ void func_80074F2C(void) {
                 anim->frame = 0;
                 anim->timer = anim->slot->frames[0].duration;
             }
-            LoadImage(&anim->slot->rect, anim->images + anim->slot->frames[anim->frame].image * 16);
+            LoadImage(&anim->slot->rect,
+                      (u_long *)(anim->images + anim->slot->frames[anim->frame].image * 16));
         }
     }
 }
@@ -1149,7 +1205,8 @@ void func_80075104(void) {
             }
             rect = &anim->slot->rect;
             size = rect->h * rect->w * 2;
-            LoadImage(rect, anim->images + anim->slot->frames[anim->frame].image * size);
+            LoadImage(rect,
+                      (u_long *)(anim->images + anim->slot->frames[anim->frame].image * size));
         }
     }
 }
@@ -1162,7 +1219,7 @@ void func_80075228(void) {
         D_8009C854[i] = 0;
     }
     D_8009D64C = 1;
-    if (D_8006EE54.flags & 0x4000) {
+    if (D_8006D634.worldmap.flags & 0x4000) {
         D_8009BE40 = 0x300;
     } else {
         D_8009BE40 = 0x180;
@@ -1226,9 +1283,9 @@ void func_80075460(void) {
     save->unk22D0 = D_8009BE0C;
     save->unk22E4[0] = ((s32 *)&D_8009C838)[0];
     save->unk22E4[1] = ((s32 *)&D_8009C838)[1];
-    save->unk22D4.vx = ((VECTOR *)D_8009BBB4)->vx;
-    save->unk22D4.vy = ((VECTOR *)D_8009BBB4)->vy;
-    save->unk22D4.vz = ((VECTOR *)D_8009BBB4)->vz;
+    save->unk22D4.vx = D_8009BBB4.vx;
+    save->unk22D4.vy = D_8009BBB4.vy;
+    save->unk22D4.vz = D_8009BBB4.vz;
     save->camera_target.vx = D_8009BE28.target.vx;
     save->camera_target.vy = D_8009BE28.target.vy;
     save->camera_target.vz = D_8009BE28.target.vz;
@@ -1252,7 +1309,7 @@ void func_8007565C(void) {
     D_8009BD38 = *(SVECTOR *)save->camera_angle;
     D_8009D3F0 = save->camera_distance;
     D_8009BE0C = save->unk22D0;
-    *(VECTOR *)D_8009BBB4 = save->unk22D4;
+    D_8009BBB4 = save->unk22D4;
     D_8009C838 = *(SVECTOR *)save->unk22E4;
     D_8009BE28.target = save->camera_target;
 }
@@ -1264,10 +1321,10 @@ void func_800758C0(void) {
     void *block;
     s32 i;
 
-    D_8006EE54.unk6A = 1;
-    D_8006F94E.heading = (D_8009BD38.vy + 0x2000) & 0x3FFF;
+    D_8006D634.worldmap.unk6A = 1;
+    D_8006D634.entry[0] = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
-        (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+        (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
     }
     D_8009D14C = D_80059179;
     if (func_80093F18(&D_8009D55C.target) == 4) {
@@ -1366,27 +1423,28 @@ void func_80075B58(void) {
     VSync(0);
     func_80035DB0();
     D_8009D804 = 0;
-    D_8006EE54.unk6A = 0;
+    D_8006D634.worldmap.unk6A = 0;
     D_80059179 = D_8009D14C;
     func_80075D4C();
 }
 
-/* Apply party slots that joined or left since the last update, then pick the
- * movement mode from the members present. */
+/* Apply the party slots' in-gear changes since the last update: a member who
+ * left the gear (actor slots 4-6) stands where it is (slots 1-3), and one who
+ * boarded marks its gear's spot parked and brings the gear to the member.
+ * Then pick the movement mode from the members present. */
 void func_80075D4C(void) {
     WorldmapActor *actors;
-    u8 *applied;  /* state last applied per slot (2-byte records) */
-    s16 *timers;  /* per-slot timer (6-byte records) */
+    u8 *applied;  /* state last applied per slot: the low bytes of the saved
+                   * in-gear flags (worldmap.unk70-unk74) */
     s32 i;
     s32 count;
     u8 state;
 
     i = 0;
     actors = D_8009BE24;
-    applied = (u8 *)&D_8006EE54.unk70;
-    timers = (s16 *)(applied + 0x11E);
+    applied = (u8 *)&D_8006D634.worldmap.unk70;
     do {
-        state = (&D_8006F8E5)[i];
+        state = D_8006D634.inGear[i];
         if (state != applied[i * 2]) {
             if (state == 0) {
                 actors[i + 1].position.vx = actors[i + 4].position.vx;
@@ -1394,7 +1452,7 @@ void func_80075D4C(void) {
                 actors[i + 1].position.vz = actors[i + 4].position.vz;
                 actors[i + 1].unk58 = actors[i + 4].unk58;
             } else {
-                timers[i * 3] = 0x400;
+                VEHICLE_SPOTS[i].flags = 0x400;
                 actors[i + 4].unk24 = 0;
                 actors[i + 4].position.vx = actors[i + 1].position.vx;
                 actors[i + 4].position.vy = actors[i + 1].position.vy;
@@ -1406,11 +1464,11 @@ void func_80075D4C(void) {
     } while (i < 3);
     count = 0;
     for (i = 0; i < 3; i++) {
-        if (D_8006F368[i] != 0xFF && (&D_8006F8E5)[i] == 1) {
+        if (D_8006D634.party[i] != 0xFF && D_8006D634.inGear[i] == 1) {
             count++;
         }
     }
-    if (!(D_8006EE54.flags & 0x4000)) {
+    if (!(D_8006D634.worldmap.flags & 0x4000)) {
         D_8009BE10 = count != 0 ? 2 : 1;
     }
 }
@@ -1465,6 +1523,22 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
     return result;
 }
 
+/* Scratchpad work area of the distant landmark. */
+typedef struct {
+    VECTOR position;  /* 0x00 */
+    u8 pad10[0x10];
+    s32 flag;         /* 0x20 */
+    u8 pad24[4];
+    s32 depth;        /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin;   /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX local;     /* 0xF0 */
+    MATRIX view;      /* 0x110 */
+} LandmarkScratch;
+
+#define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
+
 /* Place the distant landmark model (drawn by the scene overlay) relative to
  * the camera and draw it when it is in front and nearer than depth 0xD00. */
 void func_80076098(void) {
@@ -1504,7 +1578,8 @@ void func_80076098(void) {
     }
 }
 
-/* Reset the GPU and sound state before leaving. */
+/* Wait for drawing and the vertical blank, then flush the instruction
+ * cache inside a critical section. */
 void func_800762FC(void) {
     DrawSync(0);
     VSync(0);
@@ -1621,10 +1696,10 @@ void func_80076594(void) {
  * contents of disc file `file`). */
 void func_800767D4(void *data, s32 file) {
     func_80039CC4();
-    func_800399D4(D_80062528);
+    func_800399D4((SoundSeq *)D_80062528);
     memcpy(D_80062648, data, func_800288EC(file));
-    D_80062528 = func_80039850(D_80062648);
-    func_80039A80(D_80062528, 0x7F, 0);
+    D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
+    func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
 }
 
 /* Quadratic Bezier point at t (0..0x1000) through three control points. */
@@ -1651,13 +1726,13 @@ void func_80076954(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off8;
-    D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->offC;
-    D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off10;
-    D_8009C7EC = (TerrainTexture *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off14);
-    D_8009BCC0 = (AreaObject *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off18);
-    D_8009D77C = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off20);
-    D_8009D7C8 = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off24);
+    D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->models;
+    D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->meshes;
+    D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->placements;
+    D_8009C7EC = (BillboardList *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->billboards);
+    D_8009BCC0 = (AreaObject *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->emitters);
+    D_8009D77C = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->animations);
+    D_8009D7C8 = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->animations2);
 }
 
 /* Mode step that has nothing to do; always reports done. */
@@ -1668,22 +1743,22 @@ s32 func_80076A14(void) {
 /* One world-map frame of a scripted scene (no player input). */
 s32 func_80076A1C(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_80089748();
     func_80089C78();
     func_8008615C();
     func_800848F4();
-    func_800980D4(D_8009BBB4);
+    func_800980D4(&D_8009BBB4);
     if (D_8009D558 != 0) {
         func_800981C8(&D_8009BE28);
         func_80096130();
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, (s32)D_8009BE3C->packets, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();
@@ -1787,7 +1862,7 @@ s32 func_80076CD4(WorldmapActor *actor, s32 a) {
  * sequence D_80062528 to level a over b frames, at once when b is 0
  * (func_8003A89C). */
 s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b) {
-    func_8003A89C(D_80062528, a, b);
+    func_8003A89C((SoundSeq *)D_80062528, a, b);
     return 4;
 }
 
@@ -1989,10 +2064,10 @@ void func_80077480(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x11;
-    D_8006F954[0] = 7;
+    D_8006D634.map = 0x11;
+    D_8006D634.entry[2] = 7;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking along the player's heading from above. */
@@ -2012,7 +2087,7 @@ s32 func_8007756C(s32 index) {
     D_8009BE28.target.vx = D_8009C5AC.vx;
     D_8009BE28.target.vy = D_8009C5AC.vy;
     D_8009BE28.target.vz = D_8009C5AC.vz;
-    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     *SCRIPT_VECTOR = VIEW_VECTORS[0];
     VIEW_VECTORS[0] = VIEW_VECTORS[1];
     VIEW_VECTORS[1] = *SCRIPT_VECTOR;
@@ -2056,7 +2131,7 @@ s32 func_800776E0(s32 index) {
     }
     D_8009BD38.vx = actor->motion.vx >> 12;
     D_8009BD38.vy = actor->motion.vy >> 12;
-    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     scratch->view = VIEW_VECTORS[0];
     VIEW_VECTORS[0] = VIEW_VECTORS[1];
     VIEW_VECTORS[1] = scratch->view;
@@ -2073,20 +2148,20 @@ s32 func_80077954(void) {
 /* One world-map frame of a scripted scene without actor updates. */
 s32 func_8007795C(void) {
     if (D_8009D144 == 0) {
-        func_80097440(D_8009BD40);
+        func_80097440(&D_8009BD40);
     } else {
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
     }
     func_8008615C();
     func_800848F4();
-    func_800980D4(D_8009BBB4);
+    func_800980D4(&D_8009BBB4);
     if (D_8009D558 != 0) {
         func_800981C8(&D_8009BE28);
         func_80096130();
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, (s32)D_8009BE3C->packets, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();
@@ -2168,10 +2243,10 @@ void func_80077CC0(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x10E;
-    D_8006F954[0] = 0;
+    D_8006D634.map = 0x10E;
+    D_8006D634.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera: reset the actor and camera, play a sound. */

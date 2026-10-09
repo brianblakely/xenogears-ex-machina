@@ -1,4 +1,30 @@
+/* World map unit 8007C3B8-8007DE98 (rodata 8006FC50-8006FD8C, data
+ * 8009A4D8-8009A5A0): the director of scene mode 12 and its actors (the
+ * camera shots and the drifting scene objects), the set-up and leave
+ * handlers of mode 15 and the sequence start of its director.
+ *
+ * func_8007BBEC's nine-entry table ends at 8006fc50 and func_8007C3B8's
+ * follows at once, 0 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8007BBEC, at or before
+ * func_8007C3B8. Its data opens with the cue sequence that func_8007C36C,
+ * left in the preceding unit by the split, starts. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
 #include "worldmap.h"
+#include "camera.h"
+#include "effect.h"
+#include "scene.h"
+#include "screen.h"
+#include "stream.h"
+#include "terrain.h"
 
 /* The director's cue sequence, user-supplied script data (an asset in
  * worldmap.classification.txt): 8 u16 states and 8 u16 waits (started by
@@ -138,6 +164,13 @@ s32 func_8007C724(s32 index) {
     return 1;
 }
 
+/* Scratchpad work area of the camera shot director. */
+typedef struct {
+    VECTOR point;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR spot;     /* 0xA0 */
+} ShotScratch;
+
 /* Camera shot director: move the camera along a shot path (u.step, speed
  * unk58), keep the saved camera target, and shake the view by unk7C. */
 s32 func_8007C7D8(s32 index) {
@@ -177,7 +210,7 @@ s32 func_8007C7D8(s32 index) {
         break;
     }
     if (D_8009D144 == 0) {
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
     }
     switch (actor->state) {
     case 2:
@@ -212,7 +245,7 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vy = scratch->point.vy >> 16;
             VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     case 3:
@@ -266,13 +299,13 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vy = scratch->point.vy >> 16;
             VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
-        func_80097244(D_8009BD40);
+        func_80097244(&D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
     }
     shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
     scratch->spot.vy = shake;
-    ((s16 *)D_8009BD40)[1] += shake; /* VIEW.eye.vy */
+    VIEW.eye.vy += shake;
     VIEW.at.vy += scratch->spot.vy;
     return 1;
 }
@@ -636,7 +669,7 @@ s32 func_8007D7FC(s32 index) {
 /* Set up the vehicle scene: load its area, place the player at the entry, start music and its scripted actors. */
 void func_8007D918(void) {
     RECT rect;
-    void *sequence;
+    SoundSeq *sequence;
     void *data;
     u16 debug;
 
@@ -691,8 +724,8 @@ void func_8007D918(void) {
     func_80038428(D_8006259C);
     data = D_8009C884;
     memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850(D_80062648);
-    D_80062528 = sequence;
+    sequence = func_80039850((SoundSeqHeader *)D_80062648);
+    D_80062528 = (s32)sequence;
     func_80039A80(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_8007DE14, (s32)func_8007DE98);
@@ -713,7 +746,7 @@ void func_8007D918(void) {
 
 /* Leave the world map: release its sound, subsystems and buffers, and request scene 0x1A1 with the exit's flag word. */
 void func_8007DCE0(void) {
-    func_8003A89C(D_80062528, 0, 0xF0);
+    func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
     func_80039FF8();
     func_8003852C(D_8006259C);
     func_800320E8(D_8006259C);
@@ -731,9 +764,9 @@ void func_8007DCE0(void) {
     func_800320E8(D_8009BBC8[1].packets);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E.scene = 0x1A1;
-    D_8006F954[0] = D_8009A5CC[D_8009D3D4];
-    D_8006F94E.heading = D_8009BD38.vy;
+    D_8006D634.map = 0x1A1;
+    D_8006D634.entry[2] = D_8009A5CC[D_8009D3D4];
+    D_8006D634.entry[0] = D_8009BD38.vy;
     D_8009BBC4 = 1;
 }
 

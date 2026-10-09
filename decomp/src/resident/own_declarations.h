@@ -7,7 +7,9 @@
  * (8002cb54: the world map passes four), a by-value structure split
  * differently (80022224, 80023124). The shared headers in
  * decomp/include/resident leave these out, and each target declares them
- * for its own calls. */
+ * for its own calls. They also leave out the overlay area D_8006FAF0: each
+ * mode overlay's first unit defines that address as its number (a const
+ * s32). */
 
 #include "common.h"
 #include "psyq/libgte.h"
@@ -32,6 +34,9 @@ Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x,
 /* heap.h */
 void func_8003218C(u8 tag);
 void func_800324B8(s16 kind);
+
+/* mode.h */
+extern u8 D_8006FAF0[]; /* the overlay area */
 
 /* model.h */
 void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second);

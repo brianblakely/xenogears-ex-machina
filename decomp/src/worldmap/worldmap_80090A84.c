@@ -1,6 +1,25 @@
+/* World map unit 80090A84-80094A5C (rodata 80070B54-80070C50, data
+ * 8009B214-8009B564): the pad steering of each movement mode, the camera
+ * actors, the screen fade, the path and destination name windows, the
+ * palette fades and the terrain queries (cells, heights, normals, slopes,
+ * wrapping, path regions, cell boundary steps).
+ *
+ * func_8008E76C's 65-entry table ends at 80070b54 and func_80090A84's
+ * follows at once, 4 mod 8, a phase change without a pad word: this unit's
+ * rodata starts there and its text after func_8008E76C, at or before
+ * func_80090A84. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
+ * text and relocations as the build's cc1 (docs/matching.md). */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
 #include "worldmap.h"
-
-void func_80093354(VECTOR *position);
+#include "camera.h"
+#include "party.h"
+#include "screen.h"
+#include "terrain.h"
 
 /* The orbit camera per pitch step (func_80091C18): its distance, and for
  * each of its two settings (commands 10 and 9) the pitch angles and the
@@ -14,8 +33,9 @@ s16 D_8009B23C[4] = {-176, -480, -696, -936};
 /* Cell diagonal normals, per diagonal direction. */
 VECTOR D_8009B244[2] = {{2896, 0, -2896}, {2896, 0, 2896}};
 
-/* Per terrain type: the slope plane, and the split plane's normal and point. */
-SlopeNormal D_8009B264[16] = {
+/* Per terrain type: the slope's normal, and the split plane's normal and
+ * point. */
+VECTOR D_8009B264[16] = {
     {-1832, 0, 3664}, {1832, 0, 3664}, {1832, 0, 3664}, {-1832, 0, 3664},
     {-3664, 0, 1832}, {3664, 0, 1832}, {3664, 0, 1832}, {-3664, 0, 1832},
     {-2896, 0, 2896}, {2896, 0, 2896}, {0, 0, 4096}, {4096, 0, 0},
@@ -575,6 +595,8 @@ s32 func_80091B54(s32 index) {
     return 1;
 }
 
+s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
+
 /* Camera actor: on commands choose the pitch tables (9 vehicle, 10 on foot)
  * or zoom out (17); ease the distance and pitch towards the pitch that keeps
  * the terrain in view, then place the camera. */
@@ -630,7 +652,7 @@ s32 func_80091C18(s32 index) {
             actor->unk58 = pitches[actor->u.step];
             actor->unk60 = D_8009BD38.vx << 12;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 1:
         if (actor->wait >= 5) {
@@ -674,7 +696,7 @@ s32 func_80091C18(s32 index) {
         if ((actor->unk54 == D_8009D3F0) & (actor->unk58 == D_8009BD38.vx)) {
             actor->state = 0;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     case 2:
         VIEW.at.vx = 0;
@@ -685,7 +707,7 @@ s32 func_80091C18(s32 index) {
         if (actor->unk58 != D_8009BD38.vx) {
             D_8009BD38.vx += 2;
         }
-        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
         break;
     }
     actor->wait++;
@@ -716,7 +738,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     scratch->angle.vz = D_8009BD38.vz;
     for (i = 0; i < 3; i++, pitches++, distance++, heights++) {
         scratch->angle.vx = *pitches;
-        func_80096F18(D_8009BD40, &D_8009BE28, *distance - ((D_8009BCDC / 2) << 12), &scratch->angle);
+        func_80096F18(&D_8009BD40, &D_8009BE28, *distance - ((D_8009BCDC / 2) << 12), &scratch->angle);
         left = D_8009BE28.target.vx + ((VIEW.eye.vx - 0x180) << 12);
         offsetZ = (VIEW.eye.vz + 0x180) << 12;
         value = D_8009BE28.target.vz - offsetZ;
@@ -744,7 +766,7 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     }
     if (i < current) {
         floor -= 0x50;
-        gap = ((s16 *)D_8009B234)[current] + base - floor;
+        gap = D_8009B234[current] + base - floor;
         if (gap < 0) {
             gap = -gap;
         }
@@ -755,7 +777,9 @@ s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     return i;
 }
 
-/* Choose the actor's speed for the movement mode; vehicles also get state 1. */
+/* Start the view centre's height: the screen y of the view's centre
+ * (D_8009BE0C) is 0x8C in movement modes 1-5 and 0x78 when flying (6-7),
+ * where the actor also takes state 1. */
 s32 func_80092234(s32 index) {
     WorldmapActor *actor;
 
@@ -778,7 +802,8 @@ s32 func_80092234(s32 index) {
     return 1;
 }
 
-/* Ease the movement speed to 0x78 (command 9) or 0x8C (command 10); ends the step when settled. */
+/* Ease the screen y of the view's centre down to 0x78 (command 9) or up to
+ * 0x8C (command 10); 3 once it rests. */
 s32 func_800922AC(s32 index) {
     WorldmapActor *actor;
     s32 result;
@@ -919,7 +944,7 @@ end:
     return result;
 }
 
-/* Open the text window. */
+/* Open the path name window. */
 s32 func_80092BE4(void) {
     D_8009BD24 = -1;
     func_80032F54(&D_8009D498, 0x3C0, 0x180, 0xA0, 0x78, 0x20, 1);
@@ -958,7 +983,7 @@ s32 func_80092C70(s32 index) {
     return 1;
 }
 
-/* Release a resident object. */
+/* Close the path name window. */
 void func_80092DD0(void) {
     func_800346D4(&D_8009D498);
 }
@@ -1021,7 +1046,7 @@ s32 func_80092FD8(s32 index) {
     return 1;
 }
 
-/* Release a resident object. */
+/* Close the destination name window. */
 void func_800931B0(void) {
     func_800346D4(&D_8009BD64);
 }
@@ -1149,6 +1174,17 @@ u8 *func_80093660(s32 x, s32 z) {
     cell = ((z >> 4) / 8) * 9 + (x >> 4) / 8;
     return (u8 *)D_8009C184[block] + quadrant * 0x144 + cell * 4;
 }
+
+/* Scratchpad work area of the terrain normal and height. */
+typedef struct {
+    VECTOR edge0;
+    VECTOR edge1;
+    VECTOR normal;
+    u8 pad30[0x70];
+    SVECTOR corners[4]; /* 0xA0: wave-displaced cell corners */
+} TerrainScratch;
+
+#define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
 
 /* Unit normal of the terrain triangle under a position (cells split along one diagonal). */
 void func_80093740(VECTOR *normal, s32 x, s32 z) {
@@ -1306,6 +1342,12 @@ s32 func_80093A5C(s32 x, s32 z) {
     return scratch->edge1.vy << 12;
 }
 
+/* Terrain block: 16x16 cell attributes at 0x510. */
+typedef struct {
+    u8 pad0[0x510];
+    s16 attributes[256];
+} TerrainBlock;
+
 /* Terrain attribute of the cell under a position. */
 s32 func_80093E8C(VECTOR *position) {
     s32 x, z;
@@ -1352,7 +1394,8 @@ s32 func_80094028(VECTOR *position) {
     return (func_80093660(position->vx, position->vz)[3] >> 2) & 0xF;
 }
 
-/* Look up the table entry for (row, column). */
+/* Whether movement mode `row` may enter terrain layer `column` (nonzero:
+ * D_8009BAC8, 8 columns per row). */
 s16 func_80094060(s16 row, s16 column) {
     return *(s16 *)((u8 *)D_8009BAC8 + row * 16 + column * 2);
 }
@@ -1363,18 +1406,18 @@ s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
     s32 dot;
 
     type = (s16)func_80093FE4(position);
-    dot = direction->vx * D_8009B264[type].nx + direction->vz * D_8009B264[type].nz;
+    dot = direction->vx * D_8009B264[type].vx + direction->vz * D_8009B264[type].vz;
     if (dot == 0) {
         out->vx = direction->vx;
         out->vz = direction->vz;
         return 0;
     }
     if (dot < 0) {
-        out->vx = -D_8009B264[type].nx;
-        out->vz = -D_8009B264[type].nz;
+        out->vx = -D_8009B264[type].vx;
+        out->vz = -D_8009B264[type].vz;
     } else {
-        out->vx = D_8009B264[type].nx;
-        out->vz = D_8009B264[type].nz;
+        out->vx = D_8009B264[type].vx;
+        out->vz = D_8009B264[type].vz;
     }
     return 1;
 }
@@ -1454,6 +1497,7 @@ s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
     return 0;
 }
 
+/* An empty function, called by nothing. */
 void func_80094434(void) {
 }
 
