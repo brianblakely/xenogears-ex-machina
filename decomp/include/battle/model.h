@@ -20,8 +20,8 @@ typedef struct ModelTable {
 /* An effect entry (0x14 bytes) of an effect pool. */
 typedef struct {
     u8 used;
-    u8 field1;
-    u8 kind;
+    u8 field1;     /* +1: smooth / looping (battle/effect.h's Tween view) */
+    u8 kind;       /* +2: 3 rotation, 7 + n movement, 0-2 tracks */
     u8 tag;        /* +3: 0xFF persistent */
     u16 params[6]; /* +4 */
     u16 time;      /* +0x10 */
