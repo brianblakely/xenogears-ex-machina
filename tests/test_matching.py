@@ -776,6 +776,20 @@ class MatchingTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no slot rule", result.stderr)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in ("make", "psx-cpp-2.7.2", "psx-cc1-2.7.2", "maspsx", "psx-as")),
+        "enter the matching Nix shell to test the object rule",
+    )
+    def test_a_failing_stage_of_the_object_pipeline_fails_the_rule(self):
+        # cpp feeds cc1 and maspsx feeds the BSS slot filter through pipes:
+        # either failing must fail the object rather than leave a partial one.
+        source = '#include "include_asm.h"\nint value = 1;\n'
+        _obj, result = self.make_fixture_unit(source, ["MASPSX=false"])
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        _obj, result = self.make_fixture_unit('#include "missing.h"\n' + source)
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("missing.h", result.stderr)
+
     @unittest.skipUnless(importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell")
     def test_service_scan_tracks_constant_bases_calls_and_cop2(self):
         from tools.service_calls import scan_function
