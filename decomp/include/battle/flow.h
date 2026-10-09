@@ -49,8 +49,8 @@ void func_800B8D04(void);      /* finish the battle's loads */
 void func_800B8D7C(void);      /* stop the resident transfer and finish the loads */
 void func_800B9258(void);      /* count a step of the battle menu */
 /* Mark the battle menu (field48) with its state; a sprite callback (also the
- * event script overlay's), defined without a prototype (800B9508 also calls
- * it with the sprite). */
+ * event script overlay's). Declared without a prototype: 800B9508 also calls
+ * it with the sprite (defined (void)). */
 void func_800B9B30();
 /* Put the sprite at its target, idle, facing the other; defined without a
  * prototype (800BF0C4 calls it with the sprite alone). */
