@@ -361,6 +361,8 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_tail_80048BC4", SpuSet
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_tail_80048BC4", SpuGetReverbModeType);
 
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_tail_80048BC4", _card_info);
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_tail_80048BC4", InitCARD);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_tail_80048BC4", StartCARD);

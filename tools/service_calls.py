@@ -19,12 +19,13 @@ statically scans the linked image's instructions and reports:
 
 SDK entry points are the FUNC symbols inside each target's `sdk`
 classification ranges and the entries inside those symbols: BIOS call stubs,
-named by table and number where splat merged consecutive stubs into one
-symbol (`close` also holds B(41h)-B(45h)), and any other called word as
-`symbol+0xN` (GetGp is ChangeClearPAD+0x10). A call resolves against the
-caller's own image and the images that can be loaded beside it, i.e. those
-whose span does not overlap the caller's: the resident for every overlay, but
-not mdec's libraries for ovl2602, whose own code lies at the same addresses.
+named by table and number where one symbol holds consecutive stubs
+(`B(41h)`), and any other called word as `symbol+0xN` (neither occurs at
+present: every entry the game calls has a symbol of its own). A call
+resolves against the caller's own image and the images that can be loaded
+beside it, i.e. those whose span does not overlap the caller's: the resident
+for every overlay, but not mdec's libraries for ovl2602, whose own code lies
+at the same addresses.
 An entry's library comes from the PsyQ object signatures that cover it
 (tools/psyq_signatures.py; SIGNATURES is the pinned psx_psyq_signatures data).
 Indirect calls (`jalr`) are counted, not resolved. Run inside the matching shell.

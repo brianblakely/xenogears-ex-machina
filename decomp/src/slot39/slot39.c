@@ -1567,7 +1567,7 @@ u8 func_801C881C(void) {
 /* Start a card check on `channel` and wait for its event: the D_801E9768
  * result for it, or -1 when the check cannot start. */
 s32 func_801C891C(s32 channel) {
-    if (func_8004E784(channel) == 0) {
+    if (_card_info(channel) == 0) {
         return -1;
     }
     return D_801E9768[func_801C881C()];
@@ -1687,11 +1687,11 @@ u8 func_801C8D78(u8 port) {
     }
     while (--retry != 0) {
         count = 0;
-        if (func_80040584(device, &dir) == &dir) {
+        if (firstfile(device, &dir) == &dir) {
             do {
                 strcpy(D_800625A0->card->files[port * 16 + count].name, dir.name);
                 count++;
-            } while (func_80040594(&dir) == &dir);
+            } while (nextfile(&dir) == &dir);
         }
         D_800625A0->card->unk4F8A[port] = count;
         break;
@@ -1882,7 +1882,7 @@ u8 func_801C93A8(void) {
                     __builtin_memcpy(path, "bu10:", 6);
                 }
                 strcat(path, "__tmp_file");
-                func_800405B4(path);
+                delete(path);
                 D_800625A0->card->fileCount = 0;
                 D_801EA900[port] = 0;
                 for (i = 0; i < D_800625A0->card->unk4F8A[port]; i++) {
@@ -2806,7 +2806,7 @@ u8 func_801CBD90(u8 kind) {
                     continue;
                 }
                 func_801D2F4C(0x26);
-                if (func_80040574(device)) {
+                if (format(device)) {
                     func_801D32B4();
                     func_801CACF8(0x5c, 0xff, 0);
                 } else {
@@ -2823,7 +2823,7 @@ u8 func_801CBD90(u8 kind) {
                             strcat(tempName, D_800625A0->card
                                                  ->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
                                                  .name);
-                            func_800405B4(tempName);
+                            delete(tempName);
                             existing = (D_800625A0->card->headers +
                                         D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]])[0][0x123];
                         } else {
@@ -2856,7 +2856,7 @@ u8 func_801CBD90(u8 kind) {
                 strcat(tempName, "__tmp_file");
                 func_801D2F4C(0x32);
                 D_800625A0->sounds = 0;
-                func_800405B4(tempName);
+                delete(tempName);
                 retry = 3;
                 do {
                     fd = open(tempName, D_800625A0->card->saveBlocks << 16 | 0x200);
@@ -2878,7 +2878,7 @@ u8 func_801CBD90(u8 kind) {
                         }
                     } while (fd == 0 && --retry != 0);
                     if (fd == 0) {
-                        func_800405B4(tempName);
+                        delete(tempName);
                     }
                     func_801C7BF4();
                 }
@@ -2893,7 +2893,7 @@ u8 func_801CBD90(u8 kind) {
                     } while (fd == 0 && --retry != 0);
                     if (fd == 0) {
                         close(0);
-                        func_800405B4(tempName);
+                        delete(tempName);
                     } else {
                         written = 0x100;
                         buffer = func_80031BDC(0x1f00, 1);
@@ -2920,7 +2920,7 @@ u8 func_801CBD90(u8 kind) {
                                 close(created);
                                 strcpy(tempName, device);
                                 strcat(tempName, "__tmp_file");
-                                func_800405B4(tempName);
+                                delete(tempName);
                                 goto release;
                             }
                             written += 0x100;
@@ -2931,13 +2931,13 @@ u8 func_801CBD90(u8 kind) {
                         strcat(tempName, "__tmp_file");
                         retry = 3;
                         do {
-                            if (!func_800405A4(tempName, finalName)) {
+                            if (!rename(tempName, finalName)) {
                                 fd = 0;
                                 func_801C8CA4(port);
                             }
                         } while (fd == 0 && --retry != 0);
                         if (fd == 0) {
-                            func_800405B4(tempName);
+                            delete(tempName);
                         }
                     release:
                         func_800320E8(buffer);
@@ -3085,7 +3085,7 @@ u8 func_801CC6D8(void) {
                 if (D_800625A0->card->result[dest] == -2) {
                     if (func_801CB8AC(dest)) {
                         func_801D2F4C(0x26);
-                        if (func_80040574(other)) {
+                        if (format(other)) {
                             func_801D32B4();
                             func_801CACF8(0x5c, 0xff, 0);
                         } else {
@@ -3145,7 +3145,7 @@ u8 func_801CC6D8(void) {
                     if (fd == 0) {
                         close(srcFd);
                     } else {
-                        func_800405B4(tempName);
+                        delete(tempName);
                         retry = 1;
                         do {
                             destFd = open(tempName, header[3] << 16 | 0x200);
@@ -3169,7 +3169,7 @@ u8 func_801CC6D8(void) {
                             } while (fd == 0 && --retry != 0);
                             if (fd == 0) {
                                 close(srcFd);
-                                func_800405B4(tempName);
+                                delete(tempName);
                             } else {
                                 retry = 3;
                                 do {
@@ -3182,7 +3182,7 @@ u8 func_801CC6D8(void) {
                                     close(srcFd);
                                     close(destFd);
                                     destFd = 0;
-                                    func_800405B4(tempName);
+                                    delete(tempName);
                                 }
                                 written = 0x200;
                                 phase = 0;
@@ -3202,7 +3202,7 @@ u8 func_801CC6D8(void) {
                                             close(destFd);
                                             strcpy(tempName, other);
                                             strcat(tempName, "__tmp_file");
-                                            func_800405B4(tempName);
+                                            delete(tempName);
                                             break;
                                         }
                                         phase = 1;
@@ -3219,7 +3219,7 @@ u8 func_801CC6D8(void) {
                                             close(destFd);
                                             strcpy(tempName, other);
                                             strcat(tempName, "__tmp_file");
-                                            func_800405B4(tempName);
+                                            delete(tempName);
                                             break;
                                         }
                                         phase = 0;
@@ -3229,7 +3229,7 @@ u8 func_801CC6D8(void) {
                                             close(fd);
                                             strcpy(tempName, other);
                                             strcat(tempName, "__tmp_file");
-                                            func_800405A4(tempName, destName);
+                                            rename(tempName, destName);
                                             break;
                                         }
                                     }
@@ -3326,7 +3326,7 @@ u8 func_801CD2AC(void) {
                 }
                 strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
                                  .name);
-                func_800405B4(path);
+                delete(path);
                 func_801D32B4();
                 D_800625A0->sounds = 1;
                 func_801C8574(0x34);

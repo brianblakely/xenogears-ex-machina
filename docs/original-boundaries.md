@@ -57,10 +57,10 @@ The scan finds 4436 compiled game functions and these library entries
 | libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu func_8001A4B4, the debug console's flush func_80037324, arena func_80088E90), GetDrawEnv (2: the resident panorama func_8002709C, ovl2615's stage backdrop func_801E7914), MargePrim (arena HUD func_80085EC8), LoadClut2 (arena palette func_8007B270), SetGraphDebug(0) (boot func_80019578), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
 | libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix/TransMatrix (29 each), SetGeomScreen (24), ApplyMatrix (22), MulMatrix0 (20), RotTransPers (19), SetGeomOffset (19), Push/PopMatrix (15), ReadGeomScreen (12), MulMatrix2, ReadGeomOffset, RotAverage4, RotTransPers3, ApplyMatrixLV/ApplyMatrixSV, SetBackColor, SetColorMatrix, SetLightMatrix, OuterProduct0, VectorNormalS/VectorNormalSS, InitGeom, RotTransSV, RotMatrixZ, ScaleMatrixL, SetMulMatrix, lighting (NormalColor, NormalColor3, NormalColorCol, NormalColorCol3), SetFogNearFar, and 16 entries without a signature name (below) |
 | libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (func_80028230 only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the streaming ring's StSetRing, StSetStream, StGetNext, StFreeRing, StGetBackloc, StCdInterrupt and StUnSetRing (Disc and files) |
-| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset func_80019CD0), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h) and B(41h)-B(45h) (Memory card and saves), Krom2RawAdd B(51h), A(ABh) card check, GetGp (reported as ChangeClearPAD+0x10, which holds it) |
+| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset func_80019CD0), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu func_8008BA2C) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
 | libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite are func_8004D818/func_8004D878 by inspection (unattributed, called by sound.c func_8003BE68) |
-| libcard | InitCARD, StartCARD, `_bu_init` (A(70h)) |
+| libcard | InitCARD, StartCARD, `_bu_init` (A(70h)), `_card_info` (A(ABh), the card check of slot39 func_801C891C) |
 | libpress, libds | DecDCTReset/DecDCTin/DecDCTout/DecDCTvlc/DecDCTvlcSize and DecDCToutCallback, all from mdec |
 | libc, libc2 | bzero (126), rand (96), memcpy (33), memmove (16), sprintf (11), strcat, strcpy, strlen, memset, memchr, strcmp |
 | libsn | PCopen, PCcreat, PClseek, PCclose and func_8004C38C/func_8004C398/func_8004C470 (PCinit/PCread/PCwrite by inspection): development-host paths only (D_8004FE48 set, or `D_80010000 != -1`) |
@@ -69,11 +69,13 @@ The rows and, for the unattributed func_80040C3C, the note below name every
 entry the scan reports at this revision; its `--detail` output lists each
 entry's caller functions.
 
-BIOS stubs are named by table and number; splat merged consecutive stubs into
-one symbol (`close` also holds B(41h)-B(45h), SpuGetReverbModeType ends with
-A(ABh)). The slot39 headers name them by use: format, firstfile, nextfile,
-rename, erase (slot39/menu.h). func_80040C3C (unattributed) is the pad send
-registration: it calls `_SendPAD` with its four arguments (Controllers).
+The BIOS call stubs and GetGp are PsyQ objects of their own, named as the
+pinned signatures name them (among them LIBAPI A54 close, A65-A69 format,
+firstfile, nextfile, rename and delete, A91 ChangeClearPAD, A94 GetGp and
+LIBCARD C171 `_card_info`), and the resident's symbol list gives each its own
+extent; slot39 and the menu call them by these names (slot39/menu.h,
+menu/system.h). func_80040C3C (unattributed) is the pad send registration: it
+calls `_SendPAD` with its four arguments (Controllers).
 
 The libgte entries without a signature name, by their code:
 
