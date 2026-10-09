@@ -20,8 +20,11 @@ extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
 extern u8 D_800D2D50;
 extern u8 D_800D2FC4;      /* battle exit requested */
-/* Set for the resident's battle mode (the event script, result screens and
- * loader overlays set it). */
+/* The battle overlay's entry, which the resident's battle mode (2) runs, and
+ * the flag the event script (with a movie request, ovl3087 opcode 27), the
+ * result screens and the loader overlays set for it: the battle then
+ * continues in the movie mode (6). */
+void func_80070F40(void);
 extern u8 D_800D3338;
 
 /* Party members' battle masks (from the character battle data). */

@@ -139,10 +139,4 @@ extern u8 D_80065ADC[16];
 extern s16 D_8006BE2C[3]; /* per party slot (the field) */
 extern u8 D_80059180; /* battle music playing */
 
-/* The battle overlay's entry, which mode 2 runs, and its flag that the
- * battle script sets with a movie request (ovl3087 opcode 27): the battle
- * then continues in the movie mode (6). */
-void func_80070F40(void);
-extern u8 D_800D3338;
-
 #endif

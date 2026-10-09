@@ -7,6 +7,7 @@
  * target yaml). GCC 2.6.3 and 2.7.2 build the same object. */
 #include "common.h"
 #include "battle/area.h"
+#include "battle/setup.h"
 #include "resident/cd.h"
 #include "resident/console.h"
 #include "resident/gamedata.h"
