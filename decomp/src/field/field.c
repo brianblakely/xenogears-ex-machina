@@ -4,7 +4,6 @@
  * is chosen with the next unit (see field_8007A44C.c). */
 #include "common.h"
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_music.h"
@@ -206,7 +205,7 @@ void func_800700B0(void) {
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
                 func_800306D0(instance->anims);
             }
-            func_8002CBBC(instance->mesh);
+            func_8002CBBC((ModelBuffer *)instance->mesh);
             func_800320E8(instance->packets[0]);
             func_800320E8(D_800AF880.components.descriptors[i].instance);
         }
@@ -544,7 +543,7 @@ void func_80070CC8(void) {
     FieldInstance *instance;
 
     func_800705DC();
-    D_800B1F78 = D_8005A4E0->slots;
+    D_800B1F78 = FIELD_BUNDLE->slots;
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
             func_8007A7F4(&D_800B06BC[i * 4 + j], j, i, 0);
@@ -636,10 +635,10 @@ void func_80070CC8(void) {
     D_800AF880.bounds[1] = 1;
     D_800AF880.bounds[2] = 1;
     D_800AF880.bounds[3] = 1;
-    func_8006FDEC(D_8005A4E0->view);
+    func_8006FDEC(FIELD_BUNDLE->view);
 
-    count = D_8005A4E0->descriptor_count;
-    record = D_8005A4E0->descriptors;
+    count = FIELD_BUNDLE->descriptor_count;
+    record = FIELD_BUNDLE->descriptors;
     D_800AF880.components.descriptor_count = count;
     table = func_80031BDC(count * sizeof(FieldDescriptor), 0);
     D_800AF880.components.descriptors = (FieldDescriptor *)table;
@@ -663,16 +662,16 @@ void func_80070CC8(void) {
             offset = *record;
             entry = (s32 *)(offset * 4 + (s32)D_800AF880.components.geometry);
             offset = entry[1] + (s32)D_800AF880.components.geometry;
-            instance->mesh = (FieldMesh *)(offset + 0x10);
+            instance->mesh = (SpriteModel *)(offset + 0x10);
             func_8002CB54(instance->mesh, &instance->packets[0], &instance->packets[1]);
             func_8002C8CC(instance->mesh, instance->packets[0], (D_800AF880.components.descriptors[i].flags & 0xC) >> 2);
-            memcpy(instance->packets[1], instance->packets[0], instance->mesh->size);
+            memcpy(instance->packets[1], instance->packets[0], instance->mesh->packet_size);
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
                 func_80032498(3, 0);
                 instance->anims = func_800303C8(instance->mesh, 0);
                 func_80032498(8, 0);
             }
-            func_8002C644(instance->mesh);
+            func_8002C644((ModelGroup *)instance->mesh);
             func_80080F44(i);
         } else {
             D_800AF880.components.descriptors[i].flags |= 0x20;
@@ -869,7 +868,7 @@ void func_80071E58(s32 steps) {
 
 /* Pointer setup: pad buffers, divisors 3 and 4, bounds, both ports' starts. */
 void func_80071EE8(void) {
-    func_8007AD8C(D_800625FC[0], D_800625FC[1]);
+    func_8007AD8C(&D_800625FC[0], &D_800625FC[1]);
     func_8007AE14(3, 4);
     func_8007ADA4(0, 0x140, 0, 0xE0);
     func_8007AE2C(0, 0x50, 0x64);
@@ -2660,13 +2659,10 @@ void func_800775F8(void) {
     VSync(0);
 }
 
-extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
-extern s32 *D_8005A4A0;      /* the text-image file (a7) */
 extern RECT D_800B004C;      /* compass colour strip */
 extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
 extern s16 D_800C2690[2];
 extern s16 D_800C38FC[2];
-void func_8003342C(void *table);
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
@@ -2854,40 +2850,20 @@ s32 func_80077E10(void) {
     return 0;
 }
 
-extern s32 D_8004F310;
-extern s32 D_8004F2F8;
-extern u8 D_800594D0;
-extern s32 D_80010000;      /* -1 in the debug environment */
-extern s32 D_80059560;
-extern s32 D_800595AC;
 extern s32 D_8006251C;
 extern s32 D_80062524;
-extern s32 D_8004F354;
-extern s32 D_8004F358;
 extern s32 D_800AFC78;
-extern s32 D_8004F31C;
-extern s32 D_8004F320;
 extern s32 D_80059488;
 extern u16 D_800C3900;      /* pad buttons held */
 extern u16 D_800C3908;      /* pad buttons pressed */
 extern u16 D_800AFE9C;
-extern s32 D_8004F334;
-extern u8 D_8005954C;
-extern s32 D_8004F378;
-extern s32 D_8004F37C;
-extern u8 D_80059171;
 void func_8007781C(void);
 void func_80085890(); /* called with an argument it ignores */
 void func_802811EC(void);
 void func_800A94A4(s32 actor);
-s32 func_80035734(s32 a0);
-void func_80037EE4(void);
-void func_80037E8C(void);
-void func_80019CA0(void);
 void func_800A5924(void);
 void func_8007FFE8(void);
 void func_800A3F4C(void);
-void func_8003A89C(s32 sequence, s32 volume, s32 a2);
 void func_800A5C40(void);
 void func_800ACE90(void);
 void func_800ABA98(void);
@@ -2923,8 +2899,8 @@ void func_80077E88(void) {
     if (D_800C268C == 0) {
         DrawSyncCallback(func_8007781C);
     }
-    D_8006251C = D_80059560;
-    D_80062524 = D_800595AC;
+    D_8006251C = (s32)D_80059560;
+    D_80062524 = (s32)D_800595AC;
     func_80032498(8, 0);
     if (D_800C268C == 0 && D_8004F370 == 0) {
         func_80028470(4, 0);
@@ -3049,7 +3025,7 @@ void func_80077E88(void) {
                 }
                 exit = 0;
                 if (D_800ADBD4 == 1) {
-                    func_8003A89C(D_80062528, 0x7F, 0);
+                    func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0);
                 }
                 D_800ADBD4 = 0;
                 break;
@@ -3223,12 +3199,6 @@ void func_80078C5C(void) {
     }
 }
 
-extern s32 D_8004F310;
-extern s32 D_8004F2F8;  /* 1 once the field screen has been set up */
-extern s32 D_8004F304;  /* music sequence to release on entry */
-extern u8 D_8005942C;   /* 1 when entering from battle */
-extern u8 D_800594D0;   /* 1 when entering from a movie */
-void func_80031FF8(void);
 void func_80070CC8(void);
 void func_800A24C4(void);
 void func_801E7378(s32 on);
@@ -3330,8 +3300,8 @@ void func_80078D44(void) {
         MoveImage(&rect, 0x200, 0);
     }
     if (D_8004F304 != 0) {
-        func_80039C4C(D_80062528);
-        func_800399D4(D_80062528);
+        func_80039C4C((SoundTrack *)D_80062528);
+        func_800399D4((SoundSeq *)D_80062528);
         func_80038310(D_8006258C);
         D_8004F304 = 0;
     }
@@ -3397,10 +3367,6 @@ void func_80078D44(void) {
     D_800AFD04 = 0;
 }
 
-extern u8 D_800594F8;
-extern u8 D_80059508;       /* the battle's encounter kind */
-extern u8 D_80065ADC[16];   /* encounter kind weights */
-void func_800199CC(s32 mode);
 void func_80281204(s32 kind);
 
 /* Count down the random-encounter steps while encounters are possible; on a
@@ -3469,14 +3435,8 @@ draw:
     }
 }
 
-extern s32 D_8004F30C;
-extern s32 D_8004F310;
-extern s32 D_8004F324;
 extern s32 D_800AFC78;
 extern s32 D_800B0064;
-void func_8001996C(s32 mode);
-void func_80019ACC(s32 a0);
-void func_8001BB50(void);
 void func_800A30FC(void);
 s32 func_80085F30(void);
 void func_80085FB8(void);
@@ -3599,15 +3559,6 @@ void func_8007999C(void) {
     ExitCriticalSection();
 }
 
-extern s32 D_8004F350;
-extern s16 D_8006BE2C[3];
-extern void *D_8005945C;    /* the menu's shared file (1) */
-extern u8 D_80059178;
-extern u8 D_80059460;       /* menu kind */
-extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
-extern s32 D_8004F31C;
-extern s32 D_8004F320;
-void func_8001C634(void);
 
 /* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
  * the field: fade out, save the 801e module and the VRAM the menu uses,
@@ -3616,7 +3567,7 @@ void func_8001C634(void);
  * back in and reload the module and the party sprites. */
 void func_800799D4(void) {
     RECT rect;
-    FieldFileRequest files[4];
+    FileRequest files[4];
     RECT unused; /* unused in the original; reserves 8 bytes */
     u32 end;
     void *module;

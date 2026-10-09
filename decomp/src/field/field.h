@@ -8,8 +8,20 @@
 #include "psyq/libetc.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
+#include "resident/cd.h"
+#include "resident/console.h"
 #include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
 #include "resident/sprite.h"
+#include "resident/stream.h"
+#include "resident/text.h"
+#include "resident/window.h"
 
 /* A 16.16 fixed-point value; code also reads its whole part alone. */
 typedef union {
@@ -183,23 +195,6 @@ typedef struct {
     u8 unk0D;
 } CollisionTriangle;
 
-/* A resident text box (80034614/800345e0/800346d4/80033cd0/80034800). */
-typedef struct {
-    u8 unk00[0x10];
-    u16 flags;       /* 10: bit 2 keeps the window open */
-    u8 unk12[0x68 - 0x12];
-    u8 speed;        /* 68: 1 at text speed 8, else 2 */
-    u8 unk69[3];
-    u8 unk6C;        /* 6C */
-    u8 unk6D[3];
-    s32 vars[4];     /* 70: event variables 16-1c when opened */
-    s16 unk80;       /* 80: variable 1c again */
-    s16 unk82;       /* 82 */
-    s16 unk84;       /* 84 */
-    u8 unk86[0x90 - 0x86];
-    s32 unk90;       /* 90 */
-} TextBox;           /* the resident code reads the window area that follows at +94 */
-
 /* A dialogue window's frame (window + 0ac): its area and the backing and
  * border packets. The window code addresses these members from the frame,
  * so its address (800c2744 + window) is the base it keeps. */
@@ -235,7 +230,8 @@ typedef struct {
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct DialogueWindow {
     DR_MODE modes[2]; /* 000: per buffer */
-    TextBox text;    /* 018 */
+    Window text;     /* 018: its text (resident/window.h) */
+    s32 message;     /* 0A8: the message 80033728 found, shown by 80034714 */
     DialogueFrame frame; /* 0AC */
     DialogueChoice choice; /* 37C */
     DialoguePrompt prompt; /* 3C4 */
@@ -259,28 +255,14 @@ typedef struct DialogueWindow {
     u8 unk496[0x498 - 0x496];
 } DialogueWindow;
 
-/* A model's mesh header; +20/+28 bound it. */
-typedef struct {
-    u8 unk00[6];
-    u16 group_count; /* 06: primitive groups */
-    u8 unk08[0x10 - 0x08];
-    u32 *groups;     /* 10: group headers (code, flags, count << 16) and data */
-    u8 unk14[0x20 - 0x14];
-    s16 min[3];      /* 20 */
-    s16 unk26;
-    s16 max[3];      /* 28 */
-    u8 unk2E[0x34 - 0x2E];
-    s32 size;        /* 34: packet bytes per draw buffer */
-} FieldMesh;
-
 /* A model instance; +12 is its drawing mode. */
 typedef struct {
     u8 unk00[4];
-    FieldMesh *mesh; /* 04 */
+    SpriteModel *mesh; /* 04 */
     void *packets[2]; /* 08: per draw buffer */
     u8 unk10[2];
     s16 mode;        /* 12 */
-    struct FieldAnimTable *anims; /* 14 */
+    MorphState *anims; /* 14: its morph channels (80080a18 feeds them) */
     s16 center[3];   /* 18 */
     s16 unk1E;
     s16 radius;      /* 20 */
@@ -504,12 +486,6 @@ typedef struct FieldWork {
     u8 unk2359[0x235C - 0x2359];
 } FieldWork;
 
-/* A loaded sound-effect bank; +14 is its id. */
-typedef struct FieldSoundBank {
-    u8 unk00[0x14];
-    u16 id;
-} FieldSoundBank;
-
 /* Parameters events set at 800b0080, one object. */
 typedef struct FieldEventParams {
     s16 unk80[8]; /* 800b0080 */
@@ -615,64 +591,16 @@ typedef struct {
 } EventPackage;
 
 /* Resident services. */
-extern void func_8001B66C(void);
-extern void func_8002945C(WaveChunk *chunk);
-extern void func_8003827C(void *bank, s32 size);
-extern s32 func_800380D0(void *data, s32 size, s32);
-extern void func_8003A948(s32 sequence, s32, s32);
-extern void func_8003A9BC(s32 sequence, s32, s32);
-extern void func_800345E0(void *text);
-extern s32 func_80033CD0(TextBox *text);
-extern void func_80034714(TextBox *text, s32);
-extern void func_80034888(TextBox *text, u_long *ot, s32 buffer);
 extern void func_8007E1C0(u_long *ot, s32 buffer, s32 window);
 extern s32 D_800ADE94; /* dialogue cursor frame */
 extern s32 D_800ADE98; /* dialogue ticks */
-extern void func_80034614(void *text);
-extern void func_800346D4(void *text);
-extern void func_8002DFF0(s32 w, s32 h);
-extern void func_80038428(void *bank);
-extern void func_8003A344(s32 voice, s32 volume);
-extern void func_8003A55C(s32 voice, s32 pan);
-extern void func_800379B4(s32);
-extern void func_8003A838(s32 sequence, s32, s32);
-extern void func_8003A89C(s32 sequence, s32, s32);
-extern void func_8003AAC4(s32 sequence, s32);
-extern void func_80039EC4(s32 sound, s32 voice);
-extern void func_800320A4(void *block); /* keep a block */
-extern s32 func_8001ACF0(s32 member);
 extern void func_8003633C(s32);
-extern void func_80019CD0(void);
-extern s32 func_800288EC(s32 file);
-extern void *func_80031BDC(s32 size, s32);
-extern s32 func_80037FD8(void *data, s32);
-extern void func_80038310(s32 bank);
-extern void func_800399D4(s32 sequence);
-extern void func_80039C4C(s32 sequence);
 extern void func_8003BDFC(s32);
-extern s32 func_80028B14(void);
-extern void func_800295D8(s32 file, void *ring, s32, s32);
-extern void func_8003852C(void *bank);
 extern void func_80039F9C(s32 id, s16 voice, s16 volume, s16 pan);
-extern void func_80039FF8(void);
-extern void func_8003A20C(s32 voice);
-extern s32 func_8001B484(s32 file, s32);
-extern s32 func_80028470(s32 directory, s32);
-extern s32 func_800286CC(void);
-extern void func_800320B8(void *block);
-extern void func_80032498(s32 tag, s32);
 extern void func_80033698(s32, s32);
-extern void func_8003747C(s32);
-extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
-extern s32 func_80028A60(s32 mode); /* wait for the disc (1: poll) */
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
-extern void *func_8002A260(s32 sectors, s32);
-extern void func_800320E8(void *);
-extern void func_80032EB4(void *source, void *destination);
-extern MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 extern void func_80030A30(s32 index, FieldLight *light);
-extern void func_80030B14(MATRIX *m);
 
 /* Field overlay. */
 extern s32 func_8008A790(s32 id, s32 *slot);
@@ -756,7 +684,9 @@ typedef struct {
     u16 descriptors[1];    /* 190: flags, rotation[3], position[3], model */
 } FieldBundle;
 
-extern FieldBundle *D_8005A4E0;
+/* The map bundle as the field load reads it (mode.h's block D_8005A4E0). */
+#define FIELD_BUNDLE ((FieldBundle *)D_8005A4E0)
+
 /* The size and the data of component k, read as words at their byte offsets
  * in the header (the field load reads them so, not as struct members). */
 #define BUNDLE_SIZE(k) (*(s32 *)((u8 *)D_8005A4E0 + 0x10C + (k) * 4))
@@ -764,15 +694,9 @@ extern FieldBundle *D_8005A4E0;
 extern SpriteSlotTable D_800B1F78;
 extern u8 D_800658DC[];      /* messages */
 extern s32 D_800AFD10;       /* attributes before the first triangle */
-extern s32 D_8004F330;
-extern s32 D_8004F334;
 extern Panorama *D_800B007C;
 extern void func_80022A70(void *tim, s32 x, s32 y);
-extern void func_8002C3E8(void *model);
-extern void func_8002CB54(FieldMesh *mesh, void **packets, void **packets2);
-extern void func_8002C8CC(FieldMesh *mesh, void *packets, s32 mode);
-extern struct FieldAnimTable *func_800303C8(FieldMesh *mesh, s32);
-extern void func_8002C644(FieldMesh *mesh);
+extern void func_8002CB54(SpriteModel *model, void **first, void **second);
 extern void func_802812A4(void);
 extern void func_800A28D4(void);
 extern Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y, s32 mode,
@@ -785,15 +709,9 @@ extern s32 func_8009A514(void); /* camera octant */
 extern s32 D_800AFC74;       /* sprites created */
 extern Sprite *func_80024524(void *data, s16 a, s16 b, s16 x, s16 y, s32 c);
 extern Sprite *func_80024294(void *data, s16 a, s16 b, s16 x, s16 y, s32 c, s32 bank);
-extern s32 D_8004F37C; /* shadows off */
 /* The model pass (800748e8). */
-extern s32 D_80059578; /* models drawn */
-extern s32 D_800595C0; /* primitives drawn */
-extern s32 D_80050104; /* model level of detail */
 extern void func_8002C6E0(s32 r, s32 g, s32 b); /* fog color */
 extern void func_80030C40(s32 r, s32 g, s32 b); /* background color */
-extern void func_800305D8(void *list);
-extern void func_8002C700(FieldMesh *mesh, void *packets, u32 *ot, s32 mode);
 extern s32 func_800AAA74(FieldInstance *instance);
 extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 /* The field frame (8007554c). */
@@ -808,7 +726,6 @@ extern void func_800ABEC8(void);
 extern void func_800920D8(void);
 extern void func_80281400(void);
 extern void func_80281450(void);
-extern void func_80032CB8(void);
 /* The compass (80074108). */
 extern u16 D_800ADC24[8];     /* heading octant bit per palette row */
 extern DVECTOR D_800ADC34[4]; /* letter x, z offsets */
@@ -818,7 +735,6 @@ extern u16 D_800AFC08[16];    /* compass colors */
 extern u16 D_800AFD24[128];   /* compass palette */
 extern RECT D_800B004C;       /* compass palette area */
 extern FieldMarker D_800B06BC[25]; /* ring, letters, needle and pointer quads */
-extern s32 D_8004F378;
 extern void func_8008110C(void);
 extern void func_800722F4(void);
 extern s32 func_80073988(s32 angle, s32 goal, s32 step);
@@ -867,7 +783,6 @@ extern s32 func_8009FA00(s32 character);
 extern s32 func_8008492C(FieldActor *actor);
 extern s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper);
 extern void func_80081C54(s32 index);
-extern void func_800379C8(char *format, ...); /* debug print */
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);
@@ -893,44 +808,10 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
-extern s32 D_8004F33C; /* current music wave */
-extern s32 D_8004F354;
-extern s32 D_8006258C; /* music wave bank */
-extern s32 D_8006FABC[3]; /* party sprite ids per slot */
-extern s32 D_8004F380;
-extern void *D_8005A4BC; /* field sound-effect bank copy */
 extern u8 D_8005061C[6];
-extern s32 D_8004F36C; /* sequence playing */
-extern s32 D_80062528; /* current sequence */
-extern s32 D_80062590[3];
-extern s32 D_8005A444[3]; /* party members */
-extern s32 D_8004F300;
 extern u8 D_80050622;
-extern s32 D_8004F2FC; /* cached sequence */
-extern s32 D_8004F338; /* loaded music sequence */
-extern s32 D_8004F340; /* -1: start the sequence at full volume */
-extern s32 D_8004F348; /* reuse the cached sequence */
-extern s32 D_8004F358; /* sequence read pending */
-extern s32 D_8004F35C; /* sequence active */
-extern s32 D_8004F360; /* wave loaded this request */
-extern u8 D_80062648[]; /* sequence buffer */
-extern s32 func_80039850(void *data); /* load a music sequence */
-extern void func_80039A80(s32 sequence, s32 volume, s32);
-extern void func_80039B68(s32 sequence, s32 volume, s32 fade);
-extern s32 D_8004F364;
-extern s32 D_8004F368; /* shared wave bank released */
-extern s16 D_8004F384;
-extern s32 D_80059560;
 extern s32 D_8006251C; /* shared wave bank */
-extern s32 D_8004F32C;
-extern void *D_8006259C; /* field sound-effect bank */
-extern u8 D_80059179; /* battle-entry flag */
-extern s32 D_8004F308; /* pending sound; -1 until resolved */
-extern s32 D_8004F324;
-extern void *D_8005A414[3];
-extern s32 D_8004F34C; /* current map */
 
-extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
 extern s32 D_800AFC54;
@@ -998,7 +879,7 @@ extern FieldWork D_800B2078;
  * 800b2360, 800b236c and 800b2370 from symbols of their own (as members of
  * the block, 800815f0, 80081c54, 80085738, 8008848c and 800859dc compile
  * differently), and the launch fields from 800b2374. */
-extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
+extern SoundBank *D_800B235C;      /* movie sound-effect bank */
 extern s32 D_800B2360[3];          /* movement history index per party slot */
 extern u16 D_800B236C; /* menu parameter set by ext 99; the field loop and ext 55
                         * pass it to the menu (80059171) */
@@ -1038,8 +919,7 @@ extern RECT D_800AFE3C[2]; /* fade texture windows */
 extern DR_MODE D_800B1DF4[2][16];
 extern void func_8007EE0C(s32 window);
 extern u16 D_800C3900; /* pad buttons that move a window's choice */
-extern void func_80034874(TextBox *text, s32 line);
-extern void func_8003487C(TextBox *text);
+extern void func_80034874(Window *window, s32 line);
 extern s32 D_800ADC10; /* scratchpad words in use */
 extern s8 *D_800B0054[2]; /* pointer pad buffers */
 extern u16 D_800B005C; /* pointer X divisor */
@@ -1122,24 +1002,12 @@ extern u16 D_800C38F8;
 extern u16 D_800C3900;
 extern u16 D_800C3908;
 /* Resident pad state: held, pressed and repeated buttons per port. */
-extern u16 D_80059570;
-extern u16 D_80059574;
-extern u16 D_8005948C;
-extern u16 D_80059490;
-extern u16 D_800594A4;
-extern u16 D_800594A8;
-extern s32 D_80065848[5]; /* port 2 pointer record */
-extern u32 func_80035CDC(void); /* next queued pad entry, 0 when none */
 extern s32 func_8007AE78(s32 port, s32 *out);
 extern s32 D_800C3A5C;
 extern s32 D_800C3A60;
-extern s32 D_8004F30C;
-extern s32 D_8006F990[3];
-extern s32 D_80050100; /* ordering-table depth shift */
 extern MATRIX D_800AF85C;
 extern MATRIX D_800B00E8;
 extern void func_8028125C(void);
-extern void func_80035DB0(void);
 extern void func_8007254C(void);
 extern void func_80070C84(void);
 extern void func_800864B4(void);
@@ -1155,10 +1023,7 @@ extern OverlaySprites D_800B0188;
 
 extern void *D_800ADBF0;
 extern void *D_800ADB20;
-extern void func_8002CBBC(void *mesh);
-extern void func_800306D0(void *);
 extern void func_8003218C(s32 tag);
-extern void func_8003748C(void);
 extern void func_801E7FD4(void);
 extern void func_8008083C(s32 index);
 extern void func_8007999C(void);
@@ -1182,14 +1047,6 @@ extern void func_80085634(s32 a, s32 b);
 
 extern s32 D_800C2684; /* piece scale, 0x1000 = 1 */
 
-/* Resident file reads (80029afc): one entry of a file list, whose zero file
- * ends it. */
-typedef struct FieldFileRequest {
-    u16 file;
-    void *destination;
-} FieldFileRequest;
-extern s32 func_80029AFC(FieldFileRequest *list, s32 mode, s32 a2);
-extern s32 D_8004F370;         /* 1 when the 801e module and movie library files are resident */
 extern u32 D_800ADB30;         /* heap top */
 
 /* The 801e module (file 6b9) and its layers. */
@@ -1223,9 +1080,7 @@ typedef struct {
 extern LayerObject *D_801E8670[]; /* 801e module layers */
 extern void *D_801E8644;
 extern void *D_800ADB20;          /* the 801e module */
-extern void *D_8005A420[4];       /* per layer: first resource (file 6ba + id) */
-extern void *D_8005A450[4];       /* per layer: second resource (file 6bb + id) */
-extern FieldFileRequest D_800B2394[10]; /* the module's file list */
+extern FileRequest D_800B2394[10]; /* the module's file list */
 extern void func_801E738C(s32 a0);
 extern void func_801E742C(s32 layer, s32 a1, void *resource_a, void *resource_b, s32 y, s32 a5, s32 a6, s32 a7,
                           SVECTOR *angles);

@@ -10,7 +10,6 @@
  * after 800a5c40 (at or before 800ab748). */
 #include "common.h"
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_music.h"
@@ -65,7 +64,7 @@ u8 D_800AE294[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 2, 6};
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */
 s32 func_800854D0(void) {
-    s32 arrived = func_80028B14();
+    s32 arrived = (s32)func_80028B14();
 
     D_800ADBBC = arrived;
     if (arrived != 0) {
@@ -224,7 +223,7 @@ void func_800859DC(WaveChunk *chunk) {
     case 3:
         ((WaveChunk *)D_800C3A1C)[D_800B2370] = *chunk;
         D_800B2370++;
-        func_8002945C(chunk);
+        func_8002945C((u8 *)chunk);
         if (D_800B2370 == 4) {
             D_8006258C = func_800380D0(D_800C3A1C, 0x2000, 0);
         }
@@ -233,7 +232,7 @@ void func_800859DC(WaveChunk *chunk) {
         func_8003BDFC(0x10);
         *(WaveChunk *)D_800C3A1C = *chunk;
         func_8003827C(D_800C3A1C, 0x800);
-        func_8002945C(chunk);
+        func_8002945C((u8 *)chunk);
         break;
     }
 }
@@ -321,17 +320,17 @@ s32 func_80085C90(s32 music) {
     }
     if (D_8004F358 == 1) {
         if (D_8004F348 == 0) {
-            sequence = func_80039850(D_80062648);
+            sequence = (s32)func_80039850((SoundSeqHeader *)D_80062648);
             D_80062528 = sequence;
             if (D_8004F340 == -1) {
-                func_80039A80(sequence, 0x7F, 0);
+                func_80039A80((SoundSeq *)sequence, 0x7F, 0);
             } else {
-                func_80039A80(D_80062528, 0, 0);
-                func_8003A89C(D_80062528, 0, 0);
+                func_80039A80((SoundSeq *)D_80062528, 0, 0);
+                func_8003A89C((SoundSeq *)D_80062528, 0, 0);
             }
         } else {
             D_80062528 = D_8004F2FC;
-            func_80039B68(D_8004F2FC, 0x7F, 0xF0);
+            func_80039B68((SoundSeq *)D_8004F2FC, 0x7F, 0xF0);
             D_8004F348 = 0;
             D_8004F2FC = 0;
         }
@@ -347,8 +346,8 @@ s32 func_80085C90(s32 music) {
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {
     if (D_8004F2FC != 0) {
-        func_80039C4C(D_8004F2FC);
-        func_800399D4(D_8004F2FC);
+        func_80039C4C((SoundTrack *)D_8004F2FC);
+        func_800399D4((SoundSeq *)D_8004F2FC);
         D_8004F2FC = 0;
     }
 }
@@ -361,9 +360,9 @@ s32 func_80085F30(void) {
     if (func_800286CC() != 0) {
         return -1;
     }
-    bank = func_80037FD8(D_800B00E0, 0);
+    bank = (s32)func_80037FD8(D_800B00E0, 0);
     D_8006251C = bank;
-    D_80059560 = bank;
+    D_80059560 = (SoundSequence *)bank;
     func_8003BDFC(0x10);
     func_800320E8(D_800B00E0);
     D_8004F364 = 1;
@@ -387,7 +386,7 @@ void func_80085FB8(void) {
 void func_80086024(void) {
     if (D_8004F368 == 0) {
         D_8004F384 = 1;
-        func_80038310(D_8006251C);
+        func_80038310((SoundSequence *)D_8006251C);
         D_8004F368 = 1;
     }
     D_8004F364 = 0;
@@ -1947,18 +1946,18 @@ void func_8008AACC(void) {
 
     if (func_8008A558() == 0) {
         if (EVENT_OPERAND_BYTE(1) == 1) {
-            D_80062518[D_800AFD18] = func_80037FD8(D_800AFD08, 0);
+            D_80062518[D_800AFD18] = (s32)func_80037FD8(D_800AFD08, 0);
             func_8003BDFC(0x10);
             func_800320E8(D_800AFD08);
             if (D_800AFD18 == 3) {
-                D_800595AC = D_80062524;
+                D_800595AC = (SoundSequence *)D_80062524;
             }
             D_800B00C0 = 1;
             D_800B0078->pc += 2;
         } else {
             slot = func_800ACDEC(2);
             D_800AFD18 = slot;
-            func_80038310(D_80062518[slot]);
+            func_80038310((SoundSequence *)D_80062518[slot]);
             file = func_800ACDEC(4);
             D_800AFD0C = file;
             if (!(file & 0x80)) {
@@ -2176,7 +2175,7 @@ void func_8008B5D4(void) {
     POLY_FT4 *ft4_other;
     u8 *prims;
     u8 *other;
-    FieldMesh *mesh;
+    SpriteModel *mesh;
     u32 *group;
     s32 du;
     s32 dv;
@@ -2190,7 +2189,7 @@ void func_8008B5D4(void) {
     prims = instance->packets[D_800ADB08];
     mesh = instance->mesh;
     other = instance->packets[(D_800ADB08 + 1) & 1];
-    group = mesh->groups;
+    group = (u32 *)mesh->unk10;
     du = (s16)func_800ACD7C(1);
     dv = (s16)func_800ACD7C(3);
     for (groups = mesh->group_count; groups > 0; groups--) {
@@ -2603,7 +2602,7 @@ void func_8008C84C(void) {
 
     if (D_8004F36C != 0) {
         a = func_800ACDEC(1);
-        func_8003A89C(D_80062528, a, func_800ACDEC(3));
+        func_8003A89C((SoundSeq *)D_80062528, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 5;
@@ -2624,7 +2623,7 @@ void func_8008C938(void) {
 
     if (D_8004F36C != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A948(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        func_8003A948((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 6;
@@ -2644,7 +2643,7 @@ void func_8008CA60(void) {
 
     if (D_8004F36C != 0) {
         a = func_800ACDEC(1);
-        func_8003A838(D_80062528, a, func_800ACDEC(3));
+        func_8003A838((SoundSeq *)D_80062528, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 5;
@@ -2665,7 +2664,7 @@ void func_8008CB4C(void) {
 
     if (D_8004F36C != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A9BC(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        func_8003A9BC((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 6;
@@ -2682,7 +2681,7 @@ void func_8008CB4C(void) {
  * advance; otherwise advance or wait (pc-- to the fe) as fe 0e. Yields. */
 void func_8008CC74(void) {
     if (D_8004F36C != 0) {
-        func_8003AAC4(D_80062528, func_800ACDEC(1));
+        func_8003AAC4((SoundSeq *)D_80062528, func_800ACDEC(1));
         D_800B0078->pc += 3;
     } else if (D_8004F324 == 0xFF) {
         D_800B0078->pc += 3;
@@ -3594,7 +3593,6 @@ void func_8008F394(void) {
     D_800B0078->pc += 3;
 }
 
-void func_8003A450(s32 a, s32 b, s32 c);
 
 /* Event: slide the volume of the two effect channels of sound 2 * operand 3 to
  * operand 1 over operand 5 frames (resident 8003a450). */
@@ -3608,7 +3606,6 @@ void func_8008F3D0(void) {
     D_800B0078->pc += 7;
 }
 
-void func_8003A344(s32 a, s32 b);
 
 /* Event fe 62: set the volume of the two effect channels of voice pair operand
  * 3 (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
@@ -3621,7 +3618,6 @@ void func_8008F444(void) {
     D_800B0078->pc += 5;
 }
 
-void func_8003A55C(s32 a, s32 b);
 
 /* Event fe 63: set the pan of the two effect channels of voice pair operand 3
  * (channels (2 * op3) ^ 8 and the next, while they play) to operand 1
@@ -3661,7 +3657,6 @@ void func_8008F558(void) {
     D_800B0078->pc += 9;
 }
 
-s32 func_8003A5D0(s32 mask);
 
 /* Event fe 64: wait (pc-- to the fe) while any effect channel whose bit is set
  * in operand 1 << 8 is playing (8003a5d0(-1): the mask of active effect
@@ -3698,7 +3693,6 @@ void func_8008F6AC(void) {
 }
 
 extern s32 D_800ADBDC;
-extern s32 D_8004F340;
 void func_8008F7B8(void);
 
 /* Select field music track operand 1 (8008f7b8) with 8004f340 = 0 (its sequence
@@ -3727,11 +3721,7 @@ void func_8008F76C(void) {
     func_8008F7B8();
 }
 
-extern s32 D_8004F308;
-extern s32 D_8004F324;
-extern s32 D_8004F354;
 void func_80085EEC(void);
-void func_8001B66C(void);
 s32 func_8008A558(void);
 
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
@@ -4575,7 +4565,6 @@ void func_80092148(void) {
 }
 
 extern s32 D_800ADB8C;
-void *func_80031BDC(s32 size, s32 flags);
 void func_80027D64(TextureScroll *scroll, s16 x, s16 y, s16 width, s16 height, s16 length, s16 a, s16 b,
                    u8 *buffer);
 
@@ -4889,7 +4878,6 @@ void func_80092EA0(void) {
     }
 }
 
-extern s32 D_8004F34C;
 s32 func_8009744C(void);
 s32 func_8009A514(void);
 
@@ -5009,9 +4997,6 @@ void func_800932D0(void) {
     }
 }
 
-extern u8 D_8005954C;
-extern u8 D_80059508;
-extern u8 D_800594F8;
 extern s32 D_800ADBE0;
 extern s32 D_800ADB88;
 extern s32 D_800ADB18;
@@ -5081,7 +5066,6 @@ void func_80093664(void) {
     D_800B0078->pc += 5;
 }
 
-extern s32 D_8004F350;
 
 /* Event: wait (pc-- back to fe), yielding, until 8004f350 is zero: the menus
  * requested by ext 55-5a, cf and da (800adb64) have been run by 800799d4, which
@@ -5095,7 +5079,6 @@ void func_800936E4(void) {
     D_800B00C0 = 1;
 }
 
-extern u8 D_80059171;
 extern s32 D_800ADB64;
 
 /* Event fe 55: request menu kind 0 (800adb64, run by 800799d4) with the menu
@@ -5478,8 +5461,6 @@ void func_800943AC(void) {
     func_80072254(D_800AFD1C);
 }
 
-extern s32 D_8004F318;
-extern s32 D_8004F328;
 
 /* Set the play clock in variable 0x0a to operand 1 minutes : operand 3
  * seconds (low bytes), restart its frame count (8004f318) and stop it
@@ -6647,7 +6628,6 @@ void func_80097364(void) {
     D_800B0078->pc += 3;
 }
 
-s32 func_8001B484(s32 a, s32 b);
 
 /* Start reading file 0xb8 + operand 2 of the current directory ahead as map
  * data (resident 8001b484, slot byte 1); retried without yielding until that
@@ -9823,10 +9803,6 @@ s32 func_8009FA54(s32 entry) {
     return 0;
 }
 
-extern s32 D_8004F34C;
-void func_8001AD1C(void);
-void func_8001B044(void);
-void func_8001B3A8(void);
 
 /* Event fe 1e: switch the party files to gears: set 0xc000 in the field id
  * (8004f34c), wait for the disc and its pending read (8001ad1c), make the party
@@ -9842,7 +9818,6 @@ void func_8009FB98(void) {
     D_800B0078->pc += 2;
 }
 
-extern s32 D_8006F990[3];
 
 /* Party slot whose field actor is `index`, or 0xFF. */
 s32 func_8009FC10(s32 index) {
@@ -10210,7 +10185,6 @@ void func_800A0DC0(void) {
     D_800B0078->pc += 3;
 }
 
-s32 func_80028530(void);
 
 /* Store the disc number (80028530: directory table word 0x3c) in variable
  * operand 1. */
@@ -10406,7 +10380,6 @@ void func_800A1624(void) {
     D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
 }
 
-extern void func_800379C8(char *format, ...);
 
 /* Call the script at operand 1, pushing the return PC (after the 5-byte
  * instruction); with the four-entry call stack full, report and yield. */
@@ -10810,7 +10783,6 @@ void func_800A24C4(void) {
     }
 }
 
-extern s32 D_8004F30C;
 void func_800A3C8C(void);
 
 /* Reload the actors' extra blocks (file +124 into +120) and hand them to
@@ -10985,8 +10957,6 @@ void func_800A30B4(void) {
     func_800A3074(0x42, D_80062590[2]);
 }
 
-extern u16 D_8005941C;
-extern u8 D_800594D0;
 s32 func_8009744C(void);
 s32 func_8009A514(void);
 

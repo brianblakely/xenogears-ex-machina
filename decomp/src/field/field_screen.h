@@ -33,12 +33,8 @@ typedef struct ScreenGrid {
 extern ScreenGrid *D_800B00C4;
 extern s32 D_800C3A40; /* fade radius */
 
-extern s32 D_8005A4C0;   /* resident: map read-ahead size */
 extern s32 D_800AFD04;   /* reloading */
 
-void func_8001B044(void);
-void func_8001B3A8(void);
-void func_8003748C(void); /* resident */
 void func_800700B0(void);
 void func_80070CC8(void);
 void func_8007554C(void);

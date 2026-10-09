@@ -28,7 +28,6 @@ extern u16 D_800ADF68[16];     /* d-pad direction per button state */
 extern u16 D_800ADF88[16];     /* alternate d-pad directions */
 extern s32 func_80079288(void);
 
-extern s32 D_8006F990[3];    /* descriptor of each party slot's actor */
 void func_8009E574(s32 x, s32 z);
 void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c);
 void func_800A0D3C(void);
@@ -40,17 +39,10 @@ extern s32 D_800C4268;
 /* The pieces' accumulated drift (x, y, z) at 800b21bc. */
 #define PIECE_DRIFT_TOTAL ((s32 *)D_800B2078.unk21BC)
 void func_800AD898(void);
-extern s32 D_8004F30C;          /* returning to the field */
 
 /* The play record (800a31e8). */
 extern u8 D_800B02C8;
 extern u16 D_800AFC6C;         /* buttons held since the last record */
-extern s32 D_8004F2F4;
-extern s32 D_8004F318;         /* frames since the play clock stepped */
-extern s32 D_8004F328;
-extern u8 D_80059418;
-extern u8 D_80059420;
-extern u8 D_80059484;
 void func_800A30FC(void);
 s32 func_8009FEE4(s32 slot);
 
@@ -59,7 +51,6 @@ s32 func_8009FEE4(s32 slot);
 /* The field snapshot (8005a4e4) and its read cursor. */
 extern u8 D_8005A4E4[];
 extern u8 *D_800AFC50;
-extern s32 D_8005A408[3];      /* party modes when saved */
 /* The view's world block (800afa54, 0x74 bytes) as copied byte-wise. */
 typedef struct {
     u8 bytes[0x74];

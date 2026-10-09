@@ -11,7 +11,6 @@
  * screen effects; the next unit is placed at the particle effects. */
 #include "common.h"
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_script.h"
@@ -1136,7 +1135,6 @@ void func_800A7218(void) {
     func_80032498(8, 0);
 }
 
-extern void func_80019CA0(void);
 extern void func_801D3F7C(void);
 void func_80085678(void);
 
@@ -1196,7 +1194,7 @@ void func_800A73E8(void) {
  * slots 1 and 2 from their character files. */
 void func_800A74F8(void) {
     RECT rect;
-    MovieFileRequest requests[4];
+    FileRequest requests[4];
     s32 count;
     s32 i;
 

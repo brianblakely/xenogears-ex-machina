@@ -7,22 +7,12 @@
  * blocks 1 and 2 (8005a414) hold the 320x256 area at (200, 0) while a
  * movie plays. */
 
-/* A file-list entry for resident 80029afc: file index and destination. */
-typedef struct {
-    u16 file;
-    void *destination;
-} MovieFileRequest;
-
 extern void *D_8005A41C; /* resident: party sprite block 2 (8005a414[2]), addressed alone */
-extern void *D_80065AFC[3]; /* resident: party character file blocks */
 
 extern s32 D_801E89E0; /* movie library: 1 lets it present frames itself */
 
 extern u16 D_800C3900;   /* buttons pressed */
 
-void func_8002A2D0(s32 file);                  /* resident: select the stream file */
-void func_80031FF8(void);                      /* resident: compact the heap */
-void func_80038D18(s32 volume, s32 speed);     /* resident: CD input volume */
 void func_800775F8(void);
 void func_8007999C(void);
 void func_80085738(void);

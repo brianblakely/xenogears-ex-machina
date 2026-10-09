@@ -17,6 +17,10 @@
 #include "resident/sprite.h"
 #include "resident/window.h"
 
+/* mode.h: the overlay area the modes load at. Each mode overlay's first unit
+ * defines its number there under the same name (const s32 D_8006FAF0). */
+extern u8 D_8006FAF0[];
+
 /* cd.h */
 void func_8002A428(u8 mode);
 

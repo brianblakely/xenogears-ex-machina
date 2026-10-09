@@ -75,7 +75,7 @@ s32 D_800B00B4; /* camera pitch */
 SVECTOR D_800B00B8; /* piece rotation */
 s32 D_800B00C0; /* yield */
 struct ScreenGrid *D_800B00C4;
-struct FieldFileRequest D_800B00C8[3]; /* file list read by 80029afc */
+struct FileRequest D_800B00C8[3]; /* file list read by 80029afc */
 void *D_800B00E0; /* shared wave bank buffer */
 s32 D_800B00E4;
 MATRIX D_800B00E8; /* instance view: the rotation with its translation */
@@ -101,7 +101,7 @@ DR_MODE D_800B1DF4[2][16];
 u32 *D_800B1F74; /* TIM image held by instruction 0x77 */
 struct SpriteSlotTable D_800B1F78;
 struct FieldWork D_800B2078;
-struct FieldSoundBank *D_800B235C; /* movie sound-effect bank */
+struct SoundBank *D_800B235C; /* movie sound-effect bank */
 s32 D_800B2360[3]; /* movement history index per party slot */
 u16 D_800B236C; /* menu parameter set by ext 99 */
 s32 D_800B2370; /* music-wave chunks gathered */
@@ -109,7 +109,7 @@ struct FieldLaunch D_800B2374; /* effect launch for ext 90 and 93 */
 s32 D_800B2388[3]; /* unreferenced */
 /* The 801e module's file list: two files per layer (at most four), the
  * module file and the zero end. */
-struct FieldFileRequest D_800B2394[10];
+struct FileRequest D_800B2394[10];
 s32 D_800B23E4[46]; /* unreferenced */
 struct FieldDrawBlock D_800B249C[2];
 s32 D_800C2684; /* piece scale, 0x1000 = 1 */
@@ -147,7 +147,6 @@ s32 D_800C4268; /* dialogue windows opened this pass */
 struct FieldDrawBlock *D_800C426C; /* current draw block */
 
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_script.h"

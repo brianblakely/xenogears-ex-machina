@@ -8,7 +8,6 @@
  * start (see field_800A4748.c). */
 #include "common.h"
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 #include "field_script.h"
@@ -600,9 +599,9 @@ void func_800AA9DC(FieldInstance *instance) {
     s32 dz;
     s32 size;
 
-    dx = size = instance->mesh->max[0] - (min_x = instance->mesh->min[0]);
-    dy = instance->mesh->max[1] - (min_y = instance->mesh->min[1]);
-    dz = instance->mesh->max[2] - (min_z = instance->mesh->min[2]);
+    dx = size = instance->mesh->box_max.vx - (min_x = instance->mesh->box_min.vx);
+    dy = instance->mesh->box_max.vy - (min_y = instance->mesh->box_min.vy);
+    dz = instance->mesh->box_max.vz - (min_z = instance->mesh->box_min.vz);
     if (size < dy) {
         size = dy;
     }
@@ -1161,7 +1160,6 @@ u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
     return text + used;
 }
 
-extern s32 func_80028738(s32 file);
 
 /* Load files 0xab and 0xac. */
 void func_800AC308(void) {
@@ -1352,7 +1350,6 @@ s32 func_800ACDEC(s32 offset) {
     return func_800A3018(operand & 0xFFFF);
 }
 
-extern s16 D_8006BE2C[3];
 void func_800AD978(s32 mode);
 
 /* Mark which party slots changed character, then refresh the party. */

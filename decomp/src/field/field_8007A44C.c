@@ -19,7 +19,6 @@
  * to the music and sound-effect code (800854d0). */
 #include "common.h"
 #include "field.h"
-#include "field_anim.h"
 #include "field_gte.h"
 #include "field_motion.h"
 
@@ -1600,8 +1599,6 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
     poly->y3 = y + h;
 }
 
-s32 func_800347AC(TextBox *text);
-s32 func_800347C0(TextBox *text);
 
 /* Draw dialogue window `w`'s frame into `ot` for `buffer`: while opening
  * the window grows from its centre (at least 16 pixels each way) and
@@ -1753,7 +1750,6 @@ void func_8007E1C0(u_long *ot, s32 buffer, s32 w) {
     }
 }
 
-extern u8 D_800594D4[3];    /* window colour */
 
 /* Build dialogue window `w`'s packets for both buffers: the backing draw
  * mode and semi-transparent tile in the window colour, the prompt and
@@ -1901,7 +1897,7 @@ void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     *x = (s16)screen;
 }
 
-void func_80032F54(TextBox *text, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
+void func_80032F54(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 s32 func_80033728(void *messages, void *message);
 
 /* Open dialogue window `w` for `message` at (x, y) with `columns` x `rows`
@@ -1939,11 +1935,11 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         }
     }
     slot = w;
-    D_800C2698[w].text.vars[0] = func_800A3018(0x16);
-    D_800C2698[w].text.vars[1] = func_800A3018(0x18);
-    D_800C2698[w].text.vars[2] = func_800A3018(0x1A);
-    D_800C2698[w].text.vars[3] = func_800A3018(0x1C);
-    D_800C2698[w].text.unk80 = D_800C2698[w].text.vars[3];
+    D_800C2698[w].text.values[0] = func_800A3018(0x16);
+    D_800C2698[w].text.values[1] = func_800A3018(0x18);
+    D_800C2698[w].text.values[2] = func_800A3018(0x1A);
+    D_800C2698[w].text.values[3] = func_800A3018(0x1C);
+    D_800C2698[w].text.selection = D_800C2698[w].text.values[3];
     switch (mode) {
     case 2:
         target_x = 0xA0;
@@ -1981,11 +1977,11 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         D_800C2698[w].style |= 0x20;
     }
     if (D_800B2078.text_speed == 8) {
-        D_800C2698[w].text.speed = 1;
+        D_800C2698[w].text.unk68 = 1;
     } else {
-        D_800C2698[w].text.speed = 2;
+        D_800C2698[w].text.unk68 = 2;
     }
-    D_800C2698[w].text.unk90 = func_80033728(D_800ADBF0, message);
+    D_800C2698[w].message = func_80033728(D_800ADBF0, message);
     D_800C2698[w].busy = 0;
     D_800C2698[w].text.flags |= 2;
     D_800C2698[w].timer = D_800B2078.text_speed;
@@ -2037,7 +2033,7 @@ void func_8008004C(u_long *ot, s32 buffer) {
     s32 selected;
     s32 rank;
     s32 i;
-    TextBox *text;
+    Window *text;
 
     if (!(++D_800ADE98 & 3)) {
         D_800ADE94++;
@@ -2069,8 +2065,8 @@ void func_8008004C(u_long *ot, s32 buffer) {
                         D_800C2698[i].choice.index + D_800C2698[i].choice.first;
                     func_800345E0(text);
                 }
-                if (text->unk82 == 0) {
-                    func_80034714(text, D_800C2698[i].text.unk90);
+                if (text->queued == 0) {
+                    func_80034714(text, D_800C2698[i].message);
                 }
                 func_80034888(text, ot, buffer);
             }
@@ -2093,8 +2089,8 @@ void func_8008004C(u_long *ot, s32 buffer) {
                                 D_800C2698[i].choice.index + D_800C2698[i].choice.first;
                             func_800345E0(text);
                         }
-                        if (text->unk82 == 0) {
-                            func_80034714(text, D_800C2698[i].text.unk90);
+                        if (text->queued == 0) {
+                            func_80034714(text, D_800C2698[i].message);
                         }
                         func_80034888(text, ot, buffer);
                         if (func_80033CD0(text) != 0 && D_800C2698[i].choice.status != 0) {
@@ -2246,8 +2242,9 @@ s32 func_800809D0(FieldActor *actor) {
     return height >> 16;
 }
 
-/* The next word of the current descriptor's actor list. */
-s32 func_80080A18(void) {
+/* A morph channel's update: the next word of the current descriptor's actor
+ * list (the channel itself is not read). */
+s32 func_80080A18(MorphChannel *channel) {
     return D_800AF880.components.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
 }
 
@@ -2401,7 +2398,7 @@ void func_80080F44(s32 index) {
             actor->list = func_80031BDC(0x80, 0);
             if (instance->anims != NULL) {
                 for (i = 0; i < instance->anims->count; i++) {
-                    instance->anims->channels[i].fetch = func_80080A18;
+                    instance->anims->channels[i].update = func_80080A18;
                     actor->list[i] = 0;
                 }
             }
@@ -3159,7 +3156,7 @@ void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, 
 
 /* POLYCHECK: the lowest floor height of descriptor `index`'s collision model
  * under x/z (0, with the height and the last hit's normal), or -1. */
-s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR *normal) {
+s32 func_80083288(s32 index, SpriteModel *model, s32 x, s32 z, s32 *height, VECTOR *normal) {
     PolyCheck *work;
     FieldActor *actor;
     u32 *prim;
@@ -3169,7 +3166,7 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
     s32 i;
 
     work = (PolyCheck *)func_8007CD3C(sizeof(PolyCheck));
-    prim = model->prims;
+    prim = (u32 *)model->unk10;
     work->vertices = model->vertices;
     work->point = (x << 16) + z;
     work->lowest = 0x7FFFFFFF;
@@ -3217,7 +3214,7 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
     }
     SetRotMatrix(&work->transform);
     SetTransMatrix(&work->transform);
-    for (groups = model->groups; groups > 0; groups--) {
+    for (groups = model->group_count; groups > 0; groups--) {
         header = *prim;
         count = header >> 16;
         work->type = header & 0xFF;
@@ -3516,7 +3513,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         layer_flags = other->layer_flags;
         other->layer_flags = layer_flags & 0xFFFF3EFF;
         if (layer_flags & 0x80) {
-            if (func_80083288(u, (PolyModel *)D_800AF880.components.descriptors[u].instance->mesh, x, z, &top, &normal) != 0) {
+            if (func_80083288(u, D_800AF880.components.descriptors[u].instance->mesh, x, z, &top, &normal) != 0) {
                 other->layer_flags &= 0xFF3FFFFF;
                 continue;
             }

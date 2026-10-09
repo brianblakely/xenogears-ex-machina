@@ -6,7 +6,6 @@
 /* Particle effects: 64 slots (800b14b0 states, 800b0108 owners), each a
  * copy of the eight template emitters at 800b02cc with their particles. */
 
-extern s32 D_80050100; /* resident: depth shift */
 
 
 void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);

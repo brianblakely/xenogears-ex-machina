@@ -47,16 +47,6 @@ extern s16 D_800ADFC4[4]; /* terrain push speeds */
 extern u16 D_800ADFA8[8]; /* terrain push angles */
 extern s32 func_800825AC(s32 from, s32 to);
 
-/* A descriptor's collision model for the polygon check (80083288). */
-typedef struct {
-    u8 unk00[6];
-    u16 groups;        /* 06 */
-    SVECTOR *vertices; /* 08 */
-    u8 unk0C[4];
-    u32 *prims;        /* 10: per group a header word (type, flags, count << 16),
-                        * then 8-byte items of vertex indices */
-} PolyModel;
-
 /* The polygon check's scratchpad work area (0xb8 bytes). */
 typedef struct {
     s32 packed[4];     /* 00: projected vertices, x << 16 | z */
@@ -84,7 +74,6 @@ extern s32 func_800A3090(s32 actor, s32 event);
 
 /* The per-actor motion stages of the field update (8008110c). */
 extern s32 D_800AF858;
-extern s32 D_80065B08; /* actor in motion */
 extern void func_800815F0(void);
 extern void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
 extern void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
