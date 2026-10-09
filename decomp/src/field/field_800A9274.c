@@ -184,7 +184,7 @@ void func_800A9688(void) {
     if (D_800ADB34 != 0) {
         return;
     }
-    view = *(MATRIX *)D_800AFA64;
+    view = D_800AF880.scaled_world;
     for (slot = 0; slot < 64; slot++) {
         alive = 0;
         if (D_800B14B0[slot] == 1) {
@@ -654,7 +654,7 @@ s32 func_800AAA74(FieldInstance *instance) {
     return -1;
 }
 
-typedef struct {
+typedef struct FieldSprites {
     DR_MODE modes[33][2];
     SPRT sprites[33][2];
 } FieldSprites;
@@ -1005,12 +1005,6 @@ void func_800ABA98(void) {
     func_800320E8(saved);
 }
 
-typedef struct {
-    DR_MODE modes[5][2];
-    SPRT sprites[5][2];
-} OverlaySprites;
-extern OverlaySprites D_800B0188; /* per sprite and draw buffer */
-
 /* Set up the five 128x224 overlay sprites (8-bit pages from x 280) with
  * their draw modes in both buffers. */
 void func_800ABD18(void) {
@@ -1052,7 +1046,17 @@ void func_800ABEC8(void) {
 
 #include "field_glyph.h"
 
-extern s32 D_800AF780; /* file 0xab bytes left */
+/* The unit's own uninitialized variables, which only the text sequence
+ * below reads: the field BSS 800af76c-800af858, after field_800854D0's and
+ * ahead of the commons (field_common.c). */
+static void *D_800AF76C;           /* file 0xab */
+static TextRollLine *D_800AF770;   /* 16 lines */
+static u8 *D_800AF774;             /* sequence text position */
+static s32 D_800AF778;
+static s32 D_800AF77C;
+static s32 D_800AF780;             /* file 0xab bytes left */
+static void *D_800AF784;           /* file 0xac */
+static POLY_GT4 D_800AF788[2][2];  /* top and bottom fade per buffer */
 
 /* The glyph of the big-endian two-byte code at `text`: codes 8540..887f give
  * overlay font cell code - 8540 (*own 1), any other the kanji ROM bitmap
@@ -1158,8 +1162,6 @@ u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
 }
 
 extern s32 func_80028738(s32 file);
-extern void *D_800AF76C; /* file 0xab */
-extern void *D_800AF784; /* file 0xac */
 
 /* Load files 0xab and 0xac. */
 void func_800AC308(void) {
@@ -1285,9 +1287,6 @@ void func_800ACB90(void) {
     func_800320E8(pixels);
 }
 
-extern u8 *D_800AF774; /* sequence text position */
-extern s32 D_800AF778;
-extern s32 D_800AF77C;
 void func_800AC3AC(void);
 
 /* Start the sequence from file 0xab when enabled. */

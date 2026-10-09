@@ -212,11 +212,9 @@ void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v
     poly->v3 = v3;
 }
 
-extern FieldMarker D_800B0FEC[4]; /* the four compass letters */
-
-/* Build the four compass letters: corners from 800ade30, texture
- * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
- * quad to the second buffer. */
+/* Build the four compass letters (markers 21-24): corners from 800ade30,
+ * texture coordinates from 800ade70 (v offset c0), semi-transparent, then
+ * copy the quad to the second buffer. */
 void func_8007A5C4(void) {
     FieldMarker *record;
     POLY_FT4 *quad;
@@ -224,9 +222,9 @@ void func_8007A5C4(void) {
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        record = &D_800B0FEC[i];
-        copy = &D_800B0FEC[i].poly[1];
-        quad = &D_800B0FEC[i].poly[0];
+        record = &D_800B06BC[i + 21];
+        copy = &D_800B06BC[i + 21].poly[1];
+        quad = &D_800B06BC[i + 21].poly[0];
         SetPolyFT4(quad);
         record->v[0].vx = D_800ADE30[i * 8];
         record->v[0].vy = 0;
@@ -2390,7 +2388,7 @@ void func_80080F44(s32 index) {
     s32 i;
 
     if (index < D_800ADBFC) {
-        D_800B2180[0]++;
+        D_800B2078.unk2180++;
         D_800AF880.components.descriptors[index].actor = func_80031BDC(0x138, 0);
         word = (s32 *)D_800AF880.components.descriptors[index].actor;
         for (i = 0; i < words; i++) {

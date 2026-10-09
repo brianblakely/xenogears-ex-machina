@@ -187,6 +187,7 @@ decomp/src/field/field_800A4748.c
 decomp/src/field/field_800A9274.c
 decomp/src/field/field_actor_events.h
 decomp/src/field/field_anim.h
+decomp/src/field/field_common.c
 decomp/src/field/field_effect.h
 decomp/src/field/field_glyph.h
 decomp/src/field/field_gte.h

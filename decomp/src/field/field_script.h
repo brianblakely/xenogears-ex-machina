@@ -1,13 +1,10 @@
 #ifndef FIELD_FIELD_SCRIPT_H
 #define FIELD_FIELD_SCRIPT_H
 
-/* Event-script state addressed as scalars by the instruction handlers from
- * 80087af0 on (their scheduling needs them apart from the 800b2078 block). */
+/* Event-script state addressed by the instruction handlers from 80087af0 on. */
 
 #include "field.h"
 
-extern u16 D_800B236C; /* menu parameter set by ext 99; the field loop and ext 55
-                        * pass it to the menu (80059171) */
 extern u32 *D_800B1F74; /* TIM image held by instruction 0x77 */
 
 /* Sound-effect bank instruction 0xb0 (resident sound state). */
@@ -31,30 +28,6 @@ extern void func_80080A74(s32 actor);
 typedef struct {
     s32 data[0x14000 / 4];
 } PartySprite;
-
-/* The movie request block at 800c3a20, one object: the instructions that
- * fill it keep their stores ahead of loads through the actor pointer, and
- * the movie player (800a7c58) hoists one base for its fields. field.h
- * still names some halfwords one by one for the older users. */
-typedef struct {
-    s16 file;        /* 20 */
-    u16 x;           /* 22: display position */
-    u16 y;           /* 24 */
-    u16 source_x;    /* 26 */
-    u16 source_y;    /* 28 */
-    u16 unk2A;       /* 2A */
-    u16 sound_start; /* 2C: movie sound time origin */
-    u16 unk2E;       /* 2E */
-    u16 mode;        /* 30: low nibble layout, 0x40/0xc0 fade */
-    u16 width;       /* 32 */
-    u16 height;      /* 34 */
-    u16 depth24;     /* 36: 1 for a 24-bit display */
-    s16 sound_bank;  /* 38: 0xff none */
-    u16 unk3A;       /* 3A */
-} FieldMovieRequest;
-
-extern FieldMovieRequest D_800C3A20;
-#define FIELD_MOVIE D_800C3A20
 
 extern s32 D_800ADB70; /* movie requested */
 

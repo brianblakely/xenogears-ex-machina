@@ -228,7 +228,7 @@ void func_800700B0(void) {
         func_800320E8((void *)D_800AFEA8.handles[i]);
     }
     func_8003748C();
-    module_loaded = &D_800B2264;
+    module_loaded = &D_800B2078.unk2264;
     D_800AFEA8.count = 0;
     if (*module_loaded != 0) {
         func_801E7FD4();
@@ -336,7 +336,7 @@ void func_800705DC(void) {
     D_800B2078.animation_mode = 3;
     D_800B2078.unk234A = 0x40;
     D_800B2078.battle_override = 0xFF;
-    D_800C3A38 = 0xFF;
+    FIELD_MOVIE.sound_bank = 0xFF;
     D_800C3A60 = 0;
     D_800C3A5C = 0;
     D_800B2078.unk21BC[0] = 0;
@@ -390,7 +390,7 @@ void func_800705DC(void) {
     D_800B2078.unk22E0 = 0;
     D_800B2078.effects_kept = 0;
     D_800B14A4 = 0;
-    D_800B2078.unk236C = 0;
+    D_800B236C = 0;
     D_800ADB38 = 0;
     D_800ADB3C = 0;
     D_800AFD14 = 0x20;
@@ -443,7 +443,7 @@ void func_800705DC(void) {
     for (i = 0; i < 16; i++) {
         D_800B2078.encounter_music[i] = 0x1D;
     }
-    D_800B2290 = 0x1D;
+    D_800B2078.battle_music = 0x1D;
     D_800ADBEC = -1;
     D_800B2078.camera_counter = 2;
     D_800B2078.input_mask = 0xFFFF;
@@ -1779,7 +1779,7 @@ void func_80074108(void) {
             func_8007AB6C(D_800C426C->overlay_ot, &D_800B06BC[i], &base, D_800ADB08);
         }
     }
-    addPrim(D_800C426C->overlay_ot, D_800B1E00[D_800ADB08]);
+    addPrim(D_800C426C->overlay_ot, &D_800B1DF4[D_800ADB08][1]);
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(D_800AF880.projection);
 }
@@ -2025,7 +2025,7 @@ void func_800752C8(void) {
     }
     func_800250E0(D_800ADB08);
     func_80024FE4(D_800C426C->ot);
-    func_80024FF4(D_800AFA64);
+    func_80024FF4(&D_800AF880.scaled_world);
     func_8001D468();
     func_8001C9F8();
     func_8001C964();
@@ -2637,9 +2637,9 @@ void func_80077268(void) {
             }
         }
     }
-    D_800B2078.history[2] = 0;
-    D_800B2078.history[1] = 0;
-    D_800B2078.history[0] = 0;
+    D_800B2360[2] = 0;
+    D_800B2360[1] = 0;
+    D_800B2360[0] = 0;
     for (i = 0; i < 0x20; i++) {
         func_80081C54(D_800B2078.controlled);
     }
@@ -2671,10 +2671,8 @@ extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
 extern s32 *D_8005A4A0;      /* the text-image file (a7) */
 extern RECT D_800B004C;      /* compass colour strip */
 extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
-extern s16 D_800C2690;
-extern s16 D_800C2692;
-extern s16 D_800C38FC;
-extern s16 D_800C38FE;
+extern s16 D_800C2690[2];
+extern s16 D_800C38FC[2];
 void func_8003342C(void *table);
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -2694,10 +2692,10 @@ void func_80077620(void) {
     }
     func_800320B8(D_8005A4A0);
     D_8004F344 = 0;
-    D_800C2692 = 0;
-    D_800C2690 = 0;
-    D_800C38FE = 0;
-    D_800C38FC = 0;
+    D_800C2690[1] = 0;
+    D_800C2690[0] = 0;
+    D_800C38FC[1] = 0;
+    D_800C38FC[0] = 0;
     func_8003342C(D_8005A4A0);
     tim = (u32 **)D_8005A4A0;
     for (i = 0; i < 8; i++) {
@@ -2913,7 +2911,9 @@ void func_80085988(void);
  * frame loop until an exit is requested: pauses (pad start, or the stream
  * stopping), battle requests (with the battle music), the queued map, world
  * map and movie exits, menus and debug keys. Leaves through 8007954c with
- * the exit kind. */
+ * the exit kind. The battle music is set ahead of 8004f308 (independent
+ * stores): in the other order the address cse shares between it and +2355
+ * lives one insn longer (17), and loop.c hoists it out of the frame loop. */
 void func_80077E88(void) {
     u8 unused[8]; /* never used; the original frame reserves it */
     s32 exit;
@@ -3040,14 +3040,14 @@ void func_80077E88(void) {
             if (D_800ADBD0 == 1) {
                 D_8005954C = D_800B2078.unk2355;
                 D_800AFC78 = D_8004F324;
-                if (D_8004F338 != D_800B2290) {
+                if (D_8004F338 != D_800B2078.battle_music) {
                     if (D_8004F338 != -1) {
                         D_8004F348 = 1;
                     }
                     func_8001B66C();
+                    D_8004F324 = D_800B2078.battle_music;
                     D_8004F308 = -1;
-                    D_8004F324 = D_800B2290;
-                    func_80085B20(D_800B2290, 1);
+                    func_80085B20(D_800B2078.battle_music, 1);
                 }
                 D_800ADBD0 = 0;
                 D_800ADBD4 = 1;
@@ -3153,7 +3153,7 @@ void func_80077E88(void) {
             if ((D_800C3900 & 0x10) && D_800B2078.script_control[0] == 0 && D_800ADB64 == 0xFF
                 && D_800ADB68 == 1) {
                 D_800ADB64 = 0x80;
-                D_80059171 = D_800B2078.unk236C;
+                D_80059171 = D_800B236C;
             }
         }
         func_80078B5C();
@@ -3419,7 +3419,6 @@ void func_80281204(s32 kind);
  * $v0 live, so no delay slot is filled with a $v0 write. */
 s32 func_80079288(void) {
     s32 start[16];
-    s32 spare[2]; /* unused in the original; reserves 8 bytes */
     u8 *weights;
     s32 total;
     s32 sum;
@@ -3467,7 +3466,7 @@ draw:
     if (found != 0) {
         D_80059508 = i;
         D_800594F8 = 0;
-        D_800B2290 = D_800B2078.encounter_music[i];
+        D_800B2078.battle_music = D_800B2078.encounter_music[i];
         if (D_8004F370 == 0) {
             func_800199CC(2);
         }

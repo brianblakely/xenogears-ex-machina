@@ -423,7 +423,7 @@ void func_800A4DAC(void) {
     for (row = 0; row < 15; row++) {
         addPrim(&D_800C426C->ot[1], &EFFECT_MOVES[row + 1]);
     }
-    addPrim(&D_800C426C->ot[1], &D_800B1E18[D_800ADB08]);
+    addPrim(&D_800C426C->ot[1], &D_800B1DF4[D_800ADB08][3]);
 }
 
 /* Store three words at +14 of `object`. */
@@ -1017,7 +1017,7 @@ void func_800A6C40(void) {
             addPrim(&D_800C426C->overlay_ot[0], &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column]);
         }
     }
-    addPrim(&D_800C426C->overlay_ot[0], &D_800B1E24[D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF4[D_800ADB08][4]);
 }
 
 /* Build the screen grid: 16x16 half-bright quads textured from the
@@ -1089,7 +1089,7 @@ void func_800A708C(void) {
     } else {
         D_801D68B4 = 0;
     }
-    func_801D3538(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, D_800C3A36);
+    func_801D3538(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, FIELD_MOVIE.depth24);
     D_800ADB6C = 0;
     func_80032498(8, 0);
 }
@@ -1107,7 +1107,7 @@ void func_800A7120(u16 frame, s32 unused, u16 buffer) {
     if (D_800ADB74 == 0 && D_800AFE74 == 0) {
         DrawSync(0);
         D_800C426C = &D_800B249C[D_800ADB78];
-        if ((s16)D_800C3A36 == 1) {
+        if ((s16)FIELD_MOVIE.depth24 == 1) {
             D_800B249C[D_800ADB78 & 1].disp.isrgb24 = 1;
         }
     }
@@ -1125,11 +1125,12 @@ void func_800A7218(void) {
     if (D_800ADB6C == 0) {
         func_80028470(0x18, 1);
         mode = 1;
-        if (D_800C3A38 != 0xFF || (D_800ADB80 & 0x40)) {
+        if (FIELD_MOVIE.sound_bank != 0xFF || (D_800ADB80 & 0x40)) {
             mode = 3;
         }
-        func_801D37CC(FIELD_MOVIE.file + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
-                      D_800C3A24, D_800C3A26, D_800C3A28, 0xE0, func_800A7120);
+        func_801D37CC(FIELD_MOVIE.file + 2, FIELD_MOVIE.unk2A, FIELD_MOVIE.sound_start,
+                      FIELD_MOVIE.unk2E, 1, mode, FIELD_MOVIE.unk3A, FIELD_MOVIE.x, FIELD_MOVIE.y,
+                      FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, func_800A7120);
         func_80028470(4, 0);
     }
     func_80032498(8, 0);
@@ -1530,7 +1531,7 @@ void func_800A7C58(void) {
         D_800ADB38 = 1;
     }
     func_80085738();
-    D_800C3A38 = 0xFF;
+    FIELD_MOVIE.sound_bank = 0xFF;
     D_800ADB74 = 0;
     D_800ADB6C = -1;
 }
@@ -1780,7 +1781,7 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
 }
 
 extern RECT D_800AFC28;
-typedef struct {
+typedef struct ScreenColumn {
     u32 words[0x2000];
 } ScreenColumn; /* a 64x256 16-bit VRAM column */
 extern ScreenColumn *D_800AFC70; /* saved screen column */

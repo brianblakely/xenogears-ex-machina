@@ -41,6 +41,7 @@ segments:
     type: code
     start: 0x0
     vram: 0x8006faf0
+    bss_size: 0x14C88
     subsegments:
       # Units change where the jump tables change phase mod 8 (GCC's .align 3
       # is relative to the unit's rodata, placed at 4-byte boundaries; see
@@ -61,9 +62,21 @@ segments:
       - [0x3e4dc, .data, field_800854D0]
       - [0x3f034, .data, field_800A4748]
       - [0x3f984, .data, field_800A9274]
+      # The uninitialized variables follow the program, not loaded: the BSS
+      # the resident's mode table clears (800af5e4 + 4 through the word at
+      # 800c426c, bss_size above). Each unit's own come first, in unit order:
+      # only field_800854D0 (the RECT ring 80091adc keeps) and field_800A9274
+      # (the text sequence) have statics, and no unit forms an address in
+      # another's. The commons, which every unit reaches, follow up to the end
+      # in the original linker's order (field_common.c). Declaring them here
+      # keeps their names out of undefined_syms_auto.txt: the link places
+      # every one from its definition.
+      - { type: .bss, vram: 0x800AF5E8, name: field_800854D0 }
+      - { type: .bss, vram: 0x800AF76C, name: field_800A9274 }
+      - { type: .bss, vram: 0x800AF858, name: field_common }
   - [0x3faf8]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (field.mk), so the decoded image ends six
-  # zero bytes after the data, inside the BSS (800af5e8-800c4270, cleared by
-  # the resident's mode table entry), where the RECT ring at 800af5e8 lives.
+  # zero bytes after the data, inside the BSS, where the RECT ring at
+  # 800af5e8 lives.
   - [0x3fafe]

@@ -397,6 +397,10 @@ converted to C per unit. What converting the targets' `.data` established:
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
   `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
+  Where it lies past the file (field) it is not loaded, and the yaml still lists each
+  `.bss` subsegment with its vram and the segment's `bss_size`: splat then leaves
+  their names out of `undefined_syms_auto.txt`, so the link places every variable
+  from its definition.
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
@@ -425,9 +429,19 @@ converted to C per unit. What converting the targets' `.data` established:
   The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
-  (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
-  the linker's placement rather than modelling it. Zeros a packer added past the
-  program are file padding (Compressed containers).
+  (slot39_common.c, menu_common.c, ovl2602_common.c, field_common.c, mdec commons/),
+  which reproduces the linker's placement rather than modelling it. Zeros a packer
+  added past the program are file padding (Compressed containers).
+- Code shows where an object starts and how far it reaches. A member at a nonzero
+  offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
+  to any other offset of the symbol and which can stay in a register (hoisted by
+  loop.c in field 80077e88, kept across a call in 800859dc); a variable of its own is
+  addressed absolutely at every use. Relative addressing (`addiu a0, s2, -0x162`)
+  and block copies span one object. Field's work block 800b2078 ends at 800b235c,
+  the 0x2e4 bytes 800a3f4c saves, and nothing addresses past 800b2358 from it;
+  800b235c, 800b2360, 800b236c and 800b2370 are commons of their own (800815f0,
+  80081c54, 80085738, 8008848c and 800859dc do not match them as members), the
+  effect launch fields one struct from 800b2374.
 - The menu (GCC 2.7.2) splits its uninitialized variables by size. Those of up to
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's

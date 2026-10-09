@@ -21,7 +21,7 @@ typedef union {
 #define WHOLE(value) (((Fixed *)&(value))->s.whole)
 
 /* One of the two draw-buffer blocks (800b249c, 800ba590). */
-typedef struct {
+typedef struct FieldDrawBlock {
     DRAWENV draw;
     DRAWENV draw2;
     DISPENV disp;
@@ -231,7 +231,7 @@ typedef struct {
 } DialoguePrompt;
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
-typedef struct {
+typedef struct DialogueWindow {
     DR_MODE modes[2]; /* 000: per buffer */
     TextBox text;    /* 018 */
     DialogueFrame frame; /* 0AC */
@@ -384,7 +384,7 @@ typedef struct {
 
 /* The field view and camera state (800af880..800afb56), one object: code
  * addresses its members relative to one another. */
-typedef struct {
+typedef struct FieldView {
     VECTOR eye;              /* 000 */
     VECTOR target;           /* 010 */
     VECTOR up;               /* 020 */
@@ -539,10 +539,10 @@ typedef struct GameState {
     u16 unk2322;         /* 2322 */
 } GameState;
 
-/* Field work state 800b2078..800b2388, one object: stores to its members do
- * not pass loads of other members, and code addresses members relative to
- * one another. */
-typedef struct {
+/* Field work state 800b2078..800b235c, one object: the block 800a3f4c saves
+ * whole; stores to its members do not pass loads of other members, and code
+ * addresses members relative to one another (never past 800b2358). */
+typedef struct FieldWork {
     s16 unk2078;               /* 2078: screen effect running (800a484c) */
     s16 unk207A;               /* 207A */
     s16 effect_steps;          /* 207C */
@@ -599,7 +599,7 @@ typedef struct {
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
     u16 encounter_music[16];   /* 2270: per encounter kind */
-    u8 unk2290[2];             /* 2290: D_800B2290 */
+    s16 battle_music;          /* 2290: the chosen encounter's battle music */
     u8 unk2292[2];
     s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
@@ -627,26 +627,17 @@ typedef struct {
     u8 unk2356;                /* 2356 */
     u8 unk2357;                /* 2357 */
     u8 unk2358;                /* 2358 */
-    u8 unk2359[0x2360 - 0x2359];
-    s32 history[3];            /* 2360: movement history index per party slot */
-    u16 unk236C;               /* 236C */
-    u8 unk236E[2];
-    s32 wave_chunks;           /* 2370: music-wave chunks gathered */
-    s32 unk2374;               /* 2374 */
-    s32 unk2378;               /* 2378 */
-    s32 unk237C;               /* 237C */
-    s32 unk2380;               /* 2380 */
-    s32 unk2384;               /* 2384 */
+    u8 unk2359[0x235C - 0x2359];
 } FieldWork;
 
 /* A loaded sound-effect bank; +14 is its id. */
-typedef struct {
+typedef struct FieldSoundBank {
     u8 unk00[0x14];
     u16 id;
 } FieldSoundBank;
 
 /* Parameters events set at 800b0080, one object. */
-typedef struct {
+typedef struct FieldEventParams {
     s16 unk80[8]; /* 800b0080 */
     s32 unk90;    /* 800b0090 */
     s32 unk94;    /* 800b0094 */
@@ -682,7 +673,7 @@ typedef struct {
     SVECTOR corners[4]; /* A0 */
 } Particle;
 
-typedef struct {
+typedef struct Record78 {
     s16 unk00;       /* 00 */
     u16 unk02;       /* 02: start delay */
     u16 unk04;       /* 04: lifetime, 7fff lasting */
@@ -729,14 +720,14 @@ typedef struct {
 } WaveChunk;
 
 /* One of the three positional sound-emitter slots (800afe88). */
-typedef struct {
+typedef struct EmitterSlot {
     u16 actor;  /* descriptor the sound follows */
     u16 sound;  /* 0xffff when free */
     u16 unk4;
 } EmitterSlot;
 
 /* One of the three field light/lookup slots at 800b06a4. */
-typedef struct {
+typedef struct FieldSlot6 {
     s16 a;
     s16 b;
     s16 c;
@@ -869,7 +860,7 @@ typedef struct {
     s16 shared;
 } SpriteSlot;
 
-typedef struct {
+typedef struct SpriteSlotTable {
     SpriteSlot slot[32];
 } SpriteSlotTable;
 
@@ -968,7 +959,6 @@ extern u16 D_800AFC08[16];    /* compass colors */
 extern u16 D_800AFD24[128];   /* compass palette */
 extern RECT D_800B004C;       /* compass palette area */
 extern FieldMarker D_800B06BC[25]; /* ring, letters, needle and pointer quads */
-extern u32 D_800B1E00[2][0x30]; /* compass background packets per buffer */
 extern s32 D_8004F378;
 extern void func_8008110C(void);
 extern void func_800722F4(void);
@@ -1019,7 +1009,6 @@ extern s32 func_8008492C(FieldActor *actor);
 extern s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper);
 extern void func_80081C54(s32 index);
 extern void func_800379C8(char *format, ...); /* debug print */
-extern s32 D_800B2360[3]; /* movement history index per party slot (FieldWork +2360) */
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);
@@ -1099,24 +1088,34 @@ extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
 extern EventPackage *D_800ADBF8;
 extern s32 D_800ADBFC; /* event actor count */
-extern s32 D_800B2180[]; /* +0: event actors created */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;
 extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
-extern Record78 D_800B02CC[];
+extern Record78 D_800B02CC[8]; /* the eight particle emitters */
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
-/* Field movie parameters (800c3a22..800c3a3a) by halfword; the whole
- * block is D_800C3A20 (FieldMovieRequest, field_script.h). */
-extern u16 D_800C3A22;
-extern u16 D_800C3A24;
-extern u16 D_800C3A26;
-extern u16 D_800C3A28;
-extern u16 D_800C3A2A;
-extern u16 D_800C3A2C; /* movie sound time origin */
-extern u16 D_800C3A2E;
-extern u16 D_800C3A36; /* 1: 24-bit display */
-extern u16 D_800C3A3A;
+/* The movie request block at 800c3a20, one object: the instructions that
+ * fill it keep their stores ahead of loads through the actor pointer, and
+ * the movie player (800a7c58) hoists one base for its fields. */
+typedef struct FieldMovieRequest {
+    s16 file;        /* 20 */
+    u16 x;           /* 22: display position */
+    u16 y;           /* 24 */
+    u16 source_x;    /* 26 */
+    u16 source_y;    /* 28 */
+    u16 unk2A;       /* 2A */
+    u16 sound_start; /* 2C: movie sound time origin */
+    u16 unk2E;       /* 2E */
+    u16 mode;        /* 30: low nibble layout, 0x40/0xc0 fade */
+    u16 width;       /* 32 */
+    u16 height;      /* 34 */
+    u16 depth24;     /* 36: 1 for a 24-bit display */
+    s16 sound_bank;  /* 38: 0xff none */
+    u16 unk3A;       /* 3A */
+} FieldMovieRequest;
+
+extern FieldMovieRequest D_800C3A20;
+#define FIELD_MOVIE D_800C3A20
 extern s32 D_800ADB6C; /* movie stopped */
 extern s32 D_800ADB74; /* movie mode */
 extern s32 D_800ADB80;
@@ -1138,10 +1137,24 @@ extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
 extern FieldWork D_800B2078;
-/* The chosen encounter's battle music, inside FieldWork's span but loaded
- * through its own symbol (80077e88 would share a base with +2355). */
-extern s16 D_800B2290;
+/* The variables after it are objects of their own: code addresses 800b235c,
+ * 800b2360, 800b236c and 800b2370 from symbols of their own (as members of
+ * the block, 800815f0, 80081c54, 80085738, 8008848c and 800859dc compile
+ * differently), and the launch fields from 800b2374. */
 extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
+extern s32 D_800B2360[3];          /* movement history index per party slot */
+extern u16 D_800B236C; /* menu parameter set by ext 99; the field loop and ext 55
+                        * pass it to the menu (80059171) */
+extern s32 D_800B2370; /* music-wave chunks gathered */
+/* An effect launch (80088674, 80088790) for ext 90 and 93. */
+typedef struct FieldLaunch {
+    s32 actor;       /* 2374 */
+    s32 frame;       /* 2378: launch frame kind << 4 */
+    s32 layer_actor; /* 237C: 801e layer actor of frame 1 */
+    s32 layer_node;  /* 2380: 801e layer node of frame 1 */
+    s32 record;      /* 2384: emitter record (800b02cc) being set */
+} FieldLaunch;
+extern FieldLaunch D_800B2374;
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
@@ -1157,7 +1170,6 @@ extern void *D_800B00E0; /* shared wave bank buffer */
 extern void *D_800ADBB8; /* music-wave stream ring */
 extern s32 D_800ADBBC;   /* stream arrivals */
 extern void (*D_800AFEA4)(s32); /* stream chunk callback */
-extern s16 D_800C3A38;
 extern s32 D_800ADB58; /* descriptor whose list is read */
 extern s32 D_800ADB5C; /* list position */
 
@@ -1165,7 +1177,9 @@ extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
 extern RECT D_800AFC80[16]; /* text texture windows */
 extern RECT D_800AFE3C[2]; /* fade texture windows */
-extern DR_MODE D_800B1DF4[2][16]; /* text draw modes per buffer */
+/* Draw modes per buffer, one per text texture window (D_800AFC80): 0 for
+ * the text, 1 the compass, 3 the distortion, 4 the grid. */
+extern DR_MODE D_800B1DF4[2][16];
 extern void func_8007EE0C(s32 window);
 extern u16 D_800C3900; /* pad buttons that move a window's choice */
 extern void func_80034874(TextBox *text, s32 line);
@@ -1216,7 +1230,7 @@ typedef struct {
 extern Zone *D_800ADBF4;            /* trigger zones */
 
 /* Up to 32 texture scrolls (80027d64) created by func_800921E8. */
-typedef struct {
+typedef struct WindowList {
     s16 count;
     s32 handles[32];
     u8 *buffers[32];
@@ -1275,8 +1289,15 @@ extern void func_80070C84(void);
 extern void func_800864B4(void);
 extern void func_800A9274(void);
 extern void func_800ABD18(void);
+
+/* The five overlay sprites 800abd18 sets up, per sprite and draw buffer. */
+typedef struct OverlaySprites {
+    DR_MODE modes[5][2];
+    SPRT sprites[5][2];
+} OverlaySprites;
+extern OverlaySprites D_800B0188;
+
 extern void *D_800ADBF0;
-extern s32 D_800B2264; /* 801e module buffers loaded */
 extern void *D_800ADB20;
 extern void func_8001C8DC(void);
 extern void func_80024FB8(void);
@@ -1292,7 +1313,7 @@ extern void func_801E7FD4(void);
 extern void func_8008083C(s32 index);
 extern void func_8007999C(void);
 extern void func_800A83B4(void);
-extern s16 D_800C3A68[];            /* event variable bank */
+extern s16 D_800C3A68[0x400];       /* event variable bank */
 extern s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
 extern VECTOR *func_8004A414(VECTOR *v, VECTOR *squares); /* square each */
 
@@ -1311,12 +1332,11 @@ extern void func_80085634(s32 a, s32 b);
 
 #define EVENT_OPERAND_BYTE(offset) (D_800ADC00[D_800B0078->pc + (offset)])
 
-extern u8 D_800AFA64[];
 extern s32 D_800C2684; /* piece scale, 0x1000 = 1 */
 
 /* Resident file reads (80029afc): one entry of a file list, whose zero file
  * ends it. */
-typedef struct {
+typedef struct FieldFileRequest {
     u16 file;
     void *destination;
 } FieldFileRequest;
@@ -1357,7 +1377,7 @@ extern void *D_801E8644;
 extern void *D_800ADB20;          /* the 801e module */
 extern void *D_8005A420[4];       /* per layer: first resource (file 6ba + id) */
 extern void *D_8005A450[4];       /* per layer: second resource (file 6bb + id) */
-extern FieldFileRequest D_800B2394[]; /* the module's file list */
+extern FieldFileRequest D_800B2394[10]; /* the module's file list */
 extern void func_801E738C(s32 a0);
 extern void func_801E742C(s32 layer, s32 a1, void *resource_a, void *resource_b, s32 y, s32 a5, s32 a6, s32 a7,
                           SVECTOR *angles);
