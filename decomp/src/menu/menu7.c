@@ -1,11 +1,30 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/model.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "display.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "sound.h"
+#include "spark.h"
+#include "stage.h"
+#include "task.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -359,12 +378,12 @@ Node *func_80089B44(Node *node) {
     node->position.vz = 0;
     node->position.vy = 0;
     node->position.vx = 0;
-    node->unk44.vz = 0;
-    node->unk44.vy = 0;
-    node->unk44.vx = 0;
-    node->rotation.vz = 0;
-    node->rotation.vy = 0;
-    node->rotation.vx = 0;
+    node->angles.vz = 0;
+    node->angles.vy = 0;
+    node->angles.vx = 0;
+    node->offset.vz = 0;
+    node->offset.vy = 0;
+    node->offset.vx = 0;
     node->unk6C = D_80091C0C;
     node->unk4C = node->unk6C;
     node->view = node->unk4C;
@@ -765,7 +784,7 @@ void func_8008A7E0(Node *node) {
     }
     switch (node->type) {
     case 2:
-        func_8003F738(&node->unk44, &node->view);
+        func_8003F738(&node->angles, &node->view);
         if (D_8009289C) {
             MulMatrix0(&node->parent->view, &node->view, &node->unk6C);
         } else {
@@ -782,10 +801,10 @@ void func_8008A7E0(Node *node) {
     case 0:
     case 1:
         if (node->parent != NULL) {
-            node->position.vx = node->rotation.vx;
-            node->position.vy = node->rotation.vy;
-            node->position.vz = node->rotation.vz;
-            func_8003F738(&node->unk44, &node->view);
+            node->position.vx = node->offset.vx;
+            node->position.vy = node->offset.vy;
+            node->position.vz = node->offset.vz;
+            func_8003F738(&node->angles, &node->view);
             TransMatrix(&node->view, &node->position);
             MulMatrix0(&node->parent->unk6C, &node->view, &node->unk6C);
             CompMatrix(&node->parent->unk4C, &node->view, &node->unk4C);
@@ -990,27 +1009,27 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
         key->value = record->value;
         switch (record->kind & 0x7F) {
         case 3:
-            key->target = &node->unk44.vx;
+            key->target = &node->angles.vx;
             key->angular = 1;
             break;
         case 4:
-            key->target = &node->unk44.vy;
+            key->target = &node->angles.vy;
             key->angular = 1;
             break;
         case 5:
-            key->target = &node->unk44.vz;
+            key->target = &node->angles.vz;
             key->angular = 1;
             break;
         case 6:
-            key->target = &node->rotation.vx;
+            key->target = &node->offset.vx;
             key->angular = 0;
             break;
         case 7:
-            key->target = &node->rotation.vy;
+            key->target = &node->offset.vy;
             key->angular = 0;
             break;
         case 8:
-            key->target = &node->rotation.vz;
+            key->target = &node->offset.vz;
             key->angular = 0;
             break;
         }
@@ -1023,27 +1042,27 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
         channel->start = (u8 *)(record->value + base);
         switch (record->kind & 0x7F) {
         case 3:
-            channel->target = &node->unk44.vx;
+            channel->target = &node->angles.vx;
             channel->angular = 1;
             break;
         case 4:
-            channel->target = &node->unk44.vy;
+            channel->target = &node->angles.vy;
             channel->angular = 1;
             break;
         case 5:
-            channel->target = &node->unk44.vz;
+            channel->target = &node->angles.vz;
             channel->angular = 1;
             break;
         case 6:
-            channel->target = &node->rotation.vx;
+            channel->target = &node->offset.vx;
             channel->angular = 0;
             break;
         case 7:
-            channel->target = &node->rotation.vy;
+            channel->target = &node->offset.vy;
             channel->angular = 0;
             break;
         case 8:
-            channel->target = &node->rotation.vz;
+            channel->target = &node->offset.vz;
             channel->angular = 0;
             break;
         }
@@ -1094,12 +1113,12 @@ Node *func_8008B38C(ModelSetFile *file) {
         } else {
             func_80089C88(nodes[records[i].parent], node);
         }
-        node->unk44.vx = records[i].angle.vx;
-        node->unk44.vy = records[i].angle.vy;
-        node->unk44.vz = records[i].angle.vz;
-        node->rotation.vx = records[i].offset[0];
-        node->rotation.vy = records[i].offset[1];
-        node->rotation.vz = records[i].offset[2];
+        node->angles.vx = records[i].angle.vx;
+        node->angles.vy = records[i].angle.vy;
+        node->angles.vz = records[i].angle.vz;
+        node->offset.vx = records[i].offset[0];
+        node->offset.vy = records[i].offset[1];
+        node->offset.vz = records[i].offset[2];
     }
     if (animations != NULL) {
         data = animations;
@@ -1924,10 +1943,10 @@ void func_8008DA48(Emitter *emitter, u32 *ot, MATRIX *view) {
 }
 
 /* Copy one model part's local transform. */
-void func_8008DBC0(SparkModel *model, s16 part, MATRIX *out) {
+void func_8008DBC0(Node *model, s16 part, MATRIX *out) {
     MATRIX unused; /* unused in the original; reserves 32 bytes */
 
-    *out = model->list->parts[part]->matrix;
+    *out = ((ModelSet *)model->data)->nodes[part]->unk4C;
 }
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
@@ -1954,7 +1973,7 @@ void func_8008DCA8(s32 strength) {
 
 /* Emit a burst from a model part while the burst lasts, then move and draw
  * the menu's sparks under the given view. */
-void func_8008DCB8(u32 *ot, SparkModel *model, MATRIX *view, VECTOR *pos) {
+void func_8008DCB8(u32 *ot, Node *model, MATRIX *view, VECTOR *pos) {
     Emitter *emitter = D_80092834;
     MATRIX rotation;
     MATRIX part;
@@ -2709,7 +2728,7 @@ s32 func_8008F9B0(Actor *actor) {
     if (pos.vx > 0 && pos.vz > 0) {
         return 1;
     }
-    return (func_800828C4(actor) & 0x3000000) == 0x1000000;
+    return (func_800828C4(&actor->pos) & 0x3000000) == 0x1000000;
 }
 
 /* Steer the opponent toward one of two headings depending on which side

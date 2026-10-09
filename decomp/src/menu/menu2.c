@@ -1,11 +1,33 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/gpu.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "camera.h"
+#include "display.h"
+#include "effects.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "menus.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
+#include "sound.h"
+#include "stage.h"
+#include "task.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -1008,7 +1030,7 @@ void func_80072858(LightRig *rig) {
     func_8008AC0C(rig->layer);
     func_8007B210(winner, 0);
     winner->node->position.vx = winner->node->position.vy = winner->node->position.vz = 0;
-    winner->node->unk44.vy = 0;
+    winner->node->angles.vy = 0;
     set = winner->node->data;
     set->scale[0] = set->scale[1] = set->scale[2] = D_8009262C;
     ((Node *)winner->object)->view = m;

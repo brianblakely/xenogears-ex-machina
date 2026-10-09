@@ -1,27 +1,16 @@
-#ifndef MENU_H
-#define MENU_H
+#ifndef MENU_ACTOR_H
+#define MENU_ACTOR_H
 
 #include "common.h"
-#include "psyq/libc.h"
 #include "psyq/libgpu.h"
-#include "psyq/libapi.h"
-#include "psyq/libetc.h"
 #include "psyq/libgte.h"
-#include "resident/cd.h"
-#include "resident/console.h"
-#include "resident/gamedata.h"
-#include "resident/gpu.h"
-#include "resident/heap.h"
-#include "resident/mode.h"
 #include "resident/model.h"
-#include "resident/pad.h"
-#include "resident/sound.h"
-#include "resident/sprite.h"
-#include "resident/text.h"
-#include "resident/window.h"
-#include "packets.h"
+#include "node.h"
 
-#include "system.h"
+/* The two fighters of the arena (menu3 80073424-8007B270 but the bout and
+ * camera functions; menu5 80084BEC-80084FD0, 8008509C-8008518C): their
+ * models and moves, shots, trails, hits and input, and the per-frame
+ * status, action and motion. */
 
 /* A projectile fired by an actor. */
 typedef struct {
@@ -108,7 +97,7 @@ typedef struct SideHits {
 } SideHits;
 
 /* Header of an actor's loaded model file (Actor 0x8FC). */
-typedef struct {
+typedef struct SceneHeader {
     u8 core_part;    /* model part and vertex of the upper anchor */
     u8 foot_a_part;  /* model parts and vertices of the feet */
     u8 foot_b_part;
@@ -139,33 +128,15 @@ typedef struct {
     s32 unk30;       /* offset of a table from the header */
 } SceneHeader;
 
-typedef SceneHeader ModelHeader;
-
 /* A loaded model file. */
 typedef struct {
     u8 unk0[0x10];
-    ModelHeader *header; /* 0x10 */
+    SceneHeader *header; /* 0x10 */
     s32 unk14;
     u8 (*parts)[4];    /* 0x18: byte 3 set = part kind A */
     u8 unk1C[4];
     u8 *image;         /* 0x20: palette and emblem pixels */
 } ModelData;
-
-/* A node of a loaded model hierarchy. */
-typedef struct ModelNode {
-    u8 unk0[4];
-    struct ModelNode *next; /* 0x04 */
-    u8 unk8[0x28];
-    void *unk30;
-} ModelNode;
-
-/* A placed scene object. */
-typedef struct {
-    u8 unk0[0x44];
-    SVECTOR rotation;  /* 0x44 */
-} SceneObject;
-
-typedef struct MoveList ModelRecord;
 
 /* A character moved in the menu scene. */
 typedef struct Actor {
@@ -348,160 +319,58 @@ typedef struct {
 
 #define ACTOR_SIDE(actor) (((actor)->flags >> 27) & 1)
 
-/* A step in one of eight directions on the floor plane. */
-typedef struct {
-    s32 x;
-    s32 z;
-} FloorStep;
-
-/* Scene actors and camera: eye position (D_8009867C) and look-at point
- * (D_8009871C). */
-extern Actor D_80097010;
-extern Actor D_8009872C;
-extern VECTOR D_8009867C;
-extern VECTOR D_8009871C;
-
-extern Window D_8009868C; /* message window */
-
-extern u8 *D_8009105C[]; /* scene scripts */
-extern u8 D_80090F38[];
-extern u8 D_800910C4[];
-
-extern s32 D_8009284C; /* horizontal distance between the actors */
-extern s32 D_80092880;
-extern u8 D_80092884;
-extern s32 D_800928C8; /* menu mode */
-extern u8 D_800928D4;
-extern s32 D_80092900; /* bout-end sequence step */
-extern s32 D_80092904; /* camera view */
-extern s32 D_80092934;
-extern u8 D_8009293C;
-extern s32 D_80092948;
-extern FloorStep D_80091084[8];
-extern u8 D_800928FC;
-extern s32 D_80092918;
-extern s32 D_80092944;
-extern s32 D_80092950;
-extern s32 D_800911D4; /* debug: camera tuning with the pad */
-void func_80070808(VECTOR *target, s32 steps);
-void func_800708C4(VECTOR *target, s32 steps);
-s32 func_800887A4(VECTOR *from, VECTOR *to);
-extern s32 D_800928AC;
-extern u8 D_800928C0;
-void func_8007A768(Actor *actor);
-extern s32 D_80092890;
-extern u8 D_800928B4;
-extern u8 D_800928F0;
-extern u8 D_800928F4;
-extern s32 D_8009290C;
-extern s32 D_8009294C;
-extern LightRig *D_800910F0; /* the scene's lights */
-extern VECTOR D_80096FA8;    /* scene origin (last eye position) */
-extern ShotKind D_800910F4[];
-extern SideHits D_80096FB8[2];
-extern s32 D_8009112C;
-extern s32 D_80091198[];
-extern u8 D_80091178[]; /* pairs: next combo number after each button */
-extern s32 D_8009292C;
-
-/* Resident game code. */
-void func_80032F54(Window *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
-s32 func_80033728(s32 table, s32 index);
-void func_80036258(s32 port, s32 arg);
-void func_80034800(Window *window, s32 colour, s32 a2, s32 a3);
-void func_80034874(Window *window, s32 cursor);
-
-/* This overlay. */
-s32 func_800707D8(s32 target, s32 current, s32 steps);
-void func_8007099C(u32 mode);
-void func_80070F80(u8 *script);
-s32 func_8007107C(void);
-void func_80071724(u32 *ot);
-/* Forward word copy, with a positive count divisible by four. */
-void func_800732AC(void *dst, void *src, s32 size);
-/* GTE scaling; all three write x/y/z and preserve out->pad. */
-void func_80073064(SVECTOR *dir, SVECTOR *out, s32 scale); /* GPF, sf=1 */
-void func_800730AC(SVECTOR *dir, SVECTOR *out, s32 scale); /* GPF, sf=0 */
-void func_800730F4(VECTOR *dir, SVECTOR *out, s32 scale);  /* low signed halfwords, sf=1 */
-void func_8008859C(VECTOR *vector, void *out);
-s32 func_800886FC(VECTOR *v);
-s32 func_80088754(VECTOR *v);
-void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color);
-void func_8008EBD0(Actor *owner, s32 index, VECTOR *pos, s32 mode);
-void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out);
-void func_8007C100(CVECTOR *color);
-void func_80076424(Actor *actor);
-void func_80090CC0(Actor *actor);
-void func_80087AB0(Actor *actor);
-void func_80078ED4(s16 *params);
-s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
-void func_8007E894(s32 x, s32 y);
-void func_80074678(Actor *actor, s16 frame, s16 count);
-void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size);
-u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
-void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key);
-void func_8007D7A8(VECTOR *pos, s32 count);
-s32 func_8008ED6C(Actor *owner, s32 index);
-void func_8007E528(s32 state);
-s32 func_8007D190(VECTOR *pos, u32 kind);
-s32 func_8007D25C(s32 type);
-void func_8007D65C(VECTOR *from, VECTOR *to, s32 code);
-void func_80079DF0(Actor *actor, Actor *other);
-void func_8007191C(s32 scene);
-void func_80071DA4(Actor *actor);
-void func_8007E24C(void);
-s32 func_80082488(VECTOR *position, s32 arg);
 /* Per animation: how it ends (0 stop, 1 chain, 2 hold, 3 loop) and the next one. */
 typedef struct {
     u8 kind;
     s8 next;
 } AnimRule;
+
+/* Which special moves an actor has learned and may use. */
+/* Per model id (D_80092874, 0x20 bytes each). */
+typedef struct MoveList {
+    s16 base;       /* 0x00: scales the combo damage (percent per level) */
+    u8 unk2[0x2];
+    s16 level;      /* 0x04: level required to pick the model */
+    u8 tendency[4]; /* 0x06: eagerness values for the brain */
+    u8 learned[14]; /* 0x0A: per combo number from 1 (parts present) */
+    u8 unk18;       /* 0x18: power of the charged shot */
+    u8 unk19[0x7];
+} MoveList;
+
+typedef struct MoveSlot {
+    u8 unk0[0x3];
+    u8 usable;
+} MoveSlot;
+
+extern ShotKind D_800910F4[];
+extern s32 D_8009112C;           /* "ETHER": the name of an ether attack */
 extern AnimRule D_80091130[];
-void func_80082458(SVECTOR *out);
-void func_800828F8(VECTOR *position, VECTOR *step, s32 limit);
-void func_80083738(Actor *actor, Actor *other);
-void func_80083C0C(s32 arg);
-s32 func_80083CD8(void);
-s32 func_8008F4F4(Actor *actor, s32 mask);
-void func_8008EB4C(s32 id);
-void func_8007BB7C(void);
-void func_800831C8(void);
-void func_8008DCA8(s32 arg);
-void func_800720C4(void);
-void func_800732CC(void);
-void func_8008DC28(void);
-void func_80088AF8(void);
-void func_8007E954(s32 arg);
-void func_8007F834(void);
+extern u8 D_80091178[];          /* pairs: next combo number after each button */
+extern s32 D_80091198[];         /* the name of each combo number */
+extern SpriteModel D_80091FB0;   /* the extra object attached to the actors */
+extern u8 D_800925A4[15][3];     /* each combo's command inputs (1 A, 2 B), by special move */
+extern s32 D_8009284C;           /* horizontal distance between the actors */
+extern s32 D_80092850;           /* distance between the actors */
+extern MoveList *D_80092874;     /* per model id */
+extern s32 D_80092934;           /* heading from the second actor to the first */
+extern SideHits D_80096FB8[2];
+extern Actor D_80097010;
+extern Actor D_8009872C;
+
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out);
+s32 func_80073DE4(Actor *actor, s32 amount);
+void func_80074678(Actor *actor, s16 frame, s16 count);
+void func_80074BA4(Actor *actor);
+void func_8007639C(Actor *actor, u8 input); /* queue a command input */
+void func_80076424(Actor *actor);
+void func_8007661C(Actor *actor);
+s32 func_800767C8(Actor *actor);
+s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
+void func_80078ED4(s16 *params);
 void func_80078F00(Actor *actor);
-OtPair *func_8008A2B8(u16 length);
-LightRig *func_8008A3E0(OtPair *layer);
-void func_8008A5BC(LightRig *rig);
-Node *func_8008C2C0(Node *source);
-void func_80080D10(void);
-void func_8008976C(s32 a0, s32 a1);
-void func_8008BC04(void);
-
-/* Idle scene camera. */
-extern u8 D_8009287C;
-
-void func_80083310(s32 arg);
-void func_8007A21C(s32 arg);
-void func_8007AC3C(void);
-
-/* Scene actor models. */
-void *func_800891C0(s32 id);
-void func_80083BB4(s32 both);
-
-/* Menu mode exit. */
-extern s32 D_800917F0;
-
-
-/* Actor setup. */
-Node *func_8008B38C(ModelSetFile *file);
-void func_8008A168(void);
+void func_8007B210(Actor *model, s32 mode);
 void func_80084BEC(Actor *actor);
-void func_8008E6F8(Actor *actor);
-extern SpriteModel D_80091FB0; /* the extra object attached to the actors */
+void func_8008509C(s32 which, s32 id);
+void func_80085134(s32 which);
 
 #endif

@@ -1,11 +1,33 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/console.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/pad.h"
+#include "resident/sprite.h"
+#include "resident/window.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "camera.h"
+#include "display.h"
+#include "effects.h"
 #include "gte.h"
+#include "helpers.h"
+#include "menus.h"
+#include "mode.h"
+#include "node.h"
+#include "packets.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
+#include "sound.h"
+#include "spark.h"
+#include "stage.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -2283,7 +2305,7 @@ void func_80078E94(Actor *actor) {
     actor->node->position.vx = actor->pos.vx;
     actor->node->position.vy = actor->pos.vy;
     actor->node->position.vz = actor->pos.vz;
-    actor->node->unk44.vy = actor->angle;
+    actor->node->angles.vy = actor->angle;
 }
 
 /* Default values of a seven-entry parameter block. */
@@ -3085,12 +3107,12 @@ void func_8007B210(Actor *model, s32 mode) {
 
 /* Build a four-entry palette from two colours (components biased by 0x80,
  * clamped at zero) and load it, keeping the returned CLUT id. */
-void func_8007B270(u8 *first, u8 *second) {
+void func_8007B270(CVECTOR *first, CVECTOR *second) {
     s32 r, g, b;
 
-    r = first[0] - 0x80;
-    g = first[1] - 0x80;
-    b = first[2] - 0x80;
+    r = first->r - 0x80;
+    g = first->g - 0x80;
+    b = first->b - 0x80;
     if (r < 0) {
         r = 0;
     }
@@ -3101,9 +3123,9 @@ void func_8007B270(u8 *first, u8 *second) {
         b = 0;
     }
     D_800926A8[0] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
-    r = second[0] - 0x80;
-    g = second[1] - 0x80;
-    b = second[2] - 0x80;
+    r = second->r - 0x80;
+    g = second->g - 0x80;
+    b = second->b - 0x80;
     if (r < 0) {
         r = 0;
     }

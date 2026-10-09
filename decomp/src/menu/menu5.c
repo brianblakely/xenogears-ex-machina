@@ -1,11 +1,42 @@
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
-#include "spark.h"
-#include "sound.h"
+#include "common.h"
+#include "psyq/inline_c.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "resident/cd.h"
+#include "resident/console.h"
+#include "resident/gamedata.h"
+#include "resident/gpu.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/model.h"
+#include "resident/pad.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "actor.h"
+#include "bout.h"
 #include "brain.h"
-#include "window.h"
+#include "camera.h"
+#include "debug.h"
+#include "display.h"
+#include "effects.h"
+#include "glow.h"
 #include "gte.h"
+#include "helpers.h"
+#include "hud.h"
+#include "menus.h"
+#include "mode.h"
+#include "node.h"
+#include "resident_views.h"
+#include "script.h"
+#include "select.h"
+#include "sound.h"
+#include "stage.h"
+#include "task.h"
+#include "text.h"
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
@@ -1001,16 +1032,16 @@ void func_80084B48(void) {
 /* Attach an extra object (model D_80091FB0) to the actor's model, turned
  * by (0, 0xC00, 0x400). */
 void func_80084BEC(Actor *actor) {
-    void *parent = ((ModelNode *)actor->node)->next->next->unk30;
-    SceneObject *object = func_80089C54();
-    void *part = func_80089FC4();
+    Node *parent = ((ModelSet *)actor->node->data)->nodes[12];
+    Node *object = func_80089C54();
+    NodeModel *part = func_80089FC4();
 
     func_80089E2C(object, part);
     func_8008A184(part, &D_80091FB0);
     func_80089C88(parent, object);
-    object->rotation.vy = 0xC00;
-    object->rotation.vx = 0;
-    object->rotation.vz = 0x400;
+    object->angles.vy = 0xC00;
+    object->angles.vx = 0;
+    object->angles.vz = 0x400;
 }
 
 /* Set up an actor from its loaded model file on one side of the scene:
@@ -1019,7 +1050,7 @@ void func_80084BEC(Actor *actor) {
 void func_80084C88(Actor *actor, ModelData *data, s32 side) {
     RECT rect;
     void *block; /* the model object, later the mirrored emblem */
-    ModelHeader *header;
+    SceneHeader *header;
     u8 *source;
     s32 i;
     s32 j;

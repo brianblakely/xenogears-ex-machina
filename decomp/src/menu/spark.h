@@ -1,25 +1,14 @@
 #ifndef MENU_SPARK_H
 #define MENU_SPARK_H
 
-#include "menu.h"
-#include "sparkle.h"
-#include "scene.h"
+#include "common.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "node.h"
 
-/* A model's part list, as far as the menu reads it. */
-typedef struct {
-    u8 unk0[0x4C];
-    MATRIX matrix; /* 0x4C: the part's local transform */
-} ModelPart;
-
-typedef struct {
-    u32 unk0;
-    ModelPart **parts;
-} ModelPartList;
-
-typedef struct {
-    u32 unk0;
-    ModelPartList *list;
-} SparkModel;
+/* Spark emitters (menu7 8008C7C0-8008DF30): pools of sparks of one shape
+ * (lines through their last positions, tiles or dots), launched by a
+ * placement rule and moved under gravity with a bounce. */
 
 /* The common head of every spark record. */
 typedef struct {
@@ -116,15 +105,14 @@ typedef struct {
     TILE_1 dot[2];
 } SparkDot;
 
-extern u16 D_80091CE0[]; /* glow palette (256 entries) */
-
-void func_800324B8(s32 tag);                 /* heap allocation tag */
 Emitter *func_8008D3F4(s32 shape, s32 placement);
 void func_8008D580(Emitter *emitter);
 void func_8008D5C0(Emitter *emitter, s32 count);
 void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count);
 void func_8008DA48(Emitter *emitter, u32 *ot, MATRIX *view);
-void func_8008DBC0(SparkModel *model, s16 part, MATRIX *out);
+void func_8008DBC0(Node *model, s16 part, MATRIX *out);
+void func_8008DC28(void);
+void func_8008DCA8(s32 strength);
 /* Rotate with the loaded GTE matrix, then scale through IR0 with GPF12.
  * Only out->vx/vy/vz are written; out->pad is preserved. */
 void func_8008DDFC(SVECTOR *vector, SVECTOR *out, s32 scale);
