@@ -16,8 +16,9 @@
   go to `80078998`...`8007887c`. Any other type gets the script error
   `800792f8`.
 
-**Data.** Battle n's enemy data file is directory (12, 1) file 2n + 2: ovl2615
-`801e5384` loads it and `801e4870` points the scripts.
+**Data.** Battle n's enemy data file is directory (12, 1) file 2n + 2, n the
+formation's battle byte ([formations.md](formations.md)): ovl2615 `801e5384` loads it
+and `801e4870` points the scripts.
 
 - File layout: `+0x00` holds eight u16 block offsets (enemy ids 0-7), then
   zeros. `+0x30` is the name table offset, and `+0x32` holds eight 0x170-byte
@@ -83,10 +84,17 @@ whose enemy files are identical:
   (slot39); the `800d32a1` slot flag is "in a gear" (ovl2615 copies the game
   data's per-member gear flag `D_8006F8E5` and the formation id's bit 7; battle
   reads it as `D_800D32A0[slot].unk1` to choose gear commands).
+- Formations are cross-checked ([formations.md](formations.md); `python3 -m
+  tools.analysis.formations --sweep`). The field and world map encounter sets place
+  256 (battle, enemy id) pairs, each a block of its battle's enemy file, and none of
+  the 33 blocks without a script table. 319 of the 575 script tables are placed by no
+  formation; 313 of them are byte-identical to a placed block (277 are copies of one
+  84-byte block). No formation names battle 58. The commands every enemy's scripts
+  select are counted against the formula tables in
+  [dispatch-tables.md](dispatch-tables.md) whatever places it.
 
 **Open.**
 
-- Formations are not cross-checked: the encounter sets in field bundles and on
-  the world map decide which (battle, enemy id) pairs are placed. The commands
-  every enemy's scripts select are counted against the formula tables in
-  [dispatch-tables.md](dispatch-tables.md) whatever places it.
+- Six script tables differ from every placed block and no formation places them:
+  battle 5 id 4, 8 id 4, 25 id 2, 53 id 2, and 58 ids 0 and 1. Nothing else is known
+  to start them or battle 58 ([formations.md](formations.md)).

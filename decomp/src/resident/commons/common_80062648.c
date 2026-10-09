@@ -9,19 +9,18 @@ s32 D_8006585C[27]; /* unreferenced */
 u8 *D_800658C8; /* battle scene data */
 void *D_800658CC;
 s32 D_800658D0[3]; /* unreferenced */
-u8 D_800658DC[16][0x20]; /* encounter sets: battle, field, world map */
+struct EncounterSet D_800658DC; /* battle, field, world map, ovl2606 */
 u8 D_80065ADC[16]; /* field, debug595 */
 s32 D_80065AEC[4]; /* unreferenced */
 void *D_80065AFC[3]; /* party character file blocks */
 s32 D_80065B08; /* field */
 u8 D_80065B0C[0x6300]; /* the sound driver's memory pool */
 s32 D_8006BE0C; /* unreferenced */
-u8 D_8006BE10[0x10]; /* sprites, battle */
-u8 *D_8006BE20; /* the shared animation block */
+u8 D_8006BE10[0x14]; /* the shared sprite source (a SpriteSource record): sprites, battle */
 void *D_8006BE24;
 s32 D_8006BE28; /* unreferenced */
 s16 D_8006BE2C[3]; /* field */
 
-#include "../menu.h"
-#include "../mode.h"
-#include "../sprite.h"
+#include "resident/menu.h"
+#include "resident/mode.h"
+#include "resident/sprite.h"

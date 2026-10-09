@@ -59,6 +59,12 @@ typedef struct {
     u_long tag;
     u_char r0, g0, b0, code;
     short x0, y0;
+} TILE_1;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
     u_char u0, v0;
     u_short clut;
     short w, h;
@@ -71,6 +77,14 @@ typedef struct {
     u_char u0, v0;
     u_short clut;
 } SPRT_8;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
+    u_char u0, v0;
+    u_short clut;
+} SPRT_16;
 
 typedef struct {
     u_long tag;
@@ -135,6 +149,16 @@ typedef struct {
     short x2, y2;
     u_long pad;
 } LINE_F3;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
+    short x1, y1;
+    short x2, y2;
+    short x3, y3;
+    u_long pad;
+} LINE_F4;
 
 typedef struct {
     u_long tag;
@@ -214,6 +238,16 @@ typedef struct {
 
 typedef struct {
     u_long tag;
+    u_long code[2];
+} DR_AREA;
+
+typedef struct {
+    u_long tag;
+    u_long code[2];
+} DR_OFFSET;
+
+typedef struct {
+    u_long tag;
     u_long code[1];
 } DR_TPAGE;
 
@@ -248,9 +282,6 @@ typedef struct {
 #define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
     (p)->x0 = _x0, (p)->y0 = _y0, (p)->x1 = _x1, (p)->y1 = _y1, \
     (p)->x2 = _x2, (p)->y2 = _y2, (p)->x3 = _x3, (p)->y3 = _y3
-#define setUV4(p, _u0, _v0, _u1, _v1, _u2, _v2, _u3, _v3) \
-    (p)->u0 = _u0, (p)->v0 = _v0, (p)->u1 = _u1, (p)->v1 = _v1, \
-    (p)->u2 = _u2, (p)->v2 = _v2, (p)->u3 = _u3, (p)->v3 = _v3
 #define setXYWH(p, _x0, _y0, _w, _h) \
     (p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x0) + (_w), (p)->y1 = (_y0), \
     (p)->x2 = (_x0), (p)->y2 = (_y0) + (_h), (p)->x3 = (_x0) + (_w), (p)->y3 = (_y0) + (_h)
@@ -279,6 +310,7 @@ int StoreImage(RECT *rect, u_long *p);
 int MoveImage(RECT *rect, int x, int y);
 u_long *ClearOTagR(u_long *ot, int n);
 void DrawOTag(u_long *p);
+void DrawOTagEnv(u_long *p, DRAWENV *env);
 void DrawPrim(void *p);
 void AddPrim(void *ot, void *p);
 void AddPrims(void *ot, void *p0, void *p1);
@@ -301,7 +333,11 @@ void SetDrawMode(DR_MODE *p, int dfe, int dtd, int tpage, RECT *tw);
 void SetTexWindow(DR_TWIN *p, RECT *tw);
 void SetDrawTPage(DR_TPAGE *p, int dfe, int dtd, int tpage);
 void SetDrawMove(DR_MOVE *p, RECT *rect, int x, int y);
+void SetDrawArea(DR_AREA *p, RECT *r);
+void SetDrawOffset(DR_OFFSET *p, u_short *ofs);
+void SetDrawEnv(DR_ENV *dr_env, DRAWENV *env);
 u_short GetClut(int x, int y);
+u_short LoadClut2(u_long *clut, int x, int y);
 u_short GetTPage(int tp, int abr, int x, int y);
 DRAWENV *SetDefDrawEnv(DRAWENV *env, int x, int y, int w, int h);
 DISPENV *SetDefDispEnv(DISPENV *env, int x, int y, int w, int h);

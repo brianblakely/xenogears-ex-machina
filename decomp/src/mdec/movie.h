@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "psyq/libcd.h"
+#include "psyq/libpress.h"
 
 /* Resident services used by the movie library. */
 void func_800284B4(s32 *directory, s32 *offset); /* current directory */
@@ -35,23 +36,10 @@ typedef struct MovieSectorHeader {
     u32 unused[3];
 } MovieSectorHeader;
 
-/* PsyQ libpress / CD streaming members linked into this image. */
-void DecDCTReset(s32 mode);
-void DecDCToutCallback(void (*callback)(void));
-void StUnSetRing(void);
-void StSetRing(void *ring, s32 sectors);
-s32 StGetBackloc(CdlLOC *location);
-void StSetStream(s32 mode, s32 start_frame, s32 end_frame, void *func1, void *func2);
+/* The player's own functions. */
 void movie_slice_decoded(void);
 void movie_stop(void);
 void movie_decode(void);
-void DecDCTin(void *buffer, s32 mode);
-void DecDCTout(void *buffer, s32 size);
-s32 DecDCTvlcSize(s32 size);
-s32 DecDCTvlc(u32 *bitstream, void *buffer);
-s32 StGetNext(u32 **data, void *header);
-void StFreeRing(void *data);
-void StCdInterrupt(void);
 u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
 

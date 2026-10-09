@@ -10,12 +10,12 @@ s32 D_8006F990[3];
 VECTOR D_8006F99C; /* positions (16.16) of two field points */
 VECTOR D_8006F9AC;
 struct FileRequest D_8006F9BC[4]; /* the mode's sound files */
-u8 D_8006F9DC[0x20]; /* scene state: [2] the scene selector */
+struct BattleFormation D_8006F9DC; /* the battle's formation */
 struct SpuMemBlock D_8006F9FC[12]; /* the SPU memory map */
 s32 D_8006FABC[3]; /* party members of the loaded field files */
 u8 D_8006FAC8[0x28]; /* the SPU memory management table (SpuInitMalloc, 4 blocks) */
 
-#include "../cd.h"
-#include "../mode.h"
-#include "../sound.h"
-#include "../sprite.h"
+#include "resident/cd.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"

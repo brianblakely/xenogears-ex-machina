@@ -2,6 +2,7 @@
 #define OVL2615_BATTLE_SETUP_H
 
 #include "common.h"
+#include "resident/formation.h"
 
 /* Combatant slots: 0-2 party members, 3-10 enemies. */
 #define SLOT_COUNT 11
@@ -360,16 +361,15 @@ extern s16 D_800D39E0;
 
 void memmove(void *dest, void *src, s32 size); /* memmove */
 
-/* The battle formation record (resident game data at 0x8006F9DC). Its
- * per-combatant bytes are laid out relative to the slot number. */
-extern u8 D_8006F9DC[];
-
-#define FORMATION_FLAGS D_8006F9DC[1] /* 0x20 alternate module, 0x40/0x80 commands 7/8 */
-#define FORMATION_PARTY_GROUP(member) D_8006F9DC[4 + (member)]
-#define FORMATION_ENEMY_ID(enemy) D_8006F9DC[8 + (enemy)] /* 0x80: placed alone */
-#define FORMATION_ENEMY_FLAGS(enemy) D_8006F9DC[0x10 + (enemy)]
-#define FORMATION_ENEMY_GROUP(enemy) D_8006F9DC[0x18 + (enemy)]
-#define FORMATION_FLAG6(slot) D_8006F9DC[0x18 + (slot)]
+/* The battle's formation (D_8006F9DC, resident/formation.h), as the setup
+ * reads it. FORMATION_FLAG6 indexes the enemy groups by slot (3-10), not by
+ * enemy: slots 8-10 read the three bytes after the record. */
+#define FORMATION_FLAGS D_8006F9DC.flags
+#define FORMATION_PARTY_GROUP(member) D_8006F9DC.partyGroups[member]
+#define FORMATION_ENEMY_ID(enemy) D_8006F9DC.enemyIds[enemy]
+#define FORMATION_ENEMY_FLAGS(enemy) D_8006F9DC.enemyFlags[enemy]
+#define FORMATION_ENEMY_GROUP(enemy) D_8006F9DC.enemyGroups[enemy]
+#define FORMATION_FLAG6(slot) D_8006F9DC.enemyGroups[slot]
 extern u8 D_800C3D48;
 extern u8 D_8006ED0B[][0x20];   /* character table (+0xB) */
 extern u8 *D_800C20F0[];        /* command menu layouts */
@@ -795,8 +795,8 @@ typedef struct {
     u8 pad8CE4[0x40];
     SpriteRow rows[SLOT_COUNT];  /* +8d24 */
     u8 loaded;                   /* +8da8: set when loading ends */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* A file list entry for the disc reader (ended by file 0). */
 typedef struct {
@@ -985,7 +985,7 @@ void func_801E91E8(void);
 /* Load modes (load_modes.c, burst_modes.c): flip to the other display
  * buffer and clear its ordering table. */
 static inline void swap_buffers(void) {
-    BattleWork *work = &D_800C3EB0;
+    BattleArea *work = &D_800C3EB0;
     DrawBuffer *next = &work->buffers[0];
 
     if (work->current == next) {

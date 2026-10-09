@@ -13,8 +13,8 @@
  * D_800591B4 ends it or opens sprite_80022090.o's .sdata is undetermined. */
 #include "common.h"
 #include "psyq/libgpu.h"
-#include "mode.h"
-#include "sprite.h"
+#include "resident/mode.h"
+#include "resident/sprite.h"
 
 s32 D_80059198 = 0; /* extra frames per update */
 SpriteVoice *D_8005919C = NULL;

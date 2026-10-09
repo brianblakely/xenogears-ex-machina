@@ -128,8 +128,8 @@ typedef struct {
     u16 pressed;      /* +8c5e: pad buttons pressed */
     u8 unk8C60[0x8DAC - 0x8C60];
     s32 frame_rate;   /* +8dac: frames per update - 1 */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* Battle combatant records (0x170 each: party 0..2, enemies 3..10). */
 typedef struct {

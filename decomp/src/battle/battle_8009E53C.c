@@ -588,7 +588,6 @@ void func_8009F794(ModelList *list, s32 release) {
 }
 
 /* The in-place matrix product used to scale the shadow's rotation. */
-void func_80049ACC(MATRIX *m, MATRIX *scale);
 SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 

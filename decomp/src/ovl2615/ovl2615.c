@@ -451,15 +451,15 @@ void func_801E5384(void) {
     D_800D39F0 = func_80032E88(archive[0x26], 0);
     func_800320E8(D_800595A8);
     func_80028470(0xC, 1);
-    D_800C3DD0 = func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 2), 0);
+    D_800C3DD0 = func_8008ABB8(func_800288EC(D_8006F9DC.battle * 2 + 2), 0);
     D_800D33EC = D_800C3DD0;
     list = &D_800D33E8;
-    *list = D_8006F9DC[0] * 2 + 2;
-    D_800C3DEC = func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 3), 1);
+    *list = D_8006F9DC.battle * 2 + 2;
+    D_800C3DEC = func_8008ABB8(func_800288EC(D_8006F9DC.battle * 2 + 3), 1);
     D_800D33F4 = D_800C3DEC;
     D_800D33F8 = 0;
     D_800D33FC = NULL;
-    D_800D33F0 = D_8006F9DC[0] * 2 + 3;
+    D_800D33F0 = D_8006F9DC.battle * 2 + 3;
     func_80029AFC(list, 0, 0x80);
 }
 

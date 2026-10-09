@@ -2,6 +2,7 @@
 #define OVL3087_OVL3087_H
 
 #include "common.h"
+#include "resident/formation.h"
 
 /* Battle event script interpreter (loaded at 801e5000 by the battle
  * overlay when the formation sets 800c3d48). Scripts run as up to 16
@@ -166,8 +167,8 @@ typedef struct {
     BattleEvent events[32];
     u8 padA38[0x8C8C - 0xA38];
     struct BattleActor *actors[16];
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 extern u8 D_801E9C20[16]; /* actor action started by the script */
 extern BattleState *D_800C3EAC;
 
@@ -245,12 +246,6 @@ typedef struct {
     void *dest;
 } FileRequest;
 
-/* The script set of this battle is a field of the resident game data
- * (base not yet named); the original addresses it as a structure field. */
-typedef struct {
-    u8 scriptSet;
-} GameDataScriptSet;
-extern GameDataScriptSet D_8006F9DF;
 /* The message text window (0x98 bytes, pointer 800d2dac). */
 typedef struct {
     s16 column; /* 0x00 cursor */

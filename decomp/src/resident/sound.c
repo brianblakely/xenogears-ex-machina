@@ -1,7 +1,8 @@
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libspu.h"
-#include "sound.h"
+#include "resident/sound.h"
+#include "own_declarations.h"
 
 /* The sequence opcode handlers (8003cd00-8003e54c): each takes the position
  * after the opcode and returns the position after its arguments. */
@@ -3978,8 +3979,6 @@ s32 func_8003F684(u32 *data) {
     } while (count != 0);
     return sum;
 }
-
-extern void func_80038428(void *bank);
 
 /* Report a driver error once (until cleared): remember the code, load the
  * built-in error bank and play its beep. */

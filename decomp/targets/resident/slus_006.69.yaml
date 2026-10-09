@@ -21,8 +21,9 @@ options:
   undefined_funcs_auto_path: .local/decomp/resident2/undefined_funcs_auto.txt
   undefined_syms_auto_path: .local/decomp/resident2/undefined_syms_auto.txt
   find_file_boundaries: False
+  # gp_value resolves $gp-relative accesses while splitting; the link sets
+  # _gp itself from the linked small data (link.ld).
   gp_value: 0x80059170
-  ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
   ld_bss_is_noload: True

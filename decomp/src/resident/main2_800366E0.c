@@ -8,14 +8,15 @@
 #include "psyq/libgpu.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "text.h"
-#include "window.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
-#include "cd.h"
-#include "heap.h"
-#include "mode.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
+#include "resident/cd.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "own_declarations.h"
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (80059394), the larger format defaults and music file list in its .bss
@@ -751,7 +752,6 @@ typedef struct SoundModeVoice {
 extern SoundModeVoice *D_80059518;
 extern SpuVolume D_8005940C;                   /* reverb depth */
 extern SoundTrack *D_80059564;
-extern s16 D_8005A3EE; /* the CD request of D_8005A3C0 (link.ld) */
 s32 func_80038824(void);
 void func_8003885C(s32 volume);
 void func_80038DF4(void);
@@ -1201,7 +1201,7 @@ void func_800386C4(s32 mode) {
         func_8003E680(0x100, (SoundSeq *)track);
     }
     if (D_8005957C & 0x4000) {
-        func_8003885C(D_8005A3EE);
+        func_8003885C(D_8005A3C0.cd_request);
     }
     voice = D_80059518;
     if (voice != NULL && (voice->flags & 1)) {
@@ -1249,7 +1249,7 @@ void func_8003885C(s32 volume) {
     u16 flags = D_8005957C;
     s32 same;
 
-    D_8005A3EE = volume;
+    D_8005A3C0.cd_request = volume;
     if (flags & 0x700) {
         same = volume;
         volume = 0;

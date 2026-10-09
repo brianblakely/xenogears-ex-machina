@@ -37,8 +37,8 @@ typedef struct {
     u16 flags;         /* +8c5e: bit 8 ends the battle-entry effect */
     u8 unk8C60[0x24];
     s32 buffer;        /* +8c84: double-buffer index being drawn */
-} BattleWork;
-extern BattleWork D_800C3EB0;
+} BattleArea;
+extern BattleArea D_800C3EB0;
 
 /* Resident task system: a task node (update) followed by its drawing node;
  * both callbacks receive their node, whose +4 names the task's object. */

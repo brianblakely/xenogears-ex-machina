@@ -17,7 +17,8 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
-#include "area.h"
+#include "battle/area.h"
+#include "resident/formation.h"
 
 /* The battle's shared tables and state, which open .data (800c2048-800c348c).
  * The flags D_800C204C and D_800C2050 and the unreferenced object at 800c3488
@@ -362,7 +363,7 @@ void func_80070F40(void) {
         func_800295D8(6, 0x80280000, 0, 0x80);
         func_80028A60(0);
     }
-    memmove(D_8006F9DC, D_800658DC[D_80059508], 0x20);
+    memmove(&D_8006F9DC, &D_800658DC.formations[D_80059508], sizeof(BattleFormation));
     func_800B8098(D_8005954C);
     func_8007252C();
     D_800C3E4C = 2;
@@ -465,7 +466,7 @@ void func_80070F40(void) {
     while (D_800CCC58 != 0) {
         func_800716D8();
     }
-    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC[1] & 8)) {
+    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC.flags & 8)) {
         func_800B39C0(0x40, 2, 0x40, 0x40, 0x40);
     }
     func_80070EDC();

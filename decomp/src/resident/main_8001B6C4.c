@@ -7,17 +7,17 @@
 #include "psyq/libgte.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
-#include "mode.h"
-#include "menu.h"
-#include "sprite.h"
-#include "cd.h"
-#include "stream.h"
-#include "model.h"
-#include "heap.h"
-#include "text.h"
-#include "pad.h"
-#include "console.h"
-#include "sound.h"
+#include "resident/mode.h"
+#include "resident/menu.h"
+#include "resident/sprite.h"
+#include "resident/cd.h"
+#include "resident/stream.h"
+#include "resident/model.h"
+#include "resident/heap.h"
+#include "resident/text.h"
+#include "resident/pad.h"
+#include "resident/console.h"
+#include "resident/sound.h"
 
 /* Sound programs requested for each battle mode; 0xff absent. */
 u8 D_8004F388[6][3] = {
@@ -124,7 +124,7 @@ void func_8001B970(void) {
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DC[2], 0, &D_80059470, &D_80059520, &D_8005949C);
+    func_800379D8(D_8006F9DC.stage, 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 u8 D_800594F8;
@@ -252,7 +252,7 @@ void func_8001BE14(void) {
 
 /* Reset the menu's two views to the origin at distance 0x800. */
 void func_8001BEEC(void) {
-    MenuWork *work = D_800625A0;
+    MenuState *work = D_800625A0;
 
     work->offset.vz = 0x800;
     work->offset2.vz = 0x800;
@@ -316,7 +316,7 @@ void func_8001BF38(void) {
 
 /* Menu frame: decode input, flip buffers, clear the ordering table, draw the debug overlays, then present. */
 void func_8001C074(void) {
-    MenuWork *work;
+    MenuState *work;
 
     func_8001BF38();
     work = D_800625A0;
@@ -428,8 +428,8 @@ void func_8001C1A8(void) {
             func_800295D8(0x6B9, (void *)0x801DC000, 0, 0x80);
             func_80028A60(0);
             func_80028470(0x10, 0);
-            D_8005A4AC = func_80031BDC(0x4000, 0);
-            D_8005A4B0 = func_80031BDC(0x4000, 0);
+            D_8005A4AC[0] = func_80031BDC(0x4000, 0);
+            D_8005A4AC[1] = func_80031BDC(0x4000, 0);
         }
         low = func_80031BDC(4, 1);
         overlay = func_80031BDC((u8 *)low - (u8 *)0x801C5000, 1);
@@ -465,8 +465,8 @@ void func_8001C1A8(void) {
         if (D_80059460 == 5) {
             func_800320E8(D_800658CC);
             func_800320E8(D_8006BE24);
-            func_800320E8(D_8005A4AC);
-            func_800320E8(D_8005A4B0);
+            func_800320E8(D_8005A4AC[0]);
+            func_800320E8(D_8005A4AC[1]);
         }
         D_80059178 = 1;
         func_80019ACC(0);

@@ -2,6 +2,7 @@
 #define OVL2596_BATTLE_RESULTS_H
 
 #include "common.h"
+#include "resident/formation.h"
 
 /* libgpu primitives (PsyQ layout). */
 typedef struct {
@@ -433,7 +434,6 @@ extern u8 D_800D2DCC[11];       /* per slot: present */
 extern u8 D_800C3D1B[8][4];     /* per enemy: [0] nonzero, no rewards */
 extern u8 D_800D3294;
 extern u8 D_800D2D50;
-extern u8 D_8006F9DD;
 u16 func_80089C08(u8 enemy);
 void func_800BCD98(s32 arg);
 void func_801E1FB8(u32 experience);

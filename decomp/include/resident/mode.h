@@ -4,6 +4,8 @@
 #include "common.h"
 #include "gpu.h"
 #include "cd.h"
+#include "gamedata.h"
+#include "formation.h"
 
 /* Resident startup and the mode dispatcher (0x80019524-0x80019d48). */
 
@@ -33,7 +35,6 @@ typedef struct {
 
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
-extern u8 D_8006F9DC[0x20]; /* scene state: [2] the scene selector */
 extern u8 *D_80059470;  /* the scene music sequence */
 extern s32 D_80059520;
 extern u8 *D_8005949C;  /* the scene music instrument data */
@@ -53,32 +54,6 @@ extern s32 D_80062518[4]; /* loaded wave bank per slot */
 extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
-/* A 0xa4-byte character record of the game data. */
-typedef struct {
-    u8 first;
-    u8 rest[0xA3];
-} CharacterRecord;
-
-/* Game data 8006d634: the saved game, the 0x2358 bytes 8001b970 loads from
- * directory 16 file 3. The record count is not established. 8001b970 reads
- * the name slots' second bytes from a base of their own, D_8006D635
- * (link.ld). */
-typedef struct GameData {
-    u8 names[31][0x14]; /* text codes, two bytes per code */
-    u8 unknown0[0x30C - 31 * 0x14];
-    CharacterRecord characters[11];
-    u8 unknown1[0x1924 - 0x30C - 11 * 0xA4];
-    u32 gold;            /* 1924: at most 999999999 */
-    u8 unknown2[0x1D34 - 0x1928];
-    u8 party[3];         /* 1d34: character per slot, 0xff empty */
-    u8 unknown3[0x231A - 0x1D37];
-    u16 map;             /* 231a: the saved map (scene) */
-    u16 entry[3];        /* 231c: its entry parameters */
-    u8 unknown4[0x2358 - 0x2322];
-} GameData;
-
-extern GameData D_8006D634;
-extern GameData *D_8005A39C;
 extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
 extern void *D_80065AFC[3];       /* party character file blocks */
 extern void *D_8005A4A0;          /* file 0xa7 block */
@@ -131,5 +106,33 @@ void func_8001AD1C(void);
 s32 func_8001ACF0(s32 index);
 void func_8001BB50(void);
 void func_80024F20(void);
+
+/* More of the mode dispatcher's calls and state. */
+void func_80019964(void);
+void func_80019CA0(void);
+void func_8001AC94(void);
+void func_8001ACA4(void);
+void func_8001B044(void);
+s32 func_8001B484(s32 map, s32 slot);
+void func_8001B66C(void);
+void func_8001B970(void);
+void func_8001BB0C(void);
+void func_8001BBAC(void);
+extern u8 D_80059430;
+extern u8 D_80059434;
+extern u8 D_80059438;
+extern u8 D_8005943C;
+extern s32 *D_800594F0;
+extern u8 D_800594F8;
+extern u8 D_8005959C;
+extern void *D_8005A420[4];
+extern void *D_8005A450[4];
+extern s32 D_80065B08;
+extern u8 D_80062648[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
+extern s32 D_80065848[5];
+extern u8 D_8005947C; /* the next battle's formation + 1 (formation.h) */
+extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) */
+extern s16 D_8006BE2C[3]; /* per party slot (the field) */
+extern u8 D_80059180; /* battle music playing */
 
 #endif

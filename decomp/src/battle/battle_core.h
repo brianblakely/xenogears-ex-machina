@@ -660,8 +660,6 @@ extern u8 D_8005954C;      /* battle kind */
 extern u8 *D_800595D0;     /* scene texture block */
 extern s32 D_80062528;     /* battle music */
 extern u8 D_80062648[];
-extern u8 D_800658DC[][0x20]; /* scene settings */
-extern u8 D_8006F9DC[0x20];   /* the current scene settings */
 extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
 extern s32 D_800C3DEC;
