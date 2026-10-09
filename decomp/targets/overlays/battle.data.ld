@@ -1,8 +1,11 @@
 /* Names the battle source uses for addresses inside a C data object, each
  * from that object's linked address. battle.c indexes the timer reload table
  * D_800C31EC (maximum AP 3-7) by the maximum AP itself, from three 8-byte
- * rows before it. */
+ * rows before it, and the combo step table D_800C34B4 by the AP paid (1-3),
+ * from one byte before it: GCC 2.6.3 forms that base with `la` only for a
+ * declared array (D_800C34B4[step][paid - 1] puts the -1 in the load). */
 D_800C31D4 = D_800C31EC - 0x18;
+D_800C34B3 = D_800C34B4 - 0x1;
 
 /* The same for the commons (battle_common.c). The units address parts of the
  * battle area D_800C3EB0 (area.h), of its battle work (combatant.h) and of

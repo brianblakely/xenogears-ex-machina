@@ -169,7 +169,7 @@ GlyphPage *D_800C3000[26] = {
     &D_800C2FEC, &D_800C2FF0, &D_800C2FF4, &D_800C2FF8, &D_800C2FFC,
 };
 /* The party panels' glyph x per member, 24 each (the name glyphs from
- * the eighth, D_800C3076). */
+ * the eighth). */
 s16 D_800C3068[72] = {
     44, 52, 60, 68, 76, 84, 92, 52, 60, 68, 76, 84,
     60, 66, 72, 78, 84, 90, 96, 44, 50, 56, 62, 68,
@@ -963,7 +963,7 @@ u8 mode;
         if (D_800D2D88[i] != 0xFF) {
             D_800D2D28->unkE0[member] +=
                 func_80076A10(D_800D2D88[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3076[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+                              D_800C3068[member * 24 + 7 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
         }
     }
     if (mode != 0) {
