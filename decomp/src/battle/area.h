@@ -36,7 +36,7 @@ typedef struct {
 
 /* Battle state from D_800C3EB0: the frame loop and result screens address
  * the work table through this aggregate. */
-typedef struct {
+typedef struct BattleArea {
     Formation *formation;       /* 0x0000 */
     BattleSlot slots[11];       /* 0x0004 */
     BattleEvent events[32];     /* 0x0138 */

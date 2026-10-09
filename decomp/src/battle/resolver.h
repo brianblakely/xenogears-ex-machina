@@ -6,7 +6,6 @@
 #include "combatant.h"
 
 extern u8 D_800C34AE; /* a weapon-using attack found its item broken */
-extern u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
 extern u8 D_800D2D10[4];  /* speeds 8009892c replaces by each gear part speed */
 
 /* The persistent game data (8006d634), as far as the resolver uses it; its

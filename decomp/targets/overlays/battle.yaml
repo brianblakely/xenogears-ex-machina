@@ -41,6 +41,10 @@ segments:
     type: code
     start: 0x0
     vram: 0x8006faf0
+    # The uninitialized variables, not in the file: the resident's mode
+    # table (8001808c, mode 2) clears 800c3a70-800d39f4 for this overlay
+    # (800c3a6c and 800d39f0 with its pre-increment loop, 80019560).
+    bss_size: 0xFF84
     subsegments:
       # The overlay's number (6) ahead of the units' rodata, as in field (4),
       # worldmap (5), menu (7) and movie (8); the first unit's rodata starts
@@ -60,7 +64,7 @@ segments:
       - [0x9DC, .rodata, battle_8009E53C]
       - [0xCEC, .rodata, battle_800B15D8]
       - [0xD60, .rodata, battle_800B3F04]
-      - [0xF0C, .rodata, battle_800B7870]
+      - [0xF0C, .rodata, battle_800B7134]
       - [0xF20, .rodata, battle_800B8098]
       - [0xFEC, .rodata, battle_800BD3AC]
       - [0x1018, .rodata, battle_800BFE48]
@@ -74,7 +78,9 @@ segments:
       - [0x2EA4C, c, battle_8009E53C]
       - [0x41AE8, c, battle_800B15D8]
       - [0x44414, c, battle_800B3F04]
-      - [0x47D80, c, battle_800B7870]
+      # The unit holding 800B7870's table starts at 800B7134 at the latest:
+      # its own variable D_800C3CB4 is also 800B7134's and 800B7160's.
+      - [0x47644, c, battle_800B7134]
       - [0x485A8, c, battle_800B8098]
       - [0x4D8BC, c, battle_800BD3AC]
       - [0x50358, c, battle_800BFE48]
@@ -93,4 +99,17 @@ segments:
       - [0x53AE8, .data, battle_800B8098]
       - [0x53C5C, .data, battle_800BD3AC]
       - [0x53CE4, .data, battle_800BFE48]
+      # The .bss (not loaded): each unit's own variables in unit order, each
+      # read only by its own code (tools/data_users.py), then the commons,
+      # which the original linker allocated after every unit's own in an
+      # order of its own; battle_common.c, linked last, defines them.
+      - { start: 0x53F80, type: .bss, vram: 0x800C3A70, name: battle }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3AA4, name: battle_8008CCCC }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3AAC, name: battle_8009E53C }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3BD0, name: battle_800B15D8 }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CA4, name: battle_800B3F04 }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CB4, name: battle_800B7134 }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CB8, name: battle_800B8098 }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CE8, name: battle_800BD3AC }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CEC, name: battle_common }
   - [0x53f80]

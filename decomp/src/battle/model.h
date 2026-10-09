@@ -12,7 +12,7 @@ typedef struct {
 
 /* A table of the models of a relocated model group (0x38 bytes each, from
  * group +0x10). */
-typedef struct {
+typedef struct ModelList {
     Model **models;
     u32 count;
 } ModelList;
@@ -29,7 +29,7 @@ typedef struct {
 } EffectEntry;
 
 /* A pool of effect entries; next is the first entry that may be free. */
-typedef struct {
+typedef struct EffectPool {
     EffectEntry *entries;
     u16 next;
     u16 count;

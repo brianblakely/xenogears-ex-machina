@@ -23,6 +23,20 @@
 #include "stage.h"
 #include "effect_script.h"
 
+/* The unit's own uninitialized variables (its .bss, after
+ * battle_8009E53C.c's; ASPSX 2.56 aligns each by its size up to a word:
+ * decomp/Makefile). The users of the last, 800B3E04, end the unit before
+ * 800B3F04. */
+static ScriptEntry D_800C3BD0; /* the selected script */
+static u8 *D_800C3BEC;         /* effect script cursor */
+static s32 D_800C3BF0;         /* effect script step count */
+static s32 D_800C3BF4;         /* unreferenced */
+static DrawPrim8 D_800C3BF8;   /* the blend mode's texture page */
+static ScreenFade D_800C3C00;  /* the second screen fade */
+static s32 D_800C3C4C;         /* unreferenced */
+static ScreenFade D_800C3C50;
+static RECT D_800C3C9C;
+
 Quake *D_800C3548 = NULL;
 SVECTOR D_800C354C = {0, 0, 0};
 ScreenFade *D_800C3554 = NULL;

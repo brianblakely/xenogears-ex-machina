@@ -22,6 +22,19 @@
 #include "highlight.h"
 #include "battle_flow.h"
 
+/* The unit's own uninitialized variables (its .bss, after
+ * battle_800B7134.c's; ASPSX 2.56 aligns each by its size up to a word:
+ * decomp/Makefile). */
+static u8 D_800C3CB8;      /* gear file reads running */
+static s32 D_800C3CBC;
+static s32 D_800C3CC0;     /* camera mode */
+static u8 D_800C3CC4;      /* eye and look-at sprites running */
+static s32 D_800C3CC8;     /* unreferenced */
+static SVECTOR D_800C3CCC; /* the eye point saved while the camera sprites run */
+static SVECTOR D_800C3CD4; /* the look-at point saved while they run */
+static s32 D_800C3CDC;     /* the framed camera range */
+static s32 D_800C3CE0[2];  /* unreferenced */
+
 s32 D_800C35D8 = 0;
 BattleSound D_800C35DC[] = {
     {0x1F, 0x0F}, {0x26, 0x13}, {0x2F, 0x12}, {0x36, 0x0D}, {0x3E, 0x11}, {0x44, 0x1B},

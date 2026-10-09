@@ -39,31 +39,24 @@ typedef struct {
 
 extern u16 D_800C3666;           /* the places taken */
 extern ImagePlace D_800C3668[3];
-extern u8 D_800C3CB8;            /* gear file reads running */
 extern s32 D_800C35D8;           /* gear object loads running */
 extern u8 D_800C37CC;            /* the gear objects are loaded */
 
 /* The camera. */
 extern s32 D_800C3674;
 extern s32 D_800C3678;
-extern u8 D_800C3CC4;            /* eye and look-at sprites running */
-extern s32 D_800C3CBC;
-extern s32 D_800C3CC0;           /* camera mode */
 extern ActorTask *D_800C3680;    /* the eye sprite's task */
 extern ActorTask *D_800C3684;    /* the look-at sprite's task */
 extern VECTOR D_8006F99C;        /* resident: the eye sprite's position (16.16) */
 extern VECTOR D_8006F9AC;        /* resident: the look-at sprite's position (16.16) */
 extern SVECTOR D_800D30A0[2];    /* the camera's wanted eye and look-at points */
-extern SVECTOR D_800C3CCC;       /* the eye point saved while the camera sprites run */
-extern SVECTOR D_800C3CD4;       /* the look-at point saved while they run */
 extern u16 D_80059454;
-extern s32 D_800C3CDC;            /* the framed camera range */
 
 extern MATRIX D_800D30BC; /* the battle view matrix */
 
 /* The battle camera (800d309c); its view matrix is also named D_800D30BC and
  * its eye and look-at points D_800D30A0. */
-typedef struct {
+typedef struct BattleCamera {
     s32 field0;
     SVECTOR eye;    /* +04 */
     SVECTOR target; /* +0C */

@@ -1217,9 +1217,15 @@ class MatchingTests(unittest.TestCase):
             "int use(void) { return flag + point.y; }\n"
         )
         self.assertEqual(layout(small, ".sbss", ["GP_unit=8"]), ({"flag": 0, "point": 4}, 12))
+        # ASPSX 2.56 keeps each object's size and aligns it by that size up
+        # to a word (battle 800c3ca4-800c3cb4): the 6-byte array follows the
+        # byte at the next word and the halfword packs against it.
+        sized = ["MASPSX_FLAGS=--aspsx-version=2.56"]
+        self.assertEqual(layout(source, ".bss", sized), ({"flag": 0, "pairs": 4, "half": 10, "word": 12}, 16))
+        self.assertEqual(layout(small, ".sbss", sized + ["GP_unit=8"]), ({"flag": 0, "point": 4}, 12))
         # No slot rule is evidenced for other ASPSX versions: a sub-word
         # variable fails the build instead of keeping maspsx's packing.
-        _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.56"])
+        _obj, result = self.make_fixture_unit(source, ["MASPSX_FLAGS=--aspsx-version=2.86"])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no slot rule", result.stderr)
 

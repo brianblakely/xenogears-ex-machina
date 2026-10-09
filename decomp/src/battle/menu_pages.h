@@ -6,13 +6,12 @@
 #include "common.h"
 
 /* A text image's pixels. */
-typedef struct {
+typedef struct TextImage {
     u32 *pixels;
 } TextImage;
 
 extern TextImage D_800C3E5C[10]; /* text images of battle messages 0-9: the decimal digits */
 extern u32 *D_800D2DB0;      /* blank text image */
-extern u8 D_800D2CC0[0x20];  /* item counts from the 17th entry (800d2cb0 + 16) */
 
 extern u8 D_800C33B4[16];    /* gear page glyph ids */
 extern s32 D_800C33C4[16];   /* their x */

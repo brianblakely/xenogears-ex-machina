@@ -24,7 +24,6 @@ void func_800B8DA4(void);
 /* The timer reload by maximum and remaining AP: D_800C31EC (maximum 3-7) from
  * three rows before (battle.data.ld). */
 extern u8 D_800C31D4[][8];
-extern u32 *D_800C3A70[3]; /* combo text image blocks */
 s32 func_80086028(u8 member, s32 index, s32 column, u8 id, u32 **pixels, u8 offset);
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels);
 extern u8 D_800C4929;       /* healing ignores the gear */

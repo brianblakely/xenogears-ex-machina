@@ -68,9 +68,6 @@ typedef struct {
     ObjectHeader *header; /* 0x10 */
 } ObjectModelFile;
 
-extern s32 D_800C3B6C; /* the model list slot being filled */
-extern u8 *D_800C3B70; /* the model group being loaded */
-
 /* Resident services. */
 void func_80030988(s32 a, s32 b, s32 c, s32 d);
 s32 func_8003864C(SoundSystem *bank, s32 mode); /* whether a sound bank is loaded */
@@ -86,7 +83,6 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* Per-frame update and drawing of the stage objects. */
-extern s16 D_800C3B80;     /* pulse level of the highlight colour */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
 extern u8 D_800C3DF8;      /* effects run */
@@ -264,18 +260,6 @@ typedef struct {
     s16 duration;    /* 0x12 */
 } CameraChannel;
 
-/* The camera. */
-extern u8 D_800C3B84;  /* the channel kind reported in D_800C3B88 */
-extern u8 D_800C3B88;  /* bit 0: that channel runs, bit 1: it finished */
-extern u8 D_800C3B8C;  /* snap: channels 7 and 8 start at their targets */
-extern s16 D_800C3B90; /* orbit yaw */
-extern s16 D_800C3B94; /* orbit pitch */
-extern s16 D_800C3B98; /* orbit distance */
-extern s16 D_800C3B9C; /* orbit height */
-extern s16 D_800C3BA0; /* look-at yaw */
-extern s16 D_800C3BA4; /* look-at distance */
-extern s16 D_800C3BA8; /* look-at height */
-
 s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
 s16 func_800B0B14(s32 key);
 
@@ -302,8 +286,6 @@ typedef struct {
     u8 pad8[4];
     ScriptEntry entries[1]; /* 0x0C */
 } ScriptFile;
-
-extern ScriptEntry D_800C3BD0; /* the selected script */
 
 /* Resident sprites. */
 EffectSprite *func_80023FD8(s32 kind, void *resource, SVECTOR *position, s32 size);

@@ -67,8 +67,6 @@ typedef struct {
 extern ModelList *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
 extern s32 D_800CCC5C;        /* frame steps */
 extern ImageAnim D_800D3600;  /* the stage's image animation */
-extern StageColors *D_800C3AC4; /* the stage's colours as loaded */
-extern StageColors *D_800C3AC8; /* their working copy */
 extern s16 D_800D2D2C;          /* stage image width */
 extern s16 D_800D2D30;          /* stage image x */
 extern s16 D_800D2D34;          /* stage image y */

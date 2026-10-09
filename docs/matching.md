@@ -450,7 +450,11 @@ converted to C per unit. What converting the targets' `.data` established:
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are
   scaffolding, deleted when their last assembly user matches (slot39's and field's
   have gone). One of a static resolves only because maspsx makes `.lcomm` symbols
-  global, where ASPSX kept them local.
+  global, where ASPSX kept them local. Battle's C addresses parts of its commons by
+  names and views of their own (the battle area's slots, work and drawing state; the
+  camera's matrix), hundreds of times and also from CDK units, where one symbol's
+  members share a `%hi`: `battle.data.ld` defines those names from the objects'
+  linked addresses.
 - GCC emits a function's string literals into `.rodata` ahead of its code, in the order
   of first use, and its jump tables after it; an initializer's literals in reverse
   order once the definition ends (menu6's gear list and heap tag names). A unit emits
@@ -462,6 +466,10 @@ converted to C per unit. What converting the targets' `.data` established:
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
   `.bss` is loaded (splat `ld_bss_is_noload: False`, one `.bss` subsegment per unit).
+  Where it does not (battle), the segment's `bss_size` and a `.bss` subsegment per
+  unit at its vram past the file keep its names out of `undefined_syms_auto.txt`,
+  whose absolute values would otherwise override the C definitions without a
+  warning, and the link asserts the bounds the resident's mode table clears.
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
@@ -470,12 +478,16 @@ converted to C per unit. What converting the targets' `.data` established:
   801ea8e4), evidenced separately for ASPSX 2.34's `.lcomm` statics (mdec
   801e8958-801e8968: five u8, stored and loaded bytewise; menu3 80092678-800926a0;
   slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
-  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the world map's four
-  u16 at 8009bd10-8009bd1c, which three units share). The build gives each object
-  whole words at a word boundary under ASPSX 2.34 and the world map's setting 2.79
+  801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
+  map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
+  object whole words at a word boundary under ASPSX 2.34 and the world map's setting 2.79
   (no 2.79 unit allocates any in C yet; it stands for an assembler evidenced only as
-  >= 2.50, above) and rejects a smaller one under any other setting
-  (decomp/Makefile); no target or unit setting selects it. Variables that share a word
+  >= 2.50, above). ASPSX 2.56 keeps each `.lcomm` object's size and
+  aligns it by that size up to a word: battle 800B3F04's four s16 statics lie two bytes
+  apart at 800c3ca4-800c3cab (four symbols: the CDK compiler addresses one object's
+  members from a single `%hi`), its u8 is followed by a u8[3] at the next word, and
+  800B8098's SVECTORs lie at 4 mod 8. Any other version rejects a sub-word object
+  (decomp/Makefile); no target or unit setting selects a rule. Variables that share a word
   are therefore one object, also in the resident's generated `.bss`: the sprite
   position D_800592E8 is a DVECTOR. The window colour D_800594D4, the overlays'
   `u8[3]`, is still a `u8` with extern +1/+2 bytes: ASPSX 2.34 addressed a common at
@@ -486,14 +498,17 @@ converted to C per unit. What converting the targets' `.data` established:
   reports every FOREIGN reference, another unit's code forming an address in a unit's
   own `.bss` (none in any target), and, with `--end`, the order of variables still
   extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
-  80081E00, 80081E6C or 80081ECC, and slot39's after 801CD2AC and at or before
-  801DBDB4 (an earlier one moves the `.bss` boundary with it); the latest is kept.
-  The commons, which the original linker
+  80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC and at or before
+  801DBDB4 (an earlier one moves the `.bss` boundary with it), and battle 800B7870's
+  unit at or before 800B7134, whose shatter draw shares its D_800C3CB4; the latest
+  is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
-  (slot39_common.c, menu_common.c, ovl2602_common.c, mdec commons/), which reproduces
-  the linker's placement rather than modelling it. Zeros a packer added past the
-  program are file padding (Compressed containers).
+  (slot39_common.c, menu_common.c, ovl2602_common.c, battle_common.c, mdec
+  commons/), which reproduces the linker's placement rather than modelling it. It
+  defines them ahead of the headers that declare them, structures by their tag: GCC
+  2.6.3 lays out such a tentative definition once a header completes the type.
+  Zeros a packer added past the program are file padding (Compressed containers).
 - The menu (GCC 2.7.2) splits its uninitialized variables by size. Those of up to
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's

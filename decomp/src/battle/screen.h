@@ -98,17 +98,12 @@ typedef struct {
     ScreenShard shards[2][14][20];   /* 0x3C */
 } ScreenShatter;
 
-extern DrawPrim8 D_800C3BF8; /* a draw mode primitive */
-extern RECT D_800C3C9C;
-
 extern Quake *D_800C3548;
 extern SVECTOR D_800C354C; /* the quake's view offset */
 extern ScreenFade *D_800C3554;
 extern ScreenFade *D_800C3558;
 extern u8 D_800C355C; /* fade on the second screen fade */
 extern LightFade *D_800C3560;
-extern ScreenFade D_800C3C00; /* the second screen fade */
-extern ScreenFade D_800C3C50;
 extern u8 D_800D3638;
 extern u8 *D_80059580;  /* resident: the primitive buffer cursor */
 extern u8 *D_80059534;  /* its end */
@@ -142,7 +137,6 @@ void func_800B3B94(BattleTask *task);
 void func_800B3C74(BattleTask *draw);
 void func_800B3C2C(LightFade *fade);
 
-extern u32 *D_800C3CB4; /* the ordering table the shatter draws into */
 extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
 extern SVECTOR D_800C35AC[3];
 u8 func_80021AD8(u8 value, s32 delta); /* add, clamped to 0-255 */

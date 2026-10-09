@@ -20,6 +20,9 @@
 #include "result_input.h"
 #include "area.h"
 
+/* The unit's own uninitialized variable (its .bss, after battle.c's). */
+static u16 D_800C3AA4[3]; /* each member's status7A before the battle's adjustments */
+
 /* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
 extern s32 D_800CCB34_word __asm__("D_800CCB34");
 
@@ -615,7 +618,7 @@ void func_8008FE18(u8 column, u8 row, u8 open) {
             digit = D_800D2DB0;
         }
         func_800769E8(&onesRect, digit);
-        if ((u8)(D_800D2CC0[i] / 10) != 0) {
+        if ((u8)(D_800D2CB0[i + 16] / 10) != 0) {
             digit = D_800C3E5C[counts[i + 16] / 10].pixels;
         } else {
             digit = D_800D2DB0;

@@ -14,8 +14,6 @@
 extern u8 D_800C3564;    /* 1, or a slot + 2 */
 extern BattleSprite *D_800C3568; /* the sprite the debugger follows */
 extern u8 D_800C35D4;
-extern u8 D_800C3CAC;    /* the saved background flag of the display buffers */
-extern u8 D_800C3CB0[3]; /* the saved background colour */
 extern u8 D_800C492A;
 extern u16 D_800C3626; /* slots whose gear sound played */
 
