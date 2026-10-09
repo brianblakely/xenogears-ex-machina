@@ -1536,12 +1536,14 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
  * which are set afterwards; the second mirrored arrow then gets its first
- * corner one pixel up and its third one pixel left. The marks are written
- * after their packet heads, one shared coordinate at a time (x0 = x2, x1,
- * x3, y0 = y1, y2 = y3). So the length 5 and the 0x1E of both marks live
- * across the other coordinates and take $a0/$v1, while the two decrement
- * loads, register births that sched1 puts late, take $v0/$v1; sched2 then
- * lifts each load to just after the last use of its register. */
+ * corner one pixel up and its third one pixel left. Both black marks' heads
+ * come first, then the first two marks' coordinates, one shared value at a
+ * time (x0 = x2, x1, x3, y0 = y1, y2 = y3). So their shared code word
+ * 0x28000000 is dead before any coordinate and takes $v0, while the length 5
+ * (all four marks) and the 0x1E (marks[0].x0/x2, marks[1].y2/y3) live across
+ * the coordinates and take $a0/$v1; the two decrement loads, register births
+ * that sched1 puts late, take $v0/$v1, and sched2 lifts each load to just
+ * after the last use of its register. */
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
 
