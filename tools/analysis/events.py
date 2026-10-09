@@ -14,7 +14,11 @@ runs as the primary opcode of the same value ("rerun").
 Scripts are the event component of each field map bundle (directory (4, 0)
 file 0xb8 + 2 * map, read ahead by 8001b53c): 128 bytes of variable type bits,
 the actor count, 32 u16 entry PCs per actor and the bytecode (80070cc8:
-D_800ADC00 = entries + count * 64). Events start only at their entry PC:
+D_800ADC00 = entries + count * 64). 80070cc8 decodes the component's whole
+packed stream, which ends 0-7 bytes past the size in the bundle header, into
+an allocation of that size + 0x10; the walk reads the stream and reports
+instructions past the size and successors past the stream, while byte counts
+cover the size. Events start only at their entry PC:
 event 0 of every actor at load (800a28d4), event 1 whenever no slot is active
 (800a2030), event 2 on talk and 3 on touch (8008399c), actor 0's events 2 and
 3 after a return and for the party rebuild (800a22ac), a joining member's
@@ -58,6 +62,16 @@ class UnknownInstruction(EventError):
     def __init__(self, pc: int, opcode: int, *, namespace: str = "primary"):
         self.pc, self.opcode, self.namespace = pc, opcode, namespace
         super().__init__(f"unknown {namespace} opcode 0x{opcode:02x} at bytecode PC +0x{pc:04x}")
+
+
+class SuccessorOutside(EventError):
+    """A whole instruction whose successors include PCs past the bytecode: the
+    interpreter would run whatever memory follows the loaded stream."""
+
+    def __init__(self, instruction: Instruction, targets: tuple[int, ...]):
+        self.instruction, self.targets = instruction, targets
+        where = ", ".join(f"+0x{target:04x}" for target in targets)
+        super().__init__(f"opcode at +0x{instruction.pc:04x} targets {where} outside bytecode")
 
 
 COMPARISONS = (
@@ -1413,13 +1427,14 @@ def decode_instruction(bytecode: bytes, pc: int) -> Instruction:
         if _possible(condition, spec, operands, immediate)
     )
     unique = tuple(dict.fromkeys(s & 0xFFFF for s in successors))
-    for successor in unique + skips:
-        if successor >= len(bytecode):
-            raise EventError(f"opcode at +0x{pc:04x} targets +0x{successor:04x} outside bytecode")
     inner = tuple((base + advance) & 0xFFFF for advance in spec.inner)
-    return Instruction(
+    instruction = Instruction(
         pc, opcode, spec.mnemonic, size, unique, operands, extended, spec, inner, immediate, skips
     )
+    outside = tuple(dict.fromkeys(s for s in unique + skips if s >= len(bytecode)))
+    if outside:
+        raise SuccessorOutside(instruction, outside)
+    return instruction
 
 
 def _possible(condition, spec: Opcode, operands, immediate) -> bool:
@@ -1562,17 +1577,23 @@ class Walk:
     unpaired: list[int] = field(default_factory=list)
     skips: int = 0  # alternative advances over the next instruction, followed
     into: list[tuple[int, int]] = field(default_factory=list)  # (pc, target) not followed
+    outside: list[tuple[int, int]] = field(default_factory=list)  # (pc, target past the bytecode)
 
 
 def walk(bytecode: bytes, entries) -> Walk:
-    """Follow every successor; failures keep their PC and nothing is guessed."""
+    """Follow every successor; failures keep their PC and nothing is guessed.
+    A successor past the bytecode is recorded in `outside`, not followed."""
     result, pending, failed = Walk(), list(entries), set()
     while pending:
         pc = pending.pop()
         if pc in result.instructions or pc in failed:
             continue
         try:
-            ins = decode_instruction(bytecode, pc)
+            try:
+                ins = decode_instruction(bytecode, pc)
+            except SuccessorOutside as error:
+                ins = error.instruction
+                result.outside += [(pc, target) for target in error.targets]
         except UnknownInstruction as error:
             failed.add(pc)
             result.unknown.append((error.pc, error.opcode))
@@ -1582,9 +1603,9 @@ def walk(bytecode: bytes, entries) -> Walk:
             result.undecodable.append((pc, str(error)))
             continue
         result.instructions[pc] = ins
-        pending.extend(ins.successors)
+        pending.extend(s for s in ins.successors if s < len(bytecode))
         result.inner += [(pc, target) for target in ins.inner]
-        for target in ins.skips:
+        for target in (s for s in ins.skips if s < len(bytecode)):
             # Followed only when it steps over the next instruction whole.
             try:
                 lands = (
@@ -1624,6 +1645,9 @@ def disassemble_reachable(bytecode: bytes, entry: int) -> tuple[Instruction, ...
         raise UnknownInstruction(pc, opcode, namespace="extended")
     if result.undecodable:
         raise EventError(result.undecodable[0][1])
+    if result.outside:
+        pc, target = result.outside[0]
+        raise EventError(f"opcode at +0x{pc:04x} targets +0x{target:04x} outside bytecode")
     if result.overlaps:
         pc, other = result.overlaps[0]
         raise EventError(f"overlapping instructions at +0x{pc:04x} and +0x{other:04x}")
@@ -1678,14 +1702,30 @@ def map_files(extract: Path, disc: Path) -> list[tuple[int, Path]]:
     ]
 
 
+ALLOCATION_SLACK = 0x10  # 80070cc8 allocates the component's size + 0x10
+# The field operand of each instruction that sets the next field (8004f34c):
+# 12/98 (800932d0), 47 (80092894), ext 84 (800933f8; 7fff sets none) and ext
+# cf (80093888). The bundle loaded is file 0xb8 + 2 * (field & 0xfff)
+# (8001b484); bits 14-15 are flags. 56 instead leaves for the world map.
+FIELD_OPERAND = {"12": 0, "47": 0, "98": 0, "fe 84": 1, "fe cf": 0}
+NO_FIELD = 0x7FFF
+
+
 def map_events(data: bytes) -> EventPackage | None:
-    """The event component of a map bundle (None for a file too short to be one)."""
+    """The event component of a map bundle as 80070cc8 leaves it in memory
+    (None for a file too short to be one). It allocates the header's size +
+    0x10 bytes, and func_8007008C ignores the size it is passed: 80032eb4
+    writes the whole packed stream, whose last group goes 0-7 bytes past the
+    size with the bytes that followed the component when it was packed. The
+    package's bytecode is that whole stream (component_end marks the size);
+    the rest of the allocation is undefined. A stream longer than the
+    allocation would overrun it and fails."""
     if len(data) < HEADER:
         return None
     size = struct.unpack_from("<I", data, 0x10C + 4 * EVENTS)[0]
     offset = struct.unpack_from("<I", data, 0x130 + 4 * EVENTS)[0]
-    block = decode_block(data[offset:], output_limit=size + 16)
-    return event_package(block.data[:size])
+    block = decode_block(data[offset:], output_limit=size + ALLOCATION_SLACK)
+    return event_package(block.data, size)
 
 
 @dataclass
@@ -1713,14 +1753,23 @@ class Totals:
     tables: Counter = field(default_factory=Counter)
     skips: int = 0
     into: list[str] = field(default_factory=list)
+    beyond: list[str] = field(default_factory=list)  # instructions past the component's size
+    outside: list[str] = field(default_factory=list)  # successors past the decoded stream
+    field_changes: int = 0
+    targets: Counter = field(default_factory=Counter)  # immediate fields named, & 0xfff
+    variable_targets: list[str] = field(default_factory=list)  # field operands from variables
+    bundled: set[int] = field(default_factory=set)
     packages: dict[int, bytes] = field(default_factory=dict)
 
 
 def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> None:
-    code = package.bytecode
+    """Walk the whole decoded stream as the interpreter reads it; byte counts
+    and gaps cover the bytecode inside the component's size."""
     starts, skipped = script_entries(package)
-    result = walk(code, [pc for _, _, pc in starts])
+    result = walk(package.bytecode, [pc for _, _, pc in starts])
+    code = package.declared
     totals.maps += 1
+    totals.bundled.add(map_id)
     rows = b"".join(struct.pack("<32H", *row) for row in package.entries)
     totals.packages[map_id] = bytes(package.variable_unsigned_bits) + rows + code
     totals.actors += len(package.entries)
@@ -1732,9 +1781,23 @@ def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> N
     covered = set()
     for pc, ins in result.instructions.items():
         totals.uses[(ins.key, ins.name)] += 1
-        covered.update(range(pc, pc + ins.size))
+        covered.update(range(pc, min(pc + ins.size, len(code))))
         if ins.opcode == 2:
             totals.conditions[ins.operands[2]] += 1
+        if ins.key in FIELD_OPERAND:
+            index = FIELD_OPERAND[ins.key]
+            value = ins.operands[index]
+            totals.field_changes += 1
+            if not ins.immediate[index]:
+                totals.variable_targets.append(f"{label} +0x{pc:04x} {ins.text()}")
+            elif not (ins.key == "fe 84" and value & 0x7FFF == NO_FIELD):
+                totals.targets[value & 0xFFF] += 1
+        if pc + ins.size > len(code):
+            tail = package.bytecode[len(code) : pc + ins.size].hex(" ")
+            totals.beyond.append(
+                f"{label} +0x{pc:04x} {ins.key} {ins.name}: reads the stream's tail ({tail})"
+                f" past the component's {len(code)} bytecode bytes"
+            )
     totals.covered += len(covered)
     totals.unknown += [f"{label} +0x{pc:04x}: extended {op:02x}" for pc, op in result.unknown]
     totals.undecodable += [f"{label} +0x{pc:04x}: {error}" for pc, error in result.undecodable]
@@ -1744,6 +1807,10 @@ def add_map(totals: Totals, label: str, map_id: int, package: EventPackage) -> N
     totals.tables.update(slots for _, slots in result.tables)
     totals.skips += result.skips
     totals.into += [f"{label} +0x{pc:04x} -> +0x{target:04x}" for pc, target in result.into]
+    totals.outside += [
+        f"{label} +0x{pc:04x} -> +0x{target:04x}, past the {len(package.bytecode)}-byte stream"
+        for pc, target in result.outside
+    ]
     start = None
     for pc in range(len(code) + 1):
         if pc < len(code) and pc not in covered:
@@ -1835,8 +1902,17 @@ def report(results: list[tuple[int, Totals]]) -> list[str]:
             ("overlapping instructions", t.overlaps),
             ("step forms without their set-up", t.unpaired),
             ("alternative advances into an instruction (not followed)", t.into),
+            ("instructions past the component's size", t.beyond),
+            ("successors past the decoded stream (undefined memory, not followed)", t.outside),
         ):
             out += [f"  {name}: {len(items)}", *_listed(items, 6)]
+        unnamed = " ".join(str(m) for m in sorted(t.bundled - set(t.targets)))
+        out += [
+            f"  field changes (12 47 98, fe 84 fe cf): {t.field_changes}; immediate operands"
+            f" name {len(t.targets)} fields; bundles none names: {unnamed}",
+            f"  field operands read from variables: {len(t.variable_targets)}",
+            *_listed(t.variable_targets, 6),
+        ]
     first, second = results[0][1].packages, results[1][1].packages
     same = sum(1 for m in second if first.get(m) == second[m])
     out.append(f"maps on both discs: {len(second.keys() & first.keys())}, identical: {same}")
@@ -1874,6 +1950,16 @@ def listing(package: EventPackage) -> list[str]:
         lines.append(f"{pc:04x}  {raw:<30} {ins.text()}" + (f"  -> {after}" if after else ""))
     lines += [f"; unknown +0x{pc:04x}: extended {op:02x}" for pc, op in result.unknown]
     lines += [f"; undecodable +0x{pc:04x}: {error}" for pc, error in result.undecodable]
+    end = len(package.declared)
+    lines += [
+        f"; +0x{pc:04x} reads past the component's {end} bytecode bytes"
+        for pc, ins in sorted(result.instructions.items())
+        if pc + ins.size > end
+    ]
+    lines += [
+        f"; +0x{pc:04x} -> +0x{target:04x}: past the {len(code)}-byte decoded stream"
+        for pc, target in result.outside
+    ]
     return lines
 
 

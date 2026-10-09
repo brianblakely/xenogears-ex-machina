@@ -73,15 +73,25 @@ class EventPackage:
     entries: tuple[tuple[int, ...], ...]
     bytecode: bytes
     bytecode_offset: int
+    # Bytecode bytes inside the component's header size; `bytecode` may go on
+    # with the tail of the decoded stream (map_events in events.py).
+    component_end: int | None = None
 
     def entry(self, actor: int, event: int) -> int:
         if not 0 <= actor < len(self.entries) or not 0 <= event < 32:
             raise FieldError(f"event entry outside actor/event table: {actor}/{event}")
         return self.entries[actor][event]
 
+    @property
+    def declared(self) -> bytes:
+        """The bytecode inside the component's header size."""
+        return self.bytecode[: self.component_end]
 
-def event_package(logical_data: bytes) -> EventPackage:
-    """Read the 128-byte variable type map and 32 u16 entry PCs per actor."""
+
+def event_package(logical_data: bytes, size: int | None = None) -> EventPackage:
+    """Read the 128-byte variable type map and 32 u16 entry PCs per actor.
+    `size`, when the data is a whole decoded stream, is the component's size
+    from the bundle header (the bytes past it are the stream's tail)."""
     bits = region(logical_data, 0, 0x80, "variable type map")
     count = u32(logical_data, 0x80)
     offset = 0x84 + count * 64
@@ -89,12 +99,15 @@ def event_package(logical_data: bytes) -> EventPackage:
     code = region(logical_data, offset, len(logical_data) - offset, "event bytecode")
     if len(code) > 0x10000:
         raise FieldError("bytecode exceeds the original u16 PC address space")
+    end = None
+    if size is not None:
+        end = len(region(logical_data, offset, size - offset, "declared event bytecode"))
     entries = tuple(struct.unpack_from("<32H", table, actor * 64) for actor in range(count))
     for actor, row in enumerate(entries):
         for event, pc in enumerate(row):
             if pc >= len(code):
                 raise FieldError(f"actor {actor} event {event}: PC +0x{pc:x} outside bytecode")
-    return EventPackage(bits, entries, code, offset)
+    return EventPackage(bits, entries, code, offset, end)
 
 
 @dataclass(frozen=True)

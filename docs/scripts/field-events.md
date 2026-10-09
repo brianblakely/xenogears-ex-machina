@@ -23,6 +23,15 @@
 `8001b53c`). Its event component (5) holds 128 bytes of variable type bits,
 the actor count and 32 entry PCs per actor, then the bytecode (`80070cc8`).
 
+- `80070cc8` allocates the header's component size + 0x10 bytes, and
+  `func_8007008C` ignores the size it is passed: `80032eb4` writes the whole
+  packed stream, which ends 0-7 bytes past the size (the packer's last group
+  took them from the bytes after the component). The rest of the allocation is
+  undefined. The decoder walks that stream; its byte counts and gaps cover the
+  component's size.
+- A field change loads the bundle of the operand's low 12 bits (`8001b484`);
+  bits 14 and 15 are flags.
+
 - Events start only at their entry PC: event 0 at load (`800a28d4`), event 1
   whenever no slot is active (`800a2030`), event 2 on talk and 3 on touch
   (`8008399c`), actor 0's events 2 and 3 directly (`800a22ac`), a joining
@@ -53,25 +62,51 @@ maps are identical to Disc 1's.
 | --- | --- | --- |
 | maps / actors | 730 / 18117 | 205 / 5211 |
 | script starts (event entries) | 77394 (105703) | 21773 (32123) |
-| reachable instructions | 572015 | 206123 |
+| reachable instructions | 572016 | 206124 |
 | opcodes used, primary / extended | 219 / 191 | 209 / 176 |
-| unknown / undecodable | 0 / 1 | 0 / 1 |
+| unknown / undecodable | 0 / 0 | 0 / 0 |
 
 - 255 primary opcodes (`fe` is the prefix) and 227 extended ones are defined,
   in 508 forms.
 - No script uses primary 06 0e 0f 13 30 45 48 54 55 66 73 78 7d 81-83 96 97
   9e 9f b0 b2 c3 c8 cc d1 d3 dc e3 e4 e8-ea ed fd ff. No script uses extended
   00 11 12 28-2f 30 31 33 35 37 6c-6e 71 75 78-7e ab b2 b3 be d7 d8 dc e2.
-- Unreached bytes: 10226 of the 11165 gaps on Disc 1 (181801 bytes) and 4329
-  of 4586 on Disc 2 decode as instructions. Most follow a return, end or jump
+- Unreached bytes: 10226 of the 11164 gaps on Disc 1 (181801 bytes) and 4329
+  of 4585 on Disc 2 decode as instructions. Most follow a return, end or jump
   and nothing jumps to them; they are reported, not counted.
+- Field changes (`12`, `47`, `98`, ext `84`, ext `cf`): 3290 on Disc 1 and 1444
+  on Disc 2. Their immediate operands name every bundle except maps 42 and 489
+  (Disc 2 also 342 and 441). The sweep lists the 56 (44) operands read from a
+  variable.
 
 **Findings.**
 
-- Map 489, actor 1 event 1 (+0x0d): `fe a0 00 fe 61 fe a0 01 5b`. Ext `a0`
-  (`8008ea58`) reads 12 bytes, but the 24-byte bytecode ends first, so these
-  bytes read like a one-byte form that the handler does not have. Both discs
-  have this script, and it is the only undecodable one.
+- Map 489, actor 1 event 1 (+0x0d): `fe a0 00 fe 61 fe a0 01 5b`, on both
+  discs. The header gives the component 0x11c bytes (24 of bytecode), but the
+  stream decodes 0x11e: its last two bytes (`00 17`) end ext `a0`'s 12 operand
+  bytes (`8008ea58`), so the instruction is whole, its flags byte is 0x17 and
+  operand 1 names variable 0xfe00, past the bank. It also covers events 2 and 3
+  at +0x17. Once a movie request is accepted (`800adbdc` set) the PC moves to
+  +0x1a, past the stream, into the allocation's 14 undefined bytes. The bytes
+  read like shorter `a0` forms (`fe a0 00`, `fe 61`, `fe a0 01`, `5b`) that the
+  handler does not have. The sweep reports the instruction past the
+  component's size and its successor past the stream.
+- Only the three-digit map selectors load map 489. No immediate field operand
+  names it, the new-game state names map 490 (directory 0x10 file 3, +0x231a),
+  and no world-map exit names it (the path regions of every area file and the
+  scripted exits). The variable operands are the previous field (`v0004`, set by
+  `80092f44` at each change; map 317 also stores 312), the field `800a30fc`
+  saved in `v003c` (maps 488 and 723), 319 with bit 15 (maps 316, 318, 320), map
+  317's `v0420` (310, 312-315, 318, 319), and the selectors of maps 0 (`v0408`),
+  488 and 723 (`v0432`), which build any number 0-799 from three digits. Map 0,
+  whose own scripts also list maps 720-729, is entered by the field's debug key
+  only when 80010000 is not -1 (`func_80077E88`; both retail executables hold
+  -1) and by maps 96, 722 and 728 (map 96 from a choice whose message 0x2e its
+  retail table lacks). Map 723 is one of the listed maps. In map 488 (Shakhan
+  and Bart's scene) actor 56's idle event (event 1) opens a menu whose first
+  choice is the selector while port 1 holds exactly button bit 1 (0x0002); its
+  messages 13 and 18 are missing from the retail table, and its flag `v0050` is
+  written only by maps 0, 721, 723, 728 and that menu.
 - Map 222 +0x2186: `fc` names party slot 0 and is followed by the 2-byte `a9`,
   so its 6-byte skip would land inside it. Not followed.
 - `8008d808` and `8008da04` write instructions into the bytecode, but nothing
@@ -86,7 +121,9 @@ maps are identical to Disc 1's.
 
 **Open.**
 
-- Whether map 489's actor 1 ever runs event 1.
+- Whether map 488's selector menu opens in a retail game. The scripts leave
+  its button test live (`v0050` 0), so it depends on actor 56 running event 1
+  and the field's input mask there; a capture in map 488 would settle it.
 - The bounds of variable `a6` indexes: the sweep follows consecutive jumps.
 - Some targets are still only addresses: the six halfwords at `800b21a0` (ext
   `0c`) and the game's `+182c`-`+1856` words (ext `b9`-`bc`, `d5`-`d7`).
