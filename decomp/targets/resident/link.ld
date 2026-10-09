@@ -8,6 +8,12 @@
 __exe_text_size = ALIGN(SIZEOF(.main), 0x800);
 __exe_file_size = LOADADDR(.main) + __exe_text_size;
 
+/* $gp: the -G8 units and the PsyQ libraries address the small data
+ * relative to _gp, which the entry point loads (func_80019548.s). The
+ * original's, 80059170, is the first byte of the small data, so the link
+ * derives it from there. */
+_gp = main_SDATA_START;
+
 /* The last word of the BSS: the entry point (func_80019524.s) and the mode
  * table's resident entries (main.c) clear the words after D_800592B8, the
  * last of the small data, through it. The BSS ends below the overlay area

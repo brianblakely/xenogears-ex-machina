@@ -147,8 +147,9 @@ link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 uninitialized data (`matching_coverage.py --script-symbols`): an address copied from
 the original where the link should place an object, which the exact comparison
 cannot see move. Names of other images (the `*.resident.ld` fragments, an overlay's
-addresses in the resident) lie outside and pass; splat's main script, which also
-sets the ABI's `_gp`, is not among the checked scripts. `BSS_END` in a target gives
+addresses in the resident, also the `_gp` an overlay's splat script sets) lie outside
+and pass; splat's main script is not among the checked scripts, so the resident's
+`_gp` comes from its checked `link.ld`. `BSS_END` in a target gives
 the end of its uninitialized data past the image, the bound its loader clears (the
 resident's entry point, the mode table entries): the check covers the data up to it,
 a link placing any past it fails, and the coverage report counts what no linked
@@ -158,9 +159,10 @@ such a script assigns there still fails, and so does a views script that defines
 view. Four scripts are allowed: battle's (`battle.data.ld`, 42 names: parts of its
 commons that the units, CDK ones too, address by names of their own, and the timer
 reload and combo step tables from before them), the resident's (`link.ld`, 8: the
-window colour's green and blue bytes, the CD mix bytes and request, a base for the
-name slots' second bytes, which compile differently as members, and the BSS's last
-word D_8006FAEC from the link's BSS end, for the entry point and the mode table),
+window colour's green and blue bytes, the CD mix bytes and a base for the name
+slots' second bytes, which compile differently as members, the BSS's last word
+D_8006FAEC from the link's BSS end, for the entry point and the mode table, and `_gp`
+from the start of the small data, where the original's 80059170 lies),
 the menu's (`menu.bss.ld`: the opponent's command byte D_80099DA2, which
 func_8008F280 loads absolutely at each of its three reads) and the world map's
 (`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
@@ -493,7 +495,7 @@ converted to C per unit. What converting the targets' `.data` established:
   the -1 in the load instead. Where the index form compiles alike, C indexes the
   object (battle's party panel name glyphs, `D_800C3068[member * 24 + 7 + i]`).
   The resident's `link.ld` (the window colour's last two bytes, the CD mix bytes,
-  the CD request, a base for the name slots' second bytes), `menu.bss.ld` (the
+  a base for the name slots' second bytes), `menu.bss.ld` (the
   opponent's command byte) and `worldmap.data.ld` (the read list's first
   destination) name parts of uninitialized objects the same way, each where the
   member compiles differently. splat writes an interior address of a C object as an
