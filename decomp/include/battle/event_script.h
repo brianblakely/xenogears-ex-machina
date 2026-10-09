@@ -59,9 +59,21 @@ typedef struct ScriptState {
     u8 pad821[7];
 } ScriptState;
 
+/* The script file: thread count at 0x40, then 16 bytes per thread with its
+ * level entry points, then the bytecode. */
+typedef struct {
+    u16 entry[8];
+} EventScriptEntry;
+
+typedef struct EventScriptFile {
+    u8 pad0[0x40];
+    u32 threadCount;
+    EventScriptEntry entries[1];
+} EventScriptFile;
+
 extern ScriptState *D_800D3278;
-extern struct EventScriptFile *D_800D39D0; /* the script file */
-extern void *D_800D3340;                   /* the script set's data */
+extern EventScriptFile *D_800D39D0; /* the script file */
+extern void *D_800D3340;            /* the script set's data */
 
 /* The battle's side: the module block and its load, a byte forwarded to the
  * module (80070E2C's unit) and a thread's member state (80079ED8's). */

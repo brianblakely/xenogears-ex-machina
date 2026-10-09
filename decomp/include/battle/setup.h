@@ -20,6 +20,10 @@ extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
 extern u8 D_800D2D50;
 extern u8 D_800D2FC4;      /* battle exit requested */
+/* Set for the resident's battle mode (the event script, result screens and
+ * loader overlays set it). */
+extern u8 D_800D3338;
+
 
 /* Party members' battle masks (from the character battle data). */
 typedef struct MemberMasks {
@@ -35,7 +39,6 @@ void func_8009892C(void);              /* the party's adjustments at battle star
 /* The battle heap and the disc. */
 void func_8008AB4C(void);              /* heap mode 0x20/0 */
 void func_8008AB94(void);              /* heap mode 0x20/3 */
-s32 func_8008ABB8(s32 size, s32 mode); /* allocate a battle heap block */
 void func_8008AC50(void);              /* wait until the disc reads finish */
 
 #endif

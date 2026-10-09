@@ -7,6 +7,34 @@
  * back, and 801e563c at the end to release everything. Opcode
  * handlers use the battle overlay's actor, camera and message services
  * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
+#include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libgpu.h"
+#include "resident/cd.h"
+#include "resident/gamedata.h"
+#include "resident/heap.h"
+#include "resident/mode.h"
+#include "resident/sound.h"
+#include "resident/sprite.h"
+#include "resident/text.h"
+#include "resident/window.h"
+#include "battle/actions.h"
+#include "battle/actor.h"
+#include "battle/area.h"
+#include "battle/combatant.h"
+#include "battle/event_script.h"
+#include "battle/flow.h"
+#include "battle/formation.h"
+#include "battle/frame.h"
+#include "battle/graphics.h"
+#include "battle/input.h"
+#include "battle/objects.h"
+#include "battle/scene.h"
+#include "battle/setup.h"
+#include "battle/turn.h"
+#include "battle/ui.h"
+#include "battle/windows.h"
+#include "battle/work.h"
 #include "ovl3087.h"
 
 /* Portrait file per actor, normal then mirrored (file 0x46 + n). */
@@ -26,13 +54,15 @@ u8 D_801E9B5C[] = {
 };
 /* Default message window layout. */
 u16 D_801E9C10[5] = {0x7FFF, 0x7FFF, 16, 8, 0x1F0};
-s32 D_801E9C1C = 4; /* portrait sprite slot, cycled 4..0 */
+s32 D_801E9C1C = 4; /* the cursor glyph's frame, cycled 4..0 */
 u8 D_801E9C20[16] = {0};
 s32 D_801E9C30 = 0;
 s32 D_801E9C34 = 0;
 ModelArchive *D_801E9C38 = NULL;
 
-/* The actor and model helpers (script_actor.c) as this unit declares them. */
+/* The actor and model helpers (script_actor.c) as this unit declares them:
+ * its calls convert the actor, animation and target arguments differently
+ * from the definitions (bytes and halfwords where those take words). */
 void func_801E9958(s32 model, u16 animation);
 s32 func_801E9978(void *file, s32 *info);
 void func_801E9430(u8 actor, s16 animation);
@@ -53,7 +83,7 @@ void func_801E9B2C(void);
 void func_801E5160(void) {
     FileRequest files[3];
     ScriptArchive *archive;
-    ScriptFile *script;
+    EventScriptFile *script;
     s32 i;
     s32 level;
 
@@ -61,23 +91,23 @@ void func_801E5160(void) {
     func_8008AB4C();
     archive = func_8008ABB8(func_800288EC(2), 1);
     files[0].file = 2;
-    files[0].dest = archive;
+    files[0].destination = archive;
     D_801E9C38 = func_8008ABB8(func_800288EC(3), 0);
     files[1].file = 3;
-    files[1].dest = D_801E9C38;
+    files[1].destination = D_801E9C38;
     files[2].file = 0;
-    files[2].dest = NULL;
+    files[2].destination = NULL;
     func_80029AFC(files, 0, 0x80);
     func_8008AC50();
     func_8003342C(archive);
     func_8003342C(D_801E9C38);
-    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->script, 0);
-    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->data, 0);
+    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC[3] * 8))->script, 0);
+    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC[3] * 8))->data, 0);
     func_800320E8(archive);
     D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
-    bzero(D_800D3278, sizeof(ScriptState));
+    bzero((u8 *)D_800D3278, sizeof(ScriptState));
     D_800D2DAC = func_8008ABB8(0x98, 0);
-    bzero(D_800D2DAC, 0x78);
+    bzero((u8 *)D_800D2DAC, 0x78);
     D_800D39D0 = script;
     D_800D3278->code = (u8 *)D_800D39D0 + D_800D39D0->threadCount * 16 + 0x44;
     for (i = 0; i < 16; i++) {
@@ -111,7 +141,7 @@ void func_801E5160(void) {
         D_800D3278->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
     }
     D_800D2D28->unkCA = 1;
-    D_800D2D28->unkCF = 0;
+    D_800D2D28->unkCC[3] = 0;
     for (i = 0; i < 16; i++) {
         D_800D3278->actionRunning[i] = 0;
         D_801E9C20[i] = 0;
@@ -141,9 +171,9 @@ s32 func_801E563C(void) {
     func_800320E8(D_801E9C38);
     if (D_800D3278->musicPlaying != 0) {
         musicWasPlaying = 1;
-        func_80039C4C(D_800C3E54);
+        func_80039C4C((SoundTrack *)D_800C3E54);
         func_800716D8();
-        func_800399D4(D_800C3E54);
+        func_800399D4((SoundSeq *)D_800C3E54);
         func_800716D8();
     }
     if (D_800D3278->soundBankLoaded != 0) {
@@ -294,9 +324,10 @@ u8 func_801E5A98(s32 id) {
     return slot;
 }
 
-/* Show the next of five portraits at (x, y) and mirror the current
- * buffer's quad horizontally by swapping its second and third vertices.
- */
+/* Show the next frame of the five-frame cursor glyph (glyphs 0xe0-0xe4, the
+ * battle graphics' cursor quads) at (x, y), mirrored horizontally by
+ * swapping the current buffer's second and third vertices. */
+
 void func_801E5B00(x, y)
 s16 x;
 s16 y;
@@ -308,17 +339,17 @@ s16 y;
     if (--D_801E9C1C < 0) {
         D_801E9C1C = 4;
     }
-    D_800D2D28->portraitHandle =
-        func_80076A10(D_801E9C1C + 0xE0, D_800C3EA4->portrait, x, y);
+    D_800D2D28->cursorParts =
+        func_80076A10(D_801E9C1C + 0xE0, D_800C3EA4->cursor, x, y);
     graphics = D_800C3EA4;
-    x1 = graphics->portrait[D_800CCB34.index].x1;
-    y1 = graphics->portrait[D_800CCB34.index].y1;
-    graphics->portrait[D_800CCB34.index].x1 = graphics->portrait[D_800CCB34.index].x2;
-    graphics->portrait[D_800CCB34.index].y1 = graphics->portrait[D_800CCB34.index].y2;
-    graphics->portrait[D_800CCB34.index].x2 = x1;
-    graphics->portrait[D_800CCB34.index].y2 = y1;
-    D_800D2D28->portraitBuffer = D_800CCB34.index;
-    D_800D2D28->portraitShown = 1;
+    x1 = graphics->cursor[D_800CCB04.buffer].x1;
+    y1 = graphics->cursor[D_800CCB04.buffer].y1;
+    graphics->cursor[D_800CCB04.buffer].x1 = graphics->cursor[D_800CCB04.buffer].x2;
+    graphics->cursor[D_800CCB04.buffer].y1 = graphics->cursor[D_800CCB04.buffer].y2;
+    graphics->cursor[D_800CCB04.buffer].x2 = x1;
+    graphics->cursor[D_800CCB04.buffer].y2 = y1;
+    D_800D2D28->cursorBuffer = D_800CCB04.buffer;
+    D_800D2D28->cursorShown = 1;
 }
 
 /* Opcode 00 (end, 1 byte): drop the running level and restart the thread's
@@ -545,7 +576,7 @@ s32 func_801E66D8(s32 thread, u8 *insn) {
  * 0,1d0; pixels 3c0,100) and lay the current buffer's portrait quad out
  * in a 64x64 box inside the window at (x, y). */
 void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
-    TimImage tim;
+    TIM_IMAGE tim;
     s32 mirrored = flags & 1;
     s32 file = D_801E9B5C[actor * 2 + mirrored] + 0x46;
     void *data;
@@ -565,15 +596,15 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     DrawSync(0);
     func_800320E8(data);
     if (mirrored) {
-        setXY4(&D_800D3278->quads[D_800CCB34.index], x + width - 4, y + 4, x + width - 0x44, y + 4,
+        setXY4(&D_800D3278->quads[D_800CCB04.buffer], x + width - 4, y + 4, x + width - 0x44, y + 4,
                x + width - 4, y + 0x44, x + width - 0x44, y + 0x44);
-        setUV4(&D_800D3278->quads[D_800CCB34.index], 0, 0, 0x3F, 0, 0, 0x40, 0x3F, 0x40);
+        setUV4(&D_800D3278->quads[D_800CCB04.buffer], 0, 0, 0x3F, 0, 0, 0x40, 0x3F, 0x40);
     } else {
-        setXY4(&D_800D3278->quads[D_800CCB34.index], x + 4, y + 4, x + 0x44, y + 4, x + 4, y + 0x44,
+        setXY4(&D_800D3278->quads[D_800CCB04.buffer], x + 4, y + 4, x + 0x44, y + 4, x + 4, y + 0x44,
                x + 0x44, y + 0x44);
-        setUV4(&D_800D3278->quads[D_800CCB34.index], 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
+        setUV4(&D_800D3278->quads[D_800CCB04.buffer], 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
     }
-    D_800D3278->portraitBuffer = D_800CCB34.index;
+    D_800D3278->portraitBuffer = D_800CCB04.buffer;
 }
 
 /* Show message of the script's message file in the layout of opcode 1a,
@@ -624,13 +655,13 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
             }
             if (!portrait) {
                 func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
-                while (D_800D2D28->windowReady == 0) {
+                while (D_800D2D28->windowOpen[0] == 0) {
                     func_800716D8();
                 }
             } else {
                 func_801E6750(actor, flags, x, y, width);
                 func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
-                while (D_800D2D28->windowReady == 0) {
+                while (D_800D2D28->windowOpen[0] == 0) {
                     func_800716D8();
                 }
                 D_800D2D28->unkC8 = 1;
@@ -643,23 +674,24 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         D_801E9C30 = x + 12;
         func_80032F54(D_800D2DAC, 0x380, 0x100, D_801E9C30, D_801E9C34, D_800D3278->window[2] * 3,
                       D_800D3278->window[3]);
-        D_800D2DAC->unk58 = 4;
+        *(u8 *)&D_800D2DAC->tile[1] = 4;
         D_800D2DAC->flags |= 2;
         func_80034614(D_800D2DAC);
-        func_80034714(D_800D2DAC, func_80033728(D_800D3340, message));
+        func_80034714(D_800D2DAC, (s32)func_80033728(D_800D3340, message));
+
         D_800D2D28->unkC9 = 1;
         D_800D3278->windowOpen = 1;
         func_800716D8();
     }
     if (D_800D2DAC->flags & 8) {
         if (!(flags & 8)) {
-            func_801E5B00(D_800D2DAC->column * 4 + D_801E9C30 + 2, D_800D2DAC->row * 14 + D_801E9C34 + 5);
+            func_801E5B00(D_800D2DAC->x * 4 + D_801E9C30 + 2, D_800D2DAC->y * 14 + D_801E9C34 + 5);
         }
-        D_800D2D28->unkCF = 1;
+        D_800D2D28->unkCC[3] = 1;
         if (D_800D3014 == 4) {
             func_800345E0(D_800D2DAC);
-            D_800D2D28->unkCF = 0;
-            D_800D2D28->portraitShown = 0;
+            D_800D2D28->unkCC[3] = 0;
+            D_800D2D28->cursorShown = 0;
         }
     }
     if (!(D_800D2DAC->flags & 4)) {
@@ -828,7 +860,7 @@ s32 func_801E7660(s32 thread, u8 *insn) {
  * signed operand a). */
 s32 func_801E7684(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    D_800CCD1E[func_801E5A98((u8)D_800D3278->operands[0])].flags |= 1;
+    D_800CCCE8.records[func_801E5A98((u8)D_800D3278->operands[0])].pilot.flags36 |= 1;
     return 3;
 }
 
@@ -851,10 +883,10 @@ s32 func_801E775C(s32 thread, u8 *insn) {
  * state word 8004f30c (8001ac94). */
 s32 func_801E7770(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    D_8006F94E[0] = D_800D3278->operands[0];
-    D_8006F94E[1] = D_800D3278->operands[1];
-    D_8006F94E[2] = D_800D3278->operands[2];
-    D_8006F94E[3] = D_800D3278->operands[3];
+    D_8006D634.map = D_800D3278->operands[0];
+    D_8006D634.entry[0] = D_800D3278->operands[1];
+    D_8006D634.entry[1] = D_800D3278->operands[2];
+    D_8006D634.entry[2] = D_800D3278->operands[3];
     func_8001AC94();
     return 9;
 }
@@ -863,10 +895,10 @@ s32 func_801E7770(s32 thread, u8 *insn) {
  * 800d3338 = 1; 80062514 = d. */
 s32 func_801E77E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    D_8004FE44[0] = D_800D3278->operands[0] | 0x80;
-    D_8004FE44[1] = D_800D3278->operands[1];
-    D_8004FE44[2] = 1;
-    D_8004FE44[3] = D_800D3278->operands[2];
+    (&D_8004FE44)[0] = D_800D3278->operands[0] | 0x80;
+    (&D_8004FE44)[1] = D_800D3278->operands[1];
+    (&D_8004FE44)[2] = 1;
+    (&D_8004FE44)[3] = D_800D3278->operands[2];
     D_800D3338 = 1;
     D_80062514 = D_800D3278->operands[3];
     return 9;
@@ -997,7 +1029,7 @@ void func_801E7CD0(s16 music, u8 volume) {
 
     func_8001B66C();
     if (D_800D3278->musicPlaying != 0) {
-        func_800399D4(D_800C3E54);
+        func_800399D4((SoundSeq *)D_800C3E54);
         func_800716D8();
     }
     func_8008AB70();
@@ -1014,7 +1046,7 @@ void func_801E7CD0(s16 music, u8 volume) {
 
 /* Fade the music to a volume. */
 void func_801E7DE4(s32 volume, s32 time) {
-    func_8003A89C(D_800C3E54, volume, time);
+    func_8003A89C((SoundSeq *)D_800C3E54, volume, time);
 }
 
 /* Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
@@ -1063,7 +1095,7 @@ s32 func_801E7F70(s32 thread, u8 *insn) {
     if (D_800D3278->operands[3] == 0) {
         bank = D_800D3278->soundBank;
     } else {
-        bank = D_8005919C;
+        bank = (SoundBank *)D_8005919C;
     }
     func_80039F18((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1],
                   D_800D3278->operands[2]);
@@ -1079,7 +1111,7 @@ s32 func_801E7FF4(s32 thread, u8 *insn) {
     if (D_800D3278->operands[2] == 0) {
         bank = D_800D3278->soundBank;
     } else {
-        bank = D_8005919C;
+        bank = (SoundBank *)D_8005919C;
     }
     func_8003A2E4((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1]);
     return 7;
@@ -1093,9 +1125,9 @@ s32 func_801E8074(s32 thread, u8 *insn) {
 /* Opcode 33 (1 byte): stop the music. */
 s32 func_801E807C(s32 thread, u8 *insn) {
     if (D_800D3278->musicPlaying != 0) {
-        func_80039C4C(D_800C3E54);
+        func_80039C4C((SoundTrack *)D_800C3E54);
         func_800716D8();
-        func_800399D4(D_800C3E54);
+        func_800399D4((SoundSeq *)D_800C3E54);
         D_800D3278->musicPlaying = 0;
     }
     return 1;
@@ -1112,16 +1144,16 @@ s32 func_801E80E8(s32 thread, u8 *insn) {
  * = 0, 800cce42 bit 7, 800d32a1 = 2, 800c3eb8 = 1 and two battle state
  * bytes. */
 s32 func_801E80F0(s32 thread, u8 *insn) {
-    D_800CCD88 = 0;
-    D_8006D940 = 0;
+    D_800CCCE8.records[0].pilot.gearId = 0;
+    D_8006D634.characters[0].gearId = 0;
     func_80088490(0);
     func_800BAF48(0);
-    D_800C3EAC->unk2EB = 1;
-    D_800CCE42 |= 0x80;
+    D_800C3EAC->reaction[0] = 1;
+    D_800CCCE8.records[0].flags15A |= 0x80;
     func_800883AC(0);
-    D_800D32A1 = 2;
-    D_800C3EA4->unk853D = 2;
-    D_800C3EB8 = 1;
+    D_800D32A0[0].unk1 = 2;
+    D_800C3EA4->panels[0].state = 2;
+    D_800C3EB0.slots[0].gear = 1;
     return 1;
 }
 
@@ -1204,7 +1236,7 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
     attacker = func_801E5A98((u8)D_800D3278->operands[0]);
     target = func_801E5A98((u8)D_800D3278->operands[1]);
-    D_800C3EAC->unk2DA = 0;
+    D_800C3EAC->eventCount = 0;
     func_80085388();
     D_800C3EB0.events[0].codes[target] = D_800D3278->operands[3];
     if (D_801E9C20[attacker] == 0) {
@@ -1229,7 +1261,7 @@ s32 func_801E8600(s32 thread, u8 *insn) {
     u8 actor;
     u8 target;
 
-    D_800C3EAC->unk2DA = 0;
+    D_800C3EAC->eventCount = 0;
     func_80085388();
     func_801E57F8(insn, 3, 0, 1);
     actor = func_801E5A98((u8)D_800D3278->operands[0]);
@@ -1263,7 +1295,8 @@ s32 func_801E8718(s32 thread, u8 *insn) {
 
     for (i = 0; i < 11; i++) {
         if (D_800D3368[i] != NULL) {
-            D_800D3368[i]->unk35 = 0;
+            D_800D3368[i]->field35 = 0;
+
         }
     }
     return 1;

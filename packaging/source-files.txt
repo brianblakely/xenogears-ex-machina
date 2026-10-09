@@ -473,6 +473,7 @@ decomp/targets/overlays/ovl2615.mk
 decomp/targets/overlays/ovl2615.symbols.txt
 decomp/targets/overlays/ovl2615.yaml
 decomp/targets/overlays/ovl3087.mk
+decomp/targets/overlays/ovl3087.resident.ld
 decomp/targets/overlays/ovl3087.symbols.txt
 decomp/targets/overlays/ovl3087.yaml
 decomp/targets/overlays/ovl3381.mk

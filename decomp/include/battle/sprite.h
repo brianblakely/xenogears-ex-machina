@@ -17,6 +17,10 @@
  * (motion.bits.unknown0) high, read in that order. */
 #define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frame_bits.unknown30; (sprite)->motion.bits.unknown0 << 2 | low_; })
 
+/* The motion a sprite plays after an action (-1 none; resident b0's low
+ * byte) as the event script overlay writes it, a signed byte. */
+#define SPRITE_NEXT_MOTION(sprite) (*(s8 *)&(sprite)->b0.byteb0)
+
 /* A sprite's frame bits (resident frame_bits) read as one word: the battle
  * shifts the motion state (bits 28-29) out of it. */
 #define SPRITE_FRAME_WORD(sprite) (*(u32 *)&(sprite)->frame_bits)
