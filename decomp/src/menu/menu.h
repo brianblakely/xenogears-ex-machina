@@ -5,7 +5,7 @@
 #include "gpu.h"
 
 /* libgte-layout vector: three 32-bit components and padding. */
-typedef struct {
+typedef struct Vector {
     s32 vx;
     s32 vy;
     s32 vz;
@@ -49,7 +49,7 @@ typedef struct {
 } Color;
 
 /* libgte matrix. */
-typedef struct {
+typedef struct Matrix {
     s16 m[3][3];
     s32 t[3];
 } Matrix;
@@ -132,7 +132,7 @@ typedef struct {
 } Move;
 
 /* Per-side hit bookkeeping (D_80096FB8, one record per side). */
-typedef struct {
+typedef struct SideHits {
     s32 unk0;
     u8 unk4;
     s32 unk8;
@@ -387,14 +387,16 @@ typedef struct {
 
 #define ACTOR_SIDE(actor) (((actor)->flags >> 27) & 1)
 
-/* Menu window (resident window code at 80032f54). */
-typedef struct {
+/* Menu window: the resident's 0x90-byte message window record (its window
+ * code at 80032f54); the menu names the members it uses. */
+typedef struct MenuWindow {
     s16 unk0[3];
     s16 unk6;
     s16 unk8[2];
     s16 unkC;
     u8 unkE[0x5A];
     u8 unk68;
+    u8 unk69[0x27];
 } MenuWindow;
 
 /* A step in one of eight directions on the floor plane. */
@@ -409,10 +411,8 @@ extern Actor D_80097010;
 extern Actor D_8009872C;
 extern Vector D_8009867C;
 extern Vector D_8009871C;
-extern Vector D_80099078;
 
 extern MenuWindow D_8009868C; /* message window */
-extern MenuWindow D_80092954;
 
 extern u8 *D_8009105C[]; /* scene scripts */
 extern u8 D_80090F38[];
@@ -428,20 +428,9 @@ extern s32 D_80092904; /* camera view */
 extern s32 D_80092934;
 extern u8 D_8009293C;
 extern s32 D_80092948;
-extern u8 D_800929BC;
 extern FloorStep D_80091084[8];
 extern u16 D_8005948C; /* pad buttons newly pressed */
 extern u16 D_800594A4; /* pad buttons repeating */
-extern DrTpage D_800929E4[2];
-extern s32 D_80092A00;
-extern s32 D_80092A10;
-extern s32 D_80092A20;
-extern u8 D_80099D9A;
-extern u8 D_80099D9D;
-extern u8 D_80099D9E;
-extern u8 D_80099DA1;
-extern u8 D_80099DA2;
-extern s16 D_80099DA4;
 extern u8 D_800928FC;
 extern s32 D_80092918;
 extern s32 D_80092944;
@@ -452,7 +441,6 @@ void func_800708C4(Vector *target, s32 steps);
 s32 func_800887A4(Vector *from, Vector *to);
 extern s32 D_800928AC;
 extern u8 D_800928C0;
-extern Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
 void func_8007A768(Actor *actor);
 void func_800379C8(const char *format, ...); /* debug text print */
 extern s32 D_80092890;
@@ -461,8 +449,6 @@ extern u8 D_800928F0;
 extern u8 D_800928F4;
 extern s32 D_8009290C;
 extern s32 D_8009294C;
-extern Sprt16 D_8009A14C;
-extern Sprt16 D_8009A244;
 extern LightRig *D_800910F0; /* the scene's lights */
 extern Vector D_80096FA8;    /* scene origin (last eye position) */
 extern ShotKind D_800910F4[];
@@ -470,11 +456,7 @@ extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
 extern s32 D_80091198[];
 extern u8 D_80091178[]; /* pairs: next combo number after each button */
-extern u8 D_80099D9B;
-extern u8 D_80099D9C;
 extern s32 D_8009292C;
-extern s32 D_80099D88;
-extern s32 D_80099D8C;
 extern u8 D_80050622; /* resident: result of the last menu battle */
 
 /* PsyQ SDK (resident). */
@@ -595,8 +577,6 @@ typedef struct {
     u16 file;
     void *data;
 } Resource;
-
-extern u8 D_80099D9E;
 
 void *func_800891C0(s32 id);
 s32 func_800288EC(s32 file);

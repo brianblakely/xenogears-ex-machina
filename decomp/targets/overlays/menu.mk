@@ -6,7 +6,7 @@ ORIGINAL_SHA256 := 3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea15756
 BUILD := .local/decomp/build/menu
 IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld
-LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt decomp/targets/overlays/menu.bss.ld
 SOURCE_DIRS := decomp/src/menu
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:35 2:30
@@ -16,9 +16,24 @@ CLASSIFICATION := decomp/targets/overlays/menu.classification.txt
 # offset 0 is VRAM 0x8006FAF0.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0
 # The program ends at 0x80092954 (file 0x22e64) with the small uninitialized
-# variables, where the larger ones start. The original packer appended zero
-# literal tokens until its last group held eight and recorded the padded
-# length: the plain encoding of the program plus five zero literals is the
-# disc stream (tools/packed_container.py). The five bytes follow the link as
-# file padding.
+# variables (.sbss), where the larger ones (.bss) start. The original packer
+# appended zero literal tokens until its last group held eight and recorded
+# the padded length: the plain encoding of the program plus five zero literals
+# is the disc stream (tools/packed_container.py). The five bytes follow the
+# link as file padding.
 PACKER_TAIL := 5
+# The menu's assembler allocated the uninitialized variables GCC emits after
+# each unit's code by size: those of up to 8 bytes in .sbss, the larger ones
+# in .bss, each in declaration order, while the code, assembled before them,
+# addresses all of them absolutely (cc1, maspsx and GNU as stay -G0; maspsx's
+# own -G8 would also move the code's accesses to $gp). Evidence: the link
+# under this rule puts every variable the code addresses where the original
+# code addresses it: all 208 objects of up to 8 bytes in 800925d4-80092954 and
+# all 50 larger ones in 80092954-8009b558, each group in unit order with its
+# commons last. Field, compiled by the same GCC 2.7.2, keeps one .bss with its
+# small and large commons interleaved. This front end, beside this file (ROOT
+# may name another tree), runs maspsx and then makes the split (menu.yaml,
+# menu.bss.ld); the units are rebuilt when it changes.
+MENU_MASPSX := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/menu.maspsx.py
+MASPSX := $(PYTHON) $(MENU_MASPSX)
+$(patsubst %,$(ROOT)/$(BUILD)/decomp/src/menu/%.o,menu menu2 menu3 menu4 menu5 menu6 menu7 menu_common): $(MENU_MASPSX)

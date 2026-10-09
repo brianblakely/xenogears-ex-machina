@@ -47,7 +47,6 @@ extern s32 D_800911D4; /* second actor also posed by func_8007661C */
 extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 
 /* Bout-end sequence effects. */
-extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
 void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
 void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
@@ -75,7 +74,7 @@ typedef struct {
 } DrawTPage;
 
 /* Per-buffer overlay packets (map screen, 0x310 bytes). */
-typedef struct {
+typedef struct OverlayBuffer {
     DrawTPage tpage[2];   /* 0x000 */
     LineF4 frame[4];      /* 0x010: map frame outline, both sides */
     PolyF4 bars[6];       /* 0x080: gauge backgrounds */
@@ -104,20 +103,21 @@ typedef struct {
     s16 pad;
 } Line3D;
 
-extern Line3D D_80095938[100];
 extern Vector D_80096FA8; /* view origin */
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 
 /* A recorded path position and its debug marker: three axis lines (red
  * x, green y, blue z) per buffer. */
-typedef struct {
+typedef struct PathPoint {
     LineF2Tag axes[2][3]; /* 0x00 */
     s16 x, y, z;          /* 0x60 */
     u8 pad[2];
 } PathPoint;
 
-extern PathPoint D_8009A928[0x1F];
+/* Thirty records end the BSS the resident's mode table clears (8009b558);
+ * func_80087E38 records up to 31, the last over the heap that follows. */
+extern PathPoint D_8009A928[30];
 extern s32 D_800928F8; /* recorded path points */
 extern PolyFT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 
@@ -148,7 +148,6 @@ extern Environment *D_8009288C; /* current stage colours */
 extern s32 D_8009291C;
 extern s32 D_80092910;
 extern s32 D_80092908;
-extern PolyG4 D_80095580[2];   /* sky gradient, one per buffer */
 void func_8002C6E0(s32 r, s32 g, s32 b); /* back colour */
 void func_8004A10C(s32 r, s32 g, s32 b); /* far colour */
 void SetFogNearFar(s32 near, s32 far, s32 arg);
@@ -184,10 +183,7 @@ typedef struct {
 void func_80085E90(s32 mirrored, s16 *out, s32 x);
 void func_80085EAC(s32 mirrored, s16 *out, s32 y);
 
-/* Backdrop texture pages and sprites. */
-
-extern DrawTPage D_800955C8[4];
-extern Sprite D_800955F8[6];
+/* Backdrop (menu5's texture pages D_800955C8 and sprites D_800955F8). */
 void func_800875EC(void);
 void func_80087830(void);
 
@@ -205,8 +201,6 @@ typedef struct {
     PolyFT4 bar_r[2];     /* 0x230 */
 } Hud;
 
-extern Hud D_80095698;
-extern DrawTPage D_80095918[4]; /* HUD texture page modes, two per buffer */
 extern u8 D_80092860; /* left bar texel row */
 extern u8 D_80092864; /* right bar texel row */
 extern u16 D_80091814[16]; /* gauge palette */
@@ -219,7 +213,6 @@ extern s32 D_8009292C;
 
 extern u8 D_800928A0; /* buffer being built */
 extern s32 D_80092880;
-extern Caption D_80095540;
 extern Menu D_800915AC[8];
 extern s32 D_80091364; /* pad port of the menu input */
 /* Resident pad state, per port. */
@@ -230,8 +223,6 @@ extern u8 D_80059438, D_8005943C; /* stick x */
 extern u8 D_80059430, D_80059434; /* stick y */
 
 extern u8 D_800928FC;  /* pad port driving the menus */
-extern TileRgb D_8009A1C0; /* screen fade tile, buffer 0 */
-extern TileRgb D_8009A2B8; /* screen fade tile, buffer 1 */
 
 void func_80080AE8(void);
 void func_80036420(void);

@@ -25,11 +25,11 @@ options:
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
   generate_asm_macros_files: False
-  ld_bss_is_noload: False
+  ld_bss_is_noload: True
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
   use_legacy_include_asm: False
-  section_order: [".rodata", ".text", ".data", ".bss"]
+  section_order: [".rodata", ".text", ".data", ".sbss", ".bss"]
   subalign: 4
   string_encoding: ASCII
   data_string_encoding: ASCII
@@ -41,6 +41,10 @@ segments:
     type: code
     start: 0x0
     vram: 0x8006faf0
+    # The larger uninitialized variables, past the program's end (not in the
+    # file): the resident's mode table (8001808c, mode 4) clears 800925d4-
+    # 8009b558 for this overlay, the small ones (in the file) and these.
+    bss_size: 0x8C04
     subsegments:
       # Translation units. GCC puts `.align 3` before every jump table; the
       # assembler honours it relative to the unit's .rodata section, and the
@@ -85,30 +89,40 @@ segments:
       # menu.classification.txt) and D_800925A4, whose padding holds three
       # stray assembler bytes ("ind").
       - [0x2211C, .data, menu7]
-      # The file then holds the uninitialized variables of up to eight
-      # bytes (loaded .bss), zero, each in a slot of whole words
-      # (decomp/Makefile): every unit's own, in unit order, then the commons
-      # (menu_common.c). The larger ones follow past the program's end in
-      # the same order: each unit's own from D_80092954 to 80096FA8, then
-      # the large commons up to the mode table's BSS end, 8009B558. The
-      # GCC 2.6.3 images keep one .bss in declaration order (slot39, mdec),
-      # so the split is likely the original assembler's 8-byte small-data
-      # threshold applied to the .lcomm/.comm GCC emits after the code,
-      # with the linker's small commons (docs/matching.md). Until it is
-      # modelled the larger variables stay extern (undefined_syms_auto.txt):
-      # defined in their units, they would be allocated among the small
-      # ones. Every variable a unit reads lies in its own range
-      # (tools/data_users.py menu.mk --end 80096fa8: no FOREIGN reference or
-      # INVERSION; the one SHARED address, 80092A30, is menu3's variable and
-      # the end bound menu2 forms for its array at 800929F4), which places
-      # or bounds the text boundaries above.
-      - [0x22AE4, .bss, menu2]
-      - [0x22B48, .bss, menu3]
-      - [0x22BE4, .bss, menu4]
-      - [0x22C78, .bss, menu5]
-      - [0x22D00, .bss, menu6]
-      - [0x22D10, .bss, menu7]
-      - [0x22D5C, .bss, menu_common]
+      # The uninitialized variables. The menu's assembler put those of up
+      # to eight bytes in .sbss and the larger ones in .bss (menu.mk),
+      # and the original linker joined each section in unit order and
+      # allocated its commons after every unit's own (menu_common.c). The
+      # .sbss closes the file (zero there), each object in a slot of whole
+      # words (decomp/Makefile): every unit's own small variables, then the
+      # small commons. The .bss follows past the program's end, not loaded:
+      # each unit's own larger variables from 80092954 to 80096FA8, then the
+      # large commons up to the mode table's BSS end (menu.bss.ld). Every
+      # object in 800925D4-80092954 has at most eight bytes and every one
+      # from 80092954 on more, apart from the handwritten scheduler's two
+      # words (func_8008BB00.s), which an explicit .bss puts there. Every
+      # variable a unit reads lies in its own range, which places or bounds
+      # the text boundaries above (tools/data_users.py menu.mk: its one
+      # FOREIGN address, 80092A30, menu2's func_80072170 only forms, as the
+      # end of its loop over the embers D_800929F4[3]; it is the pad word of
+      # menu3's D_80092A24 behind them). Splat links the .sbss into the
+      # loaded section as data entries; listing each .bss with its vram and
+      # the segment's bss_size keeps their names out of
+      # undefined_syms_auto.txt, so the link places every variable from its
+      # definition.
+      - { start: 0x22AE4, type: .data, name: menu2, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22B48, type: .data, name: menu3, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22BE4, type: .data, name: menu4, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22C78, type: .data, name: menu5, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22D00, type: .data, name: menu6, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22D10, type: .data, name: menu7, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22D5C, type: .data, name: menu_common, linker_section_order: .sbss, linker_section: .sbss }
+      - { type: .bss, vram: 0x80092954, name: menu2 }
+      - { type: .bss, vram: 0x80092A24, name: menu3 }
+      - { type: .bss, vram: 0x80095498, name: menu4 }
+      - { type: .bss, vram: 0x80095580, name: menu5 }
+      - { type: .bss, vram: 0x80096D88, name: menu7 }
+      - { type: .bss, vram: 0x80096FA8, name: menu_common }
   - [0x22E64]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (menu.mk), so the decoded image ends five

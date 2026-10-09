@@ -34,6 +34,12 @@ static s32 D_80092628;
 static s32 D_8009262C;
 static SVector D_80092630; /* model view angles */
 
+/* Its larger ones, past the program's end (not in the file), each unit's
+ * after every unit's small ones (menu.mk). */
+static MenuWindow D_80092954; /* the opening text, then the scene list */
+static DrTpage D_800929E4[2];
+static Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
+
 /* Scene scripts, user-supplied bytecode run by func_8007107C (an asset in
  * menu.classification.txt; tools/analysis/overlay_scripts.py decodes them).
  * The opening's is empty; D_80091050 has the same form, but nothing starts
@@ -115,7 +121,6 @@ void func_800708C4(Vector *target, s32 steps) {
 
 /* Place the menu camera for one of the view modes. */
 void func_8007099C(u32 mode) {
-    extern s32 D_80098780; /* D_8009872C.angle, the word at +0x54. */
     Vector target;
     s32 top;
 
@@ -141,12 +146,12 @@ void func_8007099C(u32 mode) {
     case 4:
         D_800925F4 = 0x80;
     lifted:
-        target = D_80099078;
+        target = D_8009872C.core;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
-        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         target.vy = D_8009872C.pos.vy - (D_800925F4 + 0x20);
-        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
         top = func_80082488(&D_8009871C, 0) - (D_800925F4 + 0x40);
         if (top < D_8009871C.vy) {
@@ -570,10 +575,10 @@ void func_80071794(u32 **resources) {
     LoadImage(image.prect, image.paddr);
     SetDrawTPage(&D_800929E4[0], 0, 0, GetTPage(0, 1, image.prect->x, image.prect->y));
     D_800929E4[1] = D_800929E4[0];
-    D_8009A14C.u0 = (image.prect->x & 0x3F) * 4;
-    D_8009A14C.v0 = image.prect->y;
-    D_8009A14C.clut = GetClut(image.crect->x, image.crect->y);
-    D_8009A244 = D_8009A14C;
+    D_8009A0D8[0].sprite.u0 = (image.prect->x & 0x3F) * 4;
+    D_8009A0D8[0].sprite.v0 = image.prect->y;
+    D_8009A0D8[0].sprite.clut = GetClut(image.crect->x, image.crect->y);
+    D_8009A0D8[1].sprite = D_8009A0D8[0].sprite;
 }
 
 /* Open the menu message window. */
@@ -609,14 +614,14 @@ void func_8007191C(s32 scene) {
 /* Start the menu's opening: text window with message 0x42, the intro
  * script, then scene 9. */
 void func_800719F0(void) {
-    D_80099D9D = 0;
+    D_80099D98.com1 = 0;
     D_80099D98.driven = 0;
     func_80083C0C(7);
     D_800928C8 = 5;
     D_80092884 = 0;
     func_80032F54(&D_80092954, 0x140, 0x70, 0xA2, 0x2A, 0x1C, 8);
     func_80034714(&D_80092954, func_80033728(D_80092880, 0x42));
-    D_800929BC = 0x1E;
+    D_80092954.unk68 = 0x1E;
     D_800925DC = 0;
     func_80070F80(D_80090F38);
     D_80092604 = 0;
@@ -766,14 +771,14 @@ void func_800720D4(void) {
         func_80070F80(D_800910C4);
         D_8009293C = 1;
         D_800928D4 = 0;
-        D_80099D9D = 0;
+        D_80099D98.com1 = 0;
         D_80099D98.driven = 0;
         D_80092900 = 0;
         D_800925D4 = 0;
         D_800925D8 = 0;
-        D_80092A00 = 1;
-        D_80092A10 = 1;
-        D_80092A20 = 1;
+        D_800929F4[0].pad = 1;
+        D_800929F4[1].pad = 1;
+        D_800929F4[2].pad = 1;
         D_80097010.unkE8 = 0;
         D_8009872C.unkE8 = 0;
     }

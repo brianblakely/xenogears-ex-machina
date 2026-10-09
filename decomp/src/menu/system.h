@@ -6,10 +6,10 @@
 /* Saved system options word (resident, 0x8006f980). */
 typedef struct {
     u32 version : 4;   /* 1 once written */
-    u32 option4 : 1;   /* mirrors D_80099D9B */
-    u32 option5 : 1;   /* mirrors D_80099D9C */
-    u32 option6 : 7;   /* mirrors D_80099D9F */
-    u32 option13 : 3;  /* mirrors D_80099D98 */
+    u32 option4 : 1;   /* mirrors D_80099D98.option4 */
+    u32 option5 : 1;   /* mirrors D_80099D98.option5 */
+    u32 option6 : 7;   /* mirrors D_80099D98.option6 */
+    u32 option13 : 3;  /* mirrors D_80099D98.level */
     u32 complete : 1;  /* every tracked flag was set */
     u32 unused : 15;
 } SystemOptions;
@@ -23,10 +23,8 @@ typedef struct {
 
 extern SystemSave D_8006F978;
 extern u8 D_8005061C;    /* nonzero keeps the options in D_8006F980 */
-/* Current option settings (0x80099d98). The bytes at 0x02-0x06, 0x09,
- * 0x0A and 0x0C are also addressed through their own symbols
- * (D_80099D9A..D_80099DA4) by some functions. */
-typedef struct {
+/* Current option settings (0x80099d98). */
+typedef struct Settings {
     u8 level;     /* 0x00: saved as option13 */
     u8 unk1;
     u8 rate;      /* 0x02: frame rate choice */
@@ -67,16 +65,6 @@ typedef struct {
     u8 pad1;
 } DispEnv;
 
-/* 16x16 sprite primitive (libgpu SPRT_16). */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-} Sprite16;
-
 /* Filled rectangle primitive (libgpu TILE); colour and code as one word. */
 typedef struct {
     u8 addr[3];
@@ -91,14 +79,14 @@ typedef struct Window {
     DrawEnv draw;      /* 0x00 */
     DispEnv disp;      /* 0x5C */
     u32 ot;            /* 0x70: one-entry ordering table */
-    Sprite16 sprite;   /* 0x74 */
+    Sprt16 sprite;     /* 0x74: libgpu SPRT_16 */
     u8 unk84[0x4C];
     u32 modeD0[3];     /* 0xD0 */
     u32 modeDC[3];     /* 0xDC */
-    Tile background;   /* 0xE8 */
+    TileRgb background; /* 0xE8: libgpu TILE, also the screen fade */
 } Window;
 
-extern Window D_8009A0D8[];
+extern Window D_8009A0D8[2];
 
 /* Scene node (0x9C bytes): a typed payload with its own transform, linked
  * into a tree of children. */
@@ -333,7 +321,6 @@ extern s32 D_80091C2C;   /* nonzero: model set players do not own their keys */
 extern Matrix D_80091C0C; /* identity */
 extern Vector D_8009A0C8; /* look-at work: forward */
 extern Vector D_8009A918; /* look-at work: up */
-extern Vector D_80096F98; /* look-at work: side */
 extern Vector D_80097000; /* look-at work: third axis */
 extern Vector D_80096FA8; /* last eye position */
 extern Matrix D_8009A2D8;

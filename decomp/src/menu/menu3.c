@@ -45,6 +45,17 @@ static Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
 static SceneCell12 *D_800926C8;
 static TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
 
+/* Its larger ones, past the program's end (not in the file), each unit's
+ * after every unit's small ones (menu.mk). */
+static Vector D_80092A24; /* glow emitter position */
+static Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
+static SparkleKind D_80092A74[5];
+static Sparkle D_80092AD8[SPARKLE_COUNT];
+static u8 D_800947E8[12]; /* sparkle kind 0: texture column of each frame */
+static u8 D_800947F4[12]; /* its texture row of each frame */
+static u16 D_80094800[12]; /* its CLUT of each frame */
+static SceneLine D_80094818[100];
+
 ShotKind D_800910F4[] = {
     { 0x0600, 0, 0x2D, 0x40, 1, 0x0B, 0 },
     { 0x0600, 2, 0x19, 0xC0, 3, 0x00, 0 },
@@ -787,9 +798,9 @@ void func_80075060(s32 lost) {
         } else {
             D_80050622 = 3;
         }
-    } else if (D_80099D8C == 0 && D_80099D88 == 0) {
+    } else if (D_8009872C.unk1660 == 0 && D_8009872C.unk165C == 0) {
         D_80050622 = 0x88;
-    } else if (D_80099D88 == 0) {
+    } else if (D_8009872C.unk165C == 0) {
         D_80050622 = 0x82;
     } else {
         limit = player->max_hp * 0xB0 / 255;
@@ -1683,10 +1694,10 @@ s32 func_800776A8(Actor *actor, s32 arg) {
         return;
     }
     if (actor->flags & 0x8000000) {
-        if ((D_800928C8 == 2 || D_800928C8 == 4) && (D_80099D9C & 1) && !(actor->flags & 0x40)) {
+        if ((D_800928C8 == 2 || D_800928C8 == 4) && (D_80099D98.option5 & 1) && !(actor->flags & 0x40)) {
             func_80036258(1, arg);
         }
-    } else if ((D_80099D9B & 1) && !(actor->flags & 0x40)) {
+    } else if ((D_80099D98.option4 & 1) && !(actor->flags & 0x40)) {
         func_80036258(0, arg);
     }
 }
@@ -2520,13 +2531,13 @@ void func_80079A8C(void) {
     func_800732CC();
     func_8008DC28();
     func_80088AF8();
-    D_80099D9D = 1;
-    D_80099DA1 = 3;
+    D_80099D98.com1 = 1;
+    D_80099D98.speed = 3;
     D_8009292C = 0x100;
     D_80099D98.driven = 0;
-    D_80099D9A = 0;
-    D_80099DA2 = 0;
-    D_80099DA4 = 0x100;
+    D_80099D98.rate = 0;
+    D_80099D98.command = 0;
+    D_80099D98.unkC = 0x100;
 }
 
 void func_80079B04(void) {
@@ -2574,7 +2585,7 @@ s32 func_80079B44(void) {
     D_80092664 = 0;
     D_80092950++;
     func_800346A4(&D_8009868C);
-    D_80099D9A = 0;
+    D_80099D98.rate = 0;
     if (D_8005061C != 0) {
         switch ((D_80092950 - 1) % 5) {
         case 3:

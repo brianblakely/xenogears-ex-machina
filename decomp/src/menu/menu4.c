@@ -46,6 +46,16 @@ static u8 D_8009275C;
 static void *D_80092760; /* loaded image data */
 static u8 D_80092764; /* stick is deflected */
 
+/* Its larger ones, past the program's end (not in the file), each unit's
+ * after every unit's small ones (menu.mk). */
+static DrMove D_80095498[2];
+static DrTpage D_800954C8[2];
+static SceneSprite D_800954D8[2];
+/* The upper and lower captions: two sprite strips sharing one pixel buffer
+ * (func_80080F04), each drawn as a Caption. */
+static SpriteStrip D_80095510[2];
+static DrTpage D_80095570[2];
+
 /* Menu font glyphs (func_8007E8AC maps characters to these). */
 Glyph D_80091230[] = {
     { 0x3C, 0x13, 0x15, 0x12 }, { 0x18, 0, 5, 0x12 }, { 0x20, 0, 0xC, 0x12 },
@@ -601,7 +611,7 @@ void func_8007F9A0(MenuPage *page) {
     func_8007ECF0(func_8007F97C());
     func_8007F948(page, 1);
     sprintf(text, "%d", D_80099D98.speed + 1);
-    D_80099DA4 = D_8009292C = D_8009130C[D_80099D98.speed];
+    D_80099D98.unkC = D_8009292C = D_8009130C[D_80099D98.speed];
     func_8007ECF0(text);
     func_8007F948(page, 2);
     sprintf(text, "%dFPS", D_80091300[D_80099D98.rate]);
@@ -1151,7 +1161,7 @@ void func_80081100(s32 text, s32 lower) {
             return;
         }
         D_80092740 = text;
-        func_80081094(&D_80095540, text, 1);
+        func_80081094((Caption *)&D_80095510[1], text, 1);
     }
     rect.x = 0x140;
     rect.y = 0x30;
@@ -1171,7 +1181,7 @@ void func_800811AC(void *ot) {
         AddPrim(ot, &caption->sprite[D_800928A0]);
     }
     if (D_80092740 != 0) {
-        caption = &D_80095540;
+        caption = (Caption *)&D_80095510[1];
         caption->sprite[D_800928A0].w = caption->width;
         caption->sprite[D_800928A0].x0 = caption->x;
         AddPrim(ot, &caption->sprite[D_800928A0]);
@@ -1438,8 +1448,8 @@ void func_80081A44(void) {
             D_80092924 = 1;
             break;
         }
-        D_80099D9D = 0;
-        D_80099D9E = 1;
+        D_80099D98.com1 = 0;
+        D_80099D98.driven = 1;
         break;
     case 2:
         D_80092754 = 1;
@@ -1458,8 +1468,8 @@ void func_80081A44(void) {
         if (D_80092710 == 3) {
             D_80092924 = 1;
         }
-        D_80099D9D = 0;
-        D_80099D9E = 0;
+        D_80099D98.com1 = 0;
+        D_80099D98.driven = 0;
         break;
     case 3:
         switch ((s32)D_80092710) {
@@ -1475,8 +1485,8 @@ void func_80081A44(void) {
             D_80092924 = 1;
             break;
         }
-        D_80099D9D = 1;
-        D_80099D9E = 1;
+        D_80099D98.com1 = 1;
+        D_80099D98.driven = 1;
         break;
     case 4:
         switch ((s32)D_80092710) {
@@ -1492,8 +1502,8 @@ void func_80081A44(void) {
             D_80092924 = 1;
             break;
         }
-        D_80099D9D = 0;
-        D_80099D9E = 1;
+        D_80099D98.com1 = 0;
+        D_80099D98.driven = 1;
         break;
     case 5:
         switch ((s32)D_80092710) {
@@ -1517,8 +1527,8 @@ void func_80081A44(void) {
             D_80092924 = 1;
             break;
         }
-        D_80099D9D = 0;
-        D_80099D9E = 1;
+        D_80099D98.com1 = 0;
+        D_80099D98.driven = 1;
         break;
     }
     func_8007FBEC();
@@ -1552,28 +1562,28 @@ void func_80081D2C(void) {
 
 /* Dim the screen below the top band with the half-grey fade tiles. */
 void func_80081E00(void) {
-    D_8009A1C0.y0 = 0x60;
-    D_8009A2B8.y0 = 0x60;
-    D_8009A1C0.r0 = 0x7F;
-    D_8009A1C0.g0 = 0x7F;
-    D_8009A1C0.b0 = 0x7F;
-    D_8009A2B8.r0 = 0x7F;
-    D_8009A2B8.g0 = 0x7F;
-    D_8009A2B8.b0 = 0x7F;
-    D_8009A1C0.h = D_8009286C - 0x60;
-    D_8009A2B8.h = D_8009286C - 0x60;
+    D_8009A0D8[0].background.y0 = 0x60;
+    D_8009A0D8[1].background.y0 = 0x60;
+    D_8009A0D8[0].background.r0 = 0x7F;
+    D_8009A0D8[0].background.g0 = 0x7F;
+    D_8009A0D8[0].background.b0 = 0x7F;
+    D_8009A0D8[1].background.r0 = 0x7F;
+    D_8009A0D8[1].background.g0 = 0x7F;
+    D_8009A0D8[1].background.b0 = 0x7F;
+    D_8009A0D8[0].background.h = D_8009286C - 0x60;
+    D_8009A0D8[1].background.h = D_8009286C - 0x60;
 }
 
 /* Clear the fade tiles back to the full, black screen. */
 void func_80081E6C(void) {
-    D_8009A1C0.y0 = 0;
-    D_8009A2B8.y0 = 0;
-    D_8009A1C0.r0 = 0;
-    D_8009A1C0.g0 = 0;
-    D_8009A1C0.b0 = 0;
-    D_8009A2B8.r0 = 0;
-    D_8009A2B8.g0 = 0;
-    D_8009A2B8.b0 = 0;
-    D_8009A1C0.h = D_8009286C;
-    D_8009A2B8.h = D_8009286C;
+    D_8009A0D8[0].background.y0 = 0;
+    D_8009A0D8[1].background.y0 = 0;
+    D_8009A0D8[0].background.r0 = 0;
+    D_8009A0D8[0].background.g0 = 0;
+    D_8009A0D8[0].background.b0 = 0;
+    D_8009A0D8[1].background.r0 = 0;
+    D_8009A0D8[1].background.g0 = 0;
+    D_8009A0D8[1].background.b0 = 0;
+    D_8009A0D8[0].background.h = D_8009286C;
+    D_8009A0D8[1].background.h = D_8009286C;
 }
