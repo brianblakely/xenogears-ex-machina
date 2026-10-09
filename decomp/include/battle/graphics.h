@@ -91,7 +91,7 @@ typedef struct BattleGraphics {
     DR_MODE unk8920[2];      /* +0x8920 per draw buffer */
     u8 unk8938[0x8950 - 0x8938];
     RECT unk8950[4];         /* the CLUT rows */
-    u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
+    u_long unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
     SpriteInfo sprites[5];   /* +0xA234 */
     u16 barCluts[4];         /* +0xA2AC time bar: normal, party-wide, slow, haste */

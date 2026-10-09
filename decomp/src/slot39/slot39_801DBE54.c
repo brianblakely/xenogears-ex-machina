@@ -363,7 +363,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
             rect.y = row / 2 * 0xd + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
-            LoadImage(&rect, image);
+            LoadImage(&rect, (u_long *)image);
             DrawSync(0);
             if (row < 12) {
                 switch (kind) {
@@ -444,7 +444,7 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
-        LoadImage(&rect, image);
+        LoadImage(&rect, (u_long *)image);
         DrawSync(0);
         func_801E7C50(&D_800625A0->arts_list->extra[0], 0, 0, 0);
         func_801E920C(&D_800625A0->arts_list->extra[0].polys[D_800625A0->buffer_index], 0x1c, 0x9e, 0, 0x4e,
@@ -1005,7 +1005,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             rect.y = i / 2 * 0xd + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
-            LoadImage(&rect, image);
+            LoadImage(&rect, (u_long *)image);
             DrawSync(0);
             func_801E7C50(&D_800625A0->equip_list->names[i], i, 0x80, 0x81);
             func_801E7C50(&D_800625A0->equip_list->values[i], i, 0x80, 0x82);
@@ -1323,7 +1323,7 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
                 rect.y = (line + 8) / 2 * 0xd + 0x80;
                 rect.w = 0x28;
                 rect.h = 0xd;
-                LoadImage(&rect, image);
+                LoadImage(&rect, (u_long *)image);
                 DrawSync(0);
                 func_801E7C50(&D_800625A0->equip_list->extra[line], line + 8, 0x80, 0x81);
                 func_801C851C(D_800625A0->equip_list->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
@@ -1657,7 +1657,7 @@ void func_801E1014(void) {
 
     block = func_80031BDC(0x25c0, 0);
     D_800625A0->status_list = block;
-    bzero(block, 0x25c0);
+    bzero((u_char *)block, 0x25c0);
     func_801C72BC(4);
     func_801E8018(2, D_800625A0->labels17e0, D_801EA564, &D_800625A0->flags->label17e0_shown);
     func_801E8070(2, D_800625A0->labels17e0, D_801EA564, D_801E9EA0, &D_800625A0->flags->label17e0_shown, 0, 0, 4);
@@ -1825,7 +1825,7 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
         rect.y = (row >> 1) * 13 + 0x80;
         rect.w = 0x28;
         rect.h = 0xd;
-        LoadImage(&rect, pixels);
+        LoadImage(&rect, (u_long *)pixels);
         DrawSync(0);
         (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->x0 = 0x10a;
         (D_800625A0->status_list->values[row].polys + D_800625A0->buffer_index)->y0 = row * 13 + 0x1f;
@@ -1902,7 +1902,7 @@ void func_801E1AC8(u8 slot) {
             rect.y = i / 2 * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 0xd;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
             func_801E7C50(&D_800625A0->status_list->names[i], i, 0x80, 0x81);
             func_801E7C50(&D_800625A0->status_list->values[i], i, 0x80, 0x82);
@@ -3517,7 +3517,7 @@ void func_801E6668(s32 index) {
 
     pixels = func_80031BDC(0x100, 1);
     image = func_80031BDC(0x1000, 1);
-    bzero(image, 0x1000);
+    bzero((u_char *)image, 0x1000);
     bytes = 0;
     chars = 0;
     text = (u8 *)D_800625A0->card + (index << 9) + 0xb98;
@@ -3561,7 +3561,7 @@ void func_801E6668(s32 index) {
     rect.y = 0xe0;
     rect.w = 0x40;
     rect.h = 0x20;
-    LoadImage(&rect, image);
+    LoadImage(&rect, (u_long *)image);
     DrawSync(0);
     func_800320E8(pixels);
     func_800320E8(image);
@@ -3710,7 +3710,7 @@ void func_801E71B4(u8 index, SaveSummary *set, s32 file) {
     rect.y = D_801EA5C4[index + 6];
     rect.w = 0x28;
     rect.h = 0xd;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_800320E8(pixels);
 }
@@ -3808,11 +3808,11 @@ void func_801E78C8(s32 file) {
     D_801EA8EC.w = 0x10;
     D_801EA8EC.h = 1;
     memmove(D_801EA8C4, &D_800625A0->card->heads[file][0x60], 0x20);
-    LoadImage(&D_801EA8EC, D_801EA8C4);
+    LoadImage(&D_801EA8EC, (u_long *)D_801EA8C4);
     DrawSync(0);
     for (i = 0; i < 3; i++) {
         D_801EA8E4.y = 0x80 + i * 32 + file / 16 * 16;
-        LoadImage(&D_801EA8E4, &D_800625A0->card->heads[file][0x80 + i * 0x80]);
+        LoadImage(&D_801EA8E4, (u_long *)&D_800625A0->card->heads[file][0x80 + i * 0x80]);
         DrawSync(0);
     }
     switch (D_800625A0->card->heads[file][2]) {
@@ -3936,7 +3936,7 @@ void func_801E7E68(MenuLabel *labels, u8 *layout, s32 first, s32 count) {
         labels[i + 1].rect = labels[i].rect;
         func_801E7C50(&labels[i], i, first, 0);
         func_801E7C50(&labels[i + 1], i + 1, first, 0);
-        LoadImage(image, D_800625A0->labels[0].pixels);
+        LoadImage(image, (u_long *)D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }

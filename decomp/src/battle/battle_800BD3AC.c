@@ -483,8 +483,8 @@ void func_800BE1C4(PopupTask *task) {
     SVECTOR angle;
     VECTOR offset;
     VECTOR scale;
-    s32 x;
-    s32 y;
+    long x;
+    long y;
     NumberPopup *popup = task->popup;
     s32 i;
     s32 j;
@@ -680,7 +680,7 @@ void func_800BE790(void) {
     }
     frame->current = buffer;
     frame->ot = buffer->ot;
-    ClearOTagR(buffer->ot, 0x1000);
+    ClearOTagR((u_long *)buffer->ot, 0x1000);
     frame->buffer = 1 - frame->buffer;
     if (D_80010000 != -1) {
         func_800BEBC4();
@@ -730,7 +730,7 @@ void func_800BE790(void) {
     PutDispEnv(&BATTLE_AREA.current->dispEnv);
     PutDrawEnv(&BATTLE_AREA.current->drawEnv);
     func_80025044();
-    DrawOTag(&BATTLE_AREA.current->ot[0xFFF]);
+    DrawOTag((u_long *)&BATTLE_AREA.current->ot[0xFFF]);
     func_800BEB04();
     if (D_800C37D0 == 1) {
         if (D_800C3610 != NULL) {

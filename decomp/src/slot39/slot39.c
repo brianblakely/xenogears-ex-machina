@@ -377,9 +377,9 @@ static s32 D_801EA708;
 static s32 D_801EA70C;
 static u8 D_801EA710;
 static u8 D_801EA714;
-static s32 D_801EA718; /* card event and handler ids */
-static s32 D_801EA71C;
-static s32 D_801EA720;
+static CdlCB D_801EA718; /* the CD sync, ready and read callbacks, saved in card mode */
+static CdlCB D_801EA71C;
+static CdlCB D_801EA720;
 
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
@@ -906,7 +906,7 @@ void func_801C65F4(void) {
     for (i = 0; i < 3; i++) {
         id = D_800625A0->flags->party[i];
         if (id != 0xff) {
-            OpenTIM((u8 *)data + id * 0xb20);
+            OpenTIM((u_long *)((u8 *)data + id * 0xb20));
             ReadTIM(&tim);
             tim.crect->x = tex[i * 6 + 2];
             tim.crect->y = tex[i * 6 + 3];
@@ -1000,13 +1000,13 @@ void func_801C6D90(void) {
     u16 *clut;
 
     clut = func_80031BDC(0x20, 0);
-    bzero(clut, 0x20);
+    bzero((u_char *)clut, 0x20);
     clut[1] = 0x7fff;
     rect.x = 0;
     rect.y = 0x1c0;
     rect.w = 0x10;
     rect.h = 1;
-    LoadImage(&rect, clut);
+    LoadImage(&rect, (u_long *)clut);
     DrawSync(0);
     func_800320E8(clut);
 }
@@ -2463,7 +2463,7 @@ void func_801CAE08(u8 mode) {
         break;
     case 1:
         D_800625A0->indicator = func_80031BDC(sizeof(MenuIndicator), 0);
-        bzero(D_800625A0->indicator, sizeof(MenuIndicator));
+        bzero((u_char *)D_800625A0->indicator, sizeof(MenuIndicator));
         SetPolyF4(&D_800625A0->indicator->fills[D_800625A0->buffer_index]);
         setRGB0(&D_800625A0->indicator->fills[D_800625A0->buffer_index], 0xa0, 0xa0, 0);
         func_8002675C(D_800625A0->sheet, 0x160, D_800625A0->indicator->spriteA, D_800625A0->buffer_index, 0xa0, 0x64, 0x1000);
@@ -3903,8 +3903,8 @@ void func_801CF8D8(void) {
 void func_801CFB48(void) {
     MenuSlotImage *image;
     s32 i;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     u8 file;
     u8 match;
 
@@ -3936,14 +3936,14 @@ void func_801CFB48(void) {
                     (image->lineB + D_800625A0->buffer_index)->b0 = 0;
                 }
                 RotTransPers3(&image->lineAAt[0], &image->lineAAt[1], &image->lineAAt[3],
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x0,
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x1,
-                              (s32 *)&image->lineA[D_800625A0->buffer_index].x2, &p, &flag);
+                              (long *)&image->lineA[D_800625A0->buffer_index].x0,
+                              (long *)&image->lineA[D_800625A0->buffer_index].x1,
+                              (long *)&image->lineA[D_800625A0->buffer_index].x2, &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &image->lineA[D_800625A0->buffer_index]);
                 RotTransPers3(&image->lineBAt[0], &image->lineBAt[2], &image->lineBAt[3],
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x0,
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x1,
-                              (s32 *)&image->lineB[D_800625A0->buffer_index].x2, &p, &flag);
+                              (long *)&image->lineB[D_800625A0->buffer_index].x0,
+                              (long *)&image->lineB[D_800625A0->buffer_index].x1,
+                              (long *)&image->lineB[D_800625A0->buffer_index].x2, &p, &flag);
                 AddPrim(&D_800625A0->current->ot[4], &image->lineB[D_800625A0->buffer_index]);
             }
         }
@@ -4877,8 +4877,10 @@ void func_801D2F4C(u8 message) {
         line->buffer = D_800625A0->buffer_index;
         line->projected = 1;
     }
-    LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
-    LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    LoadImage(&D_800625A0->message_labels[0]->rect,
+              (u_long *)D_800625A0->message_labels[0]->pixels);
+    LoadImage(&D_800625A0->message_labels[2]->rect,
+              (u_long *)D_800625A0->message_labels[2]->pixels);
     DrawSync(0);
     D_800625A0->flags->messages_shown = 1;
     func_800320E8(D_800625A0->message_labels[0]->pixels);
@@ -6291,7 +6293,7 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
             rect.y = i / 4 * 0xd + 0x27;
             rect.w = 0x28;
             rect.h = 0xd;
-            LoadImage(&rect, image);
+            LoadImage(&rect, (u_long *)image);
             DrawSync(0);
         }
         func_801E7C50(&D_800625A0->equip_labels->labels[i], i, 0xc, 0);
@@ -6742,7 +6744,7 @@ void func_801DA5BC(s32 row) {
                 rect.y = (i / 2) * 0xd + 0x80;
                 rect.w = 0x28;
                 rect.h = 0xd;
-                LoadImage(&rect, image);
+                LoadImage(&rect, (u_long *)image);
                 DrawSync(0);
                 kind = D_800625A0->tables->items[D_8006D634.itemIds[row * 2 + i]].use;
                 if (kind & 0x20) {
@@ -6803,7 +6805,7 @@ void func_801DA9A8(s32 entry, s32 row) {
         rect.y = 0x4e;
         rect.w = 0x3c;
         rect.h = 0xd;
-        LoadImage(&rect, image);
+        LoadImage(&rect, (u_long *)image);
         DrawSync(0);
         func_801E7C50(&D_800625A0->item_list->extra[2], 0, 0, 0);
         func_801E920C(&D_800625A0->item_list->extra[2].polys[D_800625A0->buffer_index], 0x1c, 0xa1, 0, 0x4e,
@@ -6978,7 +6980,7 @@ void func_801DB5E4(u8 mode) {
         D_801E9785 = 1;
     }
     for (i = 0; i < 3; i++) {
-        bzero(D_800625A0->party_panels[i], 0xbec);
+        bzero((u_char *)D_800625A0->party_panels[i], 0xbec);
     }
     if (mode != 2) {
         xs = D_801EA054;

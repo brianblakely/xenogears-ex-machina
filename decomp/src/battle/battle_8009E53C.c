@@ -2239,7 +2239,7 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
             rect.y = y;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, (u32 *)anim->pixels);
+            StoreImage(&rect, (u_long *)anim->pixels);
             DrawSync(0);
             break;
         case 2:
@@ -2255,7 +2255,7 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
             rect.y = y2;
             rect.w = w;
             rect.h = h;
-            StoreImage(&rect, (u32 *)anim->pixels2);
+            StoreImage(&rect, (u_long *)anim->pixels2);
             DrawSync(0);
             break;
         case 2:
@@ -2374,13 +2374,13 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         case 0:
             func_80026F44(anim->size, frame, anim->work, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, (u32 *)anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 1:
             func_80026FE8(anim->size, frame, anim->work, anim->pixels2, anim->pixels);
             if (anim->target == NULL) {
-                LoadImage(&anim->rect, (u32 *)anim->work);
+                LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 4:
@@ -2442,7 +2442,7 @@ void func_800A429C(ImageAnim *anim) {
     if (anim->active) {
         if (anim->pixels != NULL) {
             if (anim->mode < 4) {
-                LoadImage(&anim->rect, (u32 *)anim->pixels);
+                LoadImage(&anim->rect, (u_long *)anim->pixels);
             }
             func_800320E8(anim->pixels);
             anim->pixels = NULL;
@@ -3343,7 +3343,7 @@ void func_800A6AE8(void) {
                 func_800A6884((u8 *)D_800D2D48, i, (u8 *)color);
             }
         }
-        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels2);
+        LoadImage(&D_800D3600.rect, (u_long *)D_800D3600.pixels2);
     }
 }
 
@@ -3361,7 +3361,7 @@ void func_800A6F98(void) {
                 anim->target = NULL;
             }
         }
-        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels);
+        LoadImage(&D_800D3600.rect, (u_long *)D_800D3600.pixels);
         DrawSync(0);
         func_800A429C(&D_800D3600);
     }

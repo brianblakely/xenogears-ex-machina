@@ -494,8 +494,8 @@ void func_800A5710(s32 frames) {
  * (x, y), `h` rows tall. */
 void func_800A5774(s32 x, s32 y, s32 h) {
     RECT rect;
-    u32 *pixels;
-    u32 *p;
+    u_long *pixels;
+    u_long *p;
     s32 i;
 
     rect.x = x;
@@ -844,8 +844,8 @@ void func_800A5C40(void) {
 void func_800A6408(void) {
     MATRIX m;
     VECTOR scale;
-    s32 p;
-    s32 flag;
+    long p;
+    long flag;
     s32 i;
 
     func_8003F738(&D_800B00B8, &m);
@@ -860,10 +860,12 @@ void func_800A6408(void) {
     SetTransMatrix(&m);
     for (i = 0; i < 5; i++) {
         if (D_800C2684 != 0x1000) {
-            RotAverage4(&D_800B11AC.corners[i][0], &D_800B11AC.corners[i][1], &D_800B11AC.corners[i][2],
-                        &D_800B11AC.corners[i][3], (s32 *)&D_800B11AC.quads[i][D_800ADB08].x0,
-                        (s32 *)&D_800B11AC.quads[i][D_800ADB08].x1, (s32 *)&D_800B11AC.quads[i][D_800ADB08].x2,
-                        (s32 *)&D_800B11AC.quads[i][D_800ADB08].x3, &p, &flag);
+            RotAverage4(&D_800B11AC.corners[i][0], &D_800B11AC.corners[i][1],
+                        &D_800B11AC.corners[i][2], &D_800B11AC.corners[i][3],
+                        (long *)&D_800B11AC.quads[i][D_800ADB08].x0,
+                        (long *)&D_800B11AC.quads[i][D_800ADB08].x1,
+                        (long *)&D_800B11AC.quads[i][D_800ADB08].x2,
+                        (long *)&D_800B11AC.quads[i][D_800ADB08].x3, &p, &flag);
         }
         addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.quads[i][D_800ADB08]);
         addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.modes[i][D_800ADB08]);
@@ -1275,7 +1277,7 @@ void func_800A77C4(s32 unused) {
         rect.y = 0;
         rect.w = 0x60;
         rect.h = 0xE0;
-        StoreImage(&rect, packed);
+        StoreImage(&rect, (u_long *)packed);
         DrawSync(0);
         D_800C3904 = packed;
         D_800C390C = pixels;
@@ -1294,7 +1296,7 @@ void func_800A77C4(s32 unused) {
         rect.y = 0x100;
         rect.w = 0x40;
         rect.h = 0xE0;
-        LoadImage(&rect, pixels);
+        LoadImage(&rect, (u_long *)pixels);
         DrawSync(0);
     }
     func_800320E8(packed);

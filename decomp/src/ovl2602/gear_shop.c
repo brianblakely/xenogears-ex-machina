@@ -478,7 +478,7 @@ void func_801CF38C(u8 index) {
     rect.y = 0x48;
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, D_801D9088);
+    LoadImage(&rect, (u_long *)D_801D9088);
     DrawSync(0);
     func_800320E8(D_801D9088);
 }
@@ -1038,7 +1038,7 @@ u32 func_801D1304(u8 id, u8 kind) {
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C5CA8(&D_800625A0->details->label44B0, 0, 0, 0);
@@ -1140,7 +1140,7 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             func_801C5CA8(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
             func_801C7604(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
@@ -1148,7 +1148,7 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
             func_801C5CA8(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
             func_801C7604(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
@@ -1434,7 +1434,7 @@ void func_801D2950(u8 kind) {
     rect.y = 0xB4;
     rect.w = 0x28;
     rect.h = 0xD;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     func_801C5CA8(&D_800625A0->details->label4530, 9, 0x80, 0x81);
     func_801C7604(D_800625A0->details->label4530.verts, 0xD4, 0x8E, D_800625A0->details->label4530.width, 0xD);
     DrawSync(0);
@@ -1550,7 +1550,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             func_801C5CA8(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
             func_801C7604(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
@@ -1558,7 +1558,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
             func_801C5CA8(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
             func_801C7604(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
@@ -1743,7 +1743,7 @@ void func_801D3A80(u8 kind, u8 id) {
     rect.y = 0xB4;
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5CA8(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
     func_801C7604(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
@@ -1819,7 +1819,7 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C51B8(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
@@ -2453,9 +2453,9 @@ void func_801D5D38(void) {
     D_800625A0->buffers[0].ot_big = D_8005A4AC[0];
     D_800625A0->buffers[1].ot_big = D_8005A4AC[1];
     D_800625A0->model_parts[0] = func_80031BDC(sizeof(ModelParts), 0);
-    bzero(D_800625A0->model_parts[0], sizeof(ModelParts));
+    bzero((u_char *)D_800625A0->model_parts[0], sizeof(ModelParts));
     D_800625A0->model_parts[1] = func_80031BDC(sizeof(ModelParts), 0);
-    bzero(D_800625A0->model_parts[1], sizeof(ModelParts));
+    bzero((u_char *)D_800625A0->model_parts[1], sizeof(ModelParts));
     while (D_800625A0->present[i] == 0) {
         i++;
     }

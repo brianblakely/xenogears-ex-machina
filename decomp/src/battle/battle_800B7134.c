@@ -54,8 +54,8 @@ void func_800B7134(Task *draw) {
  * screen centre and distance 512. */
 void func_800B7160(Task *draw) {
     ScreenShatter *shatter = draw->data;
-    s32 offsetX;
-    s32 offsetY;
+    long offsetX;
+    long offsetY;
     s32 screen;
     s32 layer;
     s32 row;
@@ -75,8 +75,8 @@ void func_800B7160(Task *draw) {
                 poly = &shard->poly[BATTLE_AREA.buffer];
                 if (shard->position.vz >= 64) {
                     MATRIX m;
-                    s32 p;
-                    s32 flag;
+                    long p;
+                    long flag;
                     s32 depth;
 
                     func_8003F738(&shard->angles, &m);
@@ -88,8 +88,9 @@ void func_800B7160(Task *draw) {
                     } else {
                         triangle = D_800C35AC;
                     }
-                    depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
-                                          (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6;
+                    depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
+                                          (long *)&poly->x0, (long *)&poly->x1, (long *)&poly->x2,
+                                          &p, &flag) >> 6;
                     AddPrim(D_800C3CB4 + depth, poly);
                 }
             }
@@ -270,7 +271,7 @@ void func_800B7870(void) {
     }
     area->current = buffer;
     area->ot = buffer->ot;
-    ClearOTagR(buffer->ot, 0x1000);
+    ClearOTagR((u_long *)buffer->ot, 0x1000);
     area->buffer = 0;
     area->current = first;
     area->buffers[0].drawEnv.isbg = 1;
@@ -293,7 +294,7 @@ void func_800B7870(void) {
         }
         frame->current = next;
         frame->ot = next->ot;
-        ClearOTagR(next->ot, 0x1000);
+        ClearOTagR((u_long *)next->ot, 0x1000);
         frame->buffer = 1 - frame->buffer;
         D_800C3CB4 = frame->ot;
         if (func_800286CC() == 0) {

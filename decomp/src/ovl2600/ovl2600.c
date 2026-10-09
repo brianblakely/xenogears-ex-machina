@@ -186,7 +186,7 @@ void func_801C5318(void) {
 
     func_8003342C(archive);
     data = func_80032E88(archive->files[0], 1);
-    OpenTIM(data);
+    OpenTIM((u_long *)data);
     ReadTIM(&D_800625A0->card->icon);
     strcpy(D_800625A0->card->prefix, "BISLPS-00800");
     D_800625A0->card->save_magic[0] = 'S';
@@ -238,7 +238,7 @@ void func_801C5318(void) {
     for (; i < 3; i++) {
         id = D_800625A0->flags->party[i];
         if (id != 0xFF) {
-            OpenTIM(data + id * 0xB20);
+            OpenTIM((u_long *)(data + id * 0xB20));
             ReadTIM(&tim);
             tim.crect->x = entries[i * ENTRY_WORDS + ENTRY_CLUT_X];
             tim.crect->y = entries[i * ENTRY_WORDS + ENTRY_CLUT_Y];
@@ -304,13 +304,13 @@ void func_801C5A40(void) {
     RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *clut = func_80031BDC(0x20, 0);
 
-    bzero(clut, 0x20);
+    bzero((u_char *)clut, 0x20);
     clut[1] = 0x7FFF;
     rect.x = 0;
     rect.y = 0x1C0;
     rect.w = 0x10;
     rect.h = 1;
-    LoadImage(&rect, clut);
+    LoadImage(&rect, (u_long *)clut);
     DrawSync(0);
     func_800320E8(clut);
 }
@@ -393,7 +393,7 @@ void func_801C5CFC(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
         labels[i + 1].rect = labels[i].rect;
         func_801C5ABC(&labels[i], i, row, 0);
         func_801C5ABC(&labels[i + 1], i + 1, row, 0);
-        LoadImage(rect, D_800625A0->labels[0].pixels);
+        LoadImage(rect, (u_long *)D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }
@@ -799,9 +799,9 @@ void func_801C7AA4(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
 
     if (index >= 2) {
         D_800625A0->panels[index] = func_80031BDC(0x720, 0);
-        bzero(D_800625A0->panels[index], 0x720);
+        bzero((u_char *)D_800625A0->panels[index], 0x720);
         D_800625A0->growth[index] = func_80031BDC(0x18, 0);
-        bzero(D_800625A0->growth[index], 0x18);
+        bzero((u_char *)D_800625A0->growth[index], 0x18);
         func_801C64A8(index);
     }
     growth = D_800625A0->growth[index];
@@ -1448,7 +1448,7 @@ void func_801C9D5C(u8 mode) {
     MenuMarkers *markers = func_80031BDC(0x14C, 0);
 
     D_800625A0->markers = markers;
-    bzero(markers, 0x14C);
+    bzero((u_char *)markers, 0x14C);
     switch (mode) {
     case 0:
         D_800625A0->flags->markers_shown = 1;
@@ -1531,8 +1531,10 @@ void func_801C9FC0(u8 first) {
         line->buffer = D_800625A0->buffer_index;
         line->projected = 1;
     }
-    LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
-    LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    LoadImage(&D_800625A0->message_labels[0]->rect,
+              (u_long *)D_800625A0->message_labels[0]->pixels);
+    LoadImage(&D_800625A0->message_labels[2]->rect,
+              (u_long *)D_800625A0->message_labels[2]->pixels);
     DrawSync(0);
     D_800625A0->flags->messages_shown = 1;
     func_800320E8(D_800625A0->message_labels[0]->pixels);
@@ -1617,7 +1619,7 @@ void func_801CA558(void) {
         rect.y = (i / 2) * 13;
         rect.w = 0x1C;
         rect.h = 13;
-        LoadImage(&rect, image);
+        LoadImage(&rect, (u_long *)image);
         (D_800625A0->name_entry->chars + (i * 2 + D_800625A0->buffer_index))->u0 = (i % 2) << 7;
         (D_800625A0->name_entry->chars + (i * 2 + D_800625A0->buffer_index))->v0 = (i / 2) * 13;
         (D_800625A0->name_entry->chars + (i * 2 + D_800625A0->buffer_index))->u1 = ((i % 2) << 7) + 0x3C;
@@ -1724,7 +1726,7 @@ void func_801CB1C4(u8 *codes) {
     rect.y = 0xEA;
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, image);
+    LoadImage(&rect, (u_long *)image);
     DrawSync(0);
     func_800320E8(image);
 }

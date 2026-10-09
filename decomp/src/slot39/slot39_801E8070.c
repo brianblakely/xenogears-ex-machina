@@ -243,7 +243,7 @@ void func_801E8DA8(u8 image, u8 row) {
     rect.y = D_801EA5C4[row >> 1];
     rect.w = 0x28;
     rect.h = 0xd;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_800320E8(pixels);
 }
@@ -378,7 +378,7 @@ void func_801E9340(char *name, void *buffer, s32 size) {
  * disc. */
 s32 func_801E93A0(s32 disc) {
     DiscLabel label = { { 0 } };
-    u8 pos[4];
+    CdlLOC pos;
     s32 result;
     s32 ok;
 
@@ -396,7 +396,7 @@ s32 func_801E93A0(s32 disc) {
         }
         return result;
     }
-    CdIntToPos(0, pos);
+    CdIntToPos(0, &pos);
     do {
         VSync(3);
         CdControlB(1, 0, D_801EA8F4);
@@ -415,7 +415,7 @@ retry:
     } while (CdControlB(0x13, 0, D_801EA8F4) == 0);
     do {
         VSync(3);
-    } while (CdControlB(2, pos, D_801EA8F4) == 0);
+    } while (CdControlB(2, (u_char *)&pos, D_801EA8F4) == 0);
     ok = CdControlB(0x15, 0, D_801EA8F4);
     if ((D_801EA8F4[0] & 1) && (D_801EA8F4[1] & 0x40)) {
         if (ok == 0) {

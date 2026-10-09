@@ -283,13 +283,13 @@ void func_801C5724(void) {
     RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *clut = func_80031BDC(0x20, 0);
 
-    bzero(clut, 0x20);
+    bzero((u_char *)clut, 0x20);
     clut[1] = 0x7FFF;
     rect.x = 0;
     rect.y = 0x1C0;
     rect.w = 0x10;
     rect.h = 1;
-    LoadImage(&rect, clut);
+    LoadImage(&rect, (u_long *)clut);
     DrawSync(0);
     func_800320E8(clut);
 }
@@ -372,7 +372,7 @@ void func_801C59E0(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
         labels[i + 1].rect = labels[i].rect;
         func_801C57A0(&labels[i], i, row, 0);
         func_801C57A0(&labels[i + 1], i + 1, row, 0);
-        LoadImage(rect, D_800625A0->labels[0].pixels);
+        LoadImage(rect, (u_long *)D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }
@@ -779,9 +779,9 @@ void func_801C7788(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s
 
     if (index >= 2) {
         D_800625A0->panels[index] = func_80031BDC(0x720, 0);
-        bzero(D_800625A0->panels[index], 0x720);
+        bzero((u_char *)D_800625A0->panels[index], 0x720);
         D_800625A0->growth[index] = func_80031BDC(0x18, 0);
-        bzero(D_800625A0->growth[index], 0x18);
+        bzero((u_char *)D_800625A0->growth[index], 0x18);
         func_801C618C(index);
     }
     growth = D_800625A0->growth[index];
@@ -1320,7 +1320,7 @@ void func_801C95A0(s32 index, s32 slot) {
     rect.y = D_801CB390[(u8)slot / 2];
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, image);
+    LoadImage(&rect, (u_long *)image);
     DrawSync(0);
     func_800320E8(image);
 }
@@ -1622,7 +1622,7 @@ void func_801CA944(u8 mode) {
     MenuMarkers *markers = func_80031BDC(0x14C, 0);
 
     D_800625A0->markers = markers;
-    bzero(markers, 0x14C);
+    bzero((u_char *)markers, 0x14C);
     switch (mode) {
     case 0:
         D_800625A0->flags->markers_shown = 1;

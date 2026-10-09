@@ -383,7 +383,7 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
             func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
@@ -391,7 +391,7 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
             func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
@@ -576,7 +576,7 @@ void func_801CE91C(u8 kind, u8 id) {
     rect.y = 0xB4;
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
     func_801C6E90(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
@@ -637,7 +637,7 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
@@ -1056,7 +1056,7 @@ u32 func_801CFF58(u8 id, u8 kind) {
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
-    LoadImage(&rect, pixels);
+    LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
     func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
     func_801C5A7C(&D_800625A0->details->label44B0, 0, 0, 0);
@@ -1161,7 +1161,7 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
             func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           D_800625A0->details->names_a[row].width, 13);
@@ -1169,7 +1169,7 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
-            LoadImage(&rect, pixels);
+            LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
             func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
             func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,

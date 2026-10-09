@@ -2272,7 +2272,7 @@ u8 offset;
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 13;
-    LoadImage(&rect, *pixels);
+    LoadImage(&rect, (u_long *)*pixels);
     func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + 1 + offset) * 16 + 0x50 + index * 4,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     D_800D2DB4->counts[11]++;
@@ -2508,7 +2508,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 0xD;
-    LoadImage(&rect, *pixels);
+    LoadImage(&rect, (u_long *)*pixels);
     func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     func_80076D58(&D_800D2DB4->list13[index * 2], 0, 3);

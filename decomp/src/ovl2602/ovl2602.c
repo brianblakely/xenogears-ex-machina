@@ -192,7 +192,7 @@ void func_801C5298(u32 value) {
 void func_801C5344(u8 allocate) {
     if (allocate) {
         D_800625A0->card = func_80031BDC(sizeof(MenuCard), 0);
-        bzero(D_800625A0->card, sizeof(MenuCard));
+        bzero((u_char *)D_800625A0->card, sizeof(MenuCard));
     } else {
         func_800320E8(D_800625A0->card);
     }
@@ -202,7 +202,7 @@ void func_801C5344(u8 allocate) {
 void func_801C53A8(u8 allocate) {
     if (allocate) {
         D_800625A0->flags = func_80031BDC(sizeof(MenuFlags), 0);
-        bzero(D_800625A0->flags, sizeof(MenuFlags));
+        bzero((u_char *)D_800625A0->flags, sizeof(MenuFlags));
     } else {
         func_800320E8(D_800625A0->flags);
     }
@@ -212,7 +212,7 @@ void func_801C53A8(u8 allocate) {
 void func_801C540C(u8 allocate) {
     if (allocate) {
         D_800625A0->images = func_80031BDC(sizeof(MenuImages), 0);
-        bzero(D_800625A0->images, sizeof(MenuImages));
+        bzero((u_char *)D_800625A0->images, sizeof(MenuImages));
     } else {
         func_800320E8(D_800625A0->images);
     }
@@ -222,7 +222,7 @@ void func_801C540C(u8 allocate) {
 void func_801C5470(u8 allocate) {
     if (allocate) {
         D_800625A0->lists = func_80031BDC(sizeof(MenuSpriteLists), 0);
-        bzero(D_800625A0->lists, sizeof(MenuSpriteLists));
+        bzero((u_char *)D_800625A0->lists, sizeof(MenuSpriteLists));
     } else {
         func_800320E8(D_800625A0->lists);
     }
@@ -232,7 +232,7 @@ void func_801C5470(u8 allocate) {
 void func_801C54D4(u8 allocate) {
     if (allocate) {
         D_800625A0->tables = func_80031BDC(0xCC, 0);
-        bzero(D_800625A0->tables, 0xCC);
+        bzero((u_char *)D_800625A0->tables, 0xCC);
     } else {
         func_800320E8(D_800625A0->tables);
     }
@@ -242,7 +242,7 @@ void func_801C54D4(u8 allocate) {
 void func_801C5538(u8 allocate) {
     if (allocate) {
         D_800625A0->prims = func_80031BDC(sizeof(MenuPrims), 0);
-        bzero(D_800625A0->prims, sizeof(MenuPrims));
+        bzero((u_char *)D_800625A0->prims, sizeof(MenuPrims));
     } else {
         func_800320E8(D_800625A0->prims);
     }
@@ -252,7 +252,7 @@ void func_801C5538(u8 allocate) {
 void func_801C559C(u8 allocate) {
     if (allocate) {
         D_800625A0->name_entry = func_80031BDC(0xDEC, 0);
-        bzero(D_800625A0->name_entry, 0xDEC);
+        bzero((u_char *)D_800625A0->name_entry, 0xDEC);
     } else {
         func_800320E8(D_800625A0->name_entry);
     }
@@ -262,7 +262,7 @@ void func_801C559C(u8 allocate) {
 void func_801C5600(u8 allocate) {
     if (allocate) {
         D_800625A0->details = func_80031BDC(sizeof(ShopDetails), 0);
-        bzero(D_800625A0->details, sizeof(ShopDetails));
+        bzero((u_char *)D_800625A0->details, sizeof(ShopDetails));
     } else {
         func_800320E8(D_800625A0->details);
     }
@@ -272,7 +272,7 @@ void func_801C5600(u8 allocate) {
 void func_801C5664(u8 allocate) {
     if (allocate) {
         D_800625A0->gear_screen = func_80031BDC(0x1F00, 0);
-        bzero(D_800625A0->gear_screen, 0x1F00);
+        bzero((u_char *)D_800625A0->gear_screen, 0x1F00);
     } else {
         func_800320E8(D_800625A0->gear_screen);
     }
@@ -294,7 +294,7 @@ void func_801C56C8(void) {
     res = D_8005945C;
     func_8003342C(res);
     packed = func_80032E88(res->files[0], 1);
-    OpenTIM(packed);
+    OpenTIM((u_long *)packed);
     ReadTIM(&D_800625A0->card->icon);
     *(CardPrefix *)D_800625A0->card->prefix = D_801C5000;
     D_800625A0->card->save_magic[0] = 'S';
@@ -328,7 +328,7 @@ void func_801C56C8(void) {
     for (; i < 3; i++) {
         id = D_800625A0->flags->party[i];
         if (id != 0xFF) {
-            OpenTIM((u8 *)packed + id * 0xB20);
+            OpenTIM((u_long *)((u8 *)packed + id * 0xB20));
             ReadTIM(&tim);
             tim.crect->x = entries[i * ENTRY_WORDS + ENTRY_CLUT_X];
             tim.crect->y = entries[i * ENTRY_WORDS + ENTRY_CLUT_Y];
@@ -465,7 +465,7 @@ void func_801C5EE8(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
         labels[i + 1].rect = *rect;
         func_801C5CA8(&labels[i], i, row, 0);
         func_801C5CA8(&labels[i + 1], i + 1, row, 0);
-        LoadImage(rect, D_800625A0->labels[0].pixels);
+        LoadImage(rect, (u_long *)D_800625A0->labels[0].pixels);
         DrawSync(0);
     }
 }
@@ -477,13 +477,13 @@ void func_801C6098(void) {
     u16 *palette;
 
     palette = func_80031BDC(0x20, 0);
-    bzero(palette, 0x20);
+    bzero((u_char *)palette, 0x20);
     palette[1] = 0x7FFF;
     rect.y = 0x1C0;
     rect.w = 0x10;
     rect.x = 0;
     rect.h = 1;
-    LoadImage(&rect, palette);
+    LoadImage(&rect, (u_long *)palette);
     DrawSync(0);
     func_800320E8(palette);
 }
@@ -793,7 +793,7 @@ void func_801C76A4(s32 x, s32 y, s32 height, s32 count, s32 top) {
     offset = 0;
     if (D_800625A0->flags->scroll_shown == 0) {
         D_800625A0->scroll = func_80031BDC(sizeof(MenuScrollBar), 0);
-        bzero(D_800625A0->scroll, sizeof(MenuScrollBar));
+        bzero((u_char *)D_800625A0->scroll, sizeof(MenuScrollBar));
     }
     if (count < 9) {
         height = 100;
@@ -817,7 +817,7 @@ void func_801C782C(void) {
 /* Create marker `index`, starting on its first frame. */
 void func_801C7870(u8 index) {
     D_800625A0->cursors[index] = func_80031BDC(sizeof(MenuCursor), 0);
-    bzero(D_800625A0->cursors[index], sizeof(MenuCursor));
+    bzero((u_char *)D_800625A0->cursors[index], sizeof(MenuCursor));
     D_800625A0->cursors[index]->frame = 4;
     D_800625A0->cursors[index]->timer = 0;
 }
@@ -1137,9 +1137,9 @@ void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 o
 
     if (index >= 2) {
         D_800625A0->panels[index] = func_80031BDC(sizeof(MenuPanel), 0);
-        bzero(D_800625A0->panels[index], sizeof(MenuPanel));
+        bzero((u_char *)D_800625A0->panels[index], sizeof(MenuPanel));
         D_800625A0->growth[index] = func_80031BDC(sizeof(MenuGrowth), 0);
-        bzero(D_800625A0->growth[index], sizeof(MenuGrowth));
+        bzero((u_char *)D_800625A0->growth[index], sizeof(MenuGrowth));
         func_801C7AE4(index);
     }
     growth = D_800625A0->growth[index];
@@ -1971,7 +1971,7 @@ void func_801CC1C4(void) {
         D_800625A0->current == &D_800625A0->buffers[0] ? &D_800625A0->buffers[1] : &D_800625A0->buffers[0];
     D_800625A0->buffer_index = D_800625A0->buffer_index == 0;
     ClearOTagR(D_800625A0->current->ot, 16);
-    ClearOTagR(D_800625A0->current->ot_big, 0x400);
+    ClearOTagR((u_long *)D_800625A0->current->ot_big, 0x400);
     func_801CBDA0();
     func_801CBE60();
     func_801CB3D0();
@@ -1982,7 +1982,7 @@ void func_801CC1C4(void) {
     ClearImage(&D_800625A0->current->draw.clip, 0, 0, 0);
     env = D_800625A0->current;
     AddPrims(env->ot_big, &env->ot[15], env->ot);
-    DrawOTag(&D_800625A0->current->ot_big[0x3FF]);
+    DrawOTag((u_long *)&D_800625A0->current->ot_big[0x3FF]);
 }
 
 /* Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
@@ -1990,7 +1990,7 @@ void func_801CC31C(u8 mode) {
     s32 i;
 
     D_800625A0->markers = func_80031BDC(sizeof(MenuMarkers), 0);
-    bzero(D_800625A0->markers, sizeof(MenuMarkers));
+    bzero((u_char *)D_800625A0->markers, sizeof(MenuMarkers));
     switch (mode) {
     case 0:
         D_800625A0->flags->markers_shown = 1;
@@ -2047,7 +2047,7 @@ void func_801CC530(u8 first) {
     }
     for (i = 0; i < 4; i++) {
         D_800625A0->message_labels[i] = func_80031BDC(sizeof(MenuLabel), 0);
-        bzero(D_800625A0->message_labels[i], sizeof(MenuLabel));
+        bzero((u_char *)D_800625A0->message_labels[i], sizeof(MenuLabel));
         if (!(i & 1)) {
             D_800625A0->message_labels[i]->pixels = func_80031BDC(0x5CA, 0);
             D_800625A0->message_labels[i]->rect.x = 0x140;
@@ -2077,8 +2077,10 @@ void func_801CC530(u8 first) {
         label->projected = 1;
         i++;
     } while (i < 3);
-    LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
-    LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    LoadImage(&D_800625A0->message_labels[0]->rect,
+              (u_long *)D_800625A0->message_labels[0]->pixels);
+    LoadImage(&D_800625A0->message_labels[2]->rect,
+              (u_long *)D_800625A0->message_labels[2]->pixels);
     DrawSync(0);
     D_800625A0->flags->messages_shown = 1;
     func_800320E8(D_800625A0->message_labels[0]->pixels);
@@ -2549,7 +2551,7 @@ void func_801CE024(void) {
     func_801C6E74();
     func_801D5D38();
     D_800625A0->marks = func_80031BDC(sizeof(MenuMarkerQuads), 0);
-    bzero(D_800625A0->marks, sizeof(MenuMarkerQuads));
+    bzero((u_char *)D_800625A0->marks, sizeof(MenuMarkerQuads));
     func_801CE1D0();
     D_800625A0->drawing = 1;
     D_800625A0->sounds = 1;

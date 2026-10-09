@@ -501,9 +501,9 @@ void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
 
     if (D_800D2D28->windows[window] == 0) {
         D_800D2E38[window] = (void *)func_8008ABB8(0x5A8, 0);
-        bzero(D_800D2E38[window], 0x5A8);
+        bzero((u_char *)D_800D2E38[window], 0x5A8);
         D_800D2D90[window] = (WindowRect *)func_8008ABB8(0xE, 0);
-        bzero(D_800D2D90[window], 0xE);
+        bzero((u_char *)D_800D2D90[window], 0xE);
         func_80077454(window);
     }
     if (animate != 0) {
@@ -613,7 +613,7 @@ void func_8008FE18(u8 column, u8 row, u8 open) {
         func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
     }
     D_800D2DB0 = (u32 *)func_8008AC00(0x39);
-    bzero(D_800D2DB0, 0x618);
+    bzero((u_char *)D_800D2DB0, 0x618);
     rect.x = 0x3C0;
     rect.w = 0x3C;
     rect.y = 0;
@@ -625,7 +625,7 @@ void func_8008FE18(u8 column, u8 row, u8 open) {
     }
     for (i = 0; i < 32; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
-        bzero(images[i].pixels, 0x30C);
+        bzero((u_char *)images[i].pixels, 0x30C);
         nameRect.x = (i % 2) * 30 + 0x380;
         nameRect.y = (i / 2) * 13 + 0x100;
         nameRect.w = 30;
@@ -770,7 +770,7 @@ void func_8009070C(u8 column, u8 row) {
     u32 *pixels = (u32 *)func_8008AC00(0x39);
     s32 width;
 
-    bzero(pixels, 0x618);
+    bzero((u_char *)pixels, 0x618);
     width = func_80034EAC(func_80033728(D_800D329C, item), pixels, 0x39, 0);
     rect.x = 0x3C0;
     rect.w = 0x3C;
@@ -892,7 +892,7 @@ void func_80091064(u8 member) {
     func_80076EA4();
     func_8008FC1C(0x20, 0x30, 0x98, 0x38, 0xC);
     D_800D2DB0 = (u32 *)func_8008AC00(0x39);
-    bzero(D_800D2DB0, 0x618);
+    bzero((u_char *)D_800D2DB0, 0x618);
     rect.x = 0x3C0;
     rect.w = 0x3C;
     rect.y = 0;
@@ -921,7 +921,7 @@ void func_80091064(u8 member) {
     }
     for (i = 0; i < 16; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
-        bzero(images[i].pixels, 0x30C);
+        bzero((u_char *)images[i].pixels, 0x30C);
         rowRect.x = (i % 2) * 30 + 0x380;
         rowRect.y = (i / 2) * 16 + 0x100;
         rowRect.w = 0x1B;
@@ -1088,7 +1088,7 @@ void func_80091B38(u8 member, u8 column, u8 row) {
         text = D_8006D634.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
     }
     pixels = (u32 *)func_8008AC00(0x39);
-    bzero(pixels, 0x618);
+    bzero((u_char *)pixels, 0x618);
     width0 = func_80034EAC(func_80033728(D_800D367C, text & 0xFFFF), pixels, 0x39, 0);
     width1 = func_80034EAC(func_80033728(D_800D367C, (text & 0xFFFF) | 1), pixels, 0x39, 1);
     rect.x = 0x3C0;
@@ -1227,7 +1227,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     func_80077610();
     func_80076EA4();
     D_800D2DB0 = (u32 *)func_8008AC00(0x39);
-    bzero(D_800D2DB0, 0x618);
+    bzero((u_char *)D_800D2DB0, 0x618);
     rect.x = 0x3C0;
     rect.w = 0x3C;
     rect.y = 0;
@@ -1236,7 +1236,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     nameWidth = 30;
     for (i = 0; i < 8; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
-        bzero(images[i].pixels, 0x30C);
+        bzero((u_char *)images[i].pixels, 0x30C);
         rowRect.x = (i % 2) * 30 + 0x380;
         rowRect.y = (i / 2) * 16 + 0x100;
         rowRect.w = 0x1B;
@@ -1374,7 +1374,7 @@ void func_800930AC(u8 member, u8 *present, u16 *values) {
     func_80077610();
     func_80076EA4();
     D_800D2DB0 = (u32 *)func_8008AC00(0x39);
-    bzero(D_800D2DB0, 0x618);
+    bzero((u_char *)D_800D2DB0, 0x618);
     rect.x = 0x3C0;
     rect.w = 0x3C;
     rect.y = 0;
@@ -1382,7 +1382,7 @@ void func_800930AC(u8 member, u8 *present, u16 *values) {
     func_800769E8(&rect, D_800D2DB0);
     for (i = 0; i < 4; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
-        bzero(images[i].pixels, 0x30C);
+        bzero((u_char *)images[i].pixels, 0x30C);
         rowRect.x = 0x380;
         rowRect.y = i * 16 + 0x100;
         rowRect.w = 0x1B;
@@ -1489,7 +1489,7 @@ void func_8009382C(u8 member, u8 kind) {
 
     text = (D_800CCCE8.records[member].pilot.gearId * 4 + kind) * 2;
     pixels = (u32 *)func_8008AC00(0x39);
-    bzero(pixels, 0x618);
+    bzero((u_char *)pixels, 0x618);
     width0 = func_80034EAC(func_80033728(D_800C3DE8, text & 0xFFFF), pixels, 0x39, 0);
     width1 = func_80034EAC(func_80033728(D_800C3DE8, (text & 0xFFFF) | 1), pixels, 0x39, 1);
     rect.x = 0x3C0;
@@ -1559,10 +1559,10 @@ void func_80093B08(u8 member) {
         func_80077610();
         func_80076EA4();
         D_800D2DB0 = (u32 *)func_8008AC00(0x39);
-        bzero(D_800D2DB0, 0x618);
+        bzero((u_char *)D_800D2DB0, 0x618);
         for (i = 0; i < 2; i++) {
             images[i].pixels = (u32 *)func_8008AC00(0x1B);
-            bzero(images[i].pixels, 0x30C);
+            bzero((u_char *)images[i].pixels, 0x30C);
             rowRect.x = 0x380;
             rowRect.y = i * 16 + 0x100;
             rowRect.w = 0x1B;

@@ -469,9 +469,9 @@ void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
 void func_80086200(s32 index, s32 *x, s32 *y) {
     SVECTOR point;
     MATRIX m;
-    s32 screen;
-    s32 depth;
-    s32 flag;
+    long screen;
+    long depth;
+    long flag;
 
     /* The selector call (result unused) sits inside the argument list. */
     CompMatrix(&D_800AF880.scaled_world, (func_8009CDB4(1), &D_800AF880.components.descriptors[index].matrix),
@@ -1140,7 +1140,7 @@ void func_8008800C(void) {
     MATRIX work;
     SVECTOR in;
     SVECTOR out;
-    s32 flag;
+    long flag;
     s32 a;
 
     m.t[0] = m.t[1] = m.t[2] = 0;
@@ -5973,11 +5973,11 @@ void func_80095A7C(s32 *x, s32 *y) {
     SVECTOR origin;
     MATRIX m;
     union {
-        s32 word;
+        long word;
         DVECTOR xy;
     } screen;
-    s32 depth;
-    s32 flag;
+    long depth;
+    long flag;
 
     CompMatrix(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[func_8009CD7C(1)].transform, &m);
     origin.vx = 0;

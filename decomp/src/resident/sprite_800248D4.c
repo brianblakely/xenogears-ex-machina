@@ -393,8 +393,8 @@ void func_80025224(Task *task, s32 kind) {
 void func_80025258(Task *task) {
     SVECTOR position;
     VECTOR translation;
-    s32 xy;
-    s32 flag;
+    long xy;
+    long flag;
     Sprite *sprite = task->data;
     s32 depth;
 
@@ -442,7 +442,7 @@ void func_80025258(Task *task) {
  * blend bits, both from the queue entry block, at its depth. */
 void func_8002541C(Task *task) {
     SVECTOR position;
-    s32 flag;
+    long flag;
     Sprite *sprite = task->data;
     PointPrim *point;
     P_TAG *primitive;
@@ -484,9 +484,9 @@ void func_8002541C(Task *task) {
 void func_80025544(Task *task) {
     SVECTOR centre;
     SVECTOR edge;
-    s32 edge_xy[2];
-    s32 unused_xy;
-    s32 flag;
+    long edge_xy[2];
+    long unused_xy;
+    long flag;
     Sprite *sprite = task->data;
     s32 size;
     TILE *tile;
