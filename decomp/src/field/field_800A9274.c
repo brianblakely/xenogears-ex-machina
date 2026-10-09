@@ -809,7 +809,7 @@ s32 func_800AB328(s32 item) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->id0[i] == item && D_8005A39C->count0[i] != 0) {
+        if (D_8005A39C->itemIds[i] == item && D_8005A39C->itemCounts[i] != 0) {
             return 0;
         }
     }
@@ -1360,7 +1360,7 @@ void func_800ACE24(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_8006BE2C[i] == D_8005A39C->unk22B1[i]) {
+        if (D_8006BE2C[i] == D_8005A39C->inGear[i]) {
             D_8006BE2C[i] = 0;
         } else {
             D_8006BE2C[i] = 1;
@@ -1375,15 +1375,15 @@ void func_800ACE90(void) {
     s32 i;
 
     D_8006BE2C[0] = D_8006BE2C[1] = D_8006BE2C[2] = 0;
-    if (D_8005A39C->unk22B1[0] == 0) {
+    if (D_8005A39C->inGear[0] == 0) {
         for (i = 0; i < 3; i++) {
-            if (D_8005A39C->unk22B1[i] == 0 && func_8001ACF0(D_80062590[i]) != 0xFF) {
+            if (D_8005A39C->inGear[i] == 0 && func_8001ACF0(D_80062590[i]) != 0xFF) {
                 D_8006BE2C[i] = 1;
             }
         }
     } else {
         for (i = 0; i < 3; i++) {
-            if (D_8005A39C->unk22B1[i] == 1 && func_8001ACF0(D_80062590[i]) != 0xFF) {
+            if (D_8005A39C->inGear[i] == 1 && func_8001ACF0(D_80062590[i]) != 0xFF) {
                 D_8006BE2C[i] = 1;
             }
         }
@@ -1398,10 +1398,10 @@ void func_800ACE90(void) {
 /* Return party slot `slot` to its member: swap the models back, hand the
  * stand-in's heading over, and restart both animations. */
 void func_800ACFD0(s32 slot) {
-    FieldModel *stand_in;
-    FieldModel *model;
+    Sprite *stand_in;
+    Sprite *model;
 
-    D_8005A39C->unk22B1[slot] = 0;
+    D_8005A39C->inGear[slot] = 0;
     stand_in = DESCRIPTOR(D_8006F990[slot])->model;
     model = DESCRIPTOR(D_8005A444[slot])->model;
     DESCRIPTOR(D_8005A444[slot])->model = stand_in;
@@ -1410,9 +1410,9 @@ void func_800ACFD0(s32 slot) {
     DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
     DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~1;
     func_800A0524(D_8006F990[slot], D_8005A444[slot]);
-    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
-    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
-    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_8005A444[slot])->model->x = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->y = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->z = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
     DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x400;
     DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x300;
     DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
@@ -1431,18 +1431,18 @@ void func_800ACFD0(s32 slot) {
 /* Put the current actor in for party slot `slot`: swap its model with the
  * member's, mark the slot taken, and restart both animations. */
 void func_800AD4D4(s32 slot) {
-    FieldModel *model;
+    Sprite *model;
 
     model = DESCRIPTOR(D_800AFD1C)->model;
     DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(D_8005A444[slot])->model;
     DESCRIPTOR(D_8005A444[slot])->model = model;
-    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
-    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
-    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_8005A444[slot])->model->x = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->y = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->z = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
     DESCRIPTOR(D_800AFD1C)->flags |= 0x20;
     DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x200;
     DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x500;
-    D_8005A39C->unk22B1[slot] = 1;
+    D_8005A39C->inGear[slot] = 1;
     DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
     DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
     DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
@@ -1462,7 +1462,7 @@ void func_800AD898(void) {
 
     if (D_800B2078.unk2268 != 0) {
         for (i = 0; i < 3; i++) {
-            if (D_8005A444[i] != 0xFF && D_8005A39C->unk22B1[i] == 1) {
+            if (D_8005A444[i] != 0xFF && D_8005A39C->inGear[i] == 1) {
                 D_800AF880.components.descriptors[D_8005A444[i]].actor->flags |= 0x200;
                 D_800AF880.components.descriptors[D_8005A444[i]].actor->flags &= ~0x500;
             }
@@ -1479,7 +1479,7 @@ void func_800AD978(s32 mode) {
         for (i = 0; i < 3; i++) {
             if (D_8005A444[i] != 0xFF && D_8006BE2C[i] == 1) {
                 D_800AFD1C = D_8006F990[i];
-                if ((D_8005A39C->unk22B1[i] == 0 && mode != 0) || (D_8005A39C->unk22B1[i] != 0 && mode == 0)) {
+                if ((D_8005A39C->inGear[i] == 0 && mode != 0) || (D_8005A39C->inGear[i] != 0 && mode == 0)) {
                     func_800AD4D4(i);
                 } else {
                     func_800ACFD0(i);

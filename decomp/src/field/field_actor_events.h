@@ -60,7 +60,6 @@ s32 func_8009FEE4(s32 slot);
 extern u8 D_8005A4E4[];
 extern u8 *D_800AFC50;
 extern s32 D_8005A408[3];      /* party modes when saved */
-void func_80021D50(FieldModel *model, u8 *checkpoint);
 /* The view's world block (800afa54, 0x74 bytes) as copied byte-wise. */
 typedef struct {
     u8 bytes[0x74];
@@ -72,7 +71,6 @@ extern DVECTOR D_800AEB24[15]; /* saved strip sources (x, y) */
 
 
 
-void func_80021EBC(FieldModel *model, u8 *checkpoint);
 
 /* Copy `size` bytes as one unaligned block (a byte-struct assignment). */
 #define COPY_BLOCK(destination, source, size)                    \
@@ -84,7 +82,6 @@ void func_80021EBC(FieldModel *model, u8 *checkpoint);
     }
 
 extern s32 D_800AFC74;         /* set when an initialization made a sprite */
-void func_8002303C(FieldModel *model, s32, s32);
 void func_800A3474(void);
 
 /* The distortion's two wave phases (x, y) at 800b20b0. */

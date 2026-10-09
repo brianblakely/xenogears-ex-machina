@@ -320,7 +320,7 @@ void func_8007AA44(FieldMarker *m) {
 
 /* Project a marker quad's four corners with the given matrix into its buffer's
  * textured polygon and link that polygon into the ordering table entry. */
-void func_8007AB6C(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+void func_8007AB6C(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     POLY_FT4 *poly = &marker->poly[buffer];
     s32 p;
     s32 flag;
@@ -337,7 +337,7 @@ void func_8007AB6C(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
 /* Project a quad, then replace it with a 16x10 screen-aligned sprite standing
  * on the midpoint of its projected bottom edge, and link it into the ordering
  * table entry. */
-void func_8007AC58(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+void func_8007AC58(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     POLY_FT4 *poly = &marker->poly[buffer];
     s32 p;
     s32 flag;
@@ -1481,7 +1481,7 @@ void func_8007D93C(s32 channel) {
  * reduction turns them into the original's separate induction values), and
  * the entry flag is a variable so it is computed with a store-flag. The
  * original reads abr signed (lh). */
-void func_8007DA44(u32 *ot, s32 buffer) {
+void func_8007DA44(u_long *ot, s32 buffer) {
     s32 second;
     s32 i;
 
@@ -1509,7 +1509,7 @@ void func_8007DA44(u32 *ot, s32 buffer) {
 
 /* Move a displayed window's choice (index over count lines) with the pad
  * and light its line; a window with +410 set lights none. */
-void func_8007DCF8(s32 window, u32 *ot, s32 buffer) {
+void func_8007DCF8(s32 window, u_long *ot, s32 buffer) {
     if (D_800C2698[window].choice.status == 0 && D_800C2698[window].timer == 0) {
         if (D_800C2698[window].age == 0) {
             if (D_800C3900 & 0x4000) {
@@ -1614,7 +1614,7 @@ s32 func_800347C0(TextBox *text);
  * across the stores, so this order is what places them where the original
  * has them. The portrait's y + 4 is taken next to icon_x, before the
  * style & 0x20 test, which fills that branch's delay slot. */
-void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
+void func_8007E1C0(u_long *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
     s32 y;
@@ -2031,7 +2031,7 @@ void func_8007FFE8(void) {
 /* Draw the dialogue windows: advance the cursor animation, draw the
  * selected window (+412) first and the others by rank (+410), renumber the
  * ranks, then link the frame's text draw mode into `ot`. */
-void func_8008004C(u32 *ot, s32 buffer) {
+void func_8008004C(u_long *ot, s32 buffer) {
     s32 order[4];
     s32 next;
     s32 selected;
@@ -2471,7 +2471,7 @@ void func_8008110C(void) {
             if ((actor->layer_flags & 0x600) != 0x200 && (descriptor->flags & 0xF80) == 0x200
                 && !(actor->flags & 0x10001) && i != D_800B2078.controlled) {
                 func_80084A40(i, 0x7FFFFFFF, descriptor, actor, 0);
-                if (D_800AF880.components.descriptors[i].model->animation->unk0C == 1) {
+                if ((u16)SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->halfc == 1) {
                     actor->flags &= ~0x800;
                 }
             }
@@ -2497,7 +2497,7 @@ void func_8008110C(void) {
 void func_800815F0(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
-    FieldModel *sprite;
+    Sprite *sprite;
     s32 i;
     s32 k;
     s32 slot;
@@ -2550,7 +2550,7 @@ void func_800815F0(void) {
                 actor->layer_flags &= ~0x1000;
                 if (!(motion & 0x420000)) {
                     if (D_800C3910 == -1) {
-                        if ((s16)sprite->unk84 == actor->position[1] >> 16) {
+                        if (sprite->ground == actor->position[1] >> 16) {
                             if (actor->unkE8 != 6) {
                                 s16 rest = actor->unkE6;
 
@@ -2606,14 +2606,14 @@ void func_800815F0(void) {
         }
         actor->layer = D_800B14F0[D_800B2360[slot]].layer;
         copyVector((VECTOR *)actor->unk50, (VECTOR *)D_800B14F0[D_800B2360[slot]].unk30);
-        copyVector((VECTOR *)sprite->velocity, (VECTOR *)D_800B14F0[D_800B2360[slot]].model_velocity);
+        copyVector((VECTOR *)&sprite->speed_x, (VECTOR *)D_800B14F0[D_800B2360[slot]].model_velocity);
         descriptor->matrix.t[0] = D_800B14F0[D_800B2360[slot]].position[0];
         descriptor->matrix.t[1] = D_800B14F0[D_800B2360[slot]].position[1];
         descriptor->matrix.t[2] = D_800B14F0[D_800B2360[slot]].position[2];
-        actor->position[0] = sprite->position[0] = descriptor->matrix.t[0] << 16;
-        actor->position[1] = sprite->position[1] = descriptor->matrix.t[1] << 16;
-        actor->position[2] = sprite->position[2] = descriptor->matrix.t[2] << 16;
-        sprite->unk84 = D_800B14F0[D_800B2360[slot]].model84;
+        actor->position[0] = sprite->x = descriptor->matrix.t[0] << 16;
+        actor->position[1] = sprite->y = descriptor->matrix.t[1] << 16;
+        actor->position[2] = sprite->z = descriptor->matrix.t[2] << 16;
+        sprite->ground = D_800B14F0[D_800B2360[slot]].model84;
         actor->heading = actor->heading_goal = D_800B14F0[D_800B2360[slot]].heading;
         D_800B2360[slot] = (D_800B2360[slot] - 1) & 0x1F;
     }
@@ -2622,7 +2622,7 @@ void func_800815F0(void) {
 /* Record the controlled actor `index`'s state in the next movement-history
  * slot, unless party processing is suspended. */
 void func_80081C54(s32 index) {
-    FieldModel *model;
+    Sprite *model;
     FieldActor *actor;
     s32 i;
     FieldDescriptor *descriptor;
@@ -2631,10 +2631,10 @@ void func_80081C54(s32 index) {
     actor = descriptor->actor;
     model = descriptor->model;
     if (index == D_800B2078.controlled && D_800B2078.party_processing_mode == 0) {
-        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].model_velocity, (VECTOR *)model->velocity);
+        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].model_velocity, (VECTOR *)&model->speed_x);
         copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].unk30, (VECTOR *)actor->unk50);
         D_800B14F0[D_800B2360[0]].heading = actor->heading_goal & 0xFFF;
-        D_800B14F0[D_800B2360[0]].model84 = model->unk84;
+        D_800B14F0[D_800B2360[0]].model84 = model->ground;
         D_800B14F0[D_800B2360[0]].position[0] = actor->position[0] >> 16;
         D_800B14F0[D_800B2360[0]].position[1] = actor->position[1] >> 16;
         D_800B14F0[D_800B2360[0]].position[2] = actor->position[2] >> 16;
@@ -2662,7 +2662,7 @@ s32 func_80081F5C(FieldActor *actor) {
  * scaled by the actor's speed ratio (+76) and axis scales (+f4/+f8), taken
  * from its layer's gear object, or through the sprite's own heading for an
  * ordinary party actor; both components keep 1/16 unit precision. */
-void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor) {
+void func_80081F80(Sprite *sprite, s16 heading, FieldDescriptor *descriptor) {
     FieldActor *actor;
     s32 layer;
     s32 speed;
@@ -2672,11 +2672,11 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
         speed = ((0x40000 / (u16)descriptor->actor->unk76) >> 8) << 5;
         angle = heading & 0xFFF;
         if (!(heading & 0x8000)) {
-            sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-            sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+            sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
-            sprite->velocity[0] = 0;
-            sprite->velocity[2] = 0;
+            sprite->speed_x = 0;
+            sprite->speed_z = 0;
         }
     } else if (!(heading & 0x8000)) {
         actor = descriptor->actor;
@@ -2686,26 +2686,26 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
             } else {
                 speed = ((0x40000 / (u16)actor->unk76) >> 8) << 5;
                 angle = heading & 0xFFF;
-                sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-                sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
-                sprite->unk18 = 0x4000000 / (u16)descriptor->actor->unk76;
+                sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+                sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+                sprite->speed = 0x4000000 / (u16)descriptor->actor->unk76;
             }
         } else if (!(actor->layer_flags & 0x20000)) {
             speed = ((0x80000 / (u16)actor->unk76) >> 8) << 5;
             angle = heading & 0xFFF;
-            sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-            sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+            sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             layer = actor->state.bits.layer;
-            sprite->velocity[0] = -D_801E8670[layer]->speed_x << 16;
-            sprite->velocity[2] = -D_801E8670[layer]->speed_z << 16;
+            sprite->speed_x = -D_801E8670[layer]->speed_x << 16;
+            sprite->speed_z = -D_801E8670[layer]->speed_z << 16;
         }
     } else {
-        sprite->velocity[0] = 0;
-        sprite->velocity[2] = 0;
+        sprite->speed_x = 0;
+        sprite->speed_z = 0;
     }
-    sprite->velocity[0] &= ~0xFFF;
-    sprite->velocity[2] &= ~0xFFF;
+    sprite->speed_x &= ~0xFFF;
+    sprite->speed_z &= ~0xFFF;
 }
 
 
@@ -2713,7 +2713,6 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
 
 
 
-extern void func_800245D8(void *model, s32 animation);
 /* Start animation `animation` on a descriptor's model (flag 0x40 set):
  * clears the actor's flag 0x800 outside jumps or on a change; 801e layer
  * actors (layer bit 13) set their layer frame instead (below 0x10 through
@@ -2828,7 +2827,7 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR normal;
     VECTOR unused;
     SVECTOR turn;
-    FieldModel *model;
+    Sprite *model;
     FieldActor *platform;
     LayerObject **entry;
     s32 push_x;
@@ -2887,9 +2886,9 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             if ((actor->unkF0 >> 16) >= limit) {
                 actor->unkF0 = limit << 16;
             } else {
-                actor->unkF0 += model->gravity.value;
+                actor->unkF0 += model->gravity;
             }
-            model->velocity[1] = actor->unkF0 >> 1;
+            model->speed_y = actor->unkF0 >> 1;
         }
         if (terrain & 0x400000) {
             actor->unk40[0] += push_x;
@@ -2980,7 +2979,7 @@ conveyed:
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
-    FieldModel *model;
+    Sprite *model;
     s32 moving;
     s32 result;
     u32 saved;
@@ -3019,9 +3018,9 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     }
     if (!(heading & 0x8000)) {
         func_80081F80(model, heading, descriptor);
-        move.vx = model->velocity[0];
-        move.vy = model->velocity[1];
-        move.vz = model->velocity[2];
+        move.vx = model->speed_x;
+        move.vy = model->speed_y;
+        move.vz = model->speed_z;
         move.vx += actor->unk40[0];
         move.vy += actor->unk40[1];
         move.vz += actor->unk40[2];
@@ -3057,21 +3056,21 @@ stop:
     move.vx = 0;
     move.vy = 0;
     move.vz = 0;
-    model->velocity[0] = 0;
-    model->velocity[2] = 0;
+    model->speed_x = 0;
+    model->speed_z = 0;
     actor->heading_goal |= 0x8000;
 moved:
     actor->layer_flags &= ~0x1000;
     if (actor->flags & 0x800) {
         if (D_800B2078.jump_mode == 0) {
-            if (WHOLE(model->position[1]) != (s16)model->unk84) {
+            if (WHOLE(model->y) != model->ground) {
                 if (mode == 2) {
-                    model->unk18 = model->unk82 * 0x60;
+                    model->speed = (s16)model->word82 * 0x60;
                 } else {
-                    model->unk18 = model->unk82 * 0x30;
+                    model->speed = (s16)model->word82 * 0x30;
                 }
             } else {
-                model->unk18 = 0;
+                model->speed = 0;
             }
         }
         mode = D_800B2078.animation_mode;
@@ -3356,7 +3355,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
                     other->state.bits.octant = octant;
                     if (D_800ADF64 == 0 && (other->flags & 0x8000000)) {
                         D_800ADF64 = 1;
-                        descriptor->model->velocity[1] = 0;
+                        descriptor->model->speed_y = 0;
                     }
                 }
             } else {
@@ -3651,7 +3650,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     if (!(actor->flags & 0x10000) && !(actor->layer_flags & 0x200000)) {
         func_80084A40(index, lowest, descriptor, actor, status);
     }
-    if (D_800AF880.components.descriptors[index].model->animation->unk0C == 1) {
+    if ((u16)SPRITE_SEQUENCER(D_800AF880.components.descriptors[index].model)->halfc == 1) {
         func_80035DB0();
         actor->flags &= ~0x800;
     }
@@ -3694,7 +3693,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     VECTOR normals[4];
     VECTOR old;
     s16 old_triangles[4];
-    FieldModel *sprite;
+    Sprite *sprite;
     s16 old_layer;
     s32 old_floor;
     s32 layer;
@@ -3718,8 +3717,8 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     if (actor->flags & 0x10000) {
         return -1;
     }
-    if (!(index == D_800B2078.controlled && D_800B2078.forced_position == 1) && sprite->velocity[1] == 0 &&
-        func_8008492C(actor) == 0 && (s16)sprite->unk84 == actor->position[1] >> 16) {
+    if (!(index == D_800B2078.controlled && D_800B2078.forced_position == 1) && sprite->speed_y == 0 &&
+        func_8008492C(actor) == 0 && sprite->ground == actor->position[1] >> 16) {
         return -1;
     }
     old.vx = actor->position[0];
@@ -3805,14 +3804,14 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
             if (index == D_800B2078.controlled) {
                 D_800ADB00 = 0xFFF;
             }
-            actor->position[1] += sprite->velocity[1];
+            actor->position[1] += sprite->speed_y;
             goto rollback;
         }
         actor->position[0] += actor->unk030[0];
         actor->position[2] += actor->unk030[2];
         for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
             if (actor->layer == ids[i]) {
-                sprite->unk84 = floors[i];
+                sprite->ground = floors[i];
                 break;
             }
         }
@@ -3822,39 +3821,39 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     }
     if (D_800ADB98 != 0) {
         if ((u32)status < 2) {
-            sprite->unk84 = lowest;
+            sprite->ground = lowest;
         }
     } else if (status != 0) {
-        if ((s16)sprite->unk84 < lowest + 10) {
+        if (sprite->ground < lowest + 10) {
             actor->unk074 = 0xFF;
         }
-        sprite->unk84 = lowest;
+        sprite->ground = lowest;
         actor->position[1] = lowest << 16;
     }
     if (actor->flags & 0x40000) {
         actor->position[1] = actor->unkEC << 16;
-        sprite->velocity[1] = 0;
+        sprite->speed_y = 0;
     }
-    actor->position[1] += sprite->velocity[1];
+    actor->position[1] += sprite->speed_y;
     attributes = func_80080968(actor);
     if (actor->layer != old_layer) {
         actor->flags &= 0xFBFFFFFF;
     }
-    if (!(actor->flags & 0x04000000) && (s16)sprite->unk84 > actor->position[1] >> 16) {
-        if ((s16)sprite->unk84 != actor->position[1] >> 16) {
-            sprite->velocity[1] += sprite->gravity.value;
+    if (!(actor->flags & 0x04000000) && sprite->ground > actor->position[1] >> 16) {
+        if (sprite->ground != actor->position[1] >> 16) {
+            sprite->speed_y += sprite->gravity;
         }
         actor->flags |= 0x1000;
-        actor->unkF0 = sprite->velocity[1];
+        actor->unkF0 = sprite->speed_y;
     } else {
         if (!(attributes & 0x420000)) {
             actor->unkF0 = 0;
         }
-        if (sprite->velocity[1] > 0) {
-            sprite->velocity[1] = 0;
+        if (sprite->speed_y > 0) {
+            sprite->speed_y = 0;
         }
         actor->flags &= 0xFFBFEFFF;
-        actor->position[1] = (s16)sprite->unk84 << 16;
+        actor->position[1] = sprite->ground << 16;
     }
     actor->flags &= 0xFBFFFFFF;
     for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
@@ -3866,10 +3865,10 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     if (i == D_800AF880.components.layer_count - 1) {
         bump = (s8)D_800AF880.components.collision_triangles[actor->layer][actor->triangle[actor->layer]].unk0D * 4;
         if (bump >= 0 ||
-            !((actor->position[1] >> 16) - (u16)actor->height < bump + (s16)sprite->unk84)) {
-            sprite->position[0] = actor->position[0];
-            sprite->position[1] = actor->position[1];
-            sprite->position[2] = actor->position[2];
+            !((actor->position[1] >> 16) - (u16)actor->height < bump + sprite->ground)) {
+            sprite->x = actor->position[0];
+            sprite->y = actor->position[1];
+            sprite->z = actor->position[2];
             D_800AF880.components.descriptors[index].matrix.t[0] = actor->position[0] >> 16;
             D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
             D_800AF880.components.descriptors[index].matrix.t[2] = actor->position[2] >> 16;
@@ -3884,16 +3883,16 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
-    if ((s16)sprite->unk84 != actor->position[1] >> 16) {
-        sprite->velocity[1] += sprite->gravity.value;
+    if (sprite->ground != actor->position[1] >> 16) {
+        sprite->speed_y += sprite->gravity;
     }
-    if (sprite->velocity[1] < 0) {
-        sprite->velocity[1] = 0;
+    if (sprite->speed_y < 0) {
+        sprite->speed_y = 0;
         actor->position[1] = old.vy;
     }
-    sprite->position[0] = actor->position[0];
-    sprite->position[1] = actor->position[1];
-    sprite->position[2] = actor->position[2];
+    sprite->x = actor->position[0];
+    sprite->y = actor->position[1];
+    sprite->z = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
 done:
     func_80081C54(index);
@@ -3907,20 +3906,20 @@ rollback:
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
-    if ((s16)sprite->unk84 > actor->position[1] >> 16) {
-        if ((s16)sprite->unk84 != actor->position[1] >> 16) {
-            sprite->velocity[1] += sprite->gravity.value;
+    if (sprite->ground > actor->position[1] >> 16) {
+        if (sprite->ground != actor->position[1] >> 16) {
+            sprite->speed_y += sprite->gravity;
         }
     } else {
-        if (sprite->velocity[1] > 0) {
-            sprite->velocity[1] = 0;
+        if (sprite->speed_y > 0) {
+            sprite->speed_y = 0;
         }
         actor->flags &= 0xFFBFEFFF;
-        actor->position[1] = (s16)sprite->unk84 << 16;
+        actor->position[1] = sprite->ground << 16;
     }
-    sprite->position[0] = actor->position[0];
-    sprite->position[1] = actor->position[1];
-    sprite->position[2] = actor->position[2];
+    sprite->x = actor->position[0];
+    sprite->y = actor->position[1];
+    sprite->z = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
     func_80081C54(index);
     return 0;

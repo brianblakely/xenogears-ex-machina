@@ -223,9 +223,9 @@ void func_800700B0(void) {
         func_80027D40(D_800B007C);
     }
     for (i = 0; i < D_800AFEA8.count; i++) {
-        func_8002800C(D_800AFEA8.handles[i]);
+        func_8002800C(D_800AFEA8.scrolls[i]);
         func_800320E8(D_800AFEA8.buffers[i]);
-        func_800320E8((void *)D_800AFEA8.handles[i]);
+        func_800320E8(D_800AFEA8.scrolls[i]);
     }
     func_8003748C();
     module_loaded = &D_800B2078.unk2264;
@@ -1977,9 +1977,9 @@ void func_800748E8(void) {
                 gte_SetRotMatrix(&placed);
                 gte_SetTransMatrix(&placed);
                 if (!(descriptor->flags & 0x8000)) {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot, instance->mode);
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot, instance->mode);
                 } else {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot2, instance->mode);
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot2, instance->mode);
                 }
             }
         }
@@ -2004,14 +2004,8 @@ void func_8007520C(void) {
     }
 }
 
-void func_80024FE4(u32 *ot);
-void func_80024FF4(void *p);
-void func_8001D468(void);
-void func_8001C9F8(void);
-void func_8001C964(void);
-void func_80023210(FieldModel *model);
-void func_80075B44(u32 *ot, s32 buffer);
-void func_800764B4(u32 *ot, s32 buffer);
+void func_80075B44(u_long *ot, s32 buffer);
+void func_800764B4(u_long *ot, s32 buffer);
 
 /* Draw the field characters: set up the model renderer for this buffer, then
  * draw each actor's model (shown ones unless their layer is hidden or they
@@ -2024,7 +2018,7 @@ void func_800752C8(void) {
         return;
     }
     func_800250E0(D_800ADB08);
-    func_80024FE4(D_800C426C->ot);
+    func_80024FE4((s32)D_800C426C->ot);
     func_80024FF4(&D_800AF880.scaled_world);
     func_8001D468();
     func_8001C9F8();
@@ -2048,7 +2042,7 @@ void func_800752C8(void) {
 }
 
 /* Link a table's primitives into `ot` (AddPrims). */
-void func_80075458(void *ot, u32 *table, s32 depth) {
+void func_80075458(void *ot, u_long *table, s32 depth) {
     AddPrims(ot, table + depth, table);
 }
 
@@ -2215,7 +2209,7 @@ void func_80075B08(void *target, u8 *color) {
  * set its off-screen flag, then scale, fog and draw its sprite at its depth
  * in `ot` (layered sprites twice, split sprites in two parts); party actors
  * drawn by the 801e module get their layer object's state instead. */
-void func_80075B44(u32 *ot, s32 buffer) {
+void func_80075B44(u_long *ot, s32 buffer) {
     SVECTOR v;
     SVECTOR raised;
     VECTOR scale;
@@ -2237,7 +2231,7 @@ void func_80075B44(u32 *ot, s32 buffer) {
     s32 y;
     u32 layer_flags;
     FieldActor *actor;
-    FieldModel *sprite;
+    Sprite *sprite;
     u32 side;
 
     elevation = (s16)D_800AF880.elevation;
@@ -2312,18 +2306,18 @@ void func_80075B44(u32 *ot, s32 buffer) {
             if ((u16)(actor->unkE8 + 0x22) < 2) {
                 if (!(actor->layer_flags & 0x02000000)) {
                     func_80021B98(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
-                    sprite->unk3D = 0xEF;
+                    sprite->render.bytes[1] = 0xEF;
                     func_8001E298(sprite, ot + depth - 0x10);
                     v.vx = 0;
                     v.vy = 300;
                     v.vz = 0;
                     upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
                     func_80021B98(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
-                    sprite->unk3D = 0xF7;
+                    sprite->render.bytes[1] = 0xF7;
                     func_8001E298(sprite, ot + upper);
                 }
             } else {
-                sprite->unk3D = 0;
+                sprite->render.bytes[1] = 0;
                 if (!(actor->layer_flags & 0x02000000)) {
                     if (!(actor->unk134 & 0x60)) {
                         func_80075B08(sprite, actor->color0);
@@ -2377,7 +2371,7 @@ void func_80075B44(u32 *ot, s32 buffer) {
  * lays the shadow quad on the floor under it (its axes from the floor
  * normal), scale it by the actor's size, and link the projected quad into
  * `ot`. */
-void func_800764B4(u32 *ot, s32 buffer) {
+void func_800764B4(u_long *ot, s32 buffer) {
     VECTOR up;
     VECTOR side;
     VECTOR cross;
@@ -2434,7 +2428,7 @@ void func_800764B4(u32 *ot, s32 buffer) {
         floor.m[2][1] = up.vy;
         floor.m[2][2] = up.vz;
         floor.t[0] = descriptor->matrix.t[0];
-        floor.t[1] = (s16)descriptor->model->unk84;
+        floor.t[1] = descriptor->model->ground;
         floor.t[2] = descriptor->matrix.t[2];
         gte_CompMatrix(&D_800AF880.scaled_world, &floor, &placed);
         sx = descriptor->actor->scale[0] * 0xC00;
@@ -2462,8 +2456,8 @@ void func_800764B4(u32 *ot, s32 buffer) {
 }
 
 /* Sprite completion callback: flag the sprite's actor (layer bit 16). */
-void func_80076A74(FieldSprite *sprite) {
-    D_800AF880.components.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
+void func_80076A74(Sprite *sprite) {
+    D_800AF880.components.descriptors[SPRITE_SEQUENCER(sprite)->actor].actor->layer_flags |= 0x10000;
 }
 
 /* Create an event actor's sprite: record its slot and arguments on the
@@ -2475,7 +2469,7 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     s32 width;
     s32 height;
     s32 depth;
-    FieldModel *sprite;
+    Sprite *sprite;
     s32 y;
     s32 x;
 
@@ -2522,18 +2516,18 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     D_800AF880.components.descriptors[index].unk5A |= 1;
     func_8001F5BC(sprite, 0, &width, &height, &depth);
     func_80021C00(sprite, 3);
-    sprite->unk2C = 0xC00;
-    sprite->unk82 = 0x2000;
+    sprite->scale = 0xC00;
+    sprite->word82 = 0x2000;
     if (D_8004F30C == 0) {
-        sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-        sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-        sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
-        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
-        sprite->velocity[1] = 0;
-        sprite->velocity[0] = 0;
-        sprite->velocity[1] = 0;
-        sprite->velocity[2] = 0;
-        sprite->gravity.value = 0x10000;
+        sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+        sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+        sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
+        sprite->ground = D_800AF880.components.descriptors[index].matrix.t[1];
+        sprite->speed_y = 0;
+        sprite->speed_x = 0;
+        sprite->speed_y = 0;
+        sprite->speed_z = 0;
+        sprite->gravity = 0x10000;
         if (kind == 0) {
             D_800AF880.components.descriptors[index].actor->height = height * 2;
         } else {
@@ -2541,22 +2535,22 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         }
     }
     if (D_800B2078.sprite_gate != 0) {
-        sprite->unk40 |= 0x40000;
+        sprite->flags |= 0x40000;
     }
     func_800245D8(sprite, 0);
     func_80021FE0(sprite, 0);
     func_80032498(8, 0);
-    sprite->animation->actor = index;
+    SPRITE_SEQUENCER(sprite)->actor = index;
     func_80021BF8(sprite, func_80076A74);
     if (flag == 0) {
         func_80023210(sprite);
         func_8001C964();
-        if (sprite->animation->unk0C == 0xFF) {
+        if ((u16)SPRITE_SEQUENCER(sprite)->halfc == 0xFF) {
             D_800AF880.components.descriptors[index].actor->unk0EA = 0xFF;
             D_800AF880.components.descriptors[index].actor->layer_flags |= 0x01000000;
-            sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-            sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-            sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+            sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+            sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+            sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
         }
     }
     D_800AF880.components.descriptors[index].transform.t[0] = D_800AF880.components.descriptors[index].matrix.t[0] =
@@ -2565,10 +2559,10 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         WHOLE(D_800AF880.components.descriptors[index].actor->position[1]);
     D_800AF880.components.descriptors[index].transform.t[2] = D_800AF880.components.descriptors[index].matrix.t[2] =
         WHOLE(D_800AF880.components.descriptors[index].actor->position[2]);
-    sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
-    sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
-    sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
-    sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+    sprite->ground = D_800AF880.components.descriptors[index].matrix.t[1];
+    sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
+    sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
+    sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
     D_800AFC74++;
 }
 
@@ -2608,7 +2602,7 @@ s32 func_80084A40();
 void func_80077268(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
-    FieldModel *model;
+    Sprite *model;
     s32 slot;
     s32 i;
 
@@ -2626,9 +2620,9 @@ void func_80077268(void) {
                 if (slot != 0) {
                     func_80084A40(i, WHOLE(D_800AF880.components.descriptors[i].actor->position[1]),
                                   descriptor, actor);
-                    model->position[0] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[0];
-                    model->position[1] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[1];
-                    model->position[2] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[2];
+                    model->x = D_800AF880.components.descriptors[D_800B2078.controlled].model->x;
+                    model->y = D_800AF880.components.descriptors[D_800B2078.controlled].model->y;
+                    model->z = D_800AF880.components.descriptors[D_800B2078.controlled].model->z;
                     descriptor->matrix.t[0] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[0];
                     descriptor->matrix.t[1] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[1];
                     descriptor->matrix.t[2] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[2];
@@ -2868,7 +2862,6 @@ extern s32 D_80059560;
 extern s32 D_800595AC;
 extern s32 D_8006251C;
 extern s32 D_80062524;
-extern GameState D_8006D634; /* the game state */
 extern s32 D_8004F354;
 extern s32 D_8004F358;
 extern s32 D_800AFC78;
@@ -2890,7 +2883,6 @@ void func_800A94A4(s32 actor);
 s32 func_80035734(s32 a0);
 void func_80037EE4(void);
 void func_80037E8C(void);
-void func_8001FAB4(s32 a0, s32 a1);
 void func_80019CA0(void);
 void func_800A5924(void);
 void func_8007FFE8(void);
@@ -2965,14 +2957,14 @@ void func_80077E88(void) {
     }
     func_800775C0();
     D_8005A39C = &D_8006D634;
-    D_8004F34C = D_8006D634.unk231A;
-    D_8006D634.vars[1] = D_8006D634.unk2320;
-    D_8006D634.vars[4] = D_8006D634.unk231C >> 9;
+    D_8004F34C = D_8006D634.map;
+    D_8006D634.vars[1] = D_8006D634.entry[2];
+    D_8006D634.vars[4] = D_8006D634.entry[0] >> 9;
     if (D_8004F2F8 == 0) {
         D_800594D0 = 0;
         D_8004F324 = 0xFF;
     } else {
-        D_8004F324 = D_8006D634.unk2322;
+        D_8004F324 = D_8006D634.flagWords[0];
     }
     if (D_800C268C == 1) {
         D_8005A39C->vars[0x28] = 1;
@@ -3500,8 +3492,8 @@ void func_8007954C(s32 kind) {
     case 0:
         func_800A30FC();
         D_8004F324 = D_800AFC78;
-        D_8005A39C->unk2322 = D_800AFC78;
-        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        D_8005A39C->flagWords[0] = D_800AFC78;
+        D_8005A39C->entry[2] = D_8005A39C->vars[1];
         if (D_8004F370 != 0) {
             return;
         }
@@ -3521,8 +3513,8 @@ void func_8007954C(s32 kind) {
         func_8001996C(3);
         break;
     case 2:
-        D_8005A39C->unk2322 = D_8004F324;
-        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        D_8005A39C->flagWords[0] = D_8004F324;
+        D_8005A39C->entry[2] = D_8005A39C->vars[1];
         if (D_8004F370 != 0) {
             return;
         }
@@ -3714,11 +3706,11 @@ void func_800799D4(void) {
     D_80059178 = 0;
     D_80059460 = D_800ADB64 & 0x7F;
     for (i = 0; i < 3; i++) {
-        D_8006BE2C[i] = D_8005A39C->unk22B1[i];
+        D_8006BE2C[i] = D_8005A39C->inGear[i];
     }
     func_800798BC();
-    D_8005A4AC[0] = D_800B249C[0].ot;
-    D_8005A4AC[1] = D_800B249C[1].ot;
+    D_8005A4AC[0] = (u32 *)D_800B249C[0].ot;
+    D_8005A4AC[1] = (u32 *)D_800B249C[1].ot;
     func_8007999C();
     func_8001C634();
     func_8007999C();
@@ -3728,16 +3720,16 @@ void func_800799D4(void) {
         func_800A3074(0x46, 0);
         func_800A3074(4, 4);
         D_8004F34C = 4;
-        D_8005A39C->unk2320 = 0;
+        D_8005A39C->entry[2] = 0;
         D_8005A39C->vars[1] = 0;
-        D_8005A39C->unk231A = 4;
+        D_8005A39C->map = 4;
     }
     if (D_800594D0 == 2) {
         D_800B02C8 = 1;
         func_800A3074(0x46, 2);
-        func_800A3074(4, D_8005A39C->unk231A & 0x3FFF);
-        if ((D_8005A39C->unk231A & 0x3FFF) < 0x400) {
-            D_8005A39C->unk2320 = D_8005A39C->vars[0x2A];
+        func_800A3074(4, D_8005A39C->map & 0x3FFF);
+        if ((D_8005A39C->map & 0x3FFF) < 0x400) {
+            D_8005A39C->entry[2] = D_8005A39C->vars[0x2A];
         }
     }
     func_800775F8();

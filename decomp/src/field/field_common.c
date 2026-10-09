@@ -12,6 +12,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/gpu.h"
 
 s32 D_800AF858;
 MATRIX D_800AF85C;
@@ -68,7 +69,7 @@ s32 D_800B0064;
 s32 D_800B0068[2]; /* pointer X per port */
 s32 D_800B0070[2]; /* pointer Y per port */
 struct FieldActor *D_800B0078; /* current event actor */
-void *D_800B007C;
+Panorama *D_800B007C;
 struct FieldEventParams D_800B0080;
 s32 D_800B00B4; /* camera pitch */
 SVECTOR D_800B00B8; /* piece rotation */
