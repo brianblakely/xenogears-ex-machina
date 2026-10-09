@@ -34,7 +34,7 @@ typedef struct {
 extern s32 D_800C37D0;    /* frame loop nesting */
 extern s16 D_80059494;    /* extra vertical blanks of the last frame (0-4) */
 extern s32 D_80059198;    /* frame skip */
-extern u16 D_800591B4;    /* a sound request */
+extern u16 D_800591B4;    /* the requested single action (800B8054) */
 extern u8 D_800C3780;     /* a slot's sprite commands run */
 extern s32 D_80010000;    /* the debugger's word, -1 none */
 extern u8 D_800CCB94[];
@@ -96,7 +96,7 @@ void func_800BCD8C(void);
 void func_800B7C28(void);
 void func_8001C944(void);
 void func_80024F64(s32 a, s32 b);
-extern u8 D_800591B1;  /* the sound request is done */
+extern u8 D_800591B1;  /* the requested single action is done (800B8068) */
 extern u8 D_800591AD;
 extern u8 D_800D2FDC;
 extern u8 D_800D36B8;  /* the battle's start mode */
@@ -131,7 +131,7 @@ void func_800AA320(u16 index, u16 mask, s32 arg2);
 void func_80076544(void);
 void func_8008A9C0(s32 skipped);
 void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer);
-void func_800B8068(s32 sound);
+void func_800B8068(s32 action);
 void func_800BB9D4(void);
 void func_800BBAB8(void);
 void func_800BD3AC(BattleSprite *sprite, s32 command, s32 kind);

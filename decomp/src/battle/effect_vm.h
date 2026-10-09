@@ -298,7 +298,7 @@ void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 
 void func_8003A3B8(s32 sound, s32 b, s32 c); /* slide its volume to b over c frames */
 void func_80080C6C(u8 index);
 u8 func_800885D0(u8 slot);
-void func_800B8054(s32 sound); /* request single action `sound` (800b8068 runs it) */
+void func_800B8054(s32 action); /* request single action `action` (800b8068 runs it) */
 void func_800B9258(void);
 void func_800BCAA4(void);
 void func_800BCAD0(void);
