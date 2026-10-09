@@ -115,11 +115,18 @@ Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
 byte-identical on both discs. `tools/extraction/disc_files.py` and
 `tools/extraction/overlays.py` write the local inputs; splat writes the local
-assembly. `tools/extraction/code_census.py` scans every file of both discs for
-MIPS function structure and fails unless each code-bearing file is the boot
-executable or byte-identical to a target image (MDEC streams are reported
-apart). Distinct overlays at the same address keep separate targets and symbol
-files.
+assembly. `tools/extraction/code_census.py` checks that the targets hold all the
+code on both discs. It counts every aligned `jr $ra`, leaf returns too, in each
+file's raw bytes and in every packed block the original decoder completes from
+any byte offset, checks that each movie stream's sectors are video, XA audio or
+empty and that no sector outside the files holds code, and fails unless every
+form holding code is the image of a `decomp/targets` .mk and all 26 occur. On the
+user's discs it decodes 74,925 (Disc 1) and 42,383 (Disc 2) packed blocks and
+finds code only in the targets (116 file entries and the boot programs); the
+other `jr $ra` words are compressed bytes inside packed blocks (the world map
+containers, Disc 1 file 732) and samples of the `wds ` wave bank in Disc 1 file
+3039 / Disc 2 file 3034. Distinct overlays at the same address keep separate
+targets and symbol files.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2)
