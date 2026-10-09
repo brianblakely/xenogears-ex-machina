@@ -731,9 +731,9 @@ void func_8001ACA4(void) {
     func_8001B158(1);
 }
 
-/* The first byte of character record `index` in the game data. */
+/* The gear character `index` pilots (0xff none). */
 s32 func_8001ACF0(s32 index) {
-    return D_8005A39C->characters[index].first;
+    return D_8005A39C->characters[index].gearId;
 }
 
 /* Wait until the disc is idle, then for the pending read (80028a60). */

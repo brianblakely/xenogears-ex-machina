@@ -126,6 +126,7 @@ decomp/include/psyq/stdarg.h
 decomp/include/psyq/types.h
 decomp/include/resident/cd.h
 decomp/include/resident/console.h
+decomp/include/resident/gamedata.h
 decomp/include/resident/gpu.h
 decomp/include/resident/heap.h
 decomp/include/resident/menu.h
