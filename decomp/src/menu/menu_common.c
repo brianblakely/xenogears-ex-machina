@@ -8,14 +8,15 @@
  * uninitialized variables). GCC emits tentative definitions in the order of
  * their first declaration, so they are defined ahead of the headers that
  * declare them, structures by their tags; the headers then complete and
- * check the types. The SDK headers ahead of them declare none of them. */
+ * check the types. The SDK and resident headers ahead of them (for VECTOR,
+ * MATRIX, POLY_FT3 and the resident's message Window) declare none of them. */
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 #include "resident/window.h"
 
 s32 D_8009284C; /* horizontal distance between the actors */
-s32 D_80092850;
+s32 D_80092850; /* distance between the actors */
 POLY_FT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 s16 D_8009285C; /* display width */
 u8 D_80092860; /* left bar texel row */

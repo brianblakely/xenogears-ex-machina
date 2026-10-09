@@ -2,6 +2,7 @@
 #define MENU_SELECT_H
 
 #include "common.h"
+#include "psyq/libgpu.h"
 #include "packets.h"
 
 /* The selection screen (menu4 8007EEE8-8007F834, 800802A4-800808F4): the
