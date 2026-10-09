@@ -2,76 +2,10 @@
 #define OVL2601_MENU_CARD_H
 
 #include "common.h"
-
-/* PsyQ libgpu primitives and rectangles used by the card screens. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} POLY_G4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-} POLY_F4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    u32 pad;
-} LINE_F3;
-
-typedef struct {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-/* libgs/libgpu TIM description (OpenTIM/ReadTIM). */
-typedef struct {
-    u32 mode;
-    RECT *crect;
-    u32 *caddr;
-    RECT *prect;
-    u32 *paddr;
-} TIM_IMAGE;
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
 /* A save file name prefix (13 bytes with its terminator). */
 typedef struct {
@@ -127,13 +61,6 @@ typedef struct {
     u8 buffer2;            /* 1409 */
     u8 unk140A[2];
 } ListBlock;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-} LINE_F2;
 
 /*
  * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
@@ -371,16 +298,6 @@ typedef struct {
     u32 *ot_big;   /* b0: ovl2602's 400h-entry ordering table */
 } DrawEnv;
 
-typedef struct {
-    s16 m[3][3];
-    s16 pad;
-    s32 t[3];
-} MATRIX;
-
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
 /* A character record of the game data (a4h bytes, 8006d8a0). */
 typedef struct {
     u8 unk0[4];
@@ -581,21 +498,12 @@ extern u16 D_800595D4;   /* plain text CLUT */
 extern MenuResources *D_8005945C;        /* the menu resources block */
 extern EffectBank *D_8006259C;           /* the loaded menu sound bank */
 extern const CardPrefix D_801C5000;      /* "BISLPS-00800" */
-void OpenTIM(void *tim);           /* OpenTIM */
-s32 ReadTIM(TIM_IMAGE *image);     /* ReadTIM */
 void func_8002DD20(void *list);          /* load a TIM list into VRAM */
 void func_80028470(s32 unk0, s32 unk1);  /* disc access mode */
 void func_80038428(EffectBank *bank);    /* link an effect bank */
 extern u8 D_80059171;                    /* shop number */
-void SetLineF2(LINE_F2 *prim);       /* SetLineF2 */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
 void func_80019CA0(void);                /* soft reset combination */
-void ClearOTagR(u32 *ot, s32 n);      /* ClearOTagR */
-s32 VSync(s32 mode);             /* VSync */
-void PutDrawEnv(void *env);           /* PutDrawEnv */
-void PutDispEnv(void *env);           /* PutDispEnv */
-s32 MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
-void DrawOTag(u32 *ot);             /* DrawOTag */
 s32 func_80035734(s32 port);             /* controller present */
 void func_80037EE4(void);                /* pause the sound */
 void func_80037E8C(void);                /* resume the sound */
@@ -611,8 +519,6 @@ extern u16 D_800594A4;                   /* dequeued buttons */
 extern u16 D_8005948C;                   /* dequeued buttons, second set */
 void *func_80031BDC(s32 size, s32 mode); /* heap allocate */
 void func_800320E8(void *block);         /* heap free */
-void bzero(void *dst, s32 size); /* bzero */
-void memmove(void *dst, void *src, s32 size); /* memmove */
 void *func_80032E88(void *packed, s32 mode); /* unpack into a new block */
 void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
@@ -629,27 +535,7 @@ s32 func_800288EC(s32 file);             /* file size in words */
 void func_800295D8(s32 file, void *dst, s32 offset, s32 mode); /* disc read */
 s32 func_80028A60(s32 mode);             /* disc wait */
 
-/* libgpu */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-void SetSemiTrans(void *prim, s32 abe);           /* SetSemiTrans */
-void SetShadeTex(void *prim, s32 tge);           /* SetShadeTex */
-void SetPolyFT4(POLY_FT4 *prim);                /* SetPolyFT4 */
-void SetPolyG4(POLY_G4 *prim);                 /* SetPolyG4 */
-void SetPolyF4(POLY_F4 *prim);                 /* SetPolyF4 */
-void SetLineF3(LINE_F3 *prim);                 /* SetLineF3 */
-void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
-u16 GetClut(s32 x, s32 y);                   /* GetClut */
-void AddPrim(void *ot, void *prim);          /* AddPrim */
-void PushMatrix(void);                          /* PushMatrix */
-void PopMatrix(void);                          /* PopMatrix */
 MATRIX *func_8003F738(SVECTOR *r, MATRIX *m);      /* RotMatrix */
-MATRIX *TransMatrix(MATRIX *m, VECTOR *v);       /* TransMatrix */
-void SetRotMatrix(MATRIX *m);                     /* SetRotMatrix */
-void SetTransMatrix(MATRIX *m);                     /* SetTransMatrix */
-s32 RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *xy0, s16 *xy1, s16 *xy2,
-                  s16 *xy3, s32 *p, s32 *flag); /* RotTransPers4 */
-void LoadImage(RECT *rect, void *data);        /* LoadImage */
-s32 DrawSync(s32 mode);                       /* DrawSync */
 
 /* This overlay. */
 void func_801C54B4(void);

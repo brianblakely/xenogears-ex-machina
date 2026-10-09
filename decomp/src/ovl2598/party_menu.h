@@ -2,76 +2,11 @@
 #define OVL2598_PARTY_MENU_H
 
 #include "common.h"
+#include "psyq/libc.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
 
-/* PsyQ libgpu primitives and rectangles. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} POLY_G4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-} POLY_F4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    u32 pad;
-} LINE_F3;
-
-typedef struct {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
 
 /* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
 typedef struct {
@@ -128,15 +63,6 @@ typedef struct {
     RECT screen;     /* 0x1180: VRAM area copied to the display buffer */
     u8 pad_1188[0xC];
 } ListBlock;
-
-/* PsyQ libgs TIM image descriptor (ReadTIM). */
-typedef struct {
-    u32 mode;
-    RECT *crect;
-    u32 *caddr;
-    RECT *prect;
-    u32 *paddr;
-} TIM_IMAGE;
 
 /* The 0x5034-byte menu work block. */
 typedef struct {
@@ -350,8 +276,6 @@ extern u16 D_8006F94C;   /* characters locked in place */
 
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
 extern void func_800320E8(void *block);         /* release */
-extern void bzero(void *dst, s32 size); /* bzero */
-extern void memmove(void *dst, void *src, s32 size); /* memmove */
 extern void *func_80032E88(void *packed, s32 mode);       /* unpack */
 extern void func_8003342C(void *archive);
 extern void func_8002DD20(void *data);
@@ -360,17 +284,6 @@ extern s32 func_800288EC(s32 id);
 extern void func_800295D8(s32 id, void *buffer, s32 a, s32 b);
 extern void func_80028A60(s32 a);
 extern void func_80038428(void *bank);
-extern void OpenTIM(void *tim);          /* OpenTIM */
-extern void ReadTIM(TIM_IMAGE *image);   /* ReadTIM */
-extern char *strcpy(char *dst, const char *src);
-extern void LoadImage(RECT *rect, void *data); /* LoadImage */
-extern void DrawSync(s32 mode);           /* DrawSync */
-extern void VSync(s32 mode);           /* VSync */
-extern void ClearOTagR(u32 *ot, s32 count); /* ClearOTag */
-extern void PutDrawEnv(void *env);          /* PutDrawEnv */
-extern void PutDispEnv(void *env);          /* PutDispEnv */
-extern void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
-extern void DrawOTag(u32 *ot);            /* DrawOTag */
 extern void func_80019CA0(void);               /* reset combination check */
 extern void func_80039DB8(s32 sound);          /* play a sound */
 extern void func_8003A094(void *bank);
@@ -385,24 +298,7 @@ extern s32 D_80059488;                         /* vsync count */
 extern s32 *D_8005917C;                        /* stack guard word (-1 intact) */
 extern u16 D_800594A4;                         /* dequeued buttons */
 extern u16 D_8005948C;                         /* dequeued buttons (pressed) */
-extern void AddPrim(u32 *ot, void *prim); /* AddPrim */
-extern s32 RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *sxy0,
-                         s16 *sxy1, s16 *sxy2, s16 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */
-extern void SetPolyFT4(POLY_FT4 *p);        /* SetPolyFT4 */
-extern void SetPolyG4(POLY_G4 *p);         /* SetPolyG4 */
-extern void SetPolyF4(POLY_F4 *p);         /* SetPolyF4 */
-extern void SetLineF3(LINE_F3 *p);         /* SetLineF3 */
-extern void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
-extern void SetSemiTrans(void *p, s32 abe);   /* SetSemiTrans */
-extern void SetShadeTex(void *p, s32 tge);   /* SetShadeTex */
-extern void PushMatrix(void);                /* PushMatrix */
-extern void PopMatrix(void);                /* PopMatrix */
 extern MATRIX *func_8003F738(SVECTOR *r, MATRIX *m); /* RotMatrix */
-extern MATRIX *TransMatrix(MATRIX *m, VECTOR *v);  /* TransMatrix */
-extern void SetRotMatrix(MATRIX *m);           /* SetRotMatrix */
-extern void SetTransMatrix(MATRIX *m);           /* SetTransMatrix */
-extern u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-extern u16 GetClut(s32 x, s32 y);                   /* GetClut */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                          s32 scale);
 extern s32 func_800263E4(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
