@@ -25,7 +25,6 @@
 #include "battle/formation.h"
 #include "battle/frame.h"
 #include "battle/graphics.h"
-#include "battle/highlight.h"
 #include "battle/input.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"
@@ -38,6 +37,7 @@
 #include "battle/work.h"
 #include "action_resolve.h"
 #include "overlays.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 
 /* This unit's functions, declared before their first use. */
@@ -3859,7 +3859,8 @@ u8 member;
 /* Hide the command windows (four panels); without `keep` show the
  * +0x641c lists. */
 void func_8008B108(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown
+ = 0;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
@@ -3870,7 +3871,8 @@ void func_8008B108(u8 keep) {
 /* Show the command windows (four panels, page 1) and frame the camera on
  * the member and its default target. */
 void func_8008B168(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown
+ = 1;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 1;
     D_800D2D28->unkB7 = 1;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));

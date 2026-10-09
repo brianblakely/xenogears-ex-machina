@@ -193,6 +193,7 @@ decomp/src/battle/files.h
 decomp/src/battle/gear_menu.h
 decomp/src/battle/gte.h
 decomp/src/battle/overlays.h
+decomp/src/battle/own_declarations.h
 decomp/src/battle/popup.h
 decomp/src/battle/resident_views.h
 decomp/src/battle/settle.h

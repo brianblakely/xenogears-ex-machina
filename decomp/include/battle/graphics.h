@@ -70,8 +70,10 @@ typedef struct BattleGraphics {
     POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
-    POLY_FT4 unk27C8[1];
-    u8 unk27F0[0x2E08 - 0x27F0];
+    POLY_FT4 cursor[2];       /* +0x27C8 the five-frame cursor glyph (0xe0-0xe4),
+                               * per draw buffer: the menus' and the event
+                               * script messages' */
+    u8 unk2818[0x2E08 - 0x2818];
     POLY_FT4 status[4][10][2]; /* +0x2E08 per member status glyphs; the
                                 * fourth is the party-wide label */
     POLY_FT4 unk3A88[3][80]; /* party panel name glyphs */

@@ -55,6 +55,4 @@ typedef struct ModelPart {
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
-u16 func_8009EF3C(ModelPart *part, s32 scale); /* pose a model hierarchy */
-
 #endif

@@ -96,8 +96,6 @@ extern SVECTOR D_800C35AC[3];
 /* The shattered screen's set-up (800B7424). */
 extern VECTOR D_800C35C4; /* a shard's launch velocity before turning */
 
-void func_800B3658(SVECTOR *amplitude, s32 frames); /* quake the view towards amplitude */
-void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e); /* fade the screen to a colour */
 /* Fade light slot 0; defined without a prototype (to, frames, red, blue,
  * field4C, field4E). */
 void func_800B3CD4();

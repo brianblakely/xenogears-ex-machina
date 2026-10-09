@@ -8,11 +8,9 @@
 #include "resident/heap.h"
 #include "resident/text.h"
 #include "battle/actions.h"
-#include "battle/actor.h"
 #include "battle/combatant.h"
 #include "battle/command.h"
 #include "battle/graphics.h"
-#include "battle/highlight.h"
 #include "battle/input.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"
@@ -25,6 +23,7 @@
 #include "battle/work.h"
 #include "action_resolve.h"
 #include "gear_menu.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 
 /* This unit's functions, declared before their first use. */
@@ -123,7 +122,7 @@ void (*D_800C34DC[])(void) = {
 /* Hide the command windows (three panels); without `keep` show the +0x641c
  * lists. */
 void func_8008CCCC(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
@@ -134,7 +133,7 @@ void func_8008CCCC(u8 keep) {
 /* Show the command windows (three panels, page 4) and frame the camera on
  * the member and its default target. */
 void func_8008CD28(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
     D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 1;
     D_800D2D28->unkB7 = 4;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -515,8 +514,8 @@ void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
         rect->h = h;
         rect->curW = 0;
         rect->curH = 0;
-        D_800D2D28->unkBF[window] = 0;
-        D_800D2D28->unkB8[window] = 1;
+        D_800D2D28->windowOpen[window] = 0;
+        D_800D2D28->windowOpening[window] = 1;
     } else {
         func_8008F6E4(window, x, y, w, h);
         if (wait != 0) {
@@ -528,7 +527,7 @@ void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
 /* Close window `window` and release its two blocks after a frame. */
 void func_8008FA60(u8 window) {
     D_800D2D28->windows[window] = 0;
-    D_800D2D28->unkB8[window] = 0;
+    D_800D2D28->windowOpening[window] = 0;
     func_800716D8();
     func_800320E8(D_800D2E38[window]);
     func_800320E8(D_800D2D90[window]);
@@ -543,7 +542,7 @@ void func_8008FAD8(void) {
 
     for (i = 0; i < 7; i++) {
         rect = D_800D2D90[i];
-        if (D_800D2D28->unkB8[i] != 0 && D_800D2D28->unkBF[i] == 0) {
+        if (D_800D2D28->windowOpening[i] != 0 && D_800D2D28->windowOpen[i] == 0) {
             done = 0;
             if (rect->curW + 32 >= rect->w) {
                 rect->curW = rect->w;
@@ -558,7 +557,7 @@ void func_8008FAD8(void) {
                 rect->curH += 32;
             }
             if (done == 2) {
-                D_800D2D28->unkBF[i] = 1;
+                D_800D2D28->windowOpen[i] = 1;
             }
             func_8008F6E4(rect->style, rect->x + (rect->w >> 1) - (rect->curW >> 1),
                           rect->y + (rect->h >> 1) - (rect->curH >> 1), rect->curW, rect->curH);
@@ -833,9 +832,9 @@ void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks) {
         }
         *ticks = 0;
     }
-    D_800D2D28->unk100 = func_80076A10(*frame + 0xE0, D_800C3EA4->unk27C8, x, y);
-    D_800D2D28->unkA7 = D_800CCB04.buffer;
-    D_800D2D28->unk9E = 1;
+    D_800D2D28->cursorParts = func_80076A10(*frame + 0xE0, D_800C3EA4->cursor, x, y);
+    D_800D2D28->cursorBuffer = D_800CCB04.buffer;
+    D_800D2D28->cursorShown = 1;
 }
 
 /* Show the member's EP and maximum EP as two digit glyphs each (no leading

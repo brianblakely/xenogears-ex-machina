@@ -72,8 +72,6 @@ extern Window *D_800D2DAC; /* the message text window */
 void func_80077454(u8 window); /* set up a window's primitives */
 void func_80079E18(u8 index); /* show battle message window `index` */
 void func_80079E4C(u8 index); /* hide it */
-void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait); /* open a window */
-void func_8008FA60(u8 window); /* close a window */
 
 void func_8008FAD8(void);    /* grow the opening windows */
 

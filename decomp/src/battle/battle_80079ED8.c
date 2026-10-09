@@ -8,7 +8,6 @@
 #include "resident/gamedata.h"
 #include "resident/heap.h"
 #include "battle/actions.h"
-#include "battle/actor.h"
 #include "battle/combatant.h"
 #include "battle/command.h"
 #include "battle/enemy_ai.h"
@@ -16,7 +15,6 @@
 #include "battle/flow.h"
 #include "battle/formation.h"
 #include "battle/graphics.h"
-#include "battle/highlight.h"
 #include "battle/input.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"
@@ -24,9 +22,9 @@
 #include "battle/setup.h"
 #include "battle/turn.h"
 #include "battle/ui.h"
-#include "battle/windows.h"
 #include "battle/work.h"
 #include "gear_menu.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 
 /* Callers convert arguments differently from the definition (800BAF40, in

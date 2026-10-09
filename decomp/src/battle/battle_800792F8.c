@@ -17,6 +17,7 @@
 #include "battle/ui.h"
 #include "battle/windows.h"
 #include "battle/work.h"
+#include "own_declarations.h"
 
 /* Script error screen: clear the event types and, on a debug build (the
  * 8005917c flag), print "Language Error" with the actor and script number

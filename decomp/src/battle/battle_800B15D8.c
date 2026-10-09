@@ -19,6 +19,7 @@
 #include "battle/sprite.h"
 #include "battle/stage.h"
 #include "gte.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 
 /* A command's u16 at offset, and the vertex (or normal) its index at offset

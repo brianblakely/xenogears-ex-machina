@@ -10,7 +10,6 @@
  * each frame (8009E53C's unit, 800A4654-800A7064 but for the scene's ground
  * triangles, and 800A9A50). */
 
-
 /* Run the calls between the two on a stack at the top of the scratchpad. */
 #define SPAD_STACK_ENTER()                                                                         \
     __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"            \

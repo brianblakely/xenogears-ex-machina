@@ -32,6 +32,7 @@
 #include "curve.h"
 #include "files.h"
 #include "overlays.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 #include "sprite_effect.h"
 

@@ -27,8 +27,9 @@ void func_80021B04(SVECTOR *v, s32 x, s32 y, s32 z);
 s32 func_80021C20(); /* a u8, taken as int */
 void func_80021FB8(Sprite *sprite, s32 mode); /* set the idle mode */
 void func_80021FE0(Sprite *sprite, s32 direction); /* turn a sprite to a direction */
-void func_80022224(); /* upload an image: resource, image, its place and its CLUT's place
-                       * (four-byte points by value), mode */
+/* Upload an image: resource, image, its place and its CLUT's place (four-byte
+ * points by value), mode. */
+void func_80022224();
 void func_800223B0(Sprite *sprite, s32 direction);
 s16 func_80023124(GroundPoint to, GroundPoint from); /* the direction between points */
 void func_800242F4(Sprite *sprite, s32 a, s16 b, s16 c, s32 d, s32 e, s32 f, s32 g);

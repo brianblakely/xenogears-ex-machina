@@ -9,7 +9,6 @@
  * 800C11CC) calls it with a sprite, a command number (1-107) and the
  * command's argument bytes. The debug overlay follows a sprite it marks. */
 
-
 extern u8 D_800C3564;    /* 1, or a slot + 2 */
 extern Sprite *D_800C3568; /* the sprite the debugger follows */
 

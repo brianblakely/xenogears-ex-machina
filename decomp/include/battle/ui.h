@@ -49,7 +49,7 @@ typedef struct BattleUi {
     u8 unk99[3];       /* party panel digit buffers */
     u8 unk9C;
     u8 unk9D;
-    u8 unk9E;
+    u8 cursorShown;    /* +0x9E the cursor glyph (graphics +0x27c8) is shown */
     u8 unk9F;
     u8 unkA0;          /* the result screen counts */
     u8 unkA1;
@@ -58,7 +58,7 @@ typedef struct BattleUi {
     u8 unkA4;
     u8 unkA5;
     u8 unkA6;
-    u8 unkA7;
+    u8 cursorBuffer;   /* +0xA7 its draw buffer */
     u8 unkA8;
     u8 unkA9;
     u8 unkAA;          /* frame counter */
@@ -69,8 +69,8 @@ typedef struct BattleUi {
     u8 unkAF;
     u8 windows[7];     /* +0xB0 window shown */
     u8 unkB7;          /* command window page */
-    u8 unkB8[7];       /* window opening */
-    u8 unkBF[7];       /* window fully open */
+    u8 windowOpening[7]; /* +0xB8 */
+    u8 windowOpen[7];    /* +0xBF fully open */
     u8 unkC6;
     u8 unkC7;
     u8 unkC8;
@@ -84,7 +84,7 @@ typedef struct BattleUi {
     s32 unkEC[3];
     s32 unkF8;
     s32 unkFC;
-    s32 unk100;
+    s32 cursorParts;   /* +0x100 its glyph's primitives */
     u16 unk104;
     u16 unk106;
     u8 unk108[4];
@@ -141,14 +141,12 @@ void func_80076BF0(POLY_FT4 *prim); /* the same with bit 0x40 */
 void func_80076C34(POLY_FT4 *prim); /* the same at half brightness */
 void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w); /* place a quad 13 high */
 void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h); /* place a quad */
-void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page); /* set up a quad pair */
 void func_80077698(void); /* set up the direction arrows */
 void func_80077980(void);
 
 /* Decimal digits and text images (battle.c), the cursor glyph (8008CCCC's
  * unit). */
 void func_8008AAA0(u32 value);  /* split a value into decimal digits */
-s32 func_8008AC00(s32 count);   /* allocate a text image block */
 void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 
 #endif

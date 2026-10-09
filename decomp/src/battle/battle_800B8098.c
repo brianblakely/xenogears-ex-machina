@@ -37,6 +37,7 @@
 #include "files.h"
 #include "gte.h"
 #include "overlays.h"
+#include "own_declarations.h"
 #include "popup.h"
 #include "resident_views.h"
 #include "settle.h"

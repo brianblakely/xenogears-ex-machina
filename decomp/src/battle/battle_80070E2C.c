@@ -24,14 +24,12 @@
 #include "battle/formation.h"
 #include "battle/frame.h"
 #include "battle/graphics.h"
-#include "battle/highlight.h"
 #include "battle/input.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"
 #include "battle/menu_pages.h"
 #include "battle/resolver.h"
 #include "battle/scene.h"
-#include "battle/screen.h"
 #include "battle/setup.h"
 #include "battle/turn.h"
 #include "battle/ui.h"
@@ -39,6 +37,7 @@
 #include "battle/work.h"
 #include "gear_menu.h"
 #include "overlays.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 #include "settle.h"
 
@@ -1253,8 +1252,8 @@ void func_80073F08(void) {
     if (D_800D2D28->unk9C != 0) {
         func_800728B8(D_800C3EA4->unkBA8, D_800D2D28->unkF8, D_800D2D28->unkA5);
     }
-    if (D_800D2D28->unk9E != 0) {
-        func_800728B8(D_800C3EA4->unk27C8, D_800D2D28->unk100, D_800D2D28->unkA7);
+    if (D_800D2D28->cursorShown != 0) {
+        func_800728B8(D_800C3EA4->cursor, D_800D2D28->cursorParts, D_800D2D28->cursorBuffer);
     }
     if (D_800D2D28->unk9D != 0) {
         func_800728B8(D_800C3EA4->unk1E68, D_800D2D28->unkFC, D_800D2D28->unkA6);

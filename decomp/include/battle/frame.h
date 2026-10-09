@@ -99,7 +99,6 @@ void func_800BED30(void);        /* clear the battle menu state */
 BattleMenu *func_800BED4C(void); /* open the battle menu */
 void func_800BEDE8(void);        /* close the battle menu */
 void func_800BEE2C(s32 index, s32 mask, s32 mode); /* 800AA320 on a stack of its own */
-s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target); /* list the sprites of the slots in mask */
 s16 func_800BEF24(Sprite *from, Sprite *to); /* the direction between two sprites */
 s16 func_800BEF8C(Sprite *sprite); /* the direction to a sprite's target point */
 void func_800BF0B4(s32 arg0);    /* set the battle menu's state */

@@ -6,7 +6,6 @@
  * and 800A7064-800A8A88; the same code is linked into overlay 2143 at
  * +0x13D3C0/+0x13D684). */
 
-
 #include "common.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"

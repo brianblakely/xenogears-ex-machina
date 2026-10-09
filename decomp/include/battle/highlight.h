@@ -40,7 +40,6 @@ typedef struct {
  * area (the menu's path points overlap it). */
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
-void func_800BCD98(u16 mask);  /* highlight the slots of mask */
 void func_800BD1FC(s32 slot);  /* show the current event's result on a slot */
 void func_800BD2E4(void);      /* show the current event's results on every slot */
 

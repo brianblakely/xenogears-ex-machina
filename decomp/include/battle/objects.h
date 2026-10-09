@@ -217,15 +217,11 @@ typedef struct {
     s16 duration;    /* 0x12 */
 } CameraChannel;
 
-/* Create a stage object from its script and model files. */
-void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
-                   s16 z, s16 w, SVECTOR *position);
 void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
 void func_800AA454(u16 index, u16 mask, s32 script); /* select an object and start its effect */
 s32 func_800AA600(s32 index);            /* the scaled size of an object */
 void func_800AA788(s32 value);           /* a sprite script command: set the flag D_800C3B74 */
 void func_800AA79C(s32 a, s32 b);        /* swap two stage objects */
-void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations); /* reset an object */
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3); /* start or queue its effect */
 void func_800B136C(void);                /* wait until no object is busy */
 void func_800B14CC(s32 keep);            /* end the party's objects other than keep's */

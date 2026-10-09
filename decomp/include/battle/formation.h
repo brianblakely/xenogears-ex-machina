@@ -53,14 +53,12 @@ typedef struct GroupEntry {
 
 extern GroupEntry D_800D301C[32];
 
-s32 func_80085310(u8 slot, u8 target); /* whether target's slot-info +0xa is below slot's */
 /* Plan the approach route into the battle area's path (BattleArea): the
  * actor's position, then up to seven formation points; unused points are
  * 0xFFFF. */
 s32 func_800877E0(u8 actor, u8 target);
 void func_80087EDC(u8 actor, u8 target); /* move actor into target's group */
 void func_800881B8(u8 actor, u8 target); /* move actor alone into target's empty group */
-void func_800883AC(u8 slot);             /* drop a slot from its group */
 void func_80088490(s32 slot); /* give slot a formation group of its own */
 u8 func_800885D0(u8 slot);               /* the slot's group's members among the flagged groups */
 

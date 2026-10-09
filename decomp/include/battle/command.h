@@ -51,7 +51,6 @@ void func_8007FCE8(void);    /* release the menu module block */
 void func_8007FD38(u8 member); /* load the menu module block */
 void func_8007FDEC(void);    /* release the file 3 block */
 void func_8007FE3C(void);    /* load the file 3 block */
-void func_800800E8(u8 member); /* leave a member's menu */
 void func_80080160(u8 member); /* run a party member's command menu */
 void func_80080BD0(void);    /* events done: refresh the actor's menu state */
 void func_80080C94(u8 member); /* an automatic turn */

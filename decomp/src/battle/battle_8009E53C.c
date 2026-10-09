@@ -42,6 +42,7 @@
 #include "effect_vm.h"
 #include "files.h"
 #include "gte.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 
 /* This unit's functions, declared before their first use. */

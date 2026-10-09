@@ -20,9 +20,9 @@
 #include "battle/item_command.h"
 #include "battle/objects.h"
 #include "battle/scene.h"
-#include "battle/screen.h"
 #include "battle/sprite.h"
 #include "battle/sprite_script.h"
+#include "own_declarations.h"
 #include "resident_views.h"
 #include "sprite_effect.h"
 
