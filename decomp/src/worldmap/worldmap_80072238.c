@@ -578,7 +578,7 @@ void func_80073300(void) {
             D_8009BE10 = 7;
             break;
         }
-    } else if ((D_8006F8E5 | D_8006F8E6 | D_8006F8E7) == 0) {
+    } else if ((D_8006D634.inGear[0] | D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
         D_8009BE10 = 1;
     } else {
         D_8009BE10 = 2;
@@ -1267,7 +1267,7 @@ void func_800758C0(void) {
     D_8006D634.worldmap.unk6A = 1;
     D_8006F94E.heading = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
-        (&D_8006D634.worldmap.unk70)[i] = (&D_8006F8E5)[i];
+        (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
     }
     D_8009D14C = D_80059179;
     if (func_80093F18(&D_8009D55C.target) == 4) {
@@ -1386,7 +1386,7 @@ void func_80075D4C(void) {
     applied = (u8 *)&D_8006D634.worldmap.unk70;
     timers = (s16 *)(applied + 0x11E);
     do {
-        state = (&D_8006F8E5)[i];
+        state = D_8006D634.inGear[i];
         if (state != applied[i * 2]) {
             if (state == 0) {
                 actors[i + 1].position.vx = actors[i + 4].position.vx;
@@ -1406,7 +1406,7 @@ void func_80075D4C(void) {
     } while (i < 3);
     count = 0;
     for (i = 0; i < 3; i++) {
-        if (D_8006F368[i] != 0xFF && (&D_8006F8E5)[i] == 1) {
+        if (D_8006D634.party[i] != 0xFF && D_8006D634.inGear[i] == 1) {
             count++;
         }
     }

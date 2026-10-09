@@ -2451,7 +2451,7 @@ s32 func_8008A2C8(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E5 == 0) {
+        if (D_8006D634.inGear[0] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -2468,15 +2468,15 @@ s32 func_8008A2C8(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[0] != 0xFF) {
-            D_8006F8E5 = 1;
+        if (D_8006D634.party[0] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[0] != 0xFF) {
-            D_8006F8E5 = 1;
+        if (D_8006D634.party[0] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
         }
         break;
     case 8:
@@ -2588,7 +2588,7 @@ s32 func_8008A72C(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006F8E5 == 0) {
+        if (D_8006D634.inGear[0] == 0) {
             switch (func_80090A84(actor)) {
             case 2:
             case 4:
@@ -2678,8 +2678,8 @@ s32 func_8008A72C(s32 index) {
         actor->heading = D_8009BE24[7].heading;
         break;
     case 8:
-        if (D_8006F368[1] != 0xFF) {
-            if (D_8006F8E6 == 0) {
+        if (D_8006D634.party[1] != 0xFF) {
+            if (D_8006D634.inGear[1] == 0) {
                 func_80097770(2, 1);
                 actor[1].unk6 = D_8009BD60;
                 func_80097770(5, 8);
@@ -2691,8 +2691,8 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 9:
-        if (D_8006F368[2] != 0xFF) {
-            if (D_8006F8E7 == 0) {
+        if (D_8006D634.party[2] != 0xFF) {
+            if (D_8006D634.inGear[2] == 0) {
                 func_80097770(3, 1);
                 actor[2].unk6 = D_8009BD60;
                 func_80097770(6, 8);
@@ -2704,7 +2704,7 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 10:
-        if (D_8006F368[0] != 0xFF) {
+        if (D_8006D634.party[0] != 0xFF) {
             if (func_80097770(4, 8) != 0) {
                 actor->state = 0xD;
             }
@@ -2736,7 +2736,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x10:
-        if (D_8006F368[1] != 0xFF) {
+        if (D_8006D634.party[1] != 0xFF) {
             if (func_80097770(2, 1) != 0) {
                 actor[1].unk6 = 5;
                 actor->state++;
@@ -2746,7 +2746,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x11:
-        if (D_8006F368[2] != 0xFF) {
+        if (D_8006D634.party[2] != 0xFF) {
             if (func_80097770(3, 1) != 0) {
                 actor[2].unk6 = 6;
                 actor->state++;
@@ -2799,7 +2799,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0x2A:
         point = D_8009CEC4;
-        D_8006F8E5 = 0;
+        D_8006D634.inGear[0] = 0;
         actor->unk58 = 1;
         D_8009D154 = 0;
         scratch->target = actor->position;
@@ -2818,19 +2818,19 @@ s32 func_8008A72C(s32 index) {
             actor->state = 1;
             break;
         case 2:
-            if (D_8006F8E6 == 0) {
+            if (D_8006D634.inGear[1] == 0) {
                 actor->state++;
             }
             break;
         case 3:
-            if ((D_8006F8E6 | D_8006F8E7) == 0) {
+            if ((D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
                 actor->state++;
             }
             break;
         }
         break;
     case 0x2C:
-        if (D_8006F368[1] != 0xFF) {
+        if (D_8006D634.party[1] != 0xFF) {
             if (func_80097770(2, 5) != 0) {
                 actor->state++;
             }
@@ -2839,7 +2839,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x2D:
-        if (D_8006F368[2] == 0xFF || func_80097770(3, 5) != 0) {
+        if (D_8006D634.party[2] == 0xFF || func_80097770(3, 5) != 0) {
             actor->state = 0x40;
         }
         break;
@@ -2863,7 +2863,7 @@ s32 func_8008B2BC(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[1] != 0xFF) {
+    if (D_8006D634.party[1] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
@@ -2887,7 +2887,7 @@ s32 func_8008B2BC(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E6 == 0) {
+        if (D_8006D634.inGear[1] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -2902,15 +2902,15 @@ s32 func_8008B2BC(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[1] != 0xFF) {
-            D_8006F8E6 = 1;
+        if (D_8006D634.party[1] != 0xFF) {
+            D_8006D634.inGear[1] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[1] != 0xFF) {
-            D_8006F8E6 = 1;
+        if (D_8006D634.party[1] != 0xFF) {
+            D_8006D634.inGear[1] = 1;
         }
         break;
     case 8:
@@ -2931,7 +2931,7 @@ s32 func_8008B498(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[1] != 0xFF) {
+    if (D_8006D634.party[1] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
@@ -3005,7 +3005,7 @@ s32 func_8008B644(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006F8E4[index] == 0) {
+        if (D_8006D634.inGear[index - 1] == 0) {
             point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
@@ -3077,7 +3077,7 @@ s32 func_8008B644(s32 index) {
         actor->state++;
         goto walk;
     case 0x2A:
-        D_8006F8E4[index] = 0;
+        D_8006D634.inGear[index - 1] = 0;
         actor->state = 0x40;
         break;
     case 0x30:
@@ -3116,7 +3116,7 @@ s32 func_8008BB40(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[2] != 0xFF) {
+    if (D_8006D634.party[2] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
@@ -3140,7 +3140,7 @@ s32 func_8008BB40(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006F8E7 == 0) {
+        if (D_8006D634.inGear[2] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -3155,15 +3155,15 @@ s32 func_8008BB40(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006F368[2] != 0xFF) {
-            D_8006F8E7 = 1;
+        if (D_8006D634.party[2] != 0xFF) {
+            D_8006D634.inGear[2] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006F368[2] != 0xFF) {
-            D_8006F8E7 = 1;
+        if (D_8006D634.party[2] != 0xFF) {
+            D_8006D634.inGear[2] = 1;
         }
         break;
     case 8:
@@ -3184,7 +3184,7 @@ s32 func_8008BD1C(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006F368[2] != 0xFF) {
+    if (D_8006D634.party[2] != 0xFF) {
         actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         func_800245D8(actor->handle, 0);
         func_80022000(actor->handle, 0x1800);
@@ -3330,7 +3330,7 @@ void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
 void func_8008C28C(WorldmapActor *actor, s32 member) {
     actor->handle = func_80024524(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
                                   D_8009B19C[member], D_8009B1A4[member], 0x40);
-    if ((&D_8006F8E5)[member] == 1) {
+    if (D_8006D634.inGear[member] == 1) {
         func_800245D8(actor->handle, 0);
     } else {
         func_800245D8(actor->handle, 3);

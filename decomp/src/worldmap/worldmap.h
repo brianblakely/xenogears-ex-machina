@@ -49,14 +49,8 @@ extern FileRequest D_8009D3F8[]; /* shared read list, a zero file ends it */
 extern void *D_8009D3FC;
 #define WORLD_READ_LIST ((FileRequest *)((u8 *)&D_8009D3FC - 4))
 
-/* Party: three character ids (0xFF empty) and per-character records. */
-typedef struct {
-    u8 gear; /* piloted gear, 0xFF none */
-    u8 pad1[0xA3];
-} CharacterGear;
-
+/* Party: three character ids (0xFF empty). */
 extern u8 D_8006F368[3];
-extern CharacterGear D_8006D940[];
 extern void *D_8009CD34[3]; /* character model buffers */
 extern void *D_8009BDF8[3]; /* gear model buffers */
 extern s32 D_8009C170;      /* loaded party members */
@@ -80,7 +74,6 @@ extern PolyG4 D_8009D194[4][2]; /* sky gradient bands, per buffer */
 
 /* Halfword view of the three saved gear flags in that same return state. */
 extern u16 D_8006EE70, D_8006EE72, D_8006EE74;
-extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
 
 /* Camera: its target and orientation. */
 typedef struct Camera {
@@ -1184,8 +1177,6 @@ s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s16 func_80094060(s16 row, s16 column);
 
 /* Party vehicle updaters (worldmap_8008C364). */
-extern u8 D_8006F364[]; /* per actor slot: party member state (slots 4-6) */
-extern u8 D_8006F8E1[]; /* per actor slot: riding flag (slots 4-6) */
 
 void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
 s32 func_8008BEC8(WorldmapActor *actor);
@@ -1217,7 +1208,6 @@ typedef struct {
 } PartySpot;
 
 extern PartySpot D_8006EF8A[];
-extern u8 D_8006F8E4[];   /* per party slot: riding */
 extern u16 D_8006EE58[];  /* per party slot: saved heading */
 void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
 void func_80074794(s16 id, VECTOR *position);

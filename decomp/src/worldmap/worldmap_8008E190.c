@@ -311,12 +311,12 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             }
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
-                D_8006F8E6 = 1;
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
-                D_8006F8E7 = 1;
+            if (D_8006D634.party[2] != 0xFF) {
+                D_8006D634.inGear[2] = 1;
             }
             func_80075228();
             D_8009D7D8 = (PathRegion *)-1;
@@ -575,16 +575,16 @@ s32 func_8008E76C(s32 index) {
             func_80097770(0xA, 0xA);
             func_80097770(4, 3);
             func_80097770(1, 3);
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
                 func_80097770(5, 3);
                 func_80097770(2, 3);
-                D_8006F8E6 = 1;
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
+            if (D_8006D634.party[2] != 0xFF) {
                 func_80097770(6, 3);
                 func_80097770(3, 3);
-                D_8006F8E7 = 1;
+                D_8006D634.inGear[2] = 1;
             }
             VEHICLE_STOP();
             D_8006EE68 &= 0x3FFF;
@@ -609,16 +609,16 @@ s32 func_8008E76C(s32 index) {
             func_80097770(8, 0xA);
             func_80097770(1, 3);
             func_80097770(4, 3);
-            D_8006F8E5 = 1;
-            if (D_8006F368[1] != 0xFF) {
+            D_8006D634.inGear[0] = 1;
+            if (D_8006D634.party[1] != 0xFF) {
                 func_80097770(2, 3);
                 func_80097770(5, 3);
-                D_8006F8E6 = 1;
+                D_8006D634.inGear[1] = 1;
             }
-            if (D_8006F368[2] != 0xFF) {
+            if (D_8006D634.party[2] != 0xFF) {
                 func_80097770(3, 3);
                 func_80097770(6, 3);
-                D_8006F8E7 = 1;
+                D_8006D634.inGear[2] = 1;
             }
             VEHICLE_STOP();
             D_8006EE68 &= 0x3FFF;
