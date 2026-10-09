@@ -33,8 +33,7 @@ s32 D_8005A49C;
 void *D_8005A4A0; /* file 0xa7 block */
 s32 D_8005A4A4;
 s32 D_8005A4A8;
-void *D_8005A4AC;
-void *D_8005A4B0;
+u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
 s32 D_8005A4B4;
 u16 D_8005A4B8;
 void *D_8005A4BC; /* file 0xa8 block */

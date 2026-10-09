@@ -428,8 +428,8 @@ void func_8001C1A8(void) {
             func_800295D8(0x6B9, (void *)0x801DC000, 0, 0x80);
             func_80028A60(0);
             func_80028470(0x10, 0);
-            D_8005A4AC = func_80031BDC(0x4000, 0);
-            D_8005A4B0 = func_80031BDC(0x4000, 0);
+            D_8005A4AC[0] = func_80031BDC(0x4000, 0);
+            D_8005A4AC[1] = func_80031BDC(0x4000, 0);
         }
         low = func_80031BDC(4, 1);
         overlay = func_80031BDC((u8 *)low - (u8 *)0x801C5000, 1);
@@ -465,8 +465,8 @@ void func_8001C1A8(void) {
         if (D_80059460 == 5) {
             func_800320E8(D_800658CC);
             func_800320E8(D_8006BE24);
-            func_800320E8(D_8005A4AC);
-            func_800320E8(D_8005A4B0);
+            func_800320E8(D_8005A4AC[0]);
+            func_800320E8(D_8005A4AC[1]);
         }
         D_80059178 = 1;
         func_80019ACC(0);

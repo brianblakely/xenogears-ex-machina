@@ -49,8 +49,7 @@ extern char *D_8004FA9C[7]; /* menu screen names */
 extern void *D_8005945C;
 extern void *D_800658CC;
 extern void *D_8006BE24;
-extern void *D_8005A4AC;
-extern void *D_8005A4B0;
+extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
 
 /* Menu overlay (801c5000) entries. */
 void func_801C62A8(void);
