@@ -26,7 +26,4 @@ typedef struct {
     SPRT sprites[2][4];  /* 60 */
 } TextRollLine;
 
-extern TextRollLine *D_800AF770;  /* 16 lines */
-extern POLY_GT4 D_800AF788[2][2]; /* top and bottom fade per buffer */
-
 #endif

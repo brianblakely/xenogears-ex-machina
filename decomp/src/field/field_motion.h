@@ -14,7 +14,7 @@ s32 func_80099A8C(s32 x);
 
 /* One 0x48-byte record of the controlled actor's movement history (32 at
  * 800b14f0, newest at 800b2360, filled downward). */
-typedef struct {
+typedef struct FieldHistory {
     u32 flags;          /* 00: actor +000 */
     u32 layer_flags;    /* 04: actor +004 */
     s16 position[3];    /* 08: whole x, y, z */

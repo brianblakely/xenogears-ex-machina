@@ -6,7 +6,7 @@ ORIGINAL_SHA256 := 38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1f
 BUILD := .local/decomp/build/field
 IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
-LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt decomp/targets/overlays/field.bss.ld
 SOURCE_DIRS := decomp/src/field
 # The program ends at 0x800af5e8 (file 0x3faf8), where the resident's mode
 # table starts the field BSS. The original packer then appended zero literal

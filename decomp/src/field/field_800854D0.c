@@ -121,13 +121,13 @@ void func_80085678(void) {
     u16 *sounds;
     s32 sound;
 
-    if (D_800C3A38 == 0xFF) {
+    if (FIELD_MOVIE.sound_bank == 0xFF) {
         return;
     }
     times = &D_800AE060[0][0];
     sounds = &D_800AE060[0][1];
     for (;;) {
-        if (D_800B06A0 < times[D_800C3A64 * 2] + D_800C3A2C) {
+        if (D_800B06A0 < times[D_800C3A64 * 2] + FIELD_MOVIE.sound_start) {
             return;
         }
         sound = sounds[D_800C3A64 * 2];
@@ -138,7 +138,7 @@ void func_80085678(void) {
 
 /* Release a movie's sound-effect bank, when one is loaded. */
 void func_80085738(void) {
-    if (D_800C3A38 != 0xFF) {
+    if (FIELD_MOVIE.sound_bank != 0xFF) {
         func_80039FF8();
         func_8003852C(D_800B235C);
         func_800320E8(D_800B235C);
@@ -157,7 +157,7 @@ void func_80085788(void) {
     s32 pos;
     s32 i;
 
-    file = D_800C3A38;
+    file = FIELD_MOVIE.sound_bank;
     if (file != 0xFF) {
         bank = file;
         func_80039FF8();
@@ -214,10 +214,6 @@ void func_80085988(void) {
     D_8004F32C = -1;
 }
 
-/* The music-wave chunk count (D_800B2078.wave_chunks), which the chunk
- * callback addresses as a scalar of its own. */
-extern s32 D_800B2370;
-
 /* Music-wave chunk callback: gather four 2 KiB chunks and open them as a
  * wave bank; later chunks feed the bank. */
 void func_800859DC(WaveChunk *chunk) {
@@ -264,7 +260,7 @@ void func_80085B20(s32 music, s32 unused) {
         if (D_8004F33C != wave) {
             func_80085560(file, 1, (void (*)(s32))func_800859DC);
             D_8004F354 = 1;
-            D_800B2078.wave_chunks = 0;
+            D_800B2370 = 0;
             D_800C3A1C = func_80031BDC(0x2000, 1);
         }
     }
@@ -1244,7 +1240,7 @@ void func_8008861C(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        D_800B02CC[D_800B2078.unk2384].unk30[i][0] = D_800B02CC[D_800B2078.unk2384].unk30[i][1] = 0;
+        D_800B02CC[D_800B2374.record].unk30[i][0] = D_800B02CC[D_800B2374.record].unk30[i][1] = 0;
     }
 }
 
@@ -1257,24 +1253,24 @@ void func_80088674(void) {
     if (actor == 0xFF) {
         actor = 0;
     }
-    D_800B2078.unk2374 = func_800ACDEC(1);
-    D_800B2078.unk2378 = func_800ACDEC(3);
-    D_800B2078.unk237C = func_800ACDEC(5);
-    D_800B2078.unk2380 = func_800ACDEC(7);
+    D_800B2374.actor = func_800ACDEC(1);
+    D_800B2374.frame = func_800ACDEC(3);
+    D_800B2374.layer_actor = func_800ACDEC(5);
+    D_800B2374.layer_node = func_800ACDEC(7);
     D_800B0078->pc += 9;
     func_800A94A4(actor);
-    switch (D_800B2078.unk2378) {
+    switch (D_800B2374.frame) {
     case 0:
-        D_800B2078.unk2378 = 0;
+        D_800B2374.frame = 0;
         break;
     case 1:
-        D_800B2078.unk2378 = 0x10;
+        D_800B2374.frame = 0x10;
         break;
     case 2:
-        D_800B2078.unk2378 = 0x20;
+        D_800B2374.frame = 0x20;
         break;
     case 3:
-        D_800B2078.unk2378 = 0x30;
+        D_800B2374.frame = 0x30;
         break;
     }
     D_800AFC7C += 4;
@@ -1292,24 +1288,24 @@ void func_80088790(void) {
     if (actor == 0xFF) {
         actor = 0;
     }
-    D_800B2078.unk2374 = actor;
-    D_800B2078.unk2378 = func_800ACDEC(2);
-    D_800B2078.unk237C = func_800ACDEC(4);
-    D_800B2078.unk2380 = func_800ACDEC(6);
+    D_800B2374.actor = actor;
+    D_800B2374.frame = func_800ACDEC(2);
+    D_800B2374.layer_actor = func_800ACDEC(4);
+    D_800B2374.layer_node = func_800ACDEC(6);
     D_800B0078->pc += 8;
     func_800A94A4(actor);
-    switch (D_800B2078.unk2378) {
+    switch (D_800B2374.frame) {
     case 0:
-        D_800B2078.unk2378 = 0;
+        D_800B2374.frame = 0;
         break;
     case 1:
-        D_800B2078.unk2378 = 0x10;
+        D_800B2374.frame = 0x10;
         break;
     case 2:
-        D_800B2078.unk2378 = 0x20;
+        D_800B2374.frame = 0x20;
         break;
     case 3:
-        D_800B2078.unk2378 = 0x30;
+        D_800B2374.frame = 0x30;
         break;
     }
     D_800AFC7C += 4;
@@ -1377,7 +1373,7 @@ void func_80088B68(void) {
         bits = 0x40;
         break;
     }
-    D_800B02CC[D_800B2078.unk2384].flags |= bits;
+    D_800B02CC[D_800B2374.record].flags |= bits;
     D_800AFC7C += 4;
     D_800B0078->pc += 7;
 }
@@ -1386,9 +1382,9 @@ void func_80088B68(void) {
  * into its flags and set its particle angle (+76) to operand 5; four batch
  * steps. */
 void func_80088C1C(void) {
-    D_800B02CC[D_800B2078.unk2384].unk24 = func_800ACDEC(1);
-    D_800B02CC[D_800B2078.unk2384].flags |= func_800ACDEC(3) << 8;
-    D_800B02CC[D_800B2078.unk2384].unk76 = func_800ACDEC(5);
+    D_800B02CC[D_800B2374.record].unk24 = func_800ACDEC(1);
+    D_800B02CC[D_800B2374.record].flags |= func_800ACDEC(3) << 8;
+    D_800B02CC[D_800B2374.record].unk76 = func_800ACDEC(5);
     D_800AFC7C += 4;
     D_800B0078->pc += 7;
 }
@@ -1408,14 +1404,14 @@ void func_80088D18(void) {
 /* Set the current emitter record's four +30 pairs from index first on to the
  * selected operands 1..15 (flags byte 0x11); four batch steps. */
 void func_80088D38(s32 first) {
-    D_800B02CC[D_800B2078.unk2384].unk30[first][0] = func_8009CF78(1, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first][1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][0] = func_8009D000(5, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][1] = func_8009D044(7, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][0] = func_8009D088(9, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][1] = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][0] = func_8009D110(0xD, EVENT_OPERAND_BYTE(0x11));
-    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][1] = func_8009D154(0xF, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first][0] = func_8009CF78(1, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first][1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 1][0] = func_8009D000(5, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 1][1] = func_8009D044(7, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 2][0] = func_8009D088(9, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 2][1] = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 3][0] = func_8009D110(0xD, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2374.record].unk30[first + 3][1] = func_8009D154(0xF, EVENT_OPERAND_BYTE(0x11));
     D_800AFC7C += 4;
     D_800B0078->pc += 0x12;
 }
@@ -1429,15 +1425,15 @@ extern s32 D_800ADB40;
 void func_80089004(void) {
     s32 index;
 
-    D_800B2078.unk2384 = index = func_800ACDEC(1);
+    D_800B2374.record = index = func_800ACDEC(1);
     D_800B02CC[index].unk24 = 1;
-    D_800B02CC[D_800B2078.unk2384].unk52 = D_800B2078.unk2374;
-    D_800ADB40 = D_800B02CC[D_800B2078.unk2384].unk52;
-    D_800B02CC[D_800B2078.unk2384].unk00 = 0;
-    D_800B02CC[D_800B2078.unk2384].unk76 = 0;
-    D_800B02CC[D_800B2078.unk2384].count = func_800ACDEC(3);
-    D_800B02CC[D_800B2078.unk2384].unk02 = func_800ACDEC(5);
-    D_800B02CC[D_800B2078.unk2384].unk04 = func_800ACDEC(7);
+    D_800B02CC[D_800B2374.record].unk52 = D_800B2374.actor;
+    D_800ADB40 = D_800B02CC[D_800B2374.record].unk52;
+    D_800B02CC[D_800B2374.record].unk00 = 0;
+    D_800B02CC[D_800B2374.record].unk76 = 0;
+    D_800B02CC[D_800B2374.record].count = func_800ACDEC(3);
+    D_800B02CC[D_800B2374.record].unk02 = func_800ACDEC(5);
+    D_800B02CC[D_800B2374.record].unk04 = func_800ACDEC(7);
     func_8008861C();
     D_800AFC7C += 4;
     D_800B0078->pc += 9;
@@ -1446,12 +1442,12 @@ void func_80089004(void) {
 /* Event: set the current emitter record's +0c and +14 vectors from the
  * selected operands 1..11 (flags byte 13); four batch steps. */
 void func_80089174(void) {
-    D_800B02CC[D_800B2078.unk2384].unk0C.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk0C.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk0C.vz = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk14.vx = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk14.vy = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk14.vz = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk0C.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk0C.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk0C.vz = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk14.vx = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk14.vy = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk14.vz = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
     D_800AFC7C += 4;
     D_800B0078->pc += 0xE;
 }
@@ -1460,12 +1456,12 @@ void func_80089174(void) {
  * (operands 3, 5, 7), spawn radius +26 (operand 9) and velocity spread +28
  * (operand 11), selected by flags byte 13; four batch steps. */
 void func_80089374(void) {
-    D_800B02CC[D_800B2078.unk2384].unk08 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk1C.vx = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk1C.vy = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk1C.vz = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk26 = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk28 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk08 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk1C.vx = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk1C.vy = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk1C.vz = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk26 = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk28 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
     D_800AFC7C += 4;
     D_800B0078->pc += 0xE;
 }
@@ -1477,13 +1473,13 @@ void func_80089374(void) {
 void func_80089574(void) {
     s16 flags;
 
-    D_800B02CC[D_800B2078.unk2384].unk56 = func_800ACDEC(1);
-    D_800B02CC[D_800B2078.unk2384].unk58 = func_800ACDEC(3);
-    D_800B02CC[D_800B2078.unk2384].unk54 = func_800ACDEC(5);
+    D_800B02CC[D_800B2374.record].unk56 = func_800ACDEC(1);
+    D_800B02CC[D_800B2374.record].unk58 = func_800ACDEC(3);
+    D_800B02CC[D_800B2374.record].unk54 = func_800ACDEC(5);
     flags = func_800ACDEC(7);
-    D_800B02CC[D_800B2078.unk2384].flags = flags | (func_800ACDEC(9) * 2) | D_800B2078.unk2378;
-    D_800B02CC[D_800B2078.unk2384].unk72 = D_800B2078.unk237C;
-    D_800B02CC[D_800B2078.unk2384].unk74 = D_800B2078.unk2380;
+    D_800B02CC[D_800B2374.record].flags = flags | (func_800ACDEC(9) * 2) | D_800B2374.frame;
+    D_800B02CC[D_800B2374.record].unk72 = D_800B2374.layer_actor;
+    D_800B02CC[D_800B2374.record].unk74 = D_800B2374.layer_node;
     D_800AFC7C += 4;
     D_800B0078->pc += 11;
 }
@@ -1491,12 +1487,12 @@ void func_80089574(void) {
 /* Event: set the current emitter record's +5a and +62 vectors from the
  * selected operands 1/3 and 5/7 (flags byte 9); four batch steps. */
 void func_800896D4(void) {
-    D_800B02CC[D_800B2078.unk2384].unk5A.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
-    D_800B02CC[D_800B2078.unk2384].unk5A.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
-    D_800B02CC[D_800B2078.unk2384].unk5A.vz = 0;
-    D_800B02CC[D_800B2078.unk2384].unk62.vx = func_8009D000(5, EVENT_OPERAND_BYTE(9));
-    D_800B02CC[D_800B2078.unk2384].unk62.vy = func_8009D044(7, EVENT_OPERAND_BYTE(9));
-    D_800B02CC[D_800B2078.unk2384].unk62.vz = 0;
+    D_800B02CC[D_800B2374.record].unk5A.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2374.record].unk5A.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2374.record].unk5A.vz = 0;
+    D_800B02CC[D_800B2374.record].unk62.vx = func_8009D000(5, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2374.record].unk62.vy = func_8009D044(7, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2374.record].unk62.vz = 0;
     D_800AFC7C += 4;
     D_800B0078->pc += 10;
 }
@@ -1504,12 +1500,12 @@ void func_800896D4(void) {
 /* Event: set the current emitter record's bytes +6a..+6c and +6e..+70 from
  * the selected operands 1..11 (flags byte 13); four batch steps. */
 void func_80089880(void) {
-    D_800B02CC[D_800B2078.unk2384].unk6A = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk6B = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk6C = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk6E = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk6F = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
-    D_800B02CC[D_800B2078.unk2384].unk70 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk6A = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk6B = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk6C = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk6E = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk6F = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2374.record].unk70 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
     D_800AFC7C += 4;
     D_800B0078->pc += 0xE;
 }
@@ -4452,10 +4448,13 @@ void func_80091A78(void) {
 void func_80091AD4(void) {
 }
 
-extern RECT D_800AF5E8[32];
-extern s16 D_800AF6E8[32];
-extern s16 D_800AF728[32];
-extern u16 D_800AF768;
+/* The unit's own uninitialized variables, which only 80091adc reads: the
+ * first of the field BSS (800af5e8-800af76c), the resident clearing it from
+ * 800af5e4 with a pre-increment loop. */
+static RECT D_800AF5E8[32];
+static s16 D_800AF6E8[32];
+static s16 D_800AF728[32];
+static u16 D_800AF768;
 
 /* Record a VRAM rectangle in the 32-slot ring at 800af5e8 and move it to
  * (dx, dy), or clear it to black when `clear` is set. */
@@ -4561,12 +4560,6 @@ void func_800920D8(void) {
     }
 }
 
-typedef struct {
-    u8 *data[32];
-    s16 size[32];
-} ByteTables;
-extern ByteTables D_800AFF2C;
-
 /* Event fe 40: store the low byte of raw operand 5 at index operand 3 of the
  * buffer of window-list entry operand 1 (800afea8, created by opcode da), when
  * the index is below the entry's length. */
@@ -4578,8 +4571,8 @@ void func_80092148(void) {
     table = func_800ACDEC(1);
     index = func_800ACDEC(3);
     value = func_800ACDB8(5) & 0xFFFF;
-    if (index < D_800AFF2C.size[table]) {
-        D_800AFF2C.data[table][index] = value;
+    if (index < D_800AFEA8.lengths[table]) {
+        D_800AFEA8.buffers[table][index] = value;
     }
     D_800B0078->pc += 7;
 }
@@ -5112,7 +5105,7 @@ extern s32 D_800ADB64;
 void func_80093740(void) {
     D_800B00C0 = 1;
     D_800ADB64 = 0;
-    D_80059171 = D_800B2078.unk236C;
+    D_80059171 = D_800B236C;
     D_8004F350 += 1;
     D_800B0078->pc += 1;
 }
@@ -8019,9 +8012,9 @@ void func_8009B184(void) {
     i = 0;
     D_800B2078.forced_position = 0;
     D_800B2078.party_processing_mode = 0;
-    D_800B2078.history[2] = 0;
-    D_800B2078.history[1] = 0;
-    D_800B2078.history[0] = 0;
+    D_800B2360[2] = 0;
+    D_800B2360[1] = 0;
+    D_800B2360[0] = 0;
     D_800B2078.preserve_nonplayer_motion = 0;
     do {
         i++;
@@ -8071,9 +8064,9 @@ void func_8009B338(void) {
     s32 i;
 
     i = 0;
-    D_800B2078.history[2] = 0;
-    D_800B2078.history[1] = 0;
-    D_800B2078.history[0] = 0;
+    D_800B2360[2] = 0;
+    D_800B2360[1] = 0;
+    D_800B2360[0] = 0;
     D_800B2078.preserve_nonplayer_motion = 0;
     do {
         i++;
@@ -9739,7 +9732,7 @@ void func_8009F5F4(void) {
                 jump:
                     if (func_80081F5C(D_800B0078) == 0) {
                         D_800B0078->flags |= 0x800;
-                        D_800ADB28 = D_800B2078.history[0];
+                        D_800ADB28 = D_800B2360[0];
                     }
                 }
             } else {
@@ -9749,7 +9742,7 @@ void func_8009F5F4(void) {
                     }
                     if (D_800ADB64 == 0xFF && func_80081F5C(D_800B0078) == 0) {
                         D_800B0078->flags |= 0x800;
-                        D_800ADB28 = D_800B2078.history[0];
+                        D_800ADB28 = D_800B2360[0];
                         D_800B0078->unkE8 = 0xFF;
                         D_800B2078.repeat_remaining = D_800B2078.repeat_delay;
                     }
@@ -11097,8 +11090,8 @@ void func_800A3474(void) {
     D_800AFC50 += 0x74;
     COPY_BLOCK(D_800AF880.components.collision_attributes, D_800AFC50, 0x400);
     D_800AFC50 += 0x400;
-    COPY_BLOCK(&D_800B2078, D_800AFC50, 0x2E4);
-    D_800AFC50 += 0x2E4;
+    COPY_BLOCK(&D_800B2078, D_800AFC50, sizeof(FieldWork));
+    D_800AFC50 += sizeof(FieldWork);
     COPY_BLOCK(&D_800AF880, D_800AFC50, 0x1C8);
     D_800AFC50 += 0x1C8;
     for (i = 0; i < D_800ADBFC; i++) {
@@ -11188,8 +11181,8 @@ void func_800A3F4C(void) {
     D_800AFC50 += 0x74;
     COPY_BLOCK(D_800AFC50, D_800AF880.components.collision_attributes, 0x400);
     D_800AFC50 += 0x400;
-    COPY_BLOCK(D_800AFC50, &D_800B2078, 0x2E4);
-    D_800AFC50 += 0x2E4;
+    COPY_BLOCK(D_800AFC50, &D_800B2078, sizeof(FieldWork));
+    D_800AFC50 += sizeof(FieldWork);
     COPY_BLOCK(D_800AFC50, &D_800AF880, 0x1C8);
     D_800AFC50 += 0x1C8;
     for (i = 0; i < D_800ADBFC; i++) {

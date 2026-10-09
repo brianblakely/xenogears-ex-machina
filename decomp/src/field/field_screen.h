@@ -12,7 +12,7 @@
 
 /* The five screen pieces (800b11ac), each with a quad and draw mode per
  * draw buffer. */
-typedef struct {
+typedef struct ScreenPieces {
     DR_MODE modes[5][2];   /* 000 */
     RECT windows[5][2];    /* 078: texture windows */
     POLY_FT4 quads[5][2];  /* 0C8 */
@@ -25,20 +25,12 @@ extern SVECTOR D_800B00B8; /* piece rotation */
 #define GRID_COLUMNS 20
 #define GRID_QUADS (GRID_ROWS * GRID_COLUMNS)
 
-typedef struct {
+typedef struct ScreenGrid {
     POLY_GT4 quads[2][GRID_QUADS]; /* 0000: per draw buffer */
     s16 shade[4][GRID_QUADS];      /* 71C0: per corner */
 } ScreenGrid;
 
-/* A draw mode followed by per-buffer primitives not used here (800b1e24,
- * 0xc0 bytes per draw buffer). */
-typedef struct {
-    DR_MODE mode;
-    u8 unk0C[0xC0 - 0xC];
-} GridMode;
-
 extern ScreenGrid *D_800B00C4;
-extern GridMode D_800B1E24[2];
 extern s32 D_800C3A40; /* fade radius */
 
 extern s32 D_8005A4C0;   /* resident: map read-ahead size */

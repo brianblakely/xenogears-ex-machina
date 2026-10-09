@@ -470,6 +470,10 @@ converted to C per unit. What converting the targets' `.data` established:
   unit at its vram past the file keep its names out of `undefined_syms_auto.txt`,
   whose absolute values would otherwise override the C definitions without a
   warning, and the link asserts the bounds the resident's mode table clears.
+  Where it lies past the file (field) it is not loaded, and the yaml still lists each
+  `.bss` subsegment with its vram and the segment's `bss_size`: splat then leaves
+  their names out of `undefined_syms_auto.txt`, so the link places every variable
+  from its definition.
 - GCC emits a unit's function-local statics, then its file-scope tentative
   definitions in the order of their first declaration (a header's `extern` counts),
   and maspsx allocates both in the unit's `.sbss`/`.bss`, packed without alignment
@@ -504,11 +508,21 @@ converted to C per unit. What converting the targets' `.data` established:
   is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
-  (slot39_common.c, menu_common.c, ovl2602_common.c, battle_common.c, mdec
-  commons/), which reproduces the linker's placement rather than modelling it. It
+  (slot39_common.c, menu_common.c, ovl2602_common.c, battle_common.c,
+  field_common.c, mdec commons/), which reproduces the linker's placement rather than modelling it. It
   defines them ahead of the headers that declare them, structures by their tag: GCC
   2.6.3 lays out such a tentative definition once a header completes the type.
   Zeros a packer added past the program are file padding (Compressed containers).
+- Code shows where an object starts and how far it reaches. A member at a nonzero
+  offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
+  to any other offset of the symbol and which can stay in a register (hoisted by
+  loop.c in field 80077e88, kept across a call in 800859dc); a variable of its own is
+  addressed absolutely at every use. Relative addressing (`addiu a0, s2, -0x162`)
+  and block copies span one object. Field's work block 800b2078 ends at 800b235c,
+  the 0x2e4 bytes 800a3f4c saves, and nothing addresses past 800b2358 from it;
+  800b235c, 800b2360, 800b236c and 800b2370 are commons of their own (800815f0,
+  80081c54, 80085738, 8008848c and 800859dc do not match them as members), the
+  effect launch fields one struct from 800b2374.
 - The menu (GCC 2.7.2) splits its uninitialized variables by size. Those of up to
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's
@@ -539,7 +553,8 @@ converted to C per unit. What converting the targets' `.data` established:
   taken for padding.
 - The resident clears each mode overlay's `.bss` from the address its mode table
   records with a pre-increment loop, so the first object sits 4 bytes later (movie:
-  80076f38, counters at 80076f3c; field's RECT ring).
+  80076f38, counters at 80076f3c; field's RECT ring). `field.bss.ld` fails the link
+  unless field's linked `.bss` is exactly that span.
 - Embedded game data stays generated and is classified `asset` with its format
   (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that

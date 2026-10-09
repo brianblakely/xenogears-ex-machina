@@ -27,7 +27,7 @@ extern s32 D_800AFE78;
 extern s32 D_800AFE7C;
 /* The picture's marker sprites (800b1df0), each with a draw mode per
  * draw buffer; only the first (the controlled actor's spot) is drawn. */
-typedef struct {
+typedef struct PictureMarks {
     DR_MODE modes[16][2]; /* 000 */
     SPRT sprites[16][2];  /* 180 */
 } PictureMarks;
