@@ -16,7 +16,7 @@ display and sound modes) and [scripts/interpreters.md](scripts/interpreters.md)
 
 Scale: `make -C decomp all-coverage` counts the 25 distinct images
 (SLUS_006.69 repeats SLUS_006.64). It finds 4,436 functions (1,545,260 bytes)
-of compiled C, 68 (16,028 bytes) of handwritten assembly and 452 (71,168 bytes)
+of compiled C, 68 (16,028 bytes) of handwritten assembly and 458 (71,168 bytes)
 of PsyQ SDK code, with no remaining assembly or placeholders. Regenerate these
 numbers rather than copying them.
 
@@ -29,7 +29,7 @@ Commands and inputs are in [matching.md](matching.md).
 
 | Check | What it establishes |
 | --- | --- |
-| `make -C decomp all-split all-verify` | every rebuilt image is byte-identical to the user's original (26 targets); a linker-script name inside an image fails it |
+| `make -C decomp all-split all-verify` | every rebuilt image is byte-identical to the user's original (26 targets); a linker-script name inside an image fails it, and so does an own address the link did not relocate; then every address a link takes from another image must agree with that image's rebuilt symbols, and the resident's mode table with the mode overlays' links (`tools/cross_image.py`) |
 | `make -C decomp all-coverage` | which class produced each byte: C, sdk, handwritten, asset, included, text_data |
 | `make -C decomp all-container` | every packed container (`CONTAINERS` in the target `.mk` files, 14 across both discs) is reproduced from the rebuilt images |
 | `python3 tools/matching_ram.py CAPTURE --targets` | which rebuilt images an original RAM capture holds unchanged |
@@ -345,62 +345,36 @@ narrowing.
 | Timing and pacing | `VSync`, root counters, `DrawSync`, polls | Timing | virtual clock; [consequences below](#timing-consequences-for-a-port) |
 | Interrupt work | vblank, sound tick, SPU, CD, MDEC, DrawSync callbacks, card events | Interrupt-context work | fixed delivery points, recorded for replay |
 | Control flow | entry, stack reset, dispatcher, mode exits, soft reset, arena coroutine, self-modifying patcher | Control flow and state | host loop with a non-local mode exit; nested fiber |
-| BIOS Kanji ROM | `Krom2RawAdd` (save titles; staff roll through unused event BE) | Services | needs the user's BIOS font or a labelled substitute |
+| BIOS Kanji ROM | `Krom2RawAdd` (save titles; the staff roll, which only the unused field ext `be` enables) | Services, BIOS Kanji ROM | needs the user's BIOS font or a labelled substitute |
 | Movies | mdec `St*` streaming, libpress, MDEC DMA callback | Interrupt-context work; Presentation | software MDEC; logical movie clock without output |
 
 ### Disc and files
 
 [original-boundaries.md](original-boundaries.md#disc-and-files) describes the
-disc service: the index and directory tables, the read entries and their
-callbacks, the drive commands and retries, the streams and the disc swap. What
-a port needs from it:
+disc service: the index and directory tables, the drive's users (the resident
+disc unit behind resident/cd.h, the world map's terrain reader, the movie
+library's `St*` ring, the swap's disc check and the movie overlay's development
+tools), the read entries and their callbacks, the drive commands and retries,
+the streams, the disc swap and the development PC file server. What a port
+takes from it:
 
-- **Who commands the drive.** The resident disc unit (main_8002709C.c, API in
-  resident/cd.h) reads files through the disc's index. The world map's terrain
-  reader (worldmap_80094A5C.c `func_8009699C`, `func_80096A6C`,
-  `func_80096C0C`) and the movie library (mdec.c, libcd's `St*` ring) send
-  their own commands for sectors they look up in that index (`func_800289D0`).
-  The swap's disc check (slot39_801E8070.c `func_801E93A0`) and the movie
-  overlay's development tools (movie.c) command the drive as well. A read entry
-  starts a read and returns, and the CD callbacks finish it. Callers poll
-  `func_800286CC`, which for a file list counts the files still to come: the
-  world map goes on once fewer than three are left
-  (`while (func_800286CC() >= 3)`, eleven sites), so a port must report the
-  count, not only busy.
-- **Commands.** The resident sends Getstat, Setloc, ReadN, SeekL, Pause, Stop,
-  Standby, Setmode and GetTN. Its Setfilter state (12) and the state after it
-  (8) are dead code: only state 11 enters 12, for retry reason 5, and only
-  states 12 and 8 set reason 5 (main_8002709C.c `func_8002A68C`). The shipped
-  Setfilter is mdec `movie_start`'s: file 1 and the movie's channel, when the
-  caller's select bit 0 asks for XA audio (mdec.c).
-- **Disc swap.** slot39 asks for a disc until `func_80028530` reports it
-  (`func_801C8694`). `func_801E93A0` polls Getstat until the lid opens and
-  closes and the motor runs, sends GetTN, Setloc to sector 0 and SeekL, then
-  reads the label at sector 0x17 and the new disc's index and directory at
-  sectors 0x18 and 0x28 over the copies in the resident image; RAM is kept. A
-  port's drive presents that sequence.
-- **The host-file path: an original seam, with gaps.** A boot word other than 0
-  and -1 selects the development PC file server (`func_80028230` keeps it as the
-  name table `D_8004FE48`). The resident tests that word, and the world map,
-  mdec, slot39 and movie test it through `func_8002C3D8`; then they call libsn
-  instead of the drive:
-  - sizes, whole files and file lists are read inside the call
-    (`func_80028738`, `func_80029690`, `func_80029AFC`), and so is an image
-    stream, which `func_80029EB0` pumps to its end before it returns;
-  - a ring stream (`func_80029690` with flags 0x100, the field's music, or
-    0x200, mdec's host movie stream) is only opened at the call, then read one
-    0x800-byte sector per poll (`func_80028B14`, `func_80028F30`);
-  - the world map reads one queued request list per step (`func_800967E4`),
-    and the swap loads `c:\work\cdrom.mdg`, `.fid` and `.fnd` (`cdrom2.*` for
-    disc 2) instead of reading the disc (`func_801E93A0`);
-  - raw sector reads are refused: `func_8002954C` returns -1. Its shipped users
-    are the arena's portraits (menu4.c `func_80080644`, two sectors inside file
-    6 addressed from its first sector), the movie overlay's development tools
-    (movie.c) and, on the disc path only, the swap's label and index.
-
-  A port that backs these calls with its asset store must still serve raw
-  reads by LBA (the arena) and the ring streams sector by sector. Reads that
-  end inside the call also change how many frames run during a load
+- **Serve every user from sectors.** Back the resident API, the world map's
+  request lists, the movie ring and the swap's disc check with the imported
+  discs, and the raw sector reads with them: the arena's portraits and the
+  swap's label and index ([Importing the discs](#importing-the-discs)).
+- **Report counts, not only busy.** `func_800286CC` counts the files of a list
+  still to come, and the world map goes on once fewer than three are left
+  (`while (func_800286CC() >= 3)`, eleven sites).
+- **Present the swap.** The drive shows the sequence that section gives for
+  `func_801E93A0`: the lid opening and closing, a running motor, GetTN, Setloc
+  and SeekL, the label at sector 0x17 and the other disc's index and directory
+  at sectors 0x18 and 0x28. RAM is kept.
+- **The host-file path is an original seam, with gaps.** It finishes sizes,
+  whole files, file lists and image streams inside the call, reads a ring
+  stream a sector per poll and refuses raw sector reads (`func_8002954C`
+  returns -1). A port that backs these calls with its asset store must still
+  serve raw reads by LBA (the arena) and the ring streams sector by sector.
+  Reads that end inside the call also change how many frames run during a load
   ([Timing consequences](#timing-consequences-for-a-port)).
 
 ### Importing the discs
@@ -452,10 +426,10 @@ waits. What follows for a port:
   also moves the random stream. A lag-free port diverges from a lagging original
   unless it replays the recorded per-frame overrun
   ([Open questions](#open-questions)).
-- **Frames run while the disc reads.** Battle and the field run frames until a
-  read ends (battle_800B8098.c `func_800B8354`, field_800A4748.c
-  `func_800A7394`), the field's frame feeds its music ring, and the dispatcher
-  waits for the overlay read its mode started earlier
+- **Frames run while the disc reads.** Battle runs frames until the disc is
+  idle (battle_800B8098.c `func_800B8354`), the field does so before a movie
+  (field_800A4748.c `func_800A7394`), the field's frame feeds its music ring,
+  and the dispatcher waits for the overlay read its mode started earlier
   ([Mode dispatcher](#mode-dispatcher)). A disc service that completes reads at
   once runs fewer of these frames than the drive did.
 - **A headless runtime must run the sound driver.** Field event `fe 64`
@@ -596,6 +570,7 @@ instruction on either disc. For Phases 7, 11 and 12:
 | Battle enemy, AI, effect and event files | battle, ovl2615, ovl3087 | [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md) | none |
 | Formations and encounter sets | field component 6 into `D_800658DC`, world map `D_8009D73C`, battle `func_80070F40`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
+| Cue timelines: field movie sounds, world map terrain texture animations | field `func_80085678`; world map `func_80074F2C`, `func_80075104` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
 | Save files | slot39 `func_801CBD90`, `func_801CB304` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
 | Movies (STR, XA) | mdec, movie, field `func_800A7C58` | VLC only (`src/analysis/mdec_codec.hpp`) | IDCT, colour conversion and XA ADPCM |
 
@@ -612,16 +587,21 @@ place.
   splat data segment inside `.text` (`battle_effect_script` in
   `slus_006.64.yaml`) that only the battle overlay reads, for the slot-highlight
   ring; and, through `INCLUDE_ASSET`, the boot logo `D_8004EABC`, a packed image
-  `D_8004FBD8`, the console font `D_80050240`, and the error sound banks
-  `D_80050910` (used in place as a `SoundBank`) and `D_80050940`. In the menu:
-  the sprite model `D_80091FB0` (relocated in place by `func_8002C59C`) and the
-  arena scene and setup scripts. In the world map: the actor scripts and the
-  scene directors' cue tables.
+  `D_8004FBD8`, the glyph `D_800501D0` of the character pair 0xFF 0xFF, the
+  console font `D_80050240`, and the error sound banks `D_80050910` (used in
+  place as a `SoundBank`) and `D_80050940`. In the field: the movie sound
+  timelines `D_800AE060`. In the menu: the sprite model `D_80091FB0` (relocated
+  in place by `func_8002C59C`) and the arena scene and setup scripts. In the
+  world map: the terrain texture animation sequences, the actor scripts and the
+  scene directors' cue tables ([timelines.md](scripts/timelines.md) and the
+  classification lines give each format and reader).
 - **`INCLUDE_ORIGINAL`/`INCLUDE_RODATA` objects** (`included` lines). These are
-  real variables, tables and strings kept original because stray assembler
-  bytes fill their padding, or, for the SDK strings, because several library
-  functions share them. A port build needs their values imported, or written as
-  C once the padding no longer matters.
+  real variables, tables and strings kept original because stray bytes that
+  nothing reads follow them, in their alignment padding or before the next
+  unit's data ([matching.md](matching.md), What counts as recovered source),
+  or, for the SDK strings, because several library functions share them. A
+  port build needs their values imported, or written as C once the stray bytes
+  no longer matter.
 - **The embedded disc data** of the inserted disc's executable
   (0x80010000-0x80018080: the boot word, index and directory table), the SDK
   data tables (libgte, the libpress VLC tables, the reverb presets) and the BIOS
@@ -741,7 +721,7 @@ revision:
 
 | Diagnostic | x86_64-linux-gnu | arm64-apple-macos | x86_64-pc-windows-msvc | wasm32, i686 | Cause |
 | --- | --- | --- | --- | --- | --- |
-| pointer to integer casts | 657 in 45 files (+19 from `void *`) | same | 766 in 50 files (+19) | 0 | 32-bit addresses kept in integers; on Windows also the casts to PsyQ's 32-bit `u_long` (packet words, the EXE header) |
+| pointer to integer casts | 660 in 45 files (+19 from `void *`) | same | 769 in 50 files (+19) | 0 | 32-bit addresses kept in integers; on Windows also the casts to PsyQ's 32-bit `u_long` (packet words, the EXE header) |
 | integer to pointer casts | 278 (+33 to `void *`) | same | 279 (+33) | 2 | pointers rebuilt from 32-bit words |
 | non-constant static initializers | 17 in 3 files | same | 18 in 4 files | 0 | function addresses stored as `s32` (world map `D_80099E8C`; menu3.c, menu4.c); on Windows also header.c's EXE header |
 | failed `LAYOUT_CHECK` | 3 (battle/area.h, battle/effect.h, battle/scene.h) | same | same | 0 | asserted offsets of structures with pointers |
@@ -777,7 +757,7 @@ therefore the first Phase 2 decision.
 | Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle_command.h); `battle.data.ld` names `D_800C34B3` and `D_800C31D4` before their tables; menu5.c `func_80085EC8` writes `arrows[1][3..5]` past its array | explicit range-checked index arithmetic natively |
 | Decompressors read past files | the overlay LZSS decoder reads its final flag byte past the file (tools/extraction/overlays.py); arena model files and map 145's messages read past their bytes ([arena-frame-events.md](scripts/arena-frame-events.md), [text-control.md](scripts/text-control.md)) | zero-pad imported files to whole sectors; bound the decoder |
 | Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch`/`TerrainPassScratch` in worldmap/worldmap.h | a 1 KB static buffer behind one accessor |
-| Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `D_8001808C`); slot tenants are called by address (`func_8001C1A8`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
+| Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `D_8001808C`); slot tenants are called by address (`func_8001C1A8`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
 | Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `D_80018088` (which `func_8001996C` writes) and `D_8001808C`, and `section(".text")` on the menu6.c table `D_80088BFC`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. battle_8008CCCC.c declares `D_800CCB34_word __asm__("D_800CCB34")`: where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `D_800CCB34` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
 | K&R calls and per-target prototypes | unprototyped calls pass unpromoted arguments ([matching.md](matching.md)); targets declare shared functions differently (`own_declarations.h`) | canonical prototypes and thunks in native-only headers; in WebAssembly a mismatched indirect call traps |
 | Non-volatile polling | `while (D_8005957C & 0x10)` was compiled to test once (world map); other polls re-read through calls (`func_80028A60` loops on `func_800286CC`) | deliver interrupts at yield points inside polls; do not rely on the host compiler re-reading globals |
@@ -801,7 +781,7 @@ in replays.
 | Lag changes battle | `func_800BE790` | see [Timing consequences](#timing-consequences-for-a-port) |
 | Model renderers never reject overflowed faces | `model_draw.s` (reads LZCR, not FLAG) | oversized triangles reach the GPU ([original-boundaries.md](original-boundaries.md)) |
 | Soft reset keeps modified `.data` | `func_80019CD0` jumps to the entry | not equivalent to restarting the process |
-| Unreachable content stays off | the staff roll needs event BE, which no shipped script uses (`tools/analysis/staff_roll.py`); the field's debug key into map 0 needs the development word ([field-events.md](scripts/field-events.md)) | optional content, not default behaviour |
+| Unreachable content stays off | the staff roll needs field ext `be` (`enable_movie_overlay`), which no shipped script uses ([original-boundaries.md](original-boundaries.md), Services: BIOS Kanji ROM); the field's debug key into map 0 needs the development word ([field-events.md](scripts/field-events.md)) | optional content, not default behaviour |
 
 ## Open questions
 
@@ -809,7 +789,7 @@ in replays.
 | --- | --- | --- |
 | What the uninitialized reads that can change gameplay compute on hardware | the `func_8009A2D4`, `func_80072324`, `func_80096FBC` and ovl2143 `func_801E5D44` (event type 8) sites above | a targeted capture per site, or a census showing shipped data never reaches the unset path |
 | How often battle frames overrun on hardware | `D_80059494` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `D_80059494` from captures, or an accepted lag-free definition for Phase 3 parity |
-| Conflicting shared views | `D_8006F8EA` is a u16 flags word in ovl2596.c (and in `func_8009A2D4`) but a u8 per-part durability array in battle/combatant.h (battle_80079ED8.c, battle_8008CCCC.c); targets still keep partial views of the game data beside resident/gamedata.h | reconcile from the readers, then one canonical type per address |
+| Conflicting shared views | `D_8006F8EA` is the game data's u16 flags word (`flags` in resident/gamedata.h, read so by the battle's `func_8009A2D4` and ovl2596.c), but slot39 also takes its address as the base of the gears' ammo bytes (`GEAR_PART_DURABILITY`, slot39/menu.h) and `D_8006F8BA` as that of character 4's, where the battle reads `ammo` and `gearAmmo` ([field-events.md](scripts/field-events.md)); targets still keep partial views of the game data beside resident/gamedata.h | reconcile from the readers, then one canonical type per address |
 | The disc and stream boundary | the code ([Disc and files](#disc-and-files)); no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
