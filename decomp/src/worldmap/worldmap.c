@@ -142,7 +142,7 @@ void func_80070CFC(void) {
             }
             D_8006D634.map = D_8009D7D8->scene;
             D_8006D634.entry[0] = D_8009BD38.vy;
-            D_8006F954[0] = D_8009D7D8->entry;
+            D_8006D634.entry[2] = D_8009D7D8->entry;
         }
         D_8006D634.vars[2] = D_8009BD0C + 0x400;
         break;
@@ -265,9 +265,9 @@ void func_800712D0(void) {
                         D_8009D554 = 0;
                         D_8009D7CC = found;
                         D_8005954C = 0;
-                        D_8006EE70 = D_8006D634.inGear[0];
-                        D_8006EE72 = D_8006D634.inGear[1];
-                        D_8006EE74 = D_8006D634.inGear[2];
+                        D_8006D634.worldmap.unk70 = D_8006D634.inGear[0];
+                        D_8006D634.worldmap.unk72 = D_8006D634.inGear[1];
+                        D_8006D634.worldmap.unk74 = D_8006D634.inGear[2];
                     }
                 }
             }

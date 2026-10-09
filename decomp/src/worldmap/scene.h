@@ -91,9 +91,7 @@ s32 func_8008868C(void);
 s32 func_80088C90(void);
 
 /* The ferry's saved route state is D_8006D634.unk1844 (x, z in world units,
- * next waypoint); its runs started, which func_80087C6C reads and counts by
- * a name of its own (as the member unk184A it compiles differently). */
-extern u16 D_8006EE7E;
+ * next waypoint), and unk184A counts its runs started (func_80087C6C). */
 extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
 
 /* Ferry heading history (ring of 32). */

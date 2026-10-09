@@ -1736,8 +1736,8 @@ s32 func_80087C6C(s32 index) {
         object->matrix = *(MATRIX *)&D_8009A180;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     } else {
-        if (D_8006EE7E == 0) {
-            D_8006EE7E++;
+        if (D_8006D634.unk184A == 0) {
+            D_8006D634.unk184A++;
             actor->u.step = 0;
             actor->position.vx = D_8009AF80[actor->u.step] << 12;
             z = D_8009AF90[actor->u.step];

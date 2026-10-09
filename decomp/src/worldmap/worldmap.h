@@ -51,13 +51,10 @@ extern MATRIX D_8009BE4C; /* set to the identity by each mode's set-up */
 extern MATRIX D_8009A180; /* identity matrix */
 extern s32 D_8009BD0C;    /* the saved map at entry less 0x400 (event variable 2 on leaving) */
 
-/* The world map's game data words, by names of their own where the entry
- * and the frame loop address them so: the world map's first flag word
- * (entry[2], which func_80070CFC also writes as the hand-over's mode) and
- * the saved in-gear flags (worldmap.unk70-unk74, stored one by one after an
- * encounter). As members of D_8006D634 they compile differently there. */
+/* The world map's first flag word, game data entry[2], by a name of its own
+ * where the overlay entry tests and sets it before choosing the mode: as the
+ * member it compiles differently there. */
 extern u16 D_8006F954[];
-extern u16 D_8006EE70, D_8006EE72, D_8006EE74;
 
 /* The map flags: event variables 254-255, one bit per map dot (bits 24-26
  * the vehicles). */
