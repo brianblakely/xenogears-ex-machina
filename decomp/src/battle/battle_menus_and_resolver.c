@@ -1213,10 +1213,10 @@ void battle_combo_menu_build_glyphs(u8 member, u8 *shown) {
 }
 
 /* 80092784: Build the member's gear page: set up the graphics block, render the name
- * and two-digit count of each of the seven gear parts in `ids` (0xff none)
+ * and two-digit count of each of the seven gear parts in `steps` (0xff none)
  * and the fixed eighth entry (system text 10) into VRAM text images, then
  * the page glyphs and quads. */
-void battle_combo_menu_build_page(u8 member, u8 *ids, u8 *counts) {
+void battle_combo_menu_build_page(u8 member, u8 *steps, u8 *costs) {
     RECT nameRect;
     RECT tensRect;
     RECT onesRect;
@@ -1248,8 +1248,8 @@ void battle_combo_menu_build_page(u8 member, u8 *ids, u8 *counts) {
         rowRect.h = 16;
         battle_upload_image_and_wait(&rowRect, battle_blank_text_image);
         if (i != 7) {
-            if (ids[i] != 0xFF) {
-                window_render_text_line(text_get_system_resource_entry(battle_party_character_ids[member], ids[i]), images[i].pixels, 0x1B, 0);
+            if (steps[i] != 0xFF) {
+                window_render_text_line(text_get_system_resource_entry(battle_party_character_ids[member], steps[i]), images[i].pixels, 0x1B, 0);
                 nameRect.x = (i % 2) * 30 + 0x380;
                 nameRect.y = (i / 2) * 16 + 0x102;
                 nameRect.w = nameWidth;
@@ -1276,7 +1276,7 @@ void battle_combo_menu_build_page(u8 member, u8 *ids, u8 *counts) {
         tensRect.w = 6;
         tensRect.h = 13;
         if (i != 7) {
-            tens = counts[i] / 10;
+            tens = costs[i] / 10;
             if (tens != 0) {
                 digit = battle_digit_text_images[tens].pixels;
             } else {
@@ -1287,8 +1287,8 @@ void battle_combo_menu_build_page(u8 member, u8 *ids, u8 *counts) {
             onesRect.y = (i / 2) * 16 + 0x102;
             onesRect.w = 6;
             onesRect.h = 13;
-            if (ids[i] != 0xFF) {
-                battle_upload_image_and_wait(&onesRect, battle_digit_text_images[(u8)(counts[i] % 10)].pixels);
+            if (steps[i] != 0xFF) {
+                battle_upload_image_and_wait(&onesRect, battle_digit_text_images[(u8)(costs[i] % 10)].pixels);
             } else {
                 battle_upload_image_and_wait(&onesRect, battle_blank_text_image);
             }
@@ -1301,7 +1301,7 @@ void battle_combo_menu_build_page(u8 member, u8 *ids, u8 *counts) {
             battle_upload_image_and_wait(&onesRect, battle_blank_text_image);
         }
     }
-    battle_combo_menu_build_glyphs(member, ids);
+    battle_combo_menu_build_glyphs(member, steps);
     for (i = 0; i < 8; i++) {
         heap_free(images[i].pixels);
     }

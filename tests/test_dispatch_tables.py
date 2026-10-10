@@ -273,7 +273,7 @@ class InventoryTests(unittest.TestCase):
                         break
                 if set(re.findall(r"[A-Za-z_]\w*", text[match.end() : end])) & functions:
                     tables.add(match.group(1))
-        self.assertIn("arena_mode_tasks", tables)  # the .text table menu6 places by attribute
+        self.assertIn("arena_mode_tasks", tables)  # the .text table arena_mode_entry places by attribute
         self.assertGreaterEqual(len(tables), 31)
         self.assertEqual(sorted(name for name in tables if f"`{name}`" not in inventory), [])
 

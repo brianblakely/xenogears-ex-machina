@@ -845,11 +845,11 @@ void battle_menu_close(void) {
 }
 
 /* 800BEE2C: Run 800AA320 on a 4 KB stack of its own. */
-void battle_start_object_effect_on_stack(s32 index, s32 mask, s32 effect_id) {
+void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 script) {
     u8 *stack = heap_alloc(0x1000, 1);
 
     STACK_ENTER(stack + 0xF9C);
-    battle_start_object_script(index, mask, effect_id);
+    battle_start_object_script(index, mask, script);
     STACK_LEAVE();
     heap_free(stack);
 }

@@ -50,7 +50,7 @@ s16 sprite_texture_area_row = 0;           /* 80059194: texture area row (0-2) o
 s16 sprite_texture_area_column = 0;        /* 80059196: texture area column of the next image */
 static s32 *sprite_image_list;             /* 800592E4: image list for 8001fb30 */
 static DVECTOR sprite_image_list_position; /* 800592E8: its position */
-Task *task_current_node;
+Task *task_unread_current_node;
 Task *task_main_list;
 Task *task_next_node;
 Task *task_draw_list;
@@ -89,7 +89,7 @@ void task_run_main_list(void) {
     task_next_node = task_main_list;
     while (task_next_node != NULL) {
         task = task_next_node;
-        task_current_node = task;
+        task_unread_current_node = task;
         task_next_node = task->next;
         if (task->update != NULL) {
             task->update(task);
@@ -104,7 +104,7 @@ void task_run_draw_list(void) {
     task_next_node = task_draw_list;
     while (task_next_node != NULL) {
         task = task_next_node;
-        task_current_node = task;
+        task_unread_current_node = task;
         task_next_node = task->next;
         if (task->update != NULL) {
             task->update(task);

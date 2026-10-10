@@ -1,4 +1,4 @@
-/* menu4: text 8007E528-80081ECC, rodata 8006FE1C-800701B0, data
+/* arena_menu_screens: text 8007E528-80081ECC, rodata 8006FE1C-800701B0, data
  * 80091230-8009178C, variables 800926D4-80092768 and 80095498-80095580.
  * The menu's text (the banner, font, cursor and colours), the selection
  * screen (the entry list, portraits and the two sides' wheels), the

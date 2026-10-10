@@ -518,7 +518,7 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(advances, expected, code_)
 
     def test_arena_entries_follow_the_switch_cases_and_their_advances(self):
-        text = (ROOT / "decomp/src/menu/menu2.c").read_text()
+        text = (ROOT / "decomp/src/menu/arena_camera_and_scenes.c").read_text()
         body = text[text.index("s32 arena_scene_run_script(void) {") : text.index("void arena_scene_draw_marker(")]
         parts = re.split(r"\n\s*case (\d+):", body)
         advances = {}
@@ -600,7 +600,7 @@ class AssetTests(unittest.TestCase):
         self.check("worldmap", [0x8009A758, 0x8009AC60, *tables])
 
     def test_arena_scripts(self):
-        text = code((ROOT / "decomp/src/menu/menu2.c").read_text())
+        text = code((ROOT / "decomp/src/menu/arena_camera_and_scenes.c").read_text())
         table = re.search(r"u8 \*arena_scene_scripts\[\] = \{(.*?)\};", text, re.S).group(1)
         linked = asset_addresses(text)
         scenes = [linked[name] for name in re.findall(r"\w+", table)]
@@ -805,7 +805,7 @@ def struct_fields(text: str, name: str) -> dict:
 
 class FrameEventSourceTests(unittest.TestCase):
     def setUp(self):
-        self.menu3 = (ROOT / "decomp/src/menu/menu3.c").read_text()
+        self.arena_fighters_bout_and_effects = (ROOT / "decomp/src/menu/arena_fighters_bout_and_effects.c").read_text()
 
     def test_layouts_follow_actor_h(self):
         header = (ROOT / "decomp/src/menu/actor.h").read_text()
@@ -813,7 +813,7 @@ class FrameEventSourceTests(unittest.TestCase):
         self.assertEqual(struct_fields(header, "HitSpec"), HIT_SPEC)
 
     def test_kinds_follow_the_cases_of_func_80074678(self):
-        body = function(self.menu3, "arena_frame_event_run")
+        body = function(self.arena_fighters_bout_and_effects, "arena_frame_event_run")
         self.assertIn("while (event->first != 0xFF) {", body)
         self.assertIn(
             "event = (FrameEvent *)((u8 *)actor->header + ", body.replace("events", "event")
@@ -822,7 +822,7 @@ class FrameEventSourceTests(unittest.TestCase):
         found = cases(body, "spec->unk0")
         self.assertEqual(found.pop("default").split(), ["continue;"])  # stays on the record
         self.assertEqual(sorted(found), sorted(EVENT_KINDS))
-        callees = {name: function(self.menu3, name) for name in ("arena_frame_event_hit", "arena_frame_event_effect")}
+        callees = {name: function(self.arena_fighters_bout_and_effects, name) for name in ("arena_frame_event_hit", "arena_frame_event_effect")}
         for kind, case in found.items():
             spec = EVENT_KINDS[kind]
             callee = spec.handler.partition(": ")[2]
@@ -840,23 +840,23 @@ class FrameEventSourceTests(unittest.TestCase):
         self.assertIn("if (trail_count < 20) {", found[2])
 
     def test_forms_follow_the_type_dispatch_of_the_callees(self):
-        hit = function(self.menu3, "arena_frame_event_hit")
+        hit = function(self.arena_fighters_bout_and_effects, "arena_frame_event_hit")
         self.assertIn("if (hit->type == 0x20) {", hit)
         self.assertEqual(hit.count("!(hit->type & 0x40)"), 2)
         shots = set(cases(hit, "hit->type")) - {"default"}
         self.assertEqual(shots, {t for t in range(256) if hit_form(t).startswith("shot")})
-        effect = function(self.menu3, "arena_frame_event_effect")
+        effect = function(self.arena_fighters_bout_and_effects, "arena_frame_event_effect")
         for text in ("arena_effect_is_two_point_type(hit->type) != 0", "hit->type == 0x10", "hit->type >= 0x20"):
             self.assertIn(text, effect)
         self.assertIn(
             "if (code < 0x10) {\n        return 0;\n    }\n    return code < 0x20;",
-            function(self.menu3, "arena_effect_is_two_point_type"),
+            function(self.arena_fighters_bout_and_effects, "arena_effect_is_two_point_type"),
         )
-        bolts = set(cases(function(self.menu3, "arena_effect_queue_bolt_by_type"), "code"))
+        bolts = set(cases(function(self.arena_fighters_bout_and_effects, "arena_effect_queue_bolt_by_type"), "code"))
         self.assertEqual(bolts, {t for t in range(0x10, 0x20) if effect_form(t).startswith("bolt")})
-        sparkles = set(cases(function(self.menu3, "arena_effect_spawn_sparkle"), "kind"))
+        sparkles = set(cases(function(self.arena_fighters_bout_and_effects, "arena_effect_spawn_sparkle"), "kind"))
         self.assertEqual(sparkles, {t for t in range(0x10) if effect_form(t).startswith("sparkle")})
-        sizes = re.search(r"s16 arena_effect_trail_sizes\[\] = \{([^}]*)\};", self.menu3).group(1)
+        sizes = re.search(r"s16 arena_effect_trail_sizes\[\] = \{([^}]*)\};", self.arena_fighters_bout_and_effects).group(1)
         self.assertEqual(len(sizes.split(",")), SPARKLE_SIZES)
 
 

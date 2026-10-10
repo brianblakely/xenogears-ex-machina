@@ -98,7 +98,7 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # 8-aligned). In the original images every such object takes a slot of whole
 # words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39 801ea8e4). That
 # is evidenced separately for ASPSX 2.34's .lcomm statics (mdec
-# 801e8958-801e8968: five u8, stored and loaded bytewise; menu3
+# 801e8958-801e8968: five u8, stored and loaded bytewise; arena_fighters_bout_and_effects
 # 80092678-800926a0; slot39 801ea710/801ea714) and for the commons PSYLINK
 # allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
 # Stsector_offset alone at 801e89bc; the world map's u16 at

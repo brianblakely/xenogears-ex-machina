@@ -23,7 +23,7 @@ BattleWork *battle_results_work_ptr = &battle_work_area; /* 801E44C8 */
  * in the file: commons, which the original linker allocated each in a slot
  * of whole words (decomp/Makefile). */
 s32 battle_results_gauge_start_value;               /* 801E44CC: gauge: start value */
-s32 battle_results_gauge_end_value;                 /* 801E44D0: end value */
+s32 battle_results_gauge_unread_end_value;                 /* 801E44D0: end value */
 s32 battle_results_gauge_change;                    /* 801E44D4: distance */
 s32 battle_results_gauge_start_length;              /* 801E44D8: start length */
 s32 battle_results_gauge_change_length;             /* 801E44DC: distance length */
@@ -393,7 +393,7 @@ void battle_results_shade_glyphs(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) 
  * lengths on a 64-pixel scale, the colour and arrow for up or down. */
 void battle_results_compute_gauge(u8 from, u8 to, s32 max) {
     battle_results_gauge_start_value = from;
-    battle_results_gauge_end_value = to;
+    battle_results_gauge_unread_end_value = to;
     battle_results_gauge_change = to - from;
     battle_results_gauge_start_length = from * 100 / max * 0x1900 / 10000;
     if (battle_results_gauge_change >= 0) {

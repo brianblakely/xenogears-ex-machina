@@ -5,8 +5,8 @@
 #include "psyq/types.h"
 #include "resident/cd.h"
 
-/* The menu mode (menu5 80084FD0-8008509C, 8008518C-80085E34, 800888B0-
- * 80088BFC; menu6): its entry and frame loop, the task that loads its
+/* The menu mode (arena_stage_views_and_hud 80084FD0-8008509C, 8008518C-80085E34, 800888B0-
+ * 80088BFC; arena_mode_entry): its entry and frame loop, the task that loads its
  * files and runs the title, options and scene screens, its music, and the
  * option settings and progress flags it keeps in the game data. */
 

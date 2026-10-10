@@ -5,7 +5,7 @@
 #include "psyq/libgpu.h"
 #include "mode.h"
 
-/* The menu's text (menu4 8007E528-8007EEE8): the banner sprite, the font
+/* The menu's text (arena_menu_screens 8007E528-8007EEE8): the banner sprite, the font
  * and its text quads, the text cursor, scale and colour, and the message
  * table the captions and scenes draw from. */
 

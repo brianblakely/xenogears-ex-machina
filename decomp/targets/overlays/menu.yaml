@@ -56,39 +56,39 @@ segments:
       # hand-written code (80072D18-800732CC), the start of a subsystem, or
       # the data word at 80088BFC, which no compiled unit puts in .text.
       - [0x0, .rodata, menu]
-      - [0x4, .rodata, menu2]     # tables 8006FAF4-8006FB9C at 4 mod 8
-      - [0x108, .rodata, menu3]   # tables 8006FBF8-8006FDE8 at 0 mod 8
-      - [0x32C, .rodata, menu4]   # tables 8006FE1C-8007019C at 4 mod 8
-      - [0x6C0, .rodata, menu5]   # tables 800701C0, 80070260 at 0 mod 8
-      - [0x794, .rodata, menu6]   # strings only
-      - [0xBF8, .rodata, menu7]   # tables 800706E8-80070748 at 0 mod 8
+      - [0x4, .rodata, arena_camera_and_scenes]     # tables 8006FAF4-8006FB9C at 4 mod 8
+      - [0x108, .rodata, arena_fighters_bout_and_effects]   # tables 8006FBF8-8006FDE8 at 0 mod 8
+      - [0x32C, .rodata, arena_menu_screens]   # tables 8006FE1C-8007019C at 4 mod 8
+      - [0x6C0, .rodata, arena_stage_views_and_hud]   # tables 800701C0, 80070260 at 0 mod 8
+      - [0x794, .rodata, arena_mode_entry]   # strings only
+      - [0xBF8, .rodata, arena_scene_graph_and_opponent]   # tables 800706E8-80070748 at 0 mod 8
       # The overlay number's unit has no code: 800707A8-8007099C reads
-      # menu2's uninitialized variables, so menu2's text starts there. The
-      # variables (see the .bss below) also place the menu3/menu4 boundary
-      # at 8007E528 (8007E3CC reads menu3's, 8007E528 menu4's) and bound
-      # menu4/menu5's to 80081E00, 80081E6C or 80081ECC: 80081D2C is the
-      # last function reading menu4's own, 80081ECC the first reading
-      # menu5's, and the two between touch only commons. The latest is kept.
-      - [0xcb8, c, menu2]
-      - [0x37DC, c, menu3]
-      - [0xEA38, c, menu4]
-      - [0x123DC, c, menu5]
-      # menu6 opens with a data word in .text: the mode-task table arena_mode_tasks.
-      - [0x1910C, c, menu6]
-      - [0x196D0, c, menu7]
+      # arena_camera_and_scenes's uninitialized variables, so arena_camera_and_scenes's text starts there. The
+      # variables (see the .bss below) also place the arena_fighters_bout_and_effects/arena_menu_screens boundary
+      # at 8007E528 (8007E3CC reads arena_fighters_bout_and_effects's, 8007E528 arena_menu_screens's) and bound
+      # arena_menu_screens/arena_stage_views_and_hud's to 80081E00, 80081E6C or 80081ECC: 80081D2C is the
+      # last function reading arena_menu_screens's own, 80081ECC the first reading
+      # arena_stage_views_and_hud's, and the two between touch only commons. The latest is kept.
+      - [0xcb8, c, arena_camera_and_scenes]
+      - [0x37DC, c, arena_fighters_bout_and_effects]
+      - [0xEA38, c, arena_menu_screens]
+      - [0x123DC, c, arena_stage_views_and_hud]
+      # arena_mode_entry opens with a data word in .text: the mode-task table arena_mode_tasks.
+      - [0x1910C, c, arena_mode_entry]
+      - [0x196D0, c, arena_scene_graph_and_opponent]
       # Initialized data of each unit in link order; menu has none.
-      - [0x21448, .data, menu2]
-      - [0x21604, .data, menu3]
-      - [0x21740, .data, menu4]
-      # menu5's data opens with the stage colours (arena_stage_color_table), which only
+      - [0x21448, .data, arena_camera_and_scenes]
+      - [0x21604, .data, arena_fighters_bout_and_effects]
+      - [0x21740, .data, arena_menu_screens]
+      # arena_stage_views_and_hud's data opens with the stage colours (arena_stage_color_table), which only
       # its arena_stage_apply_colors reads.
-      - [0x21C9C, .data, menu5]
-      # menu6's gear list: its strings open menu6's rodata (80070284).
-      - [0x21E74, .data, menu6]
-      # menu7's .data ends with the embedded sprite model arena_actor_extra_model (asset,
+      - [0x21C9C, .data, arena_stage_views_and_hud]
+      # arena_mode_entry's gear list: its strings open arena_mode_entry's rodata (80070284).
+      - [0x21E74, .data, arena_mode_entry]
+      # arena_scene_graph_and_opponent's .data ends with the embedded sprite model arena_actor_extra_model (asset,
       # menu.classification.txt) and arena_actor_combo_inputs, followed by three stray
       # bytes ("ind").
-      - [0x2211C, .data, menu7]
+      - [0x2211C, .data, arena_scene_graph_and_opponent]
       # The uninitialized variables. The menu's assembler put those of up
       # to eight bytes in .sbss and the larger ones in .bss (menu.mk),
       # and the original linker joined each section in unit order and
@@ -103,25 +103,25 @@ segments:
       # words (arena_task_save_scheduler.s), which an explicit .bss puts there. Every
       # variable a unit reads lies in its own range, which places or bounds
       # the text boundaries above (tools/data_users.py menu.mk: its one
-      # FOREIGN address, 80092A30, menu2's arena_scene_update_bout_end only forms, as the
+      # FOREIGN address, 80092A30, arena_camera_and_scenes's arena_scene_update_bout_end only forms, as the
       # end of its loop over the embers arena_scene_bout_end_embers[3]; it is the pad word of
-      # menu3's arena_effect_hit_spark_position behind them). Splat links the .sbss into the
+      # arena_fighters_bout_and_effects's arena_effect_hit_spark_position behind them). Splat links the .sbss into the
       # loaded section as data entries; listing each .bss with its vram and
       # the segment's bss_size keeps their names out of
       # undefined_syms_auto.txt, so the link places every variable from its
       # definition.
-      - { start: 0x22AE4, type: .data, name: menu2, linker_section_order: .sbss, linker_section: .sbss }
-      - { start: 0x22B48, type: .data, name: menu3, linker_section_order: .sbss, linker_section: .sbss }
-      - { start: 0x22BE4, type: .data, name: menu4, linker_section_order: .sbss, linker_section: .sbss }
-      - { start: 0x22C78, type: .data, name: menu5, linker_section_order: .sbss, linker_section: .sbss }
-      - { start: 0x22D00, type: .data, name: menu6, linker_section_order: .sbss, linker_section: .sbss }
-      - { start: 0x22D10, type: .data, name: menu7, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22AE4, type: .data, name: arena_camera_and_scenes, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22B48, type: .data, name: arena_fighters_bout_and_effects, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22BE4, type: .data, name: arena_menu_screens, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22C78, type: .data, name: arena_stage_views_and_hud, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22D00, type: .data, name: arena_mode_entry, linker_section_order: .sbss, linker_section: .sbss }
+      - { start: 0x22D10, type: .data, name: arena_scene_graph_and_opponent, linker_section_order: .sbss, linker_section: .sbss }
       - { start: 0x22D5C, type: .data, name: menu_common, linker_section_order: .sbss, linker_section: .sbss }
-      - { type: .bss, vram: 0x80092954, name: menu2 }
-      - { type: .bss, vram: 0x80092A24, name: menu3 }
-      - { type: .bss, vram: 0x80095498, name: menu4 }
-      - { type: .bss, vram: 0x80095580, name: menu5 }
-      - { type: .bss, vram: 0x80096D88, name: menu7 }
+      - { type: .bss, vram: 0x80092954, name: arena_camera_and_scenes }
+      - { type: .bss, vram: 0x80092A24, name: arena_fighters_bout_and_effects }
+      - { type: .bss, vram: 0x80095498, name: arena_menu_screens }
+      - { type: .bss, vram: 0x80095580, name: arena_stage_views_and_hud }
+      - { type: .bss, vram: 0x80096D88, name: arena_scene_graph_and_opponent }
       - { type: .bss, vram: 0x80096FA8, name: menu_common }
   - [0x22E64]
   # The packer completes its last group of eight tokens with zero literals

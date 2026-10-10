@@ -8,8 +8,8 @@
 #include "node.h"
 #include "mode.h"
 
-/* The arena (menu5 80081ECC-800831C8, 80083DCC-80084BEC, 800875EC-80087E38;
- * menu2's handwritten 80072D18): the stage colours, the floor and its
+/* The arena (arena_stage_views_and_hud 80081ECC-800831C8, 80083DCC-80084BEC, 800875EC-80087E38;
+ * arena_camera_and_scenes's handwritten 80072D18): the stage colours, the floor and its
  * height map, the backdrop, the wall and the actors' shadows, the map
  * triangles and row spans, and the drawing of the 3D views. */
 

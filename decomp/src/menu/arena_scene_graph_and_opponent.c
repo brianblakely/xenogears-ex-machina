@@ -1,11 +1,11 @@
-/* menu7: text 800891C0-80090F38, rodata 800706E8-800707A8, data
+/* arena_scene_graph_and_opponent: text 800891C0-80090F38, rodata 800706E8-800707A8, data
  * 80091C0C-800925D4, variables 80092800-8009284C and 80096D88-80096FA8.
  * The display and its layers, the 3D scene graph (nodes, models, model
  * sets, lights, animation players, instances and meshes), the task switch
  * (handwritten, 8008BB00-8008BCC8), the spark emitters, the glow field,
  * positional sound and the computer opponent. Its jump tables lie at 0 mod
- * 8 (800706E8-80070748) after menu6's strings. Its variables place its
- * start after menu6's last reader of theirs (80088E90) and at or before
+ * 8 (800706E8-80070748) after arena_mode_entry's strings. Its variables place its
+ * start after arena_mode_entry's last reader of theirs (80088E90) and at or before
  * 8008A040, the first reader of its own; it is kept where the file and
  * display code starts (800891C0). Its .bss opens with the task switch's
  * two words, and its data ends with the embedded sprite model arena_actor_extra_model
@@ -359,7 +359,7 @@ void arena_look_at_build_matrix(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *u
 
 /* 80089A98: Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void arena_node_aim_rig_camera(LightRig *view, VECTOR *target, VECTOR *eye) {
+void arena_node_aim_rig_camera(LightRig *view, VECTOR *position, VECTOR *focus) {
     SVECTOR up;
     SVECTOR from;
     SVECTOR origin;
@@ -367,10 +367,10 @@ void arena_node_aim_rig_camera(LightRig *view, VECTOR *target, VECTOR *eye) {
     up.vy = 0x1000;
     up.vz = 0;
     up.vx = 0;
-    arena_view_origin = *eye;
-    from.vx = target->vx - eye->vx;
-    from.vy = target->vy - eye->vy;
-    from.vz = target->vz - eye->vz;
+    arena_view_origin = *focus;
+    from.vx = position->vx - focus->vx;
+    from.vy = position->vy - focus->vy;
+    from.vz = position->vz - focus->vz;
     origin.vz = 0;
     origin.vx = 0;
     origin.vy = 0;

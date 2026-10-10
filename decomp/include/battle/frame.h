@@ -99,7 +99,7 @@ void battle_load_module(void);                                                  
 void battle_menu_clear(void);                                                                      /* clear the battle menu state */
 BattleMenu *battle_menu_open(void);                                                                /* open the battle menu */
 void battle_menu_close(void);                                                                      /* close the battle menu */
-void battle_start_object_effect_on_stack(s32 index, s32 mask, s32 mode);                           /* 800AA320 on a stack of its own */
+void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 mode);                           /* 800AA320 on a stack of its own */
 s32 battle_list_slot_sprites(u32 mask, Sprite **list, Sprite *target);                             /* list the sprites of the slots in mask */
 s16 battle_get_sprite_direction(Sprite *from, Sprite *to);                                         /* the direction between two sprites */
 s16 battle_get_target_direction(Sprite *sprite);                                                   /* the direction to a sprite's target point */

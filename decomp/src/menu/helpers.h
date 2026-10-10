@@ -4,9 +4,9 @@
 #include "common.h"
 #include "psyq/libgte.h"
 
-/* Helpers: menu2's handwritten GTE vector and matrix scaling, colour filter
- * and word copy (80073064-800732CC), menu5's vector lengths and scaling
- * (800884E0-800888B0), menu7's whole-file load (800891C0) and angle steps
+/* Helpers: arena_camera_and_scenes's handwritten GTE vector and matrix scaling, colour filter
+ * and word copy (80073064-800732CC), arena_stage_views_and_hud's vector lengths and scaling
+ * (800884E0-800888B0), arena_scene_graph_and_opponent's whole-file load (800891C0) and angle steps
  * (8008B5FC-8008B730). */
 
 /* GTE scaling; all three write x/y/z and preserve out->pad. */

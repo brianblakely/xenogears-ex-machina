@@ -1243,9 +1243,9 @@ void battle_sprite_command_show_stage_object(Sprite *sprite, u8 *args) {
     if (args[0] == 2) {
         battle_create_object_from_files(0xB, 0x300, 0x100, 0, 0x1DB);
         frame_bits = SPRITE_FRAME_WORD(battle_acting_sprite) >> 30;
-        battle_start_object_effect_on_stack(0xB, 1 << (((battle_acting_sprite->motion.word & 3) << 2) | frame_bits), args[0]);
+        battle_start_object_script_on_own_stack(0xB, 1 << (((battle_acting_sprite->motion.word & 3) << 2) | frame_bits), args[0]);
     } else {
-        battle_start_object_effect_on_stack(0xB, battle_area_event_target_mask, args[0]);
+        battle_start_object_script_on_own_stack(0xB, battle_area_event_target_mask, args[0]);
     }
     STACK_LEAVE();
     heap_free(stack);

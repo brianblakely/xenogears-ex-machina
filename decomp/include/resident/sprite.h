@@ -252,7 +252,7 @@ extern u8 sprite_in_worldmap;
 extern u8 sprite_battle_module_loaded;
 extern u8 sprite_requested_battle_module;
 extern u8 sprite_effect_source[];
-extern u8 *sprite_queue_second_entry_block; /* end of the queue entry block */
+extern u8 *sprite_queue_unread_second_entry_block; /* end of the queue entry block */
 extern s32 sprite_palette_bank;             /* extra argument of 80024524/8002435c for one call */
 
 /* A queued VRAM upload (LoadImage, or ClearImage without pixels), from the

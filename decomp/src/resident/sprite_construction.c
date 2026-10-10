@@ -286,7 +286,7 @@ s32 sprite_read_word(s32 *word) {
 
 /* 80022A0C: Upload the image at sprite_load_image_pixels to sprite_load_image_rect, running LoadImage on an 8 KB
  * heap block as its stack. */
-void sprite_load_image_on_heap_stack(void) {
+void sprite_load_image_on_own_stack(void) {
     u8 *stack = heap_alloc(0x2000, 1);
 
     STACK_ENTER(stack + 0x1F00);
@@ -317,7 +317,7 @@ void sprite_upload_images_side_by_side(s32 *list, s32 x, s16 y) {
         column += 0x40;
         sprite_load_image_rect = &rect;
         sprite_load_image_pixels = (u_long *)image;
-        sprite_load_image_on_heap_stack();
+        sprite_load_image_on_own_stack();
     }
 }
 

@@ -707,488 +707,488 @@ INCLUDE_ASM("decomp/src/resident", gpu_get_sin);
 /* 8003F8CC */
 INCLUDE_ASM("decomp/src/resident", gpu_get_cos);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", bzero);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", bzero);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", memchr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", memchr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", memcpy);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", memcpy);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", memmove);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", memmove);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", memset);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", memset);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", rand);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", rand);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", srand);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", srand);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", strcat);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", strcat);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", strcmp);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", strcmp);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", strcpy);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", strcpy);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", strlen);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", strlen);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", sprintf);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", sprintf);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", FlushCache);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", FlushCache);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _bu_init);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _bu_init);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", OpenEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", OpenEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CloseEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CloseEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", TestEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", TestEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", EnableEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", EnableEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DisableEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DisableEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", UnDeliverEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", UnDeliverEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", EnterCriticalSection);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", EnterCriticalSection);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ExitCriticalSection);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ExitCriticalSection);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SwEnterCriticalSection);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SwEnterCriticalSection);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SwExitCriticalSection);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SwExitCriticalSection);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", open);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", open);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", read);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", read);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", write);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", write);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", close);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", close);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", format);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", format);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", firstfile);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", firstfile);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", nextfile);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", nextfile);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", rename);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", rename);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", delete);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", delete);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", Krom2RawAdd);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", Krom2RawAdd);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ChangeClearPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ChangeClearPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetGp);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetGp);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetRCnt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetRCnt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetRCnt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetRCnt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", StartRCnt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", StartRCnt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", StopRCnt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", StopRCnt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ResetRCnt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ResetRCnt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetInitPadFlag);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetInitPadFlag);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ReadInitPadFlag);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ReadInitPadFlag);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", PAD_init);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", PAD_init);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", InitPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", InitPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", StartPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", StartPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", StopPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", StopPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPatchPad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPatchPad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", RemovePatchPad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", RemovePatchPad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _Pad1);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _Pad1);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _IsVSync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _IsVSync);
 
 /* 80040A8C */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b12_init_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_bios_b12_init_pad);
 
 /* 80040A9C */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b13_start_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_bios_b13_start_pad);
 
 /* 80040AAC */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b14_stop_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_bios_b14_stop_pad);
 
 /* 80040ABC */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b15_init_and_start_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_bios_b15_init_and_start_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SysEnqIntRP);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SysEnqIntRP);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SysDeqIntRP);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SysDeqIntRP);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", EnablePAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", EnablePAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DesablePAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DesablePAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _patch_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _patch_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _SendPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _SendPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _send_pad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _send_pad);
 
 /* 80040C20 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_send_pad_patch_code);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_send_pad_patch_code);
 
 /* 80040C3C */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_register_pad_send_buffers);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libapi_register_pad_send_buffers);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _remove_ChgclrPAD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _remove_ChgclrPAD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DsSyncCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DsSyncCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DsReadyCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DsReadyCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DsDataCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DsDataCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdInit);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdInit);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", def_cbsync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", def_cbsync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", def_cbready);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", def_cbready);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", def_cbread);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", def_cbread);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DeliverEvent);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DeliverEvent);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdStatus);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdStatus);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdMode);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdMode);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdLastCom);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdLastCom);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdLastPos);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdLastPos);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReset);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReset);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdFlush);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdFlush);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdSetDebug);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdSetDebug);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdComstr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdComstr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdIntstr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdIntstr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdSync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdSync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReady);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReady);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdSyncCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdSyncCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReadyCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReadyCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdControl);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdControl);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdControlF);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdControlF);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdControlB);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdControlB);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdMix);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdMix);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdGetSector);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdGetSector);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdGetSector2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdGetSector2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdDataCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdDataCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdDataSync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdDataSync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdIntToPos);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdIntToPos);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdPosToInt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdPosToInt);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_command_and_interrupt_names); /* 80018CE4 */
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libcd_command_and_interrupt_names); /* 80018CE4 */
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_timeout_message); /* 80018E28 */
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libcd_timeout_message); /* 80018E28 */
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_sync_ready_format); /* 80018E38 */
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libcd_sync_ready_format); /* 80018E38 */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", getintr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", getintr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_sync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_sync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_ready);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_ready);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_cw);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_cw);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_vol);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_vol);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_flush);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_flush);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_initvol);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_initvol);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_initintr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_initintr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_init);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_init);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_datasync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_datasync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_getsector);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_getsector);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_getsector2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_getsector2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CD_set_test_parmnum);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CD_set_test_parmnum);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", callback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", callback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", puts);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", puts);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", putchar);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", putchar);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", toupper);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", toupper);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", tolower);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", tolower);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", cb_read);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", cb_read);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", cb_data);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", cb_data);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", cd_read_retry);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", cd_read_retry);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReadBreak);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReadBreak);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdRead);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdRead);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReadSync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReadSync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReadCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReadCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdReadMode);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CdReadMode);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", LoadTPage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", LoadTPage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", LoadClut);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", LoadClut);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", LoadClut2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", LoadClut2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDefDrawEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDefDrawEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDefDispEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDefDispEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetTPage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetTPage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetClut);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetClut);
 
 /* 80043A70 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_tpage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_dump_tpage);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libgpu_tpage_format); /* 80018F88 */
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_tpage_format); /* 80018F88 */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DumpClut);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DumpClut);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", NextPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", NextPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", IsEndPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", IsEndPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", AddPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", AddPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", AddPrims);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", AddPrims);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CatPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", CatPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", TermPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", TermPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetSemiTrans);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetSemiTrans);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetShadeTex);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetShadeTex);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyF3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyF3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyFT3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyFT3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyG3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyG3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyGT3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyGT3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyF4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyF4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyFT4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyFT4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyG4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyG4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPolyGT4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPolyGT4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetSprt8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetSprt8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetSprt16);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetSprt16);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetSprt);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetSprt);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetTile1);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetTile1);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetTile8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetTile8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetTile16);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetTile16);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetTile);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetTile);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineF2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetLineF2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineG2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetLineG2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineF3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetLineF3);
 
 /* 80043DC0 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_set_line_g3);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_set_line_g3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineF4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetLineF4);
 
 /* 80043E00 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_set_line_g4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_set_line_g4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawTPage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawTPage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawMove);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawMove);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawLoad);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawLoad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", MargePrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", MargePrim);
 
 /* 80043F50 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_draw_env);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_dump_draw_env);
 
 /* 80044064 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_disp_env);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_dump_disp_env);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ResetGraph);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ResetGraph);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetGraphReverse);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetGraphReverse);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetGraphDebug);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetGraphDebug);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetGraphQueue);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetGraphQueue);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetGraphType);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetGraphType);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetGraphDebug);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetGraphDebug);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DrawSyncCallback);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DrawSyncCallback);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDispMask);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDispMask);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DrawSync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DrawSync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", checkRECT);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", checkRECT);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearImage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ClearImage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearImage2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ClearImage2);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libgpu_clear_image_name); /* 80019180 */
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_clear_image_name); /* 80019180 */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", LoadImage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", LoadImage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", StoreImage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", StoreImage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", MoveImage);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", MoveImage);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearOTag);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ClearOTag);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearOTagR);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ClearOTagR);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DrawPrim);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DrawPrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DrawOTag);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DrawOTag);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", PutDrawEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", PutDrawEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DrawOTagEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", DrawOTagEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetDrawEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetDrawEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", PutDispEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", PutDispEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetDispEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetDispEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetODE);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GetODE);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetTexWindow);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetTexWindow);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawArea);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawArea);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawOffset);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawOffset);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetPriority);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetPriority);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawMode);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawMode);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawEnv);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawEnv);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawEnv2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetDrawEnv2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_mode);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_mode);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_cs);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_cs);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_ce);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_ce);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_ofs);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_ofs);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_tw);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_tw);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_dx);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_dx);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _status);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _status);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _otc);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _otc);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _clr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _clr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _dws);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _dws);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _drs);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _drs);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _ctl);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _ctl);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _getctl);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _getctl);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _cwb);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _cwb);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _cwc);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _cwc);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _param);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _param);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _addque);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _addque);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _addque2);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _addque2);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _exeque);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _exeque);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _reset);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _reset);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _sync);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _sync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", set_alarm);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", set_alarm);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_alarm);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_alarm);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _version);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", _version);
 
 /* 80047178 */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_fill_bytes);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", libgpu_fill_bytes);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GPU_cw);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", GPU_cw);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", OpenTIM);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", OpenTIM);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ReadTIM);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ReadTIM);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", OpenTMD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", OpenTMD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ReadTMD);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", ReadTMD);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_tim_addr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_tim_addr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_tmd_addr);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", get_tmd_addr);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", unpack_packet);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", unpack_packet);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetFogNearFar);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/gpu_rotation_and_psyq_libraries", SetFogNearFar);

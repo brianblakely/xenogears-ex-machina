@@ -57,10 +57,10 @@ void sound_play_effect_on_channel_volume_pan(s32 id, s16 voice, s16 volume, s16 
 void sound_sync_transfer(s32 wait);                                                   /* wait for the SPU transfer */
 
 /* Resident objects the shared headers do not declare. */
-extern s32 pad_vblank_count;             /* vertical blank count (main2.c) */
+extern s32 pad_vblank_count;             /* vertical blank count (text_windows_and_pads.c) */
 extern CVECTOR model_color;              /* the model (fog) colour 8002c6e0 sets */
 extern u8 mode_arena_task_parameters[6]; /* option bytes of the field and the menu */
-extern u8 mode_arena_bout_outcome;       /* the arena bout's outcome (menu3 writes it) */
+extern u8 mode_arena_bout_outcome;       /* the arena bout's outcome (arena_fighters_bout_and_effects writes it) */
 extern u8 mode_snapshot_block[];         /* the field snapshot (0x22fc bytes, 800a3f4c) */
 
 #endif

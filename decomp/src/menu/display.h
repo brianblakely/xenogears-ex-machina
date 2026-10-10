@@ -6,8 +6,8 @@
 #include "psyq/libgte.h"
 #include "packets.h"
 
-/* The display (menu7 80089210-800898BC, 8008A2B8-8008A3E0, 8008AC0C-
- * 8008AF6C; menu5 80083BB4): the two display buffers, the screen setup,
+/* The display (arena_scene_graph_and_opponent 80089210-800898BC, 8008A2B8-8008A3E0, 8008AC0C-
+ * 8008AF6C; arena_stage_views_and_hud 80083BB4): the two display buffers, the screen setup,
  * the drawing layers with their ordering tables, and the frame's time
  * budget. */
 

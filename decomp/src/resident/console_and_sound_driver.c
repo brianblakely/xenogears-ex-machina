@@ -3,7 +3,7 @@
  * (800366e0-80039e18), GCC 2.7.2 at -G0; 800379b4 (the menu's task word) and
  * the report printf 800379c8 are handwritten. Its rodata opens at 0x80018b30
  * with the formatter's digit strings: 80036718's jump table (0x80018b58,
- * 0 mod 8) follows main2.c's at 4 mod 8, so a unit starts between 800365fc
+ * 0 mod 8) follows text_windows_and_pads.c's at 4 mod 8, so a unit starts between 800365fc
  * and 80036718; the console output hook 800366e0 is chosen. The sound driver
  * unit (sound.c) follows. */
 #include "common.h"
@@ -55,8 +55,8 @@ u16 console_font_cluts[64] = { /* 80050598 */
 };
 s32 mode_arena_task = 0; /* 80050618: the menu's mode (800379b4) */
 u8 mode_arena_task_parameters[6] = {1, 0, 0, 2, 2, 0}; /* 8005061C: option bytes of the field and menu */
-/* The arena bout's outcome, the byte after them: the menu writes it (menu3.c
- * arena_bout_record_outcome, menu2.c arena_scene_update_bout_end) and a field event reads it
+/* The arena bout's outcome, the byte after them: the menu writes it (arena_fighters_bout_and_effects.c
+ * arena_bout_record_outcome, arena_camera_and_scenes.c arena_scene_update_bout_end) and a field event reads it
  * (field_event.c field_event_store_bout_outcome); no resident code addresses it. Whether
  * the original declared it apart or as a seventh byte of mode_arena_task_parameters is open. */
 u8 mode_arena_bout_outcome = 0; /* 80050622 */

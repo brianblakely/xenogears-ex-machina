@@ -83,9 +83,9 @@ segments:
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
-      - [0x927C, .rodata, main2]
+      - [0x927C, .rodata, text_windows_and_pads]
       # 80036718's jump table (80018B58) is at 0 mod 8 while 80033DF0's
-      # (80018A7C, main2's first rodata) is at 4 mod 8, so a unit starts
+      # (80018A7C, text_windows_and_pads's first rodata) is at 4 mod 8, so a unit starts
       # between them: at 800365FC or later (its strings from 80018AE0) and
       # no later than 80036718 (its strings at 80018B30). 800366E0, the
       # formatter's output hook, is chosen.
@@ -93,7 +93,7 @@ segments:
       # Sound driver unit (GCC 2.6.3): its opcode-table jump table.
       - [0x93DC, .rodata, sound]
       # Hand-written rotation helpers and the PsyQ library objects.
-      - [0x93F0, .rodata, main3]
+      - [0x93F0, .rodata, gpu_rotation_and_psyq_libraries]
       # Rodata used by the SDK tail beginning with libgte MSC00.
       - [0x9BC4, .rodata, psyq_libgte_to_libcard]
       - [0x9D24, c, main]
@@ -149,13 +149,13 @@ segments:
       # report file handle heap_report_file, is chosen (80032CB8/80032D60 address
       # no small globals and compile identically either way).
       - [0x235CC, c, heap_host_report]
-      - [0x2367C, c, main2]
+      - [0x2367C, c, text_windows_and_pads]
       - [0x26EE0, c, console_and_sound_driver]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
       # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
       # only under 2.6.3, and the functions between compile identically.
       - [0x2A618, c, sound]
-      - [0x2FF38, c, main3]
+      - [0x2FF38, c, gpu_rotation_and_psyq_libraries]
       # SDK object data embedded in .text at the head of libgte MSC00.
       - start: 0x393BC
         type: data
@@ -170,7 +170,7 @@ segments:
         name: libcard_end_data
         linker_section_order: .text
       # The game units' .data in link order. cd_reads_and_streams's is the disc and
-      # stream state that its code from 8002A260 on defines. main3's is the
+      # stream state that its code from 8002A260 on defines. gpu_rotation_and_psyq_libraries's is the
       # handwritten rotation object's sine/cosine table, linked ahead of
       # every library.
       - [0x3F2A0, .data, main]
@@ -182,10 +182,10 @@ segments:
       - [0x405E0, .data, cd_reads_and_streams]
       - [0x40650, .data, model_renderer]
       - [0x40910, .data, heap]
-      - [0x40990, .data, main2]
+      - [0x40990, .data, text_windows_and_pads]
       - [0x40A40, .data, console_and_sound_driver]
       - [0x40E24, .data, sound]
-      - [0x42BF0, .data, main3]
+      - [0x42BF0, .data, gpu_rotation_and_psyq_libraries]
       # PsyQ library .data in link order (libc2 SPRINTF ... libspu S_SRMT);
       # classified sdk.
       - [0x46BF0, data, psyq_data]
@@ -213,7 +213,7 @@ segments:
       # libraries' generated statics and commons (psyq_*). Listing every
       # subsegment keeps their names out of undefined_syms_auto.txt: the
       # link places each variable from its definition.
-      # The GCC 2.7.2 units compiled at -G0 (main, model_renderer, main2,
+      # The GCC 2.7.2 units compiled at -G0 (main, model_renderer, text_windows_and_pads,
       # console_and_sound_driver) address all their variables absolutely; the build
       # divides them by size as their assembler did (SBSS in the .mk).
       - { start: 0x49ABC, type: .sbss, vram: 0x800592BC, name: main, linker_section_order: .bss }
@@ -223,9 +223,9 @@ segments:
       - { start: 0x49ABC, type: .sbss, vram: 0x80059308, name: model_renderer, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059318, name: heap, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059348, name: heap_host_report, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x8005934C, name: main2, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x8005934C, name: text_windows_and_pads, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059394, name: console_and_sound_driver, linker_section_order: .bss }
-      # The libraries' small statics: libapi's controller patches (main3),
+      # The libraries' small statics: libapi's controller patches (gpu_rotation_and_psyq_libraries),
       # libgte's and libcard's patches (psyq_libgte_to_libcard).
       - { start: 0x49ABC, type: bss, vram: 0x800593A4, name: psyq_sbss }
       - { start: 0x49ABC, type: .bss, vram: 0x80059404, name: commons/commons_small }
@@ -233,10 +233,10 @@ segments:
       - { start: 0x49ABC, type: .bss, vram: 0x800596F8, name: cd_reads_and_streams }
       - { start: 0x49ABC, type: .bss, vram: 0x80059F64, name: model_renderer }
       - { start: 0x49ABC, type: .bss, vram: 0x80059FA4, name: heap }
-      - { start: 0x49ABC, type: .bss, vram: 0x80059FD8, name: main2 }
+      - { start: 0x49ABC, type: .bss, vram: 0x80059FD8, name: text_windows_and_pads }
       - { start: 0x49ABC, type: .bss, vram: 0x8005A1CC, name: console_and_sound_driver }
       # The libraries' other statics: libc rand and putchar, libapi's patch
-      # table, libcd, libgpu's state and its TIM/TMD readers (main3).
+      # table, libcd, libgpu's state and its TIM/TMD readers (gpu_rotation_and_psyq_libraries).
       - { start: 0x49ABC, type: bss, vram: 0x8005A1FC, name: psyq_bss }
       - { start: 0x49ABC, type: .bss, vram: 0x8005A39C, name: commons/commons_before_libspu }
       # The libraries' commons where the linker placed them among the

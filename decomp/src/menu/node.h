@@ -6,7 +6,7 @@
 #include "resident/model.h"
 #include "display.h"
 
-/* The 3D scene graph (menu7 800898BC-8008A2B8, 8008A3E0-8008AC0C,
+/* The 3D scene graph (arena_scene_graph_and_opponent 800898BC-8008A2B8, 8008A3E0-8008AC0C,
  * 8008AF6C-8008B5FC, 8008B730-8008BA2C, 8008BCC8-8008C7C0): nodes with
  * typed payloads (models, model sets, lights, instances), their animation
  * players, the light rigs that view them, and the mesh packets of the
@@ -184,7 +184,7 @@ extern MATRIX arena_display_unread_identity;
 extern VECTOR arena_look_at_axis_y;        /* look-at work: up */
 
 void arena_look_at_build_matrix(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up);
-void arena_node_aim_rig_camera(LightRig *view, VECTOR *target, VECTOR *eye);
+void arena_node_aim_rig_camera(LightRig *view, VECTOR *position, VECTOR *focus);
 Node *arena_node_reset(Node *node);
 Node *arena_node_alloc(void);
 void arena_node_add_child(Node *parent, Node *child);

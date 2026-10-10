@@ -56,7 +56,7 @@ extern u8 mode_arena_option6; /* option 6 */
 extern u8 mode_arena_level; /* level */
 extern u8 mode_arena_bout_outcome; /* result of the last menu battle */
 
-/* The resident's vertical blank count (main2.c counts it), volatile here:
+/* The resident's vertical blank count (text_windows_and_pads.c counts it), volatile here:
  * the menu's frame loop reads it again at each use (80088e90). */
 extern volatile s32 pad_vblank_count;
 

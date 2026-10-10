@@ -7,7 +7,7 @@
 #include "node.h"
 #include "mode.h"
 
-/* The arena's scenes (menu2 80070F80-80072D18): the scene script
+/* The arena's scenes (arena_camera_and_scenes 80070F80-80072D18): the scene script
  * interpreter (its scripts are assets, docs/scripts/arena-scene.md), the
  * opening and the scene list, the message window, the bout-end sequence
  * and the winner screen. */

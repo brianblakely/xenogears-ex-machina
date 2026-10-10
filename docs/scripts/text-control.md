@@ -1,6 +1,6 @@
 # Text control codes
 
-- Interpreter: `window_reveal_text` (decomp/src/resident/main2.c), the reveal step
+- Interpreter: `window_reveal_text` (decomp/src/resident/text_windows_and_pads.c), the reveal step
   of message windows (`window_draw_frame`) and one-line layouts (`window_render_text_line`).
 - Dispatch: bytes 00, 01, 02, 03 and 0F are controls; 0F takes a sub-code
   through the 16-entry jump table at 0x80018A7C (cases 0-15). Other bytes are

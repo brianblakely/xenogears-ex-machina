@@ -4,7 +4,7 @@
 #include "common.h"
 #include "psyq/libgpu.h"
 
-/* The menus (menu4 8007F834-800802A4, 800808F4-80081ECC): eight choice
+/* The menus (arena_menu_screens 8007F834-800802A4, 800808F4-80081ECC): eight choice
  * menus on translucent panels, among them the settings, vibration and
  * options pages, whose draw callbacks show the values; the two captions,
  * the copy of the shown screen and the screen fades. */

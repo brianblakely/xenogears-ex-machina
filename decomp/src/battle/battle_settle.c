@@ -235,7 +235,7 @@ s32 battle_knock_down_slots(void) {
             if (BATTLE_AREA.slots[slot].gear) {
                 gear = 1;
                 battle_objects[slot]->field38 = gear;
-                battle_start_object_effect_on_stack(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
+                battle_start_object_script_on_own_stack(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
             } else if ((s8)sprite->motion.bytes[3] != 0x15) {
                 sprite_start_animation(sprite, 0x15);
             }

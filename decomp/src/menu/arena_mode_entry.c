@@ -1,8 +1,8 @@
-/* menu6: text 80088BFC-800891C0, rodata 80070284-800706E8 (strings only),
+/* arena_mode_entry: text 80088BFC-800891C0, rodata 80070284-800706E8 (strings only),
  * data 80091964-80091C0C, variables 800927F0-80092800. The menu mode's
  * entry and frame loop: the mode-task table, the start-up, the debug
  * meters, and the list of the 49 gears. Its .text opens with the task
- * table arena_mode_tasks, a data word between menu5's last return and
+ * table arena_mode_tasks, a data word between arena_stage_views_and_hud's last return and
  * arena_debug_draw_sync_callback that no other unit keeps in .text (menu.classification.txt),
  * and the gear list's strings open its rodata. */
 #include "common.h"
@@ -92,7 +92,7 @@ ListEntry arena_select_gears[49] = { /* 80091964 */
     { 0x30, "sol_13", "EG-BLADE" },
 };
 
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", arena_select_first_gear_model_name); /* 800705F0 */
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/arena_mode_entry", arena_select_first_gear_model_name); /* 800705F0 */
 
 /* Names of the menu's heap block kinds (owner tag 6, heap_select_owner_tag); their
  * literals follow "ply_01", also last to first. */
@@ -238,4 +238,4 @@ frame:
 
 /* "RATE   : %3dfps\n". Stray bytes (0x94, 0x08) follow it at the end of the
  * unit's rodata; it is linked as original rodata. */
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", arena_debug_rate_format); /* 800706D4 */
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/arena_mode_entry", arena_debug_rate_format); /* 800706D4 */

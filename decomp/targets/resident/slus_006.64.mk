@@ -107,7 +107,7 @@ EXTERN_mode_battle_and_menu := absolute
 # every one absolutely.
 SBSS_main := 8
 SBSS_model_renderer := 8
-SBSS_main2 := 8
+SBSS_text_windows_and_pads := 8
 SBSS_console_and_sound_driver := 8
 # Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
 # whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.

@@ -54,7 +54,7 @@ documents both; `overlay_scripts` decodes them.
 | `field_event_primary_handlers`, `field_event_extended_handlers` | field | the field event opcode | the field events interpreter |
 | `sound_seq_opcode_handlers` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
 | `worldmap_actor_script_handlers` | worldmap | the world map actor opcode | the world map actor interpreter |
-| `arena_menu_port1_items`, `arena_menu_port2_items`, `arena_menu_title_items`, `arena_menu_bonus_battling_items`, `arena_menu_pause_items`, `arena_menu_settings_items`, `arena_menu_give_up_items`, `arena_menu_practice_items`, `arena_menu_pages` | menu | the menu page and cursor (menu4's items and lines) | code |
+| `arena_menu_port1_items`, `arena_menu_port2_items`, `arena_menu_title_items`, `arena_menu_bonus_battling_items`, `arena_menu_pause_items`, `arena_menu_settings_items`, `arena_menu_give_up_items`, `arena_menu_practice_items`, `arena_menu_pages` | menu | the menu page and cursor (arena_menu_screens's items and lines) | code |
 | `arena_mode_tasks` | menu | `mode_arena_task`, which only `mode_set_arena_task(0)` sets (resident and field) | code |
 | `arena_spark_shapes`, `arena_spark_placement_rules`, `arena_spark_update_callbacks` | menu | an emitter's shape and placement, constants at both callers of `arena_spark_create_emitter` (1, 0 and 3, 0); its one update | code |
 | `worldmap_open_map_actors` | worldmap | the actors every area starts, a list ended by kind 0 | code |

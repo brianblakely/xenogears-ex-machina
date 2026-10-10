@@ -5,7 +5,7 @@
 #include "psyq/libgte.h"
 #include "actor.h"
 
-/* Positional sound (menu7 8008E620-8008EE1C): four voices that pan and
+/* Positional sound (arena_scene_graph_and_opponent 8008E620-8008EE1C): four voices that pan and
  * attenuate a sound from its projected position every frame, the menu's
  * sound effects and the characters' command sounds. */
 

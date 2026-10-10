@@ -447,12 +447,12 @@ void battle_menu_open_turn(s32 mode, s32 slot, s32 targets, s32 next_slot) {
         battle_finish_loads();
         battle_load_wave_bank_5();
         battle_menu_set_state(8);
-        battle_start_object_effect_on_stack(slot, targets, 0x1A);
+        battle_start_object_script_on_own_stack(slot, targets, 0x1A);
         battle_camera_set_framing_pitch(0xC0);
     }
     if (mode == 0) {
         if (BATTLE_AREA.slots[slot].gear) {
-            battle_start_object_effect_on_stack(slot, BATTLE_AREA.events[battle_area_event_index].targetMask, 2);
+            battle_start_object_script_on_own_stack(slot, BATTLE_AREA.events[battle_area_event_index].targetMask, 2);
         } else {
             sprite_set_completion_callback(sprite, battle_menu_mark_sprite_done);
             battle_walk_next_path_point(sprite);
@@ -494,7 +494,7 @@ void battle_cancel_turn(void) {
         battle_menu_set_acting_slot(battle_current_menu->turnSlot);
         sprite = battle_current_menu->sprite;
         if (BATTLE_AREA.slots[SPRITE_SLOT(sprite)].gear) {
-            battle_start_object_effect_on_stack(SPRITE_SLOT(sprite), 0, 0x1F);
+            battle_start_object_script_on_own_stack(SPRITE_SLOT(sprite), 0, 0x1F);
         } else {
             sprite->x = (u16)BATTLE_AREA.slots[battle_current_menu->slot].x << 16;
             sprite->z = (u16)BATTLE_AREA.slots[battle_current_menu->slot].z << 16;
@@ -850,7 +850,7 @@ void battle_area_event_step_gear(void) {
         return;
     case 0xFE:
         battle_wait_for_disc();
-        battle_start_object_effect_on_stack(battle_current_menu->turnSlot, BATTLE_AREA.events[battle_area_event_index].targetMask, 4);
+        battle_start_object_script_on_own_stack(battle_current_menu->turnSlot, BATTLE_AREA.events[battle_area_event_index].targetMask, 4);
         battle_menu_set_state(10);
         return;
     case 0xFC:
@@ -860,7 +860,7 @@ void battle_area_event_step_gear(void) {
         return;
     case 0xFD:
         battle_area_event_index++;
-        battle_start_object_effect_on_stack(slot, BATTLE_AREA.events[battle_area_event_index - 1].targetMask, 2);
+        battle_start_object_script_on_own_stack(slot, BATTLE_AREA.events[battle_area_event_index - 1].targetMask, 2);
         return;
     case 0xF3:
     case 0xF5:
@@ -889,7 +889,7 @@ void battle_area_event_step_gear(void) {
         battle_current_menu->field4A = 1;
         battle_single_action_set_actor(sprite);
         battle_area_event_index++;
-        battle_start_object_effect_on_stack(slot, BATTLE_AREA.events[battle_area_event_index - 1].targetMask, type);
+        battle_start_object_script_on_own_stack(slot, BATTLE_AREA.events[battle_area_event_index - 1].targetMask, type);
         return;
     }
 }

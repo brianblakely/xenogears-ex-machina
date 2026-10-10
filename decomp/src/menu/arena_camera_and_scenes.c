@@ -1,4 +1,4 @@
-/* menu2: text 800707A8-800732CC, rodata 8006FAF4-8006FBF8, data
+/* arena_camera_and_scenes: text 800707A8-800732CC, rodata 8006FAF4-8006FBF8, data
  * 80090F38-800910F4, variables 800925D4-80092638 and 80092954-80092A24.
  * The camera's eye, look-at point and view modes; the scene script
  * interpreter and its scenes (the opening, the scene list, the bout-end

@@ -5,7 +5,7 @@
 #include "psyq/libgpu.h"
 #include "packets.h"
 
-/* The selection screen (menu4 8007EEE8-8007F834, 800802A4-800808F4): the
+/* The selection screen (arena_menu_screens 8007EEE8-8007F834, 800802A4-800808F4): the
  * list of the 49 entries, their portraits in VRAM, and the two sides'
  * selection wheels. */
 

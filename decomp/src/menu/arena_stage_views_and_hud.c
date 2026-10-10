@@ -1,4 +1,4 @@
-/* menu5: text 80081ECC-80088BFC, rodata 800701B0-80070284, data
+/* arena_stage_views_and_hud: text 80081ECC-80088BFC, rodata 800701B0-80070284, data
  * 8009178C-80091964, variables 80092768-800927F0 and 80095580-80096D88.
  * The arena (the backdrop, ground heights, stage colours, floor, wall,
  * shadows and map), the idle and pair cameras, the drawing of the 3D
@@ -773,9 +773,9 @@ void arena_camera_frame_actors_for_scene(Actor *first, Actor *second) {
 }
 
 /* 80083B54: Read the camera's look-at point and eye. */
-void arena_camera_get_position_and_focus(VECTOR *look, VECTOR *eye) {
-    *look = arena_camera_position;
-    *eye = arena_camera_focus;
+void arena_camera_get_position_and_focus(VECTOR *position, VECTOR *focus) {
+    *position = arena_camera_position;
+    *focus = arena_camera_focus;
 }
 
 /* 80083BB4: Clear the display area (one or both 320-wide buffers) and wait. */

@@ -4,8 +4,8 @@
 #include "common.h"
 #include "actor.h"
 
-/* The bout (menu3 80075060-80075748, 80079A8C-8007B210 but the camera's
- * functions; menu5 80083CE8): rounds, the referee, the replay of a round's
+/* The bout (arena_fighters_bout_and_effects 80075060-80075748, 80079A8C-8007B210 but the camera's
+ * functions; arena_stage_views_and_hud 80083CE8): rounds, the referee, the replay of a round's
  * end and the result view. */
 
 extern s32 arena_debug_enabled;          /* debug: pad camera tuning, both sides' move names */

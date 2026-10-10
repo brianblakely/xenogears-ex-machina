@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-/* Cooperative tasks (menu7 8008BA2C-8008BCC8): a task runs on its own
+/* Cooperative tasks (arena_scene_graph_and_opponent 8008BA2C-8008BCC8): a task runs on its own
  * stack until it yields back to the frame loop (handwritten context
  * switches, arena_task_save_scheduler.s and its kin). */
 

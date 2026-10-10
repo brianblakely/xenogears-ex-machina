@@ -7,8 +7,8 @@
 #include "resident/model.h"
 #include "node.h"
 
-/* The two fighters of the arena (menu3 80073424-8007B270 but the bout and
- * camera functions; menu5 80084BEC-80084FD0, 8008509C-8008518C): their
+/* The two fighters of the arena (arena_fighters_bout_and_effects 80073424-8007B270 but the bout and
+ * camera functions; arena_stage_views_and_hud 80084BEC-80084FD0, 8008509C-8008518C): their
  * models and moves, shots, trails, hits and input, and the per-frame
  * status, action and motion. */
 

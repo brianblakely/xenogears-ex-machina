@@ -24,7 +24,7 @@
 
 /* This unit's own variables: those of up to 8 bytes in its .sbss
  * (8005934c), the larger window, text and controller queue buffers in its
- * .bss (80059fd8), as the original assembler placed them (SBSS_main2 in
+ * .bss (80059fd8), as the original assembler placed them (SBSS_text_windows_and_pads in
  * slus_006.64.mk). */
 static s32 text_font_two_byte_threshold;    /* 8005934C: font: first byte of a two-byte character */
 static s32 text_font_two_byte_glyph_offset; /* 80059350 */

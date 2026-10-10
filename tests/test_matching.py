@@ -190,7 +190,7 @@ class MatchingTests(unittest.TestCase):
             ("gte_shared", "worldmap",
              '#include "common.h"\n#include "psyq/libgte.h"\n'
              '#include "psyq/inline_c.h"\n', (("v0", v0),)),
-            ("menu2", "menu", menu_includes,
+            ("arena_camera_and_scenes", "menu", menu_includes,
              (
                  ("rot", ("MATRIX", "point->m[2][2]", "gte_SetRotMatrix(point)",
                           "gte_SetRotMatrix(get_point())", 0x29, 16, (0x23,), 5)),
@@ -397,7 +397,7 @@ class MatchingTests(unittest.TestCase):
         from tools.matching_coverage import stray_padding
 
         for data, stray in (
-            (b"ply_01\0o", True),  # menu6's gear list: a stray 'o'
+            (b"ply_01\0o", True),  # arena_mode_entry's gear list: a stray 'o'
             (b"Size%9d\n\0\0\x94\x08", True),
             (b"ab\0\0", False),  # zero padding, as C emits it
             (b"abc\0", False),  # no padding

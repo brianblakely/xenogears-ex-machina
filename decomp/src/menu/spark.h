@@ -6,7 +6,7 @@
 #include "psyq/libgte.h"
 #include "node.h"
 
-/* Spark emitters (menu7 8008C7C0-8008DF30): pools of sparks of one shape
+/* Spark emitters (arena_scene_graph_and_opponent 8008C7C0-8008DF30): pools of sparks of one shape
  * (lines through their last positions, tiles or dots), launched by a
  * placement rule and moved under gravity with a bounce. */
 

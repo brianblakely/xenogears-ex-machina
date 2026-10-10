@@ -45,10 +45,10 @@ PACKER_TAIL := 5
 # commons last. Field, compiled by the same GCC 2.7.2, keeps one .bss with its
 # small and large commons interleaved. SBSS (decomp/Makefile) makes the split
 # in every unit with variables (menu.yaml, menu.bss.ld).
-SBSS_menu2 := 8
-SBSS_menu3 := 8
-SBSS_menu4 := 8
-SBSS_menu5 := 8
-SBSS_menu6 := 8
-SBSS_menu7 := 8
+SBSS_arena_camera_and_scenes := 8
+SBSS_arena_fighters_bout_and_effects := 8
+SBSS_arena_menu_screens := 8
+SBSS_arena_stage_views_and_hud := 8
+SBSS_arena_mode_entry := 8
+SBSS_arena_scene_graph_and_opponent := 8
 SBSS_menu_common := 8

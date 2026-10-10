@@ -33,7 +33,7 @@ never does (`move v0,0; lw ra; addiu sp; jr ra; nop`, battle 800716d8); 2.7.2
 does not always fill it, and 2.6.3 also differs in commutative operand order and
 narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; otherwise a
 code unit's version is the one that alone reproduces some of its functions
-(resident main 8001a344 and main2 80032f54 only under 2.7.2; the ring reset
+(resident main 8001a344 and text_windows_and_pads 80032f54 only under 2.7.2; the ring reset
 80028aac builds the same under 2.6.3 and 2.7.2, though not under 2.8.1, which
 omits its empty 8-byte frame). Rebuilt under each pinned cc1, 79 of the 106 C
 units match only under their own. Three small code units build identical objects
@@ -71,7 +71,7 @@ Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay 
 the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to old-gcc
 2.6.3 for saved whole units of movie, battle_scene, slot39 and sound; CC1PSX
 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
-field_motion, menu5, worldmap_objects_effects_party and
+field_motion, arena_stage_views_and_hud, worldmap_objects_effects_party and
 worldmap_steering_camera_terrain; Psy-Q ASPSX 2.34 assembles movie 800737ec, battle
 800a7064 and sound 8003b424 to the text that maspsx `--aspsx-version=2.34` and GNU as
 give.
@@ -586,7 +586,7 @@ under .local keeps splat's names for what no symbol file names.
   `$a1` as the step count and the facing), which sched1 does not sink as births.
 - Strings whose alignment padding holds stray bytes stay original data:
   mark the symbol `force_not_migration:True` (with `size:` and a symbol after it where
-  splat would join the strings that follow, menu6's `arena_select_first_gear_model_name`), link it with
+  splat would join the strings that follow, arena_mode_entry's `arena_select_first_gear_model_name`), link it with
   INCLUDE_RODATA beside the function and reference it as `extern char[]`; never spell
   the stray bytes in a C initializer, also not as invented trailing elements
   (Recovering data). A .data object whose padding holds such bytes (a byte flag
@@ -597,7 +597,7 @@ under .local keeps splat's names for what no symbol file names.
   follows the object before it, slot39's flag menu_saving_at_cd_change); use it only where the
   padding is non-zero and nothing reads it. Both count as `included`. The same holds
   where the object ends its unit's section and stray bytes run to the next unit's
-  (menu7's arena_actor_combo_inputs, then `ind`), which are not established as the assembler's
+  (arena_scene_graph_and_opponent's arena_actor_combo_inputs, then `ind`), which are not established as the assembler's
   fill (Recovering data).
   The coverage report finds a string's stray byte itself; every other included object
   needs an `included` line in the target's classification with its reason (those data
@@ -679,7 +679,7 @@ under .local keeps splat's names for what no symbol file names.
   its plane; `console_load_font_cluts` rebuilds all 64 entries of the console font CLUTs
   `console_font_cluts` before their only upload; the gauge palette
   `arena_hud_gauge_palette` is the grey ramp 0x8000 | 0x421 * i (i = 1..14, opaque black
-  at 0 and 15); and menu7's glow ramp `arena_glow_palette` colours the heat values
+  at 0 and 15); and arena_scene_graph_and_opponent's glow ramp `arena_glow_palette` colours the heat values
   `arena_glow_step` computes, with bit 15 set on every entry by `arena_glow_init` before
   its upload.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
@@ -878,9 +878,9 @@ converted to C per unit. What converting the targets' `.data` established:
 - An object that ends its unit's section can be followed by stray bytes up to the next
   unit's. In the targets' links eleven included objects end their unit's section so: the
   strings field_clear_otag_label and field_error_id0_format (field),
-  arena_debug_rate_format (menu6), battle_debug_state_page_char_format (debug2611's
+  arena_debug_rate_format (arena_mode_entry), battle_debug_state_page_char_format (debug2611's
   pages.c) and item_shop_save_file_prefix (ovl2601) and the .data objects
-  arena_actor_combo_inputs (menu7, `ind` before menu2's .sbss) and
+  arena_actor_combo_inputs (arena_scene_graph_and_opponent, `ind` before arena_camera_and_scenes's .sbss) and
   battle_unreferenced_stray_byte (battle), all of ASPSX 2.34 units, and
   battle_music_lowered (battle) and battle_setup_next_member_image_column (ovl2615) of
   2.56 units and the world map's worldmap_scene15_flame_sizes and
@@ -910,7 +910,7 @@ converted to C per unit. What converting the targets' `.data` established:
   field_event_restore_gears) and battle_read_gear_files indexes the table by a
   combatant's gear id without a range check. With 19 pairs, battle's 00 00 is GCC's zero
   fill before the word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the
-  unit's last .data object as `ind` follows menu7's arena_actor_combo_inputs (above):
+  unit's last .data object as `ind` follows arena_scene_graph_and_opponent's arena_actor_combo_inputs (above):
   both are ASPSX 2.34 units, and both files go on with zeros for the uninitialized
   variables after those bytes (ovl2143's .bss, the menu's .sbss). Neither the readers
   nor the vendor tools, which write zeros at every stray byte under DOSBox, tell 19
@@ -956,11 +956,11 @@ converted to C per unit. What converting the targets' `.data` established:
   offset rather than a number.
 - GCC emits a function's string literals into `.rodata` ahead of its code, in the order
   of first use, and its jump tables after it; an initializer's literals in reverse
-  order once the definition ends (menu6's gear list and heap tag names). A unit emits
+  order once the definition ends (arena_mode_entry's gear list and heap tag names). A unit emits
   identical literals once, so a second copy is an array (movie's second `"\n"`), and a
   table whose strings follow some function's literals is defined after that function,
-  with the data defined around it in data order (menu3's ether name and combo names,
-  menu4's level, command and menu line names).
+  with the data defined around it in data order (arena_fighters_bout_and_effects's ether name and combo names,
+  arena_menu_screens's level, command and menu line names).
 - Several images end with zeroed `.bss` (slot39, menu, mdec, ovl2143, ovl2596,
   ovl2601, ovl2602, ovl2615). Uninitialized variables are defined uninitialized in
   their unit, never as zero data, and where a file holds its `.bss` as zeros the
@@ -987,7 +987,7 @@ converted to C per unit. What converting the targets' `.data` established:
   (in `.sbss` it 8-aligns an 8-byte object). In the original images each object takes
   a slot of whole words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39's RECT
   801ea8e4), evidenced separately for ASPSX 2.34's `.lcomm` statics (mdec
-  801e8958-801e8968: five u8, stored and loaded bytewise; menu3 80092678-800926a0;
+  801e8958-801e8968: five u8, stored and loaded bytewise; arena_fighters_bout_and_effects 80092678-800926a0;
   slot39 801ea710/801ea714) and for the commons PSYLINK allocated (ovl2596
   801e44e0/801e44e4; libcd's Stsector_offset alone at 801e89bc; the ASPSX 2.79 world
   map's four u16 at 8009bd10-8009bd1c, which three units share). The build gives each
@@ -1012,11 +1012,11 @@ converted to C per unit. What converting the targets' `.data` established:
 - A unit's own variables come first, in unit order, as statics where the commons follow
   apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk` reports every
   FOREIGN reference, another unit's code forming an address in a unit's own `.bss` (in
-  no target but the menu, whose one, 80092a30, menu2's arena_scene_update_bout_end only
+  no target but the menu, whose one, 80092a30, arena_camera_and_scenes's arena_scene_update_bout_end only
   forms as the end of its loop over the embers arena_scene_bout_end_embers[3]: it is the
-  pad word of menu3's arena_effect_hit_spark_position behind them), and, with `--end`,
+  pad word of arena_fighters_bout_and_effects's arena_effect_hit_spark_position behind them), and, with `--end`,
   the order of variables still extern. That places menu 800707A8 and 8007E528 exactly,
-  the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC
+  the arena_menu_screens/arena_stage_views_and_hud boundary at 80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC
   and at or before 801DBDB4 (an earlier one moves the `.bss` boundary with it), and
   battle 800B7870's unit at or before 800B7134, whose shatter draw shares its
   battle_shatter_ot; the latest is kept. The commons, which the original linker
@@ -1062,14 +1062,14 @@ converted to C per unit. What converting the targets' `.data` established:
   sets it for every unit with variables, commons unit included; menu.yaml links each
   unit's `.sbss` into the file (data entries with `linker_section: .sbss`) and its
   `.bss` NOLOAD past it, one subsegment per unit with the segment's `bss_size`, and
-  menu.bss.ld asserts both bounds. The task scheduler's two words open menu7's larger
+  menu.bss.ld asserts both bounds. The task scheduler's two words open arena_scene_graph_and_opponent's larger
   variables: an explicit `.bss` in its handwritten arena_task_save_scheduler.s, outside the
   assembler's rule, classified `handwritten`.
 - The resident's BSS (800592bc-8006faf0, the span its entry point clears) has the same
   four parts, the PsyQ libraries' statics after the game units' own and their commons
   among the game's: every unit's variables of up to 8 bytes in link order
   (800592bc-800593a4: the `-G8` units' `.sbss` and, by `SBSS_<file> := 8`, that of the
-  GCC 2.7.2 `-G0` units main, model_renderer, main2 and console_and_sound_driver), the
+  GCC 2.7.2 `-G0` units main, model_renderer, text_windows_and_pads and console_and_sound_driver), the
   libraries' small statics, the small commons (commons_small.c), every unit's larger
   variables (800595e8-8005a1fc; the GCC 2.6.3 unit cd_reads_and_streams keeps all its
   statics there in declaration order), the libraries' other statics, and the other
@@ -1104,7 +1104,7 @@ converted to C per unit. What converting the targets' `.data` established:
   `menu.bss.ld` with its `.sbss`, `worldmap.data.ld`, `battle.data.ld`), and the
   resident's unless its own is the span the entry point clears (`link.ld`).
 - Embedded game data stays generated and is classified `asset` with its format
-  (menu7's SpriteModel arena_actor_extra_model); library data is classified `sdk` by the code that
+  (arena_scene_graph_and_opponent's SpriteModel arena_actor_extra_model); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
   function's `.s` file, and coverage counts it with the function (the resident's
   library strings and jump tables as `sdk`) until the function is C and the compiler
@@ -1140,7 +1140,7 @@ functions are data objects and never count as C: machine words in a
 Such an object counts as `text_data` (bytes, no instructions) only where the target's
 classification has a `START END text_data NAME REASON` line for it: NAME is cc1's
 label at START, the range ends at the next symbol, and the reason is the evidence that
-the original keeps the object in .text (menu6's mode-task table arena_mode_tasks). Every other
+the original keeps the object in .text (arena_mode_entry's mode-task table arena_mode_tasks). Every other
 such byte fails the report, whatever placed it: the attribute in any spelling, a
 function's static under 2.7.2-cdk, or a definition cc1 emits while an INCLUDE_RODATA
 has left the assembler in .text. The report also fails on a data directive cc1 emits

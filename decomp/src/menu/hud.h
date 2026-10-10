@@ -7,7 +7,7 @@
 #include "stage.h"
 #include "mode.h"
 
-/* The HUD and the map overlay (menu5 80085E34-800875EC): the name plates,
+/* The HUD and the map overlay (arena_stage_views_and_hud 80085E34-800875EC): the name plates,
  * icons and gauges of both sides, the map frame with its arrows and
  * marks. */
 

@@ -11,7 +11,7 @@ data:
   handler returns the halfwords to advance; 0 yields until the actor's next
   update. Only worldmap_scene17_script_start (worldmap_scene17_actor_script) and worldmap_scene18_script_start (worldmap_scene18_actor_script) give
   an actor a script.
-* Arena scene scripts, arena_scene_run_script (decomp/src/menu/menu2.c). Bytes; switch
+* Arena scene scripts, arena_scene_run_script (decomp/src/menu/arena_camera_and_scenes.c). Bytes; switch
   cases 1-34 take one to three bytes, except 16 and 17, which never advance
   and never return. 0 and every value without a case return without
   advancing. arena_scene_start_script starts the scripts: arena_scene_scripts[scene]
@@ -26,7 +26,7 @@ data:
   runs one cue and stores state 1 (or 0). A cue that clears worldmap_loop_running ends
   the world-map loop (worldmap_run_frame_loop) after that frame, so the director never
   runs again.
-* Arena move frame events, arena_frame_event_run (decomp/src/menu/menu3.c). A gear
+* Arena move frame events, arena_frame_event_run (decomp/src/menu/arena_fighters_bout_and_effects.c). A gear
   model file (directory 0x30/1) holds per animation a list of FrameEvent
   records {first, last, spec} ending in first 0xFF; each record whose frame
   range holds the frame runs the HitSpec at header + spec through a switch on
@@ -158,7 +158,7 @@ WORLDMAP_HANDLER_ADDRESSES = (
     0x80076CB4, 0x80076CD4, 0x80076CF4, 0x80076D1C, 0x80076D50, 0x80076D8C,
 )  # fmt: skip
 
-# Switch cases of arena_scene_run_script in decomp/src/menu/menu2.c. Operands are
+# Switch cases of arena_scene_run_script in decomp/src/menu/arena_camera_and_scenes.c. Operands are
 # unsigned bytes. Headings are relative to the facing toward the opponent.
 ARENA = Machine(
     name="arena",
@@ -274,7 +274,7 @@ def scripts(machine: Machine, data: bytes, base: int = BASE) -> list[tuple[str, 
     ]
 
 
-# Script-shaped data that nothing starts (menu2.c); decoded and reported apart.
+# Script-shaped data that nothing starts (arena_camera_and_scenes.c); decoded and reported apart.
 UNREFERENCED = {ARENA.name: [("arena_scene_unreferenced_script", 0x80091050)], WORLDMAP.name: []}
 
 

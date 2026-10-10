@@ -1,6 +1,6 @@
 """Message text and its control codes, from the recovered window code.
 
-window_reveal_text (decomp/src/resident/main2.c) reveals a window's text. A byte
+window_reveal_text (decomp/src/resident/text_windows_and_pads.c) reveals a window's text. A byte
 below the font's two-byte threshold (text_font_two_byte_threshold, font halfword 2, installed by
 text_install_font) is a one-byte glyph and a byte at or above it starts a two-byte
 glyph, unless it is one of the controls 00, 01, 02, 03 or 0F; 0F takes a

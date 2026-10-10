@@ -4,7 +4,7 @@
 #include "common.h"
 #include "actor.h"
 
-/* The computer opponent (menu7 8008EE1C-80090F38): a brain per side that
+/* The computer opponent (arena_scene_graph_and_opponent 8008EE1C-80090F38): a brain per side that
  * picks commands by mode (idle, attack, distance, approach) from its
  * tendencies and the actors' distance, charge and hp, and enters them as
  * the actor's pad inputs. */

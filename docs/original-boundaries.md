@@ -145,7 +145,7 @@ Outside the libraries the game itself uses:
 ### Controllers
 
 - InitPAD fills `pad_receive_buffers[2]` (0x22-byte receive buffers); StartPAD and
-  ChangeClearPAD(0) follow (main2.c pad_start_controllers). pad_read_buttons accepts types
+  ChangeClearPAD(0) follow (text_windows_and_pads.c pad_start_controllers). pad_read_buttons accepts types
   0x40 (digital), 0x50 (analog joystick) and 0x70 (analog pad) with status 0;
   pad_get_controller_kind reports 0 none (status 0xFF), 1 digital, 2 mouse, 3 joystick,
   4 analog pad, -1 other. Field, world-map, battle and menu loops pause while
@@ -159,13 +159,13 @@ Outside the libraries the game itself uses:
   pad_port1_right_stick_x/pad_port1_right_stick_y/pad_port1_left_stick_x/pad_port1_left_stick_y
   (port 1); a digital pad gets pad_port0_left_stick_x/pad_port0_left_stick_y from
   the d-pad (tables pad_dpad_stick_x_table/pad_dpad_stick_y_table). Only the arena
-  reads them (menu3.c arena_actor_read_pad, menu4.c arena_menu_apply_pad_input).
+  reads them (arena_fighters_bout_and_effects.c arena_actor_read_pad, arena_menu_screens.c arena_menu_apply_pad_input).
 - Vibration: `pad_actuators[2]` hold each port's four transmit bytes, registered
   once with libapi_register_pad_send_buffers(act0, 4, act1, 4)
   (pad_init_actuators). The vblank handler steps them
   (pad_step_actuators/pad_step_actuator): {1, 0x40, 1, 0} while the timer runs,
   {1, 0x40, 0, 0} once, then off. pad_run_actuator(port, frames) starts one; only
-  the arena calls it (menu3.c arena_actor_vibrate_pad, per side, gated by the
+  the arena calls it (arena_fighters_bout_and_effects.c arena_actor_vibrate_pad, per side, gated by the
   settings' port vibration options arena_settings.option4/.option5).
 - Input is sampled once per vertical blank, not per game frame: the vblank
   handler queues held, pressed and repeat words for both ports in a 16-entry
@@ -283,7 +283,7 @@ callback save and restore (Memory card and saves) and the dormant CdMix.
   | Entry | Reads | Sector callbacks |
   | --- | --- | --- |
   | cd_read_file(file, dest, after, flags), cd_start_read | one file of the selection; flags 0x100: into a stream ring (0x200: the host movie stream; on the disc it issues nothing) | cd_copy_file_sector copies; for a ring, stream_store_sector puts each sector in a free slot numbered in arrival order and the data callback stream_mark_sector_complete completes the slots in order |
-  | cd_read_raw_sectors(sector, dest, size) | raw sectors: the swap's label and index, the arena's portraits (two sectors each inside file 6, menu4.c arena_select_load_pick_portraits), boot word 0's index, the movie tools | cd_copy_file_sector |
+  | cd_read_raw_sectors(sector, dest, size) | raw sectors: the swap's label and index, the arena's portraits (two sectors each inside file 6, arena_menu_screens.c arena_select_load_pick_portraits), boot word 0's index, the movie tools | cd_copy_file_sector |
   | cd_read_file_list(list, after) | a zero-terminated (file, destination) list, sorted by file and read in one pass: a next file at most cd_max_list_gap_sectors = 16 sectors ahead is read through (the sectors between are not copied), a farther one gets Pause and Setloc | cd_copy_list_sector |
   | stream_start_image_load(file, ring, after, 0, placement) | an image stream into VRAM (Streams) | stream_store_image_sector (a copy of stream_store_sector); the data callback stream_load_image_strip loads the strips |
   | cd_seek_or_pause_if_idle, cd_seek_or_pause(file) | a seek (Setloc, SeekL) to a file, or Pause for file <= 0; cd_seek_or_pause_if_idle only when idle, once before a field movie (field field_movie_play) | — |
@@ -487,7 +487,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   movie_mode_unread_decode_vsync_times).
 - GetRCnt: the sound tick times itself on root counter 2 (sound_unread_tick_time_total,
   sound_unread_timed_tick_count; profiling); the arena compacts its ordering table while root
-  counter 1 (horizontal blanks) stays within a budget (menu7.c arena_display_note_frame_start,
+  counter 1 (horizontal blanks) stays within a budget (arena_scene_graph_and_opponent.c arena_display_note_frame_start,
   arena_display_compact_layer), which changes which empty tags are skipped, not the image.
 - pad_vblank_count, the game's own blank count (vblank handler), is the play time
   stored in saves; it also drives input repeat, arena colour cycles and the
@@ -499,12 +499,12 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   menu_read_input, ovl2598 member_change_read_input, ovl2600
   name_entry_read_input, ovl2601 item_shop_read_input and ovl2602
   gear_shop_read_input.
-- The vblank handler's h:m:s clock (main2.c pad_advance_play_time) counts blanks
+- The vblank handler's h:m:s clock (text_windows_and_pads.c pad_advance_play_time) counts blanks
   in pad_play_time_frames (60 to the second), then seconds in
   pad_play_time_seconds, minutes in pad_play_time_minutes and hours in
   pad_play_time_hours; pad_play_time_stopped stops it at 100 h. The counters live
   in BSS, so they start at zero at boot and after a soft reset. The stop flag is
-  initialised data (main2.c:76) that only pad_advance_play_time tests and sets and
+  initialised data (text_windows_and_pads.c:76) that only pad_advance_play_time tests and sets and
   nothing clears, and a soft reset keeps .data: once the clock has reached 100 h
   it stays stopped, at 00:00:00 after a soft reset, until the program is loaded
   again. It counts through pauses, because only pad_vblank_count is restored, and
@@ -531,7 +531,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
 | 2 battle pause and missing pad (battle.c battle_read_input, battle_tick_event_script, battle_tick_result_screens) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in battle_read_input and battle_tick_event_script only while battle_turns_active is set) toggles battle_paused. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and pad_vblank_count is restored, as in the field |
 | 3 world map (worldmap_main, loop worldmap_run_frame_loop) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (worldmap_stream_step); sprite scripts tick twice per update (sprite_frame_skip = 1, worldmap_open_map_start) |
 | 3 world-map pause (worldmap_open_map.c worldmap_run_pause_screen, worldmap_wait_for_controller) | DrawSync, VSync(0) | 1 | A Start press (the pressed word worldmap_pad_port0_pressed & 0x800) enters worldmap_run_pause_screen until the next press, and a missing first pad enters worldmap_wait_for_controller until one answers (worldmap.c worldmap_run_frame_loop). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
-| 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (menu5.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
+| 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (arena_stage_views_and_hud.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 menu_run_frame) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
 | 5 menu missing pad (slot39 menu_read_input; ovl2598 member_change_read_input, ovl2600 name_entry_read_input, ovl2601 item_shop_read_input, ovl2602 gear_shop_read_input) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
 | 6 movie (movie_mode_main, player movie_mode_play_movie) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
@@ -585,9 +585,9 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
-| vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (worldmap_main); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
-| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c movie_mode_main, movie_mode_read_menu_input, movie_mode_read_playback_input) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_motion.c field_pointer_read/field_pointer_move_by_mouse, type 0x12 on port 1); the unreferenced dump pad_print_state |
-| vblank hook pad_vblank_hook | the arena (menu5.c arena_mode_task: arena_mode_vblank_hook); cleared by the dispatcher | every vertical blank | on odd blanks while arena_mode_glow_in_vblank is set, arena_glow_step steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
+| vblank handler pad_vblank_callback (text_windows_and_pads.c) | VSyncCallback at boot (boot_main) and on world-map entry (worldmap_main); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
+| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (text_windows_and_pads.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c movie_mode_main, movie_mode_read_menu_input, movie_mode_read_playback_input) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_motion.c field_pointer_read/field_pointer_move_by_mouse, type 0x12 on port 1); the unreferenced dump pad_print_state |
+| vblank hook pad_vblank_hook | the arena (arena_stage_views_and_hud.c arena_mode_task: arena_mode_vblank_hook); cleared by the dispatcher | every vertical blank | on odd blanks while arena_mode_glow_in_vblank is set, arena_glow_step steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
 | sound tick sound_run_tick (sound.c) | sound_start_driver: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, sound_silence_voices, and sound_restore_voices clears it) | sound_tick_count (tick count, stamps effect voices); every other tick the master and CD fades (sound_volumes), every tick the sequence slides and beats (sound_playing_seq_list, which links the effect channels too), staged voice registers written through sound_spu_registers (sound_flush_voice_registers, sound_key_off_voices), SpuSetCommonAttr, SPU IRQ re-enable (sound_pending_irq_enable) | the effect-end waits (below); the main loop reads the same driver state between ticks |
 | SPU transfer done sound_complete_transfer | sound_start_driver, each transfer (sound_start_next_transfer) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (sound_transfer_ring_read_index/sound_transfer_ring_write_index), which sets 0x10 again | the transfer waits (below) |
 | SPU IRQ sound_dispatch_spu_irq | sound_start_driver | SPU IRQ | sound_unread_spu_irq_count++, hook sound_spu_irq_hook | — |
@@ -718,8 +718,8 @@ Development only:
 | never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field field_exit_to_mode, battle mode_run_battle, world map worldmap_main, arena arena_mode_exit (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie movie_mode_main (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (field_event_soft_reset), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
-| arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c arena_mode_main); yields at 7 sites (menu2.c 1, menu5.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
-| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c arena_winner_open_screen (5, 4), arena_winner_close_screen and menu5.c arena_mode_task (1, 1), battle battle_reset_scene and ovl2143 gear_model_init (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
+| arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (arena_mode_entry.c arena_mode_main); yields at 7 sites (arena_camera_and_scenes.c 1, arena_stage_views_and_hud.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
+| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena arena_camera_and_scenes.c arena_winner_open_screen (5, 4), arena_winner_close_screen and arena_stage_views_and_hud.c arena_mode_task (1, 1), battle battle_reset_scene and ovl2143 gear_model_init (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
 Mode table mode_table (rows {entry, BSS start, BSS end, loaded}; overlay files
 mode_overlay_files in directory (0, 1)):
@@ -785,7 +785,7 @@ isrgb24 0. The game changes only what the table lists.
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_open_map.c worldmap_init_display |
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (battle_setup_build_stage) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
-| Battling arena | 640x218 for scenes (menu2.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, menu5.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c arena_display_set_disp_envs, arena_display_set_draw_envs |
+| Battling arena | 640x218 for scenes (arena_camera_and_scenes.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, arena_stage_views_and_hud.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | arena_scene_graph_and_opponent.c arena_display_set_disp_envs, arena_display_set_draw_envs |
 | in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; menu_framework.c menu_run_frame |
 | movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c movie_mode_main, movie_mode_play_requested_movie; its CD-ROM and sector monitors (debug) use 640x240 |
 
@@ -809,7 +809,7 @@ GTE with H 0x1000 (sprite_sheet.c).
 - 24-bit links: AddPrim (135 functions), AddPrims, the handwritten OT helpers
   (800315a0-80031894) and model renderers store packet addresses masked with
   0x00FFFFFF; the arena rebuilds pointers from links as
-  `(tag & 0xFFFFFF) - 0x80000000` (menu7.c arena_display_compact_layer).
+  `(tag & 0xFFFFFF) - 0x80000000` (arena_scene_graph_and_opponent.c arena_display_compact_layer).
 - Dithering is on by default (above). The DR_MODE/DR_TPAGE packets the game
   builds mostly turn it off for what follows. The counts below take the third
   (dither) argument of every call that
@@ -821,9 +821,9 @@ GTE with H 0x1000 (sprite_sheet.c).
   - The linked images hold 62 and 20 such calls, because the two branches of arena
     arena_glow_draw_shade_tile and of world map worldmap_screen_fade_update each
     share one call.
-  - Dither 1 goes to the arena's screen fades (arena_glow_draw_shade_tile at menu7.c:2154
-    and 2156, arena_glow_draw at menu7.c:2203), its HUD packets (arena_hud_build_overlay_buffer
-    at menu5.c:1605 and 1675, arena_hud_build_packets at menu5.c:1832 and 1834) and the
+  - Dither 1 goes to the arena's screen fades (arena_glow_draw_shade_tile at arena_scene_graph_and_opponent.c:2154
+    and 2156, arena_glow_draw at arena_scene_graph_and_opponent.c:2203), its HUD packets (arena_hud_build_overlay_buffer
+    at arena_stage_views_and_hud.c:1605 and 1675, arena_hud_build_packets at arena_stage_views_and_hud.c:1832 and 1834) and the
     world map's dithered saved-screen fade (worldmap_open_map.c:511 in
     worldmap_fade_saved_screen, a DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd

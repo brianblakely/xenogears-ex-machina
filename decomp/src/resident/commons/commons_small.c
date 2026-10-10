@@ -61,9 +61,9 @@ u16 pad_port1_repeated; /* 800594A8: pad buttons repeated, second port */
 void *mode_battle_heap_reservation; /* 800594AC: reservation below the heap marker */
 s32 commons_unused_word_c; /* 800594B0: unreferenced */
 u8 *sprite_queue_entry_blocks; /* 800594B4: the first sprite queue's entry block */
-u8 *sprite_queue_second_entry_block; /* 800594B8: the second's */
+u8 *sprite_queue_unread_second_entry_block; /* 800594B8: the second's */
 void *mode_battle_action_stream_ring; /* 800594BC: battle: the action file */
-struct Task *task_current_node; /* 800594C0 */
+struct Task *task_unread_current_node; /* 800594C0 */
 struct ImageUpload *sprite_queue_upload_lists[2]; /* 800594C4: the upload list of each sprite queue */
 u8 menu_state_saved_cursor; /* 800594CC */
 u8 mode_result_code; /* 800594D0 */

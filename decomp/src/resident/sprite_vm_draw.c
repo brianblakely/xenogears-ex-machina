@@ -297,7 +297,7 @@ void sprite_reset_engine(void) {
 void sprite_alloc_queues(s32 size, s32 mode) {
     sprite_queue_size = size;
     sprite_queue_entry_blocks = heap_alloc(size * 2, mode);
-    sprite_queue_second_entry_block = sprite_queue_entry_blocks + size;
+    sprite_queue_unread_second_entry_block = sprite_queue_entry_blocks + size;
     sprite_queue_free_lists[1] = NULL;
     sprite_queue_free_lists[0] = NULL;
     sprite_queue_upload_lists = NULL;

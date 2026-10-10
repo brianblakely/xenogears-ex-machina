@@ -2,7 +2,7 @@
 # suspended caller's sp while a task runs (arena_task_caller_stack) and the running
 # TaskContext * (arena_current_task). Handwritten storage in an explicit .bss, not a
 # compiler .lcomm, so the menu assembler's small-data rule (menu.mk)
-# left these 8 bytes in .bss, where they open menu7's larger variables
+# left these 8 bytes in .bss, where they open arena_scene_graph_and_opponent's larger variables
 # ahead of its compiled ones.
     .section .bss
 dlabel arena_task_caller_stack  # 80096D88

@@ -1,12 +1,12 @@
-/* menu3: text 800732CC-8007E528, rodata 8006FBF8-8006FE1C, data
+/* arena_fighters_bout_and_effects: text 800732CC-8007E528, rodata 8006FBF8-8006FE1C, data
  * 800910F4-80091230, variables 80092638-800926D4 and 80092A24-80095498.
  * The two fighters (shots, trails, frame events, hits, input, status,
  * action and motion), the bout (the referee, rounds, the replay and the
  * results) with the camera framing it, and the scene's particle effects
  * (the glow emitter, sparkles, bolts, ground particles, scene cells and
  * lines). Its jump tables lie at 0 mod 8 (8006FBF8-8006FDE8); it starts
- * after menu2's handwritten block, and 8007E3CC is the last function
- * reading its variables (8007E528 reads menu4's). */
+ * after arena_camera_and_scenes's handwritten block, and 8007E3CC is the last function
+ * reading its variables (8007E528 reads arena_menu_screens's). */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"
@@ -3104,7 +3104,7 @@ void arena_bout_update_result_view(Actor *first, Actor *second) {
 }
 
 /* This original string also contains nonzero bytes after its terminator. */
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", arena_bout_com2_victory_text); /* 8006FDD8 */
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/arena_fighters_bout_and_effects", arena_bout_com2_victory_text); /* 8006FDD8 */
 
 /* 8007B210: Set up a scene model with the given mode and place it. */
 void arena_actor_play_animation(Actor *model, s32 mode) {

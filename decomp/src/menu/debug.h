@@ -5,7 +5,7 @@
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 
-/* Debug drawing (menu5 80087E38-800884E0): 3D lines that stay for some
+/* Debug drawing (arena_stage_views_and_hud 80087E38-800884E0): 3D lines that stay for some
  * frames, and the recorded path with an axis cross at each point. */
 
 /* A 3D debug line with its packets (one per buffer). */

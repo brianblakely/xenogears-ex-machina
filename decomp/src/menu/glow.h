@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-/* The glow field (menu7 8008DF30-8008E620): a field of heat seeded at its
+/* The glow field (arena_scene_graph_and_opponent 8008DF30-8008E620): a field of heat seeded at its
  * two bottom rows, where each cell takes the cooled average of its
  * neighbours below every step (a fire), drawn over the screen through a
  * 256-colour palette; and the full-screen shade tile. */
