@@ -1,0 +1,10 @@
+[package]
+name = "xem-gpu"
+description = "The PS1 GPU as a deterministic host service: VRAM, GP0/GP1, DMA2 and display readout"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
