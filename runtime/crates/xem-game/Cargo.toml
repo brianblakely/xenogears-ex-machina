@@ -1,0 +1,15 @@
+[package]
+name = "xem-game"
+description = "The game module natively: wasm2c output compiled into the host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+links = "xem_game"
+
+[dependencies]
+xem-core = { path = "../xem-core" }
+
+[build-dependencies]
+cc.workspace = true
