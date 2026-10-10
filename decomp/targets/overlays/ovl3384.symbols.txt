@@ -1,0 +1,5 @@
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+battle_tmd_get_packet_size = 0x800B16A4; // type:func
+battle_tmd_build_packets = 0x800B1720; // type:func
+battle_get_direction_angles = 0x800C0828; // type:func
+battle_area = 0x800C3EB0;

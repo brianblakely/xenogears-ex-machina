@@ -115,8 +115,8 @@ Outside the libraries the game itself uses:
   - Eight go to the scratchpad top 0x1F8003FC, in seven functions. These are
     field func_800739C0 (twice: the camera update func_80073230 and the view
     composition func_800722F4) and func_8007554C (the frame); battle
-    func_800BE790 (the frame), func_800A4654 (the stage update) and
-    func_800B7870 (the intro swirl); and ovl2615's shatter and burst load
+    battle_run_frame (the frame), battle_draw_stage (the stage update) and
+    battle_run_intro_swirl (the intro swirl); and ovl2615's shatter and burst load
     modes func_801E8588 and func_801E91E8. In the C they are the
     `SPAD_STACK_ENTER()` and `"r"(0x1F8003FC)` sites.
   - The other 15 go to the top of a heap block: the 11
@@ -354,7 +354,7 @@ restore (Memory card and saves) and the dormant CdMix.
   - Image streams (stream_start_image_load): the field map's (file 0xB9 + 2 * map of
     entry 4, four slots, field.c func_80070488, waited for by func_80070508)
     and a battle action's (file 0x23 + 2 * index of (0xC, 2), eight slots,
-    battle_800B7134.c func_800B7C34). Each image's first sector holds type
+    battle_action_files.c battle_single_action_load). Each image's first sector holds type
     0x1200 or 0x1201, an origin and an offset (placed by the caller's mode and
     base for each type, stream_image_1200_mode-stream_image_1201_base_y; both shipped callers pass 0,
     origin plus offset), the strip width, the image count, the strip count and
@@ -385,7 +385,7 @@ restore (Memory card and saves) and the dormant CdMix.
     (Sound output modes).
 
   The disc path overlaps reads with frames: battle runs battle frames until the
-  disc is idle (func_800B8354), the field runs field frames before a movie
+  disc is idle (battle_wait_for_disc), the field runs field frames before a movie
   (func_800A7394), the world map steps its reader on VSync(0) and each frame,
   and the field's frame feeds the music ring. How many frames a load spans is
   the read latency, which nothing bounds. The host path finishes plain and list
@@ -455,10 +455,10 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(sprite_frame_skip + 1).
 
 - VSync(-1) is read at exactly four sites: the start and end of the field
   frame (field.c func_8007554C), which only pace it, and of the battle frame
-  (battle_800BD3AC.c func_800BE790), whose measurement battle logic consumes
+  (battle_frame.c battle_run_frame), whose measurement battle logic consumes
   (Pacing per mode).
 - VSync(1) feeds only profiling values (field D_800ADB9C/D_800ADBA0/D_800ADBA4
-  read by debug595, battle D_800D309C.cpu/gpu read by debug2611, arena
+  read by debug595, battle battle_camera.cpu/gpu read by debug2611, arena
   D_800927F0 and the movie monitor's D_800773B8).
 - GetRCnt: the sound tick times itself on root counter 2 (sound_unread_tick_time_total,
   sound_unread_timed_tick_count; profiling); the arena compacts its ordering table while root
@@ -469,7 +469,7 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(sprite_frame_skip + 1).
   arena's vblank hook. Every pause and missing-pad loop (Pacing per mode)
   saves and restores it, so paused time is not counted. These are field
   func_80077E88, world map func_8007634C and func_80076594, the battle input
-  readers func_80089CCC, func_8008A3EC and func_8008A684 (battle.c), and the
+  readers battle_read_input, battle_tick_event_script and battle_tick_result_screens (battle.c), and the
   menu input readers slot39 func_801C7D78, ovl2598 func_801C92AC, ovl2600
   func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
 - The vblank handler's h:m:s clock (main2.c pad_advance_play_time) counts blanks in
@@ -500,8 +500,8 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(sprite_frame_skip + 1).
 | 1 field (func_80077E88, frame func_8007554C) | start = VSync(-1); DrawSync and VSync(0) mid-frame; at the end busy-waits until VSync(-1) >= start + D_800B2078.unk217C + 2 | 2, 3 or 4 | unk217C comes from field event d6 (func_800925A0, operand 0/1/2, which also sets text speed 8/6/4); scripts use all three values on both discs. Sprite scripts tick sprite_frame_skip + 1 = 2 times per update (field.c func_80071FB0) |
 | 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2963-2974). The other is a toggle on Start (field.c:2976-2987): it starts when the field's repeat word D_800C3900 (the queued pad_port0_repeated, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (sound_silence_voices, until sound_restore_voices) and restore pad_vblank_count |
 | 1 field movie (func_800A7C58) | mode D_800ADB74 0: VSync(0) before each decode batch (func_800A732C); 1: field overlays and VSync(0) (func_80075910); 2: the full field frame | 1, or the field's | movie progress D_800B06A0 comes from the MDEC callback |
-| 2 battle (resident mode_run_battle, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync task_catch_up_frame_count = VSync(-1) - start - sprite_frame_skip, clamped 0-4; then VSync(sprite_frame_skip + 1), or VSync(0) when sprite_frame_skip is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). func_800B88C4 leaves sprite_frame_skip = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: holding Select gives VSync(8) and drops the catch-up (func_800BEBC4, mode_disc_mode != -1) |
-| 2 battle pause and missing pad (battle.c func_80089CCC, func_8008A3EC, func_8008A684) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in func_80089CCC and func_8008A3EC only while D_800CCC58 is set) toggles D_800C3444. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and pad_vblank_count is restored, as in the field |
+| 2 battle (resident mode_run_battle, overlay battle_main, frame battle_run_frame) | start = VSync(-1); after DrawSync task_catch_up_frame_count = VSync(-1) - start - sprite_frame_skip, clamped 0-4; then VSync(sprite_frame_skip + 1), or VSync(0) when sprite_frame_skip is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). battle_start_first_frame leaves sprite_frame_skip = 0. Turn logic calls frames from inside rules (battle_wait_frame, nesting counted by battle_frame_nesting). Development: holding Select gives VSync(8) and drops the catch-up (battle_read_pads_with_slowdown, mode_disc_mode != -1) |
+| 2 battle pause and missing pad (battle.c battle_read_input, battle_tick_event_script, battle_tick_result_screens) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in battle_read_input and battle_tick_event_script only while battle_turns_active is set) toggles battle_paused. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and pad_vblank_count is restored, as in the field |
 | 3 world map (func_80070CFC, loop func_800712D0) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (func_800967E4); sprite scripts tick twice per update (sprite_frame_skip = 1, func_80072238) |
 | 3 world-map pause (worldmap_80072238.c func_8007634C, func_80076594) | DrawSync, VSync(0) | 1 | A Start press (the pressed word D_8009BD10 & 0x800) enters func_8007634C until the next press, and a missing first pad enters func_80076594 until one answers (worldmap.c func_800712D0). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
 | 4 Battling arena (`menu` target, func_80088E90) | VSync(D_80092898) | 1 or 2 | the arena task sets D_80092898 to 0 or 2 (menu5.c func_800852C4); the arena coroutine runs once per frame (Control flow) |
@@ -513,42 +513,42 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(sprite_frame_skip + 1).
 Battle alone measures its frames and scales logic by the result. The field's
 VSync(-1) values only pace its frame (field.c:2109-2182), and the work driven by
 blanks rather than frames follows pad_vblank_count (above). After DrawSync the battle
-frame func_800BE790 stores task_catch_up_frame_count, the blanks since the frame's start less
-sprite_frame_skip, clamped to 0-4. It also stores frameTicks D_800CCC5C
-(BattleArea.frameTicks) = task_catch_up_frame_count + sprite_frame_skip (battle_800BD3AC.c:717-724).
+frame battle_run_frame stores task_catch_up_frame_count, the blanks since the frame's start less
+sprite_frame_skip, clamped to 0-4. It also stores frameTicks battle_frame_ticks
+(BattleArea.frameTicks) = task_catch_up_frame_count + sprite_frame_skip (battle_frame.c:717-724).
 The next frame consumes them:
 
-- Catch-up in the frame (battle_800BD3AC.c:703-713). The camera step
-  func_800BBAB8 and the main task list task_run_main_list run task_catch_up_frame_count more times,
-  and so does the battle step func_8008A9C0(1). func_8008A9C0 dispatches on
-  D_800C3E4C, and in state 1 its func_8008A274 runs the ATB tick func_8007171C
-  (while D_800CCC58 is set). The ATB therefore advances once per blank of the
+- Catch-up in the frame (battle_frame.c:703-713). The camera step
+  battle_camera_step and the main task list task_run_main_list run task_catch_up_frame_count more times,
+  and so does the battle step battle_tick_frame(1). battle_tick_frame dispatches on
+  battle_frame_mode, and in state 1 its battle_tick_turns runs the ATB tick battle_tick_atb
+  (while battle_turns_active is set). The ATB therefore advances once per blank of the
   previous frame, up to five times a frame. task_run_main_list zeroes task_catch_up_frame_count
   when its pause count task_main_pause_timer runs out.
-- Stage steps (battle_8009E53C.c:4144-4152, func_800A9A50). D_800C3E88 += 1 +
+- Stage steps (battle_scene.c:4144-4152, battle_update_stage). battle_stage_frame_remainder += 1 +
   frameTicks, capped at 6, yields up to three steps of two blanks, and the
   remainder carries over. The steps advance:
-  - the wave phase (D_800C3CF0 += 56 each);
-  - each object's pose and animation (func_800AAA20, which runs func_800A0838
-    and func_800AE2A4 once per step);
-  - the camera channels (func_800B026C, while D_800C3DF8 is set);
-  - the sprite pool's fades (func_800A2FD8);
+  - the wave phase (battle_surface_wind_phase += 56 each);
+  - each object's pose and animation (battle_update_object, which runs battle_step_part_tweens
+    and battle_run_animation_events once per step);
+  - the camera channels (battle_run_camera_channels, while battle_camera_channels_active is set);
+  - the sprite pool's fades (battle_draw_sprite_pool);
   - the timers and wait-frames counts of the objects' effect scripts
-    (func_800AAD54, run from func_800AAA20). These scripts run only in an
+    (battle_run_effect_script, run from battle_update_object). These scripts run only in an
     update with at least one step.
 - frameTicks itself. Those effect scripts integrate the object's motion
-  frameTicks + 1 times (func_800AAD54). Image animations advance by speed x
-  (frameTicks + 1) (func_800A3E98), both for every drawn object (func_8009F844)
-  and for the stage object (func_800A4654, which func_800BB9D4 calls each
-  frame while the stage is drawn, D_800C372C == 0; sprite command 0x12 of
-  func_800B3F04 sets it as it clears both draw buffers to black, and 0x14
+  frameTicks + 1 times (battle_run_effect_script). Image animations advance by speed x
+  (frameTicks + 1) (battle_step_image_anim), both for every drawn object (battle_draw_object)
+  and for the stage object (battle_draw_stage, which battle_set_view_and_draw_stage calls each
+  frame while the stage is drawn, battle_stage_drawing_off == 0; sprite command 0x12 of
+  battle_sprite_command_run sets it as it clears both draw buffers to black, and 0x14
   clears it).
-- Not scaled. The highlight pulse (D_800C3B7C += 0x80), the push-apart of the
-  acting object (func_800B10EC) and the placement of child objects
-  (func_800AAB34) run once per stage update.
+- Not scaled. The highlight pulse (battle_highlight_pulse_phase += 0x80), the push-apart of the
+  acting object (battle_keep_object_away_from_point) and the placement of child objects
+  (battle_follow_parent_object) run once per stage update.
 - The first frame's frameTicks is max(0, n / 2 - 1), where n counts the gear
   enemies present: slots 3-10 that hold a gear and whose field2 is below 0x11
-  (battle_800B8098.c func_800B88C4).
+  (battle_flow.c battle_start_first_frame).
 
 The sound driver runs beside this on its own timer: 240 ticks per second, about
 4.01 per NTSC vertical blank, so the ticks per frame are not a whole number.
@@ -558,7 +558,7 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
 | vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
-| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read func_800BEC18; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump pad_print_state |
+| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump pad_print_state |
 | vblank hook pad_vblank_hook | the arena (menu5.c func_800852C4: func_80084FD0); cleared by the dispatcher | every vertical blank | on odd blanks while D_80092784 is set, func_8008E120 steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
 | sound tick sound_run_tick (sound.c) | sound_start_driver: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, sound_silence_voices, and sound_restore_voices clears it) | sound_tick_count (tick count, stamps effect voices); every other tick the master and CD fades (sound_volumes), every tick the sequence slides and beats (sound_playing_seq_list, which links the effect channels too), staged voice registers written through sound_spu_registers (sound_flush_voice_registers, sound_key_off_voices), SpuSetCommonAttr, SPU IRQ re-enable (sound_pending_irq_enable) | the effect-end waits (below); the main loop reads the same driver state between ticks |
 | SPU transfer done sound_complete_transfer | sound_start_driver, each transfer (sound_start_next_transfer) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (sound_transfer_ring_read_index/sound_transfer_ring_write_index), which sets 0x10 again | the transfer waits (below) |
@@ -573,7 +573,7 @@ How the main program excludes these handlers:
 - **Critical sections.** EnterCriticalSection/ExitCriticalSection appear in 11
   functions. They bracket:
   - the instruction-cache flush, FlushCache, in the dispatcher mode_dispatch,
-    field func_8007999C, battle func_800BEB04 and world map func_800762FC,
+    field func_8007999C, battle battle_load_module and world map func_800762FC,
     each after a DrawSync and a VSync;
   - the sound driver's start and stop (sound_start_driver, sound_stop_driver) and its
     transfer queue (sound_queue_transfer);
@@ -615,7 +615,7 @@ callback never leaves these:
   choice for a new effect is sound_find_effect_channels.
   - Field event fe 64 (func_8008F5E4) yields while any effect channel in the
     mask operand 1 << 8 is active (sound_get_active_effect_mask(-1)), so its script stalls.
-  - Battle func_800B838C, reached through ovl3087 opcode 48 (func_801E8750),
+  - Battle battle_play_sound_to_end, reached through ovl3087 opcode 48 (func_801E8750),
     runs battle frames until sound_get_active_effect_mask(sound) returns 0. The event VM
     stalls while the battle keeps running.
 - **SPU transfers.** Flag 0x10 stays set until the transfer queue is empty.
@@ -627,9 +627,9 @@ callback never leaves these:
     func_80085C90, func_80085F30 and func_8008AACC (field_800854D0.c:182, 216,
     245, 306, 379, 1960), and ovl3087 func_801E5160 (ovl3087.c:160).
   - `while (sound_sync_transfer(0) != 0)` runs battle frames in battle
-    func_800B838C, func_800B853C and func_800B89FC (battle_800B8098.c:241, 305,
-    439) and func_800BFBA0 (battle_800BD3AC.c:1207). It spins in battle
-    func_800C0FAC (battle_800BFE48.c:547), trapping to the debugger on each
+    battle_play_sound_to_end, battle_close and battle_menu_open_turn (battle_flow.c:241, 305,
+    439) and battle_load_wave_bank_5 (battle_frame.c:1207). It spins in battle
+    battle_install_command_file_parts (battle_settle.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     func_800753B8 and func_8007548C.
   - ovl2615 func_801E6D6C polls the flag once per task step.
@@ -668,8 +668,8 @@ Blocking waits deep in call stacks:
 Development only:
 
 - The ovl2606 battle-scene selector func_801E0238 loops DrawSync and VSync(0)
-  until Start. Battle func_80070F40 runs it only while mode_battle_standalone is set
-  (battle_80070E2C.c:382), and the field's and world map's battle requests
+  until Start. Battle battle_main runs it only while mode_battle_standalone is set
+  (battle_turns_and_hud.c:382), and the field's and world map's battle requests
   clear that flag (field.c:3418, field_800854D0.c:4984 and 5011,
   worldmap.c:152).
 - The vblank handler's pollhost() trap (above).
@@ -685,7 +685,7 @@ Development only:
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine func_8008BB3C (resume) / func_8008BC04 (yield) (handwritten, menu) | task made by func_8008BA2C on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c func_80088E90); yields at 7 sites (menu2.c 1, menu5.c 6); D_80096D88/D_80096D8C hold the suspended caller; func_8008BB00/func_8008BB1C (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
-| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c func_800725B0 (5, 4), func_800726B4 and menu5.c func_800852C4 (1, 1), battle func_800A8B0C and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
+| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c func_800725B0 (5, 4), func_800726B4 and menu5.c func_800852C4 (1, 1), battle battle_reset_scene and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
 Mode table mode_table (rows {entry, BSS start, BSS end, loaded}; overlay files
 mode_overlay_files in directory (0, 1)):
@@ -710,12 +710,12 @@ state and an image at one address can be any of its tenants:
 | 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field func_800799D4 (reads the file), world map func_800758C0 (decodes its packed copy D_8009D528), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
 | 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field func_800A7C58 copies directory 4 file 0xA9 there |
 | 0x801DC000 | ovl2143 (actor module) | field func_80077884 (directory 4 file 0x6B9); for the gear shop func_800799D4 reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its func_80076098, which would draw actor 0, has no caller |
-| 0x801DE000 | ovl2596 (battle results) | battle func_80070F40 |
-| 0x801E0000 | ovl2606 (debug battle selector) | battle func_80070F40 |
+| 0x801DE000 | ovl2596 (battle results) | battle battle_main |
+| 0x801E0000 | ovl2606 (debug battle selector) | battle battle_main |
 | 0x801E4000 | ovl2615 (battle setup) | resident mode_battle_load_files |
-| 0x801E5000 | ovl3087 (battle event VM) | battle func_80070E2C |
-| 0x801FC000 | ovl3381, ovl3383-ovl3387 (battle modules) | battle func_800BEB04, mid-frame when sprite_requested_battle_module changes (DrawSync, VSync(0), FlushCache); above the heap |
-| 0x80280000 | debug595, debug2611 | field func_80077E88, battle func_80070F40; development kits only (8 MB) |
+| 0x801E5000 | ovl3087 (battle event VM) | battle battle_start_event_script_module |
+| 0x801FC000 | ovl3381, ovl3383-ovl3387 (battle modules) | battle battle_load_module, mid-frame when sprite_requested_battle_module changes (DrawSync, VSync(0), FlushCache); above the heap |
+| 0x80280000 | debug595, debug2611 | field func_80077E88, battle battle_main; development kits only (8 MB) |
 
 Resident code calls these entries by address whichever tenant is loaded, so a
 native link needs a per-slot registry that rejects a call into an absent image.
@@ -750,7 +750,7 @@ isrgb24 0. The game changes only what the table lists.
 | field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (func_80086E1C), used once, field map 41 on both discs; the staff roll func_800A7948 also switches to it but needs field ext `be` (enable_movie_overlay, func_80087C0C), which no shipped script uses (Services, BIOS Kanji ROM) |
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_80072238.c func_80072BB0 |
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
-| battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_800B8098.c func_800B8284 |
+| battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
 | Battling arena | 640x218 for scenes (menu2.c func_800725B0), 320x218 for its menus (func_800726B4, menu5.c func_800852C4), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c func_80089330, func_80089534 |
 | in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; slot39.c func_801C7BF4 |
 | movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c func_800737EC, func_800763BC; its CD-ROM and sector monitors (debug) use 640x240 |
@@ -798,7 +798,7 @@ GTE with H 0x1000 (sprite_sheet.c).
 - Semi-transparency: SetSemiTrans (76 functions) with the rate from GetTPage's
   abr argument (0 at 127 sites, 1 at 29, 2 at 31, 3 once in
   worldmap_80077E68.c, plus variables such as the field fade channels'
-  D_800B2078.fades[i].abr) or from data in raw E1 words (battle_800B3F04.c
+  D_800B2078.fades[i].abr) or from data in raw E1 words (battle_sprite_commands.c
   effects, sprite render bits 5-6 in sprite_vm_draw.c).
 - Texture windows: SetDrawMode with a window for field dialogue and text
   (field_8007A44C.c), field overlay sprites (field_800A9274.c) and ovl2615's
@@ -809,7 +809,7 @@ GTE with H 0x1000 (sprite_sheet.c).
   func_80080D20, the world-map heat haze func_80081D80); StoreImage (23
   functions), MoveImage (40), LoadImage (109) and ClearImage (17) read, copy and
   rewrite VRAM, including the saved-screen slot at (0x2C0, 0x100). The CPU sets
-  bit 15 (STP) on captured pixels (battle_800B7134.c func_800B7870, field
+  bit 15 (STP) on captured pixels (battle_action_files.c battle_run_intro_swirl, field
   func_800A5774), so textures rely on per-texel semi-transparency.
 - Mask bit: no game code sends an E6 packet; the observed environments write
   E6 set=0 check=0 (rendering-behavior.md).

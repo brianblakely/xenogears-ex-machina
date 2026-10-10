@@ -18,7 +18,7 @@
                      : "$8", "memory")
 #define SPAD_STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
 
-/* The stage sky (D_800C3EA0): a scrolling textured ceiling of 8 x 8 tiles
+/* The stage sky (battle_stage_sky): a scrolling textured ceiling of 8 x 8 tiles
  * over a 9 x 9 vertex grid, with horizon bands (the flats and quads; the
  * second half of each for the far band) per frame buffer. */
 typedef struct {
@@ -46,7 +46,7 @@ typedef struct {
 
 /* The stage's lit colours in their saved order (0x88 bytes): per side the
  * geometry quad's four corners, its flat and the backdrop's flat, then the
- * backdrop quads' corners and the two colours of D_800D2D40/D_800D2D48. */
+ * backdrop quads' corners and the two colours of battle_buffer0_background_color_ptr/battle_buffer1_background_color_ptr. */
 typedef struct {
     struct {
         CVECTOR quad[4];
@@ -57,19 +57,19 @@ typedef struct {
     CVECTOR extra[2];
 } StageColors;
 
-extern ModelTable *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
-extern s32 D_800CCC5C;        /* frame steps */
-extern s16 D_800D2D2C;          /* stage image width */
-extern s16 D_800D2D30;          /* stage image x */
-extern s16 D_800D2D34;          /* stage image y */
-extern s16 D_800C3EA8;          /* stage image height */
+extern ModelTable *battle_stage_model_table; /* the stage's models (hierarchy battle_stage_model_parts) */
+extern s32 battle_frame_ticks;        /* frame steps */
+extern s16 battle_stage_image_width;          /* stage image width */
+extern s16 battle_stage_image_x;          /* stage image x */
+extern s16 battle_stage_image_y;          /* stage image y */
+extern s16 battle_stage_image_height;          /* stage image height */
 
 /* Draw the stage. */
-void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
+void battle_draw_stage(MATRIX *view, MATRIX *light, s32 unused_mode, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth);
-void func_800A5EB4(void); /* set up the stage lighting */
-void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5); /* set a light slot */
-void func_800A6F98(void); /* release the stage image */
-void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer); /* run the stage for the elapsed frames */
+void battle_init_stage_lighting(void); /* set up the stage lighting */
+void battle_set_light_slot(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5); /* set a light slot */
+void battle_release_stage_image(void); /* release the stage image */
+void battle_update_stage(MATRIX *m, s32 light, u32 *ot, s32 buffer); /* run the stage for the elapsed frames */
 
 #endif

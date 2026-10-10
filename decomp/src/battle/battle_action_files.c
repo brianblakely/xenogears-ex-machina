@@ -5,7 +5,7 @@
  * table at 0 mod 8, so a unit starts between the two functions (that table is
  * all of 800B3F04's unit's rodata). The screen shatter's draw (800B7134,
  * 800B7160) and the intro swirl 800B7870 share the unit's own variable
- * D_800C3CB4, which follows 800B3F04's .bss, so the unit starts at 800B7134
+ * battle_shatter_ot, which follows 800B3F04's .bss, so the unit starts at 800B7134
  * at the latest; that is where it is placed. Its own 5-entry table is
  * followed directly by 800B8098's at 0x80070A10 (0 mod 8). */
 #include "common.h"
@@ -36,23 +36,23 @@
 #include "sprite_effect.h"
 
 /* This unit's functions, declared before their first use. */
-void func_800B7160(Task *draw);
-ScreenShatter *func_800B7424(ScreenShatter *shatter);
+void battle_shatter_draw_shards(Task *draw);
+ScreenShatter *battle_shatter_cut_shards(ScreenShatter *shatter);
 
 /* The unit's own uninitialized variable (its .bss, after
- * battle_800B3F04.c's). */
-static u32 *D_800C3CB4; /* the ordering table the shatter draws into */
+ * battle_sprite_commands.c's). */
+static u32 *battle_shatter_ot; /* 800C3CB4: the ordering table the shatter draws into */
 
-/* Shatter draw: into the ordering table (800B7160). */
-void func_800B7134(Task *draw) {
-    D_800C3CB4 = (u32 *)sprite_ot;
-    func_800B7160(draw);
+/* 800B7134: Shatter draw: into the ordering table (800B7160). */
+void battle_shatter_draw(Task *draw) {
+    battle_shatter_ot = (u32 *)sprite_ot;
+    battle_shatter_draw_shards(draw);
 }
 
-/* Shatter draw: each shard that has fallen in front of the screen (z at
+/* 800B7160: Shatter draw: each shard that has fallen in front of the screen (z at
  * least 64), its layer's triangle turned and placed, projected at the
  * screen centre and distance 512. */
-void func_800B7160(Task *draw) {
+void battle_shatter_draw_shards(Task *draw) {
     ScreenShatter *shatter = draw->data;
     long offsetX;
     long offsetY;
@@ -84,14 +84,14 @@ void func_800B7160(Task *draw) {
                     SetRotMatrix(&m);
                     SetTransMatrix(&m);
                     if (layer == 0) {
-                        triangle = D_800C3594;
+                        triangle = battle_shatter_upper_left_triangle;
                     } else {
-                        triangle = D_800C35AC;
+                        triangle = battle_shatter_lower_right_triangle;
                     }
                     depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
                                           (long *)&poly->x0, (long *)&poly->x1, (long *)&poly->x2,
                                           &p, &flag) >> 6;
-                    AddPrim(D_800C3CB4 + depth, poly);
+                    AddPrim(battle_shatter_ot + depth, poly);
                 }
             }
         }
@@ -100,39 +100,39 @@ void func_800B7160(Task *draw) {
     SetGeomScreen(screen);
 }
 
-/* Free a heap block once drawing is done. */
-void func_800B7330(void *block) {
+/* 800B7330: Free a heap block once drawing is done. */
+void battle_free_after_drawsync(void *block) {
     DrawSync(0);
     heap_free(block);
 }
 
-/* Shatter destroy: end the draw task, the task and its sprites. */
-void func_800B7364(ScreenShatter *shatter) {
+/* 800B7364: Shatter destroy: end the draw task, the task and its sprites. */
+void battle_shatter_destroy(ScreenShatter *shatter) {
     task_unlink_draw_node(&shatter->draw);
     task_unlink_main_node(&shatter->task);
     sprite_queue_free_later((u32)shatter);
 }
 
-/* Shatter the screen copied to VRAM (0x2C0, 0x100). */
-void func_800B73A0(void) {
-    func_800B7424((ScreenShatter *)task_alloc_two_node_task(sizeof(ScreenShatter), NULL, func_800B6F0C, func_800B7134,
-                                                 (void (*)(Task *))func_800B7364));
+/* 800B73A0: Shatter the screen copied to VRAM (0x2C0, 0x100). */
+void battle_shatter_start(void) {
+    battle_shatter_cut_shards((ScreenShatter *)task_alloc_two_node_task(sizeof(ScreenShatter), NULL, battle_shatter_update, battle_shatter_draw,
+                                                 (void (*)(Task *))battle_shatter_destroy));
 }
 
-/* Set up a shattered screen in a heap block (not run as a task). */
-ScreenShatter *func_800B73EC(void) {
+/* 800B73EC: Set up a shattered screen in a heap block (not run as a task). */
+ScreenShatter *battle_shatter_create_in_heap(void) {
     ScreenShatter *shatter = heap_alloc(sizeof(ScreenShatter), 1);
 
     shatter->task.data = shatter;
     shatter->draw.data = shatter;
-    return func_800B7424(shatter);
+    return battle_shatter_cut_shards(shatter);
 }
 
-/* Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16
+/* 800B7424: Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16
  * cell an upper-left and a lower-right triangle, each starting further out
  * the later it moves, launched outwards at a random speed with a random spin
  * and fall. */
-ScreenShatter *func_800B7424(ScreenShatter *shatter) {
+ScreenShatter *battle_shatter_cut_shards(ScreenShatter *shatter) {
     ScreenShard *shard;
     POLY_FT3 *poly;
     VECTOR square;
@@ -168,8 +168,8 @@ ScreenShatter *func_800B7424(ScreenShatter *shatter) {
                     shard->position.vy = (row * 16 - 101) * 32;
                     shard->position.vz = 0x4000;
                 }
-                D_800C35C4.vz = -500 << 16;
-                D_800C35C4.vz = D_800C35C4.vz + (-(rand() % 1000) << 16);
+                battle_shatter_launch_velocity.vz = -500 << 16;
+                battle_shatter_launch_velocity.vz = battle_shatter_launch_velocity.vz + (-(rand() % 1000) << 16);
                 Square0(&shard->position, &square);
                 distance = SquareRoot0(square.vx + square.vy);
                 shard->delay = (radius / 32 - distance) / 2048; /* overwritten */
@@ -186,7 +186,7 @@ ScreenShatter *func_800B7424(ScreenShatter *shatter) {
                 angles.vy = tilt;
                 angles.vz = yaw;
                 RotMatrix(&angles, &m);
-                ApplyMatrixLV(&m, &D_800C35C4, &shard->velocity);
+                ApplyMatrixLV(&m, &battle_shatter_launch_velocity, &shard->velocity);
                 shard->fall = 0x70800 - ((rand() % 1600) << 8);
                 shard->spin.vx = (rand() & 0xFF) - 0x7F;
                 shard->spin.vy = (rand() & 0xFF) - 0x7F;
@@ -222,12 +222,12 @@ ScreenShatter *func_800B7424(ScreenShatter *shatter) {
     return shatter;
 }
 
-/* The battle's intro swirl: the screen shatters (800B73EC) while the
+/* 800B7870: The battle's intro swirl: the screen shatters (800B73EC) while the
  * battle module's set-up phases 0-2 and the scene files load, one step per
  * frame once the disc is idle, for at least 86 frames; then phase 3. The
  * screen copied to VRAM (0x2C0, 0x100) with its pixels made opaque feeds
  * the shards, and the background fades from white. */
-void func_800B7870(void) {
+void battle_run_intro_swirl(void) {
     RECT rect;
     u16 *pixels;
     u16 *pixel;
@@ -282,7 +282,7 @@ void func_800B7870(void) {
     area->buffers[1].drawEnv.g0 = 0xFF;
     area->buffers[0].drawEnv.b0 = 0xFF;
     area->buffers[1].drawEnv.b0 = 0xFF;
-    shatter = func_800B73EC();
+    shatter = battle_shatter_create_in_heap();
     while (frames != 0 || step != 5) {
         if (frames > 0) {
             frames--;
@@ -296,7 +296,7 @@ void func_800B7870(void) {
         frame->ot = next->ot;
         ClearOTagR((u_long *)next->ot, 0x1000);
         frame->buffer = 1 - frame->buffer;
-        D_800C3CB4 = frame->ot;
+        battle_shatter_ot = frame->ot;
         if (cd_get_pending_read_count() == 0) {
             switch (step) {
             case 0:
@@ -316,8 +316,8 @@ void func_800B7870(void) {
         }
         boot_check_soft_reset();
         SPAD_STACK_ENTER();
-        func_800B6F0C(&shatter->task);
-        func_800B7160(&shatter->task);
+        battle_shatter_update(&shatter->task);
+        battle_shatter_draw_shards(&shatter->task);
         SPAD_STACK_LEAVE();
         DrawSync(0);
         VSync(2);
@@ -328,22 +328,22 @@ void func_800B7870(void) {
         PutDrawEnv(&BATTLE_AREA.current->drawEnv);
         DrawOTag((u_long *)&BATTLE_AREA.current->ot[0xFFF]);
     }
-    func_800B7330(shatter);
+    battle_free_after_drawsync(shatter);
     SetDispMask(0);
     cd_sync_reads(0);
     func_801E5840(3);
 }
 
-/* Clear D_800D2FDC. */
-void func_800B7C28(void) {
-    D_800D2FDC = 0;
+/* 800B7C28: Clear battle_unread_single_action_loaded. */
+void battle_single_action_clear_loaded(void) {
+    battle_unread_single_action_loaded = 0;
 }
 
-/* Load single action index's command file (0x22 + 2 * index) and play its
+/* 800B7C34: Load single action index's command file (0x22 + 2 * index) and play its
  * stream (0x23 + 2 * index); action 0xE3 first puts back the VRAM columns
  * saved by 800B3E04. The file's first part says which gears restart: all
  * (1) or all but the acting sprite's (2). */
-void func_800B7C34(s32 index) {
+void battle_single_action_load(s32 index) {
     RECT rect;
     s32 file;
     s32 stream;
@@ -353,59 +353,59 @@ void func_800B7C34(s32 index) {
     if (index == 0xE3) {
         rect.w = 0x40;
         rect.h = 0x100;
-        rect.x = D_800C3668[0].x;
-        rect.y = D_800C3668[0].y;
+        rect.x = battle_gear_image_places[0].x;
+        rect.y = battle_gear_image_places[0].y;
         MoveImage(&rect, 0x280, 0x100);
         rect.w = 0x40;
         rect.h = 0x100;
-        rect.x = D_800C3668[1].x;
-        rect.y = D_800C3668[1].y;
+        rect.x = battle_gear_image_places[1].x;
+        rect.y = battle_gear_image_places[1].y;
         MoveImage(&rect, 0x240, 0x100);
         rect.w = 0x40;
         rect.h = 0x100;
-        rect.x = D_800C3668[2].x;
-        rect.y = D_800C3668[2].y;
+        rect.x = battle_gear_image_places[2].x;
+        rect.y = battle_gear_image_places[2].y;
         MoveImage(&rect, 0x200, 0x100);
         DrawSync(0);
     }
-    func_800B8D7C();
+    battle_stop_reads_finish_loads();
     cd_select_directory(0xC, 2);
     file = index * 2 + 0x22;
     stream = index * 2 + 0x23;
-    D_800C3CEC = 1;
-    D_800D2FDC = 1;
+    battle_unread_command_file_loaded = 1;
+    battle_unread_single_action_loaded = 1;
     mode_battle_action_command_file = heap_alloc(cd_get_aligned_file_size(file), 0);
     cd_read_file(file, mode_battle_action_command_file, 0, 0x80);
-    func_800B8354();
+    battle_wait_for_disc();
     restart = (*(u16 *)(mode_battle_action_command_file[1] + (s32)mode_battle_action_command_file) >> 12) & 3;
     if (restart != 0) {
-        D_800C362C = restart;
-        sprite = D_800C3E1C;
-        func_800BC404(0);
+        battle_gear_restart_mode = restart;
+        sprite = battle_acting_sprite;
+        battle_camera_start_move(0);
         if (restart == 1) {
-            func_800BB080(-1);
-            D_800C3666 = 0;
+            battle_end_party_sprites(-1);
+            battle_gear_image_places_taken = 0;
         } else {
-            D_800C3666 &= ~(1 << SPRITE_SLOT(sprite));
-            func_800BB080(SPRITE_SLOT(sprite));
+            battle_gear_image_places_taken &= ~(1 << SPRITE_SLOT(sprite));
+            battle_end_party_sprites(SPRITE_SLOT(sprite));
         }
     }
     mode_battle_action_stream_ring = stream_create_ring(8, 0);
     if (cd_get_aligned_file_size(stream) > 0x10) {
         stream_start_image_load(stream, mode_battle_action_stream_ring, 0, 0, 0, 0, 0, 0, 0, 0);
     }
-    func_800B8354();
+    battle_wait_for_disc();
     DrawSync(0);
-    D_800C3618 = mode_battle_action_command_file;
+    battle_command_file = mode_battle_action_command_file;
     heap_free(mode_battle_action_stream_ring);
 }
 
-/* Start the loaded command file for the acting sprite: upload its images
+/* 800B7E94: Start the loaded command file for the acting sprite: upload its images
  * and, when its frames take their image from the sequencer, give the
  * sprite an effect sprite running its command motion (else the file becomes
  * the sprite's own resource); start its sound bank. 1 when the sprite runs
  * it itself. */
-u8 func_800B7E94(void) {
+u8 battle_single_action_start(void) {
     VramPoint at;
     VramPoint clut;
     Task wait;
@@ -415,51 +415,51 @@ u8 func_800B7E94(void) {
     s32 own;
     SpriteSource *resource;
 
-    actor = D_800C3E1C;
+    actor = battle_acting_sprite;
     task_link_main_node(0, &wait);
     wait.update = NULL;
-    func_800B8354();
+    battle_wait_for_disc();
     resource = (SpriteSource *)sprite_effect_source;
     at.x = 0x380;
     at.y = 0x100;
     clut.x = 0;
     clut.y = 0x1F4;
-    D_800C3624 = 0;
+    battle_sprite_script_finished = 0;
     sprite_resolve_resource(resource, mode_battle_action_command_file, at, clut, 0);
     own = 0;
-    func_800BEB04();
+    battle_load_module();
     if (sprite_is_cell_directory((u8 *)resource->frames)) {
-        saved = *(SpriteSource *)D_800C3E1C->image;
-        runner = sprite_create_child(D_800C3E1C, (void *)(resource->animations[D_800C3DF0 + 1] + (s32)resource->animations), resource);
+        saved = *(SpriteSource *)battle_acting_sprite->image;
+        runner = sprite_create_child(battle_acting_sprite, (void *)(resource->animations[battle_acting_sprite_command_motion + 1] + (s32)resource->animations), resource);
     } else {
         own = 1;
-        runner = D_800C3E1C;
+        runner = battle_acting_sprite;
         sprite_set_alternate_resource(runner, (s32)mode_battle_action_command_file);
         sprite_start_animation(runner, -1);
     }
-    actor->word50 = runner->word50 = (s32)func_800C0FAC(mode_battle_action_command_file);
-    D_800D3350 = 1;
-    D_800C35D4 = 1;
-    sound_set_seq_fade((SoundSeq *)D_800C3E54, 0x60, 0x78);
+    actor->word50 = runner->word50 = (s32)battle_install_command_file_parts(mode_battle_action_command_file);
+    battle_command_file_started = 1;
+    battle_music_lowered = 1;
+    sound_set_seq_fade((SoundSeq *)battle_music_seq, 0x60, 0x78);
     task_unlink_main_node(&wait);
     return own;
 }
 
-/* Set the acting sprite of a single action. */
-void func_800B8048(Sprite *sprite) {
-    D_800C3E1C = sprite;
+/* 800B8048: Set the acting sprite of a single action. */
+void battle_single_action_set_actor(Sprite *sprite) {
+    battle_acting_sprite = sprite;
 }
 
-/* Request single action `action`; the frame loop runs it (800B8068). */
-void func_800B8054(s32 action) {
+/* 800B8054: Request single action `action`; the frame loop runs it (800B8068). */
+void battle_single_action_request(s32 action) {
     sprite_single_action_request = action;
     sprite_single_action_done = 0;
 }
 
-/* Run a requested single action: load its command file (800B7C34) and
+/* 800B8068: Run a requested single action: load its command file (800B7C34) and
  * start it (800B7E94); mark it done. */
-void func_800B8068(s32 action) {
-    func_800B7C34(action);
-    func_800B7E94();
+void battle_single_action_run(s32 action) {
+    battle_single_action_load(action);
+    battle_single_action_start();
     sprite_single_action_done = 1;
 }

@@ -52,7 +52,7 @@ void text_load_palette(s32 x, s32 y);     /* upload the text palettes */
 extern u8 game_data_slot_in_gear[SLOT_COUNT];
 /* The work area as the setup declares it: BattleWork, then (past it) the
  * battle overlay's item lists and more, to the party's character ids at
- * 0x603C (D_800D2D24, 0x7F none). The setup addresses the ids as members of
+ * 0x603C (battle_party_character_ids, 0x7F none). The setup addresses the ids as members of
  * the work area, from its symbol or a register holding part of it, which
  * neither the separate symbol nor a cast of BattleWork reproduces, so this
  * view of the whole object shares the work area's assembler name. */
@@ -61,13 +61,13 @@ typedef struct {
     u8 pad5FC8[0x603C - 0x5FC8];
     u8 partyIds[3];            /* 0x603C */
 } SetupWork;
-extern SetupWork D_800CCCE8_setup __asm__("D_800CCCE8");
+extern SetupWork D_800CCCE8_setup __asm__("battle_work_area");
 
-extern u8 D_800D2D44;
+extern u8 battle_unread_setup_flag;
 
 /* The battle's allocators, which it declares with integer results. */
-void *func_8008AC00(s32 kind);
-void *func_8008ABB8(s32 size, s32 flags); /* heap allocation */
+void *battle_heap_alloc_text_image(s32 kind);
+void *battle_heap_alloc(s32 size, s32 flags); /* heap allocation */
 
 void func_801E4048(void);
 void func_801E4160(void);
@@ -89,11 +89,11 @@ void func_801E62B8(void);
 #define INVENTORY_SLOTS 150
 #define BATTLE_ITEMS 48
 
-extern u8 D_800D2CAA;
+extern u8 battle_work_command_index;
 
 /* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
 typedef struct {
-    u8 in_gear; /* the slot fights in a gear (battle: D_800D32A0.unk1) */
+    u8 in_gear; /* the slot fights in a gear (battle: battle_slot_flags.unk1) */
     u8 pad1[2];
     u8 character_b; /* from the character table */
     u8 stat62;  /* copied from the record */
@@ -106,15 +106,15 @@ typedef struct {
     SlotState enemy[8];
 } BattleSlotStates;
 
-extern BattleSlotStates D_800D32A1;
+extern BattleSlotStates battle_slot_states;
 
-void func_80097D5C(void); /* derive the party's battle stats */
-void func_8009B098(void); /* demo battle members */
+void battle_derive_party_stats(void); /* derive the party's battle stats */
+void battle_set_debug_party_stats(void); /* demo battle members */
 
 /* Enemy data file: u16 script offsets per enemy id (each enemy's four AI
  * script offsets, battle/enemy_ai.h), the name table's offset at +0x30, then
  * 0x170-byte combatant records from +0x32. */
-extern u8 *D_800C3DD0;
+extern u8 *battle_enemy_data_file;
 
 /* The battle's formation (formation_active, resident/formation.h), as the setup
  * reads it. FORMATION_FLAG6 indexes the enemy groups by slot (3-10), not by
@@ -125,30 +125,30 @@ extern u8 *D_800C3DD0;
 #define FORMATION_ENEMY_FLAGS(enemy) formation_active.enemyFlags[enemy]
 #define FORMATION_ENEMY_GROUP(enemy) formation_active.enemyGroups[enemy]
 #define FORMATION_FLAG6(slot) formation_active.enemyGroups[slot]
-extern u8 *D_800C20F0[];        /* command menu layouts */
-extern u8 *D_800C2130;          /* command menu sources */
-extern u8 *D_800C2134;
-extern u8 *D_800C2138;
+extern u8 *battle_command_layouts_by_character[];        /* command menu layouts */
+extern u8 *battle_command_layout_gear_ptr;          /* command menu sources */
+extern u8 *battle_command_layout_gear_second_ptr;
+extern u8 *battle_command_layout_gear_character7_ptr;
 
-u8 func_80085310(u8 slot, u8 target); /* facing towards the target */
+u8 battle_is_target_at_lower_x(u8 slot, u8 target); /* facing towards the target */
 
-/* The formation data D_800D3364 is the scene data (the resident's 8005949c)
+/* The formation data battle_formation is the scene data (the resident's 8005949c)
  * to the setup, which reads its positions unsigned (the battle's Formation,
  * battle/formation.h, reads them signed). */
-extern BattleScene *D_800D3364;
-extern u8 D_800C3E3D[SLOT_COUNT];
+extern BattleScene *battle_formation;
+extern u8 battle_enemy_name_indices_by_slot[SLOT_COUNT];
 
-u16 func_80089C08(s32 index); /* bit of a group member index */
+u16 battle_get_slot_bit(s32 index); /* bit of a group member index */
 
 /* The enemy files' disc read list (0x800D33E8): entries of a file number
  * and a destination, ended by file 0. Its fields are separate variables. */
-extern u16 D_800D33E8;   /* entry 0 file */
-extern void *D_800D33EC; /* entry 0 destination */
-extern u16 D_800D33F0;
-extern void *D_800D33F4;
-extern u16 D_800D33F8;
-extern void *D_800D33FC;
+extern u16 battle_enemy_read_list;   /* entry 0 file */
+extern void *battle_enemy_read_list_destination0; /* entry 0 destination */
+extern u16 battle_enemy_read_list_file1;
+extern void *battle_enemy_read_list_destination1;
+extern u16 battle_enemy_read_list_end;
+extern void *battle_enemy_read_list_end_destination;
 
-void func_80078310(void *portraits, s32 glyph);
+void battle_upload_party_portraits(void *portraits, s32 glyph);
 
 #endif

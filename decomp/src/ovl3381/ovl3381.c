@@ -30,7 +30,7 @@ SVECTOR D_801FC710[3] = {{2, -6, 0}, {2, 2, 0}, {-6, 2, 0}};
  * controller ends it. */
 void func_801FC000(Task *node) {
     ((TileTask *)node->data)->frame++;
-    if (D_800C3EB0.pressed2 & 0x100) {
+    if (battle_area.pressed2 & 0x100) {
         node->destroy(node);
     }
 }
@@ -58,7 +58,7 @@ void func_801FC064(Task *node) {
             for (row = 0; row < 16; row++) {
                 for (column = 0; column < 16; column++) {
                     tile = &task->tiles[half][row][column];
-                    prim = &tile->prim[D_800C3EB0.buffer];
+                    prim = &tile->prim[battle_area.buffer];
                     prim->x0 = tile->corner[0].vx + offset.vx;
                     prim->y0 = tile->corner[0].vy + offset.vy;
                     prim->x1 = tile->corner[1].vx + offset.vx;
@@ -143,7 +143,7 @@ void func_801FC2C0(void) {
                     prim->r0 = 0x80;
                     prim->g0 = 0xA0;
                     prim->b0 = 0x80;
-                    prim->tpage = GetTPage(2, 0, column * 8, (1 - D_800C3EB0.buffer) * 0xE0);
+                    prim->tpage = GetTPage(2, 0, column * 8, (1 - battle_area.buffer) * 0xE0);
                     u = (column * 8) & 0x3F;
                     if (half == 0) {
                         prim->u0 = u;

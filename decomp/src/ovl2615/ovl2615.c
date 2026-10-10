@@ -15,30 +15,30 @@
 void func_801E4048(void) {
     s32 i;
 
-    D_800D3338 = 0;
-    D_800C3D44 = 0;
-    D_800D2D50 = 0;
-    D_800D2FC4 = 0;
-    D_800C3D5C = 0;
-    D_800D2D44 = 0;
-    D_800C492A = 0;
+    battle_continue_to_movie_mode = 0;
+    battle_resume_event_script_at_end = 0;
+    battle_skip_result_screens = 0;
+    battle_exit_requested = 0;
+    battle_defeat_allowed_by_event_script = 0;
+    battle_unread_setup_flag = 0;
+    battle_turn_hud_hidden = 0;
     mode_battle_turn_count = 0;
     mode_battle_return_fade = 0;
     for (i = 0; i < 3; i++) {
         mode_battle_party_ids[i] = D_800CCCE8_setup.partyIds[i];
-        D_800C3EB0.slots[i].field2 = D_800CCCE8_setup.partyIds[i];
+        battle_area.slots[i].field2 = D_800CCCE8_setup.partyIds[i];
     }
     for (i = 0; i < SLOT_COUNT; i++) {
-        D_800C3EB0.slots[i].hidden = 0;
-        if (D_800D3294 == 0) {
-            D_800C3EB0.slots[i].gear = game_data_slot_in_gear[i];
+        battle_area.slots[i].hidden = 0;
+        if (battle_uses_fixed_party == 0) {
+            battle_area.slots[i].gear = game_data_slot_in_gear[i];
         } else {
-            D_800C3EB0.slots[i].gear = 1;
+            battle_area.slots[i].gear = 1;
         }
-        D_800C3EB0.slots[i].field5 = 0;
+        battle_area.slots[i].field5 = 0;
     }
-    D_800C3EB0.outcome = 0;
-    D_800D2DC0 = 0;
+    battle_area.outcome = 0;
+    battle_forced_next_turn = 0;
 }
 
 /* Place the formation: party and enemy presence, ids and groups from the
@@ -48,97 +48,97 @@ void func_801E4160(void) {
     s32 i;
     u8 id;
 
-    D_800D3280 = 0;
-    D_800D3364 = (BattleScene *)mode_battle_scene_file;
-    D_800C3EB0.formation = (struct Formation *)mode_battle_scene_file;
+    battle_party_panel_layout = 0;
+    battle_formation = (BattleScene *)mode_battle_scene_file;
+    battle_area.formation = (struct Formation *)mode_battle_scene_file;
     for (i = 0; i < 3; i++) {
-        if ((D_800C3EB0.slots[i].field2 & 0x7F) != NO_COMBATANT) {
-            D_800D2DCC.present[i] = 1;
-            D_800D3280++;
+        if ((battle_area.slots[i].field2 & 0x7F) != NO_COMBATANT) {
+            battle_turn_queue.present[i] = 1;
+            battle_party_panel_layout++;
         } else {
-            D_800D2DCC.present[i] = 0;
+            battle_turn_queue.present[i] = 0;
         }
-        if (D_800C3EB0.slots[i].gear == 0) {
-            D_800C3EB0.slots[i].group = FORMATION_PARTY_GROUP(i) & 0x7F;
+        if (battle_area.slots[i].gear == 0) {
+            battle_area.slots[i].group = FORMATION_PARTY_GROUP(i) & 0x7F;
         } else {
-            D_800C3EB0.slots[i].group = i;
+            battle_area.slots[i].group = i;
         }
     }
-    D_800D3280 += 0xFF; /* one less */
+    battle_party_panel_layout += 0xFF; /* one less */
     for (i = 0; i < 8; i++) {
         id = FORMATION_ENEMY_ID(i) & 0x7F;
         if (id != NO_COMBATANT) {
-            D_800C3EB0.slots[i + 3].field2 = id;
-            D_800C3EB0.slots[i + 3].hidden = FORMATION_ENEMY_FLAGS(i) & 0x80;
-            D_800C3EB0.slots[i + 3].gear = FORMATION_ENEMY_ID(i) & 0x80;
-            D_800C3EB0.slots[i + 3].field5 = FORMATION_ENEMY_FLAGS(i) & 1;
-            D_800D2DCC.present[i + 3] = 1;
-            D_800C3EB0.slots[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
+            battle_area.slots[i + 3].field2 = id;
+            battle_area.slots[i + 3].hidden = FORMATION_ENEMY_FLAGS(i) & 0x80;
+            battle_area.slots[i + 3].gear = FORMATION_ENEMY_ID(i) & 0x80;
+            battle_area.slots[i + 3].field5 = FORMATION_ENEMY_FLAGS(i) & 1;
+            battle_turn_queue.present[i + 3] = 1;
+            battle_area.slots[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
         } else {
             D_800CCCE8_setup.work.records[i + 3].pilot.maxHp = 0;
             D_800CCCE8_setup.work.records[i + 3].pilot.hp = 0;
-            D_800C3EB0.slots[i + 3].field2 = NO_COMBATANT;
-            D_800C3EB0.slots[i + 3].hidden = 0;
-            D_800C3EB0.slots[i + 3].gear = 0;
-            D_800D2DCC.present[i + 3] = 0;
+            battle_area.slots[i + 3].field2 = NO_COMBATANT;
+            battle_area.slots[i + 3].hidden = 0;
+            battle_area.slots[i + 3].gear = 0;
+            battle_turn_queue.present[i + 3] = 0;
         }
-        D_800C3E3D[i + 3] = D_800C3EB0.slots[i + 3].field2 + 1;
+        battle_enemy_name_indices_by_slot[i + 3] = battle_area.slots[i + 3].field2 + 1;
     }
     for (i = 0; i < 32; i++) {
-        D_800D301C[i].count = 0;
-        D_800D301C[i].members = 0;
+        battle_formation_groups[i].count = 0;
+        battle_formation_groups[i].members = 0;
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            if (D_800C3EB0.slots[i].gear == 0) {
-                D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group].count;
-                D_800D301C[D_800C3EB0.slots[i].group].members |= func_80089C08(D_800C3EB0.slots[i].member);
-                D_800D301C[D_800C3EB0.slots[i].group].count++;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            if (battle_area.slots[i].gear == 0) {
+                battle_area.slots[i].member = battle_formation_groups[battle_area.slots[i].group].count;
+                battle_formation_groups[battle_area.slots[i].group].members |= battle_get_slot_bit(battle_area.slots[i].member);
+                battle_formation_groups[battle_area.slots[i].group].count++;
             } else {
-                D_800C3EB0.slots[i].member = 0;
-                D_800D301C[D_800C3EB0.slots[i].group + 16].members = 1;
-                D_800D301C[D_800C3EB0.slots[i].group + 16].count = 1;
+                battle_area.slots[i].member = 0;
+                battle_formation_groups[battle_area.slots[i].group + 16].members = 1;
+                battle_formation_groups[battle_area.slots[i].group + 16].count = 1;
             }
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            if (D_800C3EB0.slots[i].gear == 0) {
-                D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group + 8].count;
-                D_800D301C[D_800C3EB0.slots[i].group + 8].members |= func_80089C08(D_800C3EB0.slots[i].member);
-                D_800D301C[D_800C3EB0.slots[i].group + 8].count++;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            if (battle_area.slots[i].gear == 0) {
+                battle_area.slots[i].member = battle_formation_groups[battle_area.slots[i].group + 8].count;
+                battle_formation_groups[battle_area.slots[i].group + 8].members |= battle_get_slot_bit(battle_area.slots[i].member);
+                battle_formation_groups[battle_area.slots[i].group + 8].count++;
             } else {
-                D_800C3EB0.slots[i].member = 0;
-                D_800D301C[D_800C3EB0.slots[i].group + 24].members = 1;
-                D_800D301C[D_800C3EB0.slots[i].group + 24].count = 1;
+                battle_area.slots[i].member = 0;
+                battle_formation_groups[battle_area.slots[i].group + 24].members = 1;
+                battle_formation_groups[battle_area.slots[i].group + 24].count = 1;
             }
         }
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            if (D_800C3EB0.slots[i].gear == 0) {
-                D_800C3EB0.slots[i].x =
-                    D_800D3364->group[D_800C3EB0.slots[i].group].party[D_800C3EB0.slots[i].member].x;
-                D_800C3EB0.slots[i].z =
-                    D_800D3364->group[D_800C3EB0.slots[i].group].party[D_800C3EB0.slots[i].member].z;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            if (battle_area.slots[i].gear == 0) {
+                battle_area.slots[i].x =
+                    battle_formation->group[battle_area.slots[i].group].party[battle_area.slots[i].member].x;
+                battle_area.slots[i].z =
+                    battle_formation->group[battle_area.slots[i].group].party[battle_area.slots[i].member].z;
             } else {
-                D_800C3EB0.slots[i].x = D_800D3364->gear[D_800C3EB0.slots[i].group].party.x;
-                D_800C3EB0.slots[i].z = D_800D3364->gear[D_800C3EB0.slots[i].group].party.z;
+                battle_area.slots[i].x = battle_formation->gear[battle_area.slots[i].group].party.x;
+                battle_area.slots[i].z = battle_formation->gear[battle_area.slots[i].group].party.z;
             }
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            if (D_800C3EB0.slots[i].gear == 0) {
-                D_800C3EB0.slots[i].x =
-                    D_800D3364->group[D_800C3EB0.slots[i].group].enemy[D_800C3EB0.slots[i].member].x;
-                D_800C3EB0.slots[i].z =
-                    D_800D3364->group[D_800C3EB0.slots[i].group].enemy[D_800C3EB0.slots[i].member].z;
-                D_800C3EB0.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            if (battle_area.slots[i].gear == 0) {
+                battle_area.slots[i].x =
+                    battle_formation->group[battle_area.slots[i].group].enemy[battle_area.slots[i].member].x;
+                battle_area.slots[i].z =
+                    battle_formation->group[battle_area.slots[i].group].enemy[battle_area.slots[i].member].z;
+                battle_area.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
             } else {
-                D_800C3EB0.slots[i].x = D_800D3364->gear[D_800C3EB0.slots[i].group].enemy.x;
-                D_800C3EB0.slots[i].z = D_800D3364->gear[D_800C3EB0.slots[i].group].enemy.z;
-                D_800C3EB0.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
+                battle_area.slots[i].x = battle_formation->gear[battle_area.slots[i].group].enemy.x;
+                battle_area.slots[i].z = battle_formation->gear[battle_area.slots[i].group].enemy.z;
+                battle_area.slots[i].targetCode = FORMATION_FLAG6(i) & 0x80;
             }
         }
     }
@@ -152,43 +152,43 @@ void func_801E4870(void) {
     s32 i;
     s32 j;
 
-    D_800C3EB0.knockedOut = 0;
-    D_800D39E0 = 0;
-    records = D_800C3DD0 + 0x32;
-    D_800C3DDC = D_800C3DD0 + ((u16 *)D_800C3DD0)[0x18];
+    battle_area.knockedOut = 0;
+    battle_joint_action_slots = 0;
+    records = battle_enemy_data_file + 0x32;
+    battle_enemy_name_table = battle_enemy_data_file + ((u16 *)battle_enemy_data_file)[0x18];
     for (i = 3; i < SLOT_COUNT; i++) {
-        D_800C3D18[i - 3].unk3 = 0;
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            memmove(&D_800CCCE8_setup.work.records[i], records + D_800C3EB0.slots[i].field2 * sizeof(Combatant),
+        battle_enemy_reactions[i - 3].unk3 = 0;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            memmove(&D_800CCCE8_setup.work.records[i], records + battle_area.slots[i].field2 * sizeof(Combatant),
                           sizeof(Combatant));
-            scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB0.slots[i].field2]);
-            D_800D3400[i - 3].script = (u8 *)scripts + scripts[0];
-            D_800D3400[i - 3].unk4 = (u8 *)scripts + scripts[1];
+            scripts = (u16 *)(battle_enemy_data_file + ((u16 *)battle_enemy_data_file)[battle_area.slots[i].field2]);
+            battle_enemy_ai_blocks[i - 3].script = (u8 *)scripts + scripts[0];
+            battle_enemy_ai_blocks[i - 3].unk4 = (u8 *)scripts + scripts[1];
             if (scripts[2] != 0xFFFF) {
-                D_800D3400[i - 3].reaction = (u8 *)scripts + scripts[2];
-                D_800C3D18[i - 3].armed = 1;
+                battle_enemy_ai_blocks[i - 3].reaction = (u8 *)scripts + scripts[2];
+                battle_enemy_reactions[i - 3].armed = 1;
             } else {
-                D_800C3D18[i - 3].armed = 0;
+                battle_enemy_reactions[i - 3].armed = 0;
             }
             if (scripts[3] != 0xFFFF) {
-                D_800D3400[i - 3].turnScript = (u8 *)scripts + scripts[3];
-                D_800C3D18[i - 3].unk1[0] = 1;
+                battle_enemy_ai_blocks[i - 3].turnScript = (u8 *)scripts + scripts[3];
+                battle_enemy_reactions[i - 3].unk1[0] = 1;
             } else {
-                D_800C3D18[i - 3].unk1[0] = 0;
+                battle_enemy_reactions[i - 3].unk1[0] = 0;
             }
             for (j = 3; j >= 0; j--) {
-                D_800D3400[i - 3].longs[j] = 0;
+                battle_enemy_ai_blocks[i - 3].longs[j] = 0;
             }
             for (j = 7; j >= 0; j--) {
-                D_800D3400[i - 3].vars[j] = 0;
+                battle_enemy_ai_blocks[i - 3].vars[j] = 0;
             }
             for (j = 15; j >= 0; j--) {
-                D_800D3400[i - 3].bytes[j] = 0;
+                battle_enemy_ai_blocks[i - 3].bytes[j] = 0;
             }
         } else {
             bzero((u8 *)&D_800CCCE8_setup.work.records[i], sizeof(Combatant));
-            D_800C3D18[i - 3].armed = 0;
-            D_800C3D18[i - 3].unk1[0] = 0;
+            battle_enemy_reactions[i - 3].armed = 0;
+            battle_enemy_reactions[i - 3].unk1[0] = 0;
         }
     }
 }
@@ -198,43 +198,43 @@ void func_801E4870(void) {
 void func_801E4AC0(void) {
     s32 i;
 
-    func_80097D5C();
-    if (D_800D3294 != 0) {
-        func_8009B098();
+    battle_derive_party_stats();
+    if (battle_uses_fixed_party != 0) {
+        battle_set_debug_party_stats();
     }
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            D_800C3EA4->panels[i].state = 1;
-            if (D_800C3EB0.slots[i].gear != 0) {
-                D_800D32A1.party[i].in_gear = 1;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            battle_graphics->panels[i].state = 1;
+            if (battle_area.slots[i].gear != 0) {
+                battle_slot_states.party[i].in_gear = 1;
                 D_800CCCE8_setup.work.records[i].flags15A |= 0x80;
-                if (D_800C3EB0.slots[i].field2 != 7) {
-                    D_800C3EA4->panels[i].state = 2;
+                if (battle_area.slots[i].field2 != 7) {
+                    battle_graphics->panels[i].state = 2;
                 }
             } else {
-                D_800D32A1.party[i].in_gear = 0;
+                battle_slot_states.party[i].in_gear = 0;
                 D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
             }
         } else {
-            D_800D32A1.party[i].in_gear = 0;
+            battle_slot_states.party[i].in_gear = 0;
             D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
-            D_800C3EA4->panels[i].state = 0;
+            battle_graphics->panels[i].state = 0;
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            if (D_800C3EB0.slots[i].gear != 0) {
-                D_800D32A1.enemy[i - 3].in_gear = 1;
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            if (battle_area.slots[i].gear != 0) {
+                battle_slot_states.enemy[i - 3].in_gear = 1;
             } else {
-                D_800D32A1.enemy[i - 3].in_gear = 0;
+                battle_slot_states.enemy[i - 3].in_gear = 0;
             }
         } else {
-            D_800D32A1.enemy[i - 3].in_gear = 0;
+            battle_slot_states.enemy[i - 3].in_gear = 0;
         }
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1.party[i].stat62 = D_800CCCE8_setup.work.records[i].pilot.level;
-        D_800D32A1.party[i].stat63 = D_800CCCE8_setup.work.records[i].pilot.level2;
+        battle_slot_states.party[i].stat62 = D_800CCCE8_setup.work.records[i].pilot.level;
+        battle_slot_states.party[i].stat63 = D_800CCCE8_setup.work.records[i].pilot.level2;
     }
 }
 
@@ -256,9 +256,9 @@ void func_801E4CD0(void) {
     u8 listed;
 
     for (i = 0; i < BATTLE_ITEMS; i++) {
-        D_800D2CE0[i] = 0;
-        D_800D2CB0[i] = 0;
-        D_800D2FE4[i] = 0;
+        battle_item_ids[i] = 0;
+        battle_item_counts[i] = 0;
+        battle_item_inventory_ids[i] = 0;
     }
     for (i = 0, count = game_data.itemCounts; i < INVENTORY_SLOTS; i++) {
         if (*count >= 100) {
@@ -271,23 +271,23 @@ void func_801E4CD0(void) {
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
         if (game_data.itemIds[i] != 0 && game_data.itemIds[i] < 49) {
-            LIST_ITEM(D_800D2CE0, listed, game_data.itemIds[i]);
-            D_800D2CB0[listed] = game_data.itemCounts[i];
-            D_800D2FE4[listed] = game_data.itemIds[i];
+            LIST_ITEM(battle_item_ids, listed, game_data.itemIds[i]);
+            battle_item_counts[listed] = game_data.itemCounts[i];
+            battle_item_inventory_ids[listed] = game_data.itemIds[i];
             listed++;
         }
     }
-    D_800C3EAC->lastItem = 47;
+    battle_turn_state->lastItem = 47;
     for (i = 0, listed = 0; i < 100; i++) {
         if (game_data.weaponIds[i] >= 50 && game_data.weaponIds[i] < 73) {
-            LIST_ITEM(D_800C3D70, listed, game_data.weaponIds[i]);
-            D_800D3688[listed] = game_data.weaponCounts[i];
+            LIST_ITEM(battle_gear_part_ids, listed, game_data.weaponIds[i]);
+            battle_gear_part_counts[listed] = game_data.weaponCounts[i];
             listed++;
         }
     }
     for (; listed < BATTLE_ITEMS; listed++) {
-        D_800C3D70[listed] = 0;
-        D_800D3688[listed] = 0;
+        battle_gear_part_ids[listed] = 0;
+        battle_gear_part_counts[listed] = 0;
     }
 }
 
@@ -301,36 +301,36 @@ void func_801E4E7C(void) {
     s32 delta;
     u8 slot;
 
-    D_800D2CAA = 0;
-    func_80078508(drawn);
+    battle_work_command_index = 0;
+    battle_reset_turn_timers(drawn);
     i = 0;
     do {
         slot = mode_get_random_byte_in_range(0, 10);
         if (drawn[slot] == 0) {
             drawn[slot] = 1;
-            D_800D2DCC.order[i] = slot;
+            battle_turn_queue.order[i] = slot;
             i++;
         }
     } while (i < SLOT_COUNT);
-    D_800D2DCC.cursor = 0;
+    battle_turn_queue.cursor = 0;
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8_setup.work.records[i].pilot.flags34 & 0x200)) {
-            D_800D2DCC.timers[0][i] = D_800D2DCC.timers[1][i] = 1;
+        if (battle_turn_queue.present[i] != 0 && (D_800CCCE8_setup.work.records[i].pilot.flags34 & 0x200)) {
+            battle_turn_queue.timers[0][i] = battle_turn_queue.timers[1][i] = 1;
         }
     }
     least = 0xFFFF;
     for (i = 0; i < SLOT_COUNT; i++) {
-        if (D_800D2DCC.present[i] != 0) {
-            if (D_800D2DCC.timers[1][i] < least) {
-                least = D_800D2DCC.timers[1][i];
+        if (battle_turn_queue.present[i] != 0) {
+            if (battle_turn_queue.timers[1][i] < least) {
+                least = battle_turn_queue.timers[1][i];
             }
         }
     }
     i = 0;
     delta = least - 1;
     for (; i < SLOT_COUNT; i++) {
-        if (D_800D2DCC.present[i] != 0) {
-            D_800D2DCC.timers[1][i] -= delta;
+        if (battle_turn_queue.present[i] != 0) {
+            battle_turn_queue.timers[1][i] -= delta;
         }
     }
 }
@@ -344,38 +344,38 @@ void func_801E5014(void) {
     u8 k;
 
     if (FORMATION_FLAGS & 0x20) {
-        D_800C3D48 = 1;
+        battle_uses_event_script = 1;
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1.party[i].character_b = game_data.skills[D_800CCCE8_setup.partyIds[i]].tier;
+        battle_slot_states.party[i].character_b = game_data.skills[D_800CCCE8_setup.partyIds[i]].tier;
         for (j = 0; j < 8; j++) {
-            D_800C3EAC->slots[i].layout[j] = D_800C20F0[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
+            battle_turn_state->slots[i].layout[j] = battle_command_layouts_by_character[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
         }
         for (j = 0; j < 4; j++) {
             if (D_800CCCE8_setup.partyIds[i] != 7) {
-                D_800C3EAC->slots[i].digits[0][j] = D_800C2130[j];
+                battle_turn_state->slots[i].digits[0][j] = battle_command_layout_gear_ptr[j];
             } else {
-                D_800C3EAC->slots[i].digits[0][j] = D_800C2138[j];
+                battle_turn_state->slots[i].digits[0][j] = battle_command_layout_gear_character7_ptr[j];
             }
-            D_800C3EAC->slots[i].digits[1][j] = D_800C2134[j];
+            battle_turn_state->slots[i].digits[1][j] = battle_command_layout_gear_second_ptr[j];
         }
-        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
-        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
+        battle_turn_state->slots[i].defaultTarget = battle_order_attack_candidates(i);
+        battle_area.slots[i].targetCode = battle_is_target_at_lower_x(i, battle_turn_state->slots[i].defaultTarget);
         for (k = 0; k < 16; k++) {
-            D_800C3EAC->slots[i].items[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & D_800C3234[k];
+            battle_turn_state->slots[i].items[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & battle_command_seal_bits[k];
         }
         if (D_800CCCE8_setup.work.records[i].pilot.gearId == 0xFF || (FORMATION_FLAGS & 0x40)) {
-            D_800C3EAC->slots[i].items[7] = D_800C3234[7];
-            D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[7];
+            battle_turn_state->slots[i].items[7] = battle_command_seal_bits[7];
+            D_800CCCE8_setup.work.records[i].pilot.status7A |= battle_command_seal_bits[7];
         }
         if (FORMATION_FLAGS & 0x80) {
-            D_800C3EAC->slots[i].items[8] = D_800C3234[8];
-            D_800CCCE8_setup.work.records[i].pilot.status7A |= D_800C3234[8];
+            battle_turn_state->slots[i].items[8] = battle_command_seal_bits[8];
+            D_800CCCE8_setup.work.records[i].pilot.status7A |= battle_command_seal_bits[8];
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
-        D_800C3EB0.slots[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
+        battle_turn_state->slots[i].defaultTarget = battle_order_attack_candidates(i);
+        battle_area.slots[i].targetCode = battle_is_target_at_lower_x(i, battle_turn_state->slots[i].defaultTarget);
     }
 }
 
@@ -392,15 +392,15 @@ void func_801E5384(void) {
     u16 *list;
 
     if (FORMATION_FLAGS & 0x10) {
-        D_800D3294 = 1;
+        battle_uses_fixed_party = 1;
     } else {
-        D_800D3294 = 0;
+        battle_uses_fixed_party = 0;
     }
     mask = (game_data.joined & game_data.available) & 0x7FF;
-    if (D_800D3294 == 0) {
+    if (battle_uses_fixed_party == 0) {
         count = 0;
         for (i = 0; i < 3; i++) {
-            if (func_80089C9C(mask, game_data.party[i])) {
+            if (battle_is_slot_in_mask(mask, game_data.party[i])) {
                 D_800CCCE8_setup.partyIds[count] = game_data.party[i] & 0x7F;
                 count++;
             }
@@ -418,7 +418,7 @@ void func_801E5384(void) {
     for (i = 0; i < 3; i++) {
         if (D_800CCCE8_setup.partyIds[i] != NO_COMBATANT) {
             memmove(&D_800CCCE8_setup.work.records[i].pilot, &game_data.characters[D_800CCCE8_setup.partyIds[i]], 0xA4);
-            if (D_800D3294 != 0 && (u32)(i - 1) < 2) {
+            if (battle_uses_fixed_party != 0 && (u32)(i - 1) < 2) {
                 D_800CCCE8_setup.work.records[i].pilot.gearId = 0x11;
             }
             gear = D_800CCCE8_setup.work.records[i].pilot.gearId;
@@ -446,27 +446,27 @@ void func_801E5384(void) {
     block = text_unpack_lzss_alloc(archive[2], 1);
     model_load_image_list(block, 0, 0, 0, 0, 0, 0);
     heap_free(block);
-    D_800D2F5C = text_unpack_lzss_alloc(archive[1], 0);
+    battle_glyph_table = text_unpack_lzss_alloc(archive[1], 0);
     text_load_palette(0, 0x1F0);
-    D_800D329C = text_unpack_lzss_alloc(archive[0x10], 0);
+    battle_item_name_table = text_unpack_lzss_alloc(archive[0x10], 0);
     block = text_unpack_lzss_alloc(archive[0x24], 1);
-    func_80078310(block, 0x61);
+    battle_upload_party_portraits(block, 0x61);
     heap_free(block);
     block = text_unpack_lzss_alloc(archive[0x25], 1);
     memmove((u8 *)&D_800CCCE8_setup + 0x5818, (u8 *)block + 0x320, 0x300);
     heap_free(block);
-    D_800D39F0 = text_unpack_lzss_alloc(archive[0x26], 0);
+    battle_message_table = text_unpack_lzss_alloc(archive[0x26], 0);
     heap_free(mode_battle_setup_archive);
     cd_select_directory(0xC, 1);
-    D_800C3DD0 = func_8008ABB8(cd_get_aligned_file_size(formation_active.battle * 2 + 2), 0);
-    D_800D33EC = D_800C3DD0;
-    list = &D_800D33E8;
+    battle_enemy_data_file = battle_heap_alloc(cd_get_aligned_file_size(formation_active.battle * 2 + 2), 0);
+    battle_enemy_read_list_destination0 = battle_enemy_data_file;
+    list = &battle_enemy_read_list;
     *list = formation_active.battle * 2 + 2;
-    D_800C3DEC = (s32)func_8008ABB8(cd_get_aligned_file_size(formation_active.battle * 2 + 3), 1);
-    D_800D33F4 = (void *)D_800C3DEC;
-    D_800D33F8 = 0;
-    D_800D33FC = NULL;
-    D_800D33F0 = formation_active.battle * 2 + 3;
+    battle_enemy_set_file = (s32)battle_heap_alloc(cd_get_aligned_file_size(formation_active.battle * 2 + 3), 1);
+    battle_enemy_read_list_destination1 = (void *)battle_enemy_set_file;
+    battle_enemy_read_list_end = 0;
+    battle_enemy_read_list_end_destination = NULL;
+    battle_enemy_read_list_file1 = formation_active.battle * 2 + 3;
     cd_read_file_list((FileRequest *)list, 0, 0x80);
 }
 
@@ -487,8 +487,8 @@ void func_801E5840(u8 phase) {
         func_801E4CD0();
         func_801E4E7C();
         func_801E5014();
-        D_800C3E24 = func_8008ABB8(0xEC, 0);
-        bzero((u8 *)D_800C3E24, 0xEC);
+        battle_direction_arrows = battle_heap_alloc(0xEC, 0);
+        bzero((u8 *)battle_direction_arrows, 0xEC);
         break;
     case 3:
         func_801E6290();
@@ -502,46 +502,46 @@ void func_801E5840(u8 phase) {
 void func_801E5924(void) {
     s32 i;
 
-    D_800D2D28->reaction[0] = 1;
-    D_800D2D28->reaction[1] = 1;
-    D_800D2D28->reaction[2] = 1;
-    sprite_sheet_get_texture(D_800D2F5C, 0x5C, &D_800C3EA4->sprites[0].unk0, &D_800C3EA4->sprites[0].tpageMode,
-                  &D_800C3EA4->sprites[0].clutX, &D_800C3EA4->sprites[0].clutY, &D_800C3EA4->sprites[0].pageX,
-                  &D_800C3EA4->sprites[0].pageY);
-    D_800C3EA4->barCluts[1] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY);
-    D_800C3EA4->barCluts[0] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 1);
-    D_800C3EA4->barCluts[3] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 2);
-    D_800C3EA4->barCluts[2] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY - 3);
+    battle_ui->reaction[0] = 1;
+    battle_ui->reaction[1] = 1;
+    battle_ui->reaction[2] = 1;
+    sprite_sheet_get_texture(battle_glyph_table, 0x5C, &battle_graphics->sprites[0].unk0, &battle_graphics->sprites[0].tpageMode,
+                  &battle_graphics->sprites[0].clutX, &battle_graphics->sprites[0].clutY, &battle_graphics->sprites[0].pageX,
+                  &battle_graphics->sprites[0].pageY);
+    battle_graphics->barCluts[1] = GetClut(battle_graphics->sprites[0].clutX, battle_graphics->sprites[0].clutY);
+    battle_graphics->barCluts[0] = GetClut(battle_graphics->sprites[0].clutX, battle_graphics->sprites[0].clutY - 1);
+    battle_graphics->barCluts[3] = GetClut(battle_graphics->sprites[0].clutX, battle_graphics->sprites[0].clutY - 2);
+    battle_graphics->barCluts[2] = GetClut(battle_graphics->sprites[0].clutX, battle_graphics->sprites[0].clutY - 3);
     for (i = 0; i < 8; i++) {
-        SetPolyGT4(&D_800C3EA4->gaugeBars[i]);
-        SetShadeTex(&D_800C3EA4->gaugeBars[i], 0);
-        (D_800C3EA4->gaugeBars + i)->r0 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->g0 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->b0 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->r1 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->g1 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->b1 = 0x80;
-        (D_800C3EA4->gaugeBars + i)->r2 = 0;
-        (D_800C3EA4->gaugeBars + i)->g2 = 0;
-        (D_800C3EA4->gaugeBars + i)->b2 = 0;
-        (D_800C3EA4->gaugeBars + i)->r3 = 0;
-        (D_800C3EA4->gaugeBars + i)->g3 = 0;
-        (D_800C3EA4->gaugeBars + i)->b3 = 0;
-        D_800C3EA4->gaugeBars[i].tpage =
-            GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX, D_800C3EA4->sprites[0].pageY);
-        SetPolyG4(&D_800C3EA4->shade[i]);
-        (D_800C3EA4->shade + i)->r2 = 0x4F;
-        (D_800C3EA4->shade + i)->g2 = 0x4F;
-        (D_800C3EA4->shade + i)->b2 = 0x4F;
-        (D_800C3EA4->shade + i)->r3 = 0x4F;
-        (D_800C3EA4->shade + i)->g3 = 0x4F;
-        (D_800C3EA4->shade + i)->b3 = 0x4F;
+        SetPolyGT4(&battle_graphics->gaugeBars[i]);
+        SetShadeTex(&battle_graphics->gaugeBars[i], 0);
+        (battle_graphics->gaugeBars + i)->r0 = 0x80;
+        (battle_graphics->gaugeBars + i)->g0 = 0x80;
+        (battle_graphics->gaugeBars + i)->b0 = 0x80;
+        (battle_graphics->gaugeBars + i)->r1 = 0x80;
+        (battle_graphics->gaugeBars + i)->g1 = 0x80;
+        (battle_graphics->gaugeBars + i)->b1 = 0x80;
+        (battle_graphics->gaugeBars + i)->r2 = 0;
+        (battle_graphics->gaugeBars + i)->g2 = 0;
+        (battle_graphics->gaugeBars + i)->b2 = 0;
+        (battle_graphics->gaugeBars + i)->r3 = 0;
+        (battle_graphics->gaugeBars + i)->g3 = 0;
+        (battle_graphics->gaugeBars + i)->b3 = 0;
+        battle_graphics->gaugeBars[i].tpage =
+            GetTPage(battle_graphics->sprites[0].tpageMode, 0, battle_graphics->sprites[0].pageX, battle_graphics->sprites[0].pageY);
+        SetPolyG4(&battle_graphics->shade[i]);
+        (battle_graphics->shade + i)->r2 = 0x4F;
+        (battle_graphics->shade + i)->g2 = 0x4F;
+        (battle_graphics->shade + i)->b2 = 0x4F;
+        (battle_graphics->shade + i)->r3 = 0x4F;
+        (battle_graphics->shade + i)->g3 = 0x4F;
+        (battle_graphics->shade + i)->b3 = 0x4F;
     }
     for (i = 0; i < 12; i++) {
-        SetLineF2(&D_800C3EA4->unk908[i]);
-        (D_800C3EA4->unk908 + i)->r0 = 0xFF;
-        (D_800C3EA4->unk908 + i)->g0 = 0xFF;
-        (D_800C3EA4->unk908 + i)->b0 = 0xFF;
+        SetLineF2(&battle_graphics->unk908[i]);
+        (battle_graphics->unk908 + i)->r0 = 0xFF;
+        (battle_graphics->unk908 + i)->g0 = 0xFF;
+        (battle_graphics->unk908 + i)->b0 = 0xFF;
     }
 }
 
@@ -556,17 +556,17 @@ void func_801E5D2C(void) {
     window.h = 0x100;
     window.w = 0x100;
     for (i = 0; i < 2; i++) {
-        SetPolyF4(&D_800C3EA4->panel[i]);
-        (D_800C3EA4->panel + i)->r0 = 0xFF;
-        (D_800C3EA4->panel + i)->g0 = 0xFF;
-        (D_800C3EA4->panel + i)->b0 = 0xFF;
-        SetSemiTrans(&D_800C3EA4->panel[i], 1);
-        SetDrawMode(&D_800C3EA4->panelMode[i], 0, 0,
-                      GetTPage(0, 2, D_800C3EA4->sprites[0].pageX, D_800C3EA4->sprites[0].pageY), &window);
+        SetPolyF4(&battle_graphics->panel[i]);
+        (battle_graphics->panel + i)->r0 = 0xFF;
+        (battle_graphics->panel + i)->g0 = 0xFF;
+        (battle_graphics->panel + i)->b0 = 0xFF;
+        SetSemiTrans(&battle_graphics->panel[i], 1);
+        SetDrawMode(&battle_graphics->panelMode[i], 0, 0,
+                      GetTPage(0, 2, battle_graphics->sprites[0].pageX, battle_graphics->sprites[0].pageY), &window);
     }
-    D_800C3EA4->unk6415 = 0;
-    D_800C3EA4->panelAlpha = 0xFF;
-    D_800C3EA4->unk6416 = 0;
+    battle_graphics->unk6415 = 0;
+    battle_graphics->panelAlpha = 0xFF;
+    battle_graphics->unk6416 = 0;
 }
 
 /* Render the ten battle messages 0-9 into text images. The original frame
@@ -576,8 +576,8 @@ void func_801E5E78(void) {
     s32 i;
 
     for (i = 0; i < 10; i++) {
-        D_800C3E5C[i].pixels = func_8008AC00(4);
-        window_render_text_line(text_get_battle_message(i), D_800C3E5C[i].pixels, 2, 0);
+        battle_digit_text_images[i].pixels = battle_heap_alloc_text_image(4);
+        window_render_text_line(text_get_battle_message(i), battle_digit_text_images[i].pixels, 2, 0);
     }
 }
 
@@ -590,31 +590,31 @@ void func_801E5EE8(void) {
     s32 k;
 
     for (i = 0; i < 3; i++) {
-        if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
-            D_800D2D28->gaugeParts[i] += func_80076A6C(
-                0x52, &D_800C3EA4->gauge[i][0][D_800D2D28->gaugeParts[i] * 2],
-                i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
-            part = D_800D2D28->gaugeParts[i];
+        if (battle_area.slots[i].field2 != NO_COMBATANT) {
+            battle_ui->gaugeParts[i] += battle_build_glyph_half_scale(
+                0x52, &battle_graphics->gauge[i][0][battle_ui->gaugeParts[i] * 2],
+                i * 0x60 + (battle_panel_x_by_layout[battle_party_panel_layout * 3 + i] + 0x44), 0x24);
+            part = battle_ui->gaugeParts[i];
             first = part * 2;
-            D_800D2D28->gaugeParts[i] += func_80076A6C(
-                0x53, &D_800C3EA4->gauge[i][0][part * 2],
-                i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
-            for (k = first; k < D_800D2D28->gaugeParts[i] * 2; k += 2) {
-                func_80076C34(&D_800C3EA4->gauge[i][0][k + D_800C3EB0.buffer]);
+            battle_ui->gaugeParts[i] += battle_build_glyph_half_scale(
+                0x53, &battle_graphics->gauge[i][0][part * 2],
+                i * 0x60 + (battle_panel_x_by_layout[battle_party_panel_layout * 3 + i] + 0x44), 0x24);
+            for (k = first; k < battle_ui->gaugeParts[i] * 2; k += 2) {
+                battle_quad_init_half_subtractive(&battle_graphics->gauge[i][0][k + battle_area.buffer]);
             }
-            func_80076A10(0x61 + i, D_800C3EA4->portrait[i],
-                          i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x1C), 0x14);
-            D_800C3EA4->panels[i].parts[0] =
-                func_80076A10(0x90, D_800C3EA4->panels[i].value[0],
-                              i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x38), 0x27);
-            D_800C3EA4->panels[i].parts[1] =
-                func_80076A10(0x91, D_800C3EA4->panels[i].gear[0],
-                              i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x3C), 0x27);
-            D_800C3EA4->panels[i].buffer = D_800C3EB0.buffer;
+            battle_build_glyph(0x61 + i, battle_graphics->portrait[i],
+                          i * 0x60 + (battle_panel_x_by_layout[battle_party_panel_layout * 3 + i] + 0x1C), 0x14);
+            battle_graphics->panels[i].parts[0] =
+                battle_build_glyph(0x90, battle_graphics->panels[i].value[0],
+                              i * 0x60 + (battle_panel_x_by_layout[battle_party_panel_layout * 3 + i] + 0x38), 0x27);
+            battle_graphics->panels[i].parts[1] =
+                battle_build_glyph(0x91, battle_graphics->panels[i].gear[0],
+                              i * 0x60 + (battle_panel_x_by_layout[battle_party_panel_layout * 3 + i] + 0x3C), 0x27);
+            battle_graphics->panels[i].buffer = battle_area.buffer;
         }
     }
-    D_800D2D28->gaugeBuffer = D_800C3EB0.buffer;
-    D_800D2D28->portraitBuffer = D_800C3EB0.buffer;
+    battle_ui->gaugeBuffer = battle_area.buffer;
+    battle_ui->portraitBuffer = battle_area.buffer;
 }
 
 /* Setup phase 3, first frame: the gauge panels and each member's glyphs. */

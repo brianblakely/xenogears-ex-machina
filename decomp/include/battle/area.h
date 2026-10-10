@@ -6,13 +6,13 @@
 #include "resident/sprite.h"
 #include "battle/work.h"
 
-/* The battle area D_800C3EB0 (0x8E38 bytes and its work area): the formation,
+/* The battle area battle_area (0x8E38 bytes and its work area): the formation,
  * the slots, the presentation events, the walk, the display buffers, the
  * controller state, the slots' sprites and tasks. The battle modules
  * (0x801fc000), the battle setup and script overlays and the debug pages
  * use it with the battle overlay. */
 
-/* Per-slot formation information and placement (0x1C bytes, D_800C3EB4). */
+/* Per-slot formation information and placement (0x1C bytes, battle_area_slots). */
 typedef struct {
     u8 group;  /* formation group */
     u8 member;
@@ -28,7 +28,7 @@ typedef struct {
     u8 pad10[0x1C - 0x10];
 } BattleSlot;
 
-/* Presentation event queue slot (0x48 bytes, from D_800C3FE8). */
+/* Presentation event queue slot (0x48 bytes, from battle_area_events). */
 typedef struct {
     u16 amounts[11];
     u16 targetMask;          /* 0x16 */
@@ -71,14 +71,14 @@ typedef struct {
     s32 variant;
 } SlotSource;
 
-/* Battle state from D_800C3EB0: the frame loop and result screens address
+/* Battle state from battle_area: the frame loop and result screens address
  * the work table through this aggregate. */
 typedef struct BattleArea {
     struct Formation *formation; /* 0x0000 */
     BattleSlot slots[11];       /* 0x0004 */
     BattleEvent events[32];     /* 0x0138 */
-    u16 knockedOut;            /* 0x0A38: D_800C48E8 */
-    u8 outcome;               /* 0x0A3A: D_800C48EA */
+    u16 knockedOut;            /* 0x0A38: battle_area_knocked_out */
+    u8 outcome;               /* 0x0A3A: battle_area_outcome */
     u8 padA3B;
     PathPoint path[51];         /* 0x0A3C */
     u8 padB6E[2];
@@ -102,16 +102,16 @@ typedef struct BattleArea {
     u8 pad8DA9[0x8DAC - 0x8DA9];
     s32 frameTicks;             /* 0x8DAC: vertical blanks of the last frame */
     u8 pad8DB0[0x8E38 - 0x8DB0];
-    BattleWork work;            /* 0x8E38: D_800CCCE8 */
+    BattleWork work;            /* 0x8E38: battle_work_area */
 } BattleArea;
 
 /* The battle area: one global from 800c3eb0 (the other battle overlays
  * declare it with their own view). Member accesses fold into the symbol
- * (D_800C3EB0+4 for the slots, which splat also labels D_800C3EB4); code
+ * (battle_area+4 for the slots, which splat also labels battle_area_slots); code
  * that addresses the area from its address in a register (8008a684's stores,
  * the late units) uses BATTLE_AREA. */
-extern BattleArea D_800C3EB0;
-#define BATTLE_AREA (*(BattleArea *)(void *)&D_800C3EB0)
+extern BattleArea battle_area;
+#define BATTLE_AREA (*(BattleArea *)(void *)&battle_area)
 
 LAYOUT_CHECK(BattleAreaLayout, sizeof(BattleSlot) == 0x1C && sizeof(BattleEvent) == 0x48 &&
                                    sizeof(PathPoint) == 6 && sizeof(FrameBuffer) == 0x4070 &&

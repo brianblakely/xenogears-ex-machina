@@ -31,10 +31,10 @@ void mode_run_battle(void) {
                      0x340, 0, 0x340, 0x20, NULL);
     }
     mode_battle_init_display();
-    func_80070F40();
-    outcome = D_800C3EB0.outcome;
+    battle_main();
+    outcome = battle_area.outcome;
     if (outcome == 1 || outcome == 0x40 || outcome == 0x21) {
-        if (D_800D3338 != 0) {
+        if (battle_continue_to_movie_mode != 0) {
             mode = 6;
         } else if (mode_pending_battle_formation == 0) {
             if ((game_data.map & 0x7FF) < 0x400) {

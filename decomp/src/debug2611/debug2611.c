@@ -77,16 +77,16 @@ void func_80280844(s32 buttons) {
     if (buttons & 0x2000) {
         step.vz = -speed;
     }
-    gpu_build_rotation_matrix(&D_800D309C.rot, &m);
+    gpu_build_rotation_matrix(&battle_camera.rot, &m);
     ApplyMatrix(&m, &step, &moved);
-    D_800D3354.vx += moved.vx;
-    D_800D3354.vy += moved.vy;
-    D_800D3354.vz += moved.vz;
+    battle_camera_view_eye.vx += moved.vx;
+    battle_camera_view_eye.vy += moved.vy;
+    battle_camera_view_eye.vz += moved.vz;
     if (buttons & 1) {
-        D_800D3354.vy += speed;
+        battle_camera_view_eye.vy += speed;
     }
     if (buttons & 4) {
-        D_800D3354.vy -= speed;
+        battle_camera_view_eye.vy -= speed;
     }
 }
 
@@ -121,20 +121,20 @@ void func_80280960(s32 buttons) {
     if (buttons & 0x2000) {
         step.vz = -speed;
     }
-    rot.vx = D_800D30B0.vx;
-    rot.vy = D_800D30B0.vy;
-    rot.vz = D_800D30B0.vz;
+    rot.vx = battle_camera_angles.vx;
+    rot.vy = battle_camera_angles.vy;
+    rot.vz = battle_camera_angles.vz;
     rot.vx = 0;
     gpu_build_rotation_matrix(&rot, &m);
     ApplyMatrix(&m, &step, &moved);
-    D_800D335C.vx += moved.vx;
-    D_800D335C.vy += moved.vy;
-    D_800D335C.vz += moved.vz;
+    battle_camera_view_target.vx += moved.vx;
+    battle_camera_view_target.vy += moved.vy;
+    battle_camera_view_target.vz += moved.vz;
     if (buttons & 1) {
-        D_800D335C.vy += speed;
+        battle_camera_view_target.vy += speed;
     }
     if (buttons & 4) {
-        D_800D335C.vy -= speed;
+        battle_camera_view_target.vy -= speed;
     }
 }
 
@@ -154,32 +154,32 @@ void func_80280A9C(void) {
     s32 yaw, pitch;
 
     func_80281980();
-    if (D_800C3EB0.pressed2 & 0x800) {
+    if (battle_area.pressed2 & 0x800) {
         D_80282034 = 1 - D_80282034;
     }
     if (D_80282034 != 0) {
         func_802810C4();
     }
-    if (D_800C3EB0.pressed2 & 0x20) {
+    if (battle_area.pressed2 & 0x20) {
         D_80282038 = 1 - D_80282038;
     }
     if (D_80282038 != 0) {
-        console_printf("CPU       %d\n", D_800D309C.cpu);
-        console_printf("GPU       %d\n", D_800D309C.gpu);
+        console_printf("CPU       %d\n", battle_camera.cpu);
+        console_printf("GPU       %d\n", battle_camera.gpu);
         console_printf("tasks     %d\n", task_main_count);
         console_printf("polys     %d%%\n", (sprite_queue_block_end - (u8 *)sprite_queue_next_free) * 100 / 20480);
-        console_printf("frameRate %d\n", D_800C3EB0.frameTicks + 1);
+        console_printf("frameRate %d\n", battle_area.frameTicks + 1);
         {
             /* Unreferenced bitmap format retained in the original rodata. */
             static const char bitmap_format[] = "bitmap: %x\n";
         }
     }
-    if (D_800C3EB0.pressed2 & 0x100) {
+    if (battle_area.pressed2 & 0x100) {
         D_80282040 = 1 - D_80282040;
         if (D_80282040 == 0) {
-            func_800BC2F0(1);
+            battle_camera_set_mode(1);
         } else {
-            func_800BC2F0(4);
+            battle_camera_set_mode(4);
         }
     }
     if (D_80282040 != 0) {
@@ -229,19 +229,19 @@ void func_80280A9C(void) {
         page2->tpage = GetTPage(1, 0, 0x340, 0x100);
         page2->clut = GetClut(0, 0x1CC);
         AddPrim((u_long *)sprite_ot, page2);
-        console_printf("lenge:  %d\n", D_800D309C.range);
-        console_printf("camera: %d,%d,%d\n", D_800D3354.vx, D_800D3354.vy, D_800D3354.vz);
-        console_printf("watch:  %d,%d,%d\n", D_800D335C.vx, D_800D335C.vy, D_800D335C.vz);
-        angle.vx = yaw = (D_800D309C.rot.vx & 0xFFF) * 360 / 4096;
-        angle.vy = pitch = (D_800D309C.rot.vy & 0xFFF) * 360 / 4096;
+        console_printf("lenge:  %d\n", battle_camera.range);
+        console_printf("camera: %d,%d,%d\n", battle_camera_view_eye.vx, battle_camera_view_eye.vy, battle_camera_view_eye.vz);
+        console_printf("watch:  %d,%d,%d\n", battle_camera_view_target.vx, battle_camera_view_target.vy, battle_camera_view_target.vz);
+        angle.vx = yaw = (battle_camera.rot.vx & 0xFFF) * 360 / 4096;
+        angle.vy = pitch = (battle_camera.rot.vy & 0xFFF) * 360 / 4096;
         console_printf("angle:  %d,%d(%d)\n", yaw, pitch, (pitch + 90) % 360);
         D_802820EC++;
-        SetRotMatrix(&D_800D309C.matrix);
-        SetTransMatrix(&D_800D309C.matrix);
-        watch.vx = D_800D335C.vx;
+        SetRotMatrix(&battle_camera.matrix);
+        SetTransMatrix(&battle_camera.matrix);
+        watch.vx = battle_camera_view_target.vx;
         target = &watch;
-        watch.vy = D_800D335C.vy;
-        watch.vz = D_800D335C.vz;
+        watch.vy = battle_camera_view_target.vy;
+        watch.vz = battle_camera_view_target.vz;
         mark = (TILE_1 *)sprite_queue_next_free;
         sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(TILE_1));
         ((u8 *)mark)[3] = 2;
@@ -256,20 +256,20 @@ void func_80280A9C(void) {
         if ((D_802820EC & 7) == 0) {
             sprite_create_effect(2, (SpriteSource *)sprite_shared_source, target, 0);
         }
-        if (D_800C3EB0.pressed2 & 0x80) {
+        if (battle_area.pressed2 & 0x80) {
             if (++D_80282044 & 1) {
                 SetGeomOffset(0xA0, 0x70);
             } else {
                 SetGeomOffset(0xA0, 0xA5);
             }
         }
-        if (D_800C3EB0.held2 & 0x40) {
-            func_80280960(D_800C3EB0.held2);
-            func_80280844(D_800C3EB0.held2);
-        } else if (D_800C3EB0.held2 & 0x20) {
-            func_80280960(D_800C3EB0.held2);
+        if (battle_area.held2 & 0x40) {
+            func_80280960(battle_area.held2);
+            func_80280844(battle_area.held2);
+        } else if (battle_area.held2 & 0x20) {
+            func_80280960(battle_area.held2);
         } else {
-            func_80280844(D_800C3EB0.held2);
+            func_80280844(battle_area.held2);
         }
     }
     func_8028103C();
@@ -279,7 +279,7 @@ void func_80280A9C(void) {
 void func_8028103C(void) {
     s32 unused[12]; /* unused in the original; reserves 48 bytes */
 
-    if (D_800C3EB0.pressed2 != 0) {
+    if (battle_area.pressed2 != 0) {
         console_close();
         console_open(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
         console_load_font_cluts(0x7FFF, 0x8000);
@@ -293,50 +293,50 @@ void func_802810C4(void) {
 
     func_8028191C();
     scroll = 0;
-    if (D_800C3EB0.pressed2 & 2) {
+    if (battle_area.pressed2 & 2) {
         D_8028205C ^= 0x10;
     }
-    if (D_800C3EB0.pressed2 & 8) {
+    if (battle_area.pressed2 & 8) {
         D_8028205C ^= 0x20;
     }
-    if (D_800C3EB0.pressed2 & 0x10) {
+    if (battle_area.pressed2 & 0x10) {
         D_8028205C ^= 0x40;
     }
-    if (D_800C3EB0.pressed2 & 0x20) {
+    if (battle_area.pressed2 & 0x20) {
         D_8028205C ^= 0x80;
     }
-    if (D_800C3EB0.pressed2 & 0x80) {
+    if (battle_area.pressed2 & 0x80) {
         D_8028205C ^= 2;
     }
-    if (D_800C3EB0.pressed2 & 0x40) {
+    if (battle_area.pressed2 & 0x40) {
         D_8028205C ^= 0x8000;
     }
-    if (D_800C3EB0.pressed2 & 4) {
+    if (battle_area.pressed2 & 4) {
         D_80282068++;
     }
-    if (D_800C3EB0.pressed2 & 1) {
+    if (battle_area.pressed2 & 1) {
         if (--D_80282068 < 0) {
             D_80282068 = 0;
         }
     }
     console_printf("\t\t\tdebug heap\n");
-    if (D_800C3EB0.held2 & 0x5000) {
+    if (battle_area.held2 & 0x5000) {
         if (++D_80282064 >= 9) {
             D_80282064 = 8;
         }
     } else {
         D_80282064 = 0;
     }
-    if ((D_800C3EB0.held2 & 0x1000) && D_80282064 >= 8) {
+    if ((battle_area.held2 & 0x1000) && D_80282064 >= 8) {
         scroll--;
     }
-    if ((D_800C3EB0.held2 & 0x4000) && D_80282064 >= 8) {
+    if ((battle_area.held2 & 0x4000) && D_80282064 >= 8) {
         scroll++;
     }
-    if (D_800C3EB0.pressed2 & 0x1000) {
+    if (battle_area.pressed2 & 0x1000) {
         scroll--;
     }
-    if (D_800C3EB0.pressed2 & 0x4000) {
+    if (battle_area.pressed2 & 0x4000) {
         scroll++;
     }
     if ((D_80282060 += scroll) < 0) {
@@ -350,8 +350,8 @@ void func_802810C4(void) {
 void func_80281330(Task *task) {
     LoadMeter *meter = task->data;
 
-    meter->cpu_avg += (D_800D309C.cpu * 16 - meter->cpu_avg) >> 3;
-    meter->gpu_avg += (D_800D309C.gpu * 16 - meter->gpu_avg) >> 3;
+    meter->cpu_avg += (battle_camera.cpu * 16 - meter->cpu_avg) >> 3;
+    meter->gpu_avg += (battle_camera.gpu * 16 - meter->gpu_avg) >> 3;
     meter->cpu = meter->cpu_avg;
     meter->gpu = meter->gpu_avg;
     if (--meter->cpu_hold == 0) {
@@ -542,7 +542,7 @@ void func_8028191C(void) {
  * so the switch's default branch slot takes the index shift, not the table
  * address. */
 s32 func_80281980(void) {
-    Sprite *actor = D_800C3568;
+    Sprite *actor = battle_sprite_for_debugger;
     SVECTOR v;
     VECTOR step;
     long sxy, p, flag;
@@ -551,19 +551,19 @@ s32 func_80281980(void) {
     if (actor == NULL) {
         return;
     }
-    if ((D_800C3EB0.pressed2 & 8) && ++D_802820BB >= 7) {
+    if ((battle_area.pressed2 & 8) && ++D_802820BB >= 7) {
         D_802820BB = 0;
     }
     console_printf("shifts mode: %x\n", D_802820BB);
-    if ((D_800C3EB0.pressed2 & 2) && ++D_802820BC >= 5) {
+    if ((battle_area.pressed2 & 2) && ++D_802820BC >= 5) {
         D_802820BC = 0;
     }
     console_printf("control mode: %s\n", D_802820C0[D_802820BC]);
     v.vx = actor->x >> 16;
     v.vy = actor->y >> 16;
     v.vz = actor->z >> 16;
-    SetRotMatrix(&D_800D309C.matrix);
-    SetTransMatrix(&D_800D309C.matrix);
+    SetRotMatrix(&battle_camera.matrix);
+    SetTransMatrix(&battle_camera.matrix);
     otz = RotTransPers(&v, &sxy, &p, &flag);
     console_printf("shapeno %x\n", actor->frame);
     console_printf("otz     %x\n", otz);
@@ -588,22 +588,22 @@ s32 func_80281980(void) {
     step.vx = 0;
     step.vy = 0;
     step.vz = 0;
-    if (D_800C3EB0.held2 & 1) {
+    if (battle_area.held2 & 1) {
         step.vz = -1;
     }
-    if (D_800C3EB0.held2 & 4) {
+    if (battle_area.held2 & 4) {
         step.vz++;
     }
-    if (D_800C3EB0.held2 & 0x1000) {
+    if (battle_area.held2 & 0x1000) {
         step.vy = -1;
     }
-    if (D_800C3EB0.held2 & 0x4000) {
+    if (battle_area.held2 & 0x4000) {
         step.vy++;
     }
-    if (D_800C3EB0.held2 & 0x8000) {
+    if (battle_area.held2 & 0x8000) {
         step.vx = -1;
     }
-    if (D_800C3EB0.held2 & 0x2000) {
+    if (battle_area.held2 & 0x2000) {
         step.vx++;
     }
     step.vx <<= D_802820BB;

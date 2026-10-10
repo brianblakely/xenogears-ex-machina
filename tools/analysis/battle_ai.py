@@ -194,7 +194,7 @@ _ACTIONS = """
     the enemy's experience (record +0x14c) = b1 | b2 << 8
 3a set_gold 8007bb2c u16@12
     the enemy's gold (record +0x156) = b1 | b2 << 8
-3b set_own_155 8007bb70 u8@1 u8@2 u8@3
+3b set_second_drop 8007bb70 u8@1 u8@2 u8@3
     the enemy's record bytes +0x155, +0x153, +0x151 = b1, b2, b3
 3c set_drop 8007bbd8 u8@1 u8@2 u8@3
     the enemy's first drop: category (record +0x154), item (+0x152) and
@@ -261,14 +261,14 @@ _ACTIONS = """
 56 pick_enemy_80 8007d344 v@1 any@2
     variable b1 = the bit of a random enemy slot passing 8007a6c8(b2) with slot
     info +3 bit 0x80; 0 if none
-57 pick_party_8000 8007d478 v@1
+57 pick_knocked_out_party 8007d478 v@1
     variable b1 = the bit of a random party slot with record +0x7c bit 0x8000
     and without 0x4002; 0 if none
 58 count_party_up 8007d5b0 b@1
     byte variable b1 = the party slots without record +0x7c bits 0xc000
 59 count_enemies_up 8007d610 b@1
     byte variable b1 = the present, visible enemy slots without +0x7c 0xc000
-5a party_geared_lowest_104 8007d6a8 v@1 any@2
+5a party_geared_lowest_gear_hp 8007d6a8 v@1 any@2
     variable b1 = the bit of the party slot passing 8007a628(b2) in a gear
     (800d32a1) with the lowest record +0x104 (slot 0 if none)
 5b enemy_geared_lowest_hp 8007d7b4 v@1 any@2
@@ -307,7 +307,7 @@ _ACTIONS = """
     as 67 for the enemy slots
 69 clear_result 8007e674
     the enemy's pending amount (800d2c60, BattleWork.damage[3 + enemy]) = 0 and
-    its result code = 4, which the results pass (func_80085618) applies as nothing
+    its result code = 4, which the results pass (battle_apply_event_results) applies as nothing
 6a add_ll 8007e6a0 l@1 l@2 l@3
     long b3 = long b1 + long b2
 6b sub_ll 8007e6f0 l@1 l@2 l@3
@@ -319,7 +319,7 @@ _ACTIONS = """
 70 set_event_variable 8007e7c0 u8@1 u8@2
     the battle event script's variable b1 (*800d3278 + 0x394, ovl3087's
     ScriptState.vars) = b2
-71 party_flag_7a 8007e7e4 bit@1 set@2
+71 set_party_command_seal 8007e7e4 bit@1 set@2
     set (b2 != 0) or clear flag b1 + 7 (80089bec) in every party record's +0x7a
 72 set_group_distance 8007e8ac group@1 group@2 u8@3
     formation group distance b1 -> b2 = b3
@@ -372,7 +372,7 @@ _CONDITIONS = """
     long b1 == long b2
 94 leu_ll 8007ee28 l@1 l@2
     long b1 <= long b2 (unsigned)
-95 slot_8000 8007ee70 slot@1
+95 slot_knocked_out 8007ee70 slot@1
     slot b1's record +0x7c bit 0x8000 is set
 96 group_empty 8007eea8 group@1
     formation group b1 has no members

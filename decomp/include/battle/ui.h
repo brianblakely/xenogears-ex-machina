@@ -74,7 +74,7 @@ typedef struct BattleUi {
     u8 unkC6;
     u8 unkC7;
     u8 scriptPortraitShown; /* +0xC8 the event script's portrait quad (ScriptState) is drawn */
-    u8 messageShown;   /* +0xC9 the message text window D_800D2DAC is drawn */
+    u8 messageShown;   /* +0xC9 the message text window battle_message_text_window is drawn */
     u8 scriptLoaded;   /* +0xCA the event script is set up: its threads' waits count down */
     u8 unkCB;
     u8 unkCC[3];       /* per party member: its panel and gauge are drawn */
@@ -91,7 +91,7 @@ typedef struct BattleUi {
     u8 unk108[4];
 } BattleUi;
 
-extern BattleUi *D_800D2D28;
+extern BattleUi *battle_ui;
 
 /* A run of glyphs drawn together: how many parts, and the draw buffer they
  * were built for. */
@@ -129,7 +129,7 @@ typedef struct MemberCard {
 
 LAYOUT_CHECK(MemberCardSize, sizeof(MemberCard) == 0x15FC);
 
-extern MemberCard *D_800D32F8[3];
+extern MemberCard *battle_member_cards[3];
 
 /* Battle drawing state (800ccb04, the battle area's ordering table pointer
  * on). The battle work area (800ccce8) follows it within one aggregate: some
@@ -139,14 +139,14 @@ typedef struct {
     u8 unk4[0x2C];
     s32 buffer;        /* +0x30 draw buffer index */
     u8 unk34[0x1E4 - 0x34];
-    BattleWork work;   /* +0x1E4 (D_800CCCE8) */
+    BattleWork work;   /* +0x1E4 (battle_work_area) */
 } BattleDraw;
 
-extern BattleDraw D_800CCB04;
-extern u8 D_800CCB34;   /* D_800CCB04.buffer's low byte, read on its own */
+extern BattleDraw battle_drawing_state;
+extern u8 battle_drawing_buffer_byte;   /* battle_drawing_state.buffer's low byte, read on its own */
 
-extern void *D_800D2F5C;   /* glyph table */
-extern u8 D_800C3CF4[9];   /* decimal digits */
+extern void *battle_glyph_table;   /* glyph table */
+extern u8 battle_decimal_digits[9];   /* decimal digits */
 
 /* A menu icon cell of the icon image (4 bytes, 800d2f68). */
 typedef struct IconCell {
@@ -156,7 +156,7 @@ typedef struct IconCell {
     u8 v;
 } IconCell;
 
-extern IconCell D_800D2F68[];
+extern IconCell battle_icon_cells[];
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
 typedef struct DirectionArrows {
@@ -168,24 +168,24 @@ typedef struct DirectionArrows {
     u8 unkEA[2];
 } DirectionArrows;
 
-extern DirectionArrows *D_800C3E24;
+extern DirectionArrows *battle_direction_arrows;
 
 /* Images, glyphs and quads (80070E2C's unit). */
-void func_800769E8(RECT *rect, u32 *pixels); /* upload an image and wait */
-s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* build a glyph, full scale */
-s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* half scale */
-void func_80076B00(POLY_FT4 *prim); /* set up a textured quad at full brightness */
-void func_80076B68(POLY_FT4 *prim); /* the same with texture page bit 0x20 */
-void func_80076BF0(POLY_FT4 *prim); /* the same with bit 0x40 */
-void func_80076C34(POLY_FT4 *prim); /* the same at half brightness */
-void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w); /* place a quad 13 high */
-void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h); /* place a quad */
-void func_80077698(void); /* set up the direction arrows */
-void func_80077980(void);
+void battle_upload_image_and_wait(RECT *rect, u32 *pixels); /* upload an image and wait */
+s32 battle_build_glyph(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* build a glyph, full scale */
+s32 battle_build_glyph_half_scale(s32 id, POLY_FT4 *prims, s16 x, s16 y); /* half scale */
+void battle_quad_init_full_window_blend(POLY_FT4 *prim); /* set up a textured quad at full brightness */
+void battle_quad_init_full_additive(POLY_FT4 *prim); /* the same with texture page bit 0x20 */
+void battle_quad_init_full_subtractive(POLY_FT4 *prim); /* the same with bit 0x40 */
+void battle_quad_init_half_subtractive(POLY_FT4 *prim); /* the same at half brightness */
+void battle_quad_place_text_row(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w); /* place a quad 13 high */
+void battle_quad_place(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h); /* place a quad */
+void battle_show_direction_arrows(void); /* set up the direction arrows */
+void battle_hide_direction_arrows(void);
 
 /* Decimal digits and text images (battle.c), the cursor glyph (8008CCCC's
  * unit). */
-void func_8008AAA0(u32 value);  /* split a value into decimal digits */
-void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
+void battle_split_decimal_digits(u32 value);  /* split a value into decimal digits */
+void battle_animate_cursor_glyph(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 
 #endif

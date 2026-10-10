@@ -420,13 +420,13 @@ def text_tables(disc: Disc):
     mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))  # menu mode file 3: D_80092880 = entry 0
     yield "menu mode", 0, archive_entry(mode, 0)
     battle = disc.sectors(disc.slot(12, 0, 3))  # mode_battle_setup_archive (8001bbac)
-    for index in (0x0F, 0x25):  # archive[0x10] D_800D329C, archive[0x26] D_800D39F0 (ovl2615)
+    for index in (0x0F, 0x25):  # archive[0x10] battle_item_name_table, archive[0x26] battle_message_table (ovl2615)
         yield "battle archive", index, archive_entry(battle, index, packed=True)
-    marker = disc.entries.get(disc.slot(12, 1, 1))  # enemy data: file 2n + 2 (D_800C3DD0)
+    marker = disc.entries.get(disc.slot(12, 1, 1))  # enemy data: file 2n + 2 (battle_enemy_data_file)
     for file in range(2, 2 + (-marker["size"] if marker else 0), 2):
         enemy = disc.data(disc.slot(12, 1, file))
-        yield "enemy data", file, enemy[struct.unpack_from("<H", enemy, 0x30)[0] :]  # D_800C3DDC
-    for file in (1, 2, 3):  # 8007fd38/8007fe3c after 8008ab94: D_800D367C, D_800C3DE8
+        yield "enemy data", file, enemy[struct.unpack_from("<H", enemy, 0x30)[0] :]  # battle_enemy_name_table
+    for file in (1, 2, 3):  # 8007fd38/8007fe3c after 8008ab94: battle_command_menu_module_block, battle_command_menu_file3_block
         yield "battle menu", file, disc.data(disc.slot(0x20, 3, file))
     scripts = disc.sectors(disc.slot(0x20, 0, 2))  # ovl3087 801e5160: ScriptSet n data
     for index in range(1, struct.unpack_from("<I", scripts, 0)[0], 2):

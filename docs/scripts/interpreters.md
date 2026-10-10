@@ -46,7 +46,7 @@ documents both; `overlay_scripts` decodes them.
 
 | Table | Image | Index | Census |
 | --- | --- | --- | --- |
-| `D_800C348C`, `D_800C34DC` | battle | a command descriptor's formula | [dispatch-tables.md](dispatch-tables.md) |
+| `battle_formula_table`, `battle_gear_formula_table` | battle | a command descriptor's formula | [dispatch-tables.md](dispatch-tables.md) |
 | `model_primitive_types` | resident | a model primitive group's type | [dispatch-tables.md](dispatch-tables.md) |
 | `sound_modulator_waves` | resident | a sound modulator's mode & 0xf (16 slots) | [sound-sequence.md](sound-sequence.md) |
 | `D_8009A058` | worldmap | the arrival word +0x2320 & 0x7fff | [dispatch-tables.md](dispatch-tables.md) |
@@ -65,19 +65,19 @@ documents both; `overlay_scripts` decodes them.
 ## Data-selected switches
 
 Switches on a field of a data record take their default for a value without a
-case. The TMD primitive kinds of battle `func_800B1720`, `func_800B1F6C` and
+case. The TMD primitive kinds of battle `battle_tmd_build_packets`, `battle_tmd_draw_object` and
 ovl3384 `func_801FC4C4` (mode & 0x1c, lit) are censused in
 [dispatch-tables.md](dispatch-tables.md). The effect events of `800ae2a4` and
 `801e5d44`, the arena hit and effect types (`func_800740E4`, `func_80073F34`),
 the AI action-list entry types (`800793f0`) and the battle sprite commands'
 arguments (`800c11cc`, `800b3f04`) are decoded with their machines. The battle
 formulas' sub-switches on descriptor fields (`chanceSource`, `amountKind`,
-`defenseKind` in `battle_8008CCCC.c`) are not censused; a value without a case
+`defenseKind` in `battle_menus_and_resolver.c`) are not censused; a value without a case
 takes the switch's default.
 
 ## Rejected candidates
 
-- TMD primitive builder (`func_800B1720`, `func_800B1F6C`, ovl3384): a model
+- TMD primitive builder (`battle_tmd_build_packets`, `battle_tmd_draw_object`, ovl3384): a model
   format (`battle/effect_script.h`'s "effect script file"), not an instruction
   stream. Its kinds are censused as a data-selected dispatch.
 - Morph channels (resident `model_start_morph`, `model_step_morph_weight`): per-target vertex

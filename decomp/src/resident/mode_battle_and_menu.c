@@ -58,7 +58,7 @@ void mode_battle_init_display(void) {
     InitGeom();
     SetGeomOffset(0xA0, 0xB4);
     SetGeomScreen(0x200);
-    disp = &D_800C3EB0.buffers[0].dispEnv;
+    disp = &battle_area.buffers[0].dispEnv;
     SetDefDispEnv(disp, 0, 0xE0, 0x140, 0xE0);
     draw = (DRAWENV *)((u8 *)disp - sizeof(DRAWENV));
     SetDefDrawEnv(draw, 0, 0, 0x140, 0xE0);

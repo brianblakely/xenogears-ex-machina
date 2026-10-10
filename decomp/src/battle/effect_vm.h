@@ -254,6 +254,6 @@
 /* The travel of an animation (its s16 at 0x10), in model units. */
 #define ANIMATION_SPAN(animation) (((s16 *)(animation))[8])
 
-extern u8 D_800C3530[]; /* extra file bases */
+extern u8 battle_extra_file_bases[]; /* extra file bases */
 
 #endif

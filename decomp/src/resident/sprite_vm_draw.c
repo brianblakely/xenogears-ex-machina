@@ -68,7 +68,7 @@ void sprite_vm_run(Sprite *sprite) {
     u8 count;
 
     if (sprite_in_battle != 0) {
-        func_800C11CC(sprite);
+        battle_sprite_vm_run(sprite);
         return;
     }
 next:
@@ -398,7 +398,7 @@ void sprite_task_draw(Task *task) {
     Sprite *sprite = task->data;
     s32 depth;
 
-    if (sprite->b0.bits.passive_children && D_800C3664 != 0) {
+    if (sprite->b0.bits.passive_children && battle_sprites_paused != 0) {
         return;
     }
     position.vx = sprite->x >> 16;
@@ -613,12 +613,12 @@ void sprite_task_draw_lit_tmd(Task *task) {
     if ((sprite->render.word >> 25) & 1) {
         shift = model_ot_depth_shift;
         model_ot_depth_shift = 16;
-        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+        battle_tmd_draw_object(((SpriteModelRenderer *)sprite->renderer)->model,
                       ((SpriteModelRenderer *)sprite->renderer)->packets[sprite_queue_index],
                       (u32 *)sprite_ot, 0, 0xFEC, sprite->render.bits.blend);
         model_ot_depth_shift = shift;
     } else {
-        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+        battle_tmd_draw_object(((SpriteModelRenderer *)sprite->renderer)->model,
                       ((SpriteModelRenderer *)sprite->renderer)->packets[sprite_queue_index],
                       (u32 *)sprite_ot, 0, sprite->half30, sprite->render.bits.blend);
     }
@@ -654,12 +654,12 @@ void sprite_task_draw_unlit_tmd(Task *task) {
     if ((sprite->render.word >> 25) & 1) {
         shift = model_ot_depth_shift;
         model_ot_depth_shift = 16;
-        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+        battle_tmd_draw_object(((SpriteModelRenderer *)sprite->renderer)->model,
                       ((SpriteModelRenderer *)sprite->renderer)->packets[sprite_queue_index],
                       (u32 *)sprite_ot, 0, 0xFEC, sprite->render.bits.blend);
         model_ot_depth_shift = shift;
     } else {
-        func_800B1F6C(((SpriteModelRenderer *)sprite->renderer)->model,
+        battle_tmd_draw_object(((SpriteModelRenderer *)sprite->renderer)->model,
                       ((SpriteModelRenderer *)sprite->renderer)->packets[sprite_queue_index],
                       (u32 *)sprite_ot, 0, sprite->half30, sprite->render.bits.blend);
     }

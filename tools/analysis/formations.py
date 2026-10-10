@@ -1,7 +1,7 @@
 """Battle formation and encounter set decoder (resident/formation.h).
 
 The battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
-into formation_active as it starts (battle func_80070F40). A set is 16 formations of
+into formation_active as it starts (battle battle_main). A set is 16 formations of
 0x20 bytes, BattleFormation in decomp/include/resident/formation.h, whose
 member comments name their readers; FIELDS follows that struct (the tests
 compare the two) and FLAGS names the flag bits its readers test. Sets come
@@ -73,9 +73,9 @@ FIELDS = (
 )
 # The flag bits a reader tests (formation.h); no reader tests 0x01-0x04.
 FLAGS = {
-    0x08: "noresults",  # ovl2596 func_801E2280, battle func_80070F40
-    0x10: "party10",  # ovl2615 func_801E5384 (D_800D3294), battle func_80078310, ovl2596
-    0x20: "event",  # ovl2615 func_801E5014 (D_800C3D48), ovl3087 func_801E5160
+    0x08: "noresults",  # ovl2596 func_801E2280, battle battle_main
+    0x10: "party10",  # ovl2615 func_801E5384 (battle_uses_fixed_party), battle battle_upload_party_portraits, ovl2596
+    0x20: "event",  # ovl2615 func_801E5014 (battle_uses_event_script), ovl3087 func_801E5160
     0x40: "cmd7",  # ovl2615 func_801E5014
     0x80: "cmd8",  # ovl2615 func_801E5014
 }

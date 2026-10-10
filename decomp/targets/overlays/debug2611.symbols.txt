@@ -1,2 +1,13 @@
 D_8028007C = 0x8028007C; // size:0xC force_not_migration:True
 D_802820BB = 0x802820BB; // defined:True
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+battle_camera_set_mode = 0x800BC2F0; // type:func
+battle_sprite_for_debugger = 0x800C3568;
+battle_turn_state = 0x800C3EAC;
+battle_area = 0x800C3EB0;
+battle_action_list = 0x800D2E5C;
+battle_camera = 0x800D309C;
+battle_camera_angles = 0x800D30B0;
+battle_camera_view_matrix = 0x800D30BC;
+battle_camera_view_eye = 0x800D3354;
+battle_camera_view_target = 0x800D335C;

@@ -1,14 +1,14 @@
 /* Battle unit from 800B3F04 to 800B7134: the sprite script command handler
  * (800B3F04, commands 1-107) and its commands, the sprite effects (trails,
  * approach watches, partner links, streaks) and the shattered screen's update
- * (Cygnus CDK GCC 2.7.2, like battle_800B15D8.c). 800B1F6C's odd-length table
+ * (Cygnus CDK GCC 2.7.2, like battle_tmd_screen_effects.c). 800B1F6C's odd-length table
  * ends at 0x80070850 and 800B3F04's follows unpadded at 0 mod 8, so a unit
  * starts between the two; the functions from 800B2AEC to 800B3E04 have no
  * rodata, and the boundary is placed at the first function that has (the
  * previous unit's own .bss is used up to 800B3E04). Its 107-entry table, all
  * its rodata, is followed directly by 800B7870's at 0x800709FC (4 mod 8), so
  * the unit ends before 800B7870; it ends before 800B7134, whose shatter draw
- * shares 800B7870's own variable D_800C3CB4 (a unit's .bss is read by its own
+ * shares 800B7870's own variable battle_shatter_ot (a unit's .bss is read by its own
  * code only, docs/matching.md). */
 #include "common.h"
 #include "psyq/libc.h"
@@ -39,68 +39,68 @@
 #include "sprite_effect.h"
 
 /* This unit's functions, declared before their first use. */
-void func_800B4EDC(Sprite *sprite);
-void func_800B5588(Task *task);
-void func_800B572C(Sprite *sprite, u8 *colours);
-void func_800B5B3C();
-SpriteLink *func_800B5C18();
-void func_800B5DC4(Sprite *sprite);
-void func_800B5FBC();
-void func_800B61B0();
-void func_800B61F8();
-void func_800B626C();
-void func_800B62C8();
-void func_800B639C();
-void func_800B63F0();
-void func_800B6438();
-void func_800B6464();
-void func_800B64D4();
-void func_800B6518();
-void func_800B65B0();
-void func_800B6808();
-void func_800B6930();
-void func_800B6990();
-void func_800B69E4();
-void func_800B6A50();
-void func_800B6A7C();
-void func_800B6B98();
-void func_800B6BFC();
-void func_800B6C44();
-void func_800B6C98();
-void func_800B6CEC();
-void func_800B6DC0();
-void func_800B6E84();
+void battle_sprite_command_copy_part_texture(Sprite *sprite);
+void battle_trail_update(Task *task);
+void battle_trail_create(Sprite *sprite, u8 *colours);
+void battle_link_update();
+SpriteLink *battle_link_create();
+void battle_orbit_start(Sprite *sprite);
+void battle_streak_start();
+void battle_parent_line_start();
+void battle_sprite_command_load_object_set();
+void battle_sprite_command_free_stage_object();
+void battle_sprite_command_show_stage_object();
+void battle_sprite_command_fade_lights();
+void battle_sprite_command_upload_images();
+void battle_sprite_command_draw_unlit_model();
+void battle_sprite_command_shift_cluts();
+void battle_sprite_command_slot_animation();
+void battle_sprite_command_face_target_point();
+void battle_sprite_command_steer_velocity();
+void battle_sprite_command_aim_velocity();
+void battle_sprite_command_set_position();
+void battle_sprite_set_script_vector();
+void battle_sprite_add_script_vector();
+void battle_sprite_command_take_parent_velocity();
+void battle_sprite_command_break_image();
+void battle_sprite_command_spin();
+void battle_sprite_command_shatter_screen();
+void battle_sprite_command_roll_to_velocity();
+void battle_sprite_command_pitch_to_velocity();
+void battle_sprite_command_face_velocity();
+void battle_sprite_command_clear_anchors();
+void battle_sprite_command_turn_velocity();
 
 /* The unit's own uninitialized variables (its .bss, after
- * battle_800B15D8.c's): ASPSX 2.56 keeps the halfwords two bytes apart and
+ * battle_tmd_screen_effects.c's): ASPSX 2.56 keeps the halfwords two bytes apart and
  * starts the 3-byte colour at the next word (decomp/Makefile). */
-static s16 D_800C3CA4; /* the last trail segment's far corners */
-static s16 D_800C3CA6;
-static s16 D_800C3CA8;
-static s16 D_800C3CAA;
-static u8 D_800C3CAC;    /* the saved background flag of the display buffers */
-static u8 D_800C3CB0[3]; /* the saved background colour */
+static s16 battle_trail_last_corner_x2; /* 800C3CA4: the last trail segment's far corners */
+static s16 battle_trail_last_corner_y2; /* 800C3CA6 */
+static s16 battle_trail_last_corner_x3; /* 800C3CA8 */
+static s16 battle_trail_last_corner_y3; /* 800C3CAA */
+static u8 battle_saved_background_flag;    /* 800C3CAC: the saved background flag of the display buffers */
+static u8 battle_saved_background_color[3]; /* 800C3CB0: the saved background colour */
 
-u8 D_800C3564 = 0;
-Sprite *D_800C3568 = NULL;
-u8 D_800C356C[5] = {1, 2, 3, 5, 6};
-MATRIX D_800C3574 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+u8 battle_unread_sprite_slot_mark = 0; /* 800C3564 */
+Sprite *battle_sprite_for_debugger = NULL; /* 800C3568 */
+u8 battle_trail_anchor_indices[5] = {1, 2, 3, 5, 6}; /* 800C356C */
+MATRIX battle_screen_space_matrix = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}}; /* 800C3574 */
 /* The shatter's triangles and launch velocity, which only the next unit's
  * code (800B7134-800B7424) reads; where that unit's data starts is not
  * known, so they stay here. */
-SVECTOR D_800C3594[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
-SVECTOR D_800C35AC[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
-VECTOR D_800C35C4 = {0, 0, -1536 << 16};
+SVECTOR battle_shatter_upper_left_triangle[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}}; /* 800C3594 */
+SVECTOR battle_shatter_lower_right_triangle[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}}; /* 800C35AC */
+VECTOR battle_shatter_launch_velocity = {0, 0, -1536 << 16}; /* 800C35C4 */
 /* The sound fade flag that 800B7870 and 800B8098 also use; whether it ends
  * this unit's data or the next unit's is not known. Stray bytes follow it,
  * so it stays original data. */
-INCLUDE_ORIGINAL(".data", D_800C35D4, 0x800C35D4, 4);
+INCLUDE_ORIGINAL(".data", battle_music_lowered, 0x800C35D4, 4);
 
-/* Run battle sprite script command (1-107) on sprite with its argument
+/* 800B3F04: Run battle sprite script command (1-107) on sprite with its argument
  * bytes: motion, velocity and gravity settings, render flags, camera and
  * display switches, sounds, target highlights and the helpers 800B4EDC-
  * 800B6E84 and the battle module's 801FC6FC/801FC7B0/801FC898. */
-void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
+void battle_sprite_command_run(Sprite *sprite, s32 command, u8 *args) {
     s32 unused[10]; /* allocated in the original frame */
     VECTOR eye;
     VECTOR target;
@@ -115,13 +115,13 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     switch (command) {
     /* 6b: copy the three VRAM columns away (800b3e04). */
     case 0x6B:
-        func_800B3E04();
+        battle_save_vram_columns();
         break;
     /* 6a: flags 800c492a = 1, 800c35d4 = 0; fade sequence 800c3e54 to 0 over 120 frames. */
     case 0x6A:
-        D_800C492A = 1;
-        D_800C35D4 = 0;
-        sound_set_seq_fade((SoundSeq *)D_800C3E54, 0, 0x78);
+        battle_turn_hud_hidden = 1;
+        battle_music_lowered = 0;
+        sound_set_seq_fade((SoundSeq *)battle_music_seq, 0, 0x78);
         break;
     /* 69: rebind the block idle bit 10 names: +4c when set, else +48 (bit 10 kept). */
     case 0x69:
@@ -145,7 +145,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 66: flag 800c3688 = 1. */
     case 0x66:
-        D_800C3688 = 1;
+        battle_camera_skip_gear_heights = 1;
         break;
     /* 64: idle bit 9, then as 63. */
     case 0x64:
@@ -160,7 +160,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 62: show the current event's result on this slot (800bd1fc). */
     case 0x62:
-        func_800BD1FC(SPRITE_SLOT(sprite));
+        battle_show_slot_result(SPRITE_SLOT(sprite));
         break;
     /* 61 s8: y = ground - 1; aim the jump (800ba768) at the target point (+a0) = the
      * partner's x + s8 (scaled; the side by its home place), y 0 and z. */
@@ -178,38 +178,38 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         sprite->target_x = (other->x >> 16) + distance;
         sprite->target_z = other->z >> 16;
         sprite->target_y = 0;
-        func_800BA768(sprite);
+        battle_sprite_aim_jump_keep_rise(sprite);
         break;
     /* 5f: 800c3564 = 1 (nothing recovered reads it). */
     case 0x5F:
-        D_800C3564 = 1;
+        battle_unread_sprite_slot_mark = 1;
         break;
     /* 60: 800c3564 = the sprite's slot + 2. */
     case 0x60:
-        D_800C3564 = SPRITE_SLOT(sprite) + 2;
+        battle_unread_sprite_slot_mark = SPRITE_SLOT(sprite) + 2;
         break;
     /* 59: screen fades work again (800d3638 = 0). */
     case 0x59:
-        D_800D3638 = 0;
+        battle_screen_fade_blocked = 0;
         break;
     /* 5a: screen fades are ignored (800d3638 = 1: 800b39c0 returns at once). */
     case 0x5A:
-        D_800D3638 = 1;
+        battle_screen_fade_blocked = 1;
         break;
     /* 57: flag 800c3b74 = 1 (800aa788). */
     case 0x57:
-        func_800AA788(1);
+        battle_set_object_drawing(1);
         break;
     /* 58: flag 800c3b74 = 0 (800aa788). */
     case 0x58:
-        func_800AA788(0);
+        battle_set_object_drawing(0);
         break;
     /* 56: with 800c3622, play sound kind + 0x52 of the scripts' bank for the slot's kind
      * (8, 9, 10 as 15, 2, 6), once per slot (800c3626). */
     case 0x56: {
         s32 slot;
         s32 low_slot;
-        if (D_800C3622) {
+        if (battle_wave_bank_7_loaded) {
             low_slot = sprite->frame_bits.unknown30;
             slot = sprite->motion.bits.unknown0 << 2 | low_slot;
             kind = BATTLE_AREA.slots[slot].field2;
@@ -222,9 +222,9 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
             if (kind == 8) {
                 kind = 15;
             }
-            played = D_800C3626;
+            played = battle_gear_sound_played_slots;
             if (!((played >> slot) & 1)) {
-                D_800C3626 = played | (1 << slot);
+                battle_gear_sound_played_slots = played | (1 << slot);
                 sound_play_effect((kind + 0x52) | (sprite_script_sound_bank->bank << 16));
             }
         }
@@ -270,13 +270,13 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
      * 800d335c): back two bytes and a frame (c3 form). */
     case 0x67:
         sprite->countdown++;
-        eye.vx = D_800D309C.eye.vx - D_800D3354.vx;
-        eye.vy = D_800D309C.eye.vy - D_800D3354.vy;
-        eye.vz = D_800D309C.eye.vz - D_800D3354.vz;
+        eye.vx = battle_camera.eye.vx - battle_camera_view_eye.vx;
+        eye.vy = battle_camera.eye.vy - battle_camera_view_eye.vy;
+        eye.vz = battle_camera.eye.vz - battle_camera_view_eye.vz;
         Square0(&eye, &eye);
-        target.vx = D_800D309C.target.vx - D_800D335C.vx;
-        target.vy = D_800D309C.target.vy - D_800D335C.vy;
-        target.vz = D_800D309C.target.vz - D_800D335C.vz;
+        target.vx = battle_camera.target.vx - battle_camera_view_target.vx;
+        target.vy = battle_camera.target.vy - battle_camera_view_target.vy;
+        target.vz = battle_camera.target.vz - battle_camera_view_target.vz;
         Square0(&target, &target);
         if (SquareRoot0(eye.vx + eye.vy + eye.vz) < 4 && SquareRoot0(target.vx + target.vy + target.vz) < 4) {
             break;
@@ -287,8 +287,8 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
      * retry: back two bytes (the c3 form). */
     case 0x50:
         sprite->countdown++;
-        if (D_800D36BC != 0) {
-            D_800D36BC--;
+        if (battle_pending_hit_count != 0) {
+            battle_pending_hit_count--;
             break;
         }
         sprite->script -= 2;
@@ -296,28 +296,28 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 46 u8: load the battle's sound bank set u8 (800b61f8, 800a96b4); both hit counts
      * (800d36bc, 800d2d4c) = 0. */
     case 0x46:
-        func_800B61F8(sprite, args);
-        D_800D2D4C = 0;
+        battle_sprite_command_load_object_set(sprite, args);
+        battle_effect_hit_count = 0;
         break;
     /* 51: free stage object 11 (800b626c). */
     case 0x51:
-        func_800B626C(sprite, args);
+        battle_sprite_command_free_stage_object(sprite, args);
         break;
     /* 47 u8: show stage object 11 in mode u8 (800b62c8). */
     case 0x47:
-        func_800B62C8(sprite, args);
+        battle_sprite_command_show_stage_object(sprite, args);
         break;
     /* 44: the debug actor tool (debug2611) selects this sprite (800c3568), unless
      * 80010000 is -1. */
     case 0x44:
         if (*(s32 *)0x80010000 != -1) {
-            D_800C3568 = sprite;
+            battle_sprite_for_debugger = sprite;
         }
         break;
     /* 45: the debug actor tool selects none (800c3568), unless 80010000 is -1. */
     case 0x45:
         if (*(s32 *)0x80010000 != -1) {
-            D_800C3568 = NULL;
+            battle_sprite_for_debugger = NULL;
         }
         break;
     /* 43: render bit 31 (drawn about the screen centre). */
@@ -326,15 +326,15 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 3e: partner = the next of the event's targets (800bf8cc). */
     case 0x3E:
-        func_800BF8CC(sprite);
+        battle_sprite_next_target(sprite);
         break;
     /* 3d: copy the current part's texture block and CLUT row (800b4edc). */
     case 0x3D:
-        func_800B4EDC(sprite);
+        battle_sprite_command_copy_part_texture(sprite);
         break;
     /* 3a s16: fade the lights with the six bytes at the arguments + s16 (800b639c). */
     case 0x3A:
-        func_800B639C(sprite, args);
+        battle_sprite_command_fade_lights(sprite, args);
         break;
     /* 42: motion bit 5 off. */
     case 0x42:
@@ -342,12 +342,12 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 38 s16: upload the image list at the arguments + s16 (800b63f0). */
     case 0x38:
-        func_800B63F0(sprite, args);
+        battle_sprite_command_upload_images(sprite, args);
         break;
     /* 37: request the upload of directory 2c file 1's images (800c3621; 800bf9ec does it
      * and clears the flag). */
     case 0x37:
-        D_800C3621 = 1;
+        battle_image_upload_requested = 1;
         break;
     /* 34 s8: gravity = (s8 * 2 * (+82) / 4096 << 5) * (skip + 1)^2. */
     case 0x34:
@@ -377,19 +377,19 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 2f: 800c3628 = this sprite (800bf730). */
     case 0x2F:
-        func_800BF730((s32)sprite);
+        battle_request_single_action_start((s32)sprite);
         break;
     /* 2c: draw as an unlit model (draw task update 80025a88, 800b6438). */
     case 0x2C:
-        func_800B6438(sprite, args);
+        battle_sprite_command_draw_unlit_model(sprite, args);
         break;
     /* 27 x y: move the parts' CLUTs by x, y (800b6464). */
     case 0x27:
-        func_800B6464(sprite, args);
+        battle_sprite_command_shift_cluts(sprite, args);
         break;
     /* 26 a s: battle sprite s plays animation a (800b64d4). */
     case 0x26:
-        func_800B64D4(sprite, args);
+        battle_sprite_command_slot_animation(sprite, args);
         break;
     /* 28 s8: x velocity = s8 * 16 * (+82) / 4096 << 8. */
     case 0x28:
@@ -418,7 +418,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 1f: render bit 26 off; rest on the stage floor (800ba8f4). */
     case 0x1F:
         sprite->render.word &= ~0x04000000;
-        func_800BA8F4(sprite);
+        battle_sprite_update_ground(sprite);
         break;
     /* 3f: render bit 26 on. */
     case 0x3F:
@@ -442,21 +442,21 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 23: face the target point (+a0) (800b6518). */
     case 0x23:
-        func_800B6518(sprite, args);
+        battle_sprite_command_face_target_point(sprite, args);
         break;
     /* 40 u8: turn the velocity towards the target point (+a0) by at most u8 * 4 in yaw and
      * in pitch (800b65b0). */
     case 0x40:
-        func_800B65B0(sprite, args);
+        battle_sprite_command_steer_velocity(sprite, args);
         break;
     /* 1c: velocity = the walking speed towards the target point (+a0); face that way
      * (800b6808). */
     case 0x1C:
-        func_800B6808(sprite, args);
+        battle_sprite_command_aim_velocity(sprite, args);
         break;
     /* 1b: take the parent's velocity (800b6a50). */
     case 0x1B:
-        func_800B6A50(sprite, args);
+        battle_sprite_command_take_parent_velocity(sprite, args);
         break;
     /* 1a: destroy the tasks the sprite's task created (8001ce74). */
     case 0x1A:
@@ -464,40 +464,40 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 2d s16: position = the three s16 at the arguments + s16 (800b6930). */
     case 0x2D:
-        func_800B6930(sprite, args);
+        battle_sprite_command_set_position(sprite, args);
         break;
     /* 2e s16: target = the three s16 at the arguments + s16 (800b6990). */
     case 0x2E:
-        func_800B6990(&sprite->target_x, args);
+        battle_sprite_set_script_vector(&sprite->target_x, args);
         break;
     /* 5b s16: view vector +44 = the three s16 at the arguments + s16. */
     case 0x5B:
-        func_800B6990(&sprite->renderer->light_angles.vx, args);
+        battle_sprite_set_script_vector(&sprite->renderer->light_angles.vx, args);
         break;
     /* 5c s16: view vector +4c = the three s16 at the arguments + s16. */
     case 0x5C:
-        func_800B6990((s16 *)sprite->renderer->light_colour, args);
+        battle_sprite_set_script_vector((s16 *)sprite->renderer->light_colour, args);
         break;
     /* 5d s16: view vector +44 += the three s16 at the arguments + s16 (800b69e4). */
     case 0x5D:
-        func_800B69E4(&sprite->renderer->light_angles.vx, args);
+        battle_sprite_add_script_vector(&sprite->renderer->light_angles.vx, args);
         break;
     /* 5e s16: view vector +4c += the three s16 at the arguments + s16. */
     case 0x5E:
-        func_800B69E4((s16 *)sprite->renderer->light_colour, args);
+        battle_sprite_add_script_vector((s16 *)sprite->renderer->light_colour, args);
         break;
     /* 1d s16: break the image into pieces with the six bytes at the arguments + s16
      * (800b6a7c). */
     case 0x1D:
-        func_800B6A7C(sprite, args);
+        battle_sprite_command_break_image(sprite, args);
         break;
     /* 19 s16: start a burst with the six bytes at the arguments + s16 (800b6b98). */
     case 0x19:
-        func_800B6B98(sprite, args);
+        battle_sprite_command_spin(sprite, args);
         break;
     /* 18: copy the screen and shatter it (800b6bfc). */
     case 0x18:
-        func_800B6BFC(sprite, args);
+        battle_sprite_command_shatter_screen(sprite, args);
         break;
     /* 17 s8: velocity *= s8 * 4 / 256. */
     case 0x17:
@@ -518,12 +518,12 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
      * 800bab0c skip them, and resident sprites with passive children are not drawn
      * (80025258). */
     case 0x11:
-        D_800C3664 = 1;
+        battle_sprites_paused = 1;
         break;
     /* 12: 800c372c = 1; both draw buffers clear to black (the first's colour and flag
      * saved). */
     case 0x12:
-        D_800C372C = 1;
+        battle_stage_drawing_off = 1;
         isbg = BATTLE_AREA.buffers[0].drawEnv.isbg;
         r = BATTLE_AREA.buffers[0].drawEnv.r0;
         g = BATTLE_AREA.buffers[0].drawEnv.g0;
@@ -536,32 +536,32 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         BATTLE_AREA.buffers[1].drawEnv.g0 = 0;
         BATTLE_AREA.buffers[0].drawEnv.b0 = 0;
         BATTLE_AREA.buffers[1].drawEnv.b0 = 0;
-        D_800C3CAC = isbg;
-        D_800C3CB0[0] = r;
-        D_800C3CB0[1] = g;
-        D_800C3CB0[2] = b;
+        battle_saved_background_flag = isbg;
+        battle_saved_background_color[0] = r;
+        battle_saved_background_color[1] = g;
+        battle_saved_background_color[2] = b;
         break;
     /* 13: resume them (800c3664 = 0). */
     case 0x13:
-        D_800C3664 = 0;
+        battle_sprites_paused = 0;
         break;
     /* 14: 800c372c = 0; restore the saved clear colour and flag. */
     case 0x14:
-        D_800C372C = 0;
-        BATTLE_AREA.buffers[1].drawEnv.isbg = D_800C3CAC;
-        BATTLE_AREA.buffers[0].drawEnv.isbg = D_800C3CAC;
-        BATTLE_AREA.buffers[0].drawEnv.r0 = D_800C3CB0[0];
-        BATTLE_AREA.buffers[1].drawEnv.r0 = D_800C3CB0[0];
-        BATTLE_AREA.buffers[0].drawEnv.g0 = D_800C3CB0[1];
-        BATTLE_AREA.buffers[1].drawEnv.g0 = D_800C3CB0[1];
-        BATTLE_AREA.buffers[0].drawEnv.b0 = D_800C3CB0[2];
-        BATTLE_AREA.buffers[1].drawEnv.b0 = D_800C3CB0[2];
+        battle_stage_drawing_off = 0;
+        BATTLE_AREA.buffers[1].drawEnv.isbg = battle_saved_background_flag;
+        BATTLE_AREA.buffers[0].drawEnv.isbg = battle_saved_background_flag;
+        BATTLE_AREA.buffers[0].drawEnv.r0 = battle_saved_background_color[0];
+        BATTLE_AREA.buffers[1].drawEnv.r0 = battle_saved_background_color[0];
+        BATTLE_AREA.buffers[0].drawEnv.g0 = battle_saved_background_color[1];
+        BATTLE_AREA.buffers[1].drawEnv.g0 = battle_saved_background_color[1];
+        BATTLE_AREA.buffers[0].drawEnv.b0 = battle_saved_background_color[2];
+        BATTLE_AREA.buffers[1].drawEnv.b0 = battle_saved_background_color[2];
         break;
     /* 10: position = the camera look-at point (800d335c). */
     case 0x10:
-        sprite->x = D_800D335C.vx << 16;
-        sprite->y = D_800D335C.vy << 16;
-        sprite->z = D_800D335C.vz << 16;
+        sprite->x = battle_camera_view_target.vx << 16;
+        sprite->y = battle_camera_view_target.vy << 16;
+        sprite->z = battle_camera_view_target.vz << 16;
         break;
     /* 53: mirror and flip bits off. */
     case 0x53:
@@ -584,15 +584,15 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 0d s8: turn the velocity about z by s8 * 16 (800b6e84). */
     case 0xD:
-        func_800B6E84(sprite, args);
+        battle_sprite_command_turn_velocity(sprite, args);
         break;
     /* 0a: view z angle from the velocity's x-y direction (800b6c44). */
     case 0xA:
-        func_800B6C44(sprite, args);
+        battle_sprite_command_roll_to_velocity(sprite, args);
         break;
     /* 0b: view x angle from the velocity's x-z direction (800b6c98). */
     case 0xB:
-        func_800B6C98(sprite, args);
+        battle_sprite_command_pitch_to_velocity(sprite, args);
         break;
     /* 49 s8: view x angle += s8, render bit 28. */
     case 0x49:
@@ -617,7 +617,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 0c: view angles from the velocity's direction (800b6cec). */
     case 0xC:
-        func_800B6CEC(sprite, args);
+        battle_sprite_command_face_velocity(sprite, args);
         break;
     /* 09: direction += 0x800 (half a turn) and the velocity negated. */
     case 0x9:
@@ -629,7 +629,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 01 var: a trail in the colours at the variable (a count first, 0: 4) (800b572c). */
     case 0x1:
         sprite_alloc_group_entries(sprite);
-        func_800B572C(sprite, sprite_vm_resolve_variable(sprite, args));
+        battle_trail_create(sprite, sprite_vm_resolve_variable(sprite, args));
         break;
     /* 24: the loaded battle module's 801fc7b0 (ovl3385: hold the sprite in place under its
      * effect). */
@@ -643,7 +643,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 02: end the trail (the child task running 800b5588). */
     case 0x2:
-        task = task_find_owned_with_update(sprite->block, func_800B5588);
+        task = task_find_owned_with_update(sprite->block, battle_trail_update);
         if (task != NULL) {
             task->destroy(task);
         }
@@ -651,62 +651,62 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 03 u8: link the partner at anchors u8: low nibble its own, high the partner's
      * (800b5c18). */
     case 0x3:
-        func_800B5C18(sprite, args);
+        battle_link_create(sprite, args);
         break;
     /* 04: end every link (the tasks running 800b5b3c). */
     case 0x4:
-        while ((task = task_find_by_update(func_800B5B3C)) != NULL) {
+        while ((task = task_find_by_update(battle_link_update)) != NULL) {
             task->destroy(task);
         }
         break;
     /* 1e: draw as a line in its colour to the parent (800b61b0: frame 1, primitive code
      * 0x40). */
     case 0x1E:
-        func_800B61B0(sprite, args);
+        battle_parent_line_start(sprite, args);
         break;
     /* 20: start an orbit (800b5dc4). */
     case 0x20:
-        func_800B5DC4(sprite);
+        battle_orbit_start(sprite);
         break;
     /* 05: draw as a streak, a line in its colour back along the velocity (800b5fbc: frame
      * 1, primitive code 0x40). */
     case 0x5:
-        func_800B5FBC(sprite, args);
+        battle_streak_start(sprite, args);
         break;
     /* 06: camera move to the acting sprite's slot (800bc404). */
     case 0x6:
-        func_800BC404(1 << SPRITE_SLOT(D_800C3E1C));
+        battle_camera_start_move(1 << SPRITE_SLOT(battle_acting_sprite));
         break;
     /* 55: camera move to the acting sprite's slot and the slots 800d3634. */
     case 0x55:
-        func_800BC404((1 << SPRITE_SLOT(D_800C3E1C)) | D_800D3634);
+        battle_camera_start_move((1 << SPRITE_SLOT(battle_acting_sprite)) | battle_area_event_target_mask);
         break;
     /* 07: camera move to the partner's slot. */
     case 0x7:
-        func_800BC404(1 << SPRITE_SLOT(sprite->partner));
+        battle_camera_start_move(1 << SPRITE_SLOT(sprite->partner));
         break;
     /* 65: camera move to the slots 800d3634. */
     case 0x65:
-        func_800BC404(D_800D3634);
+        battle_camera_start_move(battle_area_event_target_mask);
         break;
     /* 41: camera move to the partner's and the acting sprite's slots. */
     case 0x41: {
-        Sprite **active = &D_800C3E1C;
+        Sprite **active = &battle_acting_sprite;
         s32 a = SPRITE_SLOT(sprite->partner);
-        func_800BC404((1 << a) | (1 << SPRITE_SLOT(*active)));
+        battle_camera_start_move((1 << a) | (1 << SPRITE_SLOT(*active)));
         break;
     }
     /* 08: flags bit 19; clear the eight anchors (800b6dc0). */
     case 0x8:
         sprite->flags |= 0x80000;
-        func_800B6DC0(sprite, args);
+        battle_sprite_command_clear_anchors(sprite, args);
         break;
     }
 }
 
-/* Copy the sprite's current part's 8 x 8 texture block and its 16-colour
+/* 800B4EDC: Copy the sprite's current part's 8 x 8 texture block and its 16-colour
  * CLUT row to VRAM (0x3F0, 0x1F0) and (0x3F0, 0x1EE). */
-void func_800B4EDC(Sprite *sprite) {
+void battle_sprite_command_copy_part_texture(Sprite *sprite) {
     SpritePart *part = sprite->renderer->parts[1];
     RECT rect;
     u16 tpage;
@@ -726,10 +726,10 @@ void func_800B4EDC(Sprite *sprite) {
     MoveImage(&rect, 0x3F0, 0x1EE);
 }
 
-/* The matrix of the sprite's anchor index: its angles, at the anchor's
+/* 800B4F88: The matrix of the sprite's anchor index: its angles, at the anchor's
  * offset (mirrored with the sprite, scaled) from the sprite's position, in
  * the sprite's screen matrix. */
-void func_800B4F88(Sprite *sprite, s32 index, MATRIX *m) {
+void battle_sprite_get_anchor_matrix(Sprite *sprite, s32 index, MATRIX *m) {
     SpriteRendererEntry *anchor;
     s32 x;
     s32 y;
@@ -755,18 +755,18 @@ void func_800B4F88(Sprite *sprite, s32 index, MATRIX *m) {
     }
 }
 
-/* The offsets of the sprite's five trail anchors (D_800C356C), mirrored with
+/* 800B50D4: The offsets of the sprite's five trail anchors (battle_trail_anchor_indices), mirrored with
  * the sprite and scaled, as points (x, y, 0) of out, when it is drawn one
  * sided. */
-void func_800B50D4(Sprite *sprite, SVECTOR *out) {
+void battle_trail_get_anchors(Sprite *sprite, SVECTOR *out) {
     s32 i;
     s32 x;
     s32 y;
 
     if ((sprite->render.word & 3) == 1 && sprite->renderer != NULL && sprite->renderer->pointer34 != NULL) {
         for (i = 0; i != 5; i++, out++) {
-            x = sprite->renderer->pointer34[D_800C356C[i]].byte0;
-            y = sprite->renderer->pointer34[D_800C356C[i]].byte1;
+            x = sprite->renderer->pointer34[battle_trail_anchor_indices[i]].byte0;
+            y = sprite->renderer->pointer34[battle_trail_anchor_indices[i]].byte1;
             if ((sprite->motion.word >> 2) & 1) {
                 x = -x;
             }
@@ -779,11 +779,11 @@ void func_800B50D4(Sprite *sprite, SVECTOR *out) {
     }
 }
 
-/* Draw one segment of a sprite trail (800C08CC) from point a to point b: a
- * light line, and when on screen a quad as wide as the trail (D_800C3E9C)
+/* 800B51B0: Draw one segment of a sprite trail (800C08CC) from point a to point b: a
+ * light line, and when on screen a quad as wide as the trail (battle_trail_color_count)
  * textured from the sprite's copied 8 x 8 block (800B4EDC), joined to the
- * previous segment's far corners; counts the segments in D_800D2FCC. */
-void func_800B51B0(VECTOR *a, VECTOR *b) {
+ * previous segment's far corners; counts the segments in battle_curve_segments_drawn. */
+void battle_trail_draw_segment(VECTOR *a, VECTOR *b) {
     SVECTOR from;
     SVECTOR to;
     long scratch;
@@ -812,7 +812,7 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     line = (LINE_F2 *)sprite_queue_next_free;
     sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(LINE_F2));
     SetLineF2(line);
-    abr = D_800C3D4C;
+    abr = battle_trail_blend;
     if (abr != 0) {
         abr--;
         SetSemiTrans(line, 1);
@@ -822,19 +822,19 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     line->r0 = 0xF0;
     line->g0 = 0xF0;
     line->b0 = 0xF0;
-    if (D_800D2FD8[D_800D2FCC / 8] != 0) {
+    if (battle_trail_colors[battle_curve_segments_drawn / 8] != 0) {
         depth = 2;
     } else {
         depth = -2;
     }
-    depth += D_800D3334;
+    depth += battle_trail_depth;
     RotTransPers3(&from, &to, &from, (long *)&line->x0, (long *)&line->x1, &scratch, &scratch, &flag);
     if (depth <= 0 || depth >= 0x1000) {
         return;
     }
     dx = line->x1 - line->x0;
     dy = line->y1 - line->y0;
-    width = D_800C3E9C;
+    width = battle_trail_color_count;
     angle = ratan2(dy, dx) + 0x400; /* across the line */
     dx = gpu_get_cos(angle) * width / 8192;
     dy = gpu_get_sin(angle) * width / 8192;
@@ -845,56 +845,56 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
     SetPolyFT4(quad);
     SetShadeTex(quad, 1);
-    quad->u0 = 0xC0 + (D_800D2FCC & 7);
+    quad->u0 = 0xC0 + (battle_curve_segments_drawn & 7);
     quad->v0 = 0xF0;
-    quad->u1 = 0xC1 + (D_800D2FCC & 7);
+    quad->u1 = 0xC1 + (battle_curve_segments_drawn & 7);
     quad->v1 = 0xF0;
-    quad->u2 = 0xC0 + (D_800D2FCC & 7);
+    quad->u2 = 0xC0 + (battle_curve_segments_drawn & 7);
     quad->v2 = 0xF7;
-    quad->u3 = 0xC1 + (D_800D2FCC & 7);
+    quad->u3 = 0xC1 + (battle_curve_segments_drawn & 7);
     quad->v3 = 0xF7;
     quad->tpage = GetTPage(0, abr, 0x3F0, 0x1F0);
     quad->clut = GetClut(0x3F0, 0x1EE);
     quad->r0 = 0xF0;
     quad->g0 = 0xF0;
     quad->b0 = 0xF0;
-    if (D_800D2FCC == 0) {
+    if (battle_curve_segments_drawn == 0) {
         quad->x0 = line->x0 - dx;
         quad->y0 = line->y0 - dy;
         quad->x1 = line->x0 + dx;
         quad->y1 = line->y0 + dy;
     } else {
-        quad->x0 = D_800C3CA4;
-        quad->y0 = D_800C3CA6;
-        quad->x1 = D_800C3CA8;
-        quad->y1 = D_800C3CAA;
+        quad->x0 = battle_trail_last_corner_x2;
+        quad->y0 = battle_trail_last_corner_y2;
+        quad->x1 = battle_trail_last_corner_x3;
+        quad->y1 = battle_trail_last_corner_y3;
     }
-    D_800C3CA4 = quad->x2 = line->x1 - dx;
-    D_800C3CA6 = quad->y2 = line->y1 - dy;
-    D_800C3CA8 = quad->x3 = line->x1 + dx;
-    D_800C3CAA = quad->y3 = line->y1 + dy;
+    battle_trail_last_corner_x2 = quad->x2 = line->x1 - dx;
+    battle_trail_last_corner_y2 = quad->y2 = line->y1 - dy;
+    battle_trail_last_corner_x3 = quad->x3 = line->x1 + dx;
+    battle_trail_last_corner_y3 = quad->y3 = line->y1 + dy;
     AddPrim((u32 *)sprite_ot + depth, quad);
-    D_800D2FCC++;
+    battle_curve_segments_drawn++;
 }
 
-/* Trail update: publish its colours and blend for drawing, refresh the
+/* 800B5588: Trail update: publish its colours and blend for drawing, refresh the
  * anchors when the sprite's frame changed and ease the trail towards them;
  * end once the sprite's motion changes or its phase is 0 or 1. */
-void func_800B5588(Task *task) {
+void battle_trail_update(Task *task) {
     SpriteTrail *trail = task->data;
     Sprite *sprite;
     Sprite *current;
     s32 phase;
     s32 i;
 
-    D_800D2FD8 = trail->colours;
+    battle_trail_colors = trail->colours;
     sprite = trail->sprite;
-    D_800C3E9C = trail->count;
-    D_800C3D4C = trail->blend;
-    D_800D3334 = sprite->depth;
+    battle_trail_color_count = trail->count;
+    battle_trail_blend = trail->blend;
+    battle_trail_depth = sprite->depth;
     if (sprite->frame != trail->frame) {
         trail->frame = sprite->frame;
-        func_800B50D4(sprite, trail->anchors);
+        battle_trail_get_anchors(sprite, trail->anchors);
     }
     for (i = 1; i != 5; i++) {
         trail->trail[i].vx += (trail->anchors[i].vx - trail->trail[i].vx) / 2;
@@ -910,18 +910,18 @@ void func_800B5588(Task *task) {
     }
 }
 
-/* Trail draw: the sprite, then the trail (800C08CC). */
-void func_800B56E4(Task *draw) {
+/* 800B56E4: Trail draw: the sprite, then the trail (800C08CC). */
+void battle_trail_draw(Task *draw) {
     SpriteTrail *trail = draw->data;
 
     sprite_set_draw_matrix(trail->sprite);
-    func_800C08CC(5, trail->trail, func_800B51B0);
+    battle_curve_draw(5, trail->trail, battle_trail_draw_segment);
 }
 
-/* Give sprite a trail in colours (the first byte the colour count, 0 for
+/* 800B572C: Give sprite a trail in colours (the first byte the colour count, 0 for
  * 4). */
-void func_800B572C(Sprite *sprite, u8 *colours) {
-    SpriteTrail *trail = (SpriteTrail *)task_alloc_two_node_task(0xB8, sprite->block, func_800B5588, func_800B56E4, NULL);
+void battle_trail_create(Sprite *sprite, u8 *colours) {
+    SpriteTrail *trail = (SpriteTrail *)task_alloc_two_node_task(0xB8, sprite->block, battle_trail_update, battle_trail_draw, NULL);
 
     trail->sprite = sprite;
     trail->frame = sprite->frame;
@@ -933,12 +933,12 @@ void func_800B572C(Sprite *sprite, u8 *colours) {
     } else {
         trail->count = colours[0];
     }
-    func_800B50D4(sprite, trail->trail);
-    func_800B50D4(sprite, trail->anchors);
+    battle_trail_get_anchors(sprite, trail->trail);
+    battle_trail_get_anchors(sprite, trail->anchors);
 }
 
-/* The distance from the sprite to its target. */
-s32 func_800B57E4(Sprite *sprite) {
+/* 800B57E4: The distance from the sprite to its target. */
+s32 battle_sprite_get_target_distance(Sprite *sprite) {
     VECTOR delta;
     VECTOR squares;
 
@@ -949,15 +949,15 @@ s32 func_800B57E4(Sprite *sprite) {
     return SquareRoot0(squares.vx + squares.vz + squares.vy);
 }
 
-/* Approach watch update: resume the sprite at the given script on its next
+/* 800B5854: Approach watch update: resume the sprite at the given script on its next
  * tick once it passes its target or comes near it; end once redirected,
  * its countdown reaches zero, or its motion changes. */
-void func_800B5854(Task *task) {
+void battle_approach_watch_update(Task *task) {
     SpriteApproach *approach = (SpriteApproach *)task;
     u8 done = 0;
     Sprite *sprite = approach->sprite;
     s32 last = approach->distance;
-    s32 distance = func_800B57E4(sprite);
+    s32 distance = battle_sprite_get_target_distance(sprite);
     u8 *resume;
 
     approach->distance = distance;
@@ -978,13 +978,13 @@ void func_800B5854(Task *task) {
     }
 }
 
-/* Watch sprite approach its target (800B5854), resuming at the given script. */
-SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume) {
+/* 800B5924: Watch sprite approach its target (800B5854), resuming at the given script. */
+SpriteApproach *battle_approach_watch_start(Sprite *sprite, s32 near, u8 *resume) {
     SpriteApproach *approach = (SpriteApproach *)task_alloc_main_task(sprite->block, sizeof(SpriteApproach) - sizeof(Task));
 
-    task_set_update_callback(&approach->task, func_800B5854);
+    task_set_update_callback(&approach->task, battle_approach_watch_update);
     approach->sprite = sprite;
-    approach->distance = func_800B57E4(sprite);
+    approach->distance = battle_sprite_get_target_distance(sprite);
     approach->near = near;
     approach->resume = resume;
     approach->motion = (s8)sprite->motion.bytes[3];
@@ -992,9 +992,9 @@ SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume) {
     return approach;
 }
 
-/* The offset of the sprite's anchor index (mirrored with the sprite,
+/* 800B59BC: The offset of the sprite's anchor index (mirrored with the sprite,
  * scaled), when it is drawn one sided. */
-DVECTOR func_800B59BC(Sprite *sprite, s32 index) {
+DVECTOR battle_sprite_get_anchor_offset(Sprite *sprite, s32 index) {
     DVECTOR offset;
 
     if (sprite->renderer != NULL && (sprite->render.word & 3) == 1 && sprite->renderer->pointer34 != NULL) {
@@ -1009,21 +1009,21 @@ DVECTOR func_800B59BC(Sprite *sprite, s32 index) {
     }
 }
 
-/* The screen position of the sprite's anchor index. */
-DVECTOR func_800B5AC4(Sprite *sprite, s32 index) {
-    DVECTOR point = func_800B59BC(sprite, index);
+/* 800B5AC4: The screen position of the sprite's anchor index. */
+DVECTOR battle_sprite_get_anchor_point(Sprite *sprite, s32 index) {
+    DVECTOR point = battle_sprite_get_anchor_offset(sprite, index);
 
     point.vx += sprite->x >> 16;
     point.vy += sprite->y >> 16;
     return point;
 }
 
-/* Link update: move the partner so that its anchor meets the sprite's;
+/* 800B5B3C: Link update: move the partner so that its anchor meets the sprite's;
  * end once the sprite's motion changes or its phase is 0 or 1. */
-void func_800B5B3C(SpriteLink *link) {
+void battle_link_update(SpriteLink *link) {
     Sprite *partner = link->sprite->partner;
-    DVECTOR a = func_800B5AC4(link->sprite, link->anchor);
-    DVECTOR b = func_800B5AC4(partner, link->partnerAnchor);
+    DVECTOR a = battle_sprite_get_anchor_point(link->sprite, link->anchor);
+    DVECTOR b = battle_sprite_get_anchor_point(partner, link->partnerAnchor);
     DVECTOR delta;
     Sprite *sprite;
     s32 phase;
@@ -1038,25 +1038,25 @@ void func_800B5B3C(SpriteLink *link) {
     }
 }
 
-/* Link sprite's partner to it at anchors (low nibble the sprite's, high
+/* 800B5C18: Link sprite's partner to it at anchors (low nibble the sprite's, high
  * nibble the partner's). */
-SpriteLink *func_800B5C18(Sprite *sprite, u8 *anchors) {
+SpriteLink *battle_link_create(Sprite *sprite, u8 *anchors) {
     SpriteLink *link = (SpriteLink *)task_alloc_main_task(sprite->block, sizeof(SpriteLink) - sizeof(Task));
 
-    task_set_update_callback(&link->task, (void (*)(Task *))func_800B5B3C);
+    task_set_update_callback(&link->task, (void (*)(Task *))battle_link_update);
     link->sprite = sprite;
     link->partner = sprite->partner;
     link->frame = sprite->frame;
     link->motion = (s8)sprite->motion.bytes[3];
     link->anchor = *anchors & 0xF;
     link->partnerAnchor = *anchors >> 4;
-    func_800B5B3C(link);
+    battle_link_update(link);
     return link;
 }
 
-/* Sprite orbit update: place the sprite around its target by its speeds
+/* 800B5CC0: Sprite orbit update: place the sprite around its target by its speeds
  * (radius and angles); end with its frames. */
-void func_800B5CC0(Task *task) {
+void battle_orbit_update(Task *task) {
     Sprite *sprite = task->data;
     MATRIX m;
     SVECTOR offset;
@@ -1083,16 +1083,16 @@ void func_800B5CC0(Task *task) {
     }
 }
 
-/* Start sprite's orbit (800B5CC0). */
-void func_800B5DC4(Sprite *sprite) {
+/* 800B5DC4: Start sprite's orbit (800B5CC0). */
+void battle_orbit_start(Sprite *sprite) {
     sprite->frame = 1;
-    task_set_update_callback(sprite->block, func_800B5CC0);
+    task_set_update_callback(sprite->block, battle_orbit_update);
 }
 
-/* Draw the sprite as a streak: a line in its colour from its position back
+/* 800B5DF4: Draw the sprite as a streak: a line in its colour from its position back
  * along its velocity (scaled down by its size), blended by its render mode;
  * sets its depth. */
-void func_800B5DF4(Task *draw) {
+void battle_streak_draw(Task *draw) {
     Sprite *sprite = draw->data;
     u8 *cursor;
     LINE_F2 *line;
@@ -1116,8 +1116,8 @@ void func_800B5DF4(Task *draw) {
     position.vz = sprite->z >> 16;
     line = (LINE_F2 *)cursor;
     if (((u8 *)&sprite->render)[3] & 1) {
-        SetRotMatrix(&D_800C3574);
-        SetTransMatrix(&D_800C3574);
+        SetRotMatrix(&battle_screen_space_matrix);
+        SetTransMatrix(&battle_screen_space_matrix);
     } else {
         SetRotMatrix(&sprite_view_matrix);
         SetTransMatrix(&sprite_view_matrix);
@@ -1144,17 +1144,17 @@ void func_800B5DF4(Task *draw) {
     }
 }
 
-/* Draw sprite with 800B5DF4: frame 1, its colour word's primitive code 0x40
+/* 800B5FBC: Draw sprite with 800B5DF4: frame 1, its colour word's primitive code 0x40
  * (LINE_F2). */
-void func_800B5FBC(Sprite *sprite) {
+void battle_streak_start(Sprite *sprite) {
     sprite->frame = 1;
-    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, func_800B5DF4);
+    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, battle_streak_draw);
     sprite->colour_flags = 0x40;
 }
 
-/* Draw the sprite as a line in its colour from it to its parent, blended by
+/* 800B6004: Draw the sprite as a line in its colour from it to its parent, blended by
  * its render mode; sets its depth. */
-void func_800B6004(Task *draw) {
+void battle_parent_line_draw(Task *draw) {
     Sprite *sprite = draw->data;
     Sprite *parent;
     LINE_F2 *line;
@@ -1202,76 +1202,76 @@ void func_800B6004(Task *draw) {
     }
 }
 
-/* Draw sprite with 800B6004: frame 1, its colour word's primitive code 0x40
+/* 800B61B0: Draw sprite with 800B6004: frame 1, its colour word's primitive code 0x40
  * (LINE_F2). */
-void func_800B61B0(Sprite *sprite) {
+void battle_parent_line_start(Sprite *sprite) {
     sprite->frame = 1;
-    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, func_800B6004);
+    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, battle_parent_line_draw);
     sprite->colour_flags = 0x40;
 }
 
-/* Script command: reset D_800D36BC and load sound bank set args[0]
+/* 800B61F8: Script command: reset battle_pending_hit_count and load sound bank set args[0]
  * (800A96B4, on a stack in a heap block). */
-void func_800B61F8(Sprite *sprite, u8 *args) {
+void battle_sprite_command_load_object_set(Sprite *sprite, u8 *args) {
     u8 *stack = heap_alloc(0x4000, 1);
 
     STACK_ENTER(stack + 0x3E00);
-    D_800D36BC = 0;
-    func_800A96B4(args[0]);
+    battle_pending_hit_count = 0;
+    battle_read_object_set_files(args[0]);
     STACK_LEAVE();
     heap_free(stack);
 }
 
-/* Script command: free stage object 11 (800A9FF0, on a stack in a heap
+/* 800B626C: Script command: free stage object 11 (800A9FF0, on a stack in a heap
  * block). */
-void func_800B626C(void) {
+void battle_sprite_command_free_stage_object(void) {
     u8 *stack = heap_alloc(0x4000, 1);
 
     STACK_ENTER(stack + 0x3E00);
-    func_800A9FF0(0xB);
+    battle_free_object(0xB);
     STACK_LEAVE();
     heap_free(stack);
 }
 
-/* Script command: show stage object 11 in mode args[0] (800BEE2C); mode 2
- * first places it and shows it to the side of D_800C3E1C only. */
-void func_800B62C8(Sprite *sprite, u8 *args) {
+/* 800B62C8: Script command: show stage object 11 in mode args[0] (800BEE2C); mode 2
+ * first places it and shows it to the side of battle_acting_sprite only. */
+void battle_sprite_command_show_stage_object(Sprite *sprite, u8 *args) {
     u8 *stack = heap_alloc(0x4000, 1);
     u32 frame_bits;
 
     STACK_ENTER(stack + 0x3E00);
     if (args[0] == 2) {
-        func_800A979C(0xB, 0x300, 0x100, 0, 0x1DB);
-        frame_bits = SPRITE_FRAME_WORD(D_800C3E1C) >> 30;
-        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | frame_bits), args[0]);
+        battle_create_object_from_files(0xB, 0x300, 0x100, 0, 0x1DB);
+        frame_bits = SPRITE_FRAME_WORD(battle_acting_sprite) >> 30;
+        battle_start_object_effect_on_stack(0xB, 1 << (((battle_acting_sprite->motion.word & 3) << 2) | frame_bits), args[0]);
     } else {
-        func_800BEE2C(0xB, D_800D3634, args[0]);
+        battle_start_object_effect_on_stack(0xB, battle_area_event_target_mask, args[0]);
     }
     STACK_LEAVE();
     heap_free(stack);
 }
 
-/* Script command: fade the lights (800B3CD4) with the parameters at the
+/* 800B639C: Script command: fade the lights (800B3CD4) with the parameters at the
  * relative offset in args. */
-void func_800B639C(Sprite *sprite, u8 *args) {
+void battle_sprite_command_fade_lights(Sprite *sprite, u8 *args) {
     s8 *fade = (s8 *)SCRIPT_DATA(args);
 
-    func_800B3CD4((u8)fade[5], (u8)fade[3], (u8)fade[4], fade[0], fade[1], fade[2]);
+    battle_light_fade_start((u8)fade[5], (u8)fade[3], (u8)fade[4], fade[0], fade[1], fade[2]);
 }
 
-/* Script command: upload the images at the relative offset in args. */
-void func_800B63F0(Sprite *sprite, u8 *args) {
+/* 800B63F0: Script command: upload the images at the relative offset in args. */
+void battle_sprite_command_upload_images(Sprite *sprite, u8 *args) {
     model_load_image_list(SCRIPT_DATA(args), 0, 0, 0, 0, 0, 0);
 }
 
-/* Script command: draw sprite with the resident sprite drawer (80025A88). */
-void func_800B6438(Sprite *sprite) {
+/* 800B6438: Script command: draw sprite with the resident sprite drawer (80025A88). */
+void battle_sprite_command_draw_unlit_model(Sprite *sprite) {
     task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, sprite_task_draw_unlit_tmd);
 }
 
-/* Script command: move the CLUTs of the sprite's parts by (args[0],
+/* 800B6464: Script command: move the CLUTs of the sprite's parts by (args[0],
  * args[1]). */
-void func_800B6464(Sprite *sprite, u8 *args) {
+void battle_sprite_command_shift_cluts(Sprite *sprite, u8 *args) {
     SpritePart *part = sprite->renderer->parts[1];
     s16 count = ((SpriteFlagBits *)&sprite->flags)->part_bytes >> 2;
     s16 i = 0;
@@ -1291,13 +1291,13 @@ void func_800B6464(Sprite *sprite, u8 *args) {
     }
 }
 
-/* Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
-void func_800B64D4(Sprite *sprite, u8 *args) {
+/* 800B64D4: Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
+void battle_sprite_command_slot_animation(Sprite *sprite, u8 *args) {
     sprite_start_animation(BATTLE_AREA.sprites[args[1]], args[0]);
 }
 
-/* Script command: turn the sprite towards its target (on the x-z plane). */
-void func_800B6518(Sprite *sprite) {
+/* 800B6518: Script command: turn the sprite towards its target (on the x-z plane). */
+void battle_sprite_command_face_target_point(Sprite *sprite) {
     GroundPoint position;
     GroundPoint target;
     s16 direction;
@@ -1311,9 +1311,9 @@ void func_800B6518(Sprite *sprite) {
     sprite_set_facing(sprite, direction);
 }
 
-/* Script command: turn the sprite's speed towards its target by at most
+/* 800B65B0: Script command: turn the sprite's speed towards its target by at most
  * args[0] * 4 (of 4096) in each angle, keeping its length. */
-void func_800B65B0(Sprite *sprite, u8 *args) {
+void battle_sprite_command_steer_velocity(Sprite *sprite, u8 *args) {
     SVECTOR want;
     SVECTOR angles;
     VECTOR delta;
@@ -1374,9 +1374,9 @@ void func_800B65B0(Sprite *sprite, u8 *args) {
     sprite->speed_z = speed.vz << 7;
 }
 
-/* Script command: aim the sprite's speed (its speed setting, field18) at
+/* 800B6808: Script command: aim the sprite's speed (its speed setting, field18) at
  * its target and face it that way. */
-void func_800B6808(Sprite *sprite) {
+void battle_sprite_command_aim_velocity(Sprite *sprite) {
     SVECTOR angles;
     VECTOR delta;
     VECTOR squares;
@@ -1402,8 +1402,8 @@ void func_800B6808(Sprite *sprite) {
     sprite->speed_z = speed.vz << 7;
 }
 
-/* Script command: set a 16.16 point to the script's three s16s. */
-void func_800B6930(s32 *point, u8 *args) {
+/* 800B6930: Script command: set a 16.16 point to the script's three s16s. */
+void battle_sprite_command_set_position(s32 *point, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
 
     point[0] = SCRIPT_S16(data, 0) << 16;
@@ -1411,8 +1411,8 @@ void func_800B6930(s32 *point, u8 *args) {
     point[2] = SCRIPT_S16(data, 4) << 16;
 }
 
-/* Script command: set a vector to the script's three s16s. */
-void func_800B6990(s16 *vector, u8 *args) {
+/* 800B6990: Script command: set a vector to the script's three s16s. */
+void battle_sprite_set_script_vector(s16 *vector, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
     s32 value;
 
@@ -1424,8 +1424,8 @@ void func_800B6990(s16 *vector, u8 *args) {
     vector[2] = value;
 }
 
-/* Script command: add the script's three s16s to a vector. */
-void func_800B69E4(s16 *vector, u8 *args) {
+/* 800B69E4: Script command: add the script's three s16s to a vector. */
+void battle_sprite_add_script_vector(s16 *vector, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
     s32 value;
 
@@ -1437,8 +1437,8 @@ void func_800B69E4(s16 *vector, u8 *args) {
     vector[2] += value;
 }
 
-/* Script command: take the speed of the sprite's parent. */
-void func_800B6A50(Sprite *sprite) {
+/* 800B6A50: Script command: take the speed of the sprite's parent. */
+void battle_sprite_command_take_parent_velocity(Sprite *sprite) {
     Sprite *parent = sprite->parent;
 
     sprite->speed_x = parent->speed_x;
@@ -1446,10 +1446,10 @@ void func_800B6A50(Sprite *sprite) {
     sprite->speed_z = parent->speed_z;
 }
 
-/* Script command: break the sprite's image into pieces (801FC4C4) with the
+/* 800B6A7C: Script command: break the sprite's image into pieces (801FC4C4) with the
  * script's parameters (scaled with the sprite when field3A is set), leaving
  * it without an image. */
-void func_800B6A7C(Sprite *sprite, u8 *args) {
+void battle_sprite_command_break_image(Sprite *sprite, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
     s32 a;
     s32 b;
@@ -1472,17 +1472,17 @@ void func_800B6A7C(Sprite *sprite, u8 *args) {
     sprite->renderer->parts[1] = NULL;
 }
 
-/* Script command: start a burst from the sprite (801FC53C) with the
+/* 800B6B98: Script command: start a burst from the sprite (801FC53C) with the
  * script's parameters. */
-void func_800B6B98(Sprite *sprite, u8 *args) {
+void battle_sprite_command_spin(Sprite *sprite, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
 
     func_801FC53C(sprite, data[0] * 16, data[1], ((s8 *)data)[2] * 8, data[3] * 8, ((s8 *)data)[4] * 8, data[5]);
 }
 
-/* Script command: copy the screen to VRAM (0x2C0, 0x100) and shatter it
+/* 800B6BFC: Script command: copy the screen to VRAM (0x2C0, 0x100) and shatter it
  * (800B73A0). */
-void func_800B6BFC(void) {
+void battle_sprite_command_shatter_screen(void) {
     RECT rect;
 
     rect.w = 320;
@@ -1490,23 +1490,23 @@ void func_800B6BFC(void) {
     rect.y = 0;
     rect.h = 224;
     MoveImage(&rect, 0x2C0, 0x100);
-    func_800B73A0();
+    battle_shatter_start();
 }
 
-/* Script command: turn the sprite about z to its speed's direction in x-y. */
-void func_800B6C44(Sprite *sprite) {
+/* 800B6C44: Script command: turn the sprite about z to its speed's direction in x-y. */
+void battle_sprite_command_roll_to_velocity(Sprite *sprite) {
     sprite->renderer->angle_z = ratan2(sprite->speed_y >> 8, sprite->speed_x >> 8);
     sprite->render.word |= 0x10000000;
 }
 
-/* Script command: turn the sprite about x to its speed's direction in x-z. */
-void func_800B6C98(Sprite *sprite) {
+/* 800B6C98: Script command: turn the sprite about x to its speed's direction in x-z. */
+void battle_sprite_command_pitch_to_velocity(Sprite *sprite) {
     sprite->renderer->angle_x = ratan2(sprite->speed_z >> 8, sprite->speed_x >> 8);
     sprite->render.word |= 0x10000000;
 }
 
-/* Script command: turn the sprite to its speed's direction. */
-void func_800B6CEC(Sprite *sprite) {
+/* 800B6CEC: Script command: turn the sprite to its speed's direction. */
+void battle_sprite_command_face_velocity(Sprite *sprite) {
     VECTOR speed;
     VECTOR squares;
     s32 distance;
@@ -1525,8 +1525,8 @@ void func_800B6CEC(Sprite *sprite) {
     sprite->render.word |= 0x10000000;
 }
 
-/* Script command: clear the sprite's eight anchors. */
-void func_800B6DC0(Sprite *sprite) {
+/* 800B6DC0: Script command: clear the sprite's eight anchors. */
+void battle_sprite_command_clear_anchors(Sprite *sprite) {
     s32 i;
 
     if (sprite->renderer != NULL && sprite->renderer->pointer34 != NULL) {
@@ -1542,8 +1542,8 @@ void func_800B6DC0(Sprite *sprite) {
     }
 }
 
-/* Script command: turn the sprite's speed about z by args[0] * 16. */
-void func_800B6E84(Sprite *sprite, s8 *args) {
+/* 800B6E84: Script command: turn the sprite's speed about z by args[0] * 16. */
+void battle_sprite_command_turn_velocity(Sprite *sprite, s8 *args) {
     SVECTOR angles;
     MATRIX m;
     VECTOR velocity;
@@ -1556,9 +1556,9 @@ void func_800B6E84(Sprite *sprite, s8 *args) {
     sprite->speed_z = velocity.vz;
 }
 
-/* Shatter update: after its delay each shard fades, moves, turns and
+/* 800B6F0C: Shatter update: after its delay each shard fades, moves, turns and
  * falls, its velocity easing out. */
-void func_800B6F0C(Task *task) {
+void battle_shatter_update(Task *task) {
     ScreenShatter *shatter = task->data;
     s32 layer;
     s32 row;

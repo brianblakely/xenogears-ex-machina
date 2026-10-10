@@ -34,7 +34,7 @@ or the gear part list:
   table, which the sweep cannot see;
 * the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154
   categories, 0 weapons and 3 gear parts; ovl2596 func_801E42C4,
-  func_801E1444) and the AI's set_drop (3c, the first) and set_own_155 (3b, the
+  func_801E1444) and the AI's set_drop (3c, the first) and set_second_drop (3b, the
   second: +0x155, +0x153, +0x151).
 
 It also lists every field take_item (8d) from the weapon or gear part list,
@@ -86,8 +86,8 @@ GEARS, GEAR, PART_ITEMS, GEAR_RECORD_WEAPONS = 0x978, 0xA4, 0x04, 0x0C
 MENU_DATA = (0x10, 0, 2)  # slot39 func_801C72BC: the MenuDataArchive
 WEAPONS, GEAR_WEAPONS = 1, 42  # its +8 and +0xAC entries (tables->weapons, ->gearWeapons)
 # (entry, record size, users offset and width, load offset, kind offset):
-# slot39 MenuWeapon / GearWeapon. The load byte is the one battle func_8009A854
-# (BattleItem +3) and the uncalled func_8009E5C8 (BattlePart +0xC) store as an
+# slot39 MenuWeapon / GearWeapon. The load byte is the one battle battle_put_item_in_character4_entry
+# (BattleItem +3) and the uncalled battle_put_part_in_character4_gear (BattlePart +0xC) store as an
 # id's rounds.
 TABLES = {
     "weapon": (WEAPONS, 0x10, 0x0, 2, 0x3, 0x6),
@@ -108,7 +108,7 @@ LOCAL_VARIABLES = 0x400  # byte offsets of D_800C3A68[0x200..0x3ff]
 RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 func_801E4870
 DROPS = ((0x150, 0x152, 0x154), (0x151, 0x153, 0x155))  # (chance, id, category)
 DROP_LISTS = {0: "weapon list", 3: "gear part list"}  # ovl2596 func_801E1444
-AI_DROPS = {0x3C: 0, 0x3B: 1}  # set_drop, set_own_155: b1 category, b2 id
+AI_DROPS = {0x3C: 0, 0x3B: 1}  # set_drop, set_second_drop: b1 category, b2 id
 ENEMY_PART_ITEMS = 0xA4 + PART_ITEMS  # the combatant's gear record
 
 

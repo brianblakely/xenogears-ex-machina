@@ -80,7 +80,7 @@ void func_801FC1A8(Task *node) {
     debris = node->data;
     CompMatrix(&sprite_view_matrix, &debris->matrix, &camera);
     piece = debris->pieces;
-    prim = debris->prims[D_800C3EB0.buffer];
+    prim = debris->prims[battle_area.buffer];
     desc = (ScriptCommand *)(debris->model->commands + (s32)debris->model);
     count = debris->count;
     for (i = 0; i != count; i++, piece++) {
@@ -185,10 +185,10 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
     debris->matrix = *matrix;
     debris->life = life;
     source = model;
-    size = func_800B16A4(source);
+    size = battle_tmd_get_packet_size(source);
     if (prims == NULL) {
         buffer = heap_alloc(size * 2, 0);
-        func_800B1720(source, buffer, 0, 1);
+        battle_tmd_build_packets(source, buffer, 0, 1);
         memcpy(buffer + size, buffer, size);
     } else {
         buffer = prims;
@@ -333,7 +333,7 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
         velocity.vx = speed + r;
         velocity.vy = 0;
         velocity.vz = 0;
-        func_800C0828(&centre, &D_801FCE14, &angles);
+        battle_get_direction_angles(&centre, &D_801FCE14, &angles);
         gpu_build_rotation_matrix(&angles, &m);
         ApplyMatrixLV(&m, &velocity, &velocity);
         piece->velocity[0] = velocity.vx;

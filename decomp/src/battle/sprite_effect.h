@@ -59,20 +59,20 @@ typedef struct {
     s32 motion;              /* 0x30 */
 } SpriteLink;
 
-extern u8 D_800C356C[5]; /* the anchors of a sprite's trail */
-extern u8 *D_800D2FD8;   /* the trail being drawn: its colours */
-extern s16 D_800C3E9C;   /* its colour count */
-extern s16 D_800C3D4C;   /* its blend */
-extern s16 D_800D3334;
+extern u8 battle_trail_anchor_indices[5]; /* the anchors of a sprite's trail */
+extern u8 *battle_trail_colors;   /* the trail being drawn: its colours */
+extern s16 battle_trail_color_count;   /* its colour count */
+extern s16 battle_trail_blend;   /* its blend */
+extern s16 battle_trail_depth;
 
 /* Sprite script commands (800B3F04). */
-extern Sprite *D_800C3E1C;
-extern s16 D_800D36BC;
+extern Sprite *battle_acting_sprite;
+extern s16 battle_pending_hit_count;
 
 /* Sprite streaks and sprite effects (800B5DF4-800B7424). */
-extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
+extern MATRIX battle_screen_space_matrix; /* the screen-space camera (render bit 24) */
 
-s32 func_800B57E4(Sprite *sprite); /* the distance from a sprite to its target */
-SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume); /* watch a sprite approach its target */
+s32 battle_sprite_get_target_distance(Sprite *sprite); /* the distance from a sprite to its target */
+SpriteApproach *battle_approach_watch_start(Sprite *sprite, s32 near, u8 *resume); /* watch a sprite approach its target */
 
 #endif

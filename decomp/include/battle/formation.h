@@ -4,7 +4,7 @@
 #include "common.h"
 
 /* The battle formation: its areas, group positions and the route points
- * between groups (the formation data D_800D3364) and the approach routes
+ * between groups (the formation data battle_formation) and the approach routes
  * (battle.c 80085310-80088490), which move the slots between the formation
  * groups (battle/groups.h). */
 
@@ -42,15 +42,15 @@ typedef struct Formation {
     GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
 
-extern Formation *D_800D3364;
+extern Formation *battle_formation;
 
 /* Plan the approach route into the battle area's path (BattleArea): the
  * actor's position, then up to seven formation points; unused points are
  * 0xFFFF. */
-s32 func_800877E0(u8 actor, u8 target);
-void func_80087EDC(u8 actor, u8 target); /* move actor into target's group */
-void func_800881B8(u8 actor, u8 target); /* move actor alone into target's empty group */
-void func_80088490(s32 slot); /* give slot a formation group of its own */
-u8 func_800885D0(u8 slot);               /* the slot's group's members among the flagged groups */
+s32 battle_plan_approach_route(u8 actor, u8 target);
+void battle_join_target_group(u8 actor, u8 target); /* move actor into target's group */
+void battle_join_empty_target_group(u8 actor, u8 target); /* move actor alone into target's empty group */
+void battle_give_slot_own_group(s32 slot); /* give slot a formation group of its own */
+u8 battle_count_enemy_gear_group_members(u8 slot);               /* the slot's group's members among the flagged groups */
 
 #endif

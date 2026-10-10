@@ -260,7 +260,7 @@ typedef union {
     ImageEvent image;
 } AnimEvent;
 
-/* A position tracker (0x14 bytes, D_800D3304; ovl2143's D_801E8648): an
+/* A position tracker (0x14 bytes, battle_light_trackers; ovl2143's D_801E8648): an
  * offset from a part of a stage object, placed by 800A44C0 (801E1880). */
 typedef struct Tracker {
     s16 x;

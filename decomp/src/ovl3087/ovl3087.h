@@ -17,7 +17,7 @@
 #define SCRIPT_VAR(state, offset) \
     (*(u16 *)((u8 *)(state)->vars + ((offset) & 0xFFFE)))
 /* The variable named by the instruction's first operand. */
-#define INSN_VAR(insn) SCRIPT_VAR(D_800D3278, ((insn)[2] << 8) | (insn)[1])
+#define INSN_VAR(insn) SCRIPT_VAR(battle_state_of_event_script, ((insn)[2] << 8) | (insn)[1])
 
 /* Script file 2: per script set, the compressed script and its data. */
 typedef struct {
@@ -68,21 +68,21 @@ void sound_sync_transfer(s32 arg);
  * convert arguments/result differently from the battle's definition
  * (decomp/src/battle/own_declarations.h; 8007FF14, 800AA320, 800AA384,
  * 800B838C and 8009C0E0 are declared in their units), and 8008AB70. */
-void func_800716D8(void);
-void func_8007FF14(s32 arg);
-void func_800800E8(s32 arg);
-void func_800883AC(s32 arg);
-u16 func_80089C08(u8 id);
-void *func_8008ABB8(s32 size, s32 top);
-void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6);
-void func_8008FA60(s32 id);
-void func_8009C0E0(s32 arg);
-void func_800AA320(u16 member, u16 target, u16 arg);
-void func_800AA384(u16 member, u16 target, u16 arg);
-void func_800B3658(u16 *position, u16 arg);
-void func_800B39C0(u16 actor, s32 mode, s32 r, s32 g, s32 b);
-void func_800B838C(u16 arg0, u16 arg1);
-void func_800BCD98(s32 arg);
+void battle_wait_frame(void);
+void battle_gear_hud_show(s32 arg);
+void battle_leave_member_menu(s32 arg);
+void battle_leave_formation_group(s32 arg);
+u16 battle_get_slot_bit(u8 id);
+void *battle_heap_alloc(s32 size, s32 top);
+void battle_window_open(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 wait);
+void battle_window_close(s32 id);
+void battle_set_slot_attack_level4(s32 arg);
+void battle_start_object_script(u16 member, u16 target, u16 arg);
+void battle_make_object_act(u16 member, u16 target, u16 arg);
+void battle_quake_start(u16 *position, u16 arg);
+void battle_screen_fade_start(u16 actor, s32 mode, s32 r, s32 g, s32 b);
+void battle_play_sound_to_end(u16 index, u16 variant);
+void battle_highlight_slots(s32 arg);
 
 /* This module. */
 u16 func_801E5768(ScriptThread *thread);

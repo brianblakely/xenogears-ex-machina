@@ -47,312 +47,312 @@
 #include "resident_views.h"
 
 /* This unit's functions, declared before their first use. */
-u8 func_80084854(u8 origin, u8 direction);
-void func_80084A7C(u8 member);
-void func_80085D34(void);
-u8 func_80085EB4(u8 mode, u8 member);
-void func_800861D0(u8 code, u8 member);
-s32 func_80086B88(s32 step, u8 member); /* the member can use combo step `step` now */
-u8 func_80086F98(u8 step, u8 member);
-void func_8008AA40(u8 id); /* play a sound effect */
+u8 battle_find_candidate_in_direction(u8 origin, u8 direction);
+void battle_attack_page_init_target(u8 member);
+void battle_attack_page_build_ap_glyphs(void);
+u8 battle_is_known_deathblow_combo(u8 mode, u8 member);
+void battle_combo_record_input(u8 code, u8 member);
+s32 battle_can_use_combo_step(s32 step, u8 member); /* the member can use combo step `step` now */
+u8 battle_combo_record_gear_step(u8 step, u8 member);
+void battle_play_system_sound(u8 id); /* play a sound effect */
 
 /* The unit's own uninitialized variables, each in a slot of whole words
  * (decomp/Makefile). Its .bss opens the overlay's at 800c3a70, where the
  * resident's mode table starts the clear. */
-static u32 *D_800C3A70[3]; /* combo text image blocks */
-static s32 D_800C3A7C;     /* stepped line state (8008887c) */
-static s32 D_800C3A80;
-static s32 D_800C3A84;
-static s32 D_800C3A88;
-static s32 D_800C3A8C;
-static s32 D_800C3A90;
-static u8 D_800C3A94;
-static u8 D_800C3A98;
-static s32 D_800C3A9C;
-static u8 D_800C3AA0; /* the debug console is open */
+static u32 *battle_combo_text_image_blocks[3]; /* 800C3A70: combo text image blocks */
+static s32 battle_stepped_line_start_x;     /* 800C3A7C: stepped line state (8008887c) */
+static s32 battle_stepped_line_start_y; /* 800C3A80 */
+static s32 battle_stepped_line_end_x; /* 800C3A84 */
+static s32 battle_stepped_line_end_y; /* 800C3A88 */
+static s32 battle_stepped_line_step_x; /* 800C3A8C */
+static s32 battle_stepped_line_step_y; /* 800C3A90 */
+static u8 battle_stepped_line_x_decreasing; /* 800C3A94 */
+static u8 battle_stepped_line_y_decreasing; /* 800C3A98 */
+static s32 battle_stepped_line_speed; /* 800C3A9C */
+static u8 battle_console_opened; /* 800C3AA0: the debug console is open */
 
-/* Confirm the selected entry of the member's on-foot window: entries 4, 6
+/* 8008115C: Confirm the selected entry of the member's on-foot window: entries 4, 6
  * and 7 open the attack page (5) when the member has a target; 1 and 0 open
  * pages 2 and 7 unless their item is unavailable (buzzer 0x4f); 2 opens page
  * 3; 3 opens page 4 when available, else on a second press of the repeat
  * entry (800c3e29 = 3) page 0xa. */
-void func_8008115C(member)
+void battle_command_menu_page_01_attack(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
-            D_800D366C = 0;
-            func_80087A38(member);
-            func_80084A7C(member);
-            func_80077698();
-            D_800C3EAC->page = 5;
+        if (battle_turn_state->slots[member].defaultTarget != 0xFF) {
+            battle_command_menu_sounds_enabled = 0;
+            battle_attack_page_enter(member);
+            battle_attack_page_init_target(member);
+            battle_show_direction_arrows();
+            battle_turn_state->page = 5;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 2;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 2;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 3;
+        battle_turn_state->page = 3;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[10] == 0) {
-            D_800C3EAC->page = 4;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[7] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[10] == 0) {
+            battle_turn_state->page = 4;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[7] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0xA;
+                battle_turn_state->page = 0xA;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[5] == 0) {
-            D_800C3EAC->page = 7;
+        if (battle_turn_state->slots[member].items[5] == 0) {
+            battle_turn_state->page = 7;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's item command window: entries
+/* 80081318: Confirm the selected entry of the member's item command window: entries
  * 4, 6 and 7 open the item list when the member has one (else page 2); 0
  * opens page 1 when available, else on a repeat press (800c3e29 = 0) page 7;
  * 2 opens page 3; 3 opens page 4, else on a repeat press page 0xa; 1 opens
  * page 8 unless unavailable (buzzer 0x4f). */
-void func_80081318(member)
+void battle_command_menu_page_02_item(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (func_8008BED8(member)) {
-            func_8008B908(member);
+        if (battle_item_menu_run(member)) {
+            battle_execute_chosen_item(member);
         } else {
-            D_800C3EAC->page = 2;
+            battle_turn_state->page = 2;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 1;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[5] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 1;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[5] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 7;
+                battle_turn_state->page = 7;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 3;
+        battle_turn_state->page = 3;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[10] == 0) {
-            D_800C3EAC->page = 4;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[7] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[10] == 0) {
+            battle_turn_state->page = 4;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[7] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0xA;
+                battle_turn_state->page = 0xA;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 8;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 8;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's charge command window:
+/* 80081504: Confirm the selected entry of the member's charge command window:
  * entries 4, 6 and 7 charge and end the menu; 0 opens page 1 when available,
  * else on a repeat press (800c3e29 = 0) page 7; 1 and 2 open pages 2 and 9
  * unless unavailable (buzzer 0x4f); 3 opens page 4, else on a repeat press
  * page 0xa. */
-void func_80081504(member)
+void battle_command_menu_page_03_defend(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        func_8009AA44(member);
-        D_800C3EAC->unk2EA = 0;
-        D_800C3EAC->menuDone = 1;
+        battle_start_defending(member);
+        battle_turn_state->unk2EA = 0;
+        battle_turn_state->menuDone = 1;
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 1;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[5] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 1;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[5] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 7;
+                battle_turn_state->page = 7;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 2;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 2;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[10] == 0) {
-            D_800C3EAC->page = 4;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[7] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[10] == 0) {
+            battle_turn_state->page = 4;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[7] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0xA;
+                battle_turn_state->page = 0xA;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 9;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 9;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's gear-list command window:
+/* 800816F8: Confirm the selected entry of the member's gear-list command window:
  * entries 4, 6 and 7 open the gear list when the member has one (else page
  * 4); 0 opens page 1 when available, else on a repeat press (800c3e29 = 0)
  * page 7; 1 and 3 open pages 2 and 0xa unless unavailable (buzzer 0x4f); 2
  * opens page 3. */
-void func_800816F8(member)
+void battle_command_menu_page_04_art(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        func_8007FD38(member);
-        if (func_8008B478(member)) {
-            func_8008ADD0(member);
+        battle_command_menu_load_module_block(member);
+        if (battle_art_menu_run(member)) {
+            battle_execute_chosen_art(member);
         } else {
-            D_800C3EAC->page = 4;
+            battle_turn_state->page = 4;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 1;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[5] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 1;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[5] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 7;
+                battle_turn_state->page = 7;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 2;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 2;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 3;
+        battle_turn_state->page = 3;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[7] == 0) {
-            D_800C3EAC->page = 0xA;
+        if (battle_turn_state->slots[member].items[7] == 0) {
+            battle_turn_state->page = 0xA;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Frame the camera and target cursor on the attack page target, mark the
+/* 8008189C: Frame the camera and target cursor on the attack page target, mark the
  * four directions that lead to another target and show its name. */
-void func_8008189C(u8 member) {
+void battle_attack_page_frame_target(u8 member) {
     s32 direction;
 
-    if (D_800C3EAC->unk2E9 == 0) {
-        func_800BC404(func_80089C08(D_800C3EAC->unk2E8));
-        func_800BCD98(func_80089C08(D_800C3EAC->unk2E8));
+    if (battle_turn_state->unk2E9 == 0) {
+        battle_camera_start_move(battle_get_slot_bit(battle_turn_state->unk2E8));
+        battle_highlight_slots(battle_get_slot_bit(battle_turn_state->unk2E8));
         for (direction = 0; direction < 4; direction++) {
-            if (func_80084854(D_800C3EAC->unk2E8, direction) != D_800C3EAC->unk2E8) {
-                D_800C3E24->arrows[direction] = 1;
+            if (battle_find_candidate_in_direction(battle_turn_state->unk2E8, direction) != battle_turn_state->unk2E8) {
+                battle_direction_arrows->arrows[direction] = 1;
             } else {
-                D_800C3E24->arrows[direction] = 0;
+                battle_direction_arrows->arrows[direction] = 0;
             }
         }
-        if (D_800D2C34 != 4) {
-            func_80093B08(member);
+        if (battle_gear_hud_attack_level != 4) {
+            battle_ammo_window_open(member);
         }
     }
 }
 
-/* Confirm the attack page's target (once): make it the member's default
+/* 800819A4: Confirm the attack page's target (once): make it the member's default
  * target, close the page, highlight member and target and (except for
  * character 4) queue a move event toward it. */
-void func_800819A4(member)
+void battle_attack_page_confirm_target(member)
 u8 member;
 {
-    if (D_800C3EAC->unk2E9 == 0) {
-        D_800C3EAC->unk2E9 = 1;
-        func_800BCD98(0);
-        D_800C3EAC->slots[member].defaultTarget = D_800C3EAC->unk2E8;
-        func_8007FCE8();
-        func_8007FDEC();
-        func_80077980();
-        func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
-        if (D_800D2D24[member] != 4) {
-            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
-            D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
-            D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
-            D_800C3FE8[D_800C3EAC->eventCount].targetMask = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
-            D_800C3EAC->eventCount++;
+    if (battle_turn_state->unk2E9 == 0) {
+        battle_turn_state->unk2E9 = 1;
+        battle_highlight_slots(0);
+        battle_turn_state->slots[member].defaultTarget = battle_turn_state->unk2E8;
+        battle_command_menu_release_module_block();
+        battle_command_menu_release_file3_block();
+        battle_hide_direction_arrows();
+        battle_camera_start_move(battle_get_slot_bit(member) | battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget));
+        if (battle_party_character_ids[member] != 4) {
+            battle_area_events[battle_turn_state->eventCount].actor = member;
+            battle_area_events[battle_turn_state->eventCount].type = 0xFD;
+            battle_area_events[battle_turn_state->eventCount].parameter = 0;
+            battle_area_events[battle_turn_state->eventCount].targetMask = battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget);
+            battle_turn_state->eventCount++;
         }
-        func_8009413C(member, 0);
+        battle_ammo_window_hide(member, 0);
     }
 }
 
-/* The attack page (5) of the member's turn. The turn state bytes 0x2d4/0x2d5
+/* 80081B58: The attack page (5) of the member's turn. The turn state bytes 0x2d4/0x2d5
  * hold the AP left and the maximum, 0x2df the cost of the pressed attack,
  * 0x2e0-0x2e5 the execution, closed, shown page, attacked, combo armed and
  * reacted flags. Cancel (5) leaves the page while no AP were spent, else
@@ -362,110 +362,110 @@ u8 member;
  * reload set from the AP left; the command closes when no AP remain or the
  * target reacted. It is an int function that returns no value (the return
  * register stays live at the exits). */
-s32 func_80081B58(u8 member) {
-    D_800D366C = 0;
-    if (D_800C3EAC->unk2E1[0] != 0) {
+s32 battle_command_menu_page_05_attack_inputs(u8 member) {
+    battle_command_menu_sounds_enabled = 0;
+    if (battle_turn_state->unk2E1[0] != 0) {
         return;
     }
-    D_800C3EAC->unk2DF = 0;
-    func_8008189C(member);
-    switch (D_800D3014) {
+    battle_turn_state->unk2DF = 0;
+    battle_attack_page_frame_target(member);
+    switch (battle_pressed_key) {
     case 5:
-        if (D_800C3EAC->unk2D4[0] != D_800C3EAC->unk2D4[1]) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = 1;
+        if (battle_turn_state->unk2D4[0] != battle_turn_state->unk2D4[1]) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = 1;
         } else {
-            func_800B8DA4();
-            D_800D366C = 1;
-            D_800D2D28->unk7B = 0;
-            D_800D2D28->unkAF = 0;
-            D_800C3EAC->page = 1;
-            func_80077980();
-            func_8009413C(member, 1);
+            battle_cancel_turn();
+            battle_command_menu_sounds_enabled = 1;
+            battle_ui->unk7B = 0;
+            battle_ui->unkAF = 0;
+            battle_turn_state->page = 1;
+            battle_hide_direction_arrows();
+            battle_ammo_window_hide(member, 1);
         }
         break;
     case 4:
-        if (D_800C3EAC->slots[member].items[2] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[2] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     case 7:
-        if (D_800C3EAC->slots[member].items[1] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[1] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     case 6:
-        if (D_800C3EAC->slots[member].items[0] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[0] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     }
-    if (D_800C3EAC->unk2E9 == 0) {
-        switch (D_800D3014) {
+    if (battle_turn_state->unk2E9 == 0) {
+        switch (battle_pressed_key) {
         case 0:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
-            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 0);
+            battle_reset_events_for_target(battle_turn_state->actor, battle_turn_state->unk2E8);
+            battle_play_system_sound(0x4C);
             break;
         case 1:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
-            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 1);
+            battle_reset_events_for_target(battle_turn_state->actor, battle_turn_state->unk2E8);
+            battle_play_system_sound(0x4C);
             break;
         case 2:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
-            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 2);
+            battle_reset_events_for_target(battle_turn_state->actor, battle_turn_state->unk2E8);
+            battle_play_system_sound(0x4C);
             break;
         case 3:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
-            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 3);
+            battle_reset_events_for_target(battle_turn_state->actor, battle_turn_state->unk2E8);
+            battle_play_system_sound(0x4C);
             break;
         }
-        func_800877E0(member, D_800C3EAC->unk2E8);
+        battle_plan_approach_route(member, battle_turn_state->unk2E8);
     }
-    D_800D2D28->unkAF = 1;
-    switch (D_800D3014) {
+    battle_ui->unkAF = 1;
+    switch (battle_pressed_key) {
     case 4:
-        if (func_80085EB4(4, member) && D_800C3EAC->unk2D4[0] - 3 >= 0) {
-            D_800C3EAC->unk2E1[3]++;
+        if (battle_is_known_deathblow_combo(4, member) && battle_turn_state->unk2D4[0] - 3 >= 0) {
+            battle_turn_state->unk2E1[3]++;
         }
-        D_800C3EAC->unk2DF++;
+        battle_turn_state->unk2DF++;
     case 7:
-        D_800C3EAC->unk2DF++;
+        battle_turn_state->unk2DF++;
     case 6:
-        D_800C3EAC->unk2DF++;
-        if (D_800C3EAC->unk2D4[0] - D_800C3EAC->unk2DF >= 0) {
-            func_8008AA40(0x4D);
-            func_800819A4(member);
-            if (D_800D2D28->unkCB != 0) {
-                D_800C3EAC->page = 0x64;
-                D_800C3EAC->unk2E1[1] = 0xFF;
-                D_800C3EAC->unk2E0 = 1;
+        battle_turn_state->unk2DF++;
+        if (battle_turn_state->unk2D4[0] - battle_turn_state->unk2DF >= 0) {
+            battle_play_system_sound(0x4D);
+            battle_attack_page_confirm_target(member);
+            if (battle_ui->unkCB != 0) {
+                battle_turn_state->page = 0x64;
+                battle_turn_state->unk2E1[1] = 0xFF;
+                battle_turn_state->unk2E0 = 1;
             } else {
-                D_800C3EAC->page = 5;
-                D_800C3EAC->unk2E1[1] = 5;
+                battle_turn_state->page = 5;
+                battle_turn_state->unk2E1[1] = 5;
             }
-            D_800C3EAC->unk2D4[0] -= D_800C3EAC->unk2DF;
-            func_80085D34();
-            func_800861D0(D_800D3014, member);
-            D_800C3EAC->unk2E1[4] = func_80087AF0(member, D_800C3EAC->unk2DF);
-            D_800D2DCC.timers[1][member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
-            D_800C3EAC->unk2E1[2] = 1;
+            battle_turn_state->unk2D4[0] -= battle_turn_state->unk2DF;
+            battle_attack_page_build_ap_glyphs();
+            battle_combo_record_input(battle_pressed_key, member);
+            battle_turn_state->unk2E1[4] = battle_execute_attack_step(member, battle_turn_state->unk2DF);
+            battle_turn_queue.timers[1][member] = battle_ap_timer_reload_table_by_max_ap[battle_turn_state->unk2D4[1]][battle_turn_state->unk2D4[0]] * 100 / 56;
+            battle_turn_state->unk2E1[2] = 1;
         } else {
-            func_8008AA40(0x4F);
+            battle_play_system_sound(0x4F);
         }
-        if (D_800C3EAC->unk2D4[0] == 0) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = 1;
+        if (battle_turn_state->unk2D4[0] == 0) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = 1;
         }
-        if (D_800C3EAC->unk2E1[4] != 0) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = 1;
+        if (battle_turn_state->unk2E1[4] != 0) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = 1;
         }
         break;
     case 5:
@@ -473,860 +473,860 @@ s32 func_80081B58(u8 member) {
     }
 }
 
-/* Confirm the selected entry of the member's special command window:
+/* 800820A4: Confirm the selected entry of the member's special command window:
  * entries 4, 6 and 7 start the selection (800c3eac +0x2e1) when the member
  * has a target and a special is available, else open page 7; 1 and 0 open
  * pages 8 and 1 unless unavailable (buzzer 0x4f); 2 opens page 9, else on a
  * repeat press (800c3e29 = 2) page 3; 3 opens page 0xa, else on a repeat
  * press page 4. */
-void func_800820A4(member)
+void battle_command_menu_page_07_combo(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
-            if (func_8008C4A8(member)) {
-                D_800C3EAC->unk2E1[0] = 1;
+        if (battle_turn_state->slots[member].defaultTarget != 0xFF) {
+            if (battle_combo_command_run(member)) {
+                battle_turn_state->unk2E1[0] = 1;
             } else {
-                D_800C3EAC->page = 7;
-                D_800C3EAC->unk2E1[1] = 0xFF;
+                battle_turn_state->page = 7;
+                battle_turn_state->unk2E1[1] = 0xFF;
             }
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 8;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 8;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 9;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 3;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 9;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 3;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[7] == 0) {
-            D_800C3EAC->page = 0xA;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[10] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[7] == 0) {
+            battle_turn_state->page = 0xA;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[10] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 4;
+                battle_turn_state->page = 4;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 1;
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 1;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's item window: entries 4, 6 and 7
+/* 800822C4: Confirm the selected entry of the member's item window: entries 4, 6 and 7
  * open the item list when the member has one (else page 8); 0 opens page 7,
  * else on a repeat press (800c3e29 = 0) page 1; 2 opens page 9, else on a
  * repeat press (= 2) page 3; 3 opens page 0xa, else on a repeat press (= 3)
  * page 4; 1 opens page 2 unless unavailable (buzzer 0x4f). */
-void func_800822C4(member)
+void battle_command_menu_page_08_item(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (func_8008BED8(member)) {
-            func_8008B908(member);
+        if (battle_item_menu_run(member)) {
+            battle_execute_chosen_item(member);
         } else {
-            D_800C3EAC->page = 8;
+            battle_turn_state->page = 8;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[5] == 0) {
-            D_800C3EAC->page = 7;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[5] == 0) {
+            battle_turn_state->page = 7;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 1;
+                battle_turn_state->page = 1;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 9;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 3;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 9;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 3;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[7] == 0) {
-            D_800C3EAC->page = 0xA;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[10] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[7] == 0) {
+            battle_turn_state->page = 0xA;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[10] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 4;
+                battle_turn_state->page = 4;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 2;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 2;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the escape command window: entries 4, 6 and
+/* 80082504: Confirm the selected entry of the escape command window: entries 4, 6 and
  * 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens page 7
  * when available, else on a repeat press (800c3e29 = 0) page 1; 3 opens page
  * 0xa, else on a repeat press (800c3e29 = 3) page 4; 1 opens page 8 unless
  * unavailable (buzzer 0x4f); 2 opens page 3. */
-void func_80082504(member)
+void battle_command_menu_page_09_escape(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
         /* 8009a9d0 takes no arguments; the call passes the actor. */
-        if (((s32 (*)())func_8009A9D0)(D_800C3EAC->actor)) {
-            D_800C48EA = 0x40;
+        if (((s32 (*)())battle_try_escape)(battle_turn_state->actor)) {
+            battle_area_outcome = 0x40;
         }
-        D_800C3EAC->menuDone = 1;
+        battle_turn_state->menuDone = 1;
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[5] == 0) {
-            D_800C3EAC->page = 7;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[5] == 0) {
+            battle_turn_state->page = 7;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 1;
+                battle_turn_state->page = 1;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 8;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 8;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[7] == 0) {
-            D_800C3EAC->page = 0xA;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[10] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[7] == 0) {
+            battle_turn_state->page = 0xA;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[10] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 4;
+                battle_turn_state->page = 4;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 3;
+        battle_turn_state->page = 3;
         break;
     }
 }
 
-/* The member boards its gear: it takes a formation group of its own, its
+/* 800826CC: The member boards its gear: it takes a formation group of its own, its
  * records and panel switch to the gear, and the game data notes that the
  * party member entered a gear unless 80059179 is set. */
-void func_800826CC(u8 member) {
+void battle_board_gear(u8 member) {
     s32 i;
 
-    func_80088490(member);
-    func_8009AEFC(member);
-    func_800BAF48(member);
-    D_800CCCE8.records[member].flags15A |= 0x80;
-    func_800883AC(member);
-    D_800D32A0[member].unk1 = 2;
-    if (D_800D2D24[member] != 7) {
-        D_800C3EA4->panels[member].state = 2;
+    battle_give_slot_own_group(member);
+    battle_revive_slot_record(member);
+    battle_slot_swap_sprite_for_gear(member);
+    battle_work_area.records[member].flags15A |= 0x80;
+    battle_leave_formation_group(member);
+    battle_slot_flags[member].unk1 = 2;
+    if (battle_party_character_ids[member] != 7) {
+        battle_graphics->panels[member].state = 2;
     }
-    D_800C3EB4[member].gear = 1;
-    D_800C3EAC->reaction[member] = 1;
+    battle_area_slots[member].gear = 1;
+    battle_turn_state->reaction[member] = 1;
     for (i = 0; i < 3; i++) {
-        if (game_data.party[i] == D_800D2D24[member] && mode_gear_riding_lock == 0) {
+        if (game_data.party[i] == battle_party_character_ids[member] && mode_gear_riding_lock == 0) {
             game_data.inGear[i] = 1;
         }
     }
 }
 
-/* Confirm the selected entry of the member's main command window: entries
+/* 80082820: Confirm the selected entry of the member's main command window: entries
  * 4, 6 and 7 board the gear and end the menu; 0 opens page 7 when available,
  * else on a second press of the repeat entry (800c3e29 = 0) page 1; 2 opens
  * page 9, else on a repeat press (800c3e29 = 2) page 3; 1 and 3 open pages 8
  * and 4 unless their item is unavailable (buzzer 0x4f). */
-void func_80082820(member)
+void battle_command_menu_page_0a_board_gear(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        func_800826CC(member);
-        D_800C3EAC->menuDone = 1;
+        battle_board_gear(member);
+        battle_turn_state->menuDone = 1;
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[5] == 0) {
-            D_800C3EAC->page = 7;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[5] == 0) {
+            battle_turn_state->page = 7;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 1;
+                battle_turn_state->page = 1;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] == 0) {
-            D_800C3EAC->page = 8;
+        if (battle_turn_state->slots[member].items[11] == 0) {
+            battle_turn_state->page = 8;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 9;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 3;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 9;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 3;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[10] == 0) {
-            D_800C3EAC->page = 4;
+        if (battle_turn_state->slots[member].items[10] == 0) {
+            battle_turn_state->page = 4;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's on-foot command window: entries
+/* 800829F4: Confirm the selected entry of the member's on-foot command window: entries
  * 4, 6 and 7 open the attack page (0x19) when the member has a target; 0 and
  * 1 open pages 0x15 and 0x11 unless their item is unavailable (buzzer 0x4f);
  * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
  * press of the repeat entry page 0x18. */
-void func_800829F4(member)
+void battle_command_menu_page_10_gear_attack(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
-            func_80087A38(member);
-            func_80084A7C(member);
-            D_800C3EAC->page = 0x19;
-            func_80077698();
-            D_800D366C = 0;
+        if (battle_turn_state->slots[member].defaultTarget != 0xFF) {
+            battle_attack_page_enter(member);
+            battle_attack_page_init_target(member);
+            battle_turn_state->page = 0x19;
+            battle_show_direction_arrows();
+            battle_command_menu_sounds_enabled = 0;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x11;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x11;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 0x12;
+        battle_turn_state->page = 0x12;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[6] == 0) {
-            D_800C3EAC->page = 0x13;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[4] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[6] == 0) {
+            battle_turn_state->page = 0x13;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[4] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x18;
+                battle_turn_state->page = 0x18;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[13] == 0) {
-            D_800C3EAC->page = 0x15;
+        if (battle_turn_state->slots[member].items[13] == 0) {
+            battle_turn_state->page = 0x15;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's gear command window: entries 4,
+/* 80082BB0: Confirm the selected entry of the member's gear command window: entries 4,
  * 6 and 7 open the part list when the gear has one (else page 0x11); 0 and 1
  * open pages 0x10 and 0x16 unless their item is unavailable (buzzer 0x4f);
  * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
  * press of the repeat entry (800c3e29 = 3) page 0x18. */
-void func_80082BB0(member)
+void battle_command_menu_page_11_gear_item(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (func_8008BED8(member)) {
-            func_8008B908(member);
+        if (battle_item_menu_run(member)) {
+            battle_execute_chosen_item(member);
         } else {
-            D_800C3EAC->page = 0x11;
+            battle_turn_state->page = 0x11;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 0x10;
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 0x10;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 0x12;
+        battle_turn_state->page = 0x12;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[6] == 0) {
-            D_800C3EAC->page = 0x13;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[4] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[6] == 0) {
+            battle_turn_state->page = 0x13;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[4] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x18;
+                battle_turn_state->page = 0x18;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x16;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x16;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's gear window with charge:
+/* 80082D4C: Confirm the selected entry of the member's gear window with charge:
  * entries 4, 6 and 7 charge the gear's fuel (by 800d2c32, capped) and end
  * the member's turn; 0, 1 and 2 open pages 0x10, 0x11 and 0x17 unless their
  * item is unavailable (buzzer 0x4f); 3 opens page 0x13 when available, else
  * on a second press of the repeat entry page 0x18. */
-void func_80082D4C(member)
+void battle_command_menu_page_12_gear_charge(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        func_8009AA44(member);
-        D_800CCCE8.records[member].gear.fuel += D_800D2C32;
-        if (D_800CCCE8.records[member].gear.fuel > D_800CCCE8.records[member].gear.maxFuel) {
-            D_800CCCE8.records[member].gear.fuel = D_800CCCE8.records[member].gear.maxFuel;
+        battle_start_defending(member);
+        battle_work_area.records[member].gear.fuel += battle_gear_hud_charge;
+        if (battle_work_area.records[member].gear.fuel > battle_work_area.records[member].gear.maxFuel) {
+            battle_work_area.records[member].gear.fuel = battle_work_area.records[member].gear.maxFuel;
         }
-        D_800C3EAC->reaction[member] = 1;
-        D_800C3EAC->unk2EA = 0;
-        D_800C3EAC->menuDone = 1;
+        battle_turn_state->reaction[member] = 1;
+        battle_turn_state->unk2EA = 0;
+        battle_turn_state->menuDone = 1;
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 0x10;
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 0x10;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x11;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x11;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[6] == 0) {
-            D_800C3EAC->page = 0x13;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[4] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[6] == 0) {
+            battle_turn_state->page = 0x13;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[4] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x18;
+                battle_turn_state->page = 0x18;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 0x17;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 0x17;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's command window (800d3014):
+/* 80082F7C: Confirm the selected entry of the member's command window (800d3014):
  * entries 4, 6 and 7 open the gear list when the member has one (else page
  * 0x13); 0, 1 and 3 open pages 0x10, 0x11 and 0x18 unless their item is
  * unavailable (buzzer 0x4f); 2 opens page 0x12. */
-void func_80082F7C(member)
+void battle_command_menu_page_13_gear_art(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        func_8007FD38(member);
-        if (func_8008B478(member)) {
-            func_8008ADD0(member);
+        battle_command_menu_load_module_block(member);
+        if (battle_art_menu_run(member)) {
+            battle_execute_chosen_art(member);
         } else {
-            D_800C3EAC->page = 0x13;
+            battle_turn_state->page = 0x13;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 0x10;
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 0x10;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x11;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x11;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 0x12;
+        battle_turn_state->page = 0x12;
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[4] == 0) {
-            D_800C3EAC->page = 0x18;
+        if (battle_turn_state->slots[member].items[4] == 0) {
+            battle_turn_state->page = 0x18;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's gear command window with the
+/* 800830A8: Confirm the selected entry of the member's gear command window with the
  * guard toggle: entries 4, 6 and 7 toggle the guard (pilot and gear status
  * bit 0x8000; setting it clears gear bit 0x20 and pilot bit 0x1000) and end
  * the menu; 1 and 0 open pages 0x16 and 0x10 unless unavailable (buzzer
  * 0x4f); 2 opens page 0x17, else on a repeat press (800c3e29 = 2) page 0x12;
  * 3 opens page 0x18, else on a repeat press page 0x13. */
-void func_800830A8(member)
+void battle_command_menu_page_15_gear_haste(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (D_800CCCE8.records[member].gear.status80 & 0x8000) {
-            D_800CCCE8.records[member].gear.status80 &= 0x7FFF;
-            D_800CCCE8.records[member].pilot.status84.half.active &= 0x7FFF;
+        if (battle_work_area.records[member].gear.status80 & 0x8000) {
+            battle_work_area.records[member].gear.status80 &= 0x7FFF;
+            battle_work_area.records[member].pilot.status84.half.active &= 0x7FFF;
         } else {
-            D_800CCCE8.records[member].gear.status7C &= ~0x20;
-            D_800CCCE8.records[member].pilot.status7C &= ~0x1000;
-            D_800CCCE8.records[member].gear.status80 |= 0x8000;
-            D_800CCCE8.records[member].pilot.status84.half.active |= 0x8000;
+            battle_work_area.records[member].gear.status7C &= ~0x20;
+            battle_work_area.records[member].pilot.status7C &= ~0x1000;
+            battle_work_area.records[member].gear.status80 |= 0x8000;
+            battle_work_area.records[member].pilot.status84.half.active |= 0x8000;
         }
-        D_800C3EAC->menuDone = 1;
+        battle_turn_state->menuDone = 1;
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x16;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x16;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 0x17;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 0x12;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 0x17;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 0x12;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[4] == 0) {
-            D_800C3EAC->page = 0x18;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[6] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[4] == 0) {
+            battle_turn_state->page = 0x18;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[6] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x13;
+                battle_turn_state->page = 0x13;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[9] == 0) {
-            D_800C3EAC->page = 0x10;
+        if (battle_turn_state->slots[member].items[9] == 0) {
+            battle_turn_state->page = 0x10;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the member's item window (gear pages):
+/* 80083340: Confirm the selected entry of the member's item window (gear pages):
  * entries 4, 6 and 7 open the item list when the member has one (else page
  * 0x16); 0 opens page 0x15, else on a repeat press (800c3e29 = 0) page 0x10;
  * 2 opens page 0x17, else on a repeat press page 0x12; 3 opens page 0x18,
  * else on a repeat press page 0x13; 1 opens page 0x11 unless unavailable
  * (buzzer 0x4f). */
-void func_80083340(member)
+void battle_command_menu_page_16_gear_item(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
-        if (func_8008BED8(member)) {
-            func_8008B908(member);
+        if (battle_item_menu_run(member)) {
+            battle_execute_chosen_item(member);
         } else {
-            D_800C3EAC->page = 0x16;
+            battle_turn_state->page = 0x16;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[13] == 0) {
-            D_800C3EAC->page = 0x15;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[13] == 0) {
+            battle_turn_state->page = 0x15;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x10;
+                battle_turn_state->page = 0x10;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 0x17;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 0x12;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 0x17;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 0x12;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[4] == 0) {
-            D_800C3EAC->page = 0x18;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[6] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[4] == 0) {
+            battle_turn_state->page = 0x18;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[6] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x13;
+                battle_turn_state->page = 0x13;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x11;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x11;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* Confirm the selected entry of the escape window (gear pages): entries 4,
+/* 80083580: Confirm the selected entry of the escape window (gear pages): entries 4,
  * 6 and 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens
  * page 0x15, else on a repeat press (800c3e29 = 0) page 0x10; 1 opens page
  * 0x16 unless unavailable (buzzer 0x4f); 3 opens page 0x18, else on a repeat
  * press page 0x13; 2 opens page 0x12. */
-void func_80083580(member)
+void battle_command_menu_page_17_gear_escape(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
         /* 8009a9d0 takes no arguments; the call passes the actor. */
-        if (((s32 (*)())func_8009A9D0)(D_800C3EAC->actor)) {
-            D_800C48EA = 0x40;
+        if (((s32 (*)())battle_try_escape)(battle_turn_state->actor)) {
+            battle_area_outcome = 0x40;
         }
-        D_800C3EAC->menuDone = 1;
+        battle_turn_state->menuDone = 1;
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[13] == 0) {
-            D_800C3EAC->page = 0x15;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[13] == 0) {
+            battle_turn_state->page = 0x15;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x10;
+                battle_turn_state->page = 0x10;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x16;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x16;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[4] == 0) {
-            D_800C3EAC->page = 0x18;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 3) {
-            if (D_800C3EAC->slots[member].items[6] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[4] == 0) {
+            battle_turn_state->page = 0x18;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 3) {
+            if (battle_turn_state->slots[member].items[6] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x13;
+                battle_turn_state->page = 0x13;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        D_800C3EAC->page = 0x12;
+        battle_turn_state->page = 0x12;
         break;
     }
 }
 
-/* Confirm the selected entry of the member's gear part window: entries 4, 6
+/* 80083748: Confirm the selected entry of the member's gear part window: entries 4, 6
  * and 7 load file 3 and open the part list when the gear has one (else page
  * 0x18); 0 opens page 0x15, else on a repeat press (800c3e29 = 0) page 0x10;
  * 1 and 3 open pages 0x16 and 0x13 unless unavailable (buzzer 0x4f); 2 opens
  * page 0x17, else on a repeat press page 0x12. */
-void func_80083748(member)
+void battle_command_menu_page_18_gear_menu(member)
 u8 member;
 {
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     case 4:
     case 6:
     case 7:
         /* 8007fe3c takes no arguments; the call passes the member. */
-        ((void (*)())func_8007FE3C)(member);
-        if (func_8008CFB8(member)) {
-            func_8008ADD0(member);
+        ((void (*)())battle_command_menu_load_file3_block)(member);
+        if (battle_gear_menu_run(member)) {
+            battle_execute_chosen_art(member);
         } else {
-            D_800C3EAC->page = 0x18;
+            battle_turn_state->page = 0x18;
         }
         break;
     case 0:
-        if (D_800C3EAC->slots[member].items[13] == 0) {
-            D_800C3EAC->page = 0x15;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 0) {
-            if (D_800C3EAC->slots[member].items[9] != 0) {
-                func_8008AA74(0x4F);
+        if (battle_turn_state->slots[member].items[13] == 0) {
+            battle_turn_state->page = 0x15;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 0) {
+            if (battle_turn_state->slots[member].items[9] != 0) {
+                battle_play_menu_sound(0x4F);
             } else {
-                D_800C3EAC->page = 0x10;
+                battle_turn_state->page = 0x10;
             }
-            D_800C3EAC->repeatArmed = 0;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[12] == 0) {
-            D_800C3EAC->page = 0x16;
+        if (battle_turn_state->slots[member].items[12] == 0) {
+            battle_turn_state->page = 0x16;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 2:
-        if (D_800C3EAC->slots[member].items[8] == 0) {
-            D_800C3EAC->page = 0x17;
-        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E28[1] == 2) {
-            D_800C3EAC->page = 0x12;
-            D_800C3EAC->repeatArmed = 0;
+        if (battle_turn_state->slots[member].items[8] == 0) {
+            battle_turn_state->page = 0x17;
+        } else if (battle_turn_state->repeatArmed != 0 && battle_direction_input[1] == 2) {
+            battle_turn_state->page = 0x12;
+            battle_turn_state->repeatArmed = 0;
         } else {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
+            battle_turn_state->repeatArmed = 1;
+            battle_play_menu_sound(0x4F);
         }
         break;
     case 3:
-        if (D_800C3EAC->slots[member].items[6] == 0) {
-            D_800C3EAC->page = 0x13;
+        if (battle_turn_state->slots[member].items[6] == 0) {
+            battle_turn_state->page = 0x13;
         } else {
-            func_8008AA74(0x4F);
+            battle_play_menu_sound(0x4F);
         }
         break;
     }
 }
 
-/* The gear attack page (0x19): like the attack page (80081b58) but paid in
+/* 80083948: The gear attack page (0x19): like the attack page (80081b58) but paid in
  * fuel. The gear HUD level (4: free combos) and the chain (+0x2d6, history
  * +0x2cc) pick the step's fuel cost from the gear HUD table, indexed like the
  * combo flags (80086b88). Cancel (5) leaves the page unless steps were
  * taken; the command closes once the chain cannot continue, the target is
  * down or the attack ended the chain. Int function without a value. */
-s32 func_80083948(u8 member) {
+s32 battle_command_menu_page_19_gear_attack_inputs(u8 member) {
     s32 steps = 0;
-    u16 fuel = D_800CCCE8.records[member].gear.fuel;
+    u16 fuel = battle_work_area.records[member].gear.fuel;
     u8 enough = 0;
     u8 leave;
     s32 index;
     s32 cost;
 
-    D_800D366C = 0;
-    if (D_800C3EAC->unk2E1[0] != 0) {
+    battle_command_menu_sounds_enabled = 0;
+    if (battle_turn_state->unk2E1[0] != 0) {
         return;
     }
-    func_8008189C(member);
-    switch (D_800D3014) {
+    battle_attack_page_frame_target(member);
+    switch (battle_pressed_key) {
     case 5:
         leave = 1;
-        if (D_800C3EAC->unk2E7 != 0 && D_800CCCE8.gearHud.level != 4) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = leave;
+        if (battle_turn_state->unk2E7 != 0 && battle_work_area.gearHud.level != 4) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = leave;
             leave = 0;
         }
         if (leave) {
-            D_800D2D28->unkA8 = 0;
-            func_800B8DA4();
-            D_800D366C = 1;
-            D_800C3EAC->page = 0x10;
-            func_80077980();
-            if (D_800CCCE8.gearHud.level != 4) {
-                func_8009413C(member, 1);
+            battle_ui->unkA8 = 0;
+            battle_cancel_turn();
+            battle_command_menu_sounds_enabled = 1;
+            battle_turn_state->page = 0x10;
+            battle_hide_direction_arrows();
+            if (battle_work_area.gearHud.level != 4) {
+                battle_ammo_window_hide(member, 1);
             } else {
-                D_800C3EAC->unk2E7 = 0;
-                D_800C3EAC->unk2D6 = 0;
+                battle_turn_state->unk2E7 = 0;
+                battle_turn_state->unk2D6 = 0;
             }
         }
         break;
     case 4:
-        if (D_800C3EAC->slots[member].items[2] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[2] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     case 7:
-        if (D_800C3EAC->slots[member].items[1] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[1] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     case 6:
-        if (D_800C3EAC->slots[member].items[0] != 0) {
-            D_800D3014 = 5;
-            func_8008AA40(0x4F);
+        if (battle_turn_state->slots[member].items[0] != 0) {
+            battle_pressed_key = 5;
+            battle_play_system_sound(0x4F);
         }
         break;
     }
-    if (D_800C3EAC->unk2E9 == 0) {
-        switch (D_800D3014) {
+    if (battle_turn_state->unk2E9 == 0) {
+        switch (battle_pressed_key) {
         case 0:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 0);
+            battle_play_system_sound(0x4C);
             break;
         case 1:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 1);
+            battle_play_system_sound(0x4C);
             break;
         case 2:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 2);
+            battle_play_system_sound(0x4C);
             break;
         case 3:
-            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
-            func_8008AA40(0x4C);
+            battle_turn_state->unk2E8 = battle_find_candidate_in_direction(battle_turn_state->unk2E8, 3);
+            battle_play_system_sound(0x4C);
             break;
         }
     }
-    D_800D2D28->reaction[member] = 1;
-    if (D_800C3EAC->unk2E7 != 0) {
-        if (D_800CCCE8.gearHud.level != 4 &&
-            (D_800CCCE8.gearHud.level == 0 || D_800CCCE8.gearHud.level - 1 < D_800C3EAC->unk2CC[0])) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = 1;
+    battle_ui->reaction[member] = 1;
+    if (battle_turn_state->unk2E7 != 0) {
+        if (battle_work_area.gearHud.level != 4 &&
+            (battle_work_area.gearHud.level == 0 || battle_work_area.gearHud.level - 1 < battle_turn_state->unk2CC[0])) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = 1;
             return;
         }
-        if (func_80089C9C(D_800C48E8, D_800C3EAC->slots[member].defaultTarget)) {
-            func_80080B64(member);
-            D_800C3EAC->unk2E1[0] = 1;
+        if (battle_is_slot_in_mask(battle_area_knocked_out, battle_turn_state->slots[member].defaultTarget)) {
+            battle_close_actor_event_queue(member);
+            battle_turn_state->unk2E1[0] = 1;
             return;
         }
     }
-    switch (D_800D3014) {
+    switch (battle_pressed_key) {
     default:
-        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2E7 == 0) {
-            D_800C3EAC->unk2E7++;
-            func_80086F98(0xFF, member);
+        if (battle_work_area.gearHud.level == 4 && battle_turn_state->unk2E7 == 0) {
+            battle_turn_state->unk2E7++;
+            battle_combo_record_gear_step(0xFF, member);
         }
         break;
     case 5:
@@ -1337,99 +1337,99 @@ s32 func_80083948(u8 member) {
         steps++;
     case 6:
         steps++;
-        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2E7 == 0) {
-            D_800C3EAC->unk2E7++;
-            func_80086F98(0xFF, member);
+        if (battle_work_area.gearHud.level == 4 && battle_turn_state->unk2E7 == 0) {
+            battle_turn_state->unk2E7++;
+            battle_combo_record_gear_step(0xFF, member);
             break;
         }
         /* The call narrows like a u8 (u8, u8) prototype. */
-        if ((u8)func_80086B88((u8)(steps - 1), member)) {
-            if (D_800C3EAC->unk2D6 == 0) {
+        if ((u8)battle_can_use_combo_step((u8)(steps - 1), member)) {
+            if (battle_turn_state->unk2D6 == 0) {
                 cost = STEP_FUEL[steps];
-            } else if (D_800CCCE8.gearHud.level == 4) {
+            } else if (battle_work_area.gearHud.level == 4) {
                 index = steps + 12;
                 cost = STEP_FUEL[index];
             } else {
-                cost = STEP_FUEL[steps + (D_800C3EAC->unk2CC[0] + 1) * 3];
+                cost = STEP_FUEL[steps + (battle_turn_state->unk2CC[0] + 1) * 3];
             }
             if (fuel - cost >= 0) {
                 enough = 1;
             }
             if (enough) {
-                func_8008AA40(0x4D);
-                D_800C4929 = 1;
-                func_800819A4(member);
-                if (D_800C3EAC->unk2D6 != 0) {
-                    D_800C3EAC->unk2E1[3]++;
+                battle_play_system_sound(0x4D);
+                battle_unread_gear_attack_step_flag = 1;
+                battle_attack_page_confirm_target(member);
+                if (battle_turn_state->unk2D6 != 0) {
+                    battle_turn_state->unk2E1[3]++;
                 }
-                if (D_800D2D28->unkCB != 0) {
-                    D_800C3EAC->page = 0x65;
-                    D_800C3EAC->unk2E1[1] = 0xFF;
-                    D_800C3EAC->unk2E0 = 1;
+                if (battle_ui->unkCB != 0) {
+                    battle_turn_state->page = 0x65;
+                    battle_turn_state->unk2E1[1] = 0xFF;
+                    battle_turn_state->unk2E0 = 1;
                 } else {
-                    D_800C3EAC->page = 0x19;
-                    D_800C3EAC->unk2E1[1] = 0x19;
+                    battle_turn_state->page = 0x19;
+                    battle_turn_state->unk2E1[1] = 0x19;
                 }
-                D_800C3EAC->unk2E1[3] = func_80086F98(steps - 1, member) == 0;
-                func_80087AF0(member, steps);
-                D_800CCCE8.records[member].gear.fuel -= STEP_FUEL[D_800C3EAC->unk2DC];
-                func_800898F0(member);
-                D_800C3EAC->unk2E7++;
+                battle_turn_state->unk2E1[3] = battle_combo_record_gear_step(steps - 1, member) == 0;
+                battle_execute_attack_step(member, steps);
+                battle_work_area.records[member].gear.fuel -= STEP_FUEL[battle_turn_state->unk2DC];
+                battle_gear_hud_build_fuel_glyphs(member);
+                battle_turn_state->unk2E7++;
             } else {
-                D_800D366C = 1;
-                func_8008AA74(0x4F);
-                D_800D366C = 0;
+                battle_command_menu_sounds_enabled = 1;
+                battle_play_menu_sound(0x4F);
+                battle_command_menu_sounds_enabled = 0;
             }
-            if (D_800C3EAC->unk2E1[3] != 0) {
-                func_80080B64(member);
-                D_800C3EAC->unk2E1[0] = 1;
+            if (battle_turn_state->unk2E1[3] != 0) {
+                battle_close_actor_event_queue(member);
+                battle_turn_state->unk2E1[0] = 1;
             }
         }
         break;
     }
 }
 
-/* Whether the member can attack `slot`: present and visible; an unflagged
+/* 80083FF4: Whether the member can attack `slot`: present and visible; an unflagged
  * slot must be adjacent (formation distance 0) and not down, a flagged slot
  * not down by +0x120. */
-u8 func_80083FF4(u8 member, u8 slot) {
+u8 battle_can_attack_slot(u8 member, u8 slot) {
     u8 result = 0;
 
-    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
-        if (D_800D32A0[slot].unk1 == 0) {
-            if (D_800D3364->links[D_800C3EB4[member].group][D_800C3EB4[slot].group].distance == 0) {
-                result = (D_800CCCE8.records[slot].pilot.status7C & 0xC001) == 0;
+    if (battle_turn_queue.present[slot] != 0 && battle_area_slots[slot].hidden == 0) {
+        if (battle_slot_flags[slot].unk1 == 0) {
+            if (battle_formation->links[battle_area_slots[member].group][battle_area_slots[slot].group].distance == 0) {
+                result = (battle_work_area.records[slot].pilot.status7C & 0xC001) == 0;
             }
-        } else if (!(D_800CCCE8.records[slot].gear.status7C & 0xC001)) {
+        } else if (!(battle_work_area.records[slot].gear.status7C & 0xC001)) {
             result = 1;
         }
     }
     return result;
 }
 
-/* Whether `slot` can be targeted by a party attack: present and visible;
+/* 80084108: Whether `slot` can be targeted by a party attack: present and visible;
  * unflagged slots also not down (+0x7c 0xc001) unless `any`, flagged slots
  * not down by +0x120 unless `any`. */
-u8 func_80084108(u8 slot, u8 any) {
+u8 battle_can_target_slot(u8 slot, u8 any) {
     u8 result = 0;
 
-    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
-        if (D_800D32A0[slot].unk1 == 0) {
+    if (battle_turn_queue.present[slot] != 0 && battle_area_slots[slot].hidden == 0) {
+        if (battle_slot_flags[slot].unk1 == 0) {
             result = 1;
             if (any == 0) {
-                result = (D_800CCCE8.records[slot].pilot.status7C & 0xC001) == 0;
+                result = (battle_work_area.records[slot].pilot.status7C & 0xC001) == 0;
             }
-        } else if (any != 0 || !(D_800CCCE8.records[slot].gear.status7C & 0xC001)) {
+        } else if (any != 0 || !(battle_work_area.records[slot].gear.status7C & 0xC001)) {
             result = 1;
         }
     }
     return result;
 }
 
-/* Order the member's attack candidates: the reachable opposing slots, those
+/* 800841E0: Order the member's attack candidates: the reachable opposing slots, those
  * in its own formation group first, and the lowest-HP one (within the group
  * when there is one) moved to the front. Returns the default target. */
-u8 func_800841E0(u8 member) {
+u8 battle_order_attack_candidates(u8 member) {
     u8 slots[12];
     u8 grouped[12];
     s32 i;
@@ -1437,35 +1437,35 @@ u8 func_800841E0(u8 member) {
     s32 n;
     u8 swap;
 
-    D_800D3274 = 0;
+    battle_target_candidate_count = 0;
     for (i = 0; i < 12; i++) {
         slots[i] = 0xFF;
-        D_800C3E90[i] = 0xFF;
+        battle_target_candidates[i] = 0xFF;
         grouped[i] = 0;
     }
     if (member < 3) {
         i = 3;
         count = 0;
         for (; i < 11; i++) {
-            if (func_80083FF4(member, i)) {
+            if (battle_can_attack_slot(member, i)) {
                 slots[count++] = i;
-                D_800D3274++;
+                battle_target_candidate_count++;
             }
         }
     } else {
         i = 0;
         count = 0;
         for (; i < 3; i++) {
-            if (func_80083FF4(member, i)) {
+            if (battle_can_attack_slot(member, i)) {
                 slots[count++] = i;
-                D_800D3274++;
+                battle_target_candidate_count++;
             }
         }
     }
     n = 0;
     for (i = 0; i < count; i++) {
-        if (D_800C3EB4[member].group == D_800C3EB4[slots[i]].group) {
-            D_800C3E90[n] = slots[i];
+        if (battle_area_slots[member].group == battle_area_slots[slots[i]].group) {
+            battle_target_candidates[n] = slots[i];
             slots[i] = 0xFF;
             grouped[n] = 1;
             n++;
@@ -1473,35 +1473,35 @@ u8 func_800841E0(u8 member) {
     }
     for (i = 0; i < count; i++) {
         if (slots[i] != 0xFF) {
-            D_800C3E90[n] = slots[i];
+            battle_target_candidates[n] = slots[i];
             n++;
         }
     }
     if (grouped[0] != 0) {
         for (i = 1; i < count; i++) {
-            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
-                swap = D_800C3E90[0];
-                D_800C3E90[0] = D_800C3E90[i];
-                D_800C3E90[i] = swap;
+            if (grouped[i] != 0 && battle_work_area.records[battle_target_candidates[0]].pilot.hp > battle_work_area.records[battle_target_candidates[i]].pilot.hp) {
+                swap = battle_target_candidates[0];
+                battle_target_candidates[0] = battle_target_candidates[i];
+                battle_target_candidates[i] = swap;
             }
         }
     } else {
         for (i = 1; i < count; i++) {
-            if (D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
-                swap = D_800C3E90[0];
-                D_800C3E90[0] = D_800C3E90[i];
-                D_800C3E90[i] = swap;
+            if (battle_work_area.records[battle_target_candidates[0]].pilot.hp > battle_work_area.records[battle_target_candidates[i]].pilot.hp) {
+                swap = battle_target_candidates[0];
+                battle_target_candidates[0] = battle_target_candidates[i];
+                battle_target_candidates[i] = swap;
             }
         }
     }
-    return D_800C3E90[0];
+    return battle_target_candidates[0];
 }
 
-/* Collect the slots a party attack can target (80084108, `any` includes
+/* 80084548: Collect the slots a party attack can target (80084108, `any` includes
  * downed ones) as candidates with their mask: side 0 the enemies, 1 the
  * party, 2 both (the party first unless `partyFirst` is clear). Returns the
  * first candidate. */
-u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
+u8 battle_collect_target_candidates(u8 side, u8 any, u8 partyFirst) {
     s32 i;
     s32 count;
     s32 n1;
@@ -1511,7 +1511,7 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     s32 slot;
 
     for (i = 0; i < 12; i++) {
-        D_800C3E90[i] = 0xFF;
+        battle_target_candidates[i] = 0xFF;
     }
     switch (side) {
     case 0:
@@ -1537,15 +1537,15 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
         break;
     }
     count = 0;
-    D_800D3274 = 0;
-    D_800C3D64 = 0;
+    battle_target_candidate_count = 0;
+    battle_target_candidate_mask = 0;
     i = first1;
     while (--n1 >= 0) {
         slot = i;
-        if (func_80084108(slot, any)) {
-            D_800C3E90[count] = slot;
-            D_800C3D64 |= func_80089C08(slot);
-            D_800D3274++;
+        if (battle_can_target_slot(slot, any)) {
+            battle_target_candidates[count] = slot;
+            battle_target_candidate_mask |= battle_get_slot_bit(slot);
+            battle_target_candidate_count++;
             count++;
         }
         i++;
@@ -1553,20 +1553,20 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     i = first2;
     while (--n2 >= 0) {
         slot = i;
-        if (func_80084108(slot, any)) {
-            D_800C3E90[count] = slot;
-            D_800C3D64 |= func_80089C08(slot);
-            D_800D3274++;
+        if (battle_can_target_slot(slot, any)) {
+            battle_target_candidates[count] = slot;
+            battle_target_candidate_mask |= battle_get_slot_bit(slot);
+            battle_target_candidate_count++;
             count++;
         }
         i++;
     }
-    return D_800C3E90[0];
+    return battle_target_candidates[0];
 }
 
-/* Collect the enemy slots the member can target (80083ff4) as candidates
+/* 80084750: Collect the enemy slots the member can target (80083ff4) as candidates
  * and their mask; returns the first candidate. */
-u8 func_80084750(u8 member) {
+u8 battle_collect_attackable_enemies(u8 member) {
     s32 i;
     s32 n;
     s32 count;
@@ -1574,28 +1574,28 @@ u8 func_80084750(u8 member) {
 
     n = 8;
     for (i = 0; i < 12; i++) {
-        D_800C3E90[i] = 0xFF;
+        battle_target_candidates[i] = 0xFF;
     }
     count = 0;
-    D_800D3274 = 0;
-    D_800C3D64 = 0;
+    battle_target_candidate_count = 0;
+    battle_target_candidate_mask = 0;
     i = 3;
     while (--n >= 0) {
         slot = i;
-        if (func_80083FF4(member, slot)) {
-            D_800C3E90[count] = slot;
-            D_800C3D64 |= func_80089C08(slot);
-            D_800D3274++;
+        if (battle_can_attack_slot(member, slot)) {
+            battle_target_candidates[count] = slot;
+            battle_target_candidate_mask |= battle_get_slot_bit(slot);
+            battle_target_candidate_count++;
             count++;
         }
         i++;
     }
-    return D_800C3E90[0];
+    return battle_target_candidates[0];
 }
 
-/* The candidate nearest to `origin` that lies in screen direction
+/* 80084854: The candidate nearest to `origin` that lies in screen direction
  * `direction` (0-3, each a quarter turn around it); `origin` when none. */
-u8 func_80084854(u8 origin, u8 direction) {
+u8 battle_find_candidate_in_direction(u8 origin, u8 direction) {
     s32 best = 0xFFFFFF;
     s32 i;
     s32 angle;
@@ -1604,9 +1604,9 @@ u8 func_80084854(u8 origin, u8 direction) {
     u8 nearest = origin;
 
     for (i = 0; i < 11; i++) {
-        if (D_800C3E90[i] != 0xFF && D_800C3E90[i] != origin) {
+        if (battle_target_candidates[i] != 0xFF && battle_target_candidates[i] != origin) {
             inside = 0;
-            angle = ratan2(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin), SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+            angle = ratan2(SLOT_Z(battle_target_candidates[i]) - SLOT_Z(origin), SLOT_X(battle_target_candidates[i]) - SLOT_X(origin));
             switch (direction) {
             case 0:
                 if ((u16)(angle + 0x200) < 0x400) {
@@ -1633,11 +1633,11 @@ u8 func_80084854(u8 origin, u8 direction) {
                 break;
             }
             if (inside) {
-                distance = SQUARE(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin));
-                distance += SQUARE(SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+                distance = SQUARE(SLOT_Z(battle_target_candidates[i]) - SLOT_Z(origin));
+                distance += SQUARE(SLOT_X(battle_target_candidates[i]) - SLOT_X(origin));
                 if (distance < best) {
                     best = distance;
-                    nearest = D_800C3E90[i];
+                    nearest = battle_target_candidates[i];
                 }
             }
         }
@@ -1645,91 +1645,91 @@ u8 func_80084854(u8 origin, u8 direction) {
     return nearest;
 }
 
-/* Keep the member's default target as the attack page target when it is
+/* 80084A7C: Keep the member's default target as the attack page target when it is
  * still a candidate, else take the first candidate. */
-void func_80084A7C(u8 member) {
+void battle_attack_page_init_target(u8 member) {
     s32 found = 0;
     s32 i;
 
-    D_800C3EAC->unk2E8 = D_800C3EAC->slots[member].defaultTarget;
-    func_800841E0(member);
-    for (i = 0; i < D_800D3274; i++) {
-        if (D_800C3E90[i] == D_800C3EAC->slots[member].defaultTarget) {
+    battle_turn_state->unk2E8 = battle_turn_state->slots[member].defaultTarget;
+    battle_order_attack_candidates(member);
+    for (i = 0; i < battle_target_candidate_count; i++) {
+        if (battle_target_candidates[i] == battle_turn_state->slots[member].defaultTarget) {
             found++;
             break;
         }
     }
     if (found == 0) {
-        D_800C3EAC->unk2E8 = D_800C3E90[0];
+        battle_turn_state->unk2E8 = battle_target_candidates[0];
     }
 }
 
-/* Pick a target with the direction keys, starting from the attack page
+/* 80084B40: Pick a target with the direction keys, starting from the attack page
  * target: highlight member and target each frame; 0-3 move to the nearest
  * candidate that way, 4/6/7 confirm it as the member's default target (1)
  * and 5 cancels back to the default target (0). */
-u8 func_80084B40(u8 member) {
+u8 battle_pick_default_target(u8 member) {
     u8 state = 2;
-    u8 target = D_800C3EAC->unk2E8;
+    u8 target = battle_turn_state->unk2E8;
 
-    D_800D3014 = 8;
+    battle_pressed_key = 8;
     do {
-        while (D_800D3014 == 8) {
-            func_800BC404(func_80089C08(member) | func_80089C08(target));
-            func_800BCD98(func_80089C08(target));
-            func_800716D8();
+        while (battle_pressed_key == 8) {
+            battle_camera_start_move(battle_get_slot_bit(member) | battle_get_slot_bit(target));
+            battle_highlight_slots(battle_get_slot_bit(target));
+            battle_wait_frame();
         }
-        switch (D_800D3014) {
+        switch (battle_pressed_key) {
         case 4:
         case 6:
         case 7:
             state = 1;
-            D_800C3EAC->slots[member].defaultTarget = target;
+            battle_turn_state->slots[member].defaultTarget = target;
             break;
         case 5:
-            func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            battle_camera_start_move(battle_get_slot_bit(member) | battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget));
             state = 0;
-            func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            battle_highlight_slots(battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget));
             break;
         case 0:
-            target = func_80084854(target, 0);
+            target = battle_find_candidate_in_direction(target, 0);
             break;
         case 1:
-            target = func_80084854(target, 1);
+            target = battle_find_candidate_in_direction(target, 1);
             break;
         case 2:
-            target = func_80084854(target, 2);
+            target = battle_find_candidate_in_direction(target, 2);
             break;
         case 3:
-            target = func_80084854(target, 3);
+            target = battle_find_candidate_in_direction(target, 3);
             break;
         }
-        D_800D3014 = 8;
+        battle_pressed_key = 8;
     } while (state == 2);
     return state;
 }
 
-/* The mask of slots in 800c3d64 in the formation group of slot 800c3e2c. */
-u16 func_80084D28(void) {
+/* 80084D28: The mask of slots in 800c3d64 in the formation group of slot 800c3e2c. */
+u16 battle_get_candidates_in_target_group(void) {
     u16 mask = 0;
     s32 slot;
 
     for (slot = 0; slot < 11; slot++) {
-        if (func_80089C9C(D_800C3D64, slot) && D_800C3EB4[D_800C3E2C].group == D_800C3EB4[slot].group) {
-            mask |= func_80089C08(slot);
+        if (battle_is_slot_in_mask(battle_target_candidate_mask, slot) && battle_area_slots[battle_target_cursor_slot].group == battle_area_slots[slot].group) {
+            mask |= battle_get_slot_bit(slot);
         }
     }
     return mask;
 }
 
-/* Set up the target candidates for a target selection word (mode 0: the
+/* 80084DE4: Set up the target candidates for a target selection word (mode 0: the
  * fallback's, 1: 0x3000, 2: 0x2001). Bit 0x1000 selects the enemies, else
  * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
  * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
  * enemies (80084750). Sets the current target 800c3e2c and returns the
  * selection. Each downed test keeps its own store and release (merged
  * again by the compiler). */
-u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
+u16 battle_init_target_candidates(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
     u8 side;
     u8 partyFirst;
@@ -1766,123 +1766,123 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
         mask = 0xFFFF;
     }
     if (own) {
-        D_800C3E2C = func_80084750(member);
+        battle_target_cursor_slot = battle_collect_attackable_enemies(member);
     } else {
-        D_800C3E2C = func_80084548(side, downed, partyFirst);
+        battle_target_cursor_slot = battle_collect_target_candidates(side, downed, partyFirst);
     }
-    D_800C3D64 &= mask;
+    battle_target_candidate_mask &= mask;
     if (selection & 0x8000) {
         count = 0;
-        D_800C3E2C = 0xFF;
+        battle_target_cursor_slot = 0xFF;
         for (i = 0; i < 11; i++) {
             slot = i;
-            if (func_80089C9C(D_800C3D64, slot)) {
-                if (D_800D32A0[i].unk1 == 0) {
-                    if (D_800CCCE8.records[i].pilot.status7C & 0x8000) {
-                        D_800C3E2C = slot;
-                        D_800C3E90[count] = slot;
+            if (battle_is_slot_in_mask(battle_target_candidate_mask, slot)) {
+                if (battle_slot_flags[i].unk1 == 0) {
+                    if (battle_work_area.records[i].pilot.status7C & 0x8000) {
+                        battle_target_cursor_slot = slot;
+                        battle_target_candidates[count] = slot;
                         count++;
                     } else {
-                        D_800C3D64 &= func_80089C48(slot);
+                        battle_target_candidate_mask &= battle_get_other_slot_bits(slot);
                     }
-                } else if (D_800CCCE8.records[i].gear.status7C & 0x8000) {
-                    D_800C3E2C = slot;
-                    D_800C3E90[count] = slot;
+                } else if (battle_work_area.records[i].gear.status7C & 0x8000) {
+                    battle_target_cursor_slot = slot;
+                    battle_target_candidates[count] = slot;
                     count++;
                 } else {
-                    D_800C3D64 &= func_80089C48(slot);
+                    battle_target_candidate_mask &= battle_get_other_slot_bits(slot);
                 }
             }
         }
         for (; count < 11; count++) {
-            D_800C3E90[count] = 0xFF;
+            battle_target_candidates[count] = 0xFF;
         }
     } else if (selection & 0x4000) {
-        D_800C3E2C = member;
-        D_800C3D64 = func_80089C08(member);
+        battle_target_cursor_slot = member;
+        battle_target_candidate_mask = battle_get_slot_bit(member);
         for (count = 0; count < 11; count++) {
-            D_800C3E90[count] = 0xFF;
+            battle_target_candidates[count] = 0xFF;
         }
     }
     return selection;
 }
 
-/* Select a target for selection word `target` (80084de4): each frame
+/* 80085084: Select a target for selection word `target` (80084de4): each frame
  * highlight the current target (mode 0), all candidates (1) or those in the
  * current target's formation group (2); keys 0-3 move to the nearest
  * candidate that way, 4 confirms (1) and 5 cancels (0). The direction
  * arrows are refreshed whenever the key changes. Returns 0 when there is no
  * candidate. */
-u8 func_80085084(u16 target, u8 member, s32 mode) {
+u8 battle_choose_target(u16 target, u8 member, s32 mode) {
     u8 lastKey = 0xFE;
     u8 state;
     u16 group;
     u8 next;
     s32 direction;
 
-    func_80084DE4(target, target, member, 0, mode);
-    group = D_800C3D64;
-    state = D_800C3E2C == 0xFF;
+    battle_init_target_candidates(target, target, member, 0, mode);
+    group = battle_target_candidate_mask;
+    state = battle_target_cursor_slot == 0xFF;
     while (state == 0) {
-        func_800716D8();
+        battle_wait_frame();
         switch (target & 0xF) {
         case 0:
-            func_800BCD98(func_80089C08(D_800C3E2C));
-            func_800BC404(func_80089C08(D_800C3E2C));
+            battle_highlight_slots(battle_get_slot_bit(battle_target_cursor_slot));
+            battle_camera_start_move(battle_get_slot_bit(battle_target_cursor_slot));
             break;
         case 1:
-            func_800BCD98(D_800C3D64);
-            func_800BC404(D_800C3D64);
+            battle_highlight_slots(battle_target_candidate_mask);
+            battle_camera_start_move(battle_target_candidate_mask);
             break;
         case 2:
-            group = func_80084D28();
-            func_800BCD98(group);
-            func_800BC404(group);
+            group = battle_get_candidates_in_target_group();
+            battle_highlight_slots(group);
+            battle_camera_start_move(group);
             break;
         }
-        switch (D_800D3014) {
+        switch (battle_pressed_key) {
         case 5:
             state = 1;
             break;
         case 4:
-            D_800C3D64 = group;
+            battle_target_candidate_mask = group;
             state = 2;
             break;
         case 0:
-            next = func_80084854(D_800C3E2C, 0);
-            if (func_80089C9C(D_800C3D64, next)) {
-                D_800C3E2C = next;
+            next = battle_find_candidate_in_direction(battle_target_cursor_slot, 0);
+            if (battle_is_slot_in_mask(battle_target_candidate_mask, next)) {
+                battle_target_cursor_slot = next;
             }
             break;
         case 1:
-            next = func_80084854(D_800C3E2C, 1);
-            if (func_80089C9C(D_800C3D64, next)) {
-                D_800C3E2C = next;
+            next = battle_find_candidate_in_direction(battle_target_cursor_slot, 1);
+            if (battle_is_slot_in_mask(battle_target_candidate_mask, next)) {
+                battle_target_cursor_slot = next;
             }
             break;
         case 2:
-            next = func_80084854(D_800C3E2C, 2);
-            if (func_80089C9C(D_800C3D64, next)) {
-                D_800C3E2C = next;
+            next = battle_find_candidate_in_direction(battle_target_cursor_slot, 2);
+            if (battle_is_slot_in_mask(battle_target_candidate_mask, next)) {
+                battle_target_cursor_slot = next;
             }
             break;
         case 3:
-            next = func_80084854(D_800C3E2C, 3);
-            if (func_80089C9C(D_800C3D64, next)) {
-                D_800C3E2C = next;
+            next = battle_find_candidate_in_direction(battle_target_cursor_slot, 3);
+            if (battle_is_slot_in_mask(battle_target_candidate_mask, next)) {
+                battle_target_cursor_slot = next;
             }
             break;
         case 6:
         case 7:
             break;
         }
-        if (D_800D3014 != lastKey) {
-            lastKey = D_800D3014;
+        if (battle_pressed_key != lastKey) {
+            lastKey = battle_pressed_key;
             for (direction = 0; direction < 4; direction++) {
-                if (func_80084854(D_800C3E2C, direction) != D_800C3E2C) {
-                    D_800C3E24->arrows[direction] = 1;
+                if (battle_find_candidate_in_direction(battle_target_cursor_slot, direction) != battle_target_cursor_slot) {
+                    battle_direction_arrows->arrows[direction] = 1;
                 } else {
-                    D_800C3E24->arrows[direction] = 0;
+                    battle_direction_arrows->arrows[direction] = 0;
                 }
             }
         }
@@ -1890,90 +1890,90 @@ u8 func_80085084(u16 target, u8 member, s32 mode) {
     return state - 1;
 }
 
-/* Whether slot b's slot-info +0xa is below slot a's. */
-s32 func_80085310(u8 a, u8 b) {
-    return (u16)D_800C3EB4[a].x > (u16)D_800C3EB4[b].x;
+/* 80085310: Whether slot b's slot-info +0xa is below slot a's. */
+s32 battle_is_target_at_lower_x(u8 a, u8 b) {
+    return (u16)battle_area_slots[a].x > (u16)battle_area_slots[b].x;
 }
 
-/* Reset the running result accumulation of every slot. */
-void func_80085350(void) {
+/* 80085350: Reset the running result accumulation of every slot. */
+void battle_reset_running_results(void) {
     s32 slot;
 
     for (slot = 0; slot < 11; slot++) {
-        D_800D2D5C[slot] = 0xFF;
-        D_800D2D70[slot] = 0;
+        battle_running_result_codes[slot] = 0xFF;
+        battle_running_result_amounts[slot] = 0;
     }
 }
 
-/* Clear the current event's per-slot results (the event index is re-read for
+/* 80085388: Clear the current event's per-slot results (the event index is re-read for
  * every store). */
-void func_80085388(void) {
+void battle_clear_event_results(void) {
     s32 slot;
 
     for (slot = 0; slot < 11; slot++) {
-        D_800C3FE8[D_800C3EAC->eventCount].amounts[slot] = 0;
-        D_800C3FE8[D_800C3EAC->eventCount].codes[slot] = 0xFF;
-        D_800C3FE8[D_800C3EAC->eventCount].accumulated[slot] = 0;
-        D_800C3FE8[D_800C3EAC->eventCount].accumulatedCodes[slot] = 0xFF;
+        battle_area_events[battle_turn_state->eventCount].amounts[slot] = 0;
+        battle_area_events[battle_turn_state->eventCount].codes[slot] = 0xFF;
+        battle_area_events[battle_turn_state->eventCount].accumulated[slot] = 0;
+        battle_area_events[battle_turn_state->eventCount].accumulatedCodes[slot] = 0xFF;
     }
 }
 
-/* Copy the resolver's damage and result codes into event `queue` and
+/* 80085454: Copy the resolver's damage and result codes into event `queue` and
  * accumulate them into the running amount and code of each slot: damage
  * (codes 0 and 5) and healing (code 2) add up or cancel out, any other code
  * replaces the running result. */
-void func_80085454(u8 queue) {
+void battle_accumulate_event_results(u8 queue) {
     s32 slot;
 
     for (slot = 0; slot < 11; slot++) {
-        D_800C3FE8[queue].amounts[slot] = D_800D2C54[slot];
-        D_800C3FE8[queue].codes[slot] = D_800D2C88[slot];
-        switch (D_800D2C88[slot]) {
+        battle_area_events[queue].amounts[slot] = battle_slot_damages[slot];
+        battle_area_events[queue].codes[slot] = battle_slot_result_codes[slot];
+        switch (battle_slot_result_codes[slot]) {
         case 0:
         case 5:
-            if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
-                D_800D2D70[slot] += D_800D2C54[slot];
-            } else if (D_800D2D5C[slot] == 2) {
-                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
-                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+            if (battle_running_result_codes[slot] == 0 || battle_running_result_codes[slot] == 5) {
+                battle_running_result_amounts[slot] += battle_slot_damages[slot];
+            } else if (battle_running_result_codes[slot] == 2) {
+                if ((s16)battle_slot_damages[slot] - battle_running_result_amounts[slot] < 0) {
+                    battle_running_result_amounts[slot] = battle_running_result_amounts[slot] - (s16)battle_slot_damages[slot];
                 } else {
-                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
-                    D_800D2D5C[slot] = 0;
+                    battle_running_result_amounts[slot] = (s16)battle_slot_damages[slot] - battle_running_result_amounts[slot];
+                    battle_running_result_codes[slot] = 0;
                 }
             } else {
-                D_800D2D70[slot] = D_800D2C54[slot];
-                D_800D2D5C[slot] = D_800D2C88[slot];
+                battle_running_result_amounts[slot] = battle_slot_damages[slot];
+                battle_running_result_codes[slot] = battle_slot_result_codes[slot];
             }
             break;
         case 2:
-            if (D_800D2D5C[slot] == 2) {
-                D_800D2D70[slot] += D_800D2C54[slot];
-            } else if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
-                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
-                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+            if (battle_running_result_codes[slot] == 2) {
+                battle_running_result_amounts[slot] += battle_slot_damages[slot];
+            } else if (battle_running_result_codes[slot] == 0 || battle_running_result_codes[slot] == 5) {
+                if ((s16)battle_slot_damages[slot] - battle_running_result_amounts[slot] < 0) {
+                    battle_running_result_amounts[slot] = battle_running_result_amounts[slot] - (s16)battle_slot_damages[slot];
                 } else {
-                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
-                    D_800D2D5C[slot] = 2;
+                    battle_running_result_amounts[slot] = (s16)battle_slot_damages[slot] - battle_running_result_amounts[slot];
+                    battle_running_result_codes[slot] = 2;
                 }
             } else {
-                D_800D2D70[slot] = D_800D2C54[slot];
-                D_800D2D5C[slot] = D_800D2C88[slot];
+                battle_running_result_amounts[slot] = battle_slot_damages[slot];
+                battle_running_result_codes[slot] = battle_slot_result_codes[slot];
             }
             break;
         }
-        D_800C3FE8[queue].accumulated[slot] = D_800D2D70[slot];
-        D_800C3FE8[queue].accumulatedCodes[slot] = D_800D2D5C[slot];
+        battle_area_events[queue].accumulated[slot] = battle_running_result_amounts[slot];
+        battle_area_events[queue].accumulatedCodes[slot] = battle_running_result_codes[slot];
     }
 }
 
-/* Apply the results of event `queue` to every present slot: damage (codes
+/* 80085618: Apply the results of event `queue` to every present slot: damage (codes
  * 0, 5, 7, 8) to HP or, in a gear, gear HP (knocking the slot out at 0),
  * healing (2) up to the maximum, EP loss (1, 9) and gain (3), fuel loss
  * (10) and gain (11). A knocked-out slot only joins the 800c48e8 mask.
  * Slots whose values changed get their refresh flag (+0x2eb). Pilot damage
  * treats both HP and amount as signed halfwords; healing wraps to the
  * stored width before the maximum check. The event queue, slot table and
- * knocked-out mask are members of D_800C3EB0 (one symbol, so every base is
+ * knocked-out mask are members of battle_area (one symbol, so every base is
  * formed from the events address), while the healing stores use the
  * BATTLE_AREA view of the work table. The signed halfword locals (have and
  * amount, ep and cost) give the original's 0x58 frame and register copies.
@@ -1983,7 +1983,7 @@ void func_80085454(u8 queue) {
  * shows), and sets the refresh flag itself; cross-jumping merges that store
  * with the shared one, but its extra slot reference ranks slot above the
  * amounts pointer in global allocation ($s2/$s3). */
-void func_80085618(u8 queue) {
+void battle_apply_event_results(u8 queue) {
     s32 slot;
     s32 left;
     s16 have;
@@ -1994,210 +1994,210 @@ void func_80085618(u8 queue) {
     u16 value;
 
     for (slot = 0; slot < 11; slot++) {
-        if (D_800D2DCC.present[slot] == 0) {
+        if (battle_turn_queue.present[slot] == 0) {
             continue;
         }
-        if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
-            D_800C3EB0.knockedOut |= func_80089C08(slot);
+        if (battle_work_area.records[slot].pilot.status7C & 0x8000) {
+            battle_area.knockedOut |= battle_get_slot_bit(slot);
             continue;
         }
-        switch (D_800C3EB0.events[queue].codes[slot]) {
+        switch (battle_area.events[queue].codes[slot]) {
         case 0:
         case 5:
         case 7:
         case 8:
-            if (D_800C3EB0.slots[slot].gear == 0) {
-                have = D_800CCCE8.records[slot].pilot.hp;
-                amount = D_800C3EB0.events[queue].amounts[slot];
+            if (battle_area.slots[slot].gear == 0) {
+                have = battle_work_area.records[slot].pilot.hp;
+                amount = battle_area.events[queue].amounts[slot];
                 if (have - amount > 0) {
-                    D_800CCCE8.records[slot].pilot.hp = have - amount;
+                    battle_work_area.records[slot].pilot.hp = have - amount;
                     break;
                 }
-                D_800CCCE8.records[slot].pilot.hp = 0;
-                D_800C3EB0.knockedOut |= func_80089C08(slot);
-                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+                battle_work_area.records[slot].pilot.hp = 0;
+                battle_area.knockedOut |= battle_get_slot_bit(slot);
+                battle_work_area.records[slot].pilot.status7C |= 0x8000;
                 if (slot >= 3) {
-                    func_800883AC(slot);
+                    battle_leave_formation_group(slot);
                 }
             } else {
-                left = D_800CCCE8.records[slot].gear.hp - D_800C3EB0.events[queue].amounts[slot];
+                left = battle_work_area.records[slot].gear.hp - battle_area.events[queue].amounts[slot];
                 if (left > 0) {
-                    D_800CCCE8.records[slot].gear.hp = left;
+                    battle_work_area.records[slot].gear.hp = left;
                     break;
                 }
-                D_800CCCE8.records[slot].gear.hp = 0;
-                D_800C3EB0.knockedOut |= func_80089C08(slot);
-                D_800CCCE8.records[slot].gear.status7C |= 0x8000;
-                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+                battle_work_area.records[slot].gear.hp = 0;
+                battle_area.knockedOut |= battle_get_slot_bit(slot);
+                battle_work_area.records[slot].gear.status7C |= 0x8000;
+                battle_work_area.records[slot].pilot.status7C |= 0x8000;
                 if (slot >= 3) {
-                    func_800883AC(slot);
+                    battle_leave_formation_group(slot);
                 }
             }
             break;
         case 2:
-            if (D_800C3EB0.slots[slot].gear != 0 && D_800C2050 == 0) {
-                total = D_800CCCE8.records[slot].gear.hp + D_800C3EB0.events[queue].amounts[slot];
+            if (battle_area.slots[slot].gear != 0 && battle_applying_item_results == 0) {
+                total = battle_work_area.records[slot].gear.hp + battle_area.events[queue].amounts[slot];
                 BATTLE_AREA.work.records[slot].gear.hp = total;
-                if (D_800CCCE8.records[slot].gear.maxHp < total) {
-                    D_800CCCE8.records[slot].gear.hp = D_800CCCE8.records[slot].gear.maxHp;
+                if (battle_work_area.records[slot].gear.maxHp < total) {
+                    battle_work_area.records[slot].gear.hp = battle_work_area.records[slot].gear.maxHp;
                 }
             } else {
-                value = D_800CCCE8.records[slot].pilot.hp + D_800C3EB0.events[queue].amounts[slot];
+                value = battle_work_area.records[slot].pilot.hp + battle_area.events[queue].amounts[slot];
                 BATTLE_AREA.work.records[slot].pilot.hp = value;
-                if (D_800CCCE8.records[slot].pilot.maxHp < value) {
-                    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
+                if (battle_work_area.records[slot].pilot.maxHp < value) {
+                    battle_work_area.records[slot].pilot.hp = battle_work_area.records[slot].pilot.maxHp;
                 }
             }
             break;
         case 1:
         case 9:
-            ep = D_800CCCE8.records[slot].pilot.ep;
-            cost = D_800C3EB0.events[queue].amounts[slot];
+            ep = battle_work_area.records[slot].pilot.ep;
+            cost = battle_area.events[queue].amounts[slot];
             if (ep - cost > 0) {
-                D_800CCCE8.records[slot].pilot.ep = ep - cost;
+                battle_work_area.records[slot].pilot.ep = ep - cost;
             } else {
-                D_800CCCE8.records[slot].pilot.ep = 0;
+                battle_work_area.records[slot].pilot.ep = 0;
             }
             continue;
         case 3:
-            if (D_800C3EB0.slots[slot].gear != 0 && D_800C2050 == 0) {
+            if (battle_area.slots[slot].gear != 0 && battle_applying_item_results == 0) {
                 continue;
             }
-            value = D_800CCCE8.records[slot].pilot.ep + D_800C3EB0.events[queue].amounts[slot];
+            value = battle_work_area.records[slot].pilot.ep + battle_area.events[queue].amounts[slot];
             BATTLE_AREA.work.records[slot].pilot.ep = value;
-            if (D_800CCCE8.records[slot].pilot.maxEp < value) {
-                D_800CCCE8.records[slot].pilot.ep = D_800CCCE8.records[slot].pilot.maxEp;
+            if (battle_work_area.records[slot].pilot.maxEp < value) {
+                battle_work_area.records[slot].pilot.ep = battle_work_area.records[slot].pilot.maxEp;
             }
             continue;
         case 10:
-            if (D_800CCCE8.records[slot].gear.fuel - D_800C3EB0.events[queue].amounts[slot] > 0) {
-                D_800CCCE8.records[slot].gear.fuel -= D_800C3EB0.events[queue].amounts[slot];
+            if (battle_work_area.records[slot].gear.fuel - battle_area.events[queue].amounts[slot] > 0) {
+                battle_work_area.records[slot].gear.fuel -= battle_area.events[queue].amounts[slot];
             } else {
-                D_800CCCE8.records[slot].gear.fuel = 0;
+                battle_work_area.records[slot].gear.fuel = 0;
             }
             break;
         case 11:
-            if (D_800CCCE8.records[slot].gear.maxFuel <
+            if (battle_work_area.records[slot].gear.maxFuel <
                 (BATTLE_AREA.work.records[slot].gear.fuel =
-                     D_800CCCE8.records[slot].gear.fuel + D_800C3EB0.events[queue].amounts[slot])) {
-                D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
+                     battle_work_area.records[slot].gear.fuel + battle_area.events[queue].amounts[slot])) {
+                battle_work_area.records[slot].gear.fuel = battle_work_area.records[slot].gear.maxFuel;
             }
-            D_800C3EAC->reaction[slot] = 1;
+            battle_turn_state->reaction[slot] = 1;
             continue;
         default:
             continue;
         }
-        D_800C3EAC->reaction[slot] = 1;
+        battle_turn_state->reaction[slot] = 1;
     }
 }
 
-/* Revive slot at full HP and clear its timed statuses (the active halves of
+/* 80085AC4: Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
-void func_80085AC4(slot)
+void battle_revive_slot(slot)
 u8 slot;
 {
     s32 i;
     u16 *status;
 
-    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
-    for (i = 2, status = &D_800CCCE8.records[slot].pilot.status80; i >= 0; i -= 2, status -= 2) {
+    battle_work_area.records[slot].pilot.hp = battle_work_area.records[slot].pilot.maxHp;
+    for (i = 2, status = &battle_work_area.records[slot].pilot.status80; i >= 0; i -= 2, status -= 2) {
         *status = 0;
     }
-    for (i = 4, status = &D_800CCCE8.records[slot].pilot.status8C.half.active; i >= 0; i -= 2, status -= 2) {
+    for (i = 4, status = &battle_work_area.records[slot].pilot.status8C.half.active; i >= 0; i -= 2, status -= 2) {
         *status = 0;
     }
 }
 
-/* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
+/* 80085B58: Apply up to three recovery amounts from 8009ada0 to `slot` as separate
  * events (codes 8..10) and show them. */
-void func_80085B58(u8 slot) {
+void battle_apply_status_drains(u8 slot) {
     s32 amounts[3];
     s32 i;
 
     amounts[2] = 0;
     amounts[1] = 0;
     amounts[0] = 0;
-    if (func_8009ADA0(slot, amounts) != 0) {
+    if (battle_get_status_drain_amounts(slot, amounts) != 0) {
         for (i = 0; i < 3; i++) {
             if (amounts[i] != 0) {
-                D_800C3EAC->eventCount = 0;
-                func_80085388();
-                D_800C3FE8[0].codes[slot] = i + 8;
-                D_800C3FE8[0].amounts[slot] = amounts[i];
-                func_80085618(D_800C3EAC->eventCount);
+                battle_turn_state->eventCount = 0;
+                battle_clear_event_results();
+                battle_area_events[0].codes[slot] = i + 8;
+                battle_area_events[0].amounts[slot] = amounts[i];
+                battle_apply_event_results(battle_turn_state->eventCount);
             }
         }
-        func_800BE538(slot, amounts[0], amounts[1], amounts[2]);
+        battle_show_status_drain_amounts(slot, amounts[0], amounts[1], amounts[2]);
     }
 }
 
-/* Commit the targets for an item/effect and run 80098c6c with `param`. */
-void func_80085C48(actor, targets, param)
+/* 80085C48: Commit the targets for an item/effect and run 80098c6c with `param`. */
+void battle_commit_item_targets(actor, targets, param)
 u8 actor;
 s16 targets;
 u16 param;
 {
-    D_800C48E8 = 0;
-    D_800D2C94.targets = targets;
-    D_800D2C94.alive = D_800D39DC;
-    func_80098C6C(param);
+    battle_area_knocked_out = 0;
+    battle_committed_action.targets = targets;
+    battle_committed_action.alive = battle_alive_mask;
+    battle_resolve_item_effect(param);
 }
 
-/* Accumulate and apply event `queue`'s results. */
-void func_80085C88(u8 queue) {
-    func_80085454(queue);
-    func_80085618(queue);
-    D_800D2D28->unkAD = 0;
+/* 80085C88: Accumulate and apply event `queue`'s results. */
+void battle_accumulate_and_apply_results(u8 queue) {
+    battle_accumulate_event_results(queue);
+    battle_apply_event_results(queue);
+    battle_ui->unkAD = 0;
 }
 
-/* Commit an action (attacker, target mask, animation) and resolve it. */
-void func_80085CCC(u8 actor, u16 targets, u16 animation) {
+/* 80085CCC: Commit an action (attacker, target mask, animation) and resolve it. */
+void battle_commit_action(u8 actor, u16 targets, u16 animation) {
     u8 action; /* 1-based */
 
-    D_800C48E8 = 0;
-    D_800D2C94.actor = actor;
-    action = D_800C3EAC->unk2DC;
-    D_800D2C94.targets = targets;
-    D_800D2C94.animation = animation;
-    D_800D2C94.alive = D_800D39DC;
-    D_800D2C94.action = action - 1;
-    func_800941A4();
+    battle_area_knocked_out = 0;
+    battle_committed_action.actor = actor;
+    action = battle_turn_state->unk2DC;
+    battle_committed_action.targets = targets;
+    battle_committed_action.animation = animation;
+    battle_committed_action.alive = battle_alive_mask;
+    battle_committed_action.action = action - 1;
+    battle_resolve_action();
 }
 
-/* Build the attack page's AP text (current AP, '/', maximum) as glyph
+/* 80085D34: Build the attack page's AP text (current AP, '/', maximum) as glyph
  * primitives and remember the draw buffer. */
-void func_80085D34(void) {
-    D_800D2D28->unk7B = 0;
-    D_800D2D28->unk7B +=
-        func_80076A10(D_800C3EAC->unk2D4[0] + 0xF, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x2A, 0xD0);
-    D_800D2D28->unk7B += func_80076A10(0x19, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x32, 0xD0);
-    D_800D2D28->unk7B +=
-        func_80076A10(D_800C3EAC->unk2D4[1] + 0xF, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x3A, 0xD0);
-    D_800D2D28->unkA4 = D_800CCB04.buffer;
+void battle_attack_page_build_ap_glyphs(void) {
+    battle_ui->unk7B = 0;
+    battle_ui->unk7B +=
+        battle_build_glyph(battle_turn_state->unk2D4[0] + 0xF, battle_graphics->unk9C8[battle_ui->unk7B], 0x2A, 0xD0);
+    battle_ui->unk7B += battle_build_glyph(0x19, battle_graphics->unk9C8[battle_ui->unk7B], 0x32, 0xD0);
+    battle_ui->unk7B +=
+        battle_build_glyph(battle_turn_state->unk2D4[1] + 0xF, battle_graphics->unk9C8[battle_ui->unk7B], 0x3A, 0xD0);
+    battle_ui->unkA4 = battle_drawing_state.buffer;
 }
 
-/* Reset the turn state's seven +0x2cc bytes to 0xff and clear +0x2d6. */
-void func_80085E78(void) {
+/* 80085E78: Reset the turn state's seven +0x2cc bytes to 0xff and clear +0x2d6. */
+void battle_combo_reset_history(void) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        D_800C3EAC->unk2CC[i] = 0xFF;
+        battle_turn_state->unk2CC[i] = 0xFF;
     }
-    D_800C3EAC->unk2D6 = 0;
+    battle_turn_state->unk2D6 = 0;
 }
 
-/* Mode 4: whether the combo input history (+0x2cc) matches one of the 13
+/* 80085EB4: Mode 4: whether the combo input history (+0x2cc) matches one of the 13
  * combo patterns whose deathblow the member's character knows. */
-u8 func_80085EB4(u8 mode, u8 member) {
+u8 battle_is_known_deathblow_combo(u8 mode, u8 member) {
     u8 result = 0;
     s32 match;
     s32 combo;
     s32 i;
 
-    if (D_800C3EAC->unk2D6 != 0 && mode == 4) {
+    if (battle_turn_state->unk2D6 != 0 && mode == 4) {
         for (combo = 0; combo < 13; combo++) {
             for (i = 0; i < 7; i++) {
-                if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+                if (battle_turn_state->unk2CC[i] == battle_combo_patterns[combo][i]) {
                     match = 1;
                 } else {
                     match = 0;
@@ -2238,8 +2238,8 @@ u8 func_80085EB4(u8 mode, u8 member) {
         case 11:
             i++;
         case 12:
-            if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills,
-                              D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i])) {
+            if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].counterSkills,
+                              battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][12 - i])) {
                 result = 1;
             }
             break;
@@ -2248,11 +2248,11 @@ u8 func_80085EB4(u8 mode, u8 member) {
     return result;
 }
 
-/* Add entry `index` to list 11 (the combo chain display): render the
+/* 80086028: Add entry `index` to list 11 (the combo chain display): render the
  * member's text `id` into the shared image (two entries per image cell),
  * upload it and place its quad after `column` + `offset` + 1 steps.
  * Returns the next index. */
-s32 func_80086028(member, index, column, id, pixels, offset)
+s32 battle_combo_chain_add_name(member, index, column, id, pixels, offset)
 u8 member;
 s32 index;
 s32 column;
@@ -2267,27 +2267,27 @@ u8 offset;
 
     cell = index / 2;
     odd = index % 2;
-    func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
-    width = window_render_text_line(text_get_system_resource_entry(D_800D2D24[member], id), *pixels, 0x1B, odd);
+    battle_init_text_quad_pair(&battle_hud_primitive_lists->list11[index * 2], odd, 3);
+    width = window_render_text_line(text_get_system_resource_entry(battle_party_character_ids[member], id), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 13;
     LoadImage(&rect, (u_long *)*pixels);
-    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + 1 + offset) * 16 + 0x50 + index * 4,
+    battle_quad_place_text_row(&battle_hud_primitive_lists->list11[index * 2 + battle_drawing_state.buffer], (column + 1 + offset) * 16 + 0x50 + index * 4,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
-    D_800D2DB4->counts[11]++;
+    battle_hud_primitive_lists->counts[11]++;
     index++;
     return index;
 }
 
-/* Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
+/* 800861D0: Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
  * and show it (list 12) with the deathblows it completes or leads into:
  * the combo it spells when its character knows it and the attack is
  * available, else (unless the chain is armed) the longer combos it
  * continues. With an armed chain a completed deathblow becomes the combo step
  * (+0x2dc). The three text image blocks live for one frame. */
-void func_800861D0(u8 code, u8 member) {
+void battle_combo_record_input(u8 code, u8 member) {
     s32 index = 0;
     s32 shown = 0;
     s32 block;
@@ -2298,16 +2298,16 @@ void func_800861D0(u8 code, u8 member) {
 
     /* The text-image slots are walked by byte offset. */
     for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-        *((u32 **)((u8 *)D_800C3A70 + block)) = (u32 *)func_8008AC00(0x1E);
+        *((u32 **)((u8 *)battle_combo_text_image_blocks + block)) = (u32 *)battle_heap_alloc_text_image(0x1E);
     }
-    D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = code - 4;
-    D_800C3EAC->unk2D6++;
-    if (D_800C3EAC->unk2E1[3] != 0) {
-        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
+    battle_turn_state->unk2CC[battle_turn_state->unk2D6] = code - 4;
+    battle_turn_state->unk2D6++;
+    if (battle_turn_state->unk2E1[3] != 0) {
+        battle_turn_state->unk2CC[battle_turn_state->unk2D6 - 1] = 0xFF;
     }
     for (combo = 0; combo < 13; combo++) {
         for (i = 0; i < 7; i++) {
-            if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+            if (battle_turn_state->unk2CC[i] == battle_combo_patterns[combo][i]) {
                 match = 1;
             } else {
                 match = 0;
@@ -2320,13 +2320,13 @@ void func_800861D0(u8 code, u8 member) {
     }
     /* From here the match flag's variable holds the combo. */
     match = combo;
-    if (D_800C3EAC->unk2E1[3] != 0) {
-        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = code - 4;
+    if (battle_turn_state->unk2E1[3] != 0) {
+        battle_turn_state->unk2CC[battle_turn_state->unk2D6 - 1] = code - 4;
     }
-    D_800D2DB4->counts[12] = 0;
-    D_800D2DB4->counts[11] = 0;
-    for (combo = 0; combo < D_800C3EAC->unk2D6; combo++) {
-        switch (D_800C3EAC->unk2CC[combo]) {
+    battle_hud_primitive_lists->counts[12] = 0;
+    battle_hud_primitive_lists->counts[11] = 0;
+    for (combo = 0; combo < battle_turn_state->unk2D6; combo++) {
+        switch (battle_turn_state->unk2CC[combo]) {
         case 0:
             id = 0x5D;
             break;
@@ -2337,8 +2337,8 @@ void func_800861D0(u8 code, u8 member) {
             id = 0x5F;
             break;
         }
-        D_800D2DB4->counts[12] +=
-                func_80076A10(id, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+        battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(id, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
     }
     /* The deathblow index counts down from the last combo. */
     i = 0;
@@ -2368,27 +2368,27 @@ void func_800861D0(u8 code, u8 member) {
     case 11:
         i++;
     case 12:
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
-            D_800C3EAC->slots[member].items[2] == 0) {
-            if (D_800C3EAC->unk2E1[3] == 0) {
-                D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].counterSkills, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][12 - i]) &&
+            battle_turn_state->slots[member].items[2] == 0) {
+            if (battle_turn_state->unk2E1[3] == 0) {
+                battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(7, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
             } else {
                 combo--;
             }
-            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i], &D_800C3A70[index / 2], 0);
+            index = battle_combo_chain_add_name(member, index, combo, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][12 - i], &battle_combo_text_image_blocks[index / 2], 0);
             shown = 1;
         }
         break;
     }
-    if (D_800C3EAC->unk2E1[3] != 0 && shown) {
-        D_800D2DB4->buffers[12] = D_800CCB04.buffer;
-        D_800C3EAC->unk2DC = D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i] + 8;
-        D_800D2DB4->buffers[11] = D_800CCB04.buffer;
-        D_800D2D28->unkA8 = 1;
-        func_800716D8();
+    if (battle_turn_state->unk2E1[3] != 0 && shown) {
+        battle_hud_primitive_lists->buffers[12] = battle_drawing_state.buffer;
+        battle_turn_state->unk2DC = battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][12 - i] + 8;
+        battle_hud_primitive_lists->buffers[11] = battle_drawing_state.buffer;
+        battle_ui->unkA8 = 1;
+        battle_wait_frame();
         for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-            heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
+            heap_free(*((u32 **)((u8 *)battle_combo_text_image_blocks + block)));
         }
         return;
     }
@@ -2408,13 +2408,13 @@ void func_800861D0(u8 code, u8 member) {
     case 5:
         i++;
     case 8:
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
-            D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
-            D_800D2DB4->counts[12] +=
-                func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
-            D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + (combo + 1) * 16, 0xD0 - index * 16);
-            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i], &D_800C3A70[index / 2], 1);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].counterSkills, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][19 - i]) &&
+            battle_turn_state->slots[member].items[0] == 0 && battle_turn_state->slots[member].items[2] == 0) {
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(8, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(7, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x54 + (combo + 1) * 16, 0xD0 - index * 16);
+            index = battle_combo_chain_add_name(member, index, combo, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][19 - i], &battle_combo_text_image_blocks[index / 2], 1);
         }
         break;
     case 6:
@@ -2429,42 +2429,42 @@ void func_800861D0(u8 code, u8 member) {
     case 1:
         i++;
     case 3:
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
-            D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
-            D_800D2DB4->counts[12] +=
-                func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
-            D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + (combo + 1) * 16, 0xD0 - index * 16);
-            func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i], &D_800C3A70[index / 2], 1);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].counterSkills, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][22 - i]) &&
+            battle_turn_state->slots[member].items[1] == 0 && battle_turn_state->slots[member].items[2] == 0) {
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(9, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(7, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x58 + (combo + 1) * 16, 0xD0 - index * 16);
+            battle_combo_chain_add_name(member, index, combo, battle_combo_deathblows_by_character[battle_work_area.records[member].pilot.characterId][22 - i], &battle_combo_text_image_blocks[index / 2], 1);
         }
         break;
     }
-    D_800D2DB4->buffers[12] = D_800CCB04.buffer;
-    D_800D2DB4->buffers[11] = D_800CCB04.buffer;
-    D_800D2D28->unkA8 = 1;
-    func_800716D8();
+    battle_hud_primitive_lists->buffers[12] = battle_drawing_state.buffer;
+    battle_hud_primitive_lists->buffers[11] = battle_drawing_state.buffer;
+    battle_ui->unkA8 = 1;
+    battle_wait_frame();
     for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-        heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
+        heap_free(*((u32 **)((u8 *)battle_combo_text_image_blocks + block)));
     }
 }
 
-/* Whether the member can use combo step `step` now: without a combo chain
+/* 80086B88: Whether the member can use combo step `step` now: without a combo chain
  * (+0x2d6) always; otherwise its character must know the combo flag
  * (800c34cc) and the chain must allow another step. 800d2c34 is the gear
  * HUD's level byte of the battle work area (the original addresses it through
  * 800ccce8). */
-s32 func_80086B88(s32 step, u8 member) {
-    u8 index = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
+s32 battle_can_use_combo_step(s32 step, u8 member) {
+    u8 index = step + (battle_turn_state->unk2CC[0] + 1) * 3;
     s32 result = 1;
 
-    if (D_800C3EAC->unk2D6 != 0) {
-        if (D_800CCCE8.gearHud.level == 4) {
+    if (battle_turn_state->unk2D6 != 0) {
+        if (battle_work_area.gearHud.level == 4) {
             index = step + 12;
         }
-        if (!func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[index])) {
+        if (!battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksA, battle_combo_step_flags[index])) {
             result = 0;
-        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800CCCE8.gearHud.level != 4 &&
-                   D_800CCCE8.gearHud.level < D_800C3EAC->unk2CC[0] + 1) {
+        } else if (battle_turn_state->unk2CC[0] != 0xFF && battle_work_area.gearHud.level != 4 &&
+                   battle_work_area.gearHud.level < battle_turn_state->unk2CC[0] + 1) {
             result = 0;
         }
     }
@@ -2474,11 +2474,11 @@ s32 func_80086B88(s32 step, u8 member) {
 /* Place entry `index`'s fuel cost quad (`count` digits) in list 13. */
 #define PLACE_FUEL_COST(index, column, count)                                                                     \
     do {                                                                                                          \
-        func_80076C78(&D_800D2DB4->list13[(index) * 2 + D_800CCB04.buffer], (index) * 4 + ((column) + 1) * 16 + 0xEA, \
+        battle_quad_place_text_row(&battle_hud_primitive_lists->list13[(index) * 2 + battle_drawing_state.buffer], (index) * 4 + ((column) + 1) * 16 + 0xEA, \
                       0xC8 - (index) * 16, (index) * 32 + 0x78, 0, (count) * 8);                                  \
     } while (0)
 
-/* Add entry `index` to lists 11 and 13 (the gear's combo chain display):
+/* 80086C88: Add entry `index` to lists 11 and 13 (the gear's combo chain display):
  * render the gear's text for combo step `step` into the shared image (two
  * entries per image cell) and place its quad after `column` + 1 steps, then
  * upload the step's fuel cost digits and place their quad. Returns the next
@@ -2488,7 +2488,7 @@ s32 func_80086B88(s32 step, u8 member) {
  * rectangle address); the cost quad is placed by a statement macro (its
  * loop block weights the index for register allocation as in the
  * original). */
-s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
+s32 battle_combo_chain_add_gear_step(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
     RECT digits[4];
     s32 cell;
@@ -2500,36 +2500,36 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     s16 x;
 
     count = 0;
-    fuel = &D_800C3CF4[5];
+    fuel = &battle_decimal_digits[5];
     cell = index / 2;
     odd = index % 2;
-    func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
-    width = window_render_text_line(text_get_gear_resource_entry(D_800CCCE8.records[member].pilot.gearId, D_800C34CC[step]), *pixels, 0x1B, odd);
+    battle_init_text_quad_pair(&battle_hud_primitive_lists->list11[index * 2], odd, 3);
+    width = window_render_text_line(text_get_gear_resource_entry(battle_work_area.records[member].pilot.gearId, battle_combo_step_flags[step]), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 0xD;
     LoadImage(&rect, (u_long *)*pixels);
-    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
+    battle_quad_place_text_row(&battle_hud_primitive_lists->list11[index * 2 + battle_drawing_state.buffer], index * 4 + (column + 1) * 16 + 0x86,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
-    func_80076D58(&D_800D2DB4->list13[index * 2], 0, 3);
-    func_8008AAA0(D_800CCB04.work.gearHud.commands[step]);
+    battle_init_text_quad_pair(&battle_hud_primitive_lists->list13[index * 2], 0, 3);
+    battle_split_decimal_digits(battle_drawing_state.work.gearHud.commands[step]);
     x = index * 8 + 0x3DE;
     for (i = 0; i < 4; i++) {
         if (fuel[i] != 0xFF) {
             setRECT(&digits[count], x, 0, 6, 0xD);
-            func_800769E8(&digits[count], D_800C3E5C[fuel[i]].pixels);
+            battle_upload_image_and_wait(&digits[count], battle_digit_text_images[fuel[i]].pixels);
             x += 2;
             count++;
         }
     }
     PLACE_FUEL_COST(index, column, count);
-    D_800D2DB4->counts[11]++;
-    D_800D2DB4->counts[13]++;
+    battle_hud_primitive_lists->counts[11]++;
+    battle_hud_primitive_lists->counts[13]++;
     return index + 1;
 }
 
-/* Record gear combo step `step` for the member: unless the target fights in
+/* 80086F98: Record gear combo step `step` for the member: unless the target fights in
  * a gear (record +0x15a bit 0x80) or the attack level is 4, the step's flag
  * becomes the combo step (+0x2dc) at once. Otherwise, when the attack level
  * allows the step (or +0x2e7 is set), add it to the combo history (+0x2cc,
@@ -2537,7 +2537,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
  * (80086c88, lists 11 and 13) and, with an armed chain (+0x2e4), take a
  * completed deathblow as the combo step. Returns whether a deathblow was
  * shown (0 with an armed chain), else 1. */
-u8 func_80086F98(u8 step, u8 member) {
+u8 battle_combo_record_gear_step(u8 step, u8 member) {
     s32 index;
     s32 i;
     s32 block;
@@ -2549,28 +2549,28 @@ u8 func_80086F98(u8 step, u8 member) {
     flag = (step + 1) * 3;
     index = 0;
     shown = 0;
-    if (!(D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].flags15A & 0x80) && D_800CCCE8.gearHud.level != 4) {
-        D_800C3EAC->unk2DC = D_800C34CC[step];
+    if (!(battle_work_area.records[battle_turn_state->slots[member].defaultTarget].flags15A & 0x80) && battle_work_area.gearHud.level != 4) {
+        battle_turn_state->unk2DC = battle_combo_step_flags[step];
         return 1;
     }
-    if ((D_800CCCE8.gearHud.level != 0 && D_800CCCE8.gearHud.level - 1 >= step) || D_800C3EAC->unk2E7 != 0) {
+    if ((battle_work_area.gearHud.level != 0 && battle_work_area.gearHud.level - 1 >= step) || battle_turn_state->unk2E7 != 0) {
         /* The text-image slots are walked by byte offset. */
         for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-            *((u32 **)((u8 *)D_800C3A70 + block)) = (u32 *)func_8008AC00(0x1E);
+            *((u32 **)((u8 *)battle_combo_text_image_blocks + block)) = (u32 *)battle_heap_alloc_text_image(0x1E);
         }
-        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = step;
-        D_800C3EAC->unk2D6++;
-        if (D_800C3EAC->unk2E1[3] != 0) {
-            D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
-            D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = step;
-            flag = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
+        battle_turn_state->unk2CC[battle_turn_state->unk2D6] = step;
+        battle_turn_state->unk2D6++;
+        if (battle_turn_state->unk2E1[3] != 0) {
+            battle_turn_state->unk2CC[battle_turn_state->unk2D6 - 1] = 0xFF;
+            battle_turn_state->unk2CC[battle_turn_state->unk2D6 - 1] = step;
+            flag = step + (battle_turn_state->unk2CC[0] + 1) * 3;
         }
-        D_800D2DB4->counts[12] = 0;
-        D_800D2DB4->counts[11] = 0;
-        D_800D2DB4->counts[13] = 0;
-        for (i = 0; i < D_800C3EAC->unk2D6; i++) {
-            if (D_800C3EAC->unk2CC[i] != 0xFF) {
-                switch (D_800C3EAC->unk2CC[i]) {
+        battle_hud_primitive_lists->counts[12] = 0;
+        battle_hud_primitive_lists->counts[11] = 0;
+        battle_hud_primitive_lists->counts[13] = 0;
+        for (i = 0; i < battle_turn_state->unk2D6; i++) {
+            if (battle_turn_state->unk2CC[i] != 0xFF) {
+                switch (battle_turn_state->unk2CC[i]) {
                 case 0:
                     id = 0x5E;
                     break;
@@ -2581,81 +2581,81 @@ u8 func_80086F98(u8 step, u8 member) {
                     id = 0x5D;
                     break;
                 }
-                D_800D2DB4->counts[12] +=
-                    func_80076A10(id, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+                battle_hud_primitive_lists->counts[12] +=
+                    battle_build_glyph(id, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
             }
         }
-        if (D_800CCCE8.gearHud.level == 4) {
+        if (battle_work_area.gearHud.level == 4) {
             if (step == 0xFF) {
                 flag = 12;
             } else {
                 flag = step + 12;
             }
         }
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[flag])) {
-            if (D_800C3EAC->unk2E1[3] == 0) {
-                if (D_800C3EAC->slots[member].items[0] == 0) {
-                    D_800D2DB4->counts[12] +=
-                        func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
-                    index = func_80086C88(member, index, i - 1, flag, &D_800C3A70[index / 2]);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksA, battle_combo_step_flags[flag])) {
+            if (battle_turn_state->unk2E1[3] == 0) {
+                if (battle_turn_state->slots[member].items[0] == 0) {
+                    battle_hud_primitive_lists->counts[12] +=
+                        battle_build_glyph(8, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+                    index = battle_combo_chain_add_gear_step(member, index, i - 1, flag, &battle_combo_text_image_blocks[index / 2]);
                 }
                 shown = 1;
             } else {
-                index = func_80086C88(member, index, i - 1, flag, &D_800C3A70[index / 2]);
+                index = battle_combo_chain_add_gear_step(member, index, i - 1, flag, &battle_combo_text_image_blocks[index / 2]);
                 shown = 1;
             }
         }
-        if (D_800C3EAC->unk2E1[3] != 0 && shown) {
+        if (battle_turn_state->unk2E1[3] != 0 && shown) {
             shown = 0;
-            if (D_800C3EAC->unk2CC[0] == 0xFF) {
+            if (battle_turn_state->unk2CC[0] == 0xFF) {
                 flag = step + 12;
             }
-            D_800D2DB4->buffers[12] = D_800CCB04.buffer;
-            D_800C3EAC->unk2DC = D_800C34CC[flag];
-            D_800D2DB4->buffers[11] = D_800CCB04.buffer;
-            D_800D2DB4->buffers[13] = D_800CCB04.buffer;
-            D_800D2D28->unkA8 = 1;
-            func_800716D8();
+            battle_hud_primitive_lists->buffers[12] = battle_drawing_state.buffer;
+            battle_turn_state->unk2DC = battle_combo_step_flags[flag];
+            battle_hud_primitive_lists->buffers[11] = battle_drawing_state.buffer;
+            battle_hud_primitive_lists->buffers[13] = battle_drawing_state.buffer;
+            battle_ui->unkA8 = 1;
+            battle_wait_frame();
             for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-                heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
+                heap_free(*((u32 **)((u8 *)battle_combo_text_image_blocks + block)));
             }
             goto done;
         }
-        D_800C3EAC->unk2DC = step;
-        if (D_800CCCE8.gearHud.level != 4) {
+        battle_turn_state->unk2DC = step;
+        if (battle_work_area.gearHud.level != 4) {
             next = (step + 1) * 3 + 1;
         } else {
             next = 13;
         }
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
-            D_800C3EAC->slots[member].items[1] == 0) {
-            D_800D2DB4->counts[12] +=
-                func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
-            index = func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksA, battle_combo_step_flags[next]) &&
+            battle_turn_state->slots[member].items[1] == 0) {
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(9, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
+            index = battle_combo_chain_add_gear_step(member, index, i, next, &battle_combo_text_image_blocks[index / 2]);
             shown = 1;
         }
-        if (D_800CCCE8.gearHud.level != 4) {
+        if (battle_work_area.gearHud.level != 4) {
             next = (step + 1) * 3 + 2;
         } else {
             next = 14;
         }
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
-            D_800C3EAC->slots[member].items[2] == 0) {
-            D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
-            func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksA, battle_combo_step_flags[next]) &&
+            battle_turn_state->slots[member].items[2] == 0) {
+            battle_hud_primitive_lists->counts[12] +=
+                battle_build_glyph(7, &battle_hud_primitive_lists->list12[battle_hud_primitive_lists->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
+            battle_combo_chain_add_gear_step(member, index, i, next, &battle_combo_text_image_blocks[index / 2]);
             shown = 1;
         }
-        D_800D2DB4->buffers[12] = D_800CCB04.buffer;
-        D_800D2DB4->buffers[11] = D_800CCB04.buffer;
-        D_800D2DB4->buffers[13] = D_800CCB04.buffer;
-        D_800D2D28->unkA8 = 1;
-        func_800716D8();
+        battle_hud_primitive_lists->buffers[12] = battle_drawing_state.buffer;
+        battle_hud_primitive_lists->buffers[11] = battle_drawing_state.buffer;
+        battle_hud_primitive_lists->buffers[13] = battle_drawing_state.buffer;
+        battle_ui->unkA8 = 1;
+        battle_wait_frame();
         for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-            heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
+            heap_free(*((u32 **)((u8 *)battle_combo_text_image_blocks + block)));
         }
     } else {
-        D_800C3EAC->unk2DC = step;
+        battle_turn_state->unk2DC = step;
         shown = 1;
     }
 done:
@@ -2666,68 +2666,68 @@ done:
  * formation start, so the links (at +0x140) begin 40 entries in. */
 #define LINK_ROW(formation, group) ((GroupLink *)((u8 *)(formation) + ((group) << 6)))
 
-/* Plan the approach route from `actor` to `target`: the actor's position,
+/* 800877E0: Plan the approach route from `actor` to `target`: the actor's position,
  * then the route points the formation lists between their groups. Returns
  * 1 when the actor's character is 4. The formation is read once per point
  * and the link row is taken anew for each read. */
-s32 func_800877E0(u8 actor, u8 target) {
+s32 battle_plan_approach_route(u8 actor, u8 target) {
     s32 result = 0;
     s32 i;
     GroupLink *row;
     Formation *formation;
 
     for (i = 0; i < 9; i++) {
-        D_800C3EB0.path[i].x = 0xFFFF;
-        D_800C3EB0.path[i].z = 0xFFFF;
+        battle_area.path[i].x = 0xFFFF;
+        battle_area.path[i].z = 0xFFFF;
     }
-    D_800C3EB0.path[0].x = D_800C3EB0.slots[actor].x;
-    D_800C3EB0.path[0].z = D_800C3EB0.slots[actor].z;
-    D_800C3EB0.path[0].run = 0;
+    battle_area.path[0].x = battle_area.slots[actor].x;
+    battle_area.path[0].z = battle_area.slots[actor].z;
+    battle_area.path[0].run = 0;
     for (i = 1; i < 8; i++) {
-        formation = D_800D3364;
-        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
-        if (row[D_800C3EB0.slots[target].group + 40].points[i - 1] == 0xFF) {
+        formation = battle_formation;
+        row = LINK_ROW(formation, battle_area.slots[actor].group);
+        if (row[battle_area.slots[target].group + 40].points[i - 1] == 0xFF) {
             break;
         }
-        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
-        D_800C3EB0.path[i].x = formation->areas[row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 7].centre.x;
-        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
-        D_800C3EB0.path[i].z = formation->areas[row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 7].centre.z;
-        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
-        D_800C3EB0.path[i].run = row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 0x80;
+        row = LINK_ROW(formation, battle_area.slots[actor].group);
+        battle_area.path[i].x = formation->areas[row[battle_area.slots[target].group + 40].points[i - 1] & 7].centre.x;
+        row = LINK_ROW(formation, battle_area.slots[actor].group);
+        battle_area.path[i].z = formation->areas[row[battle_area.slots[target].group + 40].points[i - 1] & 7].centre.z;
+        row = LINK_ROW(formation, battle_area.slots[actor].group);
+        battle_area.path[i].run = row[battle_area.slots[target].group + 40].points[i - 1] & 0x80;
     }
-    if (D_800D2D24[actor] == 4) {
+    if (battle_party_character_ids[actor] == 4) {
         result = 1;
     }
     return result;
 }
 
-/* Reset every event to type 0xff for `actor` against `target`'s bit. */
-void func_800879A8(u8 actor, u8 target) {
+/* 800879A8: Reset every event to type 0xff for `actor` against `target`'s bit. */
+void battle_reset_events_for_target(u8 actor, u8 target) {
     s32 i;
 
     for (i = 0; i < 32; i++) {
-        D_800C3FE8[i].type = 0xFF;
-        D_800C3FE8[i].actor = actor;
-        D_800C3FE8[i].targetMask = func_80089C08(target);
+        battle_area_events[i].type = 0xFF;
+        battle_area_events[i].actor = actor;
+        battle_area_events[i].targetMask = battle_get_slot_bit(target);
     }
 }
 
-/* Enter the attack page: AP text, events against the default target, and
+/* 80087A38: Enter the attack page: AP text, events against the default target, and
  * the member's attack model. */
-void func_80087A38(u8 member) {
+void battle_attack_page_enter(u8 member) {
     s32 route;
 
-    func_80085D34();
-    func_800879A8(member, D_800C3EAC->slots[member].defaultTarget);
-    D_800D366C = 0;
-    route = func_800877E0(member, D_800C3EAC->slots[member].defaultTarget);
-    func_800B89FC(route, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
-    D_800D366C = 1;
-    D_800C3E18 = 0;
+    battle_attack_page_build_ap_glyphs();
+    battle_reset_events_for_target(member, battle_turn_state->slots[member].defaultTarget);
+    battle_command_menu_sounds_enabled = 0;
+    route = battle_plan_approach_route(member, battle_turn_state->slots[member].defaultTarget);
+    battle_menu_open_turn(route, member, battle_turn_state->slots[member].defaultTarget, battle_find_next_turn_slot(member));
+    battle_command_menu_sounds_enabled = 1;
+    battle_attack_approach_done = 0;
 }
 
-/* Execute the member's attack step (paying `cost` AP, 1-3): once per
+/* 80087AF0: Execute the member's attack step (paying `cost` AP, 1-3): once per
  * turn move into the target's group (unless the character is 4; flagged
  * slots use 800881b8), reset the events, advance the combo step through the
  * step table (a step from 8 is a deathblow the character must know, else
@@ -2736,55 +2736,55 @@ void func_80087A38(u8 member) {
  * attack and run its reaction script, and apply the results. Returns
  * whether the combo completed a known deathblow or the reaction ran action
  * 0x62. */
-u8 func_80087AF0(u8 member, u8 cost) {
+u8 battle_execute_attack_step(u8 member, u8 cost) {
     u8 queue;
     u8 reacted = 0;
     s32 payment;
 
-    if (D_800C3E18 == 0) {
-        if (D_800D32A0[member].unk1 == 0) {
-            if (D_800D2D24[member] != 4) {
-                func_80087EDC(member, D_800C3EAC->slots[member].defaultTarget);
+    if (battle_attack_approach_done == 0) {
+        if (battle_slot_flags[member].unk1 == 0) {
+            if (battle_party_character_ids[member] != 4) {
+                battle_join_target_group(member, battle_turn_state->slots[member].defaultTarget);
             }
         } else {
-            func_800881B8(member, D_800C3EAC->slots[member].defaultTarget);
+            battle_join_empty_target_group(member, battle_turn_state->slots[member].defaultTarget);
         }
-        D_800C3E18 = 1;
+        battle_attack_approach_done = 1;
     }
-    func_80085388();
-    if (D_800D32A0[member].unk1 == 0) {
-        if (D_800C3EAC->unk2DC < 8) {
+    battle_clear_event_results();
+    if (battle_slot_flags[member].unk1 == 0) {
+        if (battle_turn_state->unk2DC < 8) {
             payment = cost;
-            D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][payment];
-        } else if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C3EAC->unk2DC - 8)) {
+            battle_turn_state->unk2DC = battle_combo_next_step_table_by_paid[battle_turn_state->unk2DC][payment];
+        } else if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].counterSkills, battle_turn_state->unk2DC - 8)) {
             reacted = 1;
         } else {
-            D_800C3EAC->unk2DC = 7;
+            battle_turn_state->unk2DC = 7;
         }
     } else {
-        D_800C3EAC->unk2DC++;
+        battle_turn_state->unk2DC++;
     }
-    if (D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].pilot.flags34 & 0x800) {
-        D_800C3FE8[D_800C3EAC->eventCount].actor = member;
-        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
-        D_800C3FE8[D_800C3EAC->eventCount].parameter = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
-        D_800C3EAC->eventCount++;
+    if (battle_work_area.records[battle_turn_state->slots[member].defaultTarget].pilot.flags34 & 0x800) {
+        battle_area_events[battle_turn_state->eventCount].actor = member;
+        battle_area_events[battle_turn_state->eventCount].type = 0xF3;
+        battle_area_events[battle_turn_state->eventCount].parameter = battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget);
+        battle_turn_state->eventCount++;
     }
-    func_80085CCC(member, func_80089C08(D_800C3EAC->slots[member].defaultTarget), D_800C3EAC->unk2DC - 1);
-    queue = D_800C3EAC->eventCount;
-    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
-    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
-    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2C94.animation;
-    D_800C3EAC->eventCount++;
-    func_80079840(member, D_800C3EAC->slots[member].defaultTarget);
-    if (D_800C3EAC->slots[member].defaultTarget >= 3 && (u8)func_80079AB0(D_800C3EAC->slots[member].defaultTarget)) {
+    battle_commit_action(member, battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget), battle_turn_state->unk2DC - 1);
+    queue = battle_turn_state->eventCount;
+    battle_area_events[battle_turn_state->eventCount].actor = member;
+    battle_area_events[battle_turn_state->eventCount].targetMask = battle_committed_action.targets;
+    battle_area_events[battle_turn_state->eventCount].type = battle_committed_action.animation;
+    battle_turn_state->eventCount++;
+    battle_ai_tell_target_about_actor(member, battle_turn_state->slots[member].defaultTarget);
+    if (battle_turn_state->slots[member].defaultTarget >= 3 && (u8)battle_ai_run_reaction_script(battle_turn_state->slots[member].defaultTarget)) {
         reacted = 1;
     }
-    func_80085C88(queue);
+    battle_accumulate_and_apply_results(queue);
     return reacted;
 }
 
-/* Move `actor` into `target`'s formation group when it is another group
+/* 80087EDC: Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
  * member place and stand at that place of the group's area. The entries
  * are offset by the actor's side (8 for an enemy, as in 800883AC) only when
@@ -2796,386 +2796,386 @@ u8 func_80087AF0(u8 member, u8 cost) {
  * jump2 hoists the zero above the branch and reorg fills the delay slot
  * with it. A ternary or if/else over `side`, or an s32 `side`, leaves a
  * one-insn arm that jump1 folds into `side & -(target < 3)`. */
-void func_80087EDC(u8 actor, u8 target) {
+void battle_join_target_group(u8 actor, u8 target) {
     u8 base;
     u8 side;
     s32 member;
 
-    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+    if (battle_area_slots[actor].group != battle_area_slots[target].group) {
         side = (actor >= 3) * 8;
         base = side * (target < 3);
-        if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
-            func_800883AC(actor);
-            D_800D301C[D_800C3EB4[target].group + base].count++;
+        if (battle_formation_groups[battle_area_slots[target].group + base].count < 4) {
+            battle_leave_formation_group(actor);
+            battle_formation_groups[battle_area_slots[target].group + base].count++;
             for (member = 0; member < 4; member++) {
-                if (func_80089C9C(D_800D301C[D_800C3EB4[target].group + base].members, member) == 0) {
+                if (battle_is_slot_in_mask(battle_formation_groups[battle_area_slots[target].group + base].members, member) == 0) {
                     break;
                 }
             }
-            D_800C3EB4[actor].group = D_800C3EB4[target].group;
-            D_800C3EB4[actor].member = member;
-            D_800D301C[D_800C3EB4[actor].group + base].members |= func_80089C08(D_800C3EB4[actor].member);
+            battle_area_slots[actor].group = battle_area_slots[target].group;
+            battle_area_slots[actor].member = member;
+            battle_formation_groups[battle_area_slots[actor].group + base].members |= battle_get_slot_bit(battle_area_slots[actor].member);
             if (actor < 3) {
-                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].x;
-                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].z;
+                battle_area_slots[actor].x = battle_formation->areas[battle_area_slots[actor].group].party[battle_area_slots[actor].member].x;
+                battle_area_slots[actor].z = battle_formation->areas[battle_area_slots[actor].group].party[battle_area_slots[actor].member].z;
             } else {
-                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].x;
-                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].z;
+                battle_area_slots[actor].x = battle_formation->areas[battle_area_slots[actor].group].enemies[battle_area_slots[actor].member].x;
+                battle_area_slots[actor].z = battle_formation->areas[battle_area_slots[actor].group].enemies[battle_area_slots[actor].member].z;
             }
         }
     }
 }
 
-/* Move `actor` alone into `target`'s formation group when that group is
+/* 800881B8: Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * The slots are read as members of the battle area (D_800C3EB0+4), which
+ * The slots are read as members of the battle area (battle_area+4), which
  * keeps the group reload below the count store. */
-void func_800881B8(u8 actor, u8 target) {
+void battle_join_empty_target_group(u8 actor, u8 target) {
     u8 base;
     s32 party;
 
-    if (D_800C3EB0.slots[actor].group != D_800C3EB0.slots[target].group) {
+    if (battle_area.slots[actor].group != battle_area.slots[target].group) {
         party = actor < 3;
         if (target < 3) {
             base = party ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
-        if (D_800D301C[D_800C3EB0.slots[target].group + base].count == 0) {
-            func_800883AC(actor);
-            D_800C3EB0.slots[actor].group = D_800C3EB0.slots[target].group;
-            D_800C3EB0.slots[actor].member = 0;
-            D_800D301C[D_800C3EB0.slots[actor].group + base].count = 1;
-            D_800D301C[D_800C3EB0.slots[actor].group + base].members = 1;
+        if (battle_formation_groups[battle_area.slots[target].group + base].count == 0) {
+            battle_leave_formation_group(actor);
+            battle_area.slots[actor].group = battle_area.slots[target].group;
+            battle_area.slots[actor].member = 0;
+            battle_formation_groups[battle_area.slots[actor].group + base].count = 1;
+            battle_formation_groups[battle_area.slots[actor].group + base].members = 1;
             if (actor < 3) {
-                D_800C3EB0.slots[actor].x = D_800D3364->positions[D_800C3EB0.slots[actor].group].x;
-                D_800C3EB0.slots[actor].z = D_800D3364->positions[D_800C3EB0.slots[actor].group].z;
+                battle_area.slots[actor].x = battle_formation->positions[battle_area.slots[actor].group].x;
+                battle_area.slots[actor].z = battle_formation->positions[battle_area.slots[actor].group].z;
             } else {
-                D_800C3EB0.slots[actor].x = D_800D3364->positions[D_800C3EB0.slots[actor].group].enemyX;
-                D_800C3EB0.slots[actor].z = D_800D3364->positions[D_800C3EB0.slots[actor].group].enemyZ;
+                battle_area.slots[actor].x = battle_formation->positions[battle_area.slots[actor].group].enemyX;
+                battle_area.slots[actor].z = battle_formation->positions[battle_area.slots[actor].group].enemyZ;
             }
         }
     }
 }
 
-/* Drop a slot from its formation group (enemy entries from 8, flagged slots
+/* 800883AC: Drop a slot from its formation group (enemy entries from 8, flagged slots
  * add 0x10). */
-void func_800883AC(u8 slot) {
+void battle_leave_formation_group(u8 slot) {
     u8 base = (slot >= 3) * 8;
 
-    if (D_800D32A0[slot].unk1 != 0) {
+    if (battle_slot_flags[slot].unk1 != 0) {
         base |= 0x10;
     }
-    D_800D301C[D_800C3EB4[slot].group + base].count--;
-    D_800D301C[D_800C3EB4[slot].group + base].members &= func_80089C48(D_800C3EB4[slot].member);
+    battle_formation_groups[battle_area_slots[slot].group + base].count--;
+    battle_formation_groups[battle_area_slots[slot].group + base].members &= battle_get_other_slot_bits(battle_area_slots[slot].member);
 }
 
-/* Give slot a formation group of its own: keep its group when that is empty,
+/* 80088490: Give slot a formation group of its own: keep its group when that is empty,
  * else take the first empty one; it becomes the group's only member and is
  * placed at the group's position. */
-void func_80088490(slot)
+void battle_give_slot_own_group(slot)
 u8 slot;
 {
     u8 group;
     s32 i;
 
-    if (D_800D301C[D_800C3EB4[slot].group + 16].count == 0) {
-        group = D_800C3EB4[slot].group;
+    if (battle_formation_groups[battle_area_slots[slot].group + 16].count == 0) {
+        group = battle_area_slots[slot].group;
     } else {
         for (i = 0; i < 8; i++) {
-            if (D_800D301C[16 + i].count == 0) {
+            if (battle_formation_groups[16 + i].count == 0) {
                 group = i;
                 break;
             }
         }
     }
-    D_800C3EB4[slot].group = group;
-    D_800C3EB4[slot].member = 0;
-    D_800D301C[D_800C3EB4[slot].group + 16].members = 1;
-    D_800D301C[D_800C3EB4[slot].group + 16].count = 1;
-    D_800C3EB4[slot].x = D_800D3364->positions[D_800C3EB4[slot].group].x;
-    D_800C3EB4[slot].z = D_800D3364->positions[D_800C3EB4[slot].group].z;
+    battle_area_slots[slot].group = group;
+    battle_area_slots[slot].member = 0;
+    battle_formation_groups[battle_area_slots[slot].group + 16].members = 1;
+    battle_formation_groups[battle_area_slots[slot].group + 16].count = 1;
+    battle_area_slots[slot].x = battle_formation->positions[battle_area_slots[slot].group].x;
+    battle_area_slots[slot].z = battle_formation->positions[battle_area_slots[slot].group].z;
 }
 
-/* The member count of the slot's group among the flagged enemy groups. */
-u8 func_800885D0(u8 slot) {
-    return D_800D301C[D_800C3EB4[slot].group + 0x18].count;
+/* 800885D0: The member count of the slot's group among the flagged enemy groups. */
+u8 battle_count_enemy_gear_group_members(u8 slot) {
+    return battle_formation_groups[battle_area_slots[slot].group + 0x18].count;
 }
 
-/* Build the glyph lists at +0x1720 (glyphs 800c33b0[0..1]), +0 (glyph 0xa8)
+/* 8008860C: Build the glyph lists at +0x1720 (glyphs 800c33b0[0..1]), +0 (glyph 0xa8)
  * and +0x2530 (800c33b0[2..3]) at (0xa0, 0x64) and initialise the current
  * buffer's quads. The first two keep their count and buffer at +0x5d74 /
  * +0x5d83 and +0x5d70 / +0x5d92. */
-void func_8008860C(void) {
+void battle_gear_hud_build_fixed_glyphs(void) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        D_800D2DB4->extraCounts[4] +=
-            func_80076A10(D_800C33B0[i], &D_800D2DB4->extra4[D_800D2DB4->extraCounts[4] * 2], 0xA0, 0x64);
+        battle_hud_primitive_lists->extraCounts[4] +=
+            battle_build_glyph(battle_gear_hud_fixed_glyph_ids[i], &battle_hud_primitive_lists->extra4[battle_hud_primitive_lists->extraCounts[4] * 2], 0xA0, 0x64);
     }
-    D_800D2DB4->extraBuffer4 = D_800CCB04.buffer;
-    D_800D2DB4->extraCounts[0] = func_80076A10(0xA8, &D_800D2DB4->extra0[D_800D2DB4->extraCounts[0] * 2], 0xA0, 0x64);
-    D_800D2DB4->extraBuffers[0] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->extraCounts[4]; i++) {
-        func_80076B68(&D_800D2DB4->extra4[i * 2 + D_800D2DB4->extraBuffer4]);
+    battle_hud_primitive_lists->extraBuffer4 = battle_drawing_state.buffer;
+    battle_hud_primitive_lists->extraCounts[0] = battle_build_glyph(0xA8, &battle_hud_primitive_lists->extra0[battle_hud_primitive_lists->extraCounts[0] * 2], 0xA0, 0x64);
+    battle_hud_primitive_lists->extraBuffers[0] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->extraCounts[4]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->extra4[i * 2 + battle_hud_primitive_lists->extraBuffer4]);
     }
-    for (i = 0; i < D_800D2DB4->extraCounts[0]; i++) {
-        func_80076B68(&D_800D2DB4->extra0[i * 2 + D_800D2DB4->extraBuffers[0]]);
+    for (i = 0; i < battle_hud_primitive_lists->extraCounts[0]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->extra0[i * 2 + battle_hud_primitive_lists->extraBuffers[0]]);
     }
     for (i = 2; i < 4; i++) {
-        D_800D2DB4->counts[9] +=
-            func_80076A10(D_800C33B0[i], &D_800D2DB4->list9[D_800D2DB4->counts[9] * 2], 0xA0, 0x64);
+        battle_hud_primitive_lists->counts[9] +=
+            battle_build_glyph(battle_gear_hud_fixed_glyph_ids[i], &battle_hud_primitive_lists->list9[battle_hud_primitive_lists->counts[9] * 2], 0xA0, 0x64);
     }
-    D_800D2DB4->buffers[9] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[9]; i++) {
-        func_80076BF0(&D_800D2DB4->list9[i * 2 + D_800D2DB4->buffers[9]]);
+    battle_hud_primitive_lists->buffers[9] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[9]; i++) {
+        battle_quad_init_full_subtractive(&battle_hud_primitive_lists->list9[i * 2 + battle_hud_primitive_lists->buffers[9]]);
     }
 }
 
-/* Set up a stepped line from (x0, y0) to (x1, y1): directions, the 8.8 steps
+/* 8008887C: Set up a stepped line from (x0, y0) to (x1, y1): directions, the 8.8 steps
  * of the minor axis and a random speed 1..8. */
-void func_8008887C(s32 x0, s32 y0, s32 x1, s32 y1) {
+void battle_stepped_line_start(s32 x0, s32 y0, s32 x1, s32 y1) {
     s32 dx;
     s32 dy;
 
-    D_800C3A7C = x0;
-    D_800C3A80 = y0;
-    D_800C3A84 = x1;
-    D_800C3A88 = y1;
+    battle_stepped_line_start_x = x0;
+    battle_stepped_line_start_y = y0;
+    battle_stepped_line_end_x = x1;
+    battle_stepped_line_end_y = y1;
     if (x1 != x0 && y1 != y0) {
         if (x1 < x0) {
-            D_800C3A94 = 1;
+            battle_stepped_line_x_decreasing = 1;
             dx = x0 - x1;
         } else {
             dx = x1 - x0;
-            D_800C3A94 = 0;
+            battle_stepped_line_x_decreasing = 0;
         }
         if (y1 < y0) {
-            D_800C3A98 = 1;
+            battle_stepped_line_y_decreasing = 1;
             dy = y0 - y1;
         } else {
             dy = y1 - y0;
-            D_800C3A98 = 0;
+            battle_stepped_line_y_decreasing = 0;
         }
         if (dx >= dy) {
-            D_800C3A8C = 0x100;
-            D_800C3A90 = (dy << 8) / dx;
+            battle_stepped_line_step_x = 0x100;
+            battle_stepped_line_step_y = (dy << 8) / dx;
         } else {
-            D_800C3A90 = 0x100;
-            D_800C3A8C = (dx << 8) / dy;
+            battle_stepped_line_step_y = 0x100;
+            battle_stepped_line_step_x = (dx << 8) / dy;
         }
-        D_800C2080 = 0;
-        D_800C2084 = 0;
-        D_800C3A9C = mode_get_random_byte_in_range(1, 8);
-        D_800C207C = 0;
+        battle_stepped_line_progress_x = 0;
+        battle_stepped_line_progress_y = 0;
+        battle_stepped_line_speed = mode_get_random_byte_in_range(1, 8);
+        battle_stepped_line_ended = 0;
     }
 }
 
-/* Advance the stepped line by its speed and flag its end (800c207c) once
+/* 80088990: Advance the stepped line by its speed and flag its end (800c207c) once
  * the major axis passes the end point. */
-void func_80088990(void) {
+void battle_stepped_line_advance(void) {
     s32 i;
 
-    for (i = 0; i < D_800C3A9C; i++) {
-        if (D_800C3A94) {
-            D_800C2080 -= D_800C3A8C;
+    for (i = 0; i < battle_stepped_line_speed; i++) {
+        if (battle_stepped_line_x_decreasing) {
+            battle_stepped_line_progress_x -= battle_stepped_line_step_x;
         } else {
-            D_800C2080 += D_800C3A8C;
+            battle_stepped_line_progress_x += battle_stepped_line_step_x;
         }
-        if (D_800C3A98) {
-            D_800C2084 -= D_800C3A90;
+        if (battle_stepped_line_y_decreasing) {
+            battle_stepped_line_progress_y -= battle_stepped_line_step_y;
         } else {
-            D_800C2084 += D_800C3A90;
+            battle_stepped_line_progress_y += battle_stepped_line_step_y;
         }
     }
-    if (D_800C3A8C == 0x100) {
-        if (D_800C3A94) {
-            if (D_800C2080 / 256 + D_800C3A7C < D_800C3A84) {
-                D_800C207C = 1;
+    if (battle_stepped_line_step_x == 0x100) {
+        if (battle_stepped_line_x_decreasing) {
+            if (battle_stepped_line_progress_x / 256 + battle_stepped_line_start_x < battle_stepped_line_end_x) {
+                battle_stepped_line_ended = 1;
             }
-        } else if (D_800C2080 / 256 + D_800C3A7C > D_800C3A84) {
-            D_800C207C = 1;
+        } else if (battle_stepped_line_progress_x / 256 + battle_stepped_line_start_x > battle_stepped_line_end_x) {
+            battle_stepped_line_ended = 1;
         }
-    } else if (D_800C3A98) {
-        if (D_800C2084 / 256 + D_800C3A80 < D_800C3A88) {
-            D_800C207C = 1;
+    } else if (battle_stepped_line_y_decreasing) {
+        if (battle_stepped_line_progress_y / 256 + battle_stepped_line_start_y < battle_stepped_line_end_y) {
+            battle_stepped_line_ended = 1;
         }
-    } else if (D_800C2084 / 256 + D_800C3A80 > D_800C3A88) {
-        D_800C207C = 1;
+    } else if (battle_stepped_line_progress_y / 256 + battle_stepped_line_start_y > battle_stepped_line_end_y) {
+        battle_stepped_line_ended = 1;
     }
 }
 
-/* Draw the stepped line effect while UI +0xad is set: once a line ends,
+/* 80088B80: Draw the stepped line effect while UI +0xad is set: once a line ends,
  * start another towards a random end point (a 4 in 100 chance per frame);
  * otherwise advance it. Place its glyphs at the current point (lists
  * extra1-extra3 and +0x32a0) and, while the line runs, twenty random
  * glyphs (+0x46a0) in two rows. */
-void func_80088B80(void) {
+void battle_stepped_line_draw(void) {
     s32 i;
     s32 j;
     s32 n;
 
-    if (D_800D2D28->unkAD != 0) {
-        if (D_800C207C != 0 && mode_get_random_byte_in_range(0, 99) >= 0x60) {
-            func_8008887C(D_800D2DB4->lineX, D_800D2DB4->lineY, D_800C2054[0][mode_get_random_byte_in_range(0, 4)],
-                          D_800C2054[1][mode_get_random_byte_in_range(0, 4)]);
+    if (battle_ui->unkAD != 0) {
+        if (battle_stepped_line_ended != 0 && mode_get_random_byte_in_range(0, 99) >= 0x60) {
+            battle_stepped_line_start(battle_hud_primitive_lists->lineX, battle_hud_primitive_lists->lineY, battle_stepped_line_end_points[0][mode_get_random_byte_in_range(0, 4)],
+                          battle_stepped_line_end_points[1][mode_get_random_byte_in_range(0, 4)]);
         }
-        if (D_800C207C == 0) {
-            func_80088990();
-            D_800D2DB4->lineX = D_800C3A7C + D_800C2080 / 256;
-            D_800D2DB4->lineY = D_800C3A80 + D_800C2084 / 256;
+        if (battle_stepped_line_ended == 0) {
+            battle_stepped_line_advance();
+            battle_hud_primitive_lists->lineX = battle_stepped_line_start_x + battle_stepped_line_progress_x / 256;
+            battle_hud_primitive_lists->lineY = battle_stepped_line_start_y + battle_stepped_line_progress_y / 256;
         }
-        D_800D2DB4->extraCounts[2] = func_80076A10(0xB9, D_800D2DB4->extra2, D_800D2DB4->lineX, D_800D2DB4->lineY);
-        D_800D2DB4->extraBuffers[2] = D_800CCB04.buffer;
-        D_800D2DB4->extraCounts[1] = func_80076A10((D_800D2DB4->lineX & 0xF) + 0xA9, D_800D2DB4->extra1, 0xA0, 0x64);
-        D_800D2DB4->extraBuffers[1] = D_800CCB04.buffer;
-        D_800D2DB4->extraCounts[3] = func_80076A10(0x82, D_800D2DB4->extra3, D_800D2DB4->lineX, D_800D2DB4->lineY);
-        D_800D2DB4->extraBuffers[3] = D_800CCB04.buffer;
-        for (i = 0; i < D_800D2DB4->extraCounts[2]; i++) {
-            func_80076B68(&D_800D2DB4->extra2[i * 2 + D_800D2DB4->extraBuffers[2]]);
+        battle_hud_primitive_lists->extraCounts[2] = battle_build_glyph(0xB9, battle_hud_primitive_lists->extra2, battle_hud_primitive_lists->lineX, battle_hud_primitive_lists->lineY);
+        battle_hud_primitive_lists->extraBuffers[2] = battle_drawing_state.buffer;
+        battle_hud_primitive_lists->extraCounts[1] = battle_build_glyph((battle_hud_primitive_lists->lineX & 0xF) + 0xA9, battle_hud_primitive_lists->extra1, 0xA0, 0x64);
+        battle_hud_primitive_lists->extraBuffers[1] = battle_drawing_state.buffer;
+        battle_hud_primitive_lists->extraCounts[3] = battle_build_glyph(0x82, battle_hud_primitive_lists->extra3, battle_hud_primitive_lists->lineX, battle_hud_primitive_lists->lineY);
+        battle_hud_primitive_lists->extraBuffers[3] = battle_drawing_state.buffer;
+        for (i = 0; i < battle_hud_primitive_lists->extraCounts[2]; i++) {
+            battle_quad_init_full_additive(&battle_hud_primitive_lists->extra2[i * 2 + battle_hud_primitive_lists->extraBuffers[2]]);
         }
-        for (i = 0; i < D_800D2DB4->extraCounts[3]; i++) {
-            func_80076B68(&D_800D2DB4->extra3[i * 2 + D_800D2DB4->extraBuffers[3]]);
+        for (i = 0; i < battle_hud_primitive_lists->extraCounts[3]; i++) {
+            battle_quad_init_full_additive(&battle_hud_primitive_lists->extra3[i * 2 + battle_hud_primitive_lists->extraBuffers[3]]);
         }
-        for (i = 0; i < D_800D2DB4->extraCounts[1]; i++) {
-            func_80076B68(&D_800D2DB4->extra1[i * 2 + D_800D2DB4->extraBuffers[1]]);
+        for (i = 0; i < battle_hud_primitive_lists->extraCounts[1]; i++) {
+            battle_quad_init_full_additive(&battle_hud_primitive_lists->extra1[i * 2 + battle_hud_primitive_lists->extraBuffers[1]]);
         }
-        D_800D2DB4->count32A0 = func_80076A10((D_800D2DB4->lineY & 0xF) + 0xC9, D_800D2DB4->unk32A0,
-                                              D_800D2DB4->lineX, D_800D2DB4->lineY);
-        D_800D2DB4->buffer32A0 = D_800CCB04.buffer;
-        for (i = 0; i < D_800D2DB4->count32A0; i++) {
-            func_80076BF0(&D_800D2DB4->unk32A0[i * 2 + D_800D2DB4->buffer32A0]);
+        battle_hud_primitive_lists->count32A0 = battle_build_glyph((battle_hud_primitive_lists->lineY & 0xF) + 0xC9, battle_hud_primitive_lists->unk32A0,
+                                              battle_hud_primitive_lists->lineX, battle_hud_primitive_lists->lineY);
+        battle_hud_primitive_lists->buffer32A0 = battle_drawing_state.buffer;
+        for (i = 0; i < battle_hud_primitive_lists->count32A0; i++) {
+            battle_quad_init_full_subtractive(&battle_hud_primitive_lists->unk32A0[i * 2 + battle_hud_primitive_lists->buffer32A0]);
         }
-        if (D_800C207C == 0) {
+        if (battle_stepped_line_ended == 0) {
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 10; j++) {
                     n = i * 10 + j;
-                    func_80076A10(mode_get_random_byte_in_range(0, 9) + 0xBA, &D_800D2DB4->unk46A0[n * 2], 0x82 + j * 6, 0xA + i * 0xBD);
-                    func_80076B68(&D_800D2DB4->unk46A0[n * 2 + D_800CCB04.buffer]);
+                    battle_build_glyph(mode_get_random_byte_in_range(0, 9) + 0xBA, &battle_hud_primitive_lists->unk46A0[n * 2], 0x82 + j * 6, 0xA + i * 0xBD);
+                    battle_quad_init_full_additive(&battle_hud_primitive_lists->unk46A0[n * 2 + battle_drawing_state.buffer]);
                 }
             }
-            D_800D2DB4->buffer46A0 = D_800CCB04.buffer;
+            battle_hud_primitive_lists->buffer46A0 = battle_drawing_state.buffer;
         }
     }
 }
 
-/* Build the glyphs of the flags set in 800d2c30 (up to five, 10 pixels
+/* 80089038: Build the glyphs of the flags set in 800d2c30 (up to five, 10 pixels
  * apart from y 0x6e) into the +0x4ce0 primitives. */
-void func_80089038(void) {
+void battle_gear_hud_build_warning_glyphs(void) {
     s32 i;
     s32 y; /* 16.16 */
 
     i = 0;
     y = 0x6E << 16;
-    D_800D2DB4->count4CE0 = 0;
+    battle_hud_primitive_lists->count4CE0 = 0;
     for (; i < 5; i++) {
-        if (func_80089C6C(D_800D2C30, i)) {
-            D_800D2DB4->count4CE0 += func_80076A10(i + 0xC4, &D_800D2DB4->unk4CE0[D_800D2DB4->count4CE0 * 2], 0xE0, y >> 16);
+        if (battle_is_flag_in_mask(battle_gear_hud_warning_flags, i)) {
+            battle_hud_primitive_lists->count4CE0 += battle_build_glyph(i + 0xC4, &battle_hud_primitive_lists->unk4CE0[battle_hud_primitive_lists->count4CE0 * 2], 0xE0, y >> 16);
             y += 10 << 16;
         }
     }
-    D_800D2DB4->buffer4CE0 = D_800CCB04.buffer;
-    D_800D2DB4->blink = 0;
+    battle_hud_primitive_lists->buffer4CE0 = battle_drawing_state.buffer;
+    battle_hud_primitive_lists->blink = 0;
 }
 
-/* Build glyph 0xa0 (0xa1 with 800d2c38) into the +0x3ac0 primitives and
+/* 80089110: Build glyph 0xa0 (0xa1 with 800d2c38) into the +0x3ac0 primitives and
  * initialise the current buffer's quads. */
-void func_80089110(void) {
+void battle_gear_hud_build_overheat_glyph(void) {
     s32 id = 0xA0;
     s32 i;
 
-    if (D_800D2C38 != 0) {
+    if (battle_gear_hud_overheat != 0) {
         id = 0xA1;
     }
-    D_800D2DB4->counts[0] = func_80076A10(id, D_800D2DB4->list0, 0xA0, 0x64);
-    D_800D2DB4->buffers[0] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[0]; i++) {
-        func_80076B68(&D_800D2DB4->list0[i * 2 + D_800D2DB4->buffers[0]]);
+    battle_hud_primitive_lists->counts[0] = battle_build_glyph(id, battle_hud_primitive_lists->list0, 0xA0, 0x64);
+    battle_hud_primitive_lists->buffers[0] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[0]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list0[i * 2 + battle_hud_primitive_lists->buffers[0]]);
     }
 }
 
-/* Build the two glyphs of the escape/limit page (800d2c34 - 0x5d and
+/* 800891E4: Build the two glyphs of the escape/limit page (800d2c34 - 0x5d and
  * - 0x25) into lists 2 and 10 and initialise their quads. */
-void func_800891E4(void) {
+void battle_gear_hud_build_level_glyphs(void) {
     s32 i;
     u8 first;
     u8 second;
 
-    first = D_800D2C34 - 0x5D;
-    second = D_800D2C34 - 0x25;
-    D_800D2DB4->counts[2] = func_80076A10(first, D_800D2DB4->list2, 0xA0, 0x64);
-    D_800D2DB4->buffers[2] = D_800CCB34;
-    D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->list10, 0xA0, 0x64);
-    D_800D2DB4->buffers[10] = D_800CCB34;
-    for (i = 0; i < D_800D2DB4->counts[2]; i++) {
-        func_80076B68(&D_800D2DB4->list2[i * 2 + D_800D2DB4->buffers[2]]);
+    first = battle_gear_hud_attack_level - 0x5D;
+    second = battle_gear_hud_attack_level - 0x25;
+    battle_hud_primitive_lists->counts[2] = battle_build_glyph(first, battle_hud_primitive_lists->list2, 0xA0, 0x64);
+    battle_hud_primitive_lists->buffers[2] = battle_drawing_buffer_byte;
+    battle_hud_primitive_lists->counts[10] = battle_build_glyph(second, battle_hud_primitive_lists->list10, 0xA0, 0x64);
+    battle_hud_primitive_lists->buffers[10] = battle_drawing_buffer_byte;
+    for (i = 0; i < battle_hud_primitive_lists->counts[2]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list2[i * 2 + battle_hud_primitive_lists->buffers[2]]);
     }
-    for (i = 0; i < D_800D2DB4->counts[10]; i++) {
-        func_80076BF0(&D_800D2DB4->list10[i * 2 + D_800D2DB4->buffers[10]]);
+    for (i = 0; i < battle_hud_primitive_lists->counts[10]; i++) {
+        battle_quad_init_full_subtractive(&battle_hud_primitive_lists->list10[i * 2 + battle_hud_primitive_lists->buffers[10]]);
     }
 }
 
-/* Build the five-digit value 800d2c2a as glyphs into list 3 at (0x11a, 0x46)
+/* 80089348: Build the five-digit value 800d2c2a as glyphs into list 3 at (0x11a, 0x46)
  * and initialise its quads. */
-void func_80089348(void) {
+void battle_gear_hud_build_attack_glyphs(void) {
     s32 i;
     s32 x; /* 16.16 */
     u8 digit;
 
     i = 0;
     x = 0x11A << 16;
-    func_8008AAA0(D_800D2C2A);
+    battle_split_decimal_digits(battle_gear_hud_attack);
     for (; i < 5; i++) {
-        digit = D_800C3CF4[i + 4];
+        digit = battle_decimal_digits[i + 4];
         if (digit != 0xFF) {
-            D_800D2DB4->counts[3] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->list3[D_800D2DB4->counts[3] * 2], x >> 16, 0x46);
+            battle_hud_primitive_lists->counts[3] +=
+                battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list3[battle_hud_primitive_lists->counts[3] * 2], x >> 16, 0x46);
             x += 6 << 16;
         }
     }
-    D_800D2DB4->buffers[3] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[3]; i++) {
-        func_80076B68(&D_800D2DB4->list3[i * 2 + D_800D2DB4->buffers[3]]);
+    battle_hud_primitive_lists->buffers[3] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[3]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list3[i * 2 + battle_hud_primitive_lists->buffers[3]]);
     }
 }
 
-/* Build the two-digit value 800d2c3a and a '%' glyph into list 4 at
+/* 8008946C: Build the two-digit value 800d2c3a and a '%' glyph into list 4 at
  * (0x11a, 0x4e), or glyph 0xa2 from page 4 on, and initialise its quads. */
-void func_8008946C(void) {
+void battle_gear_hud_build_boost_chance_glyphs(void) {
     s32 i;
     s32 x; /* 16.16 */
     s32 digits;
     u8 digit;
 
-    if (D_800D2C34 < 4) {
-        func_8008AAA0(D_800D2C3A);
+    if (battle_gear_hud_attack_level < 4) {
+        battle_split_decimal_digits(battle_gear_hud_boost_chance);
         i = 0;
         digits = 0;
         x = 0x11A << 16;
         for (; i < 2; i++) {
-            digit = D_800C3CF4[i + 7];
+            digit = battle_decimal_digits[i + 7];
             if (digit != 0xFF) {
-                    D_800D2DB4->counts[4] +=
-                    func_80076A10(digit + 0x92, &D_800D2DB4->list4[D_800D2DB4->counts[4] * 2], x >> 16, 0x4E);
+                    battle_hud_primitive_lists->counts[4] +=
+                    battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list4[battle_hud_primitive_lists->counts[4] * 2], x >> 16, 0x4E);
                 digits++;
                 x += 6 << 16;
             }
         }
-        D_800D2DB4->counts[4] +=
-            func_80076A10(0x9D, &D_800D2DB4->list4[D_800D2DB4->counts[4] * 2], digits * 6 + 0x11A, 0x4E);
+        battle_hud_primitive_lists->counts[4] +=
+            battle_build_glyph(0x9D, &battle_hud_primitive_lists->list4[battle_hud_primitive_lists->counts[4] * 2], digits * 6 + 0x11A, 0x4E);
     } else {
-        D_800D2DB4->counts[4] = func_80076A10(0xA2, D_800D2DB4->list4, 0x11A, 0x4E);
+        battle_hud_primitive_lists->counts[4] = battle_build_glyph(0xA2, battle_hud_primitive_lists->list4, 0x11A, 0x4E);
     }
-    D_800D2DB4->buffers[4] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[4]; i++) {
-        func_80076B68(&D_800D2DB4->list4[i * 2 + D_800D2DB4->buffers[4]]);
+    battle_hud_primitive_lists->buffers[4] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[4]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list4[i * 2 + battle_hud_primitive_lists->buffers[4]]);
     }
 }
 
-/* Build the three-digit value 800d2c36 and a '%' glyph into list 5 at
+/* 8008963C: Build the three-digit value 800d2c36 and a '%' glyph into list 5 at
  * (0x11a, 0x56) and initialise its quads. */
-void func_8008963C(void) {
+void battle_gear_hud_build_defense_glyphs(void) {
     s32 i;
     s32 x; /* 16.16 */
     s32 digits;
@@ -3184,100 +3184,100 @@ void func_8008963C(void) {
     i = 0;
     digits = 0;
     x = 0x11A << 16;
-    func_8008AAA0(D_800D2C36);
+    battle_split_decimal_digits(battle_gear_hud_defense);
     for (; i < 3; i++) {
-        digit = D_800C3CF4[i + 6];
+        digit = battle_decimal_digits[i + 6];
         if (digit != 0xFF) {
-            D_800D2DB4->counts[5] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->list5[D_800D2DB4->counts[5] * 2], x >> 16, 0x56);
+            battle_hud_primitive_lists->counts[5] +=
+                battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list5[battle_hud_primitive_lists->counts[5] * 2], x >> 16, 0x56);
             digits++;
             x += 6 << 16;
         }
     }
-    D_800D2DB4->counts[5] +=
-        func_80076A10(0x9D, &D_800D2DB4->list5[D_800D2DB4->counts[5] * 2], digits * 6 + 0x11A, 0x56);
-    D_800D2DB4->buffers[5] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[5]; i++) {
-        func_80076B68(&D_800D2DB4->list5[i * 2 + D_800D2DB4->buffers[5]]);
+    battle_hud_primitive_lists->counts[5] +=
+        battle_build_glyph(0x9D, &battle_hud_primitive_lists->list5[battle_hud_primitive_lists->counts[5] * 2], digits * 6 + 0x11A, 0x56);
+    battle_hud_primitive_lists->buffers[5] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[5]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list5[i * 2 + battle_hud_primitive_lists->buffers[5]]);
     }
 }
 
-/* Build the two-digit value 800d2c35 as glyphs into list 6 at (0x11a,
+/* 800897CC: Build the two-digit value 800d2c35 as glyphs into list 6 at (0x11a,
  * 0x5e) and initialise its quads. */
-void func_800897CC(void) {
+void battle_gear_hud_build_speed_glyphs(void) {
     s32 i;
     s32 x; /* 16.16 */
     u8 digit;
 
     i = 0;
     x = 0x11A << 16;
-    func_8008AAA0(D_800D2C35);
+    battle_split_decimal_digits(battle_gear_hud_speed);
     for (; i < 2; i++) {
-        digit = D_800C3CF4[i + 7];
+        digit = battle_decimal_digits[i + 7];
         if (digit != 0xFF) {
-            D_800D2DB4->counts[6] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->list6[D_800D2DB4->counts[6] * 2], x >> 16, 0x5E);
+            battle_hud_primitive_lists->counts[6] +=
+                battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list6[battle_hud_primitive_lists->counts[6] * 2], x >> 16, 0x5E);
             x += 6 << 16;
         }
     }
-    D_800D2DB4->buffers[6] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->counts[6]; i++) {
-        func_80076B68(&D_800D2DB4->list6[i * 2 + D_800D2DB4->buffers[6]]);
+    battle_hud_primitive_lists->buffers[6] = battle_drawing_state.buffer;
+    for (i = 0; i < battle_hud_primitive_lists->counts[6]; i++) {
+        battle_quad_init_full_additive(&battle_hud_primitive_lists->list6[i * 2 + battle_hud_primitive_lists->buffers[6]]);
     }
 }
 
-/* Build the member's gear fuel as glyphs at y 0xcc: the fuel's last four
+/* 800898F0: Build the member's gear fuel as glyphs at y 0xcc: the fuel's last four
  * digits into list 7 (from x 0x20, blanks keep their place) and the maximum
  * fuel's into list 8 (from x 0x48, packed), then the separator glyph 0x9c
  * at x 0x41. */
-void func_800898F0(u8 member) {
+void battle_gear_hud_build_fuel_glyphs(u8 member) {
     s32 i;
     s32 x; /* 16.16 */
     u8 digit;
 
     i = 0;
-    D_800D2DB4->counts[7] = 0;
+    battle_hud_primitive_lists->counts[7] = 0;
     x = 0x20 << 16;
-    func_8008AAA0(D_800CCCE8.records[member].gear.fuel);
+    battle_split_decimal_digits(battle_work_area.records[member].gear.fuel);
     for (; i < 4; i++) {
-        digit = D_800C3CF4[i + 5];
+        digit = battle_decimal_digits[i + 5];
         if (digit != 0xFF) {
-            D_800D2DB4->counts[7] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->list7[D_800D2DB4->counts[7] * 2], x >> 16, 0xCC);
+            battle_hud_primitive_lists->counts[7] +=
+                battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list7[battle_hud_primitive_lists->counts[7] * 2], x >> 16, 0xCC);
         }
         x += 8 << 16;
     }
     i = 0;
-    D_800D2DB4->buffers[7] = D_800CCB04.buffer;
-    D_800D2DB4->counts[8] = 0;
+    battle_hud_primitive_lists->buffers[7] = battle_drawing_state.buffer;
+    battle_hud_primitive_lists->counts[8] = 0;
     x = 0x48 << 16;
-    func_8008AAA0(D_800CCCE8.records[member].gear.maxFuel);
+    battle_split_decimal_digits(battle_work_area.records[member].gear.maxFuel);
     for (; i < 4; i++) {
-        digit = D_800C3CF4[i + 5];
+        digit = battle_decimal_digits[i + 5];
         if (digit != 0xFF) {
-            D_800D2DB4->counts[8] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->list8[D_800D2DB4->counts[8] * 2], x >> 16, 0xCC);
+            battle_hud_primitive_lists->counts[8] +=
+                battle_build_glyph(digit + 0x92, &battle_hud_primitive_lists->list8[battle_hud_primitive_lists->counts[8] * 2], x >> 16, 0xCC);
             x += 8 << 16;
         }
     }
-    D_800D2DB4->counts[8] += func_80076A10(0x9C, &D_800D2DB4->list8[D_800D2DB4->counts[8] * 2], 0x41, 0xCC);
-    D_800D2DB4->buffers[8] = D_800CCB04.buffer;
+    battle_hud_primitive_lists->counts[8] += battle_build_glyph(0x9C, &battle_hud_primitive_lists->list8[battle_hud_primitive_lists->counts[8] * 2], 0x41, 0xCC);
+    battle_hud_primitive_lists->buffers[8] = battle_drawing_state.buffer;
 }
 
-/* Run the eight 8008860c..800897cc steps (the member is unused). */
-void func_80089AF8(u8 member) {
-    func_8008860C();
-    func_80089038();
-    func_80089110();
-    func_800891E4();
-    func_80089348();
-    func_8008946C();
-    func_8008963C();
-    func_800897CC();
+/* 80089AF8: Run the eight 8008860c..800897cc steps (the member is unused). */
+void battle_gear_hud_build_lists(u8 member) {
+    battle_gear_hud_build_fixed_glyphs();
+    battle_gear_hud_build_warning_glyphs();
+    battle_gear_hud_build_overheat_glyph();
+    battle_gear_hud_build_level_glyphs();
+    battle_gear_hud_build_attack_glyphs();
+    battle_gear_hud_build_boost_chance_glyphs();
+    battle_gear_hud_build_defense_glyphs();
+    battle_gear_hud_build_speed_glyphs();
 }
 
-/* A random value in low..high (0xffff for low 0xffff, 0 for high 0). */
-u16 func_80089B50(u16 low, u16 high) {
+/* 80089B50: A random value in low..high (0xffff for low 0xffff, 0 for high 0). */
+u16 battle_random_range(u16 low, u16 high) {
     s32 span;
 
     if (low == 0xFFFF) {
@@ -3296,58 +3296,58 @@ u16 func_80089B50(u16 low, u16 high) {
     return low + (u16)rand() % (span + 1);
 }
 
-/* The mask bit `bit`. */
-u16 func_80089BEC(u8 bit) {
-    return D_800C3468[bit];
+/* 80089BEC: The mask bit `bit`. */
+u16 battle_get_flag_bit(u8 bit) {
+    return battle_flag_bits[bit];
 }
 
-/* The mask bit of `slot`. */
-u16 func_80089C08(u8 slot) {
-    return D_800C3448[slot];
+/* 80089C08: The mask bit of `slot`. */
+u16 battle_get_slot_bit(u8 slot) {
+    return battle_slot_bits[slot];
 }
 
-/* Every mask bit but `bit`. */
-u16 func_80089C24(u8 bit) {
-    return ~D_800C3468[bit];
+/* 80089C24: Every mask bit but `bit`. */
+u16 battle_get_other_flag_bits(u8 bit) {
+    return ~battle_flag_bits[bit];
 }
 
-/* Every slot bit but `slot`'s. */
-u16 func_80089C48(u8 slot) {
-    return ~D_800C3448[slot];
+/* 80089C48: Every slot bit but `slot`'s. */
+u16 battle_get_other_slot_bits(u8 slot) {
+    return ~battle_slot_bits[slot];
 }
 
-/* Bit `bit` of `mask`; 0 for bits past 15. */
-u16 func_80089C6C(u16 mask, u8 bit) {
+/* 80089C6C: Bit `bit` of `mask`; 0 for bits past 15. */
+u16 battle_is_flag_in_mask(u16 mask, u8 bit) {
     u16 result;
 
     if (bit < 16) {
-        result = D_800C3468[bit] & mask;
+        result = battle_flag_bits[bit] & mask;
     } else {
         result = 0;
     }
     return result;
 }
 
-/* The bit of `slot` in `mask`; 0 for slots past 15. */
-u16 func_80089C9C(u16 mask, u8 slot) {
+/* 80089C9C: The bit of `slot` in `mask`; 0 for slots past 15. */
+u16 battle_is_slot_in_mask(u16 mask, u8 slot) {
     u16 result;
 
     if (slot < 16) {
-        result = D_800C3448[slot] & mask;
+        result = battle_slot_bits[slot] & mask;
     } else {
         result = 0;
     }
     return result;
 }
 
-/* Read the battle input into 800d3014: wait for a controller as 8008a3ec
+/* 80089CCC: Read the battle input into 800d3014: wait for a controller as 8008a3ec
  * does, then dequeue pad entries until one matters. Directions (0-3,
  * remembered in 800c3e28) and the face buttons (4-7) play their sounds;
  * with the debug flag, select refills the party's AP and button 2 opens the
  * debug console; start (0x800, while 800ccc58) pauses or resumes, and while
  * paused holding both 4 and 8 on a debug build ends the battle. A finished
  * battle or event returns 0xff. Loops while paused. */
-void func_80089CCC(s32 mode) {
+void battle_read_input(s32 mode) {
     u8 code = 8;
     u8 waiting = 1;
     u8 paused = 0;
@@ -3372,74 +3372,74 @@ void func_80089CCC(s32 mode) {
             }
         }
     } while (waiting);
-    directions = D_800C3E28;
-    outcome = &D_800C48EA;
+    directions = battle_direction_input;
+    outcome = &battle_area_outcome;
     do {
         if (pad_has_queue_overflowed()) {
             pad_clear_queue();
         } else {
             while (pad_dequeue_state()) {
-                if (*outcome != 0 || D_800C3EAC->eventsDone != 0) {
+                if (*outcome != 0 || battle_turn_state->eventsDone != 0) {
                     code = 0xFF;
                     break;
                 }
-                if (D_800C3444 != 0) {
+                if (battle_paused != 0) {
                     if (*mode_disc_mode_pointer != -1 && (pad_port0_repeated & 4) && (pad_port0_repeated & 8)) {
                         *outcome = 1;
                         goto resume;
                     }
                 } else if (pad_port0_repeated & 0x2000) {
-                    func_8008AA74(0x4C);
+                    battle_play_menu_sound(0x4C);
                     code = 0;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
                 } else if (pad_port0_repeated & 0x4000) {
-                    func_8008AA74(0x4C);
+                    battle_play_menu_sound(0x4C);
                     code = 1;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
                 } else if (pad_port0_repeated & 0x8000) {
-                    func_8008AA74(0x4C);
+                    battle_play_menu_sound(0x4C);
                     code = 2;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
                 } else if (pad_port0_repeated & 0x1000) {
-                    func_8008AA74(0x4C);
+                    battle_play_menu_sound(0x4C);
                     code = 3;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
                 } else if (pad_port0_pressed & 0x20) {
                     code = 4;
-                    func_8008AA74(0x4D);
+                    battle_play_menu_sound(0x4D);
                     break;
                 } else if (pad_port0_pressed & 0x40) {
                     code = 5;
-                    func_8008AA74(0x4E);
+                    battle_play_menu_sound(0x4E);
                     break;
                 } else if (pad_port0_pressed & 0x80) {
                     code = 6;
-                    func_8008AA74(0x4D);
+                    battle_play_menu_sound(0x4D);
                     break;
                 } else if (pad_port0_pressed & 0x10) {
                     code = 7;
-                    func_8008AA74(0x4D);
+                    battle_play_menu_sound(0x4D);
                     break;
                 } else if (pad_port0_pressed & 1) {
                     code = 0xC;
                     if (*mode_disc_mode_pointer != -1) {
-                        D_800D32A0[0].unk0 = 28;
-                        D_800D32A0[1].unk0 = 28;
-                        D_800D32A0[2].unk0 = 28;
-                        D_800CCCE8.records[0].field148 = 4;
-                        D_800CCCE8.records[1].field148 = 4;
-                        D_800CCCE8.records[2].field148 = 4;
-                        D_800CCCE8.records[0].statusTimers[6] = 0xFF;
-                        D_800CCCE8.records[1].statusTimers[6] = 0xFF;
-                        D_800CCCE8.records[2].statusTimers[6] = 0xFF;
+                        battle_slot_flags[0].unk0 = 28;
+                        battle_slot_flags[1].unk0 = 28;
+                        battle_slot_flags[2].unk0 = 28;
+                        battle_work_area.records[0].field148 = 4;
+                        battle_work_area.records[1].field148 = 4;
+                        battle_work_area.records[2].field148 = 4;
+                        battle_work_area.records[0].statusTimers[6] = 0xFF;
+                        battle_work_area.records[1].statusTimers[6] = 0xFF;
+                        battle_work_area.records[2].statusTimers[6] = 0xFF;
                     }
                     break;
                 } else if (pad_port0_pressed & 2) {
@@ -3448,10 +3448,10 @@ void func_80089CCC(s32 mode) {
                         if (++mode_battle_debug_page >= 5) {
                             mode_battle_debug_page = 0;
                         }
-                        if (D_800C3AA0 == 0) {
+                        if (battle_console_opened == 0) {
                             console_set_external_block(0x80200000);
                             console_open(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
-                            D_800C3AA0++;
+                            battle_console_opened++;
                         }
                     }
                     break;
@@ -3461,91 +3461,91 @@ void func_80089CCC(s32 mode) {
                 }
                 if (pad_port0_pressed & 0x800) {
                     code = 0xE;
-                    if (D_800CCC58 != 0) {
-                        if (D_800C3444 == 0) {
+                    if (battle_turns_active != 0) {
+                        if (battle_paused == 0) {
                             sprite_upload_pause_image(0x88, 0x64);
                             sprite_upload_pause_image(0x88, 0x144);
                             sound_silence_voices();
                             vsyncs = pad_vblank_count;
-                            D_800C3444 = 1;
+                            battle_paused = 1;
                         } else {
                         resume:
                             sound_restore_voices();
                             pad_vblank_count = vsyncs;
-                            D_800C3444 = 0;
+                            battle_paused = 0;
                         }
                     }
                     break;
                 }
             }
         }
-    } while (D_800C3444 != 0);
-    D_800D3014 = code;
+    } while (battle_paused != 0);
+    battle_pressed_key = code;
 }
 
-/* Every other frame upload the next step of the four cycling CLUT strips. */
-void func_8008A144(void) {
-    D_800D2D28->unkAA++;
-    if (D_800D2D28->unkAA & 1) {
-        LoadImage(&D_800C3EA4->unk8950[0], &D_800C3EA4->unk8970[0][D_800D2D28->unk30]);
-        LoadImage(&D_800C3EA4->unk8950[1], &D_800C3EA4->unk8970[1][D_800D2D28->unk30]);
-        LoadImage(&D_800C3EA4->unk8950[2], &D_800C3EA4->unk8970[2][D_800D2D28->unk30]);
-        LoadImage(&D_800C3EA4->unk8950[3], &D_800C3EA4->unk8970[3][D_800D2D28->unk30]);
-        D_800D2D28->unk30 += 4;
-        if (D_800D2D28->unk30 >= 0xC7) {
-            D_800D2D28->unk30 = 0;
+/* 8008A144: Every other frame upload the next step of the four cycling CLUT strips. */
+void battle_step_clut_cycle(void) {
+    battle_ui->unkAA++;
+    if (battle_ui->unkAA & 1) {
+        LoadImage(&battle_graphics->unk8950[0], &battle_graphics->unk8970[0][battle_ui->unk30]);
+        LoadImage(&battle_graphics->unk8950[1], &battle_graphics->unk8970[1][battle_ui->unk30]);
+        LoadImage(&battle_graphics->unk8950[2], &battle_graphics->unk8970[2][battle_ui->unk30]);
+        LoadImage(&battle_graphics->unk8950[3], &battle_graphics->unk8970[3][battle_ui->unk30]);
+        battle_ui->unk30 += 4;
+        if (battle_ui->unk30 >= 0xC7) {
+            battle_ui->unk30 = 0;
         }
     }
 }
 
-/* Result-screen tick of end state 1: the ATB while 800ccc58, input for the
+/* 8008A274: Result-screen tick of end state 1: the ATB while 800ccc58, input for the
  * member, counters, the pulsing shade, the scroll by 800d39d4 and the CLUT
  * cycle. */
-void func_8008A274(u8 member) {
-    if (D_800CCC58 != 0) {
-        func_8007171C();
+void battle_tick_turns(u8 member) {
+    if (battle_turns_active != 0) {
+        battle_tick_atb();
     }
     if (member == 0) {
-        func_80089CCC(0);
+        battle_read_input(0);
     }
-    D_800D2D28->unkA9 += 6;
-    D_800D2D28->unkAB++;
-    if (D_800C3EA4->unk6415 != 0) {
-        if (D_800C3EA4->unk6416 == 0) {
-            D_800C3EA4->panelAlpha += 4;
-            if (D_800C3EA4->panelAlpha > 0x80) {
-                D_800C3EA4->panelAlpha = 0x7C;
-                D_800C3EA4->unk6416 = 1;
+    battle_ui->unkA9 += 6;
+    battle_ui->unkAB++;
+    if (battle_graphics->unk6415 != 0) {
+        if (battle_graphics->unk6416 == 0) {
+            battle_graphics->panelAlpha += 4;
+            if (battle_graphics->panelAlpha > 0x80) {
+                battle_graphics->panelAlpha = 0x7C;
+                battle_graphics->unk6416 = 1;
             }
         } else {
-            D_800C3EA4->panelAlpha -= 4;
-            if (D_800C3EA4->panelAlpha < 0) {
-                D_800C3EA4->panelAlpha = 4;
-                D_800C3EA4->unk6416 = 0;
+            battle_graphics->panelAlpha -= 4;
+            if (battle_graphics->panelAlpha < 0) {
+                battle_graphics->panelAlpha = 4;
+                battle_graphics->unk6416 = 0;
             }
         }
     }
-    switch (D_800D39D4) {
+    switch (battle_list_page_scroll_request) {
     case 1:
     case 3:
-        D_800D3288++;
+        battle_list_page_scroll++;
         break;
     case 2:
     case 4:
-        D_800D3288--;
+        battle_list_page_scroll--;
         break;
     }
-    func_8008A144();
+    battle_step_clut_cycle();
 }
 
-/* Wait for a controller (pausing the sound and the vsync count while there
+/* 8008A3EC: Wait for a controller (pausing the sound and the vsync count while there
  * is none), run a result-screen tick, count down the active 800d3278 entry
  * timers, then read the input: an overflowed queue is reset; otherwise
  * entries are dequeued until one matters. Confirm (0x20) sets input code 4;
  * start (0x800, while 800ccc58) pauses or resumes the battle, and while
  * paused holding both 4 and 8 with a disc ends it (outcome 1). Loops while
  * paused. */
-void func_8008A3EC(u8 member) {
+void battle_tick_event_script(u8 member) {
     u8 waiting = 1;
     u8 paused = 0;
     s32 vsyncs;
@@ -3568,62 +3568,62 @@ void func_8008A3EC(u8 member) {
             }
         }
     } while (waiting);
-    func_8008A144();
-    if (D_800D2D28->scriptLoaded != 0) {
+    battle_step_clut_cycle();
+    if (battle_ui->scriptLoaded != 0) {
         for (i = 0; i < 16; i++) {
-            if (D_800D3278->threads[i].waiting != 0) {
-                if (--D_800D3278->threads[i].waitTimer < 0) {
-                    D_800D3278->threads[i].waitTimer = 0;
+            if (battle_state_of_event_script->threads[i].waiting != 0) {
+                if (--battle_state_of_event_script->threads[i].waitTimer < 0) {
+                    battle_state_of_event_script->threads[i].waitTimer = 0;
                 }
             }
         }
     }
     do {
-        if (D_800D2D28->waitingCross == 0) {
-            D_800D3014 = 0xFF;
+        if (battle_ui->waitingCross == 0) {
+            battle_pressed_key = 0xFF;
         }
         if (pad_has_queue_overflowed()) {
             pad_clear_queue();
         } else {
             while (pad_dequeue_state()) {
-                if (D_800C3444 != 0) {
+                if (battle_paused != 0) {
                     if (*mode_disc_mode_pointer != -1 && (pad_port0_repeated & 4) && (pad_port0_repeated & 8)) {
-                        D_800C48EA = 1;
+                        battle_area_outcome = 1;
                         goto resume;
                     }
                 } else if (pad_port0_pressed & 0x20) {
-                    D_800D3014 = 4;
+                    battle_pressed_key = 4;
                     break;
                 }
                 if (pad_port0_pressed & 0x800) {
-                    if (D_800CCC58 != 0) {
-                        if (D_800C3444 == 0) {
+                    if (battle_turns_active != 0) {
+                        if (battle_paused == 0) {
                             sound_silence_voices();
                             sprite_upload_pause_image(0x88, 0x64);
                             sprite_upload_pause_image(0x88, 0x144);
                             vsyncs = pad_vblank_count;
-                            D_800C3444 = 1;
+                            battle_paused = 1;
                         } else {
                         resume:
                             sound_restore_voices();
                             pad_vblank_count = vsyncs;
-                            D_800C3444 = 0;
+                            battle_paused = 0;
                         }
                     }
                     break;
                 }
             }
         }
-    } while (D_800C3444 != 0);
+    } while (battle_paused != 0);
 }
 
-/* Result screen input: wait for a controller as 8008a3ec does, read the
+/* 8008A684: Result screen input: wait for a controller as 8008a3ec does, read the
  * input (confirm sets input code 4, start pauses or resumes) while paused,
  * then count each member's two result values one step; while any is still
  * counting redraw the panels (801df270, 801df4c0), else stop counting.
  * Reads use the work table; stores use its position in the battle area.
  * These are two views of the same counters at 800cdcb8/800cdcd0. */
-void func_8008A684(u8 member) {
+void battle_tick_result_screens(u8 member) {
     u8 done = 1;
     u8 waiting = 1;
     u8 paused = 0;
@@ -3647,8 +3647,8 @@ void func_8008A684(u8 member) {
             }
         }
     } while (waiting);
-    if (D_800D2D28->waitingCross == 0) {
-        D_800D3014 = 0xFF;
+    if (battle_ui->waitingCross == 0) {
+        battle_pressed_key = 0xFF;
     }
     do {
         if (pad_has_queue_overflowed()) {
@@ -3656,268 +3656,268 @@ void func_8008A684(u8 member) {
         } else {
             while (pad_dequeue_state()) {
                 if (pad_port0_pressed & 0x20) {
-                    D_800D3014 = 4;
+                    battle_pressed_key = 4;
                     break;
                 }
                 if (pad_port0_pressed & 0x800) {
-                    if (D_800C3444 == 0) {
+                    if (battle_paused == 0) {
                         sound_silence_voices();
                         sprite_upload_pause_image(0x88, 0x64);
                         sprite_upload_pause_image(0x88, 0x144);
                         vsyncs = pad_vblank_count;
-                        D_800C3444 = 1;
+                        battle_paused = 1;
                     } else {
                         sound_restore_voices();
                         pad_vblank_count = vsyncs;
-                        D_800C3444 = 0;
+                        battle_paused = 0;
                     }
                     break;
                 }
             }
         }
-    } while (D_800C3444 != 0);
-    if (D_800D2D28->showCards != 0 && D_800D32F8[0]->counting != 0) {
+    } while (battle_paused != 0);
+    if (battle_ui->showCards != 0 && battle_member_cards[0]->counting != 0) {
         for (i = 0; i < 3; i++) {
-            if (D_800D32F8[i]->done[0] == 0) {
-                if (D_800CCCE8.toCount[i][0] == 0) {
-                    D_800D32F8[i]->done[0] = 1;
+            if (battle_member_cards[i]->done[0] == 0) {
+                if (battle_work_area.toCount[i][0] == 0) {
+                    battle_member_cards[i]->done[0] = 1;
                 } else {
-                    BATTLE_AREA.work.toCount[i][0] = D_800CCCE8.toCount[i][0] - 1;
-                    BATTLE_AREA.work.expTotals[i][0] = D_800CCCE8.expTotals[i][0] + 1;
+                    BATTLE_AREA.work.toCount[i][0] = battle_work_area.toCount[i][0] - 1;
+                    BATTLE_AREA.work.expTotals[i][0] = battle_work_area.expTotals[i][0] + 1;
                 }
             }
-            if (D_800D32F8[i]->done[1] == 0) {
-                if (D_800CCCE8.toCount[i][1] == 0) {
-                    D_800D32F8[i]->done[1] = 1;
+            if (battle_member_cards[i]->done[1] == 0) {
+                if (battle_work_area.toCount[i][1] == 0) {
+                    battle_member_cards[i]->done[1] = 1;
                 } else {
-                    BATTLE_AREA.work.toCount[i][1] = D_800CCCE8.toCount[i][1] - 1;
-                    BATTLE_AREA.work.expTotals[i][1] = D_800CCCE8.expTotals[i][1] + 1;
+                    BATTLE_AREA.work.toCount[i][1] = battle_work_area.toCount[i][1] - 1;
+                    BATTLE_AREA.work.expTotals[i][1] = battle_work_area.expTotals[i][1] + 1;
                 }
             }
-            done &= D_800D32F8[i]->done[0];
-            if (D_800D32F8[0]->secondValue != 0) {
-                done &= D_800D32F8[i]->done[1];
+            done &= battle_member_cards[i]->done[0];
+            if (battle_member_cards[0]->secondValue != 0) {
+                done &= battle_member_cards[i]->done[1];
             }
         }
         if (!done) {
             func_801DF270();
             func_801DF4C0();
         } else {
-            D_800D32F8[0]->counting = 0;
+            battle_member_cards[0]->counting = 0;
         }
     }
 }
 
-/* Result-screen step by the battle end state 800c3e4c. */
-void func_8008A9C0(u8 member) {
-    switch (D_800C3E4C) {
+/* 8008A9C0: Result-screen step by the battle end state 800c3e4c. */
+void battle_tick_frame(u8 member) {
+    switch (battle_frame_mode) {
     case 0:
-        func_8008A684(member);
+        battle_tick_result_screens(member);
         break;
     case 1:
-        func_8008A274(member);
+        battle_tick_turns(member);
         break;
     case 2:
-        func_8008A3EC(member);
+        battle_tick_event_script(member);
         break;
     }
 }
 
-/* Play menu sound effect `id` of the system effect bank. */
-void func_8008AA40(u8 id) {
+/* 8008AA40: Play menu sound effect `id` of the system effect bank. */
+void battle_play_system_sound(u8 id) {
     sound_play_effect_on_last_channels((sprite_script_sound_bank->bank << 16) | id);
 }
 
-/* Play menu sound effect `id` while menu effects are enabled. */
-void func_8008AA74(u8 id) {
-    if (D_800D366C != 0) {
-        func_8008AA40(id);
+/* 8008AA74: Play menu sound effect `id` while menu effects are enabled. */
+void battle_play_menu_sound(u8 id) {
+    if (battle_command_menu_sounds_enabled != 0) {
+        battle_play_system_sound(id);
     }
 }
 
-/* Split `value` into nine decimal digits at 800c3cf4, leading zeros 0xff. */
-void func_8008AAA0(u32 value) {
+/* 8008AAA0: Split `value` into nine decimal digits at 800c3cf4, leading zeros 0xff. */
+void battle_split_decimal_digits(u32 value) {
     u32 divisor = 100000000;
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        D_800C3CF4[i] = value / divisor;
+        battle_decimal_digits[i] = value / divisor;
         value %= divisor;
         divisor /= 10;
     }
     for (i = 1; i < 9; i++) {
-        if (D_800C3CF4[i] != 0) {
-            if (D_800C3CF4[i - 1] == 0) {
-                D_800C3CF4[i - 1] = 0xFF;
+        if (battle_decimal_digits[i] != 0) {
+            if (battle_decimal_digits[i - 1] == 0) {
+                battle_decimal_digits[i - 1] = 0xFF;
             }
             break;
         }
-        D_800C3CF4[i - 1] = 0xFF;
+        battle_decimal_digits[i - 1] = 0xFF;
     }
 }
 
-/* Heap mode 0x20/0. */
-void func_8008AB4C(void) {
+/* 8008AB4C: Heap mode 0x20/0. */
+void battle_cd_select_event_script_directory(void) {
     cd_select_directory(0x20, 0);
 }
 
-/* Heap mode 0x20/2. */
-void func_8008AB70(void) {
+/* 8008AB70: Heap mode 0x20/2. */
+void battle_cd_select_music_directory(void) {
     cd_select_directory(0x20, 2);
 }
 
-/* Heap mode 0x20/3. */
-void func_8008AB94(void) {
+/* 8008AB94: Heap mode 0x20/3. */
+void battle_cd_select_menu_directory(void) {
     cd_select_directory(0x20, 3);
 }
 
-/* Allocate a battle heap block (owner tag 2). */
-s32 func_8008ABB8(s32 size, s32 mode) {
+/* 8008ABB8: Allocate a battle heap block (owner tag 2). */
+s32 battle_heap_alloc(s32 size, s32 mode) {
     heap_select_owner_tag(2, 0);
     return (s32)heap_alloc(size, mode);
 }
 
-/* Allocate a text image block for `count` characters. */
-s32 func_8008AC00(s32 count) {
+/* 8008AC00: Allocate a text image block for `count` characters. */
+s32 battle_heap_alloc_text_image(s32 count) {
     heap_select_owner_tag(2, 0);
     return (s32)heap_alloc((count + 3) * 26, 0);
 }
 
-/* Wait frames until the disc reads finish. */
-void func_8008AC50(void) {
+/* 8008AC50: Wait frames until the disc reads finish. */
+void battle_cd_wait_for_reads(void) {
     while (cd_get_pending_read_count() != 0) {
-        func_800716D8();
+        battle_wait_frame();
     }
 }
 
-/* Queue event 0xf3 for `actor` with the enemies of `mask` whose +0x34 bit
+/* 8008AC88: Queue event 0xf3 for `actor` with the enemies of `mask` whose +0x34 bit
  * 0x800 is set (low three bits dropped). */
-void func_8008AC88(u16 mask, u8 actor) {
+void battle_queue_reacting_enemies_event(u16 mask, u8 actor) {
     u16 targets = mask & 0xFFF8;
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if (func_80089C9C(targets, i + 3) && !(D_800CCCE8.records[i + 3].pilot.flags34 & 0x800)) {
-            targets &= func_80089C48(i + 3);
+        if (battle_is_slot_in_mask(targets, i + 3) && !(battle_work_area.records[i + 3].pilot.flags34 & 0x800)) {
+            targets &= battle_get_other_slot_bits(i + 3);
         }
     }
     if (targets) {
-        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
-        D_800C3FE8[D_800C3EAC->eventCount].parameter = targets;
-        D_800C3EAC->eventCount++;
+        battle_area_events[battle_turn_state->eventCount].actor = actor;
+        battle_area_events[battle_turn_state->eventCount].type = 0xF3;
+        battle_area_events[battle_turn_state->eventCount].parameter = targets;
+        battle_turn_state->eventCount++;
     }
 }
 
-/* Execute the chosen technique (turn state +0x2e6) for the member: reset
+/* 8008ADD0: Execute the chosen technique (turn state +0x2e6) for the member: reset
  * the events, commit the command (from 23, or the gear's from 22 in a gear;
  * command bits 0-2 target the candidates, else the chosen target), apply
  * its results, face the camera, show the member's model, queue its event
  * with the targeted enemies' reactions and wait for the presentation. */
-void func_8008ADD0(member)
+void battle_execute_chosen_art(member)
 u8 member;
 {
     u16 targets;
     u16 command;
     s32 i;
 
-    D_800D366C = 0;
-    func_800BCD98(0);
+    battle_command_menu_sounds_enabled = 0;
+    battle_highlight_slots(0);
     for (i = 0; i < 32; i++) {
-        D_800C3FE8[i].type = 0xFF;
+        battle_area_events[i].type = 0xFF;
     }
-    if (D_800D32A0[member].unk1 == 0) {
-        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 23;
-        command = D_800CCCE8.partyCommands[member][D_800C3EAC->unk2E6 + 22].state;
+    if (battle_slot_flags[member].unk1 == 0) {
+        battle_turn_state->unk2DC = battle_turn_state->unk2E6 + 23;
+        command = battle_work_area.partyCommands[member][battle_turn_state->unk2E6 + 22].state;
     } else {
-        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 22;
-        command = D_800CCCE8.gearCommands[member][D_800C3EAC->unk2E6 + 21].state;
+        battle_turn_state->unk2DC = battle_turn_state->unk2E6 + 22;
+        command = battle_work_area.gearCommands[member][battle_turn_state->unk2E6 + 21].state;
     }
     if (command & 7) {
-        targets = D_800C3D64;
+        targets = battle_target_candidate_mask;
     } else {
-        targets = func_80089C08(D_800C3E2C);
+        targets = battle_get_slot_bit(battle_target_cursor_slot);
     }
-    func_8008AC88(targets, member);
-    func_80085388();
-    func_80085CCC(member, targets, D_800C3EAC->unk2DC - 1);
-    func_80085C88(D_800C3EAC->eventCount);
-    func_800BC404(D_800D2C94.targets | func_80089C08(member));
-    func_800B89FC(1, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
-    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2C94.animation;
-    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
-    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    battle_queue_reacting_enemies_event(targets, member);
+    battle_clear_event_results();
+    battle_commit_action(member, targets, battle_turn_state->unk2DC - 1);
+    battle_accumulate_and_apply_results(battle_turn_state->eventCount);
+    battle_camera_start_move(battle_committed_action.targets | battle_get_slot_bit(member));
+    battle_menu_open_turn(1, member, battle_turn_state->slots[member].defaultTarget, battle_find_next_turn_slot(member));
+    battle_area_events[battle_turn_state->eventCount].type = battle_committed_action.animation;
+    battle_area_events[battle_turn_state->eventCount].actor = member;
+    battle_area_events[battle_turn_state->eventCount].targetMask = battle_committed_action.targets;
     for (i = 3; i < 11; i++) {
-        if (func_80089C9C(D_800D2C94.targets, i)) {
-            func_80079840(member, i);
+        if (battle_is_slot_in_mask(battle_committed_action.targets, i)) {
+            battle_ai_tell_target_about_actor(member, i);
         }
     }
-    D_800C3EAC->eventCount++;
-    func_80080B64(member);
-    while (D_800C3EAC->eventsDone == 0) {
-        func_800716D8();
+    battle_turn_state->eventCount++;
+    battle_close_actor_event_queue(member);
+    while (battle_turn_state->eventsDone == 0) {
+        battle_wait_frame();
     }
 }
 
-/* Hide the command windows (four panels); without `keep` show the
+/* 8008B108: Hide the command windows (four panels); without `keep` show the
  * +0x641c lists. */
-void func_8008B108(u8 keep) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 0;
-    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 0;
-    D_800D2D28->unkB7 = 0;
+void battle_hide_command_windows(u8 keep) {
+    battle_ui->unk9C = battle_ui->unk9D = battle_ui->cursorShown = 0;
+    battle_ui->windows[0] = battle_ui->windows[1] = battle_ui->windows[2] = battle_ui->windows[3] = 0;
+    battle_ui->unkB7 = 0;
     if (keep == 0) {
-        D_800D2D28->unkCB = 1;
+        battle_ui->unkCB = 1;
     }
 }
 
-/* Show the command windows (four panels, page 1) and frame the camera on
+/* 8008B168: Show the command windows (four panels, page 1) and frame the camera on
  * the member and its default target. */
-void func_8008B168(u8 member) {
-    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->cursorShown = 1;
-    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 1;
-    D_800D2D28->unkB7 = 1;
-    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
-    func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+void battle_show_command_windows(u8 member) {
+    battle_ui->unk9C = battle_ui->unk9D = battle_ui->cursorShown = 1;
+    battle_ui->windows[0] = battle_ui->windows[1] = battle_ui->windows[2] = battle_ui->windows[3] = 1;
+    battle_ui->unkB7 = 1;
+    battle_camera_start_move(battle_get_slot_bit(member) | battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget));
+    battle_highlight_slots(battle_get_slot_bit(battle_turn_state->slots[member].defaultTarget));
 }
 
-/* Confirm the technique in list cell (column, row) for the member: its
+/* 8008B224: Confirm the technique in list cell (column, row) for the member: its
  * command (from 22, or the gear's from 21 when the member is in a gear) needs
  * the character's permission bit and the EP it costs. Hides the command
  * windows and commits it, paying the EP; if the commit fails the windows
  * come back. A refused technique plays the error sound. Returns 1 when
  * committed. */
-u8 func_8008B224(u8 member, u8 column, u8 row) {
+u8 battle_confirm_art(u8 member, u8 column, u8 row) {
     u8 committed = 0;
     u8 refused = 1;
     u8 allowed = 0;
     u16 command;
     u8 cost;
 
-    if (D_800D32A0[member].unk1 == 0) {
-        command = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
-        cost = D_800CCCE8.partyCommands[member][row * 2 + column + 22].cost;
-        allowed = func_80089C6C(game_data.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
+    if (battle_slot_flags[member].unk1 == 0) {
+        command = battle_work_area.partyCommands[member][row * 2 + column + 22].state;
+        cost = battle_work_area.partyCommands[member][row * 2 + column + 22].cost;
+        allowed = battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].levelSkills, column + row * 2) != 0;
     } else {
-        command = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
-        cost = D_800CCCE8.gearCommands[member][row * 2 + column + 21].cost;
-        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksB, column + row * 2) != 0) {
+        command = battle_work_area.gearCommands[member][row * 2 + column + 21].state;
+        cost = battle_work_area.gearCommands[member][row * 2 + column + 21].cost;
+        if (battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksB, column + row * 2) != 0) {
             allowed = 1;
         }
     }
-    if (D_800CCCE8.records[member].pilot.ep >= cost && allowed) {
-        func_8008B108(1);
-        D_800D2D28->unkC6 = 1;
-        if (func_80085084(command, member, 0)) {
-            D_800CCCE8.records[member].pilot.ep -= cost;
+    if (battle_work_area.records[member].pilot.ep >= cost && allowed) {
+        battle_hide_command_windows(1);
+        battle_ui->unkC6 = 1;
+        if (battle_choose_target(command, member, 0)) {
+            battle_work_area.records[member].pilot.ep -= cost;
             committed = 1;
         } else {
-            D_800D2D28->unkC6 = 0;
-            func_8008B168(member);
+            battle_ui->unkC6 = 0;
+            battle_show_command_windows(member);
         }
         refused = 0;
     }
     if (refused) {
-        func_8008AA74(0x4F);
+        battle_play_menu_sound(0x4F);
     }
     return committed;
 }

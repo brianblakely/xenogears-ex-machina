@@ -28,7 +28,7 @@ void func_801E7F4C(Task *node) {
         for (row = 0; row != 7; row++) {
             for (col = 0; col != 10; col++) {
                 cell = &task->cells[half][row][col];
-                prim = &cell->prim[D_800C3EB0.buffer];
+                prim = &cell->prim[battle_area.buffer];
                 prim->r0 = sprite_add_clamp_byte(prim->r0, -3);
                 prim->g0 = sprite_add_clamp_byte(prim->g0, -3);
                 prim->b0 = sprite_add_clamp_byte(prim->b0, -3);
@@ -65,7 +65,7 @@ void func_801E80B4(Task *node) {
         for (row = 0; row != 7; row++) {
             for (col = 0; col != 10; col++) {
                 cell = &task->cells[half][row][col];
-                prim = &cell->prim[D_800C3EB0.buffer];
+                prim = &cell->prim[battle_area.buffer];
                 if (cell->trans.vz >= 0x40) {
                     SVECTOR *triangle;
                     MATRIX m;
@@ -217,7 +217,7 @@ void func_801E8588(void) {
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     heap_free(screen);
-    work = &D_800C3EB0;
+    work = &battle_area;
     next = &work->buffers[0];
     if (work->current == (first = next)) {
         next = &work->buffers[1];
@@ -241,8 +241,8 @@ void func_801E8588(void) {
             frames--;
         }
         swap_buffers();
-        D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
-        D_801E96B8 = D_800C3EB0.ot;
+        battle_area.buffer = 1 - battle_area.buffer;
+        D_801E96B8 = battle_area.ot;
         if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
@@ -268,15 +268,15 @@ void func_801E8588(void) {
         STACK_LEAVE();
         DrawSync(0);
         VSync(2);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
-        PutDispEnv(&D_800C3EB0.current->dispEnv);
-        PutDrawEnv(&D_800C3EB0.current->drawEnv);
-        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
+        battle_area.buffers[battle_area.buffer].drawEnv.r0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.r0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.g0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.g0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.b0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.b0, -12);
+        PutDispEnv(&battle_area.current->dispEnv);
+        PutDrawEnv(&battle_area.current->drawEnv);
+        DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     }
     func_801E827C(shatter);
     SetDispMask(0);

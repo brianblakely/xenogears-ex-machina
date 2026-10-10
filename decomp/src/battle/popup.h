@@ -28,7 +28,7 @@ typedef struct NumberPopup {
 } NumberPopup;
 
 /* A damage number over a sprite (800BD3AC, 0x1B0 bytes): it drifts to one
- * side, then fades; listed from D_800C3750. */
+ * side, then fades; listed from battle_damage_popups. */
 typedef struct DamagePopup {
     Task task;
     Task draw;              /* 0x1C */
@@ -52,8 +52,8 @@ typedef struct DamagePopup {
     SpritePart glyphs[12];        /* 0x90 */
 } DamagePopup;
 
-/* The running total shown during an action (D_800D30EC, a static task
- * pair): its value D_800C3D38 as glyphs at (x, y). */
+/* The running total shown during an action (battle_total_popup, a static task
+ * pair): its value battle_running_total as glyphs at (x, y). */
 typedef struct TotalPopup {
     Task task;
     Task draw;              /* 0x1C */
@@ -70,10 +70,10 @@ typedef struct TotalPopup {
     SpritePart glyphs[1];         /* 0x68: glyphCount of them */
 } TotalPopup;
 
-extern DamagePopup *D_800C3750; /* the damage popups */
-extern TotalPopup D_800D30EC;
-extern s32 D_800C3D38;          /* the running total */
-extern s32 D_800D3680;          /* the total shown, -1 none */
+extern DamagePopup *battle_damage_popups; /* the damage popups */
+extern TotalPopup battle_total_popup;
+extern s32 battle_running_total;          /* the running total */
+extern s32 battle_total_popup_shown_value;          /* the total shown, -1 none */
 
 /* The task drawing a popup. */
 typedef struct {
@@ -81,16 +81,16 @@ typedef struct {
     NumberPopup *popup; /* 0x04 */
 } PopupTask;
 
-extern struct TotalPopup *D_800D2D68; /* the running total's task, if shown */
-extern s32 D_800C374C;
-extern MATRIX D_800C3760; /* the popups' view */
-extern s16 D_800C3754[];  /* the first glyph's x by digit count */
-extern s32 D_800D3630;    /* the popup colour kind */
-extern u8 D_800C3784[];   /* hexadecimal digit glyphs */
-extern u32 D_800C37A4[];  /* powers of ten */
+extern struct TotalPopup *battle_current_total_popup; /* the running total's task, if shown */
+extern s32 battle_unread_popup_word;
+extern MATRIX battle_popup_view_matrix; /* the popups' view */
+extern s16 battle_popup_first_glyph_x_table[];  /* the first glyph's x by digit count */
+extern s32 battle_popup_color_kind;    /* the popup colour kind */
+extern u8 battle_hex_digits[];   /* hexadecimal digit glyphs */
+extern u32 battle_powers_of_ten[];  /* powers of ten */
 
-void func_800BD3AC(Sprite *sprite, s32 command, s32 kind); /* show a value over a sprite */
-void func_800BE0DC(void); /* hide the running total */
-void func_800BE108(void);
+void battle_damage_popup_show(Sprite *sprite, s32 command, s32 kind); /* show a value over a sprite */
+void battle_total_popup_hide(void); /* hide the running total */
+void battle_total_popup_reset(void);
 
 #endif

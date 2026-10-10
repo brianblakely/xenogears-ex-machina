@@ -5,7 +5,7 @@
 
 /* Battle formations and encounter sets (docs/scripts/formations.md). The
  * battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
- * into formation_active as it starts (battle func_80070F40); the battle setup, event
+ * into formation_active as it starts (battle battle_main); the battle setup, event
  * script and results overlays read it there. Party members take battle slots
  * 0-2, enemies slots 3-10 (battle/area.h BattleSlot); "slot byte n" below is
  * byte n of a slot's BattleSlot record. The places of each formation group
@@ -17,16 +17,16 @@ typedef struct BattleFormation {
                         * 2n + 3 (ovl2615 func_801E5384) */
     u8 flags;          /* 0x01: 0x08 no result screens, whose spoils list adds the
                         * drops (ovl2596 func_801E2280 skips func_801E1FB8), nor the
-                        * fade after them (battle func_80070F40); 0x10 sets
-                        * D_800D3294 (ovl2615 func_801E5384): the party is party
+                        * fade after them (battle battle_main); 0x10 sets
+                        * battle_uses_fixed_party (ovl2615 func_801E5384): the party is party
                         * slot 0's character and character 10 twice, members 1 and
                         * 2 with gear 17; every member fights in a gear
                         * (func_801E4048), so partyGroups is not read
                         * (func_801E4160); members 1 and 2 get fixed HP and stats
-                        * (battle func_8009B098, from func_801E4AC0), character
-                        * 11's portrait (battle func_80078310) and no place in the
+                        * (battle battle_set_debug_party_stats, from func_801E4AC0), character
+                        * 11's portrait (battle battle_upload_party_portraits) and no place in the
                         * results (ovl2596 func_801E2280); 0x20 the event script runs
-                        * (func_801E5014 sets D_800C3D48); 0x40 and 0x80 give every
+                        * (func_801E5014 sets battle_uses_event_script); 0x40 and 0x80 give every
                         * member command 7 and 8 (func_801E5014). No reader tests
                         * 0x01, 0x02 or 0x04. */
     u8 stage;          /* 0x02: s, the battle stage: its stage file (12, 3) 6 + 2s
@@ -73,7 +73,7 @@ extern u8 formation_encounter_weights[16];          /* the field's random-encoun
 extern u8 formation_selected_index;              /* the formation the battle copies: drawn by the field
                                     * (func_80079288) or the world map (func_80075E7C),
                                     * named by a field script (events 71, fe 84), or
-                                    * mode_pending_battle_formation - 1 (battle func_80070F40) */
+                                    * mode_pending_battle_formation - 1 (battle battle_main) */
 extern BattleFormation formation_active; /* the battle's formation */
 
 #endif

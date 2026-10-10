@@ -405,7 +405,7 @@ _SPECS = {FIELD: FIELD_SPECS, BATTLE: BATTLE_SPECS}
 
 # 8001fbe4 case bc: selectors (bits 0-5 with bit 7 set) of its 39-way switch.
 # target: the sprite aimed at (+74); creator: the sprite attached to (+70);
-# actor: the battle's acting sprite (D_800C3E1C); part n: a group offset of
+# actor: the battle's acting sprite (battle_acting_sprite); part n: a group offset of
 # the renderer's part table (+34 entry n).
 PLACE_SELECTORS = {
     0: "target",
@@ -466,7 +466,7 @@ BATTLE_COMMANDS = {
         0x16: ("draw_at_back", ()),
         0x17: ("scale_velocity", ("s8",)),
         0x18: ("shatter_screen", ()),
-        0x19: ("burst", ("data",)),
+        0x19: ("spin", ("data",)),
         0x1A: ("destroy_children", ()),
         0x1B: ("take_parent_velocity", ()),
         0x1C: ("aim_velocity", ()),
@@ -510,7 +510,7 @@ BATTLE_COMMANDS = {
         0x43: ("screen_centred", ()),
         0x44: ("debug_select", ()),
         0x45: ("debug_deselect", ()),
-        0x46: ("load_sound_banks", ("u8",)),
+        0x46: ("load_object_set", ("u8",)),
         0x47: ("show_stage_object", ("u8",)),
         0x48: ("flag_0_on", ()),
         0x49: ("add_view_angle_x", ("s8",)),
@@ -993,8 +993,8 @@ FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_fie
 FIELD_HEADER = 0x154
 # Directory groups (cd_select_directory group + index) the battle overlay reads its
 # files from: 0c+0 battle_mode.c, 0c+1 ovl2615 (enemy sets), 0c+2
-# battle_800B7134, 10+0/2 battle_80070E2C, 20+0/2/3 battle.c, 28+0/1/2
-# battle_8009E53C, 2c+0/1 battle_800B8098 and ovl2615 battle_loader.c. Their
+# battle_action_files, 10+0/2 battle_turns_and_hud, 20+0/2/3 battle.c, 28+0/1/2
+# battle_scene, 2c+0/1 battle_flow and ovl2615 battle_loader.c. Their
 # sprites run while sprite_in_battle is set (battle 800B8840 to 800B8774); all
 # other data runs under 800248d4 itself.
 BATTLE_DIRECTORIES = frozenset({12, 13, 14, 16, 18, 32, 34, 35, 40, 41, 42, 44, 45})

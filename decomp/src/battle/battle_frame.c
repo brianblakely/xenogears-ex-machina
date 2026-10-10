@@ -43,66 +43,66 @@
 
 /* Functions of other units declared as this unit calls them, which differs
  * from their definitions. */
-void func_8008A9C0(s32 skipped);                     /* the result-screen step (a u8 member there) */
-void func_800AA320(u16 index, u16 mask, s32 arg2);  /* start a stage object's effect (an s16 mask there) */
+void battle_tick_frame(s32 skipped);                     /* the result-screen step (a u8 member there) */
+void battle_start_object_script(u16 index, u16 mask, s32 script);  /* start a stage object's effect (an s16 mask there) */
 
 /* This unit's functions, declared before their first use. */
-void func_800BD7A0(Task *task);
-void func_800BDA1C(Task *draw);
-void func_800BDB08(DamagePopup *popup);
-void func_800BDC78(DamagePopup *popup);
-void func_800BDE58(void);
-void func_800BDF1C(void);
-void func_800BE330(s32 value);
-void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
-void func_800BEBC4(void);
-void func_800BEC18(void);
-void func_800BF1EC(Sprite *sprite, s32 mode);
+void battle_damage_popup_destroy(Task *task);
+void battle_damage_popup_draw(Task *draw);
+void battle_damage_popup_fade(DamagePopup *popup);
+void battle_damage_popup_drift(DamagePopup *popup);
+void battle_total_popup_show(void);
+void battle_total_popup_refresh(void);
+void battle_number_popup_show(s32 value);
+void battle_format_decimal(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
+void battle_read_pads_with_slowdown(void);
+void battle_read_pads(void);
+void battle_walk_to_target(Sprite *sprite, s32 mode);
 
 /* The unit's own uninitialized variable (its .bss, after
- * battle_800B8098.c's); the commons follow (battle_common.c). */
-static s32 D_800C3CE8; /* finished sprite motions */
+ * battle_flow.c's); the commons follow (battle_common.c). */
+static s32 battle_finished_motion_count; /* 800C3CE8: finished sprite motions */
 
-/* This unit's data (800c374c-800c37d4). The flags D_800C3780 and D_800C37C8
+/* This unit's data (800c374c-800c37d4). The flags battle_showing_status_drains and battle_effects_disabled
  * are followed by stray bytes, so they stay original data. */
-s32 D_800C374C = 0;
-DamagePopup *D_800C3750 = NULL;
-s16 D_800C3754[5] = {-4, -8, -12, -16, -20}; /* the first glyph's x by digit count */
-MATRIX D_800C3760 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0x200}};
-INCLUDE_ORIGINAL(".data", D_800C3780, 0x800C3780, 4);
-u8 D_800C3784[32] = "0123456789ABCDEF0123456789abcdef";
-u32 D_800C37A4[] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
-INCLUDE_ORIGINAL(".data", D_800C37C8, 0x800C37C8, 4);
-u8 D_800C37CC = 0;
-s32 D_800C37D0 = 0;
+s32 battle_unread_popup_word = 0; /* 800C374C */
+DamagePopup *battle_damage_popups = NULL; /* 800C3750 */
+s16 battle_popup_first_glyph_x_table[5] = {-4, -8, -12, -16, -20}; /* 800C3754: the first glyph's x by digit count */
+MATRIX battle_popup_view_matrix = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0x200}}; /* 800C3760 */
+INCLUDE_ORIGINAL(".data", battle_showing_status_drains, 0x800C3780, 4);
+u8 battle_hex_digits[32] = "0123456789ABCDEF0123456789abcdef"; /* 800C3784 */
+u32 battle_powers_of_ten[] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000}; /* 800C37A4 */
+INCLUDE_ORIGINAL(".data", battle_effects_disabled, 0x800C37C8, 4);
+u8 battle_gear_objects_loaded = 0; /* 800C37CC */
+s32 battle_frame_nesting = 0; /* 800C37D0 */
 
-/* Show value over sprite as a damage popup of kind (replacing the sprite's
+/* 800BD3AC: Show value over sprite as a damage popup of kind (replacing the sprite's
  * earlier ones): 1 a prefix glyph, 2 green, 3 magenta with a prefix, 4 a
  * single glyph that only fades, 5 red, 10 and 11 (blue) with a suffix
  * glyph; the digits follow. Only while the battle menu is open. */
-void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
+void battle_damage_popup_show(Sprite *sprite, s32 value, s32 kind) {
     DamagePopup *popup;
     u8 text[0x38];
     s32 x;
     s32 i;
 
-    if (D_800C3610 == NULL) {
+    if (battle_current_menu == NULL) {
         return;
     }
-    func_800BDE58();
-    D_800C4929 = 0;
-    for (popup = D_800C3750; popup != NULL; popup = popup->next) {
+    battle_total_popup_show();
+    battle_unread_gear_attack_step_flag = 0;
+    for (popup = battle_damage_popups; popup != NULL; popup = popup->next) {
         if (popup->sprite == sprite) {
             popup->task.destroy(&popup->task);
         }
     }
-    popup = (DamagePopup *)task_alloc_two_node_task(sizeof(DamagePopup), NULL, (void (*)(Task *))func_800BDC78, func_800BDA1C,
-                                         func_800BD7A0);
+    popup = (DamagePopup *)task_alloc_two_node_task(sizeof(DamagePopup), NULL, (void (*)(Task *))battle_damage_popup_drift, battle_damage_popup_draw,
+                                         battle_damage_popup_destroy);
     popup->sprite = sprite;
     popup->timer = 8;
-    popup->next = D_800C3750;
+    popup->next = battle_damage_popups;
     popup->x = sprite->x;
-    D_800C3750 = popup;
+    battle_damage_popups = popup;
     popup->y = sprite->y;
     popup->z = sprite->z;
     popup->scale.vx = 0x2000;
@@ -118,15 +118,15 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
     popup->right = sprite->motion.bits.mirror;
     popup->glyphCount = 0;
     if (kind != 4) {
-        func_800BE6E8(value, text, 5, 0, 0);
-        x = D_800C3754[text[0] - 1];
+        battle_format_decimal(value, text, 5, 0, 0);
+        x = battle_popup_first_glyph_x_table[text[0] - 1];
     }
     switch (kind) {
     case 4:
         popup->timer = 0x40;
-        popup->glyphCount = sprite_sheet_fill_parts(D_800D2F5C, 0x7C, popup->glyphs, -0x14, -0x10);
+        popup->glyphCount = sprite_sheet_fill_parts(battle_glyph_table, 0x7C, popup->glyphs, -0x14, -0x10);
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] & ~1) | 2;
-        task_set_update_callback(&popup->task, (void (*)(Task *))func_800BDB08);
+        task_set_update_callback(&popup->task, (void (*)(Task *))battle_damage_popup_fade);
         break;
     case 5:
         popup->colour.rgbc[0] = 0x80;
@@ -135,21 +135,21 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
         popup->colour.rgbc[3] &= ~1;
         break;
     case 10:
-        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x7F, &popup->glyphs[popup->glyphCount], x, 0);
+        popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, 0x7F, &popup->glyphs[popup->glyphCount], x, 0);
         break;
     case 11:
-        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x91, &popup->glyphs[popup->glyphCount], x, 0);
+        popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, 0x91, &popup->glyphs[popup->glyphCount], x, 0);
         popup->colour.rgbc[2] = 0x80;
         popup->colour.rgbc[0] = 0;
         popup->colour.rgbc[1] = 0;
         popup->colour.rgbc[3] &= ~1;
         break;
     case 1:
-        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
         x += 0x20;
         break;
     case 3:
-        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
         popup->colour.rgbc[0] = 0x80;
         popup->colour.rgbc[2] = 0x80;
         popup->colour.rgbc[1] = 0;
@@ -165,15 +165,15 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
     }
     if (kind != 4) {
         for (i = 0; i != text[0]; i++, x += 10) {
-            popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -0x10);
+            popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -0x10);
         }
     }
 }
 
-/* Damage popup destroy: unlink it from D_800C3750 and end it. */
-void func_800BD7A0(Task *task) {
+/* 800BD7A0: Damage popup destroy: unlink it from battle_damage_popups and end it. */
+void battle_damage_popup_destroy(Task *task) {
     DamagePopup *popup = (DamagePopup *)task;
-    DamagePopup *entry = D_800C3750;
+    DamagePopup *entry = battle_damage_popups;
     DamagePopup *previous = NULL;
 
     for (; entry != NULL; entry = entry->next) {
@@ -181,7 +181,7 @@ void func_800BD7A0(Task *task) {
             if (previous != NULL) {
                 previous->next = entry->next;
             } else {
-                D_800C3750 = entry->next;
+                battle_damage_popups = entry->next;
             }
             break;
         }
@@ -190,10 +190,10 @@ void func_800BD7A0(Task *task) {
     task_destroy_two_node_task(task);
 }
 
-/* Draw a popup glyph as a textured quad in colour (its word also sets the
+/* 800BD810: Draw a popup glyph as a textured quad in colour (its word also sets the
  * primitive code) through the current matrices, added to the ordering
  * table's first entry, while the primitive buffer has room. */
-void func_800BD810(SpritePart *glyph, s32 colour) {
+void battle_popup_draw_glyph(SpritePart *glyph, s32 colour) {
     POLY_FT4 *poly = (POLY_FT4 *)sprite_queue_next_free;
     long p;
     long flag;
@@ -238,9 +238,9 @@ void func_800BD810(SpritePart *glyph, s32 colour) {
     }
 }
 
-/* The camera-space offset of point's projection from the geometry offset
+/* 800BD974: The camera-space offset of point's projection from the geometry offset
  * (doubled), at the screen distance. */
-void func_800BD974(SVECTOR *point, VECTOR *out) {
+void battle_popup_project_point(SVECTOR *point, VECTOR *out) {
     SVECTOR unused; /* allocated in the original frame */
     s16 screen[2];
     long p;
@@ -248,8 +248,8 @@ void func_800BD974(SVECTOR *point, VECTOR *out) {
     long offsetX;
     long offsetY;
 
-    SetRotMatrix(&D_800D30BC);
-    SetTransMatrix(&D_800D30BC);
+    SetRotMatrix(&battle_camera_view_matrix);
+    SetTransMatrix(&battle_camera_view_matrix);
     RotTransPers(point, (long *)screen, &p, &flag);
     ReadGeomOffset(&offsetX, &offsetY);
     out->vx = (screen[0] - offsetX) * 2;
@@ -257,9 +257,9 @@ void func_800BD974(SVECTOR *point, VECTOR *out) {
     out->vz = ReadGeomScreen();
 }
 
-/* Damage popup draw: its glyphs turned, scaled and placed over its
+/* 800BDA1C: Damage popup draw: its glyphs turned, scaled and placed over its
  * point. */
-void func_800BDA1C(Task *draw) {
+void battle_damage_popup_draw(Task *draw) {
     MATRIX m;
     SVECTOR point;
     VECTOR offset;
@@ -267,25 +267,25 @@ void func_800BDA1C(Task *draw) {
     s32 i;
     SpritePart *glyph;
 
-    D_800C3760.t[2] = ReadGeomScreen();
+    battle_popup_view_matrix.t[2] = ReadGeomScreen();
     point.vx = popup->x >> 16;
     point.vy = popup->y >> 16;
     point.vz = popup->z >> 16;
-    func_800BD974(&point, &offset);
+    battle_popup_project_point(&point, &offset);
     gpu_build_rotation_matrix(&popup->angles, &m);
     TransMatrix(&m, &offset);
-    CompMatrix(&D_800C3760, &m, &m);
+    CompMatrix(&battle_popup_view_matrix, &m, &m);
     ScaleMatrix(&m, &popup->scale);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     for (i = 0, glyph = popup->glyphs; i != popup->glyphCount; i++, glyph++) {
-        func_800BD810(glyph, popup->colour.word);
+        battle_popup_draw_glyph(glyph, popup->colour.word);
     }
 }
 
-/* Damage popup fade: darken by 2 a frame until its time is up. */
-void func_800BDB08(DamagePopup *popup) {
-    func_800BDF1C();
+/* 800BDB08: Damage popup fade: darken by 2 a frame until its time is up. */
+void battle_damage_popup_fade(DamagePopup *popup) {
+    battle_total_popup_refresh();
     popup->colour.rgbc[0] -= 2;
     popup->colour.rgbc[1] -= 2;
     popup->colour.rgbc[2] -= 2;
@@ -294,12 +294,12 @@ void func_800BDB08(DamagePopup *popup) {
     }
 }
 
-/* Damage popup fade out: darken by 8 a frame (green and blue follow red)
+/* 800BDB74: Damage popup fade out: darken by 8 a frame (green and blue follow red)
  * until black or its time is up. */
-void func_800BDB74(Task *task) {
+void battle_damage_popup_fade_out(Task *task) {
     DamagePopup *popup = (DamagePopup *)task;
 
-    func_800BDF1C();
+    battle_total_popup_refresh();
     popup->colour.rgbc[0] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
     popup->colour.rgbc[1] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
     popup->colour.rgbc[2] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
@@ -308,20 +308,20 @@ void func_800BDB74(Task *task) {
     }
 }
 
-/* Damage popup hold: after 16 frames switch to the fade out (800BDB74). */
-void func_800BDC14(DamagePopup *popup) {
-    func_800BDF1C();
+/* 800BDC14: Damage popup hold: after 16 frames switch to the fade out (800BDB74). */
+void battle_damage_popup_hold(DamagePopup *popup) {
+    battle_total_popup_refresh();
     if (--popup->timer < 0) {
         popup->timer = 16;
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] | 2) & ~1;
-        task_set_update_callback(&popup->task, func_800BDB74);
+        task_set_update_callback(&popup->task, battle_damage_popup_fade_out);
     }
 }
 
-/* Damage popup drift: move 12 a frame to its side, then hold (800BDC14)
+/* 800BDC78: Damage popup drift: move 12 a frame to its side, then hold (800BDC14)
  * for 16 frames. */
-void func_800BDC78(DamagePopup *popup) {
-    func_800BDF1C();
+void battle_damage_popup_drift(DamagePopup *popup) {
+    battle_total_popup_refresh();
     if (popup->right) {
         popup->x += 0xC0000;
     } else {
@@ -329,24 +329,24 @@ void func_800BDC78(DamagePopup *popup) {
     }
     if (--popup->timer < 0) {
         popup->timer = 16;
-        task_set_update_callback(&popup->task, (void (*)(Task *))func_800BDC14);
+        task_set_update_callback(&popup->task, (void (*)(Task *))battle_damage_popup_hold);
     }
 }
 
-/* Running total destroy: end its draw task and itself. */
-void func_800BDCF8(TotalPopup *total) {
-    D_800D2D68 = NULL;
+/* 800BDCF8: Running total destroy: end its draw task and itself. */
+void battle_total_popup_destroy(TotalPopup *total) {
+    battle_current_total_popup = NULL;
     task_unlink_draw_node(&total->draw);
     task_unlink_main_node(&total->task);
 }
 
-/* The running total's empty update (800BDE58 starts its task with it). */
-void func_800BDD34(void) {
+/* 800BDD34: The running total's empty update (800BDE58 starts its task with it). */
+void battle_total_popup_empty_update(void) {
 }
 
-/* Running total draw: its label glyph, then its digits turned, scaled and
+/* 800BDD3C: Running total draw: its label glyph, then its digits turned, scaled and
  * centred on the screen. */
-void func_800BDD3C(Task *draw) {
+void battle_total_popup_draw(Task *draw) {
     TotalPopup *total = draw->data;
     MATRIX m;
     SVECTOR unused; /* allocated in the original frame */
@@ -357,56 +357,56 @@ void func_800BDD3C(Task *draw) {
     SpritePart *glyph;
 
     ReadGeomOffset(&x, &y);
-    sprite_sheet_queue_quads(D_800D2F5C, 0x81, total->x, total->y, (u_long *)sprite_ot);
+    sprite_sheet_queue_quads(battle_glyph_table, 0x81, total->x, total->y, (u_long *)sprite_ot);
     offset.vx = (0xA0 - x) * 2;
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
-    D_800C3760.t[2] = ReadGeomScreen();
+    battle_popup_view_matrix.t[2] = ReadGeomScreen();
     gpu_build_rotation_matrix(&total->angles, &m);
     TransMatrix(&m, &offset);
-    CompMatrix(&D_800C3760, &m, &m);
+    CompMatrix(&battle_popup_view_matrix, &m, &m);
     ScaleMatrix(&m, &total->scale);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     for (i = 0, glyph = total->glyphs; i != total->glyphCount; i++, glyph++) {
-        func_800BD810(glyph, total->colour.word);
+        battle_popup_draw_glyph(glyph, total->colour.word);
     }
 }
 
-/* Show the running total (D_800D30EC at (0x90, 0x2A)), unless shown or
+/* 800BDE58: Show the running total (battle_total_popup at (0x90, 0x2A)), unless shown or
  * sprite commands run. */
-void func_800BDE58(void) {
-    if (D_800D2D68 == NULL && D_800C3780 == 0) {
-        D_800D2D68 = &D_800D30EC;
-        task_link_main_node(NULL, &D_800D30EC.task);
-        task_link_draw_node(&D_800D30EC.task, &D_800D30EC.draw);
-        task_set_update_callback(&D_800D30EC.task, (void (*)(Task *))func_800BDD34);
-        task_set_draw_callback(&D_800D30EC.draw, func_800BDD3C);
-        task_set_destroy_callback(&D_800D30EC.task, (void (*)(Task *))func_800BDCF8);
-        D_800D30EC.x = 0x90;
-        D_800D30EC.y = 0x2A;
-        D_800D30EC.task.data = &D_800D30EC;
-        D_800D30EC.draw.data = &D_800D30EC;
-        D_800D30EC.glyphCount = 0;
-        D_800D3680 = -1;
+void battle_total_popup_show(void) {
+    if (battle_current_total_popup == NULL && battle_showing_status_drains == 0) {
+        battle_current_total_popup = &battle_total_popup;
+        task_link_main_node(NULL, &battle_total_popup.task);
+        task_link_draw_node(&battle_total_popup.task, &battle_total_popup.draw);
+        task_set_update_callback(&battle_total_popup.task, (void (*)(Task *))battle_total_popup_empty_update);
+        task_set_draw_callback(&battle_total_popup.draw, battle_total_popup_draw);
+        task_set_destroy_callback(&battle_total_popup.task, (void (*)(Task *))battle_total_popup_destroy);
+        battle_total_popup.x = 0x90;
+        battle_total_popup.y = 0x2A;
+        battle_total_popup.task.data = &battle_total_popup;
+        battle_total_popup.draw.data = &battle_total_popup;
+        battle_total_popup.glyphCount = 0;
+        battle_total_popup_shown_value = -1;
     }
 }
 
-/* Update the running total when D_800C3D38 changed: pop the value
+/* 800BDF1C: Update the running total when battle_running_total changed: pop the value
  * (800BE330) and show it coloured by the popup kind (2 green, 3 magenta,
  * 11 blue, else white). */
-void func_800BDF1C(void) {
-    s32 value = D_800C3D38;
+void battle_total_popup_refresh(void) {
+    s32 value = battle_running_total;
     TotalPopup *total;
     u8 text[8];
     s32 i;
     s32 x;
 
-    if (D_800D2D68 != NULL && D_800C3780 == 0) {
-        total = D_800D2D68;
-        if (value != D_800D3680) {
-            D_800D3680 = value;
-            func_800BE330(value);
+    if (battle_current_total_popup != NULL && battle_showing_status_drains == 0) {
+        total = battle_current_total_popup;
+        if (value != battle_total_popup_shown_value) {
+            battle_total_popup_shown_value = value;
+            battle_number_popup_show(value);
             total->colour.rgbc[3] = 0x2D;
             total->scale.vx = 0x2000;
             total->scale.vy = 0x2000;
@@ -415,7 +415,7 @@ void func_800BDF1C(void) {
             total->angles.vx = 0;
             total->angles.vy = 0;
             total->angles.vz = 0;
-            switch (D_800D3630) {
+            switch (battle_popup_color_kind) {
             case 11:
                 total->colour.rgbc[0] = 0;
                 total->colour.rgbc[1] = 0;
@@ -437,32 +437,32 @@ void func_800BDF1C(void) {
                 total->colour.rgbc[2] = 0x80;
                 break;
             }
-            func_800BE6E8(value, text, 5, 0, 0);
-            x = D_800C3754[text[0] - 1];
+            battle_format_decimal(value, text, 5, 0, 0);
+            x = battle_popup_first_glyph_x_table[text[0] - 1];
             total->glyphCount = 0;
             for (i = 0; i != text[0]; x += 10) {
-                total->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
+                total->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
                 i++;
             }
         }
     }
 }
 
-/* Hide the running total (800BDCF8), if shown. */
-void func_800BE0DC(void) {
-    if (D_800D2D68 != NULL) {
-        func_800BDCF8(D_800D2D68);
+/* 800BE0DC: Hide the running total (800BDCF8), if shown. */
+void battle_total_popup_hide(void) {
+    if (battle_current_total_popup != NULL) {
+        battle_total_popup_destroy(battle_current_total_popup);
     }
 }
 
-/* Clear D_800D2D68 and D_800C374C. */
-void func_800BE108(void) {
-    D_800D2D68 = 0;
-    D_800C374C = 0;
+/* 800BE108: Clear battle_current_total_popup and battle_unread_popup_word. */
+void battle_total_popup_reset(void) {
+    battle_current_total_popup = 0;
+    battle_unread_popup_word = 0;
 }
 
-/* Popup update: spin and shrink it, fade its colour, end it with its life. */
-void func_800BE11C(NumberPopup *popup) {
+/* 800BE11C: Popup update: spin and shrink it, fade its colour, end it with its life. */
+void battle_number_popup_update(NumberPopup *popup) {
     popup->angle.vz += popup->spin;
     popup->scale.vx += 0x330;
     popup->scale.vy += 0x330;
@@ -475,9 +475,9 @@ void func_800BE11C(NumberPopup *popup) {
     }
 }
 
-/* Popup drawing: its glyphs six times, each copy turned back 5 more and
+/* 800BE1C4: Popup drawing: its glyphs six times, each copy turned back 5 more and
  * shrunk by 0x330, centred on the screen from the geometry offset. */
-void func_800BE1C4(PopupTask *task) {
+void battle_number_popup_draw(PopupTask *task) {
     MATRIX m;
     SVECTOR unused; /* allocated in the original frame */
     SVECTOR angle;
@@ -494,7 +494,7 @@ void func_800BE1C4(PopupTask *task) {
     offset.vx = (0xA0 - x) * 2;
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
-    D_800C3760.t[2] = ReadGeomScreen();
+    battle_popup_view_matrix.t[2] = ReadGeomScreen();
     sprite_copy_svector(&angle, &popup->angle);
     scale.vx = popup->scale.vx;
     scale.vy = popup->scale.vy;
@@ -502,12 +502,12 @@ void func_800BE1C4(PopupTask *task) {
     for (i = 0; i != 6; i++) {
         gpu_build_rotation_matrix(&angle, &m);
         TransMatrix(&m, &offset);
-        CompMatrix(&D_800C3760, &m, &m);
+        CompMatrix(&battle_popup_view_matrix, &m, &m);
         ScaleMatrix(&m, &scale);
         SetRotMatrix(&m);
         SetTransMatrix(&m);
         for (j = 0, glyph = popup->glyphs; j != popup->glyphCount; j++, glyph++) {
-            func_800BD810(glyph, popup->colour.word);
+            battle_popup_draw_glyph(glyph, popup->colour.word);
         }
         angle.vz -= 5;
         scale.vx -= 0x330;
@@ -516,16 +516,16 @@ void func_800BE1C4(PopupTask *task) {
     }
 }
 
-/* Show value as a number popup, coloured by the popup kind D_800D3630 (2
+/* 800BE330: Show value as a number popup, coloured by the popup kind battle_popup_color_kind (2
  * green, 3 magenta, 11 blue, else white), spinning one way at random. */
-void func_800BE330(s32 value) {
+void battle_number_popup_show(s32 value) {
     NumberPopup *popup;
     u8 text[8];
     s32 i;
     s32 x;
 
-    popup = (NumberPopup *)task_alloc_two_node_task(sizeof(NumberPopup), NULL, (void (*)(Task *))func_800BE11C,
-                                         (void (*)(Task *))func_800BE1C4, NULL);
+    popup = (NumberPopup *)task_alloc_two_node_task(sizeof(NumberPopup), NULL, (void (*)(Task *))battle_number_popup_update,
+                                         (void (*)(Task *))battle_number_popup_draw, NULL);
     popup->spin = -(((rand() & 3) - 2) * 8);
     if (popup->spin == 0) {
         popup->spin = 6;
@@ -539,7 +539,7 @@ void func_800BE330(s32 value) {
     popup->angle.vx = 0;
     popup->angle.vy = 0;
     popup->angle.vz = 0;
-    switch (D_800D3630) {
+    switch (battle_popup_color_kind) {
     case 11:
         popup->colour.rgbc[0] = 0;
         popup->colour.rgbc[1] = 0;
@@ -561,11 +561,11 @@ void func_800BE330(s32 value) {
         popup->colour.rgbc[2] = 0x80;
         break;
     }
-    func_800BE6E8(value, text, 5, 0, 0);
-    x = D_800C3754[text[0] - 1];
+    battle_format_decimal(value, text, 5, 0, 0);
+    x = battle_popup_first_glyph_x_table[text[0] - 1];
     popup->glyphCount = 0;
     for (i = 0; i != text[0]; x += 10) {
-        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);
+        popup->glyphCount += sprite_sheet_fill_parts(battle_glyph_table, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);
         i++;
     }
     for (i = 0; i != popup->glyphCount; i++) {
@@ -574,9 +574,9 @@ void func_800BE330(s32 value) {
     }
 }
 
-/* Run up to three commands (kinds 0, 1 and 10) on slot's sprite outside the
+/* 800BE538: Run up to three commands (kinds 0, 1 and 10) on slot's sprite outside the
  * battle menu and wait frames until they are done. */
-void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
+void battle_show_status_drain_amounts(s32 slot, s32 first, s32 second, s32 third) {
     Sprite *sprite;
     s32 mode;
     BattleMenu *menu;
@@ -584,39 +584,39 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
     task_active_main_count = 0;
     task_new_tasks_active = 1;
     sprite = BATTLE_AREA.sprites[slot];
-    D_800C3780 = 1;
+    battle_showing_status_drains = 1;
     if (sprite != NULL) {
         mode = (s8)sprite->motion.bytes[3];
         sprite_start_animation(sprite, 10);
-        menu = D_800C3610;
-        D_800C3610 = (BattleMenu *)1;
+        menu = battle_current_menu;
+        battle_current_menu = (BattleMenu *)1;
         if (first) {
-            func_800BD3AC(sprite, first, 0);
+            battle_damage_popup_show(sprite, first, 0);
         }
         if (second) {
-            func_800BD3AC(sprite, second, 1);
+            battle_damage_popup_show(sprite, second, 1);
         }
         if (third) {
-            func_800BD3AC(sprite, third, 10);
+            battle_damage_popup_show(sprite, third, 10);
         }
-        D_800C3610 = menu;
-        while (func_800BF6F8()) {
-            func_800BE790();
+        battle_current_menu = menu;
+        while (battle_count_active_tasks()) {
+            battle_run_frame();
         }
         while ((s8)sprite->motion.bytes[3] == 10) {
-            func_800BE790();
+            battle_run_frame();
         }
         sprite_start_animation(sprite, mode);
     }
-    D_800C3780 = 0;
-    func_800BE0DC();
+    battle_showing_status_drains = 0;
+    battle_total_popup_hide();
     task_active_main_count = 0;
     task_new_tasks_active = 0;
 }
 
-/* Write value as digits hexadecimal glyphs (D_800C3784, plus base) after
+/* 800BE6A0: Write value as digits hexadecimal glyphs (battle_hex_digits, plus base) after
  * the count in text. */
-void func_800BE6A0(s32 value, u8 *text, s32 digits, s32 base) {
+void battle_format_hex(s32 value, u8 *text, s32 digits, s32 base) {
     s32 i;
     s32 last;
 
@@ -624,16 +624,16 @@ void func_800BE6A0(s32 value, u8 *text, s32 digits, s32 base) {
     if (digits != 0) {
         last = digits - 1;
         do {
-            text[i + 1] = D_800C3784[(value >> ((last - i) * 4)) & 0xF] + base;
+            text[i + 1] = battle_hex_digits[(value >> ((last - i) * 4)) & 0xF] + base;
         } while (++i != digits);
     }
     text[0] = digits;
 }
 
-/* Write value in decimal after the count in text: a '-' for a negative
+/* 800BE6E8: Write value in decimal after the count in text: a '-' for a negative
  * value, then its last digits + 1 digits (plus base), leading zeros only
  * when leading is set. */
-void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
+void battle_format_decimal(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
     s32 count = 0;
     u8 *out = text + 1;
     u8 digit;
@@ -645,9 +645,9 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
         value = -value;
         digits--;
     }
-    while (value %= D_800C37A4[digits], digits != 0) {
+    while (value %= battle_powers_of_ten[digits], digits != 0) {
         digits--;
-        digit = value / D_800C37A4[digits];
+        digit = value / battle_powers_of_ten[digits];
         if (digit) {
             leading = 1;
         }
@@ -660,19 +660,19 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
     text[0] = count + 1;
 }
 
-/* Run one battle frame: swap the display buffers, read the controllers,
+/* 800BE790: Run one battle frame: swap the display buffers, read the controllers,
  * update the sprites, the stage and the effects (the skipped frames once
  * more each) with the stack in the scratchpad, draw, time the frame and
  * present it; the outermost frame also runs the battle menu, a requested
  * single action and the deferred free of the objects' extra files. */
-void func_800BE790(void) {
+void battle_run_frame(void) {
     BattleArea *frame;
     FrameBuffer *buffer;
     s32 skipped;
 
-    D_800C37D0++;
+    battle_frame_nesting++;
     boot_check_soft_reset();
-    D_800D309C.start = VSync(-1);
+    battle_camera.start = VSync(-1);
     frame = &BATTLE_AREA;
     buffer = &frame->buffers[0];
     if (frame->current == buffer) {
@@ -683,38 +683,38 @@ void func_800BE790(void) {
     ClearOTagR((u_long *)buffer->ot, 0x1000);
     frame->buffer = 1 - frame->buffer;
     if (mode_disc_mode != -1) {
-        func_800BEBC4();
+        battle_read_pads_with_slowdown();
         __asm__ volatile(".word 0x0001000D"); /* break 1: the debugger breakpoint */
         func_80280A9C();
     }
     sprite_queue_start_fill(frame->buffer);
-    func_800BBAB8();
-    func_800BB9D4();
-    sprite_set_view_matrix(&D_800D309C.matrix);
+    battle_camera_step();
+    battle_set_view_and_draw_stage();
+    sprite_set_view_matrix(&battle_camera.matrix);
     sprite_set_ot((s32)frame->ot);
     if (mode_disc_mode != -1) {
         console_flush((u_long *)frame->ot);
     }
-    func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, (u32 *)sprite_ot, frame->buffer);
+    battle_update_stage(&battle_camera.matrix, (s32)battle_light_matrix, (u32 *)sprite_ot, frame->buffer);
     SPAD_STACK_ENTER();
     sprite_build_pending_frames();
     task_run_draw_list();
     task_run_main_list();
     skipped = task_catch_up_frame_count;
     while (--skipped != -1) {
-        func_800BBAB8();
+        battle_camera_step();
         task_run_main_list();
     }
     SPAD_STACK_LEAVE();
-    func_80076544();
-    func_8008A9C0(0);
+    battle_draw_hud();
+    battle_tick_frame(0);
     while (--task_catch_up_frame_count != -1) {
-        func_8008A9C0(1);
+        battle_tick_frame(1);
     }
-    D_800D309C.cpu = VSync(1);
+    battle_camera.cpu = VSync(1);
     DrawSync(0);
-    D_800D309C.gpu = VSync(1);
-    task_catch_up_frame_count = VSync(-1) - D_800D309C.start - sprite_frame_skip;
+    battle_camera.gpu = VSync(1);
+    task_catch_up_frame_count = VSync(-1) - battle_camera.start - sprite_frame_skip;
     if (task_catch_up_frame_count < 0) {
         task_catch_up_frame_count = 0;
     }
@@ -731,39 +731,39 @@ void func_800BE790(void) {
     PutDrawEnv(&BATTLE_AREA.current->drawEnv);
     sprite_queue_run_uploads();
     DrawOTag((u_long *)&BATTLE_AREA.current->ot[0xFFF]);
-    func_800BEB04();
-    if (D_800C37D0 == 1) {
-        if (D_800C3610 != NULL) {
-            D_800C3610->update(D_800C3610);
+    battle_load_module();
+    if (battle_frame_nesting == 1) {
+        if (battle_current_menu != NULL) {
+            battle_current_menu->update(battle_current_menu);
         }
         if (sprite_single_action_request != 0) {
             s32 action = sprite_single_action_request;
 
             sprite_single_action_request = 0;
-            func_800B8068(action);
+            battle_single_action_run(action);
         }
-        if (D_800C37CC != 0 && cd_get_pending_read_count() == 0) {
-            D_800C37CC = 0;
-            func_800B136C();
+        if (battle_gear_objects_loaded != 0 && cd_get_pending_read_count() == 0) {
+            battle_gear_objects_loaded = 0;
+            battle_wait_objects_idle();
         }
     }
-    D_800C37D0--;
+    battle_frame_nesting--;
 }
 
-/* Load the requested battle module (sprite_requested_battle_module) into 0x801FC000 when it
+/* 800BEB04: Load the requested battle module (sprite_requested_battle_module) into 0x801FC000 when it
  * changed, around the module switch 800B8354, and mark it loaded. */
-void func_800BEB04(void) {
+void battle_load_module(void) {
     s32 saved0;
     s32 saved1;
     u8 module;
 
     if (sprite_loaded_battle_module != (module = sprite_requested_battle_module)) {
         sprite_loaded_battle_module = sprite_requested_battle_module;
-        func_800B8354();
+        battle_wait_for_disc();
         cd_get_selected_directory(&saved0, &saved1);
         cd_select_directory(0xC, 2);
         cd_read_file(module + 2, (void *)0x801FC000, 0, 0x80);
-        func_800B8354();
+        battle_wait_for_disc();
         cd_select_directory(saved0, saved1);
         DrawSync(0);
         VSync(0);
@@ -774,18 +774,18 @@ void func_800BEB04(void) {
     sprite_battle_module_loaded = 1;
 }
 
-/* Read the controllers; holding select (0x100) slows the frame down. */
-void func_800BEBC4(void) {
-    func_800BEC18();
+/* 800BEBC4: Read the controllers; holding select (0x100) slows the frame down. */
+void battle_read_pads_with_slowdown(void) {
+    battle_read_pads();
     if (BATTLE_AREA.held & 0x100) {
         VSync(8);
         task_catch_up_frame_count = 0;
     }
 }
 
-/* Read both controllers: held, newly pressed and released buttons, and a
+/* 800BEC18: Read both controllers: held, newly pressed and released buttons, and a
  * history of the first controller's last changes. */
-void func_800BEC18(void) {
+void battle_read_pads(void) {
     s32 held;
     u16 old;
 
@@ -805,58 +805,58 @@ void func_800BEC18(void) {
         BATTLE_AREA.history[0].held = BATTLE_AREA.held;
         BATTLE_AREA.history[0].pressed = BATTLE_AREA.pressed;
         BATTLE_AREA.history[0].released = BATTLE_AREA.released;
-        BATTLE_AREA.history[0].time = D_800D30E4;
+        BATTLE_AREA.history[0].time = battle_frame_start_time;
     }
 }
 
-/* Clear the battle menu state. */
-void func_800BED30(void) {
-    D_800C3E20 = 0;
-    D_800C3610 = NULL;
-    D_800D2E54 = 0;
+/* 800BED30: Clear the battle menu state. */
+void battle_menu_clear(void) {
+    battle_unread_menu_word = 0;
+    battle_current_menu = NULL;
+    battle_knocked_down_mask = 0;
 }
 
-/* Open the battle menu (800B9F78 its update). */
-BattleMenu *func_800BED4C(void) {
+/* 800BED4C: Open the battle menu (800B9F78 its update). */
+BattleMenu *battle_menu_open(void) {
     BattleMenu *menu = heap_alloc(sizeof(BattleMenu), 0);
 
-    D_800C3610 = menu;
-    menu->update = func_800B9F78;
-    D_800C360C = 0;
+    battle_current_menu = menu;
+    menu->update = battle_menu_update;
+    battle_area_event_index = 0;
     menu->field4A = 0;
-    D_800C3610->field30 = 0;
-    D_800C3610->field48 = 1;
-    D_800C3610->field2C = 1;
-    D_800C3610->sprite = NULL;
-    D_800C3610->field49 = 0;
-    D_800C3610->field34 = 0;
-    func_800BF0B4(0);
+    battle_current_menu->field30 = 0;
+    battle_current_menu->field48 = 1;
+    battle_current_menu->field2C = 1;
+    battle_current_menu->sprite = NULL;
+    battle_current_menu->field49 = 0;
+    battle_current_menu->field34 = 0;
+    battle_menu_set_state(0);
     task_active_main_count = 0;
     task_new_tasks_active = 1;
-    return D_800C3610;
+    return battle_current_menu;
 }
 
-/* Close the battle menu. */
-void func_800BEDE8(void) {
-    heap_free(D_800C3610);
+/* 800BEDE8: Close the battle menu. */
+void battle_menu_close(void) {
+    heap_free(battle_current_menu);
     task_active_main_count = 0;
-    D_800C3610 = NULL;
+    battle_current_menu = NULL;
     task_new_tasks_active = 0;
 }
 
-/* Run 800AA320 on a 4 KB stack of its own. */
-void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
+/* 800BEE2C: Run 800AA320 on a 4 KB stack of its own. */
+void battle_start_object_effect_on_stack(s32 index, s32 mask, s32 effect_id) {
     u8 *stack = heap_alloc(0x1000, 1);
 
     STACK_ENTER(stack + 0xF9C);
-    func_800AA320(index, mask, arg2);
+    battle_start_object_script(index, mask, effect_id);
     STACK_LEAVE();
     heap_free(stack);
 }
 
-/* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
+/* 800BEEB4: List the slot sprites of the slots in mask (up to 11, NULL-terminated),
  * setting their target; their count. */
-s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target) {
+s32 battle_list_slot_sprites(u32 mask, Sprite **list, Sprite *target) {
     s32 i;
     s32 count;
     Sprite *sprite;
@@ -878,8 +878,8 @@ s32 func_800BEEB4(u32 mask, Sprite **list, Sprite *target) {
     return count;
 }
 
-/* The direction from sprite from to sprite to on the ground. */
-s16 func_800BEF24(Sprite *from, Sprite *to) {
+/* 800BEF24: The direction from sprite from to sprite to on the ground. */
+s16 battle_get_sprite_direction(Sprite *from, Sprite *to) {
     GroundPoint a;
     GroundPoint b;
 
@@ -890,8 +890,8 @@ s16 func_800BEF24(Sprite *from, Sprite *to) {
     return sprite_get_ground_direction(b, a);
 }
 
-/* The direction from sprite to its target point on the ground. */
-s16 func_800BEF8C(Sprite *sprite) {
+/* 800BEF8C: The direction from sprite to its target point on the ground. */
+s16 battle_get_target_direction(Sprite *sprite) {
     GroundPoint a;
     GroundPoint b;
 
@@ -902,40 +902,40 @@ s16 func_800BEF8C(Sprite *sprite) {
     return sprite_get_ground_direction(b, a);
 }
 
-/* Make slot the acting slot, returning the previous acting sprite to idle. */
-void func_800BEFF4(s32 slot) {
-    Sprite *sprite = D_800C3610->sprite;
+/* 800BEFF4: Make slot the acting slot, returning the previous acting sprite to idle. */
+void battle_menu_set_acting_slot(s32 slot) {
+    Sprite *sprite = battle_current_menu->sprite;
 
-    if (sprite != NULL && D_800C3610->slot != slot && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
+    if (sprite != NULL && battle_current_menu->slot != slot && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
         sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
     }
-    D_800C3610->slot = slot;
-    D_800C3610->sprite = BATTLE_AREA.sprites[slot];
+    battle_current_menu->slot = slot;
+    battle_current_menu->sprite = BATTLE_AREA.sprites[slot];
 }
 
-/* Set the battle menu's state. */
-void func_800BF0B4(s32 state) {
-    D_800C3610->state = state;
+/* 800BF0B4: Set the battle menu's state. */
+void battle_menu_set_state(s32 state) {
+    battle_current_menu->state = state;
 }
 
-/* Walk sprite to the next point of the path, or at its end, to its target. */
-void func_800BF0C4(Sprite *sprite) {
-    if (BATTLE_AREA.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_AREA.path[D_800C3610->field2C].z == 0xFFFF) {
+/* 800BF0C4: Walk sprite to the next point of the path, or at its end, to its target. */
+void battle_walk_next_path_point(Sprite *sprite) {
+    if (BATTLE_AREA.path[battle_current_menu->field2C].x == 0xFFFF && BATTLE_AREA.path[battle_current_menu->field2C].z == 0xFFFF) {
         sprite->target_y = 0;
         sprite->target_x = sprite->x >> 16;
         sprite->target_z = sprite->z >> 16;
-        func_800BF4F0(sprite, sprite->partner);
+        battle_walk_beside_target(sprite, sprite->partner);
         return;
     }
-    sprite->target_x = BATTLE_AREA.path[D_800C3610->field2C].x;
-    sprite->target_z = BATTLE_AREA.path[D_800C3610->field2C].z;
+    sprite->target_x = BATTLE_AREA.path[battle_current_menu->field2C].x;
+    sprite->target_z = BATTLE_AREA.path[battle_current_menu->field2C].z;
     sprite->target_y = 0;
-    func_800BF1EC(sprite, BATTLE_AREA.path[D_800C3610->field2C].run ? 3 : 2);
-    D_800C3610->field2C++;
+    battle_walk_to_target(sprite, BATTLE_AREA.path[battle_current_menu->field2C].run ? 3 : 2);
+    battle_current_menu->field2C++;
 }
 
-/* Start sprite moving to its target point with motion mode. */
-void func_800BF1EC(Sprite *sprite, s32 mode) {
+/* 800BF1EC: Start sprite moving to its target point with motion mode. */
+void battle_walk_to_target(Sprite *sprite, s32 mode) {
     GroundPoint from;
     GroundPoint to;
 
@@ -943,74 +943,74 @@ void func_800BF1EC(Sprite *sprite, s32 mode) {
     from.z = sprite->z >> 16;
     to.x = sprite->target_x;
     to.z = sprite->target_z;
-    D_800C3610->field44 = func_800C07CC(from, to);
-    sprite_set_direction(sprite, func_800BEF8C(sprite));
-    sprite_set_facing(sprite, func_800BEF8C(sprite));
+    battle_current_menu->field44 = battle_get_ground_distance(from, to);
+    sprite_set_direction(sprite, battle_get_target_direction(sprite));
+    sprite_set_facing(sprite, battle_get_target_direction(sprite));
     sprite_start_animation(sprite, mode);
-    func_800BF0B4(6);
+    battle_menu_set_state(6);
 }
 
-/* Load the file of sprite's resource for its slot's command. */
-void func_800BF2B8(Sprite *sprite) {
+/* 800BF2B8: Load the file of sprite's resource for its slot's command. */
+void battle_load_slot_command_file(Sprite *sprite) {
     s32 file;
     void *block;
 
-    func_800B8D7C();
+    battle_stop_reads_finish_loads();
     cd_select_directory(0x2C, 1);
     file = ((SpriteSequencer *)sprite->sequencer)->word0;
     block = heap_alloc(cd_get_aligned_file_size(file), 1);
     cd_read_file(file, block, 0, 0x80);
-    D_800C3618 = block;
-    D_800C361C = SPRITE_SLOT(sprite);
+    battle_command_file = block;
+    battle_command_file_slot = SPRITE_SLOT(sprite);
 }
 
-/* Start the loaded command file once. */
-s32 func_800BF354(void) {
+/* 800BF354: Start the loaded command file once. */
+s32 battle_start_command_file_once(void) {
     s32 result;
 
-    if (D_800D3350 == 0) {
-        result = (s32)func_800C0FAC(D_800C3618);
-        D_800D3350 = 1;
+    if (battle_command_file_started == 0) {
+        result = (s32)battle_install_command_file_parts(battle_command_file);
+        battle_command_file_started = 1;
     }
     return result;
 }
 
-/* Stop the started command file. */
-void func_800BF3A4(void) {
-    if (D_800D3350 != 0) {
-        func_800C1140(D_800C3618);
-        D_800D3350 = 0;
+/* 800BF3A4: Stop the started command file. */
+void battle_stop_command_file(void) {
+    if (battle_command_file_started != 0) {
+        battle_free_command_file_sound_bank(battle_command_file);
+        battle_command_file_started = 0;
     }
 }
 
-/* Face sprite and the first target of the current event at each other. */
-void func_800BF3E8(Sprite *sprite) {
+/* 800BF3E8: Face sprite and the first target of the current event at each other. */
+void battle_face_first_target(Sprite *sprite) {
     Sprite *first;
     s32 slot;
     Sprite *target;
 
-    D_800D3634 = BATTLE_AREA.events[D_800C360C].targetMask;
-    if ((D_800D3678 = func_800BEEB4(BATTLE_AREA.events[D_800C360C].targetMask, D_800D363C, sprite)) == 0) {
-        D_800D363C[0] = sprite;
+    battle_area_event_target_mask = BATTLE_AREA.events[battle_area_event_index].targetMask;
+    if ((battle_area_event_target_count = battle_list_slot_sprites(BATTLE_AREA.events[battle_area_event_index].targetMask, battle_area_event_target_sprites, sprite)) == 0) {
+        battle_area_event_target_sprites[0] = sprite;
     }
-    target = D_800D363C[0];
+    target = battle_area_event_target_sprites[0];
     sprite->partner = target;
     target->partner = sprite;
-    first = D_800D363C[0];
+    first = battle_area_event_target_sprites[0];
     slot = SPRITE_SLOT(target);
-    D_800C3610->target = first;
-    D_800C3610->targetSlot = slot;
-    sprite_set_facing(sprite, func_800BEF24(sprite, sprite->partner));
+    battle_current_menu->target = first;
+    battle_current_menu->targetSlot = slot;
+    sprite_set_facing(sprite, battle_get_sprite_direction(sprite, sprite->partner));
     if ((s8)target->motion.bytes[3] != 0x15) {
-        sprite_set_facing(target, func_800BEF24(sprite->partner, sprite));
+        sprite_set_facing(target, battle_get_sprite_direction(sprite->partner, sprite));
     }
 }
 
-/* At the path's end, step sprite beside target; else walk the path on. */
-void func_800BF4F0(Sprite *sprite, Sprite *target) {
+/* 800BF4F0: At the path's end, step sprite beside target; else walk the path on. */
+void battle_walk_beside_target(Sprite *sprite, Sprite *target) {
     s16 x;
 
-    if (BATTLE_AREA.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_AREA.path[D_800C3610->field2C].z == 0xFFFF) {
+    if (BATTLE_AREA.path[battle_current_menu->field2C].x == 0xFFFF && BATTLE_AREA.path[battle_current_menu->field2C].z == 0xFFFF) {
         sprite->x = sprite->target_x << 16;
         sprite->z = sprite->target_z << 16;
         x = target->x >> 16;
@@ -1018,205 +1018,205 @@ void func_800BF4F0(Sprite *sprite, Sprite *target) {
         sprite->target_z = target->z >> 16;
         sprite->target_y = 0;
         if (sprite->target_x == (s16)(sprite->x >> 16) && sprite->target_z == (s16)(sprite->z >> 16)) {
-            func_800B9C00(sprite);
+            battle_sprite_arrive_at_target(sprite);
             return;
         }
-        func_800BF1EC(sprite, 3);
-        func_800BF0B4(2);
+        battle_walk_to_target(sprite, 3);
+        battle_menu_set_state(2);
         return;
     }
-    func_800BF0C4(sprite);
+    battle_walk_next_path_point(sprite);
 }
 
-/* Count a finished sprite motion. */
-void func_800BF5E8(void) {
-    D_800C3CE8++;
+/* 800BF5E8: Count a finished sprite motion. */
+void battle_count_finished_motion(void) {
+    battle_finished_motion_count++;
 }
 
-/* Run command with sprite playing its motion, then wait for the motion's end. */
-void func_800BF600(s32 command, Sprite *sprite) {
+/* 800BF600: Run command with sprite playing its motion, then wait for the motion's end. */
+void battle_single_action_load_during_motion(s32 command, Sprite *sprite) {
     if (sprite->animations == 0) {
-        func_800B7C34(command);
+        battle_single_action_load(command);
         return;
     }
-    D_800C3CE8 = 0;
+    battle_finished_motion_count = 0;
     if ((s8)sprite->motion.bytes[3] != 0) {
-        sprite_set_completion_callback(sprite, func_800BF5E8);
+        sprite_set_completion_callback(sprite, battle_count_finished_motion);
         sprite_start_animation(sprite, (s8)sprite->motion.bytes[3]);
     }
-    func_800B7C34(command);
+    battle_single_action_load(command);
     if ((s8)sprite->motion.bytes[3] != 0) {
-        while (D_800C3CE8 == 0) {
-            func_800BE790();
+        while (battle_finished_motion_count == 0) {
+            battle_run_frame();
         }
         sprite_set_completion_callback(sprite, NULL);
     }
 }
 
-/* Update the battle menu when it is open. */
-void func_800BF6CC(void) {
-    if (D_800C3610 != NULL) {
-        func_800BD2E4();
+/* 800BF6CC: Update the battle menu when it is open. */
+void battle_show_results_if_menu_open(void) {
+    if (battle_current_menu != NULL) {
+        battle_show_results();
     }
 }
 
-/* task_active_main_count less one while a number popup shows. */
-s32 func_800BF6F8(void) {
-    return task_active_main_count - func_800BF720();
+/* 800BF6F8: task_active_main_count less one while a number popup shows. */
+s32 battle_count_active_tasks(void) {
+    return task_active_main_count - battle_is_total_popup_shown();
 }
 
-/* Whether a number popup shows. */
-s32 func_800BF720(void) {
-    return D_800D2D68 != 0;
+/* 800BF720: Whether a number popup shows. */
+s32 battle_is_total_popup_shown(void) {
+    return battle_current_total_popup != 0;
 }
 
-/* Set D_800C3628. */
-void func_800BF730(s32 value) {
-    D_800C3628 = value;
+/* 800BF730: Set battle_single_action_start_request. */
+void battle_request_single_action_start(s32 value) {
+    battle_single_action_start_request = value;
 }
 
-/* Watch a sprite's value; on a rise or a fall under the threshold call back
+/* 800BF73C: Watch a sprite's value; on a rise or a fall under the threshold call back
  * and end. */
-void func_800BF73C(Task *task) {
+void battle_distance_watch_update(Task *task) {
     SlotWatch *watch = (SlotWatch *)task;
     s32 last = watch->value;
 
-    watch->value = func_800B57E4(watch->sprite);
+    watch->value = battle_sprite_get_target_distance(watch->sprite);
     if (last < watch->value || watch->value < watch->threshold) {
         watch->callback(watch->sprite);
         watch->destroy(watch);
     }
 }
 
-/* Start watching sprite's value against threshold with callback. */
-void func_800BF7C8(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)) {
+/* 800BF7C8: Start watching sprite's value against threshold with callback. */
+void battle_distance_watch_start(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)) {
     SlotWatch *watch = (SlotWatch *)task_alloc_main_task(sprite->block, sizeof(SlotWatch) - 0x1C);
 
-    task_set_update_callback((Task *)watch, func_800BF73C);
+    task_set_update_callback((Task *)watch, battle_distance_watch_update);
     watch->callback = callback;
     watch->sprite = sprite;
     watch->mode = (s8)sprite->motion.bytes[3];
-    watch->value = func_800B57E4(sprite);
+    watch->value = battle_sprite_get_target_distance(sprite);
     watch->threshold = threshold;
     sprite->motion.word |= 0x20;
 }
 
-/* Make slot's sprite act on the sprite of slot target alone. */
-void func_800BF85C(s32 slot, s32 target) {
+/* 800BF85C: Make slot's sprite act on the sprite of slot target alone. */
+void battle_set_single_target(s32 slot, s32 target) {
     Sprite *sprite = BATTLE_AREA.sprites[slot];
 
     if (sprite != NULL) {
-        D_800C3E1C = sprite;
+        battle_acting_sprite = sprite;
         sprite->partner = BATTLE_AREA.sprites[target];
-        D_800D3634 = 1 << target;
-        D_800D363C[0] = BATTLE_AREA.sprites[target];
-        D_800D363C[1] = NULL;
+        battle_area_event_target_mask = 1 << target;
+        battle_area_event_target_sprites[0] = BATTLE_AREA.sprites[target];
+        battle_area_event_target_sprites[1] = NULL;
     }
 }
 
-/* Move sprite's target to the next of the event's targets. */
-void func_800BF8CC(Sprite *sprite) {
+/* 800BF8CC: Move sprite's target to the next of the event's targets. */
+void battle_sprite_next_target(Sprite *sprite) {
     s32 i;
 
-    for (i = 0; i != D_800D3678; i++) {
-        if (D_800D363C[i] == sprite->partner) {
+    for (i = 0; i != battle_area_event_target_count; i++) {
+        if (battle_area_event_target_sprites[i] == sprite->partner) {
             break;
         }
     }
-    if (i >= D_800D3678) {
-        sprite->partner = D_800D363C[0];
+    if (i >= battle_area_event_target_count) {
+        sprite->partner = battle_area_event_target_sprites[0];
     } else {
-        sprite->partner = D_800D363C[i + 1];
+        sprite->partner = battle_area_event_target_sprites[i + 1];
     }
 }
 
-/* The index of sprite among the event's targets. */
-s32 func_800BF954(Sprite *sprite) {
+/* 800BF954: The index of sprite among the event's targets. */
+s32 battle_get_target_index(Sprite *sprite) {
     s32 i;
 
-    for (i = 0; i != D_800D3678; i++) {
-        if (D_800D363C[i] == sprite) {
+    for (i = 0; i != battle_area_event_target_count; i++) {
+        if (battle_area_event_target_sprites[i] == sprite) {
             break;
         }
     }
     return i;
 }
 
-/* Count an effect hit; at the second, signal event 11. */
-void func_800BF998(void) {
-    D_800D2D4C++;
-    D_800D36BC++;
-    if (D_800D2D4C == 2) {
-        func_800A9FF0(0xB);
+/* 800BF998: Count an effect hit; at the second, signal event 11. */
+void battle_count_effect_hit(void) {
+    battle_effect_hit_count++;
+    battle_pending_hit_count++;
+    if (battle_effect_hit_count == 2) {
+        battle_free_object(0xB);
     }
 }
 
-/* Upload the images of file 1 of directory 0x2C once requested. */
-void func_800BF9EC(void) {
+/* 800BF9EC: Upload the images of file 1 of directory 0x2C once requested. */
+void battle_upload_requested_images(void) {
     void *file;
 
-    if (D_800C3621 != 0) {
-        func_800B8354();
+    if (battle_image_upload_requested != 0) {
+        battle_wait_for_disc();
         cd_select_directory(0x2C, 0);
         file = heap_alloc(cd_get_aligned_file_size(1), 0);
         cd_read_file(1, file, 0, 0x80);
-        func_800B8354();
+        battle_wait_for_disc();
         model_load_image_list(file, 0, 0, 0, 0, 0, 0);
-        func_800BE790();
+        battle_run_frame();
         heap_free(file);
-        D_800C3621 = 0;
+        battle_image_upload_requested = 0;
     }
 }
 
-/* Once requested, restart the party slots in gears (in mode 2 all but the
+/* 800BFA9C: Once requested, restart the party slots in gears (in mode 2 all but the
  * acting one) and wait for them to stop moving. */
-void func_800BFA9C(void) {
+void battle_restart_party_gears(void) {
     s32 i;
     s32 acting;
 
-    if (D_800C362C != 0) {
-        func_800B8D04();
-        func_800BE790();
-        func_800BE790();
-        acting = SPRITE_SLOT(D_800C3E1C);
+    if (battle_gear_restart_mode != 0) {
+        battle_finish_loads();
+        battle_run_frame();
+        battle_run_frame();
+        acting = SPRITE_SLOT(battle_acting_sprite);
         for (i = 0; i != 3; i++) {
-            if (BATTLE_AREA.slots[i].gear != 0 && (D_800C362C != 2 || i != acting) && BATTLE_AREA.slots[i].field2 < 0x11) {
-                func_800BB760(i);
+            if (BATTLE_AREA.slots[i].gear != 0 && (battle_gear_restart_mode != 2 || i != acting) && BATTLE_AREA.slots[i].field2 < 0x11) {
+                battle_gear_load_start(i);
             }
         }
-        while (D_800C35D8 != 0) {
-            func_800BE790();
+        while (battle_gear_object_load_count != 0) {
+            battle_run_frame();
         }
-        D_800C362C = 0;
+        battle_gear_restart_mode = 0;
     }
 }
 
-/* Load and transfer the sound bank of file 5 of directory 0x2C once. */
-void func_800BFBA0(void) {
+/* 800BFBA0: Load and transfer the sound bank of file 5 of directory 0x2C once. */
+void battle_load_wave_bank_5(void) {
     u8 *file;
 
-    if (D_800C3620 == 0) {
-        func_800B8354();
+    if (battle_wave_bank_5_loaded == 0) {
+        battle_wait_for_disc();
         cd_select_directory(0x2C, 0);
         file = heap_alloc(cd_get_aligned_file_size(5), 0);
         cd_read_file(5, file, 0, 0x80);
-        func_800B8354();
+        battle_wait_for_disc();
         if (sound_find_wave_bank(*(u16 *)(file + 0x20)) == 0) {
-            func_800C0F70();
-            D_800C3A6C = sound_load_wave_bank((SoundSequence *)file, 0);
+            battle_release_wave_bank();
+            battle_transferred_wave_bank = sound_load_wave_bank((SoundSequence *)file, 0);
             while (sound_sync_transfer(0) != 0) {
-                func_800BE790();
+                battle_run_frame();
             }
-            D_800C3620 = 1;
-            D_800C3622 = 0;
+            battle_wave_bank_5_loaded = 1;
+            battle_wave_bank_7_loaded = 0;
         }
         heap_free(file);
     }
 }
 
-/* Find the resident effect sprites of sprite with motion mode (any with
+/* 800BFC80: Find the resident effect sprites of sprite with motion mode (any with
  * action 2): action 0 returns the first, the others destroy them. */
-Sprite *func_800BFC80(Sprite *sprite, s32 mode, s32 action) {
+Sprite *battle_find_or_destroy_effect_sprites(Sprite *sprite, s32 mode, s32 action) {
     Task *owner = sprite->block;
     Task *task;
     Sprite *child;
@@ -1241,17 +1241,17 @@ Sprite *func_800BFC80(Sprite *sprite, s32 mode, s32 action) {
     return NULL;
 }
 
-/* Destroy the resident effect sprites of sprite with motion mode. */
-void func_800BFD88(Sprite *sprite, s32 mode) {
-    func_800BFC80(sprite, mode, 1);
+/* 800BFD88: Destroy the resident effect sprites of sprite with motion mode. */
+void battle_destroy_effect_sprites(Sprite *sprite, s32 mode) {
+    battle_find_or_destroy_effect_sprites(sprite, mode, 1);
 }
 
-/* Give sprite a resident effect sprite playing motion mode, unless it has. */
-void func_800BFDA8(Sprite *sprite, s32 mode) {
+/* 800BFDA8: Give sprite a resident effect sprite playing motion mode, unless it has. */
+void battle_add_effect_sprite(Sprite *sprite, s32 mode) {
     u8 saved;
     Sprite *child;
 
-    if (sprite->animations != 0 && func_800BFC80(sprite, mode, 0) == NULL) {
+    if (sprite->animations != 0 && battle_find_or_destroy_effect_sprites(sprite, mode, 0) == NULL) {
         void *motion = (void *)(SPRITE_SOURCE->animations[mode + 1] + (s32)SPRITE_SOURCE->animations);
         saved = task_new_tasks_active;
         task_new_tasks_active = 0;

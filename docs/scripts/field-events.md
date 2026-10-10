@@ -238,7 +238,7 @@ maps are identical to Disc 1's.
   would set byte 0x0D of the resident's battle formation `formation_active`
   (`enemyIds[5]`, resident/formation.h; `0x8006f9e9`) to 100 (`801df0d4`).
   Every battle copies its formation over `formation_active` before its turns (battle
-  `func_80070F40`), so it would read and lower that formation's enemy id byte
+  `battle_main`), so it would read and lower that formation's enemy id byte
   as the rounds, not the 100.
 - The stock of the shop numbers past the tables, weapon shops 40-255 and gear
   shops 30-255, which maps 488 and 723's selectors and the debug start can

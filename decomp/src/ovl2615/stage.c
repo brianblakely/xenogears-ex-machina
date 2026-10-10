@@ -52,10 +52,10 @@ s32 func_801E70E8(s32 *images) {
     }
     width = right - left;
     height = bottom - top;
-    D_800D2D30 = left;
-    D_800D2D34 = top;
-    D_800D2D2C = width;
-    D_800C3EA8 = height;
+    battle_stage_image_x = left;
+    battle_stage_image_y = top;
+    battle_stage_image_width = width;
+    battle_stage_image_height = height;
     return width * height;
 }
 
@@ -94,26 +94,26 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         return 0;
     }
     heap_select_owner_tag(4, 0);
-    D_800C3E38 = NULL;
-    D_800C3EA0 = NULL;
-    D_800D3344 = NULL;
-    D_800D39CC = NULL;
-    D_800D3348 = 0;
+    battle_stage_model_parts = NULL;
+    battle_stage_sky = NULL;
+    battle_scene_points = NULL;
+    battle_scene_triangles = NULL;
+    battle_scene_triangle_count = 0;
     for (i = 1; i >= 0; i--) {
-        D_800C3D50[i] = NULL;
+        battle_stage_backdrops[i] = NULL;
     }
     for (j = 0; j < 2; j++) {
-        D_800C3DA0[j].phases = NULL;
+        battle_stage_texture_scrolls[j].phases = NULL;
     }
-    D_800D361A = 0;
+    battle_stage_image_anim_active = 0;
     if (stage != NULL) {
         heap_unprotect_block(stage);
-        func_800A8BF0(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
+        battle_create_object(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
         func_801E70E8(stage->images);
         position = stage->positions;
-        part = D_800D3368[STAGE_MODEL]->hierarchy;
-        D_800C3E38 = part;
-        D_800C3E48 = D_800D3368[STAGE_MODEL]->field0;
+        part = battle_objects[STAGE_MODEL]->hierarchy;
+        battle_stage_model_parts = part;
+        battle_stage_model_table = battle_objects[STAGE_MODEL]->field0;
         for (i = 1; i < part->index; i++, position++) {
             part[i].translation[0] = position->x;
             part[i].translation[1] = position->y;
@@ -153,9 +153,9 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     info = &data->info;
     table = (s32 *)((s32 *)pointer)[1];
     if (stage != NULL) {
-        func_800AA898(D_800D3368[STAGE_MODEL], &D_800C3D0C, (s32 *)pointer + 2, 0);
-        func_800AA934(D_800D3368[STAGE_MODEL], D_800D3368[STAGE_MODEL], &D_800C3D0C, 0);
-        func_8009EF3C(D_800C3E38, D_800D3368[STAGE_MODEL]->scale1C);
+        battle_reset_object(battle_objects[STAGE_MODEL], &battle_effect_pool, (s32 *)pointer + 2, 0);
+        battle_start_effect_script(battle_objects[STAGE_MODEL], battle_objects[STAGE_MODEL], &battle_effect_pool, 0);
+        battle_pose_model_hierarchy(battle_stage_model_parts, battle_objects[STAGE_MODEL]->scale1C);
     }
     for (i = 0; i < 4; i++) {
         size = *table;
@@ -183,9 +183,9 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     colours[6] = data->colours[2];
     colours[7] = 0;
     colours[8] = 0;
-    D_800D2FD0 = (u16 *)(first_motion + 2);
-    D_800D2FC8 = motion_count;
-    D_800D2FC0 = (MATRIX *)colours;
+    battle_stage_circles = (u16 *)(first_motion + 2);
+    battle_stage_circle_count = motion_count;
+    battle_stage_color_matrix = (MATRIX *)colours;
     SetColorMatrix((MATRIX *)colours);
     SetBackColor(data->back[0], data->back[1], data->back[2]);
     for (i = 0; i < 6; i++) {
@@ -194,24 +194,24 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         case 0:
             break;
         case 1:
-            if (D_800C3D50[made] == NULL && made < 2) {
-                D_800C3D50[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
+            if (battle_stage_backdrops[made] == NULL && made < 2) {
+                battle_stage_backdrops[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
                     object->v1A, object->v1C, object->v1E, object->v20, object, NULL, 0,
                     object->v24, object->v26);
             }
             made++;
             break;
         case 2:
-            if (D_800C3D50[made] == NULL && made < 2) {
-                D_800C3D50[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
+            if (battle_stage_backdrops[made] == NULL && made < 2) {
+                battle_stage_backdrops[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
                     object->v1A, object->v1C, object->v1E, object->v20, object, info->fogColour,
                     object->v22, object->v24, object->v26);
             }
             made++;
             break;
         case 3:
-            if (D_800C3EA0 == NULL) {
-                D_800C3EA0 = func_801E7914(object->v10, object->v12, info->backdrop[2],
+            if (battle_stage_sky == NULL) {
+                battle_stage_sky = func_801E7914(object->v10, object->v12, info->backdrop[2],
                     info->backdrop[3], object->v14, object->v1E, object->v16, object->v1A,
                     object->v1C, info->backdrop[0], info->backdrop[1], (VECTOR *)object,
                     (CVECTOR *)info->fogColour, object->v20, object->v22);
@@ -221,8 +221,8 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             info->fog = 1;
             break;
         case 7:
-            if (D_800C3DA0[placed].phases == NULL && placed < 2 && i + 1 < 4) {
-                gpu_init_texture_scroll(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
+            if (battle_stage_texture_scrolls[placed].phases == NULL && placed < 2 && i + 1 < 4) {
+                gpu_init_texture_scroll(&battle_stage_texture_scrolls[placed], object->v10, object->v12, object->v14,
                     object->v16, object->v20, object->v1A, object->v1C, motions[i + 1]);
             }
             placed++;
@@ -239,7 +239,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         func_801E7EC4(points, triangles, *triangle_count);
     }
     for (i = 0; i < 4; i++) {
-        D_800D2D10[i] = ((BattleScene *)mode_battle_scene_data)->info.flags[i];
+        battle_scene_part_speeds[i] = ((BattleScene *)mode_battle_scene_data)->info.flags[i];
     }
     DrawSync(0);
     heap_free(stage);
@@ -384,17 +384,17 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
 void func_801E7EC4(SVECTOR *points, SceneTriangle *triangles, s32 count) {
     s32 i;
 
-    D_800D3344 = points;
-    D_800D39CC = triangles;
-    D_800D3348 = count;
-    D_800D2F64 = 1;
+    battle_scene_points = points;
+    battle_scene_triangles = triangles;
+    battle_scene_triangle_count = count;
+    battle_triangle_visit_stamp = 1;
     if (triangles != NULL) {
-        for (i = 0; i < D_800D3348; i++) {
-            D_800D39CC[i].visited = 0;
+        for (i = 0; i < battle_scene_triangle_count; i++) {
+            battle_scene_triangles[i].visited = 0;
         }
     }
     if (count == 0) {
-        D_800D3344 = NULL;
-        D_800D39CC = NULL;
+        battle_scene_points = NULL;
+        battle_scene_triangles = NULL;
     }
 }

@@ -92,7 +92,7 @@ void func_801FC11C(Task *node) {
             for (col = 0; col != 20; col++) {
                 cell = &burst->cells[half][row][col];
                 corner = cell->corner;
-                prim = &cell->prim[D_800C3EB0.buffer];
+                prim = &cell->prim[battle_area.buffer];
                 for (k = 0; k != 3; k++) {
                     if (D_801FCE14 != 0) {
                         twist = burst->twist;
@@ -299,13 +299,13 @@ void func_801FC8F4(void) {
 
     saved.pages[0] = heap_alloc(0x8000, 1);
     saved.pages[1] = heap_alloc(0x8000, 1);
-    rect.x = D_800C3668[1].x;
-    rect.y = D_800C3668[1].y;
+    rect.x = battle_gear_image_places[1].x;
+    rect.y = battle_gear_image_places[1].y;
     rect.w = 0x40;
     rect.h = 0x100;
     StoreImage(&rect, saved.pages[0]);
-    rect.x = D_800C3668[2].x;
-    rect.y = D_800C3668[2].y;
+    rect.x = battle_gear_image_places[2].x;
+    rect.y = battle_gear_image_places[2].y;
     rect.w = 0x40;
     rect.h = 0x100;
     StoreImage(&rect, saved.pages[1]);
@@ -328,7 +328,7 @@ void func_801FC8F4(void) {
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     heap_free(screen);
-    work = &D_800C3EB0;
+    work = &battle_area;
     back = &work->buffers[0];
     shown = work->current;
     buffers = back;
@@ -357,41 +357,41 @@ void func_801FC8F4(void) {
         if (frames > 0) {
             frames--;
         }
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
-        next = &D_800C3EB0.buffers[0];
-        if (D_800C3EB0.current == next) {
-            next = &D_800C3EB0.buffers[1];
+        battle_area.buffers[battle_area.buffer].drawEnv.r0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.r0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.g0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.g0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.b0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.b0, -12);
+        next = &battle_area.buffers[0];
+        if (battle_area.current == next) {
+            next = &battle_area.buffers[1];
         }
-        D_800C3EB0.current = next;
-        D_800C3EB0.ot = next->ot;
+        battle_area.current = next;
+        battle_area.ot = next->ot;
         ClearOTagR((u_long *)next->ot, 0x1000);
-        D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
-        D_801FCE48 = D_800C3EB0.ot;
+        battle_area.buffer = 1 - battle_area.buffer;
+        D_801FCE48 = battle_area.ot;
         DrawSync(0);
         VSync(2);
         func_801FC000(&burst->task);
         func_801FC11C(&burst->task);
-        PutDispEnv(&D_800C3EB0.current->dispEnv);
-        PutDrawEnv(&D_800C3EB0.current->drawEnv);
-        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
+        PutDispEnv(&battle_area.current->dispEnv);
+        PutDrawEnv(&battle_area.current->drawEnv);
+        DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     }
     DrawSync(0);
     VSync(2);
-    ClearOTagR((u_long *)D_800C3EB0.ot, 0x1000);
+    ClearOTagR((u_long *)battle_area.ot, 0x1000);
     DrawSync(0);
     VSync(2);
-    rect.x = D_800C3668[1].x;
-    rect.y = D_800C3668[1].y;
+    rect.x = battle_gear_image_places[1].x;
+    rect.y = battle_gear_image_places[1].y;
     rect.w = 0x40;
     rect.h = 0x100;
     LoadImage(&rect, saved.pages[0]);
-    rect.x = D_800C3668[2].x;
-    rect.y = D_800C3668[2].y;
+    rect.x = battle_gear_image_places[2].x;
+    rect.y = battle_gear_image_places[2].y;
     rect.w = 0x40;
     rect.h = 0x100;
     LoadImage(&rect, saved.pages[1]);
@@ -419,14 +419,14 @@ void func_801FC8F4(void) {
     prim->y2 = 0xF0;
     prim->x3 = 0x140;
     prim->y3 = 0xF0;
-    AddPrim(&D_800C3EB0.ot[0xFFE], prim);
-    D_800C3EB0.buffers[1].drawEnv.isbg = isbg;
-    D_800C3EB0.buffers[0].drawEnv.isbg = isbg;
-    D_800C3EB0.buffers[1].drawEnv.r0 = saved.colour[0];
-    D_800C3EB0.buffers[0].drawEnv.r0 = saved.colour[0];
-    D_800C3EB0.buffers[1].drawEnv.g0 = saved.colour[1];
-    D_800C3EB0.buffers[0].drawEnv.g0 = saved.colour[1];
-    D_800C3EB0.buffers[1].drawEnv.b0 = saved.colour[2];
-    D_800C3EB0.buffers[0].drawEnv.b0 = saved.colour[2];
+    AddPrim(&battle_area.ot[0xFFE], prim);
+    battle_area.buffers[1].drawEnv.isbg = isbg;
+    battle_area.buffers[0].drawEnv.isbg = isbg;
+    battle_area.buffers[1].drawEnv.r0 = saved.colour[0];
+    battle_area.buffers[0].drawEnv.r0 = saved.colour[0];
+    battle_area.buffers[1].drawEnv.g0 = saved.colour[1];
+    battle_area.buffers[0].drawEnv.g0 = saved.colour[1];
+    battle_area.buffers[1].drawEnv.b0 = saved.colour[2];
+    battle_area.buffers[0].drawEnv.b0 = saved.colour[2];
     func_801FC400(burst);
 }

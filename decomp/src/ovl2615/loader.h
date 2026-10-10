@@ -94,15 +94,15 @@ typedef struct {
 /* Battle file 2's block, in the first word of what the battle declares as
  * the party panel's maximum digits (u8[7], battle/graphics.h), which the
  * battle releases from there (800b8098). */
-extern void *D_800D2D54;
+extern void *battle_file2_block_and_max_hp_digits;
 
 /* The battle overlay's sprite task for a sprite row: a resident task whose
  * data is the sprite (BattleArea.tasks and .sprites take the two). */
-Task *func_800BA984(void *resource, s32 clut_x, s32 clut_y, s16 texture_x, s16 texture_y, s32 unused5,
+Task *battle_sprite_task_create(void *resource, s32 clut_x, s32 clut_y, s16 texture_x, s16 texture_y, s32 unused5,
                     s32 x, s32 y, s32 z, s32 animation, s32 direction, s32 unused11, s32 unused12,
                     s32 palette_bank);
-void func_800BB350(s32 slot);
-void func_800B14B8(void);
+void battle_object_follower_create(s32 slot);
+void battle_enable_shadows(void);
 
 void func_801E6314(u8 *data);
 void func_801E6710(u8 *data);

@@ -6,8 +6,8 @@
 #include "common.h"
 #include "psyq/libgte.h"
 
-extern s32 D_800D2FCC; /* segments drawn of the current curve */
+extern s32 battle_curve_segments_drawn; /* segments drawn of the current curve */
 
-void func_800C08CC(s32 count, SVECTOR *points, void (*draw)()); /* draw a smooth curve through points */
+void battle_curve_draw(s32 count, SVECTOR *points, void (*draw)()); /* draw a smooth curve through points */
 
 #endif

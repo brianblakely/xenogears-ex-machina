@@ -23,7 +23,7 @@ typedef struct EnemyAi {
     u8 bytes[16];      /* +0x30 (bFlag) */
 } EnemyAi;
 
-extern EnemyAi D_800D3400[8];
+extern EnemyAi battle_enemy_ai_blocks[8];
 
 /* Enemy reaction state (4 bytes per enemy from 800c3d18). The setup (ovl2615)
  * arms the scripts an enemy has and clears unk3. */
@@ -34,20 +34,20 @@ typedef struct EnemyReaction {
     u8 unk3;
 } EnemyReaction;
 
-extern EnemyReaction D_800C3D18[8];
+extern EnemyReaction battle_enemy_reactions[8];
 
 /* The enemies' names. */
-extern void *D_800C3DDC;   /* enemy name table */
-extern u8 D_800C3E40[8];   /* enemy name per enemy slot (3-10) */
+extern void *battle_enemy_name_table;   /* enemy name table */
+extern u8 battle_enemy_name_indices[8];   /* enemy name per enemy slot (3-10) */
 
 /* The AI script interpreter (800792F8's unit 80079934-80079E7C, 80079ED8's
  * 8007EF6C-8007F8C0). */
-void func_80079934(u8 **pc);                /* step past a four-byte instruction */
-void func_800799C8(u8 slot, u16 attacking); /* run enemy slot's turn script */
-s32 func_80079AB0(u8 slot); /* run the enemy reaction script; it ran action 0x62 */
-void func_80079C24(void);                   /* the after-turn scripts */
-u8 func_80079E7C(u16 mask);                 /* the first slot in mask; 11 when none */
-u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count); /* run an AI action */
-u8 func_8007F8C0(u8 **pc, u8 enemy);        /* evaluate an AI condition */
+void battle_ai_step_instruction(u8 **pc);                /* step past a four-byte instruction */
+void battle_ai_run_turn_script(u8 slot, u16 attacking); /* run enemy slot's turn script */
+s32 battle_ai_run_reaction_script(u8 slot); /* run the enemy reaction script; it ran action 0x62 */
+void battle_ai_run_targeted_scripts(void);                   /* the after-turn scripts */
+u8 battle_find_first_slot_in_mask(u16 mask);                 /* the first slot in mask; 11 when none */
+u8 battle_ai_run_action(u8 **pc, u8 enemy, u8 count); /* run an AI action */
+u8 battle_ai_evaluate_condition(u8 **pc, u8 enemy);        /* evaluate an AI condition */
 
 #endif

@@ -49,7 +49,7 @@ void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 u8 D_801E96A4 = 0; /* the file screen saves (nonzero) or loads */
 /* The flag D_801E96A5 (0), then 08 00 before the word-aligned masks, which
  * nothing reads: taken as its padding, holding stray bytes, by analogy with
- * battle's flag D_800C2050 (08 00 00) and ovl2596's D_801E44C0 (04 00 00);
+ * battle's flag battle_applying_item_results (08 00 00) and ovl2596's D_801E44C0 (04 00 00);
  * neither the bytes nor the vendor tools tell it from an unreferenced byte 8
  * (docs/matching.md). It stays original data (slot39.classification.txt). */
 INCLUDE_ORIGINAL_UNALIGNED(".data", D_801E96A5, 0x801E96A5, 3);

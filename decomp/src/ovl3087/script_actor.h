@@ -16,7 +16,7 @@ void sprite_set_direction(Sprite *sprite, s32 arg);
 void sprite_set_facing(Sprite *sprite, s32 arg);
 
 /* Defined u8 in the battle (own_declarations.h); u8 here adds andi 0xff to the result's test. */
-s32 func_800B7E94(void);
+s32 battle_single_action_start(void);
 
 void func_801E93E8(Sprite *actor);
 void func_801E9430(s32 actor, s32 animation);

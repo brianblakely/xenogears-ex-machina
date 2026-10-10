@@ -96,7 +96,7 @@ void func_801E8A64(Task *node) {
             for (col = 0; col != 20; col++) {
                 cell = &burst->cells[half][row][col];
                 corner = cell->corner;
-                prim = &cell->prim[D_800C3EB0.buffer];
+                prim = &cell->prim[battle_area.buffer];
                 for (k = 0; k != 3; k++) {
                     if (D_801E9680 != 0) {
                         twist = burst->twist;
@@ -291,7 +291,7 @@ void func_801E91E8(void) {
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
     heap_free(screen);
-    work = &D_800C3EB0;
+    work = &battle_area;
     /* Flip as swap_buffers() does, remembering the first buffer. */
     next = &work->buffers[0];
     if (work->current == (first = next)) {
@@ -316,8 +316,8 @@ void func_801E91E8(void) {
             frames--;
         }
         swap_buffers();
-        D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
-        D_801E96BC = D_800C3EB0.ot;
+        battle_area.buffer = 1 - battle_area.buffer;
+        D_801E96BC = battle_area.ot;
         if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
@@ -336,12 +336,12 @@ void func_801E91E8(void) {
             }
         }
         boot_check_soft_reset();
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
-        D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.r0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.r0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.g0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.g0, -12);
+        battle_area.buffers[battle_area.buffer].drawEnv.b0 =
+            sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.b0, -12);
         /* Run the burst on a stack at the top of the scratchpad. */
         STACK_ENTER(0x1F8003FC);
         func_801E8964(&burst->task);
@@ -349,9 +349,9 @@ void func_801E91E8(void) {
         STACK_LEAVE();
         DrawSync(0);
         VSync(2);
-        PutDispEnv(&D_800C3EB0.current->dispEnv);
-        PutDrawEnv(&D_800C3EB0.current->drawEnv);
-        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
+        PutDispEnv(&battle_area.current->dispEnv);
+        PutDrawEnv(&battle_area.current->drawEnv);
+        DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     }
     func_801E8D48(burst);
     SetDispMask(0);

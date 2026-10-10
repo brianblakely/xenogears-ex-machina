@@ -1848,10 +1848,10 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
 
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vx = D_800C3EB0.slots[(side << 2) | slot].x;
+                vector.vx = battle_area.slots[(side << 2) | slot].x;
                 slot = sprite->frame_bits.unknown30;
                 side = sprite->motion.word & 3;
-                vector.vz = D_800C3EB0.slots[(side << 2) | slot].z;
+                vector.vz = battle_area.slots[(side << 2) | slot].z;
                 vector.vy = 0;
                 break;
             }
@@ -1889,16 +1889,16 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 32-35: as 18-21 for the acting sprite (800c3e1c). */
             case 32:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 goto focus_top;
             case 33:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 goto focus_middle;
             case 34:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 goto focus_depth;
             case 35:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 goto focus_half_depth;
             /* 18: the target's top (y - height). */
             case 18:
@@ -1949,7 +1949,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 1: the acting sprite's position. */
             case 1:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 goto focus_position;
             /* 9, 8, 10: the target's part offsets 1, 2 and 3. */
             case 9:
@@ -2007,7 +2007,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
             case 29:
             case 30:
             case 31:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 index -= 14;
                 goto group_place;
             /* 0: the target's position. */
@@ -2023,7 +2023,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
                 s32 members;
 
                 sprite_set_vector(&sum, 0, 0, 0);
-                for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
+                for (members = 0; (other = battle_area_event_target_sprites[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
                     sum.vz += other->z;
@@ -2038,7 +2038,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
             }
             /* 3: halfway to the acting sprite. */
             case 3:
-                other = D_800C3E1C;
+                other = battle_acting_sprite;
                 sum.vx = other->x;
                 sum.vy = other->y;
                 sum.vz = other->z;
@@ -2057,7 +2057,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
                 s32 members;
 
                 sprite_set_vector(&sum, 0, 0, 0);
-                for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
+                for (members = 0; (other = battle_area_event_target_sprites[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
                     sum.vz += other->z;
@@ -2280,7 +2280,7 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
         }
         if (((sprite->flags >> 13) & 0xF) == 0xF && ((SpriteModelRenderer *)sprite->renderer)->model != NULL &&
             !((sprite->flags >> 1) & 1)) {
-            func_800B2AEC(((SpriteModelRenderer *)sprite->renderer)->model,
+            battle_tmd_tint_packets(((SpriteModelRenderer *)sprite->renderer)->model,
                           ((SpriteModelRenderer *)sprite->renderer)->packets[0],
                           ((SpriteModelRenderer *)sprite->renderer)->packets[1], model->red, model->green, model->blue);
         }

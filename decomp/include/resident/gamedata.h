@@ -151,7 +151,7 @@ typedef struct GearRecord {
     u8 equipAttackScale;  /* 0x56 */
     u8 chargeRate;        /* 0x57 */
     u8 pad58[0x5C - 0x58];
-    u8 fileVariant;       /* 0x5C: the gear's extra file (battle D_800C3508), 0 none */
+    u8 fileVariant;       /* 0x5C: the gear's extra file (battle battle_gear_file_table), 0 none */
     u8 spriteVariants[3]; /* 0x5D: added (less one) to its animations' sprite kinds */
     u32 hp;               /* 0x60 */
     u32 maxHp;            /* 0x64 */
@@ -177,7 +177,7 @@ typedef struct GearRecord {
     u8 field9D;
     u8 frameFactor;       /* 0x9E: attack scale in quarters */
     s8 hitBonus;          /* 0x9F: accuracy while its first ammo slot reads 0 rounds, as
-                           * an empty slot does (battle func_8009D3A0); half as evasion */
+                           * an empty slot does (battle battle_resolve_gear_hit_outcome); half as evasion */
     u8 padA0[0xA4 - 0xA0];
 } GearRecord;
 
@@ -280,9 +280,9 @@ typedef struct GameData {
      * character 4 and its gears 5 and 13 may use them
      * (docs/scripts/field-events.md). The field menu sets an id's byte to 100
      * when it is loaded (slot39 func_801DF0D4), each action takes one from the
-     * slots its command number names (battle func_8009AFD8, func_8009E788), and
-     * a command whose descriptor names a slot at 0 misses (func_80096AB8,
-     * func_8009D3A0). The code forms
+     * slots its command number names (battle battle_wear_weapon_items, battle_wear_down_attacker_gear_parts), and
+     * a command whose descriptor names a slot at 0 misses (battle_resolve_hit_outcome,
+     * battle_resolve_gear_hit_outcome). The code forms
      * an id's address from 50 bytes before each array, splat's D_8006F8BA
      * (+0x2286) and D_8006F8EA (+0x22B6, the address of `flags`). An empty
      * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,

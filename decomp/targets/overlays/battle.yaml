@@ -55,61 +55,61 @@ segments:
       # docs/matching.md). The tables at 80070314-80070370 (8008B478,
       # 8008BED8, 8008C81C) sit at 4 mod 8 between runs at 0 mod 8; their
       # unit's text starts after 800861D0 and ends before 80094EE4.
-      - [0x4, .rodata, battle_80070E2C]
-      - [0x18, .rodata, battle_800792F8]
-      - [0x8C, .rodata, battle_80079ED8]
+      - [0x4, .rodata, battle_turns_and_hud]
+      - [0x18, .rodata, battle_ai_runners]
+      - [0x8C, .rodata, battle_ai_opcodes]
       - [0x520, .rodata, battle]
-      - [0x824, .rodata, battle_8008B478]
-      - [0x880, .rodata, battle_8008CCCC]
-      - [0x9DC, .rodata, battle_8009E53C]
-      - [0xCEC, .rodata, battle_800B15D8]
-      - [0xD60, .rodata, battle_800B3F04]
-      - [0xF0C, .rodata, battle_800B7134]
-      - [0xF20, .rodata, battle_800B8098]
-      - [0xFEC, .rodata, battle_800BD3AC]
-      - [0x1018, .rodata, battle_800BFE48]
-      - [0x1124, .rodata, battle_800C11CC]
-      - [0x133c, c, battle_80070E2C]
-      - [0x9808, c, battle_800792F8]
-      - [0xA3E8, c, battle_80079ED8]
+      - [0x824, .rodata, battle_command_submenus]
+      - [0x880, .rodata, battle_menus_and_resolver]
+      - [0x9DC, .rodata, battle_scene]
+      - [0xCEC, .rodata, battle_tmd_screen_effects]
+      - [0xD60, .rodata, battle_sprite_commands]
+      - [0xF0C, .rodata, battle_action_files]
+      - [0xF20, .rodata, battle_flow]
+      - [0xFEC, .rodata, battle_frame]
+      - [0x1018, .rodata, battle_settle]
+      - [0x1124, .rodata, battle_sprite_vm]
+      - [0x133c, c, battle_turns_and_hud]
+      - [0x9808, c, battle_ai_runners]
+      - [0xA3E8, c, battle_ai_opcodes]
       - [0x1166C, c, battle]
-      - [0x1B988, c, battle_8008B478]
-      - [0x1D1DC, c, battle_8008CCCC]
-      - [0x2EA4C, c, battle_8009E53C]
-      - [0x41AE8, c, battle_800B15D8]
-      - [0x44414, c, battle_800B3F04]
+      - [0x1B988, c, battle_command_submenus]
+      - [0x1D1DC, c, battle_menus_and_resolver]
+      - [0x2EA4C, c, battle_scene]
+      - [0x41AE8, c, battle_tmd_screen_effects]
+      - [0x44414, c, battle_sprite_commands]
       # The unit holding 800B7870's table starts at 800B7134 at the latest:
-      # its own variable D_800C3CB4 is also 800B7134's and 800B7160's.
-      - [0x47644, c, battle_800B7134]
-      - [0x485A8, c, battle_800B8098]
-      - [0x4D8BC, c, battle_800BD3AC]
-      - [0x50358, c, battle_800BFE48]
-      - [0x516DC, c, battle_800C11CC]
+      # its own variable battle_shatter_ot is also 800B7134's and 800B7160's.
+      - [0x47644, c, battle_action_files]
+      - [0x485A8, c, battle_flow]
+      - [0x4D8BC, c, battle_frame]
+      - [0x50358, c, battle_settle]
+      - [0x516DC, c, battle_sprite_vm]
       # Each unit's .data follows in unit order; the shared tables open it in
       # the main unit (80070E2C). Objects followed by stray bytes
-      # (D_800C204C, D_800C2050, D_800C34CC, D_800C35D4, D_800C3780,
-      # D_800C37C8, D_800C37D4, and 800C3488, unreferenced, whose object and
+      # (battle_in_automatic_turn, battle_applying_item_results, battle_combo_step_flags, battle_music_lowered, battle_showing_status_drains,
+      # battle_effects_disabled, battle_condition_idle_motions, and 800C3488, unreferenced, whose object and
       # padding are inferred by analogy with ovl2596's D_801E44C0) are
       # included from the original in their units (INCLUDE_ORIGINAL).
-      - [0x52558, .data, battle_80070E2C]
-      - [0x5399C, .data, battle_8008CCCC]
-      - [0x53A18, .data, battle_8009E53C]
-      - [0x53A58, .data, battle_800B15D8]
-      - [0x53A74, .data, battle_800B3F04]
-      - [0x53AE8, .data, battle_800B8098]
-      - [0x53C5C, .data, battle_800BD3AC]
-      - [0x53CE4, .data, battle_800BFE48]
+      - [0x52558, .data, battle_turns_and_hud]
+      - [0x5399C, .data, battle_menus_and_resolver]
+      - [0x53A18, .data, battle_scene]
+      - [0x53A58, .data, battle_tmd_screen_effects]
+      - [0x53A74, .data, battle_sprite_commands]
+      - [0x53AE8, .data, battle_flow]
+      - [0x53C5C, .data, battle_frame]
+      - [0x53CE4, .data, battle_settle]
       # The .bss (not loaded): each unit's own variables in unit order, each
       # read only by its own code (tools/data_users.py), then the commons,
       # which the original linker allocated after every unit's own in an
       # order of its own; battle_common.c, linked last, defines them.
       - { start: 0x53F80, type: .bss, vram: 0x800C3A70, name: battle }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3AA4, name: battle_8008CCCC }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3AAC, name: battle_8009E53C }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3BD0, name: battle_800B15D8 }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3CA4, name: battle_800B3F04 }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3CB4, name: battle_800B7134 }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3CB8, name: battle_800B8098 }
-      - { start: 0x53F80, type: .bss, vram: 0x800C3CE8, name: battle_800BD3AC }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3AA4, name: battle_menus_and_resolver }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3AAC, name: battle_scene }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3BD0, name: battle_tmd_screen_effects }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CA4, name: battle_sprite_commands }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CB4, name: battle_action_files }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CB8, name: battle_flow }
+      - { start: 0x53F80, type: .bss, vram: 0x800C3CE8, name: battle_frame }
       - { start: 0x53F80, type: .bss, vram: 0x800C3CEC, name: battle_common }
   - [0x53f80]

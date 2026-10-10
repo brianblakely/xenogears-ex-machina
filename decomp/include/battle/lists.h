@@ -49,29 +49,29 @@ typedef struct ListPrims {
     s16 blink;                /* +0x5DA2 frame counter of the blinking list */
 } ListPrims;
 
-extern ListPrims *D_800D2DB4;
+extern ListPrims *battle_hud_primitive_lists;
 
 /* The glyph lists' values: names of parts of the battle work area's gear HUD
  * (battle.data.ld) and the glyphs of lists extra4 and list9. */
-extern u8 D_800C33B0[4];    /* glyph ids: two for list extra4, two for list9 */
-extern u8 D_800D2C0C[3][2]; /* values shown in number strings 2-4 */
-extern u16 D_800D2C2A;
-extern u16 D_800D2C30;
-extern u8 D_800D2C35;
-extern u8 D_800D2C36;
-extern u8 D_800D2C38;
-extern u16 D_800D2C3A;
-extern u8 D_800D3294;
+extern u8 battle_gear_hud_fixed_glyph_ids[4];    /* glyph ids: two for list extra4, two for list9 */
+extern u8 battle_gear_hud[3][2]; /* values shown in number strings 2-4 */
+extern u16 battle_gear_hud_attack;
+extern u16 battle_gear_hud_warning_flags;
+extern u8 battle_gear_hud_speed;
+extern u8 battle_gear_hud_defense;
+extern u8 battle_gear_hud_overheat;
+extern u16 battle_gear_hud_boost_chance;
+extern u8 battle_uses_fixed_party;
 
 /* The stepped line (80088b80). */
-extern u8 D_800C207C; /* the stepped line reached its end */
-extern s32 D_800C2080;
-extern s32 D_800C2084;
-extern s32 D_800C2054[2][5]; /* end points (x, then y) of the stepped line */
+extern u8 battle_stepped_line_ended; /* the stepped line reached its end */
+extern s32 battle_stepped_line_progress_x;
+extern s32 battle_stepped_line_progress_y;
+extern s32 battle_stepped_line_end_points[2][5]; /* end points (x, then y) of the stepped line */
 
-void func_80088B80(void);      /* draw the stepped line effect */
-void func_800898F0(u8 member); /* build the member's gear fuel glyphs */
-void func_80089AF8(u8 member); /* run the eight list building steps */
-void func_8009A2D4(u8 member); /* fill the gear HUD (8008CCCC's unit) */
+void battle_stepped_line_draw(void);      /* draw the stepped line effect */
+void battle_gear_hud_build_fuel_glyphs(u8 member); /* build the member's gear fuel glyphs */
+void battle_gear_hud_build_lists(u8 member); /* run the eight list building steps */
+void battle_gear_hud_fill(u8 member); /* fill the gear HUD (8008CCCC's unit) */
 
 #endif

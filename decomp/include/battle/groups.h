@@ -11,10 +11,10 @@
  * the battle's approach moves keep them (battle/formation.h). */
 typedef struct GroupEntry {
     u8 count;
-    u8 members;        /* member bits (func_80089C08) */
+    u8 members;        /* member bits (battle_get_slot_bit) */
     u8 unk2[2];
 } GroupEntry;
 
-extern GroupEntry D_800D301C[32];
+extern GroupEntry battle_formation_groups[32];
 
 #endif

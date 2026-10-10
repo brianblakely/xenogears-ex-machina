@@ -90,7 +90,7 @@ class LayoutTests(unittest.TestCase):
         self.assertIn(f"menu_state_screen_parameter * 0x{SHOP:X}", shop)
         self.assertIn(f"shop_kinds[j] = i / {SHOP_WEAPONS};", shop)
         copy = function("decomp/src/ovl2615/ovl2615.c", "void func_801E4870(void) {")
-        self.assertIn(f"D_800C3DD0 + 0x{RECORDS:x}", copy)
+        self.assertIn(f"battle_enemy_data_file + 0x{RECORDS:x}", copy)
         take = function("decomp/src/field/field_800854D0.c", "void func_8009640C(void) {")
         self.assertRegex(take, rf"if \(--counts\[slot\] == 0\) \{{\s+ids\[slot\] = 0x{EMPTIED:X};")
 

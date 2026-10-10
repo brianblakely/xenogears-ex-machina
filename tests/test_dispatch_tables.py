@@ -82,20 +82,20 @@ class SourceTests(unittest.TestCase):
     def test_formula_tables_and_their_callers(self):
         foot, gear = formula_tables()
         self.assertEqual(
-            (foot.name, foot.caller, len(foot.handlers)), ("D_800C348C", "func_800941A4", 8)
+            (foot.name, foot.caller, len(foot.handlers)), ("battle_formula_table", "battle_resolve_action", 8)
         )
         self.assertEqual(
-            (gear.name, gear.caller, len(gear.handlers)), ("D_800C34DC", "func_8009C198", 11)
+            (gear.name, gear.caller, len(gear.handlers)), ("battle_gear_formula_table", "battle_resolve_gear_action", 11)
         )
-        self.assertEqual(foot.handlers[4], gear.handlers[9])  # func_80096018 sits in both
-        text = source("battle/battle_8008CCCC.c")
+        self.assertEqual(foot.handlers[4], gear.handlers[9])  # battle_formula4_deal_damage_by_kind sits in both
+        text = source("battle/battle_menus_and_resolver.c")
         for table in (foot, gear):
             for formula, handler in enumerate(table.handlers):
                 comment = text[: text.index(f"\nvoid {handler}(void) {{")].rsplit("/*", 1)[1]
                 self.assertIn(f"{table.name}[{formula}]", comment, handler)
-        caller = function_body(text, "func_800941A4")
+        caller = function_body(text, "battle_resolve_action")
         self.assertIn("flags15A & 0x80", caller)  # gear attackers go to 8009c198
-        self.assertIn("D_800C3DFC->flagsA & 0x10", caller)
+        self.assertIn("battle_current_command->flagsA & 0x10", caller)
 
     def test_descriptor_fields_and_archive_layout(self):
         header = (ROOT / "decomp/include/battle/work.h").read_text()
@@ -123,25 +123,25 @@ class SourceTests(unittest.TestCase):
         self.assertIn("file = heap_alloc(cd_get_aligned_file_size(3), 1);", entry)
 
     def test_enemy_command_is_the_act_entrys_arg1(self):
-        executor = function_body(source("battle/battle_800792F8.c"), "func_800793F0")
-        self.assertIn(f"case {ACT}:\n            func_80078998(actor, i, target);", executor)
-        act = function_body(source("battle/battle_80070E2C.c"), "func_80078998")
-        self.assertIn("D_800C3EAC->unk2DC = D_800D2E5C[index].arg1 + 1;", act)
-        commit = function_body(source("battle/battle.c"), "func_80085CCC")
-        self.assertIn("D_800D2C94.action = action - 1;", commit)
+        executor = function_body(source("battle/battle_ai_runners.c"), "battle_action_list_execute")
+        self.assertIn(f"case {ACT}:\n            battle_action_list_act(actor, i, target);", executor)
+        act = function_body(source("battle/battle_turns_and_hud.c"), "battle_action_list_act")
+        self.assertIn("battle_turn_state->unk2DC = battle_action_list[index].arg1 + 1;", act)
+        commit = function_body(source("battle/battle.c"), "battle_commit_action")
+        self.assertIn("battle_committed_action.action = action - 1;", commit)
 
     def test_gear_techniques_follow_the_menu_learning_and_loader(self):
-        menu = function_body(source("battle/battle.c"), "func_8008B224")
+        menu = function_body(source("battle/battle.c"), "battle_confirm_art")
         self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
         self.assertIn(
-            "func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksB, column + row * 2)",
+            "battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksB, column + row * 2)",
             menu,
         )
-        battle = source("battle/battle.c")  # func_8008ADD0 is defined K&R
-        commit = battle[battle.index("void func_8008ADD0(member)") :]
+        battle = source("battle/battle.c")  # battle_execute_chosen_art is defined K&R
+        commit = battle[battle.index("void battle_execute_chosen_art(member)") :]
         commit = commit[: commit.index("\n}\n")]
-        self.assertIn(f"gearCommands[member][D_800C3EAC->unk2E6 + {TECHNIQUE_BASE}]", commit)
-        bits = initializer(source("battle/battle_80070E2C.c"), "D_800C3468")[1]
+        self.assertIn(f"gearCommands[member][battle_turn_state->unk2E6 + {TECHNIQUE_BASE}]", commit)
+        bits = initializer(source("battle/battle_turns_and_hud.c"), "battle_flag_bits")[1]
         values = [int(v, 0) for v in bits.split(",") if v.strip()]
         self.assertEqual(values, [0x8000 >> i for i in range(16)])
         learn = function_body(source("ovl2596/ovl2596.c"), "func_801E3F28")
@@ -157,7 +157,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn(f"D_800CCCE8_setup.work.records[i].pilot.gearId = 0x{gear:X};", loader)
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E211C")
         self.assertIn("cd_select_directory(0x10, 2);", results)
-        self.assertIn("D_800D2C08[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results)
+        self.assertIn("battle_work_growth_file[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results)
 
     def test_world_modes_follow_the_entry_and_their_writers(self):
         self.assertEqual(len(world_modes()), 19)
@@ -166,7 +166,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_800854D0.c"), "func_80093014")
         self.assertIn("game_current_data->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("game_data.entry[2] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
+        self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
             "} else if ((game_data.map & 0x7FF) >= 0x400) {\n            mode_load_overlay_block(3);",
@@ -206,7 +206,7 @@ class SourceTests(unittest.TestCase):
         self.assertEqual((kinds[0x1C].packet, kinds[0x1C].reads), ("POLY_GT4", 44))
         self.assertEqual(tmd_kind(1, 0x21), 0x0)  # flag bit 0 set: no lighting
         self.assertEqual(tmd_kind(0, 0x3C), 0x11C)
-        builder = kr_body(source("battle/battle_800B15D8.c"), "func_800B1720")
+        builder = kr_body(source("battle/battle_tmd_screen_effects.c"), "battle_tmd_build_packets")
         self.assertIn("prims += (cmd[0] + 1) * 4;", builder)
         self.assertIn("cmd += (cmd[1] + 1) * 4;", builder)
 

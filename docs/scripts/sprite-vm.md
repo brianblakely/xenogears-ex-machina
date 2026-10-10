@@ -11,12 +11,12 @@ the `decomp/src` switch labels and the C length table.
   until one takes time. Resident `sprite_vm_tick` calls it once the halfword countdown
   (`+9e`) reaches 0, ticking skip + 1 times per frame. While `sprite_in_battle` is set
   (battle `800B8840` to `800B8774`), it hands every sprite to the battle overlay's
-  copy `func_800C11CC` (`battle_800C11CC.c`). Resident `sprite_vm_replay_frames`
+  copy `battle_sprite_vm_run` (`battle_sprite_vm.c`). Resident `sprite_vm_replay_frames`
   (`sprite_construction.c`) replays frame commands untimed when the facing group changes.
 - **Dispatch:** 800248d4's switch table is at `800186e0` (80-fa) and 800c11cc's at
   `80070c14` (80-fb, then the 10 `f8` conditions). Both fall back to the generic
   commands `sprite_vm_run_generic_command` (`sprite.c`, 8a-fc), which `c8` also runs and which holds
-  the 39 `bc` selectors. `func_800B3F04` (`battle_800B3F04.c`, table `80070850`)
+  the 39 `bc` selectors. `battle_sprite_command_run` (`battle_sprite_commands.c`, table `80070850`)
   implements battle commands 01-6b (all but 39) for `c3`, `ec`, `f9` and `e8`.
 - **Format:** a command is one opcode byte followed by little-endian operands.
   - `00`-`7f` take one byte and show a frame: `00`-`0f` the next frame, `10`-`1f`

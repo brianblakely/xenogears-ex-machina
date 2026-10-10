@@ -33,13 +33,13 @@
 #define VM_S16(p, i) ((s16)((p)[(i) + 1] << 8) | (p)[i])
 
 /* The screen fade's blend mode (800B3B6C): a u8, taken as int. */
-s32 func_800B3B6C();
+s32 battle_screen_fade_get_blend();
 
-/* Run a sprite's animation script until it waits: commands below 80 show a
+/* 800C11CC: Run a sprite's animation script until it waits: commands below 80 show a
  * frame (00-0F the next, 10-1F the next of the facing, 20-2F the previous,
  * 30-3F none) and wait (op & 0xF) + 1 frames scaled by its divisor; the
  * others are the battle's commands, falling back to the resident VM's. */
-void func_800C11CC(Sprite *sprite) {
+void battle_sprite_vm_run(Sprite *sprite) {
     u8 *args;
     u8 op;
     s32 duration;
@@ -101,7 +101,7 @@ next:
         switch (op) {
         /* e8 cmd var: battle command cmd (800b3f04) on the bytes at the variable. */
         case 0xE8:
-            func_800B3F04(sprite, args[0], sprite_vm_resolve_variable(sprite, args + 1));
+            battle_sprite_command_run(sprite, args[0], sprite_vm_resolve_variable(sprite, args + 1));
             break;
         /* ca s16: fade the screen with the five bytes at the operand + s16: to r, g, b over
          * (byte 3 >> 1) * 2 frames, blend byte 4 - 1 (0: the running fade's, 1 without
@@ -110,7 +110,7 @@ next:
             {
                 u8 *effect = SCRIPT_DATA(args);
 
-                func_800B39C0(effect[3] >> 1, effect[4] != 0 ? effect[4] - 1 : func_800B3B6C(), effect[0], effect[1], effect[2]);
+                battle_screen_fade_start(effect[3] >> 1, effect[4] != 0 ? effect[4] - 1 : battle_screen_fade_get_blend(), effect[0], effect[1], effect[2]);
             }
             break;
         /* cb s16: quake the view with the four bytes at the operand + s16: amplitude x, y,
@@ -120,7 +120,7 @@ next:
                 u8 *quake = SCRIPT_DATA(args);
 
                 sprite_set_svector(&v, quake[0], quake[1], quake[2]);
-                func_800B3658(&v, quake[3]);
+                battle_quake_start(&v, quake[3]);
             }
             break;
         /* e3 s16: the partner runs the animation header at this command + s16, as animation
@@ -137,39 +137,39 @@ next:
         /* fb s16 u8: go on; once the sprite comes nearer its target point (+a0) than u8 * 2,
          * or moves away from it, resume at this command + s16 (800b5924 watches). */
         case 0xFB:
-            func_800B5924(sprite, args[2] * 2, sprite->script + VM_S16(args, 0));
+            battle_approach_watch_start(sprite, args[2] * 2, sprite->script + VM_S16(args, 0));
             break;
         /* c3 cmd, ec cmd a, f9 cmd a b: battle command cmd (800b3f04) on the bytes after it:
          * none, one or two of its own. */
         case 0xC3:
         case 0xEC:
         case 0xF9:
-            func_800B3F04(sprite, args[0], args + 1);
+            battle_sprite_command_run(sprite, args[0], args + 1);
             break;
         /* 9d: mark the camera eye point (800d3354, group 10) or look-at point (800d335c,
          * others) at the sprite's position. */
         case 0x9D:
             if (((SpriteFlagBits *)&sprite->flags)->type == 10) {
-                D_800D3354.vx = sprite->x >> 16;
-                D_800D3354.vy = sprite->y >> 16;
-                D_800D3354.vz = sprite->z >> 16;
+                battle_camera_view_eye.vx = sprite->x >> 16;
+                battle_camera_view_eye.vy = sprite->y >> 16;
+                battle_camera_view_eye.vz = sprite->z >> 16;
             } else {
-                D_800D335C.vx = sprite->x >> 16;
-                D_800D335C.vy = sprite->y >> 16;
-                D_800D335C.vz = sprite->z >> 16;
+                battle_camera_view_target.vx = sprite->x >> 16;
+                battle_camera_view_target.vy = sprite->y >> 16;
+                battle_camera_view_target.vz = sprite->z >> 16;
             }
             break;
         /* 99: view angles = the camera's angles (800d30b0). */
         case 0x99:
-            sprite->renderer->angle_x = D_800D30B0.vx;
-            sprite->renderer->angle_y = D_800D30B0.vy;
-            sprite->renderer->angle_z = D_800D30B0.vz;
+            sprite->renderer->angle_x = battle_camera_angles.vx;
+            sprite->renderer->angle_y = battle_camera_angles.vy;
+            sprite->renderer->angle_z = battle_camera_angles.vz;
             break;
         /* 9a: v = (camera distance 800d30b8, 0, 0) by the view angles; group 10 moves to
          * 8006f9ac - v, group 11 to 8006f99c + v. */
         case 0x9A:
             angles = (SVECTOR *)sprite->renderer;
-            v.vx = D_800D30B8;
+            v.vx = battle_camera_distance;
             v.vy = 0;
             v.vz = 0;
             gpu_build_rotation_matrix(angles, &m);
@@ -187,12 +187,12 @@ next:
             break;
         /* 9b: scale = (s16)80059454 << 12 / the camera distance. */
         case 0x9B:
-            sprite->scale = ((s16)mode_battle_camera_range << 12) / D_800D30B8;
+            sprite->scale = ((s16)mode_battle_camera_range << 12) / battle_camera_distance;
             break;
         /* 9c: as 9a with ((s16)80059454 << 12 / scale, 0, 0) by the camera's angles. */
         case 0x9C:
             v.vx = ((s16)mode_battle_camera_range << 12) / sprite->scale;
-            angles = &D_800D30B0;
+            angles = &battle_camera_angles;
             v.vy = 0;
             v.vz = 0;
             gpu_build_rotation_matrix(angles, &m);
@@ -224,7 +224,7 @@ next:
                 sprite->target_x = (target->x >> 16) + distance;
                 sprite->target_z = target->z >> 16;
                 sprite->target_y = 0;
-                func_800BA768(sprite);
+                battle_sprite_aim_jump_keep_rise(sprite);
             }
             break;
         /* 97: wait until landed (retrying each frame), then stop walking and turn this
@@ -253,7 +253,7 @@ next:
                 s32 motion = (s8)args[0];
 
                 if (target->animations == 0) {
-                    func_800AA454(SPRITE_SLOT(target), 1 << SPRITE_SLOT(sprite), motion);
+                    battle_start_slot_object_own_script(SPRITE_SLOT(target), 1 << SPRITE_SLOT(sprite), motion);
                 } else {
                     sprite_start_animation(target, motion);
                 }
@@ -275,15 +275,15 @@ next:
             break;
         /* 89: aim the jump at the target point (+a0) keeping the rising speed (800ba768). */
         case 0x89:
-            func_800BA768(sprite);
+            battle_sprite_aim_jump_keep_rise(sprite);
             break;
         /* 88: aim the jump at the target point (+a0) (800ba614). */
         case 0x88:
-            func_800BA614(sprite);
+            battle_sprite_aim_jump(sprite);
             break;
         /* 8f: finish: flag 800c3624, no script, state 0. */
         case 0x8F:
-            D_800C3624 = 1;
+            battle_sprite_script_finished = 1;
             sprite->script = NULL;
             sprite->frame_bits.field28 = 0;
             return;
@@ -292,13 +292,13 @@ next:
          * event targets follow the partner (then the next one), 8 flag 800c4928, 9 the
          * partner is the acting sprite; others never. */
         case 0xF8:
-            code = BATTLE_AREA.events[D_800C360C - 1].codes[SPRITE_SLOT(sprite->partner)];
+            code = BATTLE_AREA.events[battle_area_event_index - 1].codes[SPRITE_SLOT(sprite->partner)];
             switch (args[2] & 0x7F) {
             case 8:
-                cond = (u8)D_800C4928 != 0;
+                cond = (u8)battle_acting_with_partner != 0;
                 break;
             case 9:
-                cond = sprite->partner == D_800C3E1C;
+                cond = sprite->partner == battle_acting_sprite;
                 break;
             case 0:
                 cond = code == 0;
@@ -326,9 +326,9 @@ next:
                 cond = code == 6;
                 break;
             case 7:
-                cond = D_800D3678;
-                cond = func_800BF954(sprite->partner) + 1 < cond;
-                func_800BF8CC(sprite);
+                cond = battle_area_event_target_count;
+                cond = battle_get_target_index(sprite->partner) + 1 < cond;
+                battle_sprite_next_target(sprite);
                 break;
             default:
                 cond = 0;
@@ -351,17 +351,17 @@ next:
             offset = ((s8)args[2] << 16) + (args[1] << 8) + args[0];
             data = (u8 *)(offset + (s32)args);
             if (offset != 0) {
-                size = func_800B16A4((ScriptEntry *)func_800B168C(data, 0));
+                size = battle_tmd_get_packet_size((ScriptEntry *)battle_tmd_get_object(data, 0));
                 buffer = heap_alloc(size * 2, 0);
                 if (sprite->rate != 0) {
-                    func_800B1EA0((VertexList *)func_800B168C(data, 0), 3);
+                    battle_tmd_scale_vertices((VertexList *)battle_tmd_get_object(data, 0), 3);
                 }
-                func_800B1720(func_800B168C(data, 0), buffer, ((u8 *)&sprite->render)[0] >> 5, sprite->colour_flags & 1);
+                battle_tmd_build_packets(battle_tmd_get_object(data, 0), buffer, ((u8 *)&sprite->render)[0] >> 5, sprite->colour_flags & 1);
                 part = buffer + size;
                 memcpy(part, buffer, size);
                 sprite->renderer->parts[0] = (SpritePart *)buffer;
                 sprite->renderer->parts[1] = (SpritePart *)part;
-                sprite->renderer->pointer34 = (SpriteRendererEntry *)func_800B168C(data, 0);
+                sprite->renderer->pointer34 = (SpriteRendererEntry *)battle_tmd_get_object(data, 0);
             } else {
                 sprite->renderer->parts[0] = NULL;
                 sprite->renderer->pointer34 = NULL;
@@ -369,7 +369,7 @@ next:
             break;
         /* 8b: show the current event's results (800bd2e4). */
         case 0x8B:
-            func_800BD2E4();
+            battle_show_results();
             break;
         /* be s16 (three bytes; the width table says two): frame bits 0-8, wait bits 11-14 +
          * 1 (scaled); one-sided sprites also take flip x (bit 9) and y (bit 10), and bit 15
@@ -491,7 +491,7 @@ next:
             sprite_start_animation(sprite, (s8)sprite->motion.bytes[3]);
             sprite->speed_y = velocity;
             sprite->countdown = 0;
-            func_800C11CC(sprite);
+            battle_sprite_vm_run(sprite);
             return;
         /* 81: hold: animation 3f ends (80); others stop here (countdown 0) after the
          * completion callback, in state 1. */

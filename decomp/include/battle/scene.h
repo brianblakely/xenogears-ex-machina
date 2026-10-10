@@ -26,7 +26,7 @@ typedef struct {
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct BattleObject {
-    ModelTable *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
+    ModelTable *field0;    /* 0x00: the object's models (battle_object_model_tables), NULL unused */
     ModelPart *hierarchy; /* 0x04 */
     u8 **scripts;         /* 0x08: effect scripts 0-0x4F */
     ExtraFile *extra;     /* 0x0C: scripts from 0x50, NULL none */
@@ -164,42 +164,42 @@ typedef struct {
 } LightSlot;
 
 /* Battle scene and effect state. */
-extern SVECTOR *D_800D3344;       /* scene points */
-extern SceneTriangle *D_800D39CC; /* scene triangles */
-extern s32 D_800D3348;            /* scene triangle count */
-extern u8 D_800D2F64;             /* triangle visit stamp */
-extern u8 D_800C37C8;             /* effects disabled */
-extern s16 D_800D2FC8;  /* point count of D_800D2FD0 */
-extern u16 *D_800D2FD0; /* (x, z, y) points */
-extern u8 D_800D3611;   /* a light slot changed */
-extern u8 D_800C3D6C;
-extern u8 D_800C3D68;
-extern s32 D_800C3E88;
-extern s16 D_800C3CF0;
-extern Tracker D_800D3304[2];
-extern s32 D_800D2D40;
-extern s32 D_800D2D48;
-extern BattleObject *D_800D3368[]; /* stage objects */
-extern BattleEvent D_800C3FE8[];   /* presentation events */
-extern u16 D_800C3E30;             /* slot mask */
-extern u16 D_800C3D40;
-extern EffectPool D_800C3D0C;
-extern SpritePool D_800C3D04;
-extern ImageAnim D_800D3600; /* the stage's image animation */
-extern ModelPart *D_800C3E38; /* the stage model's parts (the setup, ovl2615, sets them) */
-extern Panorama *D_800C3D50[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
-extern void *D_800C3EA0;
-extern TextureScroll D_800C3DA0[2]; /* the stage's texture scrolls */
-extern s32 D_800C360C;
-extern u8 D_800C4000[]; /* per slot */
-extern BattleSlot D_800C3EB4[11];
+extern SVECTOR *battle_scene_points;       /* scene points */
+extern SceneTriangle *battle_scene_triangles; /* scene triangles */
+extern s32 battle_scene_triangle_count;            /* scene triangle count */
+extern u8 battle_triangle_visit_stamp;             /* triangle visit stamp */
+extern u8 battle_effects_disabled;             /* effects disabled */
+extern s16 battle_stage_circle_count;  /* point count of battle_stage_circles */
+extern u16 *battle_stage_circles; /* (x, z, y) points */
+extern u8 battle_stage_image_dirty;   /* a light slot changed */
+extern u8 battle_shadows_enabled;
+extern u8 battle_unread_acting_object_started;
+extern s32 battle_stage_frame_remainder;
+extern s16 battle_surface_wind_phase;
+extern Tracker battle_light_trackers[2];
+extern s32 battle_buffer0_background_color_ptr;
+extern s32 battle_buffer1_background_color_ptr;
+extern BattleObject *battle_objects[]; /* stage objects */
+extern BattleEvent battle_area_events[];   /* presentation events */
+extern u16 battle_selected_slot_mask;             /* slot mask */
+extern u16 battle_selected_object_index;
+extern EffectPool battle_effect_pool;
+extern SpritePool battle_effect_sprite_pool;
+extern ImageAnim battle_stage_image_anim; /* the stage's image animation */
+extern ModelPart *battle_stage_model_parts; /* the stage model's parts (the setup, ovl2615, sets them) */
+extern Panorama *battle_stage_backdrops[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
+extern void *battle_stage_sky;
+extern TextureScroll battle_stage_texture_scrolls[2]; /* the stage's texture scrolls */
+extern s32 battle_area_event_index;
+extern u8 battle_area_event0_codes[]; /* per slot */
+extern BattleSlot battle_area_slots[11];
 
-void func_800A4820(void);         /* free the battle scene's resources */
-s32 func_800A579C(SVECTOR *point); /* the first scene triangle containing a point */
-s32 func_800A5870(SVECTOR *point, s32 index, void *out); /* relate a point to a triangle */
-s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth); /* the triangle containing a point, from a neighbour */
-void func_800A8B0C(void);         /* reset the battle scene */
-void func_800A9F94(void);         /* free the stage objects and the pools */
-void func_800A9FF0(s32 index);    /* free a stage object */
+void battle_free_scene(void);         /* free the battle scene's resources */
+s32 battle_find_scene_triangle(SVECTOR *point); /* the first scene triangle containing a point */
+s32 battle_put_point_on_scene_triangle(SVECTOR *point, s32 index, void *out); /* relate a point to a triangle */
+s32 battle_find_scene_triangle_near(SVECTOR *point, s32 triangle, s32 depth); /* the triangle containing a point, from a neighbour */
+void battle_reset_scene(void);         /* reset the battle scene */
+void battle_free_objects(void);         /* free the stage objects and the pools */
+void battle_free_object(s32 index);    /* free a stage object */
 
 #endif

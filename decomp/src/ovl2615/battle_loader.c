@@ -54,15 +54,15 @@ void func_801E6314(u8 *data) {
     slot = 3;
     /* The original counts this loop with the column variable. */
     for (column = 0; column != SLOT_COUNT; column++) {
-        types[column] = D_800C3EB0.slots[column].field2;
+        types[column] = battle_area.slots[column].field2;
     }
     count = data[0];
     column = data[1] * 0x40 + 0x140;
     table = count * sizeof(EnemyEntry) + 8;
-    D_800D39C8 = heap_alloc(*(s32 *)(data + 4) - table, 0);
-    memcpy(D_800D39C8, data + table, *(s32 *)(data + 4) - table);
+    battle_enemy_set_copy = heap_alloc(*(s32 *)(data + 4) - table, 0);
+    memcpy(battle_enemy_set_copy, data + table, *(s32 *)(data + 4) - table);
     entry = (EnemyEntry *)(data + 8);
-    base = (u8 *)D_800D39C8 - table;
+    base = (u8 *)battle_enemy_set_copy - table;
     for (k = 0; k != count; k++) {
         if (entry->model != 0) {
             placed = 0;
@@ -72,7 +72,7 @@ void func_801E6314(u8 *data) {
                 continue;
             }
             type = slot - 3;
-            D_800C3EB0.sources[slot].data = NULL;
+            battle_area.sources[slot].data = NULL;
             column += 0x40;
             for (j = 3, same = 0; j != SLOT_COUNT; j++) {
                 if (type == types[j]) {
@@ -100,11 +100,11 @@ void func_801E6314(u8 *data) {
                         }
                     }
                     j |= 0x80;
-                    func_800A8BF0(enemy, (u16)j, (u8 *)(entry->offset + (s32)base),
+                    battle_create_object(enemy, (u16)j, (u8 *)(entry->offset + (s32)base),
                                   (u8 *)(entry->images + (s32)data), (s16)(column - 0x40), 0x100, 0,
                                   (s16)(enemy - (s16)(placed - 0x1C0)), 0);
                     placed++;
-                    func_800BB350(enemy);
+                    battle_object_follower_create(enemy);
                 }
             }
         } else {
@@ -119,10 +119,10 @@ void func_801E6314(u8 *data) {
                     column = 0;
                 }
             }
-            D_800C3EB0.sources[slot].data = (u8 *)(entry->offset + (s32)base);
-            D_800C3EB0.sources[slot].y = 0x100;
-            D_800C3EB0.sources[slot].x = columns[index];
-            D_800C3EB0.sources[slot].variant = entry->variant;
+            battle_area.sources[slot].data = (u8 *)(entry->offset + (s32)base);
+            battle_area.sources[slot].y = 0x100;
+            battle_area.sources[slot].x = columns[index];
+            battle_area.sources[slot].variant = entry->variant;
         }
         entry++;
         slot++;
@@ -136,8 +136,8 @@ void func_801E6710(u8 *data) {
     s32 type;
 
     for (slot = 3; slot != SLOT_COUNT; slot++) {
-        type = D_800C3EB0.slots[slot].field2;
-        if (type < 8 && D_800C3EB0.sources[type + 3].data != NULL) {
+        type = battle_area.slots[slot].field2;
+        if (type < 8 && battle_area.sources[type + 3].data != NULL) {
             func_801E67A4(slot, type + 3, 1);
         }
     }
@@ -150,22 +150,22 @@ void func_801E67A4(s32 slot, s32 row, s32 animation) {
     BattleSprite *sprite;
     s32 angle;
 
-    task = func_800BA984(D_800C3EB0.sources[row].data, 0, slot + 0x1C0, D_800C3EB0.sources[row].x,
-                         D_800C3EB0.sources[row].y, 0x20, 0, 0, 0, animation, 0, 0, 0,
-                         D_800C3EB0.sources[row].variant);
+    task = battle_sprite_task_create(battle_area.sources[row].data, 0, slot + 0x1C0, battle_area.sources[row].x,
+                         battle_area.sources[row].y, 0x20, 0, 0, 0, animation, 0, 0, 0,
+                         battle_area.sources[row].variant);
     sprite = task->data;
-    sprite->image[3] = D_800C3EB0.sources[row].y;
-    sprite->image[2] = D_800C3EB0.sources[row].x;
+    sprite->image[3] = battle_area.sources[row].y;
+    sprite->image[2] = battle_area.sources[row].x;
     *(DVECTOR *)((u8 *)sprite->sequencer + 0xE) = *(DVECTOR *)&sprite->image[2];
-    D_800C3EB0.sprites[slot] = task->data;
-    D_800C3EB0.tasks[slot] = (SpriteTask *)task;
+    battle_area.sprites[slot] = task->data;
+    battle_area.tasks[slot] = (SpriteTask *)task;
     sprite->slotLow = slot;
     sprite->slotHigh = (u32)slot >> 2;
-    sprite_set_position_xz(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
-    angle = (D_800C3EB0.slots[slot].targetCode != 0) << 11;
+    sprite_set_position_xz(sprite, battle_area.slots[slot].x, battle_area.slots[slot].z);
+    angle = (battle_area.slots[slot].targetCode != 0) << 11;
     sprite_set_facing(sprite, angle);
     sprite_set_direction(sprite, angle);
-    if (D_800C3EB0.slots[slot].hidden != 0) {
+    if (battle_area.slots[slot].hidden != 0) {
         sprite->countdown = 0;
     }
 }
@@ -180,15 +180,15 @@ void func_801E693C(FileRequest *list) {
 
     cd_select_directory(0x2C, 1);
     for (entries = member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].field2;
-        if (type < 0x11 && D_800C3EB0.slots[member].gear == 0) {
+        type = battle_area.slots[member].field2;
+        if (type < 0x11 && battle_area.slots[member].gear == 0) {
             file = D_801E95BC[type].file;
             list[entries].file = file;
             block = heap_alloc(cd_get_aligned_file_size(file), 0);
             list[entries].destination = block;
             entries++;
-            D_800C3EB0.sources[member].data = block;
-            D_800C3EB0.sources[member].variant = 0;
+            battle_area.sources[member].data = block;
+            battle_area.sources[member].variant = 0;
         }
     }
     list[entries].file = 0;
@@ -203,9 +203,9 @@ void func_801E6A4C(void) {
     s32 type;
 
     for (member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].field2;
-        if (type < 0x11 && D_800C3EB0.slots[member].gear != 0) {
-            func_800BB760(member);
+        type = battle_area.slots[member].field2;
+        if (type < 0x11 && battle_area.slots[member].gear != 0) {
+            battle_gear_load_start(member);
         }
     }
 }
@@ -220,23 +220,23 @@ void func_801E6AC4(void) {
     s32 type;
 
     for (member = 0; member != 3; member++) {
-        type = D_800C3EB0.slots[member].field2;
-        if (type < 0x11 && D_800C3EB0.slots[member].gear == 0) {
-            D_800C3EB0.sources[member].y = 0x1C0;
-            D_800C3EB0.sources[member].x = D_801E9638 + 0x100;
+        type = battle_area.slots[member].field2;
+        if (type < 0x11 && battle_area.slots[member].gear == 0) {
+            battle_area.sources[member].y = 0x1C0;
+            battle_area.sources[member].x = D_801E9638 + 0x100;
             D_801E9638 += D_801E962C[type];
             func_801E67A4(member, member, 1);
-            sprite = (BattleSprite *)D_800C3EB0.sprites[member];
+            sprite = (BattleSprite *)battle_area.sprites[member];
             *sprite->sequencer = D_801E95BC[type].sequence;
             heap_free(sprite->renderer->parts[0]);
             sprite->renderer->parts[0] = heap_alloc(0x300, 0);
         }
     }
-    if (D_800D36B8 == 0) {
+    if (battle_start_mode == 0) {
         for (member = 0; member != 3; member++) {
-            sprite = (BattleSprite *)D_800C3EB0.sprites[member];
+            sprite = (BattleSprite *)battle_area.sprites[member];
             if (sprite != NULL) {
-                func_800BA8F4((Sprite *)sprite);
+                battle_sprite_update_ground((Sprite *)sprite);
                 x = sprite->x;
                 y = sprite->y;
                 z = sprite->z;
@@ -258,13 +258,13 @@ void func_801E6C80(Task *node) {
 
     if (task->timer == 0) {
         for (member = 0; member != 3; member++) {
-            if (D_800C3EB0.slots[member].gear == 0 &&
-                (sprite = (BattleSprite *)D_800C3EB0.sprites[member]) != NULL &&
+            if (battle_area.slots[member].gear == 0 &&
+                (sprite = (BattleSprite *)battle_area.sprites[member]) != NULL &&
                 sprite->y != sprite->ground) {
                 return;
             }
         }
-        D_800C3EB0.field8DA8 = 1;
+        battle_area.field8DA8 = 1;
         task_destroy_main_task(node);
     } else {
         task->timer--;
@@ -273,7 +273,7 @@ void func_801E6C80(Task *node) {
 
 /* Loading state: once the members stop moving, wait 16 frames and settle. */
 void func_801E6D34(Task *node) {
-    if (D_800C35D8 == 0) {
+    if (battle_gear_object_load_count == 0) {
         ((LoaderTask *)node)->timer = 0x10;
         task_set_update_callback(node, func_801E6C80);
     }
@@ -320,7 +320,7 @@ void func_801E6E48(Task *node) {
         sound_add_effect_bank(task->effects);
         sprite_script_sound_bank = task->effects;
         task_set_update_callback(node, func_801E6D6C);
-        func_800B14B8();
+        battle_enable_shadows();
     }
 }
 
@@ -338,7 +338,7 @@ void func_801E6F00(Task *node) {
         files = task->files;
         task->images = files[0].destination = heap_alloc(cd_get_aligned_file_size(1), 1);
         files[0].file = 1;
-        D_800D2D54 = task->shared = files[1].destination = heap_alloc(cd_get_aligned_file_size(2), 0);
+        battle_file2_block_and_max_hp_digits = task->shared = files[1].destination = heap_alloc(cd_get_aligned_file_size(2), 0);
         files[1].file = 2;
         task->effects = files[2].destination = heap_alloc(cd_get_aligned_file_size(3), 0);
         files[2].file = 3;

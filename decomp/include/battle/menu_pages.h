@@ -12,16 +12,16 @@ typedef struct TextImage {
     u32 *pixels;
 } TextImage;
 
-extern TextImage D_800C3E5C[10]; /* text images of battle messages 0-9: the decimal digits */
-extern u32 *D_800D2DB0;      /* blank text image */
+extern TextImage battle_digit_text_images[10]; /* text images of battle messages 0-9: the decimal digits */
+extern u32 *battle_blank_text_image;      /* blank text image */
 
-extern u8 D_800C33B4[16];    /* gear page glyph ids */
-extern s32 D_800C33C4[16];   /* their x */
-extern s32 D_800C3404[16];   /* their y */
+extern u8 battle_combo_menu_glyph_ids[16];    /* gear page glyph ids */
+extern s32 battle_combo_menu_glyph_x[16];   /* their x */
+extern s32 battle_combo_menu_glyph_y[16];   /* their y */
 
-extern u8 D_800C3DE0[8];     /* the entered combo steps' buttons */
+extern u8 battle_combo_step_buttons[8];     /* the entered combo steps' buttons */
 
-void func_80076EA4(void);                       /* render the command names' text images */
-void func_8008FE18(u8 column, u8 row, u8 open); /* build the item list page */
+void battle_upload_command_name_images(void);                       /* render the command names' text images */
+void battle_item_menu_build_page(u8 column, u8 row, u8 open); /* build the item list page */
 
 #endif

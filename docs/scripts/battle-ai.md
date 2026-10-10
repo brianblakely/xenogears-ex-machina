@@ -1,7 +1,7 @@
 # Battle enemy AI scripts
 
-**Interpreter** (battle overlay, `decomp/src/battle/battle_800792F8.c` and
-`battle_80079ED8.c`):
+**Interpreter** (battle overlay, `decomp/src/battle/battle_ai_runners.c` and
+`battle_ai_opcodes.c`):
 
 - Runners stop at `fd` or `ff`: `800799c8` runs an enemy's turn script,
   `80079ab0` its reaction script during a party member's attack step, and
@@ -83,7 +83,7 @@ whose enemy files are identical:
   16 persistent battle halfwords that the menu keeps in the game data at +0x2324
   (slot39); the `800d32a1` slot flag is "in a gear" (ovl2615 copies the game
   data's per-member gear flag `game_data_slot_in_gear` and the formation id's bit 7; battle
-  reads it as `D_800D32A0[slot].unk1` to choose gear commands).
+  reads it as `battle_slot_flags[slot].unk1` to choose gear commands).
 - [formations.md](formations.md#census-and-cross-check) checks the (battle, enemy id)
   pairs the formations place against these enemy files and counts the script tables
   no formation places (`python3 -m tools.analysis.formations --sweep`). The commands

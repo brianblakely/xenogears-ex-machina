@@ -17,7 +17,7 @@
 INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
 extern u8 D_801E44C0; /* the result fanfare has started */
 GameData *D_801E44C4 = &game_data;
-BattleWork *D_801E44C8 = &D_800CCCE8;
+BattleWork *D_801E44C8 = &battle_work_area;
 /* The module's uninitialized variables (the level gauge animation, the
  * growth data and the record being processed, the experience pools), zero
  * in the file: commons, which the original linker allocated each in a slot
@@ -39,20 +39,20 @@ u8 D_801E44F8[3][2];          /* each slot's levels A and B before the experienc
 void func_801DE048(void) {
     s32 i;
 
-    if (D_800D2D28->showCards != 0) {
+    if (battle_ui->showCards != 0) {
         for (i = 0; i < 3; i++) {
-            func_800728B8(D_800D32F8[i]->portrait, D_800D32F8[i]->runs[0].count, D_800D32F8[i]->runs[0].buffer);
-            func_800728B8(D_800D32F8[i]->labels, D_800D32F8[i]->runs[1].count, D_800D32F8[i]->runs[1].buffer);
-            func_800728B8(D_800D32F8[i]->field960, D_800D32F8[i]->runs[4].count, D_800D32F8[i]->runs[4].buffer);
-            func_800728B8(D_800D32F8[i]->fieldB40, D_800D32F8[i]->runs[6].count, D_800D32F8[i]->runs[6].buffer);
-            func_800728B8(D_800D32F8[i]->fieldA50, D_800D32F8[i]->runs[5].count, D_800D32F8[i]->runs[5].buffer);
-            func_800728B8(D_800D32F8[i]->fieldBE0, D_800D32F8[i]->runs[7].count, D_800D32F8[i]->runs[7].buffer);
-            func_800728B8(D_800D32F8[i]->field780, D_800D32F8[i]->runs[2].count, D_800D32F8[i]->runs[2].buffer);
-            func_800728B8(D_800D32F8[i]->field870, D_800D32F8[i]->runs[3].count, D_800D32F8[i]->runs[3].buffer);
-            func_800728B8(D_800D32F8[i]->fieldC80, D_800D32F8[i]->runs[8].count, D_800D32F8[i]->runs[8].buffer);
-            func_800728B8(D_800D32F8[i]->fieldF00, D_800D32F8[i]->runs[9].count, D_800D32F8[i]->runs[9].buffer);
-            func_800728B8(D_800D32F8[i]->field1180, D_800D32F8[i]->runs[10].count, D_800D32F8[i]->runs[10].buffer);
-            func_800728B8(D_800D32F8[i]->field13B0, D_800D32F8[i]->runs[11].count, D_800D32F8[i]->runs[11].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->portrait, battle_member_cards[i]->runs[0].count, battle_member_cards[i]->runs[0].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->labels, battle_member_cards[i]->runs[1].count, battle_member_cards[i]->runs[1].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->field960, battle_member_cards[i]->runs[4].count, battle_member_cards[i]->runs[4].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->fieldB40, battle_member_cards[i]->runs[6].count, battle_member_cards[i]->runs[6].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->fieldA50, battle_member_cards[i]->runs[5].count, battle_member_cards[i]->runs[5].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->fieldBE0, battle_member_cards[i]->runs[7].count, battle_member_cards[i]->runs[7].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->field780, battle_member_cards[i]->runs[2].count, battle_member_cards[i]->runs[2].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->field870, battle_member_cards[i]->runs[3].count, battle_member_cards[i]->runs[3].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->fieldC80, battle_member_cards[i]->runs[8].count, battle_member_cards[i]->runs[8].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->fieldF00, battle_member_cards[i]->runs[9].count, battle_member_cards[i]->runs[9].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->field1180, battle_member_cards[i]->runs[10].count, battle_member_cards[i]->runs[10].buffer);
+            battle_add_prims_to_ot(battle_member_cards[i]->field13B0, battle_member_cards[i]->runs[11].count, battle_member_cards[i]->runs[11].buffer);
         }
     }
 }
@@ -61,25 +61,25 @@ void func_801DE048(void) {
 void func_801DE1C4(void) {
     s32 i;
 
-    if (D_800D2D28->showSummary != 0) {
-        func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
-        func_800728B8(D_800D334C->text, D_800D334C->runs[1].count, D_800D334C->runs[1].buffer);
-        func_800728B8(D_800D334C->glyphs1630, D_800D334C->runs[2].count, D_800D334C->runs[2].buffer);
-        func_800728B8(D_800D334C->glyphs1720, D_800D334C->runs[4].count, D_800D334C->runs[4].buffer);
-        func_800728B8(D_800D334C->glyphs17C0, D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
-        func_800728B8(D_800D334C->glyphs1900, D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
+    if (battle_ui->showSummary != 0) {
+        battle_add_prims_to_ot(battle_summary_window_prims->title[0], battle_summary_window_prims->runs[0].count, battle_summary_window_prims->runs[0].buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->text, battle_summary_window_prims->runs[1].count, battle_summary_window_prims->runs[1].buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs1630, battle_summary_window_prims->runs[2].count, battle_summary_window_prims->runs[2].buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs1720, battle_summary_window_prims->runs[4].count, battle_summary_window_prims->runs[4].buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs17C0, battle_summary_window_prims->runs[3].count, battle_summary_window_prims->runs[3].buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs1900, battle_summary_window_prims->runs[5].count, battle_summary_window_prims->runs[5].buffer);
         for (i = 0; i < 7; i++) {
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
-            func_800728B8(D_800D334C->rowA[i], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
-            func_800728B8(D_800D334C->rowB[i], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->barB[i][battle_summary_window_prims->barBuffer[i]]);
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->barA[i][battle_summary_window_prims->barBuffer[i]]);
+            battle_add_prims_to_ot(battle_summary_window_prims->rowA[i], battle_summary_window_prims->rowACount[i], battle_summary_window_prims->rowABuffer[i]);
+            battle_add_prims_to_ot(battle_summary_window_prims->rowB[i], battle_summary_window_prims->rowBCount[i], battle_summary_window_prims->rowBBuffer[i]);
         }
     }
     i = 0;
-    if (D_800D2D28->showSkill != 0) {
-        func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
+    if (battle_ui->showSkill != 0) {
+        battle_add_prims_to_ot(battle_summary_window_prims->title[0], battle_summary_window_prims->runs[0].count, battle_summary_window_prims->runs[0].buffer);
         for (; i < 2; i++) {
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->glyphs34B0[i][battle_summary_window_prims->buffer34B0[i]]);
         }
     }
 }
@@ -88,16 +88,16 @@ void func_801DE1C4(void) {
 void func_801DE408(void) {
     s32 i;
 
-    if (D_800D2D28->showSpoils != 0) {
-        func_800728B8(D_800D334C->glyphs2D30[0], 7, D_800D334C->buffer2D30);
-        func_800728B8(D_800D334C->glyphs2F60[0], D_800D334C->run2F60.count, D_800D334C->run2F60.buffer);
-        func_800728B8(D_800D334C->glyphs3140[0], D_800D334C->run3140.count, D_800D334C->run3140.buffer);
-        for (i = 0; i < D_800D334C->listCount; i++) {
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
+    if (battle_ui->showSpoils != 0) {
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs2D30[0], 7, battle_summary_window_prims->buffer2D30);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs2F60[0], battle_summary_window_prims->run2F60.count, battle_summary_window_prims->run2F60.buffer);
+        battle_add_prims_to_ot(battle_summary_window_prims->glyphs3140[0], battle_summary_window_prims->run3140.count, battle_summary_window_prims->run3140.buffer);
+        for (i = 0; i < battle_summary_window_prims->listCount; i++) {
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->listA[i][battle_summary_window_prims->listBuffer]);
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->listB[i][battle_summary_window_prims->listBuffer]);
         }
         for (i = 0; i < 2; i++) {
-            AddPrim(D_800C3EB0.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
+            AddPrim(battle_area.ot + 1, &battle_summary_window_prims->glyphs3410[i][battle_summary_window_prims->buffer3410]);
         }
     }
 }
@@ -114,11 +114,11 @@ void func_801DE5C4(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[0].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
-            D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, &D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count * 2], 0x20, i * 0x20 + 0x24);
+        battle_member_cards[i]->runs[0].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
+            battle_member_cards[i]->runs[0].count += battle_build_glyph(i + 0xFC, &battle_member_cards[i]->portrait[battle_member_cards[i]->runs[0].count * 2], 0x20, i * 0x20 + 0x24);
         }
-        D_800D32F8[i]->runs[0].buffer = D_800C3EB0.buffer;
+        battle_member_cards[i]->runs[0].buffer = battle_area.buffer;
     }
 }
 
@@ -129,21 +129,21 @@ void func_801DE69C(void) {
     s32 j;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[1].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+        battle_member_cards[i]->runs[1].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
             for (j = 0; j < 18; j++) {
-                D_800D32F8[i]->runs[1].count += func_80076A10(D_800C3268[j], &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], D_800C327C[j], D_800C32A0[j] + i * 0x20);
+                battle_member_cards[i]->runs[1].count += battle_build_glyph(battle_member_card_label_glyphs[j], &battle_member_cards[i]->labels[battle_member_cards[i]->runs[1].count * 2], battle_member_card_label_x[j], battle_member_card_label_y[j] + i * 0x20);
             }
-            if (D_800D32F8[0]->secondValue != 0) {
-                D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
-                D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
-                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800C3EB0.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800C3EB0.buffer] - 4, 0x80, 0x40, 0x40);
-                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800C3EB0.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800C3EB0.buffer] - 2, 0x40, 0x80, 0x40);
+            if (battle_member_cards[0]->secondValue != 0) {
+                battle_member_cards[i]->runs[1].count += battle_build_glyph(0xE8, &battle_member_cards[i]->labels[battle_member_cards[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
+                battle_member_cards[i]->runs[1].count += battle_build_glyph(0xE9, &battle_member_cards[i]->labels[battle_member_cards[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
+                SetShadeTex(&battle_member_cards[i]->labels[(battle_member_cards[i]->runs[1].count - 2) * 2 + battle_area.buffer], 0);
+                setRGB0(&battle_member_cards[i]->labels[battle_member_cards[i]->runs[1].count * 2 + battle_area.buffer] - 4, 0x80, 0x40, 0x40);
+                SetShadeTex(&battle_member_cards[i]->labels[(battle_member_cards[i]->runs[1].count - 1) * 2 + battle_area.buffer], 0);
+                setRGB0(&battle_member_cards[i]->labels[battle_member_cards[i]->runs[1].count * 2 + battle_area.buffer] - 2, 0x40, 0x80, 0x40);
             }
         }
-        D_800D32F8[i]->runs[1].buffer = D_800C3EB0.buffer;
+        battle_member_cards[i]->runs[1].buffer = battle_area.buffer;
     }
 }
 
@@ -156,47 +156,47 @@ void func_801DEA18(void) {
     s32 digit;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[4].count = 0;
-        D_800D32F8[i]->runs[6].count = 0;
-        D_800D32F8[i]->runs[5].count = 0;
-        D_800D32F8[i]->runs[7].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
-            func_8008AAA0(D_800CCCE8.records[i].pilot.hp);
+        battle_member_cards[i]->runs[4].count = 0;
+        battle_member_cards[i]->runs[6].count = 0;
+        battle_member_cards[i]->runs[5].count = 0;
+        battle_member_cards[i]->runs[7].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
+            battle_split_decimal_digits(battle_work_area.records[i].pilot.hp);
             for (j = 0; j < 3; j++) {
                 n = j + 9;
-                digit = D_800C3CF1[n];
+                digit = battle_decimal_digits_minus_3[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[4].count += func_80076A10(digit, &D_800D32F8[i]->field960[D_800D32F8[i]->runs[4].count * 2], j * 8 + 0x48, i * 0x20 + 0x20);
+                    battle_member_cards[i]->runs[4].count += battle_build_glyph(digit, &battle_member_cards[i]->field960[battle_member_cards[i]->runs[4].count * 2], j * 8 + 0x48, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[4].buffer = D_800C3EB0.buffer;
-            func_8008AAA0(D_800CCCE8.records[i].pilot.ep);
+            battle_member_cards[i]->runs[4].buffer = battle_area.buffer;
+            battle_split_decimal_digits(battle_work_area.records[i].pilot.ep);
             for (j = 0; j < 2; j++) {
                 n = j + 10;
-                digit = D_800C3CF1[n];
+                digit = battle_decimal_digits_minus_3[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[6].count += func_80076A10(digit, &D_800D32F8[i]->fieldB40[D_800D32F8[i]->runs[6].count * 2], j * 8 + 0x50, i * 0x20 + 0x28);
+                    battle_member_cards[i]->runs[6].count += battle_build_glyph(digit, &battle_member_cards[i]->fieldB40[battle_member_cards[i]->runs[6].count * 2], j * 8 + 0x50, i * 0x20 + 0x28);
                 }
             }
-            D_800D32F8[i]->runs[6].buffer = D_800C3EB0.buffer;
-            func_8008AAA0(D_800CCCE8.savedMax[i][0]);
+            battle_member_cards[i]->runs[6].buffer = battle_area.buffer;
+            battle_split_decimal_digits(battle_work_area.savedMax[i][0]);
             for (j = 0; j < 3; j++) {
                 n = j + 13;
-                digit = D_800C3CED[n];
+                digit = battle_decimal_digits_minus_7[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[5].count += func_80076A10(digit, &D_800D32F8[i]->fieldA50[D_800D32F8[i]->runs[5].count * 2], j * 8 + 0x68, i * 0x20 + 0x20);
+                    battle_member_cards[i]->runs[5].count += battle_build_glyph(digit, &battle_member_cards[i]->fieldA50[battle_member_cards[i]->runs[5].count * 2], j * 8 + 0x68, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[5].buffer = D_800C3EB0.buffer;
-            func_8008AAA0(D_800CCCE8.savedMax[i][1]);
+            battle_member_cards[i]->runs[5].buffer = battle_area.buffer;
+            battle_split_decimal_digits(battle_work_area.savedMax[i][1]);
             for (j = 0; j < 2; j++) {
                 n = j + 14;
-                digit = D_800C3CED[n];
+                digit = battle_decimal_digits_minus_7[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[7].count += func_80076A10(digit, &D_800D32F8[i]->fieldBE0[D_800D32F8[i]->runs[7].count * 2], j * 8 + 0x70, i * 0x20 + 0x28);
+                    battle_member_cards[i]->runs[7].count += battle_build_glyph(digit, &battle_member_cards[i]->fieldBE0[battle_member_cards[i]->runs[7].count * 2], j * 8 + 0x70, i * 0x20 + 0x28);
                 }
             }
-            D_800D32F8[i]->runs[7].buffer = D_800C3EB0.buffer;
+            battle_member_cards[i]->runs[7].buffer = battle_area.buffer;
         }
     }
 }
@@ -211,43 +211,43 @@ void func_801DEDC0(u8 fromGameData) {
     s32 digit;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[2].count = 0;
-        D_800D32F8[i]->runs[3].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
+        battle_member_cards[i]->runs[2].count = 0;
+        battle_member_cards[i]->runs[3].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
             if (fromGameData == 0) {
-                func_8008AAA0(D_800D32A5[i].level);
+                battle_split_decimal_digits(battle_slot_levels[i].level);
             } else {
-                func_8008AAA0(game_data.characters[D_800D2D24[i]].level);
+                battle_split_decimal_digits(game_data.characters[battle_party_character_ids[i]].level);
             }
             for (j = 0; j < 3; j++) {
                 n = j + 18;
-                digit = D_800C3CE8[n];
+                digit = battle_finished_motion_count[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[2].count += func_80076A10(digit, &D_800D32F8[i]->field780[D_800D32F8[i]->runs[2].count * 2], j * 8 + 0x90, i * 0x20 + 0x20);
+                    battle_member_cards[i]->runs[2].count += battle_build_glyph(digit, &battle_member_cards[i]->field780[battle_member_cards[i]->runs[2].count * 2], j * 8 + 0x90, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[2].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->secondValue != 0) {
+            battle_member_cards[i]->runs[2].buffer = battle_area.buffer;
+            if (battle_member_cards[0]->secondValue != 0) {
                 if (fromGameData == 0) {
-                    func_8008AAA0(D_800D32A5[i].level2);
+                    battle_split_decimal_digits(battle_slot_levels[i].level2);
                 } else {
-                    func_8008AAA0(game_data.characters[D_800D2D24[i]].level2);
+                    battle_split_decimal_digits(game_data.characters[battle_party_character_ids[i]].level2);
                 }
                 for (j = 0; j < 3; j++) {
                     n = j + 18;
-                    digit = D_800C3CE8[n];
+                    digit = battle_finished_motion_count[n];
                     if (digit != 0xFF) {
-                        D_800D32F8[i]->runs[3].count += func_80076A10(digit, &D_800D32F8[i]->field870[D_800D32F8[i]->runs[3].count * 2], j * 8 + 0x90, i * 0x20 + 0x28);
+                        battle_member_cards[i]->runs[3].count += battle_build_glyph(digit, &battle_member_cards[i]->field870[battle_member_cards[i]->runs[3].count * 2], j * 8 + 0x90, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[3].buffer = D_800C3EB0.buffer;
-                for (j = 0; j < D_800D32F8[i]->runs[2].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800C3EB0.buffer], 0);
-                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
+                battle_member_cards[i]->runs[3].buffer = battle_area.buffer;
+                for (j = 0; j < battle_member_cards[i]->runs[2].count; j++) {
+                    SetShadeTex(&battle_member_cards[i]->field780[j * 2 + battle_area.buffer], 0);
+                    setRGB0(&battle_member_cards[i]->field780[j * 2 + battle_area.buffer], 0x80, 0x40, 0x40);
                 }
-                for (j = 0; j < D_800D32F8[i]->runs[3].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800C3EB0.buffer], 0);
-                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800C3EB0.buffer], 0x40, 0x80, 0x40);
+                for (j = 0; j < battle_member_cards[i]->runs[3].count; j++) {
+                    SetShadeTex(&battle_member_cards[i]->field870[j * 2 + battle_area.buffer], 0);
+                    setRGB0(&battle_member_cards[i]->field870[j * 2 + battle_area.buffer], 0x40, 0x80, 0x40);
                 }
             }
         }
@@ -263,28 +263,28 @@ void func_801DF270(void) {
     s32 digit;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[8].count = 0;
-        D_800D32F8[i]->runs[9].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
-            func_8008AAA0(D_800CCCE8.expTotals[i][0]);
+        battle_member_cards[i]->runs[8].count = 0;
+        battle_member_cards[i]->runs[9].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
+            battle_split_decimal_digits(battle_work_area.expTotals[i][0]);
             for (j = 0; j < 8; j++) {
                 n = j + 22;
-                digit = D_800C3CDF[n];
+                digit = battle_decimal_digits_minus_21[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[8].count += func_80076A10(digit, &D_800D32F8[i]->fieldC80[D_800D32F8[i]->runs[8].count * 2], j * 8 + 0xB0, i * 0x20 + 0x20);
+                    battle_member_cards[i]->runs[8].count += battle_build_glyph(digit, &battle_member_cards[i]->fieldC80[battle_member_cards[i]->runs[8].count * 2], j * 8 + 0xB0, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[8].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->secondValue != 0) {
-                func_8008AAA0(D_800CCCE8.expTotals[i][1]);
+            battle_member_cards[i]->runs[8].buffer = battle_area.buffer;
+            if (battle_member_cards[0]->secondValue != 0) {
+                battle_split_decimal_digits(battle_work_area.expTotals[i][1]);
                 for (j = 0; j < 8; j++) {
                     n = j + 22;
-                    digit = D_800C3CDF[n];
+                    digit = battle_decimal_digits_minus_21[n];
                     if (digit != 0xFF) {
-                        D_800D32F8[i]->runs[9].count += func_80076A10(digit, &D_800D32F8[i]->fieldF00[D_800D32F8[i]->runs[9].count * 2], j * 8 + 0xB0, i * 0x20 + 0x28);
+                        battle_member_cards[i]->runs[9].count += battle_build_glyph(digit, &battle_member_cards[i]->fieldF00[battle_member_cards[i]->runs[9].count * 2], j * 8 + 0xB0, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[9].buffer = D_800C3EB0.buffer;
+                battle_member_cards[i]->runs[9].buffer = battle_area.buffer;
             }
         }
     }
@@ -298,28 +298,28 @@ void func_801DF4C0(void) {
     s32 digit;
 
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i]->runs[10].count = 0;
-        D_800D32F8[i]->runs[11].count = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
-            func_8008AAA0(D_800CCCE8.toCount[i][0]);
+        battle_member_cards[i]->runs[10].count = 0;
+        battle_member_cards[i]->runs[11].count = 0;
+        if (battle_area.slots[i].field2 != 0x7F) {
+            battle_split_decimal_digits(battle_work_area.toCount[i][0]);
             for (j = 0; j < 7; j++) {
                 n = j + 31;
-                digit = D_800C3CD7[n];
+                digit = battle_decimal_digits_minus_29[n];
                 if (digit != 0xFF) {
-                    D_800D32F8[i]->runs[10].count += func_80076A10(digit, &D_800D32F8[i]->field1180[D_800D32F8[i]->runs[10].count * 2], j * 8 + 0xF8, i * 0x20 + 0x20);
+                    battle_member_cards[i]->runs[10].count += battle_build_glyph(digit, &battle_member_cards[i]->field1180[battle_member_cards[i]->runs[10].count * 2], j * 8 + 0xF8, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[10].buffer = D_800C3EB0.buffer;
-            if (D_800D32F8[0]->secondValue != 0) {
-                func_8008AAA0(D_800CCCE8.toCount[i][1]);
+            battle_member_cards[i]->runs[10].buffer = battle_area.buffer;
+            if (battle_member_cards[0]->secondValue != 0) {
+                battle_split_decimal_digits(battle_work_area.toCount[i][1]);
                 for (j = 0; j < 7; j++) {
                     n = j + 31;
-                    digit = D_800C3CD7[n];
+                    digit = battle_decimal_digits_minus_29[n];
                     if (digit != 0xFF) {
-                        D_800D32F8[i]->runs[11].count += func_80076A10(digit, &D_800D32F8[i]->field13B0[D_800D32F8[i]->runs[11].count * 2], j * 8 + 0xF8, i * 0x20 + 0x28);
+                        battle_member_cards[i]->runs[11].count += battle_build_glyph(digit, &battle_member_cards[i]->field13B0[battle_member_cards[i]->runs[11].count * 2], j * 8 + 0xF8, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[11].buffer = D_800C3EB0.buffer;
+                battle_member_cards[i]->runs[11].buffer = battle_area.buffer;
             }
         }
     }
@@ -413,11 +413,11 @@ s32 func_801DFA38(u8 slot) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        if (D_800CCCE8.savedStats[slot][i] >= best) {
-            best = D_800CCCE8.savedStats[slot][i];
+        if (battle_work_area.savedStats[slot][i] >= best) {
+            best = battle_work_area.savedStats[slot][i];
         }
-        if (D_800CCCE8.resultStats[slot][i] >= best) {
-            best = D_800CCCE8.resultStats[slot][i];
+        if (battle_work_area.resultStats[slot][i] >= best) {
+            best = battle_work_area.resultStats[slot][i];
         }
     }
     return best;
@@ -437,23 +437,23 @@ void func_801DFAA8(u8 member) {
     colours[3] = 0x40;
     colours[4] = 0x40;
     colours[5] = 0x40;
-    D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x3E, 0xA4);
-    D_800D334C->runs[0].buffer = D_800C3EB0.buffer;
-    D_800D334C->runs[1].count = 0;
+    battle_summary_window_prims->runs[0].count = battle_build_glyph(member + 0xFC, battle_summary_window_prims->title[0], 0x3E, 0xA4);
+    battle_summary_window_prims->runs[0].buffer = battle_area.buffer;
+    battle_summary_window_prims->runs[1].count = 0;
     for (i = 0; i < 27; i++) {
-        start = D_800D334C->runs[1].count;
-        if (D_800C32C4[i * 3] != 0xFF) {
-            D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i * 3], &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
-            if (D_800C32C4[i * 3 + 1] != 0) {
-                for (k = start; k < D_800D334C->runs[1].count; k++) {
-                    SetShadeTex(&D_800D334C->text[k * 2 + D_800C3EB0.buffer], 0);
-                    setRGB0(&D_800D334C->text[k * 2 + D_800C3EB0.buffer], colours[D_800C32C4[i * 3 + 2] * 3],
-                            colours[D_800C32C4[i * 3 + 2] * 3 + 1], colours[D_800C32C4[i * 3 + 2] * 3 + 2]);
+        start = battle_summary_window_prims->runs[1].count;
+        if (battle_summary_text_glyphs[i * 3] != 0xFF) {
+            battle_summary_window_prims->runs[1].count += battle_build_glyph(battle_summary_text_glyphs[i * 3], &battle_summary_window_prims->text[start * 2], battle_summary_text_x[i], battle_summary_text_y[i]);
+            if (battle_summary_text_glyphs[i * 3 + 1] != 0) {
+                for (k = start; k < battle_summary_window_prims->runs[1].count; k++) {
+                    SetShadeTex(&battle_summary_window_prims->text[k * 2 + battle_area.buffer], 0);
+                    setRGB0(&battle_summary_window_prims->text[k * 2 + battle_area.buffer], colours[battle_summary_text_glyphs[i * 3 + 2] * 3],
+                            colours[battle_summary_text_glyphs[i * 3 + 2] * 3 + 1], colours[battle_summary_text_glyphs[i * 3 + 2] * 3 + 2]);
                 }
             }
         }
     }
-    D_800D334C->runs[1].buffer = D_800C3EB0.buffer;
+    battle_summary_window_prims->runs[1].buffer = battle_area.buffer;
 }
 
 /* Build the summary's first member value (three digits); clear the other
@@ -463,19 +463,19 @@ void func_801DFD58(u8 member) {
     s32 n;
     s32 digit;
 
-    D_800D334C->runs[2].count = 0;
-    D_800D334C->runs[4].count = 0;
-    D_800D334C->runs[3].count = 0;
-    D_800D334C->runs[5].count = 0;
-    func_8008AAA0(D_800CCCE8.savedMax[member][0]);
+    battle_summary_window_prims->runs[2].count = 0;
+    battle_summary_window_prims->runs[4].count = 0;
+    battle_summary_window_prims->runs[3].count = 0;
+    battle_summary_window_prims->runs[5].count = 0;
+    battle_split_decimal_digits(battle_work_area.savedMax[member][0]);
     for (j = 0; j < 3; j++) {
         n = j + 23;
-        digit = D_800C3CE3[n];
+        digit = battle_decimal_digits_minus_17[n];
         if (digit != 0xFF) {
-            D_800D334C->runs[2].count += func_80076A10(digit, &D_800D334C->glyphs1630[D_800D334C->runs[2].count * 2], j * 8 + 0xB8, 0x80);
+            battle_summary_window_prims->runs[2].count += battle_build_glyph(digit, &battle_summary_window_prims->glyphs1630[battle_summary_window_prims->runs[2].count * 2], j * 8 + 0xB8, 0x80);
         }
     }
-    D_800D334C->runs[2].buffer = D_800C3EB0.buffer;
+    battle_summary_window_prims->runs[2].buffer = battle_area.buffer;
 }
 
 /* Build the summary's second member value (two digits). */
@@ -484,15 +484,15 @@ void func_801DFE6C(u8 member) {
     s32 n;
     s32 digit;
 
-    func_8008AAA0(D_800CCCE8.savedMax[member][1]);
+    battle_split_decimal_digits(battle_work_area.savedMax[member][1]);
     for (j = 0; j < 2; j++) {
         n = j + 24;
-        digit = D_800C3CE3[n];
+        digit = battle_decimal_digits_minus_17[n];
         if (digit != 0xFF) {
-            D_800D334C->runs[4].count += func_80076A10(digit, &D_800D334C->glyphs1720[D_800D334C->runs[4].count * 2], j * 8 + 0xC0, 0x88);
+            battle_summary_window_prims->runs[4].count += battle_build_glyph(digit, &battle_summary_window_prims->glyphs1720[battle_summary_window_prims->runs[4].count * 2], j * 8 + 0xC0, 0x88);
         }
     }
-    D_800D334C->runs[4].buffer = D_800C3EB0.buffer;
+    battle_summary_window_prims->runs[4].buffer = battle_area.buffer;
 }
 
 /* Build the summary's change of the member's first stat since the battle
@@ -506,8 +506,8 @@ void func_801DFF50(u8 member) {
     s32 n;
     s32 digit;
 
-    before = D_800CCCE8.savedMax[member][0];
-    after = game_data.characters[D_800D2D24[member]].maxHp;
+    before = battle_work_area.savedMax[member][0];
+    after = game_data.characters[battle_party_character_ids[member]].maxHp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -515,21 +515,21 @@ void func_801DFF50(u8 member) {
         difference = before - after;
     }
     if (difference != 0) {
-        D_800D334C->runs[3].count = func_80076A10(arrow, D_800D334C->glyphs17C0, 0xD8, 0x80);
-        func_8008AAA0(difference);
+        battle_summary_window_prims->runs[3].count = battle_build_glyph(arrow, battle_summary_window_prims->glyphs17C0, 0xD8, 0x80);
+        battle_split_decimal_digits(difference);
         n = 0;
         for (j = 0; j < 3; j++) {
-            digit = D_800C3CFA[j];
+            digit = battle_decimal_digits_plus_6[j];
             if (digit != 0xFF) {
-                D_800D334C->runs[3].count += func_80076A10(digit, &D_800D334C->glyphs17C0[D_800D334C->runs[3].count * 2], n * 8 + 0xE0, 0x80);
+                battle_summary_window_prims->runs[3].count += battle_build_glyph(digit, &battle_summary_window_prims->glyphs17C0[battle_summary_window_prims->runs[3].count * 2], n * 8 + 0xE0, 0x80);
                 n++;
             }
         }
-        for (j = 0; j < D_800D334C->runs[3].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800C3EB0.buffer], 0);
-            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
+        for (j = 0; j < battle_summary_window_prims->runs[3].count; j++) {
+            SetShadeTex(&battle_summary_window_prims->glyphs17C0[j * 2 + battle_area.buffer], 0);
+            setRGB0(&battle_summary_window_prims->glyphs17C0[j * 2 + battle_area.buffer], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[3].buffer = D_800C3EB0.buffer;
+        battle_summary_window_prims->runs[3].buffer = battle_area.buffer;
     }
 }
 
@@ -543,8 +543,8 @@ void func_801E0184(u8 member) {
     s32 n;
     s32 digit;
 
-    before = D_800CCCE8.savedMax[member][1];
-    after = game_data.characters[D_800D2D24[member]].maxEp;
+    before = battle_work_area.savedMax[member][1];
+    after = game_data.characters[battle_party_character_ids[member]].maxEp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -552,21 +552,21 @@ void func_801E0184(u8 member) {
         difference = before - after;
     }
     if (difference != 0) {
-        D_800D334C->runs[5].count = func_80076A10(arrow, D_800D334C->glyphs1900, 0xD8, 0x88);
-        func_8008AAA0(difference);
+        battle_summary_window_prims->runs[5].count = battle_build_glyph(arrow, battle_summary_window_prims->glyphs1900, 0xD8, 0x88);
+        battle_split_decimal_digits(difference);
         n = 0;
         for (j = 0; j < 2; j++) {
-            digit = D_800C3CFB[j];
+            digit = battle_decimal_digits_plus_7[j];
             if (digit != 0xFF) {
-                D_800D334C->runs[5].count += func_80076A10(digit, &D_800D334C->glyphs1900[D_800D334C->runs[5].count * 2], n * 8 + 0xE0, 0x88);
+                battle_summary_window_prims->runs[5].count += battle_build_glyph(digit, &battle_summary_window_prims->glyphs1900[battle_summary_window_prims->runs[5].count * 2], n * 8 + 0xE0, 0x88);
                 n++;
             }
         }
-        for (j = 0; j < D_800D334C->runs[5].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800C3EB0.buffer], 0);
-            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800C3EB0.buffer], 0x80, 0x40, 0x40);
+        for (j = 0; j < battle_summary_window_prims->runs[5].count; j++) {
+            SetShadeTex(&battle_summary_window_prims->glyphs1900[j * 2 + battle_area.buffer], 0);
+            setRGB0(&battle_summary_window_prims->glyphs1900[j * 2 + battle_area.buffer], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[5].buffer = D_800C3EB0.buffer;
+        battle_summary_window_prims->runs[5].buffer = battle_area.buffer;
     }
 }
 
@@ -581,7 +581,7 @@ void func_801E03B8(u8 member) {
 /* Build the member's seven gauge rows: for each, the value before and after
  * the battle out of the highest (801dfa38) as a bar and its change bar, the
  * value, and when it changed an arrow and the change shaded by direction.
- * The value's digits are entries 23-25 of func_8008AAA0's digit buffer. */
+ * The value's digits are entries 23-25 of battle_split_decimal_digits's digit buffer. */
 void func_801E03FC(u8 member) {
     s32 max;
     s32 i;
@@ -595,57 +595,57 @@ void func_801E03FC(u8 member) {
 
     max = func_801DFA38(member);
     for (i = 0; i < 7; i++) {
-        D_800D334C->rowACount[i] = 0;
-        D_800D334C->rowBCount[i] = 0;
-        func_801DF910(D_800CCCE8.savedStats[member][i], D_800CCCE8.resultStats[member][i], max);
-        func_801DF710(D_800D334C->barA[i], 0);
-        func_801DF710(D_800D334C->barB[i], D_801E44E0);
+        battle_summary_window_prims->rowACount[i] = 0;
+        battle_summary_window_prims->rowBCount[i] = 0;
+        func_801DF910(battle_work_area.savedStats[member][i], battle_work_area.resultStats[member][i], max);
+        func_801DF710(battle_summary_window_prims->barA[i], 0);
+        func_801DF710(battle_summary_window_prims->barB[i], D_801E44E0);
         top = i * 8 + 0x92;
         bottom = i * 8 + 0x98;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x0 = 0x78;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y0 = top;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x1 = D_801E44D8 + 0x78;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y1 = top;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x2 = 0x78;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y2 = bottom;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->x3 = D_801E44D8 + 0x78;
-        (D_800D334C->barA[i] + D_800C3EB0.buffer)->y3 = bottom;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x0 = 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->y0 = top;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x1 = D_801E44D8 + 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->y1 = top;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x2 = 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->y2 = bottom;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x3 = D_801E44D8 + 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->y3 = bottom;
         if (D_801E44E0 == 2) {
             left = D_801E44D8 + 0x78;
         } else {
             left = D_801E44D8 + 0x78 - D_801E44DC;
         }
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x0 = left;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y0 = top;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x1 = left + D_801E44DC;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y1 = top;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x2 = left;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y2 = bottom;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->x3 = left + D_801E44DC;
-        (D_800D334C->barB[i] + D_800C3EB0.buffer)->y3 = bottom;
-        D_800D334C->barBuffer[i] = D_800C3EB0.buffer;
-        func_8008AAA0(D_801E44CC);
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x0 = left;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->y0 = top;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x1 = left + D_801E44DC;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->y1 = top;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x2 = left;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->y2 = bottom;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x3 = left + D_801E44DC;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->y3 = bottom;
+        battle_summary_window_prims->barBuffer[i] = battle_area.buffer;
+        battle_split_decimal_digits(D_801E44CC);
         for (j = 0; j < 3; j++) {
             k = j + 23;
-            digit = D_800C3CE3[k];
+            digit = battle_decimal_digits_minus_17[k];
             if (digit != 0xFF) {
-                D_800D334C->rowACount[i] += func_80076A10(digit, &D_800D334C->rowA[i][D_800D334C->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
+                battle_summary_window_prims->rowACount[i] += battle_build_glyph(digit, &battle_summary_window_prims->rowA[i][battle_summary_window_prims->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
             }
         }
-        D_800D334C->rowABuffer[i] = D_800C3EB0.buffer;
+        battle_summary_window_prims->rowABuffer[i] = battle_area.buffer;
         if (D_801E44D4 != 0) {
-            D_800D334C->rowBCount[i] = func_80076A10(D_801E44E4, D_800D334C->rowB[i], 0xD8, i * 8 + 0x90);
-            func_8008AAA0(D_801E44D4);
+            battle_summary_window_prims->rowBCount[i] = battle_build_glyph(D_801E44E4, battle_summary_window_prims->rowB[i], 0xD8, i * 8 + 0x90);
+            battle_split_decimal_digits(D_801E44D4);
             n = 0;
             for (j = 0; j < 3; j++) {
-                digit = D_800C3CFA[j];
+                digit = battle_decimal_digits_plus_6[j];
                 if (digit != 0xFF) {
-                    D_800D334C->rowBCount[i] += func_80076A10(digit, &D_800D334C->rowB[i][D_800D334C->rowBCount[i] * 2], n * 8 + 0xE0, i * 8 + 0x90);
+                    battle_summary_window_prims->rowBCount[i] += battle_build_glyph(digit, &battle_summary_window_prims->rowB[i][battle_summary_window_prims->rowBCount[i] * 2], n * 8 + 0xE0, i * 8 + 0x90);
                     n++;
                 }
             }
-            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800C3EB0.buffer);
-            D_800D334C->rowBBuffer[i] = D_800C3EB0.buffer;
+            func_801DF840(battle_summary_window_prims->rowB[i], D_801E44E0 - 2, battle_summary_window_prims->rowBCount[i], battle_area.buffer);
+            battle_summary_window_prims->rowBBuffer[i] = battle_area.buffer;
         }
     }
 }
@@ -669,12 +669,12 @@ void func_801E09F4(void) {
 /* Start the fanfare and run battle frames until Cross is pressed. */
 void func_801E0A4C(void) {
     func_801E09F4();
-    func_800716D8();
-    D_800D2D28->waitingCross = 1;
-    while (D_800D3014 != 4) {
-        func_800716D8();
+    battle_wait_frame();
+    battle_ui->waitingCross = 1;
+    while (battle_pressed_key != 4) {
+        battle_wait_frame();
     }
-    D_800D2D28->waitingCross = 0;
+    battle_ui->waitingCross = 0;
 }
 
 /* Show the skills the member learnt in the battle, one at a time: the
@@ -688,61 +688,61 @@ void func_801E0ACC(u8 member) {
     u8 width;
     RECT rect;
 
-    newCounter = game_data.skills[D_800D2D24[member]].counterSkills & ~D_800C3E0C[member].counterSkills;
-    newLevel = game_data.skills[D_800D2D24[member]].levelSkills & ~D_800C3E0C[member].levelSkills;
+    newCounter = game_data.skills[battle_party_character_ids[member]].counterSkills & ~battle_known_skills_at_start[member].counterSkills;
+    newLevel = game_data.skills[battle_party_character_ids[member]].levelSkills & ~battle_known_skills_at_start[member].levelSkills;
     if (newCounter == 0 && newLevel == 0) {
         return;
     }
-    if (D_800D2D28->windows[1] == 0) {
-        func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
+    if (battle_ui->windows[1] == 0) {
+        battle_window_open(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
     }
-    D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
-    D_800D334C->runs[0].buffer = D_800C3EB0.buffer;
-    D_800D2D28->waitingCross = 0;
-    image = func_8008AC00(0x1B);
-    func_80076D58(D_800D334C->glyphs34B0[0], 1, 2);
-    func_80076D58(D_800D334C->glyphs34B0[1], 0, 3);
+    battle_summary_window_prims->runs[0].count = battle_build_glyph(member + 0xFC, battle_summary_window_prims->title[0], 0x40, 0xA4);
+    battle_summary_window_prims->runs[0].buffer = battle_area.buffer;
+    battle_ui->waitingCross = 0;
+    image = battle_heap_alloc_text_image(0x1B);
+    battle_init_text_quad_pair(battle_summary_window_prims->glyphs34B0[0], 1, 2);
+    battle_init_text_quad_pair(battle_summary_window_prims->glyphs34B0[1], 0, 3);
     for (i = 0; i < 16; i++) {
-        if (func_80089C6C(newCounter, i) != 0) {
-            s32 *buffer = &D_800C3EB0.buffer;
+        if (battle_is_flag_in_mask(newCounter, i) != 0) {
+            s32 *buffer = &battle_area.buffer;
 
-            width = window_render_text_line(text_get_system_resource_entry(D_800D2D24[member], i), image, 0x1B, 0);
+            width = window_render_text_line(text_get_system_resource_entry(battle_party_character_ids[member], i), image, 0x1B, 0);
             rect.x = 0x3C0;
             rect.y = 0x1A;
             rect.w = 0x1E;
             rect.h = 0xD;
-            func_800769E8(&rect, image);
-            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
-            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800C3EB0.buffer], 0, 0x80, 0);
-            D_800D334C->buffer34B0[1] = *buffer;
-            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
-            D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->showSkill = 1;
+            battle_upload_image_and_wait(&rect, image);
+            battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&battle_summary_window_prims->glyphs34B0[1][*buffer], 0);
+            setRGB0(&battle_summary_window_prims->glyphs34B0[1][battle_area.buffer], 0, 0x80, 0);
+            battle_summary_window_prims->buffer34B0[1] = *buffer;
+            battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, battle_skill_mark_icon_cell[2], battle_skill_mark_icon_cell[3], battle_skill_mark_icon_cell[0]);
+            battle_summary_window_prims->buffer34B0[0] = *buffer;
+            battle_ui->showSkill = 1;
             func_801E0A4C();
         }
     }
     for (i = 0; i < 16; i++) {
-        if (func_80089C6C(newLevel, i) != 0) {
-            s32 *buffer = &D_800C3EB0.buffer;
+        if (battle_is_flag_in_mask(newLevel, i) != 0) {
+            s32 *buffer = &battle_area.buffer;
 
-            width = window_render_text_line(text_get_character_art_name(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
+            width = window_render_text_line(text_get_character_art_name(battle_party_character_ids[member] * 16 + i), image, 0x1B, 0);
             rect.x = 0x3C0;
             rect.y = 0x1A;
             rect.w = 0x1E;
             rect.h = 0xD;
-            func_800769E8(&rect, image);
-            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
-            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800C3EB0.buffer], 0x80, 0x80, 0);
-            D_800D334C->buffer34B0[1] = *buffer;
-            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
-            D_800D334C->buffer34B0[0] = *buffer;
-            D_800D2D28->showSkill = 1;
+            battle_upload_image_and_wait(&rect, image);
+            battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&battle_summary_window_prims->glyphs34B0[1][*buffer], 0);
+            setRGB0(&battle_summary_window_prims->glyphs34B0[1][battle_area.buffer], 0x80, 0x80, 0);
+            battle_summary_window_prims->buffer34B0[1] = *buffer;
+            battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, battle_skill_mark_icon_cell[2], battle_skill_mark_icon_cell[3], battle_skill_mark_icon_cell[0]);
+            battle_summary_window_prims->buffer34B0[0] = *buffer;
+            battle_ui->showSkill = 1;
             func_801E0A4C();
         }
     }
-    D_800D2D28->showSkill = 0;
+    battle_ui->showSkill = 0;
 }
 
 
@@ -751,9 +751,9 @@ void func_801E1044(void) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        D_800D334C->count2D30 += func_80076A10(D_800C3388[i], D_800D334C->glyphs2D30[D_800D334C->count2D30], D_800C3390[i], D_800C33A0[i]);
+        battle_summary_window_prims->count2D30 += battle_build_glyph(battle_spoils_label_glyphs[i], battle_summary_window_prims->glyphs2D30[battle_summary_window_prims->count2D30], battle_spoils_label_x[i], battle_spoils_label_y[i]);
     }
-    D_800D334C->buffer2D30 = D_800C3EB0.buffer;
+    battle_summary_window_prims->buffer2D30 = battle_area.buffer;
 }
 
 /* Build the spoils window's numbers: the experience (six digits) and the
@@ -763,36 +763,36 @@ void func_801E10F8(u32 experience) {
     s32 n;
     s32 digit;
 
-    func_8008AAA0(experience);
+    battle_split_decimal_digits(experience);
     for (i = 0; i < 6; i++) {
         n = i + 27;
-        digit = D_800C3CDC[n];
+        digit = battle_camera_framed_range[n];
         if (digit != 0xFF) {
-            D_800D334C->run2F60.count += func_80076A10(digit, D_800D334C->glyphs2F60[D_800D334C->run2F60.count], i * 8 + 0xD8, 0x50);
+            battle_summary_window_prims->run2F60.count += battle_build_glyph(digit, battle_summary_window_prims->glyphs2F60[battle_summary_window_prims->run2F60.count], i * 8 + 0xD8, 0x50);
         }
     }
-    D_800D334C->run2F60.buffer = D_800C3EB0.buffer;
-    func_8008AAA0(game_data.gold);
+    battle_summary_window_prims->run2F60.buffer = battle_area.buffer;
+    battle_split_decimal_digits(game_data.gold);
     for (i = 0; i < 9; i++) {
         n = i + 24;
-        digit = D_800C3CDC[n];
+        digit = battle_camera_framed_range[n];
         if (digit != 0xFF) {
-            D_800D334C->run3140.count += func_80076A10(digit, D_800D334C->glyphs3140[D_800D334C->run3140.count], i * 8 + 0xC0, 0x60);
+            battle_summary_window_prims->run3140.count += battle_build_glyph(digit, battle_summary_window_prims->glyphs3140[battle_summary_window_prims->run3140.count], i * 8 + 0xC0, 0x60);
         }
     }
-    D_800D334C->run3140.buffer = D_800C3EB0.buffer;
+    battle_summary_window_prims->run3140.buffer = battle_area.buffer;
 }
 
 /* Build the spoils window's two icons. */
 void func_801E126C(void) {
     s32 *buffer;
 
-    func_80076D58(D_800D334C->glyphs3410[0], 0, 2);
-    func_80076D58(D_800D334C->glyphs3410[1], 1, 2);
-    buffer = &D_800C3EB0.buffer;
-    func_80076C78(&D_800D334C->glyphs3410[0][*buffer], 0x20, 0x20, D_800D2F90[2], D_800D2F90[3], D_800D2F90[0]);
-    func_80076C78(&D_800D334C->glyphs3410[1][*buffer], 0xB8, 0x40, D_800D2F90[6], D_800D2F90[7], D_800D2F90[4]);
-    D_800D334C->buffer3410 = *buffer;
+    battle_init_text_quad_pair(battle_summary_window_prims->glyphs3410[0], 0, 2);
+    battle_init_text_quad_pair(battle_summary_window_prims->glyphs3410[1], 1, 2);
+    buffer = &battle_area.buffer;
+    battle_quad_place_text_row(&battle_summary_window_prims->glyphs3410[0][*buffer], 0x20, 0x20, battle_spoils_icon_cells[2], battle_spoils_icon_cells[3], battle_spoils_icon_cells[0]);
+    battle_quad_place_text_row(&battle_summary_window_prims->glyphs3410[1][*buffer], 0xB8, 0x40, battle_spoils_icon_cells[6], battle_spoils_icon_cells[7], battle_spoils_icon_cells[4]);
+    battle_summary_window_prims->buffer3410 = *buffer;
 }
 
 /* Add count of item id to an inventory list of size entries (ids and
@@ -863,16 +863,16 @@ void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
     }
     k = 0;
     for (i = 0; i < 8; i++) {
-        if (D_800CCCE8.dropIds[i] != 0) {
+        if (battle_work_area.dropIds[i] != 0) {
             for (j = 0; j < 8; j++) {
-                if (D_800CCCE8.dropCategories[i] == categories[j] && D_800CCCE8.dropIds[i] == ids[j]) {
+                if (battle_work_area.dropCategories[i] == categories[j] && battle_work_area.dropIds[i] == ids[j]) {
                     counts[j]++;
                     break;
                 }
             }
             if (j == 8) {
-                categories[k] = D_800CCCE8.dropCategories[i];
-                ids[k] = D_800CCCE8.dropIds[i];
+                categories[k] = battle_work_area.dropCategories[i];
+                ids[k] = battle_work_area.dropIds[i];
                 counts[k]++;
                 k++;
             }
@@ -898,9 +898,9 @@ void func_801E1690(void) {
     names = text;
     for (i = 0, count = 0; i < 8; i++) {
         if (ids[i] != 0) {
-            func_80076D58(D_800D334C->listA[count], 0, 1);
-            func_80076D58(D_800D334C->listB[count], 0, 2);
-            names[count] = func_8008AC00(0x1B);
+            battle_init_text_quad_pair(battle_summary_window_prims->listA[count], 0, 1);
+            battle_init_text_quad_pair(battle_summary_window_prims->listB[count], 0, 2);
+            names[count] = battle_heap_alloc_text_image(0x1B);
             switch (categories[i]) {
             case 0:
                 width = window_render_text_line(text_get_weapon_name(ids[i]), names[count], 0x1B, 0);
@@ -922,9 +922,9 @@ void func_801E1690(void) {
             rect.y = count * 13 + 0x100;
             rect.w = 0x1E;
             rect.h = 0xD;
-            func_800769E8(&rect, names[count]);
-            func_80076C78(&D_800D334C->listA[count][D_800C3EB0.buffer], 0x2C, count * 16 + 0x30, 0, count * 13, width);
-            func_80076C78(&D_800D334C->listB[count][D_800C3EB0.buffer], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
+            battle_upload_image_and_wait(&rect, names[count]);
+            battle_quad_place_text_row(&battle_summary_window_prims->listA[count][battle_area.buffer], 0x2C, count * 16 + 0x30, 0, count * 13, width);
+            battle_quad_place_text_row(&battle_summary_window_prims->listB[count][battle_area.buffer], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
             count++;
         }
     }
@@ -932,8 +932,8 @@ void func_801E1690(void) {
     for (i = 0; i < count; i++) {
         heap_free(text[i]);
     }
-    D_800D334C->listCount = count;
-    D_800D334C->listBuffer = D_800C3EB0.buffer;
+    battle_summary_window_prims->listCount = count;
+    battle_summary_window_prims->listBuffer = battle_area.buffer;
 }
 
 /* Show the member cards over six frames, then wait for Cross. */
@@ -944,12 +944,12 @@ void func_801E196C(void) {
     step = 0;
     building = 1;
     do {
-        func_800716D8();
+        battle_wait_frame();
         switch (step) {
         case 0:
             func_801DE5C4();
-            D_800D2D28->showCards = 1;
-            D_800C3EAC->eventsDone = 0;
+            battle_ui->showCards = 1;
+            battle_turn_state->eventsDone = 0;
             break;
         case 1:
             func_801DE69C();
@@ -970,11 +970,11 @@ void func_801E196C(void) {
         }
         step++;
     } while (building);
-    D_800D2D28->waitingCross = 1;
-    while (D_800D3014 != 4) {
-        func_800716D8();
+    battle_ui->waitingCross = 1;
+    while (battle_pressed_key != 4) {
+        battle_wait_frame();
     }
-    D_800D2D28->waitingCross = 0;
+    battle_ui->waitingCross = 0;
 }
 
 /* Wait for Cross on the first member card (repeating the prompt sound),
@@ -983,23 +983,23 @@ void func_801E196C(void) {
 void func_801E1AA4(void) {
     s32 i;
 
-    func_800716D8();
-    D_800D2D28->waitingCross = 1;
-    D_800D32F8[0]->counting = 1;
-    while (D_800D32F8[0]->counting != 0) {
-        if (D_800D3014 == 4) {
+    battle_wait_frame();
+    battle_ui->waitingCross = 1;
+    battle_member_cards[0]->counting = 1;
+    while (battle_member_cards[0]->counting != 0) {
+        if (battle_pressed_key == 4) {
             break;
         }
         func_801E09C0(0x5B);
-        func_800716D8();
+        battle_wait_frame();
     }
-    D_800D2D28->waitingCross = 0;
-    D_800D32F8[0]->counting = 0;
+    battle_ui->waitingCross = 0;
+    battle_member_cards[0]->counting = 0;
     for (i = 0; i < 3; i++) {
-        D_800CCCE8.expTotals[i][0] = game_data.characters[D_800D2D24[i]].expTotalA;
-        D_800CCCE8.expTotals[i][1] = game_data.characters[D_800D2D24[i]].expTotalB;
-        D_800CCCE8.toCount[i][0] = 0;
-        D_800CCCE8.toCount[i][1] = 0;
+        battle_work_area.expTotals[i][0] = game_data.characters[battle_party_character_ids[i]].expTotalA;
+        battle_work_area.expTotals[i][1] = game_data.characters[battle_party_character_ids[i]].expTotalB;
+        battle_work_area.toCount[i][0] = 0;
+        battle_work_area.toCount[i][1] = 0;
     }
     func_801DF270();
     func_801DF4C0();
@@ -1013,71 +1013,71 @@ void func_801E1C10(void) {
     u8 member;
 
     func_801DEDC0(1);
-    func_800716D8();
-    D_800D2D28->waitingCross = 1;
-    while (D_800D3014 != 4) {
-        func_800716D8();
+    battle_wait_frame();
+    battle_ui->waitingCross = 1;
+    while (battle_pressed_key != 4) {
+        battle_wait_frame();
     }
-    D_800D2D28->waitingCross = 0;
-    func_800716D8();
-    func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 0);
-    D_800D2D28->windows[1] = 0;
+    battle_ui->waitingCross = 0;
+    battle_wait_frame();
+    battle_window_open(1, 0x28, 0x78, 0xE8, 0x58, 0, 0);
+    battle_ui->windows[1] = 0;
     for (i = 0; i < 3; i++) {
         shown = 0;
-        if (D_800C3EB0.slots[i].field2 != 0x7F) {
-            if (D_800CCCE8.levelGains[i][0] != 0) {
+        if (battle_area.slots[i].field2 != 0x7F) {
+            if (battle_work_area.levelGains[i][0] != 0) {
                 member = i;
-                D_800D2D28->windows[1] = 1;
+                battle_ui->windows[1] = 1;
                 func_801DFAA8(member);
                 func_801E03B8(member);
                 func_801E03FC(member);
-                D_800D2D28->showSummary = 1;
+                battle_ui->showSummary = 1;
                 func_801E09F4();
-                D_800D2D28->waitingCross = 0;
+                battle_ui->waitingCross = 0;
                 shown = 1;
-                func_800716D8();
+                battle_wait_frame();
             }
-            D_800D2D28->waitingCross = 1;
-            while (D_800D3014 != 4 && shown) {
-                func_800716D8();
+            battle_ui->waitingCross = 1;
+            while (battle_pressed_key != 4 && shown) {
+                battle_wait_frame();
             }
-            D_800D2D28->showSummary = 0;
-            func_800716D8();
+            battle_ui->showSummary = 0;
+            battle_wait_frame();
             func_801E0ACC(i);
-            D_800D2D28->waitingCross = 0;
-            D_800D2D28->windows[1] = 0;
+            battle_ui->waitingCross = 0;
+            battle_ui->windows[1] = 0;
         }
     }
 }
 
 /* Show the spoils window (experience, gold, items) until Cross. */
 void func_801E1E10(u32 experience) {
-    D_800D2D28->showCards = 0;
-    D_800D2D28->showSummary = 0;
-    D_800D2D28->showSkill = 0;
-    func_800716D8();
-    func_8008F8F4(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
-    func_8008F8F4(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
-    func_800716D8();
+    battle_ui->showCards = 0;
+    battle_ui->showSummary = 0;
+    battle_ui->showSkill = 0;
+    battle_wait_frame();
+    battle_window_open(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
+    battle_window_open(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
+    battle_wait_frame();
     func_801E1044();
     func_801E10F8(experience);
     func_801E126C();
     func_801E1690();
-    D_800D2D28->showSpoils = 1;
+    battle_ui->showSpoils = 1;
     sound_play_effect_on_last_channels((sprite_script_sound_bank->bank << 16) | 0x5B);
-    D_800D2D28->waitingCross = 1;
-    while (D_800D3014 != 4) {
-        func_800716D8();
+    battle_ui->waitingCross = 1;
+    while (battle_pressed_key != 4) {
+        battle_wait_frame();
     }
-    D_800D2D28->waitingCross = 0;
-    D_800D2D28->showSpoils = 0;
-    D_800D2D28->windows[0] = 0;
-    D_800D2D28->windows[1] = 0;
-    D_800D2D28->windows[2] = 0;
-    func_800716D8();
-    func_8008FA60(0);
-    func_8008FA60(1);
-    func_8008FA60(2);
+    battle_ui->waitingCross = 0;
+    battle_ui->showSpoils = 0;
+    battle_ui->windows[0] = 0;
+    battle_ui->windows[1] = 0;
+    battle_ui->windows[2] = 0;
+    battle_wait_frame();
+    battle_window_close(0);
+    battle_window_close(1);
+    battle_window_close(2);
 }
 
 /* The battle results: allocate the member cards and the summary, show the
@@ -1086,30 +1086,30 @@ void func_801E1FB8(u32 experience) {
     u8 saved;
     s32 i;
 
-    saved = D_800C3EB0.outcome;
-    D_800D2D28->waitingCross = 0;
+    saved = battle_area.outcome;
+    battle_ui->waitingCross = 0;
     for (i = 0; i < 3; i++) {
-        D_800D32F8[i] = func_8008ABB8(sizeof(MemberCard), 0);
-        bzero((u8 *)D_800D32F8[i], sizeof(MemberCard));
+        battle_member_cards[i] = battle_heap_alloc(sizeof(MemberCard), 0);
+        bzero((u8 *)battle_member_cards[i], sizeof(MemberCard));
     }
-    D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
-    bzero((u8 *)D_800D334C, sizeof(ResultSummary));
-    D_800D32F8[0]->secondValue = (game_data.flags >> 15) ^ 1;
-    func_800716D8();
-    D_800C3EB0.outcome = 0;
+    battle_summary_window_prims = battle_heap_alloc(sizeof(ResultSummary), 0);
+    bzero((u8 *)battle_summary_window_prims, sizeof(ResultSummary));
+    battle_member_cards[0]->secondValue = (game_data.flags >> 15) ^ 1;
+    battle_wait_frame();
+    battle_area.outcome = 0;
     func_801E196C();
     func_801E1AA4();
     func_801E1C10();
     func_801E1E10(experience);
-    D_800D2D28->showCards = 0;
-    D_800D2D28->showSummary = 0;
-    D_800D2D28->showSkill = 0;
-    func_800716D8();
+    battle_ui->showCards = 0;
+    battle_ui->showSummary = 0;
+    battle_ui->showSkill = 0;
+    battle_wait_frame();
     for (i = 0; i < 3; i++) {
-        heap_free(D_800D32F8[i]);
+        heap_free(battle_member_cards[i]);
     }
-    heap_free(D_800D334C);
-    D_800C3EB0.outcome = saved;
+    heap_free(battle_summary_window_prims);
+    battle_area.outcome = saved;
     sound_stop_all_effects();
 }
 
@@ -1121,30 +1121,30 @@ void func_801E211C(void) {
     ResultArchive *archive;
     void *data;
 
-    D_800C3E4C = 0;
-    D_800D2D28->showCards = 0;
-    D_800D2D28->showSummary = 0;
-    D_800D2D28->showSkill = 0;
-    D_800D2D28->showSpoils = 0;
-    D_800D2D28->barShown[0] = D_800D2D28->barShown[1] = D_800D2D28->barShown[2] = 0;
-    func_800716D8();
-    func_800716D8();
-    heap_free(D_800D2F5C);
+    battle_frame_mode = 0;
+    battle_ui->showCards = 0;
+    battle_ui->showSummary = 0;
+    battle_ui->showSkill = 0;
+    battle_ui->showSpoils = 0;
+    battle_ui->barShown[0] = battle_ui->barShown[1] = battle_ui->barShown[2] = 0;
+    battle_wait_frame();
+    battle_wait_frame();
+    heap_free(battle_glyph_table);
     cd_select_directory(0x10, 2);
-    archive = func_8008ABB8(cd_get_aligned_file_size(2), 1);
+    archive = battle_heap_alloc(cd_get_aligned_file_size(2), 1);
     cd_read_file(2, archive, 0, 0x80);
-    func_8008AC50();
+    battle_cd_wait_for_reads();
     text_relocate_offset_table(archive);
-    D_800D2C08[0] = text_unpack_lzss_alloc(archive->items[0], 0);
+    battle_work_growth_file[0] = text_unpack_lzss_alloc(archive->items[0], 0);
     data = text_unpack_lzss_alloc(archive->items[2], 0);
     model_load_tim_list(data);
     heap_free(data);
-    D_800D2F5C = text_unpack_lzss_alloc(archive->items[1], 0);
+    battle_glyph_table = text_unpack_lzss_alloc(archive->items[1], 0);
     data = text_unpack_lzss_alloc(archive->items[3], 0);
-    func_80078310(data, 0xFC);
+    battle_upload_party_portraits(data, 0xFC);
     heap_free(data);
     heap_free(archive);
-    func_80076EA4();
+    battle_upload_command_name_images();
 }
 
 /* Total the experience and gold of the defeated enemies, add the gold (up
@@ -1156,15 +1156,15 @@ void func_801E2280(void) {
     u32 *partyGold;
 
     gold = 0;
-    D_800CCCE8.experience = 0;
-    D_800CCCE8.defeated = 0;
-    if (D_800D2FC4 == 0) {
+    battle_work_area.experience = 0;
+    battle_work_area.defeated = 0;
+    if (battle_exit_requested == 0) {
         for (i = 0; i < 8; i++) {
-            if (D_800D2DCC.present[i + 3] != 0 && D_800C3EB0.slots[i + 3].hidden == 0
-                && (D_800CCCE8.records[i + 3].pilot.status7C & 0x8000) && D_800C3D1B[i][0] == 0) {
-                D_800CCCE8.experience += D_800CCCE8.records[i + 3].field14C;
-                gold += D_800CCCE8.records[i + 3].field156;
-                D_800CCCE8.defeated |= func_80089C08(i);
+            if (battle_turn_queue.present[i + 3] != 0 && battle_area.slots[i + 3].hidden == 0
+                && (battle_work_area.records[i + 3].pilot.status7C & 0x8000) && battle_enemy_no_reward_flags[i][0] == 0) {
+                battle_work_area.experience += battle_work_area.records[i + 3].field14C;
+                gold += battle_work_area.records[i + 3].field156;
+                battle_work_area.defeated |= battle_get_slot_bit(i);
             }
         }
         partyGold = &game_data.gold;
@@ -1172,19 +1172,19 @@ void func_801E2280(void) {
         if (*partyGold > 9999999) {
             *partyGold = 9999999;
         }
-        func_800BCD98(0);
+        battle_highlight_slots(0);
     }
     for (i = 0; i < 3; i++) {
-        if (D_800D2D24[i] == 0x7F) {
-            D_800D2D24[i] = 0xFF;
+        if (battle_party_character_ids[i] == 0x7F) {
+            battle_party_character_ids[i] = 0xFF;
         }
     }
-    if (D_800D3294 != 0) {
-        D_800D2D24[1] = D_800D2D24[2] = 0xFF;
-        D_800C3EB0.slots[1].field2 = D_800C3EB0.slots[2].field2 = 0x7F;
+    if (battle_uses_fixed_party != 0) {
+        battle_party_character_ids[1] = battle_party_character_ids[2] = 0xFF;
+        battle_area.slots[1].field2 = battle_area.slots[2].field2 = 0x7F;
     }
     func_801E2794();
-    if (D_800D2D50 == 0 && !(formation_active.flags & 8)) {
+    if (battle_skip_result_screens == 0 && !(formation_active.flags & 8)) {
         func_801E1FB8(gold);
     }
 }
@@ -1196,11 +1196,11 @@ void func_801E24B0(void) {
     u8 *item;
 
     for (i = 0; i < 48; i++) {
-        item = &D_800D2FE4[i];
+        item = &battle_item_inventory_ids[i];
         if (*item != 0) {
             for (j = 0; j < 150; j++) {
                 if (*item == game_data.itemIds[j]) {
-                    game_data.itemCounts[j] = D_800D2CB0[i];
+                    game_data.itemCounts[j] = battle_item_counts[i];
                 }
             }
         }
@@ -1215,12 +1215,12 @@ void func_801E252C(void) {
     u8 *outcome;
 
     func_801E211C();
-    if (D_800C3D48 != 0) {
-        heap_free((void *)D_800D3284);
-        heap_free((void *)D_800D328C);
+    if (battle_uses_event_script != 0) {
+        heap_free((void *)battle_heap_mark_for_event_script);
+        heap_free((void *)battle_heap_reserve_for_event_script);
     }
     if (mode_battle_standalone == 0) {
-        if (D_800D3338 != 0) {
+        if (battle_continue_to_movie_mode != 0) {
             mode_load_overlay_block(6);
         } else if (mode_pending_battle_formation != 0) {
             mode_load_overlay_block(2);
@@ -1228,39 +1228,39 @@ void func_801E252C(void) {
             mode_load_overlay_block(3);
         } else {
             mode_preload_field_files();
-            func_8008AC50();
+            battle_cd_wait_for_reads();
             mode_load_overlay_block(1);
         }
     }
-    func_8008AC50();
+    battle_cd_wait_for_reads();
     func_801E24B0();
-    outcome = &D_800C3EB0.outcome;
-    if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && mode_result_code != 3) {
-        func_800BFBA0();
+    outcome = &battle_area.outcome;
+    if (!(*outcome & 0xC0) && *outcome != 0x21 && battle_exit_requested == 0 && mode_result_code != 3) {
+        battle_load_wave_bank_5();
         func_801E2280();
     }
     for (i = 0; i < 8; i += 2) {
-        heap_free(D_800D3720[i].data);
+        heap_free(battle_message_pixel_blocks[i].data);
     }
     for (i = 0; i < 10; i++) {
-        heap_free(D_800C3E5C[i].pixels);
+        heap_free(battle_digit_text_images[i].pixels);
     }
-    heap_free(D_800D329C);
-    heap_free(D_800C3E24);
-    func_8008FA60(5);
-    func_8008FA60(4);
-    heap_free(D_800D39F0);
-    heap_free(D_800C3EA4);
-    heap_free(D_800D2D28);
-    heap_free(D_800C3EAC);
-    heap_free(D_800D2C08[0]);
-    heap_free(D_800D2F5C);
+    heap_free(battle_item_name_table);
+    heap_free(battle_direction_arrows);
+    battle_window_close(5);
+    battle_window_close(4);
+    heap_free(battle_message_table);
+    heap_free(battle_graphics);
+    heap_free(battle_ui);
+    heap_free(battle_turn_state);
+    heap_free(battle_work_growth_file[0]);
+    heap_free(battle_glyph_table);
     heap_free_tag(2);
     if (mode_battle_standalone != 0) {
-        sound_stop_seq((SoundSeq *)D_800C3E54);
-        sound_release_seq((SoundSeq *)D_800C3E54);
+        sound_stop_seq((SoundSeq *)battle_music_seq);
+        sound_release_seq((SoundSeq *)battle_music_seq);
     }
-    func_800B8774();
+    battle_leave();
 }
 
 /* Grant the battle rewards unless the whole party is knocked out; then, when
@@ -1273,7 +1273,7 @@ void func_801E2794(void) {
 
     knockedOut = 0;
     for (slot = 0; slot < 3; slot++) {
-        if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
+        if (battle_work_area.records[slot].pilot.status7C & 0x8000) {
             knockedOut++;
         }
     }
@@ -1308,14 +1308,14 @@ void func_801E2888(void) {
     GearRecord *block;
 
     for (slot = 0; slot < 3; slot++) {
-        if (D_800D2D24[slot] == 0xFF) {
+        if (battle_party_character_ids[slot] == 0xFF) {
             continue;
         }
         record = &D_801E44C8->records[slot];
         character = &D_801E44C4->characters[record->pilot.characterId];
         gear = &D_801E44C4->gears[record->pilot.gearId];
         block = &record->gear;
-        if (record->pilot.characterId == 7 && (D_800CCCE8.records[slot].flags15A & 0x80)) {
+        if (record->pilot.characterId == 7 && (battle_work_area.records[slot].flags15A & 0x80)) {
             record->pilot.hp = (block->hp + 1) / 50;
             if (record->pilot.hp == 0) {
                 record->pilot.hp = 1;
@@ -1369,7 +1369,7 @@ void func_801E2ACC(void) {
     }
     absent = 0;
     for (i = 0; i < 3; i++) {
-        if (D_800D2D24[i] == 0xFF) {
+        if (battle_party_character_ids[i] == 0xFF) {
             absent++;
             continue;
         }
@@ -1400,10 +1400,10 @@ void func_801E2ACC(void) {
         func_801E308C();
     }
     for (i = 0; i < 3; i++) {
-        if (D_800D2D24[i] == 0xFF) {
+        if (battle_party_character_ids[i] == 0xFF) {
             continue;
         }
-        D_801E44EC = &D_801E44C4->characters[D_800D2D24[i]];
+        D_801E44EC = &D_801E44C4->characters[battle_party_character_ids[i]];
         D_801E44C8->levelGains[i][0] = D_801E44EC->level - D_801E44F8[i][0];
         D_801E44C8->levelGains[i][1] = D_801E44EC->level2 - D_801E44F8[i][1];
         if (D_801E44EC->characterId == 4) {
@@ -1870,7 +1870,7 @@ void func_801E41B4(void) {
     u8 id;
 
     for (slot = 0; slot < 3; slot++) {
-        id = D_800CCCE8.records[slot].pilot.characterId;
+        id = battle_work_area.records[slot].pilot.characterId;
         if (game_data.characters[id].level >= 50) {
             game_data.skills[id].unlocksA |= 8;
         }

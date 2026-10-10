@@ -20,9 +20,9 @@
 #include "resident/mode.h"
 #include "resident/sound.h"
 
-extern void *D_800D39D8;
+extern void *battle_music_file_block;
 
-extern void *func_8008ABB8(s32 size, s32 mode); /* battle allocation */
-extern void func_8009B1E4(void);
+extern void *battle_heap_alloc(s32 size, s32 mode); /* battle allocation */
+extern void battle_grant_debug_items_and_skills(void);
 
 #endif

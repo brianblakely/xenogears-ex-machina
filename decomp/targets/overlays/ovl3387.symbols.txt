@@ -1,0 +1,3 @@
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+battle_gear_image_places = 0x800C3668;
+battle_area = 0x800C3EB0;

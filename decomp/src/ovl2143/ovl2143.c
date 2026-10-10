@@ -2276,7 +2276,7 @@ void func_801E1880(Actor **actors) {
  * to a multiple of 64/256 as a halfword; the u/v bases and steps are signed
  * halfwords, and the cells between two strands use the smaller of their
  * point counts. On an allocation failure the record is left empty. The same
- * code as the battle overlay's func_800A7064. */
+ * code as the battle overlay's battle_build_surface. */
 void func_801E1A14(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
@@ -3823,7 +3823,7 @@ void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
 
 /* The sound bank id (in the high half) of source: 0 the system bank, 1 and 2
  * those of the actor's sound blocks (800AE220 without its source 3, the bank
- * D_800C4924). */
+ * battle_sound_bank_of_event_script). */
 s32 func_801E5CD8(Actor *actor, s32 source) {
     if (source == 0) {
         return sprite_script_sound_bank->bank << 16;

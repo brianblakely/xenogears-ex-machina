@@ -33,7 +33,7 @@ Panorama *gpu_create_panorama(u16 tex_x, u16 tex_y, u16 width, u16 height, u16 c
 void gpu_init_texture_scroll(TextureScroll *scroll, s32 x, s32 y, s32 w, s32 h, s32 count, s32 source_x,
                    s32 source_y, void *speeds);
 
-/* The battle object list's last entry (D_800D3368) is the stage model. */
+/* The battle object list's last entry (battle_objects) is the stage model. */
 #define STAGE_MODEL 31
 
 /* The stage file: its texture image list and part positions. */
@@ -49,11 +49,11 @@ typedef struct {
     PartPosition *positions; /* 0x14 */
 } StageFile;
 
-extern s16 D_800D361A;
+extern s16 battle_stage_image_anim_active;
 /* The battle's calls with the stage's conversions: start the stage model's
  * effect script list, and pose its hierarchy (no result). */
-void func_800AA898(BattleObject *object, EffectPool *pool, void *motion, s32 a3);
-void func_8009EF3C(ModelPart *parts, s32 scale);
+void battle_reset_object(BattleObject *object, EffectPool *pool, void *motion, s32 animations);
+void battle_pose_model_hierarchy(ModelPart *parts, s32 scale);
 
 /* The stage backdrop (func_801E7914, 0x17cc bytes): a floor grid of 9 x 9
  * vertices and 128 tiles, and the fills and fades around it. */

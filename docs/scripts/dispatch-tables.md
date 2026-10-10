@@ -18,25 +18,25 @@ and table, and how each table's index is chosen, is listed in
 
 ## Battle formulas
 
-- Dispatch (`decomp/src/battle/battle_8008CCCC.c`): for each target in the mask,
-  `func_800941A4` calls `D_800C348C[descriptor->formula]()` (8 handlers). An
+- Dispatch (`decomp/src/battle/battle_menus_and_resolver.c`): for each target in the mask,
+  `battle_resolve_action` calls `battle_formula_table[descriptor->formula]()` (8 handlers). An
   attacker whose record has +0x15a bit 0x80 (in a gear), or a descriptor with
-  flagsA bit 0x10, goes to `func_8009C198`, which takes a party member's gear
-  descriptor (an enemy keeps its own) and calls `D_800C34DC[formula]()` (11
+  flagsA bit 0x10, goes to `battle_resolve_gear_action`, which takes a party member's gear
+  descriptor (an enemy keeps its own) and calls `battle_gear_formula_table[formula]()` (11
   handlers). Each handler's comment names its slot.
 - Data: the 0x28-byte descriptors (`CommandDescriptor`, formula at +0x16) of the
   battle setup archive, directory (12, 0) file 3, an offset table of packed
   blocks that ovl2615 `func_801E5384` unpacks: archive[5 + character] (copies
   0x5f0 bytes, 38 descriptors), archive[0x11 + gear] (0x690, 42) and archive[4]
   for the enemies (0x1f40, 200). An enemy's command is the arg1 byte of its AI's
-  type-1 action-list entries (`func_80078998` -> `func_80085CCC`); the census reads
+  type-1 action-list entries (`battle_action_list_act` -> `battle_commit_action`); the census reads
   those from the enemy data files with `tools.analysis.battle_ai`, with the
   enemy's in-gear bit from its record (+0x15a, copied by `func_801E4870`).
 - Results (both discs, identical archives):
   - Party: 11 sets, 418 descriptors, formulas 0 1 2 5 6; none past
-    `D_800C348C`.
+    `battle_formula_table`.
   - Gears: 19 sets of 41 descriptors (the copy's 42nd comes from past the block).
-    Formulas 0-3, 5, 9 and 10, and three records past `D_800C34DC`: gear 17 #31
+    Formulas 0-3, 5, 9 and 10, and three records past `battle_gear_formula_table`: gear 17 #31
     (formula 82) and gear 18 #34 (86) and #35 (115).
   - Enemies: 98 descriptors (the copy's other 102 come from past the block),
     formulas 0-9. The AI scripts close 1336 act entries, all with a constant
@@ -51,9 +51,9 @@ and table, and how each table's index is chosen, is listed in
     entry. Every one of the 1336 entries is reached with a single constant
     command, the same as in address order.
 - Gear techniques. A gear's technique slot k is its descriptor 21 + k (battle.c
-  `func_8008B224` offers it, `func_8008ADD0` commits it), offered only while bit
+  `battle_confirm_art` offers it, `battle_execute_chosen_art` commits it), offered only while bit
   `0x8000 >> k` of the pilot's `CharacterBattleData.mask6` is set. The three
-  records past `D_800C34DC` are slots 10 (gear 17) and 13 and 14 (gear 18). The
+  records past `battle_gear_formula_table` are slots 10 (gear 17) and 13 and 14 (gear 18). The
   census derives each gear's pilots and each character's possible mask6:
   - pilots: the new-game state (directory 0x10 file 3, `+0xa0` of each 0xa4-byte
     record from +0x26c), field ext `a1` (`set_gear`; Bart is given gear 18 in maps
@@ -66,7 +66,7 @@ and table, and how each table's index is chosen, is listed in
     learning (ovl2596 `func_801E3F28`: slot k for each of the character's growth
     `unlocksB` entries, k < 13; the growth table is item 0 of directory (0x10, 2)
     file 2), and ext `d0`'s copies. Only the debug battle selector (ovl2606
-    `func_8009B1E4`) writes them otherwise, and it gives characters 3 and 10
+    `battle_grant_debug_items_and_skills`) writes them otherwise, and it gives characters 3 and 10
     0xff00. Character 3 can reach 0xfc00 (slots 0-5), character 10 0xff00 (slots
     0-7, also through character 6's copy).
   - So slots 10, 13 and 14 are never offered to a pilot of gears 17 and 18, and
@@ -85,7 +85,7 @@ and table, and how each table's index is chosen, is listed in
   hierarchy may build only some): field map geometry (component 2, `func_80070CC8`),
   ovl2143 actor files (4, 0) 0x6bb + 2k, battle object model files (stages
   (12, 3) 6 + 2s, enemy set model entries, object sets (0x28, 0) 2s + 1, gears and
-  their part files by `D_800C3508`), arena models (0x30, 1) id + 2 and the menu
+  their part files by `battle_gear_file_table`), arena models (0x30, 1) id + 2 and the menu
   overlay's `D_80091FB0`, world map area files (0x24, 0) by `D_8009B584`, and the
   models sprite commands f5-f7 bind in the blocks `tools.analysis.sprite_vm`
   finds.
@@ -138,8 +138,8 @@ and table, and how each table's index is chosen, is listed in
 
 ## TMD primitives
 
-- Dispatch (`decomp/src/battle/battle_800B15D8.c`): `func_800B1720` builds and
-  `func_800B1F6C` draws each primitive of a TMD object
+- Dispatch (`decomp/src/battle/battle_tmd_screen_effects.c`): `battle_tmd_build_packets` builds and
+  `battle_tmd_draw_object` draws each primitive of a TMD object
   (`battle/effect_script.h`'s effect script file) by kind: mode & 0x1c, plus
   0x100 when flag bit 0 (no lighting) is clear. Both switches, and ovl3384
   `func_801FC4C4`'s, have all 16 kinds, and a switch is bounds-checked, so the

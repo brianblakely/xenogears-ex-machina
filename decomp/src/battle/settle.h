@@ -10,10 +10,10 @@
 /* The distance between a and b on one axis. */
 #define DISTANCE(a, b) ((a) - (b) >= 0 ? (a) - (b) : (b) - (a))
 
-extern u16 D_800C37D4[]; /* the idle motion of each shown condition */
+extern u16 battle_condition_idle_motions[]; /* the idle motion of each shown condition */
 
-void func_800BFE48(void); /* return the slots' sprites to their places */
-s32 func_800C0314(void);  /* knock down the slots of the down mask */
-void func_800C0564(void); /* run frames until every slot's sprite has settled */
+void battle_return_sprites_home(void); /* return the slots' sprites to their places */
+s32 battle_knock_down_slots(void);  /* knock down the slots of the down mask */
+void battle_wait_sprites_settled(void); /* run frames until every slot's sprite has settled */
 
 #endif

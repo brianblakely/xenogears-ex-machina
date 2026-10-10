@@ -22,10 +22,10 @@ void func_8028022C(void) {
     case 1:
         console_place_cursor(0, 0);
         for (i = 3; i < 11; i++) {
-            if (D_800C3EB0.slots[i].gear == 0) {
-                hp = D_800CCCE8.records[i].pilot.hp;
+            if (battle_area.slots[i].gear == 0) {
+                hp = battle_work_area.records[i].pilot.hp;
             } else {
-                hp = D_800CCCE8.records[i].gear.hp;
+                hp = battle_work_area.records[i].gear.hp;
             }
             console_printf("%d,", hp);
         }
@@ -35,19 +35,19 @@ void func_8028022C(void) {
             console_place_cursor(0, (i + 2) * 8);
             console_printf("%X", i);
             console_place_cursor(0x24, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].type);
+            console_printf("%X", battle_action_list[i].type);
             console_place_cursor(0x48, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].arg1);
+            console_printf("%X", battle_action_list[i].arg1);
             console_place_cursor(0x6C, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].animation);
+            console_printf("%X", battle_action_list[i].animation);
             console_place_cursor(0x90, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].named);
+            console_printf("%X", battle_action_list[i].named);
             console_place_cursor(0xB4, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].param);
+            console_printf("%X", battle_action_list[i].param);
             console_place_cursor(0xD8, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].unk5);
+            console_printf("%X", battle_action_list[i].unk5);
             console_place_cursor(0xFC, (i + 2) * 8);
-            console_printf("%X", D_800D2E5C[i].targets);
+            console_printf("%X", battle_action_list[i].targets);
         }
         break;
     case 2:
@@ -58,41 +58,41 @@ void func_8028022C(void) {
             console_place_cursor(x, (i / 2 + 5) * 8);
             console_printf("%X", i);
             console_place_cursor(x + 0x24, (i / 2 + 5) * 8);
-            console_printf("%X", D_800C3EB0.events[i].type);
+            console_printf("%X", battle_area.events[i].type);
             console_place_cursor(x + 0x48, (i / 2 + 5) * 8);
-            console_printf("%X", D_800C3EB0.events[i].parameter);
+            console_printf("%X", battle_area.events[i].parameter);
             console_place_cursor(x + 0x6C, (i / 2 + 5) * 8);
-            console_printf("%X", D_800C3EB0.events[i].targetMask);
+            console_printf("%X", battle_area.events[i].targetMask);
         }
         break;
     case 3:
-        if (D_800C3EAC->actor < 3) {
+        if (battle_turn_state->actor < 3) {
             break;
         }
         console_place_cursor(0, 0x50);
         console_printf("bFlag\n");
         for (i = 0; i < 8; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].bytes[i]);
         }
         console_printf("\n");
         for (i = 0; i < 8; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i + 8]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].bytes[i + 8]);
         }
         console_printf("\nhFlag\n");
         for (i = 0; i < 4; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].vars[i]);
         }
         console_printf("\n");
         for (i = 0; i < 4; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i + 4]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].vars[i + 4]);
         }
         console_printf("\nlFlag\n");
         for (i = 0; i < 2; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].longs[i]);
         }
         console_printf("\n");
         for (i = 0; i < 2; i++) {
-            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i + 2]);
+            console_printf("%X ", battle_enemy_ai_blocks[battle_turn_state->actor - 3].longs[i + 2]);
         }
         break;
     case 4:
@@ -100,7 +100,7 @@ void func_8028022C(void) {
         for (i = 0; i < 3; i++) {
             console_printf("\nWork#%d:", i);
             for (j = 0; j < 7; j++) {
-                console_printf(" %d", D_800CCCE8.records[i].pilot.useCounts[j]);
+                console_printf(" %d", battle_work_area.records[i].pilot.useCounts[j]);
             }
         }
         console_printf("\n");

@@ -22,9 +22,9 @@ typedef struct {
     u16 shade;
 } GlyphEntry;
 
-extern GlyphPage *D_800C3000[]; /* per command panel page */
-extern GlyphEntry *D_800C2F4C[]; /* glyph sets */
+extern GlyphPage *battle_command_panel_pages[]; /* per command panel page */
+extern GlyphEntry *battle_command_panel_glyph_sets[]; /* glyph sets */
 
-s32 func_8008D598(u8 member, u8 page, u8 fade); /* build or fade the command panel, return its buffer */
+s32 battle_command_panel_build_page(u8 member, u8 page, u8 fade); /* build or fade the command panel, return its buffer */
 
 #endif

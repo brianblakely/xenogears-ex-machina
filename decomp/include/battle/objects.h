@@ -40,16 +40,16 @@ typedef struct {
 } ObjectScriptFile;
 
 /* Per-frame update and drawing of the stage objects. */
-extern s16 D_800D39E8;     /* a slow wave (4..9) */
-extern u16 D_800C3D14;     /* highlighted slots */
-extern u8 D_800C3DF8;      /* effects run */
-extern MATRIX *D_800D2FC0; /* the stage colour matrix */
-extern SoundBank *D_800C4924;
-extern SVECTOR D_800D3354; /* camera position */
-extern SVECTOR D_800D335C; /* camera look-at point */
-extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
-extern s16 D_800C3544;     /* its ground height */
-extern s16 D_800C3546;     /* key of the last update */
+extern s16 battle_surface_wind_strength;     /* a slow wave (4..9) */
+extern u16 battle_highlight_slot_mask;     /* highlighted slots */
+extern u8 battle_camera_channels_active;      /* effects run */
+extern MATRIX *battle_stage_color_matrix; /* the stage colour matrix */
+extern SoundBank *battle_sound_bank_of_event_script;
+extern SVECTOR battle_camera_view_eye; /* camera position */
+extern SVECTOR battle_camera_view_target; /* camera look-at point */
+extern s16 battle_camera_ground_triangle;     /* last scene triangle under the camera's view point */
+extern s16 battle_camera_ground_height;     /* its ground height */
+extern s16 battle_camera_ground_key;     /* key of the last update */
 
 /* The battle's block of a sprite following an object part (0x18 bytes),
  * after the sprite in its resident sprite task (the sprite's size bytes
@@ -63,12 +63,12 @@ typedef struct {
     SVECTOR offset;                       /* 0x10: from the part */
 } SpriteFollow;
 
-/* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
+/* A camera channel: an effect entry of battle_camera_channels seen as signed values. */
 typedef struct {
     u8 used;
     u8 field1;
     u8 mode;         /* 0x02: bit 0 ease, low nibble < 2 follows objects */
-    u8 tag;          /* 0x03: matched against D_800C3B84 */
+    u8 tag;          /* 0x03: matched against battle_camera_wait_kind */
     s16 current[3];  /* 0x04 */
     s16 slot;        /* 0x0A: the followed object (or the target x) */
     s16 height;      /* 0x0C: subtracted from its height (or the target y) */
@@ -77,13 +77,13 @@ typedef struct {
     s16 duration;    /* 0x12 */
 } CameraChannel;
 
-void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
-void func_800AA454(u16 index, u16 mask, s32 script); /* select an object and start its effect */
-s32 func_800AA600(s32 index);            /* the scaled size of an object */
-void func_800AA788(s32 value);           /* a sprite script command: set the flag D_800C3B74 */
-void func_800AA79C(s32 a, s32 b);        /* swap two stage objects */
-void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3); /* start or queue its effect */
-void func_800B136C(void);                /* wait until no object is busy */
-void func_800B14CC(s32 keep);            /* end the party's objects other than keep's */
+void battle_create_object_from_files(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
+void battle_start_slot_object_own_script(u16 index, u16 mask, s32 script); /* select an object and start its effect */
+s32 battle_get_object_height(s32 index);            /* the scaled size of an object */
+void battle_set_object_drawing(s32 value);           /* a sprite script command: set the flag battle_object_drawing_on */
+void battle_swap_objects(s32 a, s32 b);        /* swap two stage objects */
+void battle_start_effect_script(BattleObject *object, BattleObject *target, EffectPool *pool, s32 id); /* start or queue its effect */
+void battle_wait_objects_idle(void);                /* wait until no object is busy */
+void battle_end_party_objects(s32 keep);            /* end the party's objects other than keep's */
 
 #endif

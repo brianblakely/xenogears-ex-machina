@@ -9,23 +9,23 @@
  * adjustments at the start (8008CCCC's 8009892C), the music, and the battle
  * heap and disc helpers (battle.c 8008AB4C-8008AC50). */
 
-extern u8 D_800C3D44;
-extern u8 D_800C3D5C;
-extern s32 D_800C3DEC;
-extern s32 D_800C3E54;     /* the battle music's sequence */
-extern u8 D_800C3E4C;      /* battle end state */
-extern u8 D_800C48EA;      /* battle outcome (the battle area's outcome) */
-extern u8 D_800C492A;      /* keep the battle's resources at its end (the battle area's +0xa7a) */
-extern s32 D_800D2D3C;     /* 801de000 module blocks */
-extern s32 D_800D2F60;
-extern u8 D_800D2D50;
-extern u8 D_800D2FC4;      /* battle exit requested; the results then skip the rewards */
+extern u8 battle_resume_event_script_at_end;
+extern u8 battle_defeat_allowed_by_event_script;
+extern s32 battle_enemy_set_file;
+extern s32 battle_music_seq;     /* the battle music's sequence */
+extern u8 battle_frame_mode;      /* battle end state */
+extern u8 battle_area_outcome;      /* battle outcome (the battle area's outcome) */
+extern u8 battle_turn_hud_hidden;      /* keep the battle's resources at its end (the battle area's +0xa7a) */
+extern s32 battle_heap_mark_for_post_battle_module;     /* 801de000 module blocks */
+extern s32 battle_heap_reserve_for_post_battle_module;
+extern u8 battle_skip_result_screens;
+extern u8 battle_exit_requested;      /* battle exit requested; the results then skip the rewards */
 /* The battle overlay's entry, which the resident's battle mode (2) runs, and
  * the flag the event script (with a movie request, ovl3087 opcode 27), the
  * result screens and the loader overlays set for it: the battle then
  * continues in the movie mode (6). */
-void func_80070F40(void);
-extern u8 D_800D3338;
+void battle_main(void);
+extern u8 battle_continue_to_movie_mode;
 
 /* The skills each party member knew at the battle's start (80070E2C's unit
  * copies them from the game data): the result screens (ovl2596) show those
@@ -35,15 +35,15 @@ typedef struct KnownSkills {
     u16 levelSkills;
 } KnownSkills;
 
-extern KnownSkills D_800C3E0C[3];
+extern KnownSkills battle_known_skills_at_start[3];
 
-void func_80076544(void);              /* end the battle by its outcome state */
-void func_8009892C(void);              /* the party's adjustments at battle start */
+void battle_draw_hud(void);              /* end the battle by its outcome state */
+void battle_adjust_party_at_start(void);              /* the party's adjustments at battle start */
 
 /* The battle heap and the disc. */
-void func_8008AB4C(void);              /* heap mode 0x20/0 */
-void func_8008AB70(void);              /* heap mode 0x20/2 */
-void func_8008AB94(void);              /* heap mode 0x20/3 */
-void func_8008AC50(void);              /* wait until the disc reads finish */
+void battle_cd_select_event_script_directory(void);              /* heap mode 0x20/0 */
+void battle_cd_select_music_directory(void);              /* heap mode 0x20/2 */
+void battle_cd_select_menu_directory(void);              /* heap mode 0x20/3 */
+void battle_cd_wait_for_reads(void);              /* wait until the disc reads finish */
 
 #endif

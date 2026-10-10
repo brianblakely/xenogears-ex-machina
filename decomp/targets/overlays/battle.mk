@@ -25,25 +25,25 @@ LINK_VIEWS := decomp/targets/overlays/battle.data.ld
 # The reasons its included objects stay original (coverage class included).
 CLASSIFICATION := decomp/targets/overlays/battle.classification.txt
 # Unit 8009E53C-800B16F0 divides with ASPSX's checked division.
-MASPSX_battle_8009E53C := --aspsx-version=2.34 --expand-div
+MASPSX_battle_scene := --aspsx-version=2.34 --expand-div
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:38 2:33
 # Unit 800B15D8-end: the Cygnus CDK GCC 2.7.2 with a later ASPSX (global
 # stores through a register for %hi, positive li as addiu; docs/matching.md).
-CC_battle_800B15D8 := 2.7.2-cdk
-MASPSX_battle_800B15D8 := --aspsx-version=2.56
-CC_battle_800B8098 := 2.7.2-cdk
-MASPSX_battle_800B8098 := --aspsx-version=2.56
-CC_battle_800B3F04 := 2.7.2-cdk
-MASPSX_battle_800B3F04 := --aspsx-version=2.56
-CC_battle_800B7134 := 2.7.2-cdk
-MASPSX_battle_800B7134 := --aspsx-version=2.56
-CC_battle_800BD3AC := 2.7.2-cdk
-MASPSX_battle_800BD3AC := --aspsx-version=2.56
-CC_battle_800BFE48 := 2.7.2-cdk
-MASPSX_battle_800BFE48 := --aspsx-version=2.56
-CC_battle_800C11CC := 2.7.2-cdk
-MASPSX_battle_800C11CC := --aspsx-version=2.56
+CC_battle_tmd_screen_effects := 2.7.2-cdk
+MASPSX_battle_tmd_screen_effects := --aspsx-version=2.56
+CC_battle_flow := 2.7.2-cdk
+MASPSX_battle_flow := --aspsx-version=2.56
+CC_battle_sprite_commands := 2.7.2-cdk
+MASPSX_battle_sprite_commands := --aspsx-version=2.56
+CC_battle_action_files := 2.7.2-cdk
+MASPSX_battle_action_files := --aspsx-version=2.56
+CC_battle_frame := 2.7.2-cdk
+MASPSX_battle_frame := --aspsx-version=2.56
+CC_battle_settle := 2.7.2-cdk
+MASPSX_battle_settle := --aspsx-version=2.56
+CC_battle_sprite_vm := 2.7.2-cdk
+MASPSX_battle_sprite_vm := --aspsx-version=2.56
 # INCLUDE_ORIGINAL reads original data from ORIGINAL, whose file offset 0 is
 # VRAM 0x8006FAF0.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8006FAF0

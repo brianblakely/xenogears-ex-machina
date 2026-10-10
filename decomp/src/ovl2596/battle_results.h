@@ -53,7 +53,7 @@ void *text_get_gear_part_name(u8 id);
 /* A glyph-table sprite part, one primitive per draw buffer. */
 typedef POLY_FT4 Glyph[2];
 
-/* The member cards and their glyph runs (GlyphRun, MemberCard, D_800D32F8)
+/* The member cards and their glyph runs (GlyphRun, MemberCard, battle_member_cards)
  * are in battle/ui.h: the battle counts them up. */
 
 /* The result summary windows' primitives (pointer 800d334c). */
@@ -91,19 +91,19 @@ typedef struct {
     u8 buffer34B0[2];         /* 0x3A88 */
 } ResultSummary;
 
-extern ResultSummary *D_800D334C;
+extern ResultSummary *battle_summary_window_prims;
 
-/* func_8008AAA0 writes a value's nine decimal digits to 800c3cf4, leading
+/* battle_split_decimal_digits writes a value's nine decimal digits to 800c3cf4, leading
  * zeros as 0xff; the screens read the last digits through these views. */
-extern u8 D_800C3CF1[12];
-extern u8 D_800C3CED[16];
-extern u8 D_800C3CE8[];     /* as the level numbers address it */
-extern u8 D_800C3CE3[];
-extern u8 D_800C3CFA[];
-extern u8 D_800C3CFB[];
-extern u8 D_800C3CDF[];
-extern u8 D_800C3CD7[];
-extern u8 D_800C3CDC[];     /* the spoils window's */
+extern u8 battle_decimal_digits_minus_3[12];
+extern u8 battle_decimal_digits_minus_7[16];
+extern u8 battle_finished_motion_count[];     /* as the level numbers address it */
+extern u8 battle_decimal_digits_minus_17[];
+extern u8 battle_decimal_digits_plus_6[];
+extern u8 battle_decimal_digits_plus_7[];
+extern u8 battle_decimal_digits_minus_21[];
+extern u8 battle_decimal_digits_minus_29[];
+extern u8 battle_camera_framed_range[];     /* the spoils window's */
 
 /* Battle slot levels (8 bytes per slot). */
 typedef struct {
@@ -112,33 +112,33 @@ typedef struct {
     u8 pad[6];
 } SlotLevels;
 
-extern SlotLevels D_800D32A5[3];
+extern SlotLevels battle_slot_levels[3];
 
 /* The summary window's text: 27 glyph entries of three bytes (glyph, 0xff:
  * none; shaded flag; index into the shading colours) and their positions. */
-extern u8 D_800C32C4[27 * 3];
-extern s16 D_800C3318[27];
-extern s16 D_800C3350[27];
+extern u8 battle_summary_text_glyphs[27 * 3];
+extern s16 battle_summary_text_x[27];
+extern s16 battle_summary_text_y[27];
 
 /* The seven glyphs of the summary's 2d30 label: ids and positions. */
-extern u8 D_800C3388[8];
-extern s16 D_800C3390[8];
-extern s16 D_800C33A0[8];
+extern u8 battle_spoils_label_glyphs[8];
+extern s16 battle_spoils_label_x[8];
+extern s16 battle_spoils_label_y[8];
 
 /* The member card's label glyphs: ids and positions. */
-extern u8 D_800C3268[18];
-extern s16 D_800C327C[18];
-extern s16 D_800C32A0[18];
+extern u8 battle_member_card_label_glyphs[18];
+extern s16 battle_member_card_label_x[18];
+extern s16 battle_member_card_label_y[18];
 
-void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6); /* open a window */
-void func_8008FA60(s32 id);     /* close a window */
-void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
-void *func_8008AC00(s32 kind);                  /* allocate a text image */
-void func_800716D8(void);       /* run one battle frame */
+void battle_window_open(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 wait); /* open a window */
+void battle_window_close(s32 id);     /* close a window */
+void battle_init_text_quad_pair(POLY_FT4 *prims, s32 alternate, s32 page);
+void *battle_heap_alloc_text_image(s32 kind);                  /* allocate a text image */
+void battle_wait_frame(void);       /* run one battle frame */
 
-extern u8 D_800D2F90[8];        /* two icon records: arg5, -, arg3, arg4 */
-extern u8 D_800D2FA0[4];        /* the skill mark icon: width, -, u, v */
-extern void *D_800D2C08[1];     /* the results text; the original addresses it as a table */
+extern u8 battle_spoils_icon_cells[8];        /* two icon records: arg5, -, arg3, arg4 */
+extern u8 battle_skill_mark_icon_cell[4];        /* the skill mark icon: width, -, u, v */
+extern void *battle_work_growth_file[1];     /* the results text; the original addresses it as a table */
 
 void func_801DE1C4(void);
 void func_801DE408(void);
@@ -199,9 +199,9 @@ void func_801E2888(void);
 
 /* --- Rewards, the results resources and the battle exit ------------------ */
 
-extern u8 D_800C3D1B[8][4];     /* per enemy: [0] nonzero, no rewards */
-u16 func_80089C08(u8 enemy);
-void func_800BCD98(s32 arg);
+extern u8 battle_enemy_no_reward_flags[8][4];     /* per enemy: [0] nonzero, no rewards */
+u16 battle_get_slot_bit(u8 enemy);
+void battle_highlight_slots(s32 arg);
 void func_801E1FB8(u32 experience);
 void func_801E211C(void);
 void func_801E24B0(void);
@@ -211,15 +211,15 @@ typedef struct {
     s32 count;
     void *items[4];
 } ResultArchive;
-void func_80078310(void *portraits, s32 glyph);
-void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
+void battle_upload_party_portraits(void *portraits, s32 glyph);
+void *battle_heap_alloc(s32 size, s32 top);        /* heap allocate */
 
 /* Battle exit (func_801E252C). */
 typedef struct {
     void *data;
     u8 pad[0x5C];
 } BattleBlock;
-extern BattleBlock D_800D3720[8]; /* every other one is released */
-void func_800B8774(void);     /* levels A and B per slot before the battle */
+extern BattleBlock battle_message_pixel_blocks[8]; /* every other one is released */
+void battle_leave(void);     /* levels A and B per slot before the battle */
 
 #endif

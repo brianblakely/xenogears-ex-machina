@@ -57,12 +57,12 @@ typedef struct {
 } VertexList;
 
 /* Drawing (the battle, 800B15D8's unit). */
-u8 *func_800B168C(u8 *table, s32 index);   /* entry index of a script file */
-s32 func_800B16A4(ScriptEntry *entry);      /* the bytes of its primitives */
+u8 *battle_tmd_get_object(u8 *table, s32 index);   /* entry index of a script file */
+s32 battle_tmd_get_packet_size(ScriptEntry *entry);      /* the bytes of its primitives */
 /* Defined old-style: callers pass the entry, its primitive buffer and the
  * blend and shade flags unconverted. */
-void func_800B1720();                       /* build the entry's primitives */
-void func_800B1EA0(VertexList *list, s32 shift);
-void func_800B1F6C();                       /* draw the entry (old-style) */
+void battle_tmd_build_packets();                       /* build the entry's primitives */
+void battle_tmd_scale_vertices(VertexList *list, s32 shift);
+void battle_tmd_draw_object();                       /* draw the entry (old-style) */
 
 #endif

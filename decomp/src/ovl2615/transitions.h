@@ -55,7 +55,7 @@ void func_801E91E8(void);
 
 /* Flip to the other display buffer and clear its ordering table. */
 static inline void swap_buffers(void) {
-    BattleArea *work = &D_800C3EB0;
+    BattleArea *work = &battle_area;
     FrameBuffer *next = &work->buffers[0];
 
     if (work->current == next) {

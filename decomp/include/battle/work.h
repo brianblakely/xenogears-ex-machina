@@ -4,7 +4,7 @@
 #include "common.h"
 #include "resident/gamedata.h"
 
-/* The battle's work area D_800CCCE8 (within the battle area D_800C3EB0, at
+/* The battle's work area battle_work_area (within the battle area battle_area, at
  * +0x8E38): the combatants, their command tables and item lists, and the
  * current action's results. The battle modules, the result screen and the
  * debug pages read it too. */
@@ -12,7 +12,7 @@
 /* A 16-byte entry of the battle's character item list. */
 typedef struct {
     u8 pad0[3];
-    u8 rounds; /* +3: the rounds of ammo func_8009A854 gives an id it equips */
+    u8 rounds; /* +3: the rounds of ammo battle_put_item_in_character4_entry gives an id it equips */
     u8 pad4[2];
     u8 id; /* +6 */
     u8 pad7[3];
@@ -25,7 +25,7 @@ typedef struct {
 /* A 20-byte entry of the battle's gear part list. */
 typedef struct {
     u8 pad0[0xC];
-    u8 rounds; /* +0xC: the rounds of ammo the uncalled func_8009E5C8 gives an id */
+    u8 rounds; /* +0xC: the rounds of ammo the uncalled battle_put_part_in_character4_gear gives an id */
     u8 padD;
     u8 valueE;
     u8 id; /* +0xF */
@@ -114,7 +114,7 @@ typedef struct {
     u16 boostChance; /* 0x2E */
 } GearHud;
 
-/* Battle work area D_800CCCE8; D_800C34B0 points at it. */
+/* Battle work area battle_work_area; battle_work_ptr points at it. */
 typedef struct {
     Combatant records[11]; /* 0x0000 */
     u32 expTotals[3][2];   /* 0x0FD0: each member's experience totals, saved at
@@ -174,6 +174,6 @@ LAYOUT_CHECK(BattleWorkResults, OFFSET_OF(BattleWork, dropCategories) == 0x100C 
                                     OFFSET_OF(BattleWork, defeated) == 0x5FB4 &&
                                     OFFSET_OF(BattleWork, penalty) == 0x5FC4);
 
-extern BattleWork D_800CCCE8;
+extern BattleWork battle_work_area;
 
 #endif

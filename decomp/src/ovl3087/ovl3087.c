@@ -92,75 +92,75 @@ void func_801E5160(void) {
     s32 i;
     s32 level;
 
-    func_800716D8();
-    func_8008AB4C();
-    archive = func_8008ABB8(cd_get_aligned_file_size(2), 1);
+    battle_wait_frame();
+    battle_cd_select_event_script_directory();
+    archive = battle_heap_alloc(cd_get_aligned_file_size(2), 1);
     files[0].file = 2;
     files[0].destination = archive;
-    D_801E9C38 = func_8008ABB8(cd_get_aligned_file_size(3), 0);
+    D_801E9C38 = battle_heap_alloc(cd_get_aligned_file_size(3), 0);
     files[1].file = 3;
     files[1].destination = D_801E9C38;
     files[2].file = 0;
     files[2].destination = NULL;
     cd_read_file_list(files, 0, 0x80);
-    func_8008AC50();
+    battle_cd_wait_for_reads();
     text_relocate_offset_table(archive);
     text_relocate_offset_table(D_801E9C38);
     script = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->script, 0);
-    D_800D3340 = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->data, 0);
+    battle_messages_of_event_script = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->data, 0);
     heap_free(archive);
-    D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
-    bzero((u8 *)D_800D3278, sizeof(ScriptState));
-    D_800D2DAC = func_8008ABB8(0x98, 0);
-    bzero((u8 *)D_800D2DAC, 0x78);
-    D_800D39D0 = script;
-    D_800D3278->code = (u8 *)D_800D39D0 + D_800D39D0->threadCount * 16 + 0x44;
+    battle_state_of_event_script = battle_heap_alloc(sizeof(ScriptState), 0);
+    bzero((u8 *)battle_state_of_event_script, sizeof(ScriptState));
+    battle_message_text_window = battle_heap_alloc(0x98, 0);
+    bzero((u8 *)battle_message_text_window, 0x78);
+    battle_file_of_event_script = script;
+    battle_state_of_event_script->code = (u8 *)battle_file_of_event_script + battle_file_of_event_script->threadCount * 16 + 0x44;
     for (i = 0; i < 16; i++) {
-        D_800D3278->order[i] = 0xFF;
+        battle_state_of_event_script->order[i] = 0xFF;
     }
-    for (i = 0; i < D_800D39D0->threadCount; i++) {
+    for (i = 0; i < battle_file_of_event_script->threadCount; i++) {
         for (level = 0; level < 8; level++) {
-            D_800D3278->threads[i].pc[level] = 0xFFFF;
-            D_800D3278->threads[i].priority[level] = 0xFF;
-            D_800D3278->threads[i].entry[level] = 0xFF;
+            battle_state_of_event_script->threads[i].pc[level] = 0xFFFF;
+            battle_state_of_event_script->threads[i].priority[level] = 0xFF;
+            battle_state_of_event_script->threads[i].entry[level] = 0xFF;
         }
-        D_800D3278->order[i] = i;
-        D_800D3278->threads[i].pc[0] = D_800D39D0->entries[i].entry[0];
-        D_800D3278->threads[i].priority[0] = 0;
-        D_800D3278->threads[i].order = 0xFF;
-        D_800D3278->threads[i].entry[0] = 0;
-        D_800D3278->threads[i].level = 0;
-        D_800D3278->threads[i].request = 0xFF;
-        D_800D3278->threads[i].speaker = 0xFF;
+        battle_state_of_event_script->order[i] = i;
+        battle_state_of_event_script->threads[i].pc[0] = battle_file_of_event_script->entries[i].entry[0];
+        battle_state_of_event_script->threads[i].priority[0] = 0;
+        battle_state_of_event_script->threads[i].order = 0xFF;
+        battle_state_of_event_script->threads[i].entry[0] = 0;
+        battle_state_of_event_script->threads[i].level = 0;
+        battle_state_of_event_script->threads[i].request = 0xFF;
+        battle_state_of_event_script->threads[i].speaker = 0xFF;
     }
-    D_800D3278->unk7F5 = 4;
+    battle_state_of_event_script->unk7F5 = 4;
     for (i = 0; i < 5; i++) {
-        D_800D3278->window[i] = D_801E9C10[i];
+        battle_state_of_event_script->window[i] = D_801E9C10[i];
     }
     for (i = 0; i < 2; i++) {
-        SetPolyFT4(&D_800D3278->quads[i]);
-        setRGB0(&D_800D3278->quads[i], 0x80, 0x80, 0x80);
-        SetSemiTrans(&D_800D3278->quads[i], 0);
-        SetShadeTex(&D_800D3278->quads[i], 1);
-        D_800D3278->quads[i].clut = GetClut(0, 0x1D0);
-        D_800D3278->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
+        SetPolyFT4(&battle_state_of_event_script->quads[i]);
+        setRGB0(&battle_state_of_event_script->quads[i], 0x80, 0x80, 0x80);
+        SetSemiTrans(&battle_state_of_event_script->quads[i], 0);
+        SetShadeTex(&battle_state_of_event_script->quads[i], 1);
+        battle_state_of_event_script->quads[i].clut = GetClut(0, 0x1D0);
+        battle_state_of_event_script->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
     }
-    D_800D2D28->scriptLoaded = 1;
-    D_800D2D28->waitingCross = 0;
+    battle_ui->scriptLoaded = 1;
+    battle_ui->waitingCross = 0;
     for (i = 0; i < 16; i++) {
-        D_800D3278->actionRunning[i] = 0;
+        battle_state_of_event_script->actionRunning[i] = 0;
         D_801E9C20[i] = 0;
     }
-    D_800D3278->musicPlaying = 0;
-    func_8008AB4C();
-    D_800D3278->soundBank = func_8008ABB8(cd_get_aligned_file_size(4), 0);
-    cd_read_file(4, D_800D3278->soundBank, 0, 0x80);
-    func_8008AC50();
-    sound_add_effect_bank(D_800D3278->soundBank);
+    battle_state_of_event_script->musicPlaying = 0;
+    battle_cd_select_event_script_directory();
+    battle_state_of_event_script->soundBank = battle_heap_alloc(cd_get_aligned_file_size(4), 0);
+    cd_read_file(4, battle_state_of_event_script->soundBank, 0, 0x80);
+    battle_cd_wait_for_reads();
+    sound_add_effect_bank(battle_state_of_event_script->soundBank);
     sound_sync_transfer(0x10);
-    D_800D3278->soundBankLoaded = 1;
-    D_800C4924 = D_800D3278->soundBank;
-    func_800BFBA0();
+    battle_state_of_event_script->soundBankLoaded = 1;
+    battle_sound_bank_of_event_script = battle_state_of_event_script->soundBank;
+    battle_load_wave_bank_5();
 }
 
 /* Release the interpreter state, the script and model files, stop the
@@ -168,25 +168,25 @@ void func_801E5160(void) {
 s32 func_801E563C(void) {
     s32 musicWasPlaying;
 
-    heap_free(D_800D3278);
+    heap_free(battle_state_of_event_script);
     musicWasPlaying = 0;
-    heap_free(D_800D2DAC);
-    heap_free(D_800D39D0);
-    heap_free(D_800D3340);
+    heap_free(battle_message_text_window);
+    heap_free(battle_file_of_event_script);
+    heap_free(battle_messages_of_event_script);
     heap_free(D_801E9C38);
-    if (D_800D3278->musicPlaying != 0) {
+    if (battle_state_of_event_script->musicPlaying != 0) {
         musicWasPlaying = 1;
-        sound_stop_seq((SoundSeq *)D_800C3E54);
-        func_800716D8();
-        sound_release_seq((SoundSeq *)D_800C3E54);
-        func_800716D8();
+        sound_stop_seq((SoundSeq *)battle_music_seq);
+        battle_wait_frame();
+        sound_release_seq((SoundSeq *)battle_music_seq);
+        battle_wait_frame();
     }
-    if (D_800D3278->soundBankLoaded != 0) {
-        sound_stop_bank_effects(D_800D3278->soundBank);
-        sound_remove_effect_bank(D_800D3278->soundBank);
-        func_800716D8();
-        heap_free(D_800D3278->soundBank);
-        D_800D3278->soundBankLoaded = 0;
+    if (battle_state_of_event_script->soundBankLoaded != 0) {
+        sound_stop_bank_effects(battle_state_of_event_script->soundBank);
+        sound_remove_effect_bank(battle_state_of_event_script->soundBank);
+        battle_wait_frame();
+        heap_free(battle_state_of_event_script->soundBank);
+        battle_state_of_event_script->soundBankLoaded = 0;
     }
     return musicWasPlaying;
 }
@@ -233,15 +233,15 @@ void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm) {
         if (signedForm) {
             raw = insn[i * 2 + 1] + (insn[i * 2 + 2] << 8);
             if (raw & 0x8000) {
-                D_800D3278->operands[i] = raw & 0x7FFF;
+                battle_state_of_event_script->operands[i] = raw & 0x7FFF;
             } else {
-                D_800D3278->operands[i] = D_800D3278->vars[(s16)(raw / 2)];
+                battle_state_of_event_script->operands[i] = battle_state_of_event_script->vars[(s16)(raw / 2)];
             }
         } else if ((immediateMask << i) & 0x80) {
-            D_800D3278->operands[i] = insn[i * 2 + 1] + (insn[i * 2 + 2] << 8);
+            battle_state_of_event_script->operands[i] = insn[i * 2 + 1] + (insn[i * 2 + 2] << 8);
         } else {
-            D_800D3278->operands[i] =
-                SCRIPT_VAR(D_800D3278, (insn[i * 2 + 2] << 8) | insn[i * 2 + 1]);
+            battle_state_of_event_script->operands[i] =
+                SCRIPT_VAR(battle_state_of_event_script, (insn[i * 2 + 2] << 8) | insn[i * 2 + 1]);
         }
     }
 }
@@ -297,12 +297,12 @@ u8 func_801E58EC(s16 a, s16 b, u8 op) {
         }
         break;
     case 9:
-        if (func_80089C9C((u16)a, (u8)b)) {
+        if (battle_is_slot_in_mask((u16)a, (u8)b)) {
             result = 1;
         }
         break;
     case 10:
-        if (!func_80089C9C((u16)a, (u8)b)) {
+        if (!battle_is_slot_in_mask((u16)a, (u8)b)) {
             result = 1;
         }
         break;
@@ -318,7 +318,7 @@ u8 func_801E5A98(s32 id) {
 
     if ((u8)id < 16) {
         for (i = 0; i < 3; i++) {
-            if (D_800D2D24[i] != 0xFF && D_800D2D24[i] == (u8)id) {
+            if (battle_party_character_ids[i] != 0xFF && battle_party_character_ids[i] == (u8)id) {
                 slot = i;
                 break;
             }
@@ -343,37 +343,37 @@ s16 y;
     if (--D_801E9C1C < 0) {
         D_801E9C1C = 4;
     }
-    D_800D2D28->cursorParts =
-        func_80076A10(D_801E9C1C + 0xE0, D_800C3EA4->cursor, x, y);
-    graphics = D_800C3EA4;
-    x1 = graphics->cursor[D_800CCB04.buffer].x1;
-    y1 = graphics->cursor[D_800CCB04.buffer].y1;
-    graphics->cursor[D_800CCB04.buffer].x1 = graphics->cursor[D_800CCB04.buffer].x2;
-    graphics->cursor[D_800CCB04.buffer].y1 = graphics->cursor[D_800CCB04.buffer].y2;
-    graphics->cursor[D_800CCB04.buffer].x2 = x1;
-    graphics->cursor[D_800CCB04.buffer].y2 = y1;
-    D_800D2D28->cursorBuffer = D_800CCB04.buffer;
-    D_800D2D28->cursorShown = 1;
+    battle_ui->cursorParts =
+        battle_build_glyph(D_801E9C1C + 0xE0, battle_graphics->cursor, x, y);
+    graphics = battle_graphics;
+    x1 = graphics->cursor[battle_drawing_state.buffer].x1;
+    y1 = graphics->cursor[battle_drawing_state.buffer].y1;
+    graphics->cursor[battle_drawing_state.buffer].x1 = graphics->cursor[battle_drawing_state.buffer].x2;
+    graphics->cursor[battle_drawing_state.buffer].y1 = graphics->cursor[battle_drawing_state.buffer].y2;
+    graphics->cursor[battle_drawing_state.buffer].x2 = x1;
+    graphics->cursor[battle_drawing_state.buffer].y2 = y1;
+    battle_ui->cursorBuffer = battle_drawing_state.buffer;
+    battle_ui->cursorShown = 1;
 }
 
 /* Opcode 00 (end, 1 byte): drop the running level and restart the thread's
  * base level at its idle entry (1). Yields. */
 s32 func_801E5C1C(s32 thread) {
-    D_800D3278->threads[thread].entry[D_800D3278->threads[thread].level] = 0xFF;
-    D_800D3278->threads[thread].priority[D_800D3278->threads[thread].level] = 0xFF;
-    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = 0xFFFF;
-    D_800D3278->threads[thread].entry[0] = 1;
-    D_800D3278->threads[thread].level = 0;
-    D_800D3278->threads[thread].priority[0] = 7;
-    D_800D3278->threads[thread].pc[0] = D_800D39D0->entries[thread].entry[1];
-    D_800D3278->threads[thread].request = 0xFF;
+    battle_state_of_event_script->threads[thread].entry[battle_state_of_event_script->threads[thread].level] = 0xFF;
+    battle_state_of_event_script->threads[thread].priority[battle_state_of_event_script->threads[thread].level] = 0xFF;
+    battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = 0xFFFF;
+    battle_state_of_event_script->threads[thread].entry[0] = 1;
+    battle_state_of_event_script->threads[thread].level = 0;
+    battle_state_of_event_script->threads[thread].priority[0] = 7;
+    battle_state_of_event_script->threads[thread].pc[0] = battle_file_of_event_script->entries[thread].entry[1];
+    battle_state_of_event_script->threads[thread].request = 0xFF;
     return 0;
 }
 
 /* Opcode 01 (jump, 3 bytes): continue the running level at the bytecode
  * offset (u16 at byte 1). */
 s32 func_801E5CE4(s32 thread, u8 *insn) {
-    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = insn[1] + (insn[2] << 8);
+    battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = insn[1] + (insn[2] << 8);
     return 0;
 }
 
@@ -382,10 +382,10 @@ s32 func_801E5CE4(s32 thread, u8 *insn) {
  * (801e58ec); when the comparison fails jump to the offset at byte 6. */
 s32 func_801E5D24(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    if (func_801E58EC(D_800D3278->operands[0], D_800D3278->operands[1], insn[5])) {
+    if (func_801E58EC(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1], insn[5])) {
         return 8;
     }
-    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = insn[6] + (insn[7] << 8);
+    battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = insn[6] + (insn[7] << 8);
     return 0;
 }
 
@@ -394,15 +394,15 @@ s32 func_801E5D24(s32 thread, u8 *insn) {
  * bits. Retries (length 0) while that thread has no free level. */
 s32 func_801E5DCC(s32 thread, u8 *insn) {
     s32 length = 0;
-    u8 level = func_801E57C4(&D_800D3278->threads[insn[1]]);
+    u8 level = func_801E57C4(&battle_state_of_event_script->threads[insn[1]]);
 
     if (level != 8) {
-        D_800D3278->threads[thread].request = insn[2] & 0x1F;
-        D_800D3278->threads[insn[1]].priority[level] = insn[2] >> 5;
-        D_800D3278->threads[insn[1]].pc[level] =
-            (D_800D39D0->entries + insn[1])->entry[D_800D3278->threads[thread].request];
+        battle_state_of_event_script->threads[thread].request = insn[2] & 0x1F;
+        battle_state_of_event_script->threads[insn[1]].priority[level] = insn[2] >> 5;
+        battle_state_of_event_script->threads[insn[1]].pc[level] =
+            (battle_file_of_event_script->entries + insn[1])->entry[battle_state_of_event_script->threads[thread].request];
         length = 3;
-        D_800D3278->threads[insn[1]].entry[level] = D_800D3278->threads[thread].request;
+        battle_state_of_event_script->threads[insn[1]].entry[level] = battle_state_of_event_script->threads[thread].request;
     }
     return length;
 }
@@ -411,12 +411,12 @@ s32 func_801E5DCC(s32 thread, u8 *insn) {
  * then wait until the other thread is running the requested entry. */
 s32 func_801E5EF8(s32 thread, u8 *insn) {
     s32 length = 0;
-    u8 request = D_800D3278->threads[thread].request;
+    u8 request = battle_state_of_event_script->threads[thread].request;
 
     if (request != (insn[2] & 0x1F)) {
         func_801E5DCC(thread, insn);
-    } else if (request == D_800D3278->threads[insn[1]].runningEntry) {
-        D_800D3278->threads[thread].request = 0xFF;
+    } else if (request == battle_state_of_event_script->threads[insn[1]].runningEntry) {
+        battle_state_of_event_script->threads[thread].request = 0xFF;
         length = 3;
     }
     return length;
@@ -427,7 +427,7 @@ s32 func_801E5EF8(s32 thread, u8 *insn) {
  * other thread. */
 s32 func_801E5F8C(s32 thread, u8 *insn) {
     s32 length = 0;
-    u8 request = D_800D3278->threads[thread].request;
+    u8 request = battle_state_of_event_script->threads[thread].request;
     u8 finished = 1;
     s32 i;
 
@@ -435,15 +435,15 @@ s32 func_801E5F8C(s32 thread, u8 *insn) {
         func_801E5DCC(thread, insn);
     } else {
         for (i = 0; i < 8; i++) {
-            if (D_800D3278->threads[insn[1]].entry[i] == request) {
+            if (battle_state_of_event_script->threads[insn[1]].entry[i] == request) {
                 finished = 0;
                 break;
             }
         }
         if (finished &&
-            D_800D3278->threads[thread].request != D_800D3278->threads[insn[1]].runningEntry) {
+            battle_state_of_event_script->threads[thread].request != battle_state_of_event_script->threads[insn[1]].runningEntry) {
             length = 3;
-            D_800D3278->threads[thread].request = 0xFF;
+            battle_state_of_event_script->threads[thread].request = 0xFF;
         }
     }
     return length;
@@ -453,7 +453,7 @@ s32 func_801E5F8C(s32 thread, u8 *insn) {
  * 5 has bit 0x40). */
 s32 func_801E6084(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) = D_800D3278->operands[1];
+    INSN_VAR(insn) = battle_state_of_event_script->operands[1];
     return 6;
 }
 
@@ -473,28 +473,28 @@ s32 func_801E6118(s32 thread, u8 *insn) {
  * of byte 5). */
 s32 func_801E6144(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) += D_800D3278->operands[1];
+    INSN_VAR(insn) += battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 0a (6 bytes): var (byte 1) -= value (as 09). */
 s32 func_801E61B4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) -= D_800D3278->operands[1];
+    INSN_VAR(insn) -= battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 0b (6 bytes): var (byte 1) |= value (as 09). */
 s32 func_801E6224(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) |= D_800D3278->operands[1];
+    INSN_VAR(insn) |= battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 0c (6 bytes): var (byte 1) &= ~value (as 09). */
 s32 func_801E6294(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) &= ~D_800D3278->operands[1];
+    INSN_VAR(insn) &= ~battle_state_of_event_script->operands[1];
     return 6;
 }
 
@@ -513,21 +513,21 @@ s32 func_801E633C(s32 thread, u8 *insn) {
 /* Opcode 0f (6 bytes): var (byte 1) &= value (as 09). */
 s32 func_801E6374(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) &= D_800D3278->operands[1];
+    INSN_VAR(insn) &= battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 10 (6 bytes): var (byte 1) |= value (as 09; the same as 0b). */
 s32 func_801E63E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) |= D_800D3278->operands[1];
+    INSN_VAR(insn) |= battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 11 (6 bytes): var (byte 1) ^= value (as 09). */
 s32 func_801E6454(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) ^= D_800D3278->operands[1];
+    INSN_VAR(insn) ^= battle_state_of_event_script->operands[1];
     return 6;
 }
 
@@ -536,7 +536,7 @@ s32 func_801E64C4(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
     func_801E57F8(insn, 2, 0, 0);
-    D_800D3278->vars[index] <<= D_800D3278->operands[1];
+    battle_state_of_event_script->vars[index] <<= battle_state_of_event_script->operands[1];
     return 5;
 }
 
@@ -545,19 +545,19 @@ s32 func_801E6534(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
     func_801E57F8(insn, 2, 0, 0);
-    D_800D3278->vars[index] >>= D_800D3278->operands[1];
+    battle_state_of_event_script->vars[index] >>= battle_state_of_event_script->operands[1];
     return 5;
 }
 
 /* Opcode 14 (3 bytes): var (byte 1) = random 0..7fff. */
 s32 func_801E65A4(s32 thread, u8 *insn) {
-    INSN_VAR(insn) = func_80089B50(0, 0x7FFF);
+    INSN_VAR(insn) = battle_random_range(0, 0x7FFF);
     return 3;
 }
 
 /* Opcode 15 (5 bytes): var (byte 3) = random 0..limit (u16 at byte 1). */
 s32 func_801E65FC(s32 thread, u8 *insn) {
-    SCRIPT_VAR(D_800D3278, (insn[4] << 8) | insn[3]) = func_80089B50(0, insn[1] | (insn[2] << 8));
+    SCRIPT_VAR(battle_state_of_event_script, (insn[4] << 8) | insn[3]) = battle_random_range(0, insn[1] | (insn[2] << 8));
     return 5;
 }
 
@@ -565,14 +565,14 @@ s32 func_801E65FC(s32 thread, u8 *insn) {
  * immediate by bit 0x80 of byte 5), b at byte 3 (bit 0x40). */
 s32 func_801E6660(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) = D_800D3278->operands[0] * D_800D3278->operands[1];
+    INSN_VAR(insn) = battle_state_of_event_script->operands[0] * battle_state_of_event_script->operands[1];
     return 6;
 }
 
 /* Opcode 17 (6 bytes): var (byte 1) = a / b (signed; operands as 16). */
 s32 func_801E66D8(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, insn[5], 0);
-    INSN_VAR(insn) = (s32)D_800D3278->operands[0] / (s32)D_800D3278->operands[1];
+    INSN_VAR(insn) = (s32)battle_state_of_event_script->operands[0] / (s32)battle_state_of_event_script->operands[1];
     return 6;
 }
 
@@ -586,9 +586,9 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     void *data;
 
     cd_select_directory(4, 0);
-    data = func_8008ABB8(cd_get_aligned_file_size(file), 1);
+    data = battle_heap_alloc(cd_get_aligned_file_size(file), 1);
     cd_read_file(file, data, 0, 0x80);
-    func_8008AC50();
+    battle_cd_wait_for_reads();
     OpenTIM(data);
     ReadTIM(&tim);
     tim.crect->x = 0;
@@ -600,15 +600,15 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     DrawSync(0);
     heap_free(data);
     if (mirrored) {
-        setXY4(&D_800D3278->quads[D_800CCB04.buffer], x + width - 4, y + 4, x + width - 0x44, y + 4,
+        setXY4(&battle_state_of_event_script->quads[battle_drawing_state.buffer], x + width - 4, y + 4, x + width - 0x44, y + 4,
                x + width - 4, y + 0x44, x + width - 0x44, y + 0x44);
-        setUV4(&D_800D3278->quads[D_800CCB04.buffer], 0, 0, 0x3F, 0, 0, 0x40, 0x3F, 0x40);
+        setUV4(&battle_state_of_event_script->quads[battle_drawing_state.buffer], 0, 0, 0x3F, 0, 0, 0x40, 0x3F, 0x40);
     } else {
-        setXY4(&D_800D3278->quads[D_800CCB04.buffer], x + 4, y + 4, x + 0x44, y + 4, x + 4, y + 0x44,
+        setXY4(&battle_state_of_event_script->quads[battle_drawing_state.buffer], x + 4, y + 4, x + 0x44, y + 4, x + 4, y + 0x44,
                x + 0x44, y + 0x44);
-        setUV4(&D_800D3278->quads[D_800CCB04.buffer], 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
+        setUV4(&battle_state_of_event_script->quads[battle_drawing_state.buffer], 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
     }
-    D_800D3278->portraitBuffer = D_800CCB04.buffer;
+    battle_state_of_event_script->portraitBuffer = battle_drawing_state.buffer;
 }
 
 /* Show message of the script's message file in the layout of opcode 1a,
@@ -626,27 +626,27 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
 
     portrait = 0;
     done = 0;
-    x = D_800D3278->window[0];
-    y = D_800D3278->window[1];
-    width = D_800D3278->window[2] * 12 + 0x18;
+    x = battle_state_of_event_script->window[0];
+    y = battle_state_of_event_script->window[1];
+    width = battle_state_of_event_script->window[2] * 12 + 0x18;
     if (flags == 0) {
-        flags = D_800D3278->window[4];
+        flags = battle_state_of_event_script->window[4];
     }
-    if (D_800D3278->windowOpen == 0) {
+    if (battle_state_of_event_script->windowOpen == 0) {
         D_801E9C1C = 4;
-        if (D_800D3278->window[1] == 0x7FFF) {
+        if (battle_state_of_event_script->window[1] == 0x7FFF) {
             y = 0x10;
             if (flags & 4) {
                 y = 0x8C;
             }
         }
-        if (D_800D3278->window[3] >= 5) {
+        if (battle_state_of_event_script->window[3] >= 5) {
             height = 4;
         } else {
-            height = D_800D3278->window[3];
+            height = battle_state_of_event_script->window[3];
         }
         height = height * 13 + 0x14;
-        if (D_800D3278->window[0] == 0x7FFF) {
+        if (battle_state_of_event_script->window[0] == 0x7FFF) {
             x = 0xA0 - (width >> 1);
         }
         if (!(flags & 8)) {
@@ -654,21 +654,21 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
                 width += 0x40;
                 portrait = 1;
             }
-            if (D_800D3278->window[0] == 0x7FFF) {
+            if (battle_state_of_event_script->window[0] == 0x7FFF) {
                 x = 0xA0 - (width >> 1);
             }
             if (!portrait) {
-                func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
-                while (D_800D2D28->windowOpen[0] == 0) {
-                    func_800716D8();
+                battle_window_open(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
+                while (battle_ui->windowOpen[0] == 0) {
+                    battle_wait_frame();
                 }
             } else {
                 func_801E6750(actor, flags, x, y, width);
-                func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
-                while (D_800D2D28->windowOpen[0] == 0) {
-                    func_800716D8();
+                battle_window_open(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
+                while (battle_ui->windowOpen[0] == 0) {
+                    battle_wait_frame();
                 }
-                D_800D2D28->scriptPortraitShown = 1;
+                battle_ui->scriptPortraitShown = 1;
                 if (!(flags & 1)) {
                     x += 0x40;
                 }
@@ -676,39 +676,39 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         }
         D_801E9C34 = y + 8;
         D_801E9C30 = x + 12;
-        window_open(D_800D2DAC, 0x380, 0x100, D_801E9C30, D_801E9C34, D_800D3278->window[2] * 3,
-                      D_800D3278->window[3]);
-        *(u8 *)&D_800D2DAC->tile[1] = 4;
-        D_800D2DAC->flags |= 2;
-        window_reset_if_idle(D_800D2DAC);
-        window_queue_message(D_800D2DAC, (s32)text_get_resource_entry(D_800D3340, message));
-        D_800D2D28->messageShown = 1;
-        D_800D3278->windowOpen = 1;
-        func_800716D8();
+        window_open(battle_message_text_window, 0x380, 0x100, D_801E9C30, D_801E9C34, battle_state_of_event_script->window[2] * 3,
+                      battle_state_of_event_script->window[3]);
+        *(u8 *)&battle_message_text_window->tile[1] = 4;
+        battle_message_text_window->flags |= 2;
+        window_reset_if_idle(battle_message_text_window);
+        window_queue_message(battle_message_text_window, (s32)text_get_resource_entry(battle_messages_of_event_script, message));
+        battle_ui->messageShown = 1;
+        battle_state_of_event_script->windowOpen = 1;
+        battle_wait_frame();
     }
-    if (D_800D2DAC->flags & 8) {
+    if (battle_message_text_window->flags & 8) {
         if (!(flags & 8)) {
-            func_801E5B00(D_800D2DAC->x * 4 + D_801E9C30 + 2, D_800D2DAC->y * 14 + D_801E9C34 + 5);
+            func_801E5B00(battle_message_text_window->x * 4 + D_801E9C30 + 2, battle_message_text_window->y * 14 + D_801E9C34 + 5);
         }
-        D_800D2D28->waitingCross = 1;
-        if (D_800D3014 == 4) {
-            window_end_wait(D_800D2DAC);
-            D_800D2D28->waitingCross = 0;
-            D_800D2D28->cursorShown = 0;
+        battle_ui->waitingCross = 1;
+        if (battle_pressed_key == 4) {
+            window_end_wait(battle_message_text_window);
+            battle_ui->waitingCross = 0;
+            battle_ui->cursorShown = 0;
         }
     }
-    if (!(D_800D2DAC->flags & 4)) {
-        D_800D2D28->messageShown = 0;
-        window_close(D_800D2DAC);
-        func_800716D8();
-        D_800D2D28->scriptPortraitShown = 0;
+    if (!(battle_message_text_window->flags & 4)) {
+        battle_ui->messageShown = 0;
+        window_close(battle_message_text_window);
+        battle_wait_frame();
+        battle_ui->scriptPortraitShown = 0;
         if (!(flags & 8)) {
-            func_8008FA60(0);
+            battle_window_close(0);
         }
         done = 1;
-        D_800D3278->windowOpen = 0;
+        battle_state_of_event_script->windowOpen = 0;
         for (i = 0; i < 5; i++) {
-            D_800D3278->window[i] = D_801E9C10[i];
+            battle_state_of_event_script->window[i] = D_801E9C10[i];
         }
     }
     return done;
@@ -718,7 +718,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
  * speaker with flags (byte 3; 0 takes the layout's); repeats until the
  * message is done. */
 s32 func_801E71D4(s32 thread, u8 *insn) {
-    return (func_801E6CE8(insn[1] | (insn[2] << 8), D_800D3278->threads[thread].speaker, insn[3]) != 0) * 4;
+    return (func_801E6CE8(insn[1] | (insn[2] << 8), battle_state_of_event_script->threads[thread].speaker, insn[3]) != 0) * 4;
 }
 
 /* Opcode 19 (5 bytes): show message (u16 at byte 2) from actor (byte 1) with
@@ -734,13 +734,13 @@ s32 func_801E7278(s32 thread, u8 *insn) {
 
     func_801E57F8(insn, 5, 0, 1);
     for (i = 0; i < 4; i++) {
-        if (D_800D3278->operands[i] != 0) {
-            D_800D3278->window[i] = D_800D3278->operands[i];
+        if (battle_state_of_event_script->operands[i] != 0) {
+            battle_state_of_event_script->window[i] = battle_state_of_event_script->operands[i];
         } else {
-            D_800D3278->window[i] = D_801E9C10[i];
+            battle_state_of_event_script->window[i] = D_801E9C10[i];
         }
     }
-    D_800D3278->window[4] = D_800D3278->operands[4];
+    battle_state_of_event_script->window[4] = battle_state_of_event_script->operands[4];
     return 11;
 }
 
@@ -750,21 +750,21 @@ s32 func_801E7314(s32 thread, u8 *insn) {
     u8 actor = insn[1];
 
     if (actor >= 0xF3) {
-        actor = D_800D2D24[actor - 0xF3];
+        actor = battle_party_character_ids[actor - 0xF3];
     }
-    D_800D3278->threads[thread].speaker = actor;
+    battle_state_of_event_script->threads[thread].speaker = actor;
     return 2;
 }
 
 /* Opcode 1c (1 byte): battle end state (800c3e4c) = 2. */
 s32 func_801E7358(s32 thread, u8 *insn) {
-    D_800C3E4C = 2;
+    battle_frame_mode = 2;
     return 1;
 }
 
 /* Opcode 1d (1 byte): battle end state (800c3e4c) = 1. */
 s32 func_801E736C(s32 thread, u8 *insn) {
-    D_800C3E4C = 1;
+    battle_frame_mode = 1;
     return 1;
 }
 
@@ -772,51 +772,51 @@ s32 func_801E736C(s32 thread, u8 *insn) {
  * operand a; blend mode 2, 800b39c0). */
 s32 func_801E7380(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_800B39C0(D_800D3278->operands[0], 2, 0xFF, 0xFF, 0xFF);
+    battle_screen_fade_start(battle_state_of_event_script->operands[0], 2, 0xFF, 0xFF, 0xFF);
     return 3;
 }
 
 /* Opcode 1f (3 bytes): fade the screen to black over 2 * a frames (as 1e). */
 s32 func_801E73D4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_800B39C0(D_800D3278->operands[0], 2, 0, 0, 0);
+    battle_screen_fade_start(battle_state_of_event_script->operands[0], 2, 0, 0, 0);
     return 3;
 }
 
 /* Opcode 49 (3 bytes): 8005942c = signed operand a. */
 s32 func_801E7424(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    mode_battle_return_fade = D_800D3278->operands[0];
+    mode_battle_return_fade = battle_state_of_event_script->operands[0];
     return 3;
 }
 
 /* Opcode 20 (1 byte): end the battle (800c3d44) and halt the script
  * (801e879c checks it when next called). */
 s32 func_801E746C(s32 thread, u8 *insn) {
-    D_800C3D44 = 1;
-    D_800D3278->halted = 1;
+    battle_resume_event_script_at_end = 1;
+    battle_state_of_event_script->halted = 1;
     return 1;
 }
 
 /* Opcode 21 (1 byte): 800d2d50 = 1. */
 s32 func_801E748C(s32 thread, u8 *insn) {
-    D_800D2D50 = 1;
+    battle_skip_result_screens = 1;
     return 1;
 }
 
 /* Opcode 22 (1 byte): make this pass of 801e879c its last, returning to the
  * battle (it repeats its passes until then). */
 s32 func_801E74A0(s32 thread, u8 *insn) {
-    D_800D3278->unk801 = 2;
+    battle_state_of_event_script->unk801 = 2;
     return 1;
 }
 
 /* Opcode 37 (1 byte): request the battle exit (800d2fc4), set the outcome
  * (800c48ea) to 1 and halt the script. */
 s32 func_801E74B8(s32 thread, u8 *insn) {
-    D_800D2FC4 = 1;
-    D_800D3278->halted = 1;
-    D_800C48EA = 1;
+    battle_exit_requested = 1;
+    battle_state_of_event_script->halted = 1;
+    battle_area_outcome = 1;
     return 1;
 }
 
@@ -828,17 +828,17 @@ s32 func_801E74E0(s32 thread, u8 *insn) {
     s32 length = 0;
 
     func_801E57F8(insn, 3, 0, 1);
-    switch (D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState) {
+    switch (battle_state_of_event_script->threads[battle_state_of_event_script->operands[0] - 0xF3].memberState) {
     case 0:
-        D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState = 2;
-        func_800AA384(D_800D3278->operands[0] - 0xF3, func_80089C08(D_800D3278->operands[1] + 0xD),
-                      D_800D3278->operands[2]);
+        battle_state_of_event_script->threads[battle_state_of_event_script->operands[0] - 0xF3].memberState = 2;
+        battle_make_object_act(battle_state_of_event_script->operands[0] - 0xF3, battle_get_slot_bit(battle_state_of_event_script->operands[1] + 0xD),
+                      battle_state_of_event_script->operands[2]);
         break;
     case 1:
         length = 7;
-        func_800B8D04();
-        func_800BFBA0();
-        D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState = 0;
+        battle_finish_loads();
+        battle_load_wave_bank_5();
+        battle_state_of_event_script->threads[battle_state_of_event_script->operands[0] - 0xF3].memberState = 0;
         break;
     }
     return length;
@@ -848,14 +848,14 @@ s32 func_801E74E0(s32 thread, u8 *insn) {
  * effect script c on slot b + 13 (800aa320) without waiting. */
 s32 func_801E75F0(s32 thread, u8 *insn) {
     func_801E57F8(insn, 3, 0, 1);
-    func_800AA320(D_800D3278->operands[0] - 0xF3, func_80089C08(D_800D3278->operands[1] + 0xD),
-                  D_800D3278->operands[2]);
+    battle_start_object_script(battle_state_of_event_script->operands[0] - 0xF3, battle_get_slot_bit(battle_state_of_event_script->operands[1] + 0xD),
+                  battle_state_of_event_script->operands[2]);
     return 7;
 }
 
 /* Opcode 4a (1 byte): put slot 0 into state 4 with timer 6 (8009c0e0(0)). */
 s32 func_801E7660(s32 thread, u8 *insn) {
-    func_8009C0E0(0);
+    battle_set_slot_attack_level4(0);
     return 1;
 }
 
@@ -863,7 +863,7 @@ s32 func_801E7660(s32 thread, u8 *insn) {
  * signed operand a). */
 s32 func_801E7684(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    D_800CCCE8.records[func_801E5A98((u8)D_800D3278->operands[0])].pilot.flags36 |= 1;
+    battle_work_area.records[func_801E5A98((u8)battle_state_of_event_script->operands[0])].pilot.flags36 |= 1;
     return 3;
 }
 
@@ -872,14 +872,14 @@ s32 func_801E7684(s32 thread, u8 *insn) {
  * 8001b6c4) takes formation a of the same encounter set (80070f40). */
 s32 func_801E7700(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
-    mode_pending_battle_formation = D_800D3278->operands[0] + 1;
-    mode_battle_kind = D_800D3278->operands[1];
+    mode_pending_battle_formation = battle_state_of_event_script->operands[0] + 1;
+    mode_battle_kind = battle_state_of_event_script->operands[1];
     return 5;
 }
 
 /* Opcode 25 (1 byte): 800c3d5c = 1. */
 s32 func_801E775C(s32 thread, u8 *insn) {
-    D_800C3D5C = 1;
+    battle_defeat_allowed_by_event_script = 1;
     return 1;
 }
 
@@ -887,10 +887,10 @@ s32 func_801E775C(s32 thread, u8 *insn) {
  * state word 8004f30c (8001ac94). */
 s32 func_801E7770(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    game_data.map = D_800D3278->operands[0];
-    game_data.entry[0] = D_800D3278->operands[1];
-    game_data.entry[1] = D_800D3278->operands[2];
-    game_data.entry[2] = D_800D3278->operands[3];
+    game_data.map = battle_state_of_event_script->operands[0];
+    game_data.entry[0] = battle_state_of_event_script->operands[1];
+    game_data.entry[1] = battle_state_of_event_script->operands[2];
+    game_data.entry[2] = battle_state_of_event_script->operands[3];
     mode_clear_field_return();
     return 9;
 }
@@ -899,19 +899,19 @@ s32 func_801E7770(s32 thread, u8 *insn) {
  * 800d3338 = 1; 80062514 = d. */
 s32 func_801E77E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    (&cd_movie_request_kind)[0] = D_800D3278->operands[0] | 0x80;
-    (&cd_movie_request_kind)[1] = D_800D3278->operands[1];
+    (&cd_movie_request_kind)[0] = battle_state_of_event_script->operands[0] | 0x80;
+    (&cd_movie_request_kind)[1] = battle_state_of_event_script->operands[1];
     (&cd_movie_request_kind)[2] = 1;
-    (&cd_movie_request_kind)[3] = D_800D3278->operands[2];
-    D_800D3338 = 1;
-    cd_movie_request_last_frame = D_800D3278->operands[3];
+    (&cd_movie_request_kind)[3] = battle_state_of_event_script->operands[2];
+    battle_continue_to_movie_mode = 1;
+    cd_movie_request_last_frame = battle_state_of_event_script->operands[3];
     return 9;
 }
 
 /* Opcode 28 (6 bytes): fade the screen to colour (bytes 2-4) in blend mode
  * (byte 1) over 2 * (byte 5) frames (800b39c0). */
 s32 func_801E786C(s32 thread, u8 *insn) {
-    func_800B39C0(insn[5], insn[1], insn[2], insn[3], insn[4]);
+    battle_screen_fade_start(insn[5], insn[1], insn[2], insn[3], insn[4]);
     return 6;
 }
 
@@ -921,10 +921,10 @@ s32 func_801E78A8(s32 thread, u8 *insn) {
     u16 position[3];
 
     func_801E57F8(insn, 4, 0, 1);
-    position[0] = D_800D3278->operands[0];
-    position[1] = D_800D3278->operands[1];
-    position[2] = D_800D3278->operands[2];
-    func_800B3658(position, D_800D3278->operands[3]);
+    position[0] = battle_state_of_event_script->operands[0];
+    position[1] = battle_state_of_event_script->operands[1];
+    position[2] = battle_state_of_event_script->operands[2];
+    battle_quake_start(position, battle_state_of_event_script->operands[3]);
     return 9;
 }
 
@@ -936,12 +936,12 @@ s32 func_801E7914(s32 thread, u8 *insn) {
     void *file;
 
     func_801E57F8(insn, 2, 0, 1);
-    slot = (u8)(D_800D3278->operands[0] + 13);
-    if (D_800D3278->threads[slot].modelLoaded == 0) {
-        file = text_unpack_lzss_alloc(D_801E9C38->entries[D_800D3278->operands[1]], 0);
-        D_800D3278->threads[slot].modelFile = file;
-        D_800D3278->threads[slot].model = func_801E9978(file, info);
-        D_800D3278->threads[slot].modelLoaded = 1;
+    slot = (u8)(battle_state_of_event_script->operands[0] + 13);
+    if (battle_state_of_event_script->threads[slot].modelLoaded == 0) {
+        file = text_unpack_lzss_alloc(D_801E9C38->entries[battle_state_of_event_script->operands[1]], 0);
+        battle_state_of_event_script->threads[slot].modelFile = file;
+        battle_state_of_event_script->threads[slot].model = func_801E9978(file, info);
+        battle_state_of_event_script->threads[slot].modelLoaded = 1;
     }
     return 5;
 }
@@ -952,9 +952,9 @@ s32 func_801E79E0(s32 thread, u8 *insn) {
     s32 slot;
 
     func_801E57F8(insn, 2, 0, 1);
-    slot = (u8)(D_800D3278->operands[0] + 13);
-    if (D_800D3278->threads[slot].modelLoaded != 0) {
-        func_801E9958(D_800D3278->threads[slot].model, D_800D3278->operands[1]);
+    slot = (u8)(battle_state_of_event_script->operands[0] + 13);
+    if (battle_state_of_event_script->threads[slot].modelLoaded != 0) {
+        func_801E9958(battle_state_of_event_script->threads[slot].model, battle_state_of_event_script->operands[1]);
     }
     return 5;
 }
@@ -964,11 +964,11 @@ void func_801E7A5C(s32 thread, u8 *insn) {
     s32 slot;
 
     func_801E57F8(insn, 1, 0, 1);
-    slot = (u8)(D_800D3278->operands[0] + 13);
-    if (D_800D3278->threads[slot].modelLoaded != 0) {
-        func_801E9AD4(D_800D3278->threads[slot].model);
-        heap_free(D_800D3278->threads[slot].modelFile);
-        D_800D3278->threads[slot].modelLoaded = 0;
+    slot = (u8)(battle_state_of_event_script->operands[0] + 13);
+    if (battle_state_of_event_script->threads[slot].modelLoaded != 0) {
+        func_801E9AD4(battle_state_of_event_script->threads[slot].model);
+        heap_free(battle_state_of_event_script->threads[slot].modelFile);
+        battle_state_of_event_script->threads[slot].modelLoaded = 0;
     }
 }
 
@@ -991,13 +991,13 @@ s32 func_801E7B2C(s32 thread, u8 *insn) {
 s32 func_801E7B58(s32 thread, u8 *insn) {
     s32 length = 0;
 
-    if (D_800D3278->threads[thread].waiting == 0) {
+    if (battle_state_of_event_script->threads[thread].waiting == 0) {
         func_801E57F8(insn, 1, 0, 1);
-        D_800D3278->threads[thread].waitTimer = D_800D3278->operands[0] * 2;
-        D_800D3278->threads[thread].waiting = 1;
+        battle_state_of_event_script->threads[thread].waitTimer = battle_state_of_event_script->operands[0] * 2;
+        battle_state_of_event_script->threads[thread].waiting = 1;
     }
-    if (D_800D3278->threads[thread].waitTimer == 0) {
-        D_800D3278->threads[thread].waiting = 0;
+    if (battle_state_of_event_script->threads[thread].waitTimer == 0) {
+        battle_state_of_event_script->threads[thread].waiting = 0;
         length = 3;
     }
     return length;
@@ -1010,16 +1010,16 @@ s32 func_801E7C0C(s32 thread, u8 *insn) {
     s32 i;
     s32 next;
 
-    D_800D3278->threads[thread].order = insn[1];
+    battle_state_of_event_script->threads[thread].order = insn[1];
     if (insn[1] == 0xFE) {
         for (i = 0; i < 16; i++) {
-            order[i] = D_800D3278->order[i];
+            order[i] = battle_state_of_event_script->order[i];
         }
         next = 1;
-        D_800D3278->order[0] = thread;
+        battle_state_of_event_script->order[0] = thread;
         for (i = 0; i < 16; i++) {
             if (order[i] != thread) {
-                D_800D3278->order[next++] = order[i];
+                battle_state_of_event_script->order[next++] = order[i];
             }
         }
     }
@@ -1032,39 +1032,39 @@ void func_801E7CD0(s16 music, u8 volume) {
     s32 size;
 
     mode_stop_music();
-    if (D_800D3278->musicPlaying != 0) {
-        sound_release_seq((SoundSeq *)D_800C3E54);
-        func_800716D8();
+    if (battle_state_of_event_script->musicPlaying != 0) {
+        sound_release_seq((SoundSeq *)battle_music_seq);
+        battle_wait_frame();
     }
-    func_8008AB70();
+    battle_cd_select_music_directory();
     size = cd_get_aligned_file_size(music + 4);
-    D_800D3278->music = mode_music_buffer;
+    battle_state_of_event_script->music = mode_music_buffer;
     cd_read_file(music + 4, mode_music_buffer, 0, 0x80);
-    func_8008AC50();
-    memmove(mode_music_buffer, D_800D3278->music, size);
-    D_800D3278->musicPlaying = 1;
-    D_800D3278->musicId = music;
-    D_800D3278->musicVolume = volume;
-    D_800C3E54 = sound_create_and_play_seq(mode_music_buffer, volume, 0);
+    battle_cd_wait_for_reads();
+    memmove(mode_music_buffer, battle_state_of_event_script->music, size);
+    battle_state_of_event_script->musicPlaying = 1;
+    battle_state_of_event_script->musicId = music;
+    battle_state_of_event_script->musicVolume = volume;
+    battle_music_seq = sound_create_and_play_seq(mode_music_buffer, volume, 0);
 }
 
 /* Fade the music to a volume. */
 void func_801E7DE4(s32 volume, s32 time) {
-    sound_set_seq_fade((SoundSeq *)D_800C3E54, volume, time);
+    sound_set_seq_fade((SoundSeq *)battle_music_seq, volume, time);
 }
 
 /* Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
  * volume. */
 s32 func_801E7E14(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_801E7CD0(D_800D3278->operands[0], 0x7F);
+    func_801E7CD0(battle_state_of_event_script->operands[0], 0x7F);
     return 3;
 }
 
 /* Opcode 2e (3 bytes): start music a at volume 0. */
 s32 func_801E7E5C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_801E7CD0(D_800D3278->operands[0], 0);
+    func_801E7CD0(battle_state_of_event_script->operands[0], 0);
     return 3;
 }
 
@@ -1072,8 +1072,8 @@ s32 func_801E7E5C(s32 thread, u8 *insn) {
  * its stored volume (signed operands). */
 s32 func_801E7EA4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
-    D_800D3278->musicVolume = D_800D3278->operands[0];
-    func_801E7DE4(D_800D3278->operands[0], D_800D3278->operands[1]);
+    battle_state_of_event_script->musicVolume = battle_state_of_event_script->operands[0];
+    func_801E7DE4(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
     return 5;
 }
 
@@ -1083,8 +1083,8 @@ s32 func_801E7F08(s32 thread, u8 *insn) {
     u8 volume = 0;
 
     func_801E57F8(insn, 1, 0, 1);
-    if (D_800D3278->operands[0] == 0) {
-        volume = D_800D3278->musicVolume;
+    if (battle_state_of_event_script->operands[0] == 0) {
+        volume = battle_state_of_event_script->musicVolume;
     }
     func_801E7DE4(volume, 0);
     return 3;
@@ -1096,13 +1096,13 @@ s32 func_801E7F70(s32 thread, u8 *insn) {
     SoundBank *bank;
 
     func_801E57F8(insn, 4, 0, 1);
-    if (D_800D3278->operands[3] == 0) {
-        bank = D_800D3278->soundBank;
+    if (battle_state_of_event_script->operands[3] == 0) {
+        bank = battle_state_of_event_script->soundBank;
     } else {
         bank = (SoundBank *)sprite_script_sound_bank;
     }
-    sound_play_effect_volume_pan((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1],
-                  D_800D3278->operands[2]);
+    sound_play_effect_volume_pan((bank->id << 16) | battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1],
+                  battle_state_of_event_script->operands[2]);
     return 9;
 }
 
@@ -1112,12 +1112,12 @@ s32 func_801E7FF4(s32 thread, u8 *insn) {
     SoundBank *bank;
 
     func_801E57F8(insn, 3, 0, 1);
-    if (D_800D3278->operands[2] == 0) {
-        bank = D_800D3278->soundBank;
+    if (battle_state_of_event_script->operands[2] == 0) {
+        bank = battle_state_of_event_script->soundBank;
     } else {
         bank = (SoundBank *)sprite_script_sound_bank;
     }
-    sound_set_effect_volume((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1]);
+    sound_set_effect_volume((bank->id << 16) | battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
     return 7;
 }
 
@@ -1128,11 +1128,11 @@ s32 func_801E8074(s32 thread, u8 *insn) {
 
 /* Opcode 33 (1 byte): stop the music. */
 s32 func_801E807C(s32 thread, u8 *insn) {
-    if (D_800D3278->musicPlaying != 0) {
-        sound_stop_seq((SoundSeq *)D_800C3E54);
-        func_800716D8();
-        sound_release_seq((SoundSeq *)D_800C3E54);
-        D_800D3278->musicPlaying = 0;
+    if (battle_state_of_event_script->musicPlaying != 0) {
+        sound_stop_seq((SoundSeq *)battle_music_seq);
+        battle_wait_frame();
+        sound_release_seq((SoundSeq *)battle_music_seq);
+        battle_state_of_event_script->musicPlaying = 0;
     }
     return 1;
 }
@@ -1148,16 +1148,16 @@ s32 func_801E80E8(s32 thread, u8 *insn) {
  * = 0, 800cce42 bit 7, 800d32a1 = 2, 800c3eb8 = 1 and two battle state
  * bytes. */
 s32 func_801E80F0(s32 thread, u8 *insn) {
-    D_800CCCE8.records[0].pilot.gearId = 0;
+    battle_work_area.records[0].pilot.gearId = 0;
     game_data.characters[0].gearId = 0;
-    func_80088490(0);
-    func_800BAF48(0);
-    D_800C3EAC->reaction[0] = 1;
-    D_800CCCE8.records[0].flags15A |= 0x80;
-    func_800883AC(0);
-    D_800D32A0[0].unk1 = 2;
-    D_800C3EA4->panels[0].state = 2;
-    D_800C3EB0.slots[0].gear = 1;
+    battle_give_slot_own_group(0);
+    battle_slot_swap_sprite_for_gear(0);
+    battle_turn_state->reaction[0] = 1;
+    battle_work_area.records[0].flags15A |= 0x80;
+    battle_leave_formation_group(0);
+    battle_slot_flags[0].unk1 = 2;
+    battle_graphics->panels[0].state = 2;
+    battle_area.slots[0].gear = 1;
     return 1;
 }
 
@@ -1165,14 +1165,14 @@ s32 func_801E80F0(s32 thread, u8 *insn) {
  * (801e9430). */
 s32 func_801E818C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
-    func_801E9430(func_801E5A98((u8)D_800D3278->operands[0]), D_800D3278->operands[1]);
+    func_801E9430(func_801E5A98((u8)battle_state_of_event_script->operands[0]), battle_state_of_event_script->operands[1]);
     return 5;
 }
 
 /* Opcode 3b (3 bytes): return actor a to its idle animation (801e950c). */
 s32 func_801E81EC(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_801E950C(func_801E5A98((u8)D_800D3278->operands[0]));
+    func_801E950C(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
@@ -1180,14 +1180,14 @@ s32 func_801E81EC(s32 thread, u8 *insn) {
  * its flags at 0x40 (801e9550). */
 s32 func_801E823C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_801E9550(func_801E5A98((u8)D_800D3278->operands[0]));
+    func_801E9550(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
 /* Opcode 3d (3 bytes): clear actor a's byte 0x9e (801e958c). */
 s32 func_801E828C(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    func_801E958C(func_801E5A98((u8)D_800D3278->operands[0]));
+    func_801E958C(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
@@ -1198,12 +1198,12 @@ s32 func_801E82DC(s32 thread, u8 *insn) {
     s32 length = 0;
 
     func_801E57F8(insn, 4, 0, 1);
-    slot = func_801E5A98((u8)D_800D3278->operands[0]);
+    slot = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
     if (D_801E9C20[slot] == 0) {
-        D_800D3278->actionRunning[slot] = 1;
+        battle_state_of_event_script->actionRunning[slot] = 1;
         D_801E9C20[slot] = 1;
-        func_801E95E4(slot, D_800D3278->operands[1], D_800D3278->operands[2], D_800D3278->operands[3]);
-    } else if (D_800D3278->actionRunning[slot] == 0) {
+        func_801E95E4(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
+    } else if (battle_state_of_event_script->actionRunning[slot] == 0) {
         D_801E9C20[slot] = 0;
         length = 9;
     }
@@ -1217,12 +1217,12 @@ s32 func_801E83C0(s32 thread, u8 *insn) {
     s32 length = 0;
 
     func_801E57F8(insn, 4, 0, 1);
-    slot = func_801E5A98((u8)D_800D3278->operands[0]);
+    slot = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
     if (D_801E9C20[slot] == 0) {
-        D_800D3278->actionRunning[slot] = 1;
+        battle_state_of_event_script->actionRunning[slot] = 1;
         D_801E9C20[slot] = 1;
-        func_801E9694(slot, D_800D3278->operands[1], D_800D3278->operands[2], D_800D3278->operands[3]);
-    } else if (D_800D3278->actionRunning[slot] == 0) {
+        func_801E9694(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
+    } else if (battle_state_of_event_script->actionRunning[slot] == 0) {
         D_801E9C20[slot] = 0;
         length = 9;
     }
@@ -1238,20 +1238,20 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
     u8 target;
 
     func_801E57F8(insn, 4, 0, 1);
-    attacker = func_801E5A98((u8)D_800D3278->operands[0]);
-    target = func_801E5A98((u8)D_800D3278->operands[1]);
-    D_800C3EAC->eventCount = 0;
-    func_80085388();
-    D_800C3EB0.events[0].codes[target] = D_800D3278->operands[3];
+    attacker = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
+    target = func_801E5A98((u8)battle_state_of_event_script->operands[1]);
+    battle_turn_state->eventCount = 0;
+    battle_clear_event_results();
+    battle_area.events[0].codes[target] = battle_state_of_event_script->operands[3];
     if (D_801E9C20[attacker] == 0) {
-        D_800D3278->actionRunning[attacker] = 1;
+        battle_state_of_event_script->actionRunning[attacker] = 1;
         D_801E9C20[attacker] = 1;
         func_801E9894(attacker, target);
         while (cd_get_pending_read_count() != 0) {
-            func_800716D8();
+            battle_wait_frame();
         }
-        func_801E9430(attacker, D_800D3278->operands[2]);
-    } else if (D_800D3278->actionRunning[attacker] == 0) {
+        func_801E9430(attacker, battle_state_of_event_script->operands[2]);
+    } else if (battle_state_of_event_script->actionRunning[attacker] == 0) {
         D_801E9C20[attacker] = 0;
         length = 9;
     }
@@ -1265,31 +1265,31 @@ s32 func_801E8600(s32 thread, u8 *insn) {
     u8 actor;
     u8 target;
 
-    D_800C3EAC->eventCount = 0;
-    func_80085388();
+    battle_turn_state->eventCount = 0;
+    battle_clear_event_results();
     func_801E57F8(insn, 3, 0, 1);
-    actor = func_801E5A98((u8)D_800D3278->operands[0]);
-    target = func_801E5A98((u8)D_800D3278->operands[1]);
-    func_801E9700(actor, D_800D3278->operands[2]);
+    actor = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
+    target = func_801E5A98((u8)battle_state_of_event_script->operands[1]);
+    func_801E9700(actor, battle_state_of_event_script->operands[2]);
     func_801E9760(actor, target);
     return 7;
 }
 
 /* Opcode 47 (1 byte): stop the disc read and finish the loads (800b8d7c). */
 s32 func_801E86AC(s32 thread, u8 *insn) {
-    func_800B8D7C();
+    battle_stop_reads_finish_loads();
     return 1;
 }
 
 /* Opcode 42 (1 byte): show member 0's number lists (8007ff14(0)). */
 s32 func_801E86D0(s32 thread, u8 *insn) {
-    func_8007FF14(0);
+    battle_gear_hud_show(0);
     return 1;
 }
 
 /* Opcode 43 (1 byte): leave member 0's menu (800800e8(0)). */
 s32 func_801E86F4(s32 thread, u8 *insn) {
-    func_800800E8(0);
+    battle_leave_member_menu(0);
     return 1;
 }
 
@@ -1298,8 +1298,8 @@ s32 func_801E8718(s32 thread, u8 *insn) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        if (D_800D3368[i] != NULL) {
-            D_800D3368[i]->field35 = 0;
+        if (battle_objects[i] != NULL) {
+            battle_objects[i]->field35 = 0;
         }
     }
     return 1;
@@ -1309,7 +1309,7 @@ s32 func_801E8718(s32 thread, u8 *insn) {
  * to its end (800b838c). */
 s32 func_801E8750(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
-    func_800B838C(D_800D3278->operands[0], D_800D3278->operands[1]);
+    battle_play_sound_to_end(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
     return 5;
 }
 
@@ -1325,253 +1325,253 @@ void func_801E879C(void) {
     u8 again;
     u16 pc;
 
-    func_800BFBA0();
-    func_800BCD98(0);
+    battle_load_wave_bank_5();
+    battle_highlight_slots(0);
     again = 1;
-    if (D_800D3278->halted == 0) {
+    if (battle_state_of_event_script->halted == 0) {
         do {
-            for (i = 0; i < D_800D39D0->threadCount; i++) {
-                thread = D_800D3278->order[i];
+            for (i = 0; i < battle_file_of_event_script->threadCount; i++) {
+                thread = battle_state_of_event_script->order[i];
                 steps = 4;
-                func_800716D8();
+                battle_wait_frame();
                 do {
-                    pc = func_801E5768(&D_800D3278->threads[thread]);
-                    switch (D_800D3278->code[pc]) {
+                    pc = func_801E5768(&battle_state_of_event_script->threads[thread]);
+                    switch (battle_state_of_event_script->code[pc]) {
                     case 0x00:
                         length = func_801E5C1C(thread);
                         steps = 1;
                         break;
                     case 0x01:
-                        length = func_801E5CE4(thread, D_800D3278->code + pc);
+                        length = func_801E5CE4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x02:
-                        length = func_801E5D24(thread, D_800D3278->code + pc);
+                        length = func_801E5D24(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x03:
-                        length = func_801E5DCC(thread, D_800D3278->code + pc);
+                        length = func_801E5DCC(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x04:
-                        length = func_801E5EF8(thread, D_800D3278->code + pc);
+                        length = func_801E5EF8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x05:
-                        length = func_801E5F8C(thread, D_800D3278->code + pc);
+                        length = func_801E5F8C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x06:
-                        length = func_801E6084(thread, D_800D3278->code + pc);
+                        length = func_801E6084(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x07:
-                        length = func_801E60E8(thread, D_800D3278->code + pc);
+                        length = func_801E60E8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x08:
-                        length = func_801E6118(thread, D_800D3278->code + pc);
+                        length = func_801E6118(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x09:
-                        length = func_801E6144(thread, D_800D3278->code + pc);
+                        length = func_801E6144(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0A:
-                        length = func_801E61B4(thread, D_800D3278->code + pc);
+                        length = func_801E61B4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0B:
-                        length = func_801E6224(thread, D_800D3278->code + pc);
+                        length = func_801E6224(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0C:
-                        length = func_801E6294(thread, D_800D3278->code + pc);
+                        length = func_801E6294(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0D:
-                        length = func_801E6304(thread, D_800D3278->code + pc);
+                        length = func_801E6304(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0E:
-                        length = func_801E633C(thread, D_800D3278->code + pc);
+                        length = func_801E633C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0F:
-                        length = func_801E6374(thread, D_800D3278->code + pc);
+                        length = func_801E6374(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x10:
-                        length = func_801E63E4(thread, D_800D3278->code + pc);
+                        length = func_801E63E4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x11:
-                        length = func_801E6454(thread, D_800D3278->code + pc);
+                        length = func_801E6454(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x12:
-                        length = func_801E64C4(thread, D_800D3278->code + pc);
+                        length = func_801E64C4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x13:
-                        length = func_801E6534(thread, D_800D3278->code + pc);
+                        length = func_801E6534(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x14:
-                        length = func_801E65A4(thread, D_800D3278->code + pc);
+                        length = func_801E65A4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x15:
-                        length = func_801E65FC(thread, D_800D3278->code + pc);
+                        length = func_801E65FC(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x16:
-                        length = func_801E6660(thread, D_800D3278->code + pc);
+                        length = func_801E6660(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x17:
-                        length = func_801E66D8(thread, D_800D3278->code + pc);
+                        length = func_801E66D8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x18:
-                        length = func_801E71D4(thread, D_800D3278->code + pc);
+                        length = func_801E71D4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x19:
-                        length = func_801E7230(thread, D_800D3278->code + pc);
+                        length = func_801E7230(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1A:
-                        length = func_801E7278(thread, D_800D3278->code + pc);
+                        length = func_801E7278(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1B:
-                        length = func_801E7314(thread, D_800D3278->code + pc);
+                        length = func_801E7314(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1C:
-                        length = func_801E7358(thread, D_800D3278->code + pc);
+                        length = func_801E7358(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1D:
-                        length = func_801E736C(thread, D_800D3278->code + pc);
+                        length = func_801E736C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1E:
-                        length = func_801E7380(thread, D_800D3278->code + pc);
+                        length = func_801E7380(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1F:
-                        length = func_801E73D4(thread, D_800D3278->code + pc);
+                        length = func_801E73D4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x20:
-                        length = func_801E746C(thread, D_800D3278->code + pc);
+                        length = func_801E746C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x21:
-                        length = func_801E748C(thread, D_800D3278->code + pc);
+                        length = func_801E748C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x22:
-                        length = func_801E74A0(thread, D_800D3278->code + pc);
+                        length = func_801E74A0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x23:
-                        length = func_801E74E0(thread, D_800D3278->code + pc);
+                        length = func_801E74E0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x24:
-                        length = func_801E7700(thread, D_800D3278->code + pc);
+                        length = func_801E7700(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x25:
-                        length = func_801E775C(thread, D_800D3278->code + pc);
+                        length = func_801E775C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x26:
-                        length = func_801E7770(thread, D_800D3278->code + pc);
+                        length = func_801E7770(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x27:
-                        length = func_801E77E4(thread, D_800D3278->code + pc);
+                        length = func_801E77E4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x28:
-                        length = func_801E786C(thread, D_800D3278->code + pc);
+                        length = func_801E786C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x29:
-                        length = func_801E78A8(thread, D_800D3278->code + pc);
+                        length = func_801E78A8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2A:
-                        length = func_801E79E0(thread, D_800D3278->code + pc);
+                        length = func_801E79E0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2B:
-                        length = func_801E7B58(thread, D_800D3278->code + pc);
+                        length = func_801E7B58(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2C:
-                        length = func_801E7C0C(thread, D_800D3278->code + pc);
+                        length = func_801E7C0C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2D:
-                        length = func_801E7E14(thread, D_800D3278->code + pc);
+                        length = func_801E7E14(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2E:
-                        length = func_801E7E5C(thread, D_800D3278->code + pc);
+                        length = func_801E7E5C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2F:
-                        length = func_801E7EA4(thread, D_800D3278->code + pc);
+                        length = func_801E7EA4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x30:
-                        length = func_801E7F08(thread, D_800D3278->code + pc);
+                        length = func_801E7F08(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x31:
-                        length = func_801E7F70(thread, D_800D3278->code + pc);
+                        length = func_801E7F70(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x32:
-                        length = func_801E8074(thread, D_800D3278->code + pc);
+                        length = func_801E8074(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x33:
-                        length = func_801E807C(thread, D_800D3278->code + pc);
+                        length = func_801E807C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x34:
-                        length = func_801E80E8(thread, D_800D3278->code + pc);
+                        length = func_801E80E8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x35:
-                        length = func_801E7914(thread, D_800D3278->code + pc);
+                        length = func_801E7914(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x36:
-                        length = func_801E7B08(thread, D_800D3278->code + pc);
+                        length = func_801E7B08(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x37:
-                        length = func_801E74B8(thread, D_800D3278->code + pc);
+                        length = func_801E74B8(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x38:
-                        length = func_801E75F0(thread, D_800D3278->code + pc);
+                        length = func_801E75F0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x39:
-                        length = func_801E80F0(thread, D_800D3278->code + pc);
+                        length = func_801E80F0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3A:
-                        length = func_801E818C(thread, D_800D3278->code + pc);
+                        length = func_801E818C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3B:
-                        length = func_801E81EC(thread, D_800D3278->code + pc);
+                        length = func_801E81EC(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3C:
-                        length = func_801E823C(thread, D_800D3278->code + pc);
+                        length = func_801E823C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3D:
-                        length = func_801E828C(thread, D_800D3278->code + pc);
+                        length = func_801E828C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3E:
-                        length = func_801E82DC(thread, D_800D3278->code + pc);
+                        length = func_801E82DC(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3F:
-                        length = func_801E83C0(thread, D_800D3278->code + pc);
+                        length = func_801E83C0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x40:
-                        length = func_801E7B2C(thread, D_800D3278->code + pc);
+                        length = func_801E7B2C(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x41:
-                        length = func_801E7FF4(thread, D_800D3278->code + pc);
+                        length = func_801E7FF4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x42:
-                        length = func_801E86D0(thread, D_800D3278->code + pc);
+                        length = func_801E86D0(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x43:
-                        length = func_801E86F4(thread, D_800D3278->code + pc);
+                        length = func_801E86F4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x44:
-                        length = func_801E8718(thread, D_800D3278->code + pc);
+                        length = func_801E8718(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x45:
-                        length = func_801E84A4(thread, D_800D3278->code + pc);
+                        length = func_801E84A4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x46:
-                        length = func_801E8600(thread, D_800D3278->code + pc);
+                        length = func_801E8600(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x47:
-                        length = func_801E86AC(thread, D_800D3278->code + pc);
+                        length = func_801E86AC(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x48:
-                        length = func_801E8750(thread, D_800D3278->code + pc);
+                        length = func_801E8750(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x49:
-                        length = func_801E7424(thread, D_800D3278->code + pc);
+                        length = func_801E7424(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x4A:
-                        length = func_801E7660(thread, D_800D3278->code + pc);
+                        length = func_801E7660(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x4B:
-                        length = func_801E7684(thread, D_800D3278->code + pc);
+                        length = func_801E7684(thread, battle_state_of_event_script->code + pc);
                         break;
                     }
-                    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] =
-                        length + D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level];
+                    battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] =
+                        length + battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level];
                 } while (--steps != 0);
             }
-            if (D_800D3278->unk801 != 0 && --D_800D3278->unk801 == 1) {
+            if (battle_state_of_event_script->unk801 != 0 && --battle_state_of_event_script->unk801 == 1) {
                 again = 0;
             }
         } while (again);

@@ -1487,7 +1487,10 @@ def check_unit(repo: Repository, plan: Plan, where: str, row: Row) -> None:
     stem = row.new[:-2] if row.new.endswith(".c") else row.new
     if entry is None:
         old = Path(row.old) if "/" in row.old else Path("decomp/src") / row.image / row.old
-        if not old.exists() and old.with_name(f"{stem}.c").exists():
+        folder = Path("decomp/src") / row.image
+        here = [old] if "/" in row.old else [*folder.rglob(f"{old.stem}.c")]
+        moved = old.with_name(f"{stem}.c").exists() or any(folder.rglob(f"{stem}.c"))
+        if not any(path.exists() for path in [old, *here]) and moved:
             plan.applied += 1  # already moved
         else:
             plan.errors.append(

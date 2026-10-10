@@ -9,17 +9,17 @@ recovered C at run time, and `--sweep` reads every record the game's loaders
 hand to them on both discs and prints aggregate counts only. The world map
 modes, sprite kinds and TMD primitives are described with their sections below.
 
-Battle formulas (decomp/src/battle/battle_8008CCCC.c). For each target in the
-mask, func_800941A4 calls D_800C348C[D_800C3DFC->formula](). An attacker whose
+Battle formulas (decomp/src/battle/battle_menus_and_resolver.c). For each target in the
+mask, battle_resolve_action calls battle_formula_table[battle_current_command->formula](). An attacker whose
 record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA bit
-0x10, goes to func_8009C198 instead: it selects a party member's gear descriptor
-(an enemy keeps its own) and calls D_800C34DC[formula](). The 0x28-byte
+0x10, goes to battle_resolve_gear_action instead: it selects a party member's gear descriptor
+(an enemy keeps its own) and calls battle_gear_formula_table[formula](). The 0x28-byte
 descriptors come from the battle setup archive, directory (12, 0) file 3
 (resident mode_battle_load_files), an offset table of packed blocks that ovl2615
 func_801E5384 unpacks: archive[4] holds the enemy commands, archive[5 + character]
 a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40, 0x5f0
 and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1
-action-list entries (func_80078998 -> func_80085CCC), so the census also reads
+action-list entries (battle_action_list_act -> battle_commit_action), so the census also reads
 which commands the enemy data files' AI scripts select (tools.analysis.battle_ai)
 and whether each enemy fights in a gear (its record's +0x15a, copied by ovl2615
 func_801E4870).
@@ -37,11 +37,11 @@ ones by model_relocate_sprite_model) come from these loaders:
   the geometry component (component 2, field func_80070CC8);
 * ovl2143 actors, the model file of each pair after ovl2143 in (4, 0), files
   0x6bb + 2k (field func_80077884, the gear shop's func_801CF9BC);
-* battle objects (func_800A8BF0: the group between the model file's entries 2
+* battle objects (battle_create_object: the group between the model file's entries 2
   and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
   of enemy set files (12, 1) 2n + 3 (ovl2615 func_801E6314), object sets
-  (0x28, 0) 2s + 1 (func_800A96B4), gears (0x28, 1) base + 1 and their part
-  files base + 2 + v by D_800C3508 (func_800A9540, func_800A979C);
+  (0x28, 0) 2s + 1 (battle_read_object_set_files), gears (0x28, 1) base + 1 and their part
+  files base + 2 + v by battle_gear_file_table (battle_read_gear_files, battle_create_object_from_files);
 * arena model files (0x30, 1) id + 2 (menu func_8008509C; relocated against the
   base word at +0x1c, func_8008AF6C, and bound by func_8008B38C) and the menu
   overlay's own D_80091FB0 (func_800852C4);
@@ -74,14 +74,14 @@ from tools.analysis.overlay_scripts import BASE, disc_image
 from tools.analysis.packed import PackedError, decode_block
 
 ROOT = Path(__file__).resolve().parents[2]
-FORMULA_UNIT = "battle/battle_8008CCCC.c"  # D_800C348C, D_800C34DC
-GEAR_FILE_UNIT = "battle/battle_8009E53C.c"  # D_800C3508
+FORMULA_UNIT = "battle/battle_menus_and_resolver.c"  # battle_formula_table, battle_gear_formula_table
+GEAR_FILE_UNIT = "battle/battle_scene.c"  # battle_gear_file_table
 MODEL_UNIT = "resident/model_renderer.c"  # model_primitive_types and its prepare routines
 AREA_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B584
 MODE_UNIT = "worldmap/worldmap_80072238.c"  # D_8009A058, the world map modes
 SPRITE_UNIT = "resident/sprite_vm_draw.c"  # sprite_draw_callbacks, the sprite task callbacks
-TMD_UNIT = "battle/battle_800B15D8.c"  # func_800B1720 packets, func_800B1F6C draws
-FORMULA_TABLES = (("D_800C348C", "func_800941A4"), ("D_800C34DC", "func_8009C198"))
+TMD_UNIT = "battle/battle_tmd_screen_effects.c"  # battle_tmd_build_packets packets, battle_tmd_draw_object draws
+FORMULA_TABLES = (("battle_formula_table", "battle_resolve_action"), ("battle_gear_formula_table", "battle_resolve_gear_action"))
 
 
 class CensusError(ValueError):
@@ -143,7 +143,7 @@ def formula_tables(root: Path = ROOT) -> tuple[FormulaTable, ...]:
         handlers = tuple(entry.strip() for entry in body.split(",") if entry.strip())
         if length not in (None, len(handlers)):
             raise CensusError(f"{name}[{length}] lists {len(handlers)} handlers")
-        if f"{name}[D_800C3DFC->formula]()" not in function_body(text, caller):
+        if f"{name}[battle_current_command->formula]()" not in function_body(text, caller):
             raise CensusError(f"{caller} does not index {name} by the formula")
         tables.append(FormulaTable(name, caller, handlers))
     return tuple(tables)
@@ -186,8 +186,8 @@ def primitive_table(root: Path = ROOT) -> PrimitiveTable:
 
 @cache
 def gear_files(root: Path = ROOT) -> tuple[tuple[int, int], ...]:
-    """D_800C3508: per gear its file base in (0x28, 1) and part file count."""
-    _, body = initializer(unit(GEAR_FILE_UNIT, root), "D_800C3508")
+    """battle_gear_file_table: per gear its file base in (0x28, 1) and part file count."""
+    _, body = initializer(unit(GEAR_FILE_UNIT, root), "battle_gear_file_table")
     values = [int(v, 0) for v in body.replace("\n", " ").split(",") if v.strip()]
     return tuple(zip(values[::2], values[1::2], strict=True))
 
@@ -206,7 +206,7 @@ def area_files(root: Path = ROOT) -> tuple[int, ...]:
 DESCRIPTOR = 0x28
 FORMULA = 0x16  # CommandDescriptor.formula
 FLAGS_A = 0x0A  # CommandDescriptor.flagsA
-GEAR_DESCRIPTOR = 0x10  # flagsA bit func_800941A4 hands to func_8009C198
+GEAR_DESCRIPTOR = 0x10  # flagsA bit battle_resolve_action hands to battle_resolve_gear_action
 SETUP_ARCHIVE = (12, 0, 3)  # mode_battle_load_files: 80028470(12, 0), file 3 into mode_battle_setup_archive
 # func_801E5384: archive entry, bytes copied, and the first entry after the run
 # (archive[0x10] and archive[0x24] are loaded for other uses).
@@ -216,7 +216,7 @@ GEAR_COMMANDS = (0x11, 0x690, 0x24)  # archive[0x11 + gear]
 ENEMY_RECORDS = 0x32  # 801e4870: records from +0x32, 0x170 bytes per enemy id
 RECORD = 0x170
 GEAR_FLAG = 0x15A  # Combatant.flags15A, bit 0x80
-ACT = 1  # action-list entry type func_800793F0 hands to func_80078998
+ACT = 1  # action-list entry type battle_action_list_execute hands to battle_action_list_act
 
 
 def archive_entries(data: bytes) -> list[bytes]:
@@ -316,8 +316,8 @@ def family_census(
 
 
 def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
-    """0 for D_800C348C, 1 for D_800C34DC: an enemy in a gear, or a descriptor
-    with flagsA 0x10, goes through func_8009C198 with its own descriptor."""
+    """0 for battle_formula_table, 1 for battle_gear_formula_table: an enemy in a gear, or a descriptor
+    with flagsA 0x10, goes through battle_resolve_gear_action with its own descriptor."""
     return int(in_gear or bool(descriptor[1] & GEAR_DESCRIPTOR))
 
 
@@ -383,9 +383,9 @@ def enemy_commands(census: FormulaCensus, root: Path, disc: int) -> None:
                         (commands.in_gear if in_gear else commands.on_foot)[command] += 1
 
 
-# A gear's technique slot k is its descriptor 21 + k (battle.c func_8008B224
-# offers it, func_8008ADD0 commits it), offered only while bit 0x8000 >> k of
-# the pilot's CharacterBattleData.mask6 is set (func_80089C6C reads bits 0-15).
+# A gear's technique slot k is its descriptor 21 + k (battle.c battle_confirm_art
+# offers it, battle_execute_chosen_art commits it), offered only while bit 0x8000 >> k of
+# the pilot's CharacterBattleData.mask6 is set (battle_is_flag_in_mask reads bits 0-15).
 TECHNIQUE_BASE = 21
 NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data: the game data a new game starts from
 CHARACTER, CHARACTERS, GEAR_ID = 0x26C, 11, 0xA0  # 0xa4-byte records, +0xa0 the gear
@@ -401,7 +401,7 @@ class Techniques:
     mask6 can hold: the new-game state, battle-results learning (ovl2596
     func_801E3F28), field ext d0 (a character's records copied over another's,
     gear and masks) and ext a1 (set_gear). Only the debug battle selector
-    (ovl2606 func_8009B1E4) writes the masks otherwise."""
+    (ovl2606 battle_grant_debug_items_and_skills) writes the masks otherwise."""
 
     pilots: dict[int, set[int]] = field(default_factory=dict)  # gear -> characters
     bits: dict[int, int] = field(default_factory=dict)  # character -> possible mask6
@@ -437,7 +437,7 @@ def technique_census(
     disc: Disc, outside: list[tuple[int, int, int]], root: Path = ROOT
 ) -> Techniques:
     """The new-game state, the growth table and the field scripts of `disc`
-    against the gear descriptors past D_800C34DC."""
+    against the gear descriptors past battle_gear_formula_table."""
     game = disc.data(disc.slot(*NEW_GAME))
     results = disc.sectors(disc.slot(*RESULTS))
     growth = decode_block(results[struct.unpack_from("<I", results, 4)[0] :]).data
@@ -635,7 +635,7 @@ def record_count(disc: Disc, group: int, index: int, file: int) -> int:
 
 
 def object_model_group(data: bytes, base: int = 0) -> tuple[int, int]:
-    """func_800A8BF0: an object model file is an offset table (8003342c); its
+    """battle_create_object: an object model file is an offset table (8003342c); its
     model group runs from entry 2 to entry 3 (the hierarchy)."""
     count = struct.unpack_from("<I", data, base)[0]
     if not 4 <= count < 0x40 or base + 4 + 4 * count > len(data):
@@ -648,7 +648,7 @@ def object_model_group(data: bytes, base: int = 0) -> tuple[int, int]:
 
 def object_refs(where: str, data: bytes, base: int = 0) -> list[ModelRef]:
     group, end = object_model_group(data, base)
-    view = data[group:end]  # the copy func_800A8BF0 relocates
+    view = data[group:end]  # the copy battle_create_object relocates
     return group_refs(where, view, 0)
 
 
@@ -1019,19 +1019,19 @@ def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
 # ---------------------------------------------------------------------------
 #
 # Battle draws PlayStation TMD models (battle/effect_script.h's "effect script
-# file"): the resident model_slot_ring_tmd (the slot-highlight ring, func_800BD098) and the model a
-# battle sprite command f3 binds as its parts (func_800C11CC), which ovl3384
+# file"): the resident model_slot_ring_tmd (the slot-highlight ring, battle_slot_ring_create) and the model a
+# battle sprite command f3 binds as its parts (battle_sprite_vm_run), which ovl3384
 # func_801FC4C4 can also break into pieces. Both read object 0
-# (func_800B168C: 0x1c-byte entries after a 0xc-byte header); each primitive
+# (battle_tmd_get_object: 0x1c-byte entries after a 0xc-byte header); each primitive
 # is olen (packet words - 1), ilen (data words - 1), flag and mode bytes and
-# its data. func_800B1720 builds a packet and func_800B1F6C draws it by kind
+# its data. battle_tmd_build_packets builds a packet and battle_tmd_draw_object draws it by kind
 # (mode & 0x1c, plus 0x100 when flag bit 0, no lighting, is clear); ovl3384
-# switches on the same kinds. func_800B16A4 sizes the packets by olen.
+# switches on the same kinds. battle_tmd_get_packet_size sizes the packets by olen.
 
 TMD_OBJECT = 0xC
 RESIDENT_TMD = 0x8001C76C
 POLYGON = 0x20  # GPU command codes 0x20-0x3f draw polygons
-# libgpu.h packet sizes of the types func_800B1720 writes
+# libgpu.h packet sizes of the types battle_tmd_build_packets writes
 POLY_SIZES = {
     "POLY_F3": 0x14,
     "POLY_G3": 0x1C,
@@ -1078,24 +1078,24 @@ def case_groups(body: str) -> list[tuple[tuple[int, ...], str]]:
 
 @dataclass(frozen=True)
 class TmdKind:
-    packet: str  # the POLY type func_800B1F6C draws for the kind's mode bits
-    reads: int  # primitive bytes func_800B1720 and func_800B1F6C read
+    packet: str  # the POLY type battle_tmd_draw_object draws for the kind's mode bits
+    reads: int  # primitive bytes battle_tmd_build_packets and battle_tmd_draw_object read
 
 
 @cache
 def tmd_kinds(root: Path = ROOT) -> dict[int, TmdKind]:
-    """Each kind func_800B1720 and func_800B1F6C handle: func_800B1F6C's
+    """Each kind battle_tmd_build_packets and battle_tmd_draw_object handle: battle_tmd_draw_object's
     second switch (mode & 0x1c) gives the packet each mode draws (the builder
     writes the colour bytes of the flat quads through POLY_F3), and the bytes
     read are the furthest cmd[] byte (builder) and vertex or normal index
     (both switches of the drawer) of the kind's cases."""
     text = unit(TMD_UNIT, root)
     reads: dict[int, int] = {}
-    for labels, statements in case_groups(kr_body(text, "func_800B1720")):
+    for labels, statements in case_groups(kr_body(text, "battle_tmd_build_packets")):
         offsets = [int(o, 0) + 1 for o in re.findall(r"cmd\[(0x[0-9A-Fa-f]+|\d+)\]", statements)]
         for label in labels:
             reads[label] = max([reads.get(label, 0), *offsets])
-    draw = kr_body(text, "func_800B1F6C")
+    draw = kr_body(text, "battle_tmd_draw_object")
     split = draw.index("kind = cmd[3] & 0x1C;\n        switch")
     for labels, statements in case_groups(draw[:split]):
         halves = re.findall(r"SET_VERTICES[34]\(([^)]*)\)|cmd, (0x[0-9A-Fa-f]+)\)", statements)
@@ -1108,12 +1108,12 @@ def tmd_kinds(root: Path = ROOT) -> dict[int, TmdKind]:
     for labels, statements in case_groups(draw[split:]):
         types = set(re.findall(r"\((POLY_\w+) \*\)prims", statements))
         if len(types) != 1:
-            raise CensusError(f"func_800B1F6C mode cases {labels} draw {sorted(types)}")
+            raise CensusError(f"battle_tmd_draw_object mode cases {labels} draw {sorted(types)}")
         packet = types.pop()
         for label in labels:
             packets[label] = packet
     if any(kind & 0x1C not in packets for kind in reads):
-        raise CensusError("func_800B1F6C draws no packet for a kind func_800B1720 builds")
+        raise CensusError("battle_tmd_draw_object draws no packet for a kind battle_tmd_build_packets builds")
     return {kind: TmdKind(packets[kind & 0x1C], reads[kind]) for kind in sorted(reads)}
 
 
@@ -1146,7 +1146,7 @@ def walk_tmd(
         census.primitives[kind] += 1
         census.modes[mode] += 1
         spec = kinds.get(kind)
-        if mode & 0xE0 != POLYGON:  # func_800B1720 writes the mode as the packet's GPU code
+        if mode & 0xE0 != POLYGON:  # battle_tmd_build_packets writes the mode as the packet's GPU code
             census.errors.append(f"{where}: primitive {number} mode {mode:#x} is not a polygon")
         if spec is None:
             census.errors.append(f"{where}: primitive {number} kind {kind:#x} has no case")
@@ -1379,7 +1379,7 @@ def kind_report(results: list[KindCensus]) -> list[str]:
 def tmd_report(results: list[TmdCensus]) -> list[str]:
     kinds = tmd_kinds()
     out = [
-        f"TMD primitives: {len(kinds)} kinds (func_800B1720 builds, func_800B1F6C draws;"
+        f"TMD primitives: {len(kinds)} kinds (battle_tmd_build_packets builds, battle_tmd_draw_object draws;"
         " mode & 0x1c, 0x100 lit)"
     ]
     for n, result in enumerate(results, 1):

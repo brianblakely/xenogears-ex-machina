@@ -97,27 +97,27 @@ typedef struct BattleGraphics {
     u16 barCluts[4];         /* +0xA2AC time bar: normal, party-wide, slow, haste */
 } BattleGraphics;
 
-extern BattleGraphics *D_800C3EA4;
+extern BattleGraphics *battle_graphics;
 
 /* The party panel: its layout, name glyphs and values. */
-extern u8 D_800D3280;      /* party panel layout */
-extern u16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
-extern s16 D_800C3068[]; /* party panel glyph x: [member * 24 + glyph] */
-extern u8 D_800D2D88[5];   /* name glyph codes */
-extern u8 D_800C3214[5][6]; /* list separator rows by list size (3-7) */
-extern s16 D_800D3330;     /* panel member maximum HP */
-extern s16 D_800D2FE0;     /* its digits' remainder */
-extern s16 D_800D2E58;     /* panel member HP */
-extern s16 D_800D2D38;     /* its digits' remainder */
-extern s32 D_800D333C;     /* panel gear HP */
-extern s32 D_800D3018;     /* its digits' remainder */
-extern s32 D_800D3668;     /* panel gear maximum HP */
-extern u8 D_800C3E08[3]; /* panel value digits */
-extern u8 D_800D2D54[7]; /* panel maximum digits */
+extern u8 battle_party_panel_layout;      /* party panel layout */
+extern u16 battle_panel_x_by_layout[]; /* party panel x: [layout * 3 + member] */
+extern s16 battle_panel_glyph_x[]; /* party panel glyph x: [member * 24 + glyph] */
+extern u8 battle_panel_gear_hp_digits[5];   /* name glyph codes */
+extern u8 battle_separator_rows_by_list_size[5][6]; /* list separator rows by list size (3-7) */
+extern s16 battle_panel_max_hp;     /* panel member maximum HP */
+extern s16 battle_panel_max_hp_remainder;     /* its digits' remainder */
+extern s16 battle_panel_hp;     /* panel member HP */
+extern s16 battle_panel_hp_remainder;     /* its digits' remainder */
+extern s32 battle_panel_gear_hp;     /* panel gear HP */
+extern s32 battle_panel_gear_hp_remainder;     /* its digits' remainder */
+extern s32 battle_panel_gear_max_hp;     /* panel gear maximum HP */
+extern u8 battle_panel_hp_digits[3]; /* panel value digits */
+extern u8 battle_file2_block_and_max_hp_digits[7]; /* panel maximum digits */
 
 /* 80070E2C's unit. */
-void func_800728B8(POLY_FT4 *prims, s32 count, s32 first); /* add every other primitive to the OT */
-void func_80077610(void); /* allocate and set up the graphics block */
-void func_8007765C(void); /* release it after a frame */
+void battle_add_prims_to_ot(POLY_FT4 *prims, s32 count, s32 first); /* add every other primitive to the OT */
+void battle_alloc_list_page_block(void); /* allocate and set up the graphics block */
+void battle_release_list_page_block(void); /* release it after a frame */
 
 #endif

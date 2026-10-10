@@ -71,18 +71,18 @@ typedef struct EventScriptFile {
     EventScriptEntry entries[1];
 } EventScriptFile;
 
-extern ScriptState *D_800D3278;
-extern EventScriptFile *D_800D39D0; /* the script file */
-extern void *D_800D3340;            /* the script set's data */
+extern ScriptState *battle_state_of_event_script;
+extern EventScriptFile *battle_file_of_event_script; /* the script file */
+extern void *battle_messages_of_event_script;            /* the script set's data */
 
 /* The battle's side: the module block and its load, a byte forwarded to the
  * module (80070E2C's unit) and a thread's member state (80079ED8's). */
-extern u8 D_800C3D48;      /* the 801e5000 module is loaded */
-extern s32 D_800D3284;     /* its block */
-extern s32 D_800D328C;
+extern u8 battle_uses_event_script;      /* the 801e5000 module is loaded */
+extern s32 battle_heap_mark_for_event_script;     /* its block */
+extern s32 battle_heap_reserve_for_event_script;
 
-void func_80070EB0(s32 value); /* forward a byte to the module when it is loaded */
-void func_80080C6C(u8 index);  /* set thread index's member state to done */
+void battle_run_event_script(s32 value); /* forward a byte to the module when it is loaded */
+void battle_mark_event_thread_effect_done(u8 index);  /* set thread index's member state to done */
 
 /* The interpreter's entries (ovl3087). */
 void func_801E5160(void); /* load the script set and set up the threads */

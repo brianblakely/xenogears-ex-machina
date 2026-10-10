@@ -92,7 +92,7 @@ it in ``verify``): a symbol a linker script given with ``--script`` assigns
 loaded image or uninitialized data, where an address copied from the original
 stands in for an object the link should place. A script named with
 ``--views`` may define names there only as views, expressions of symbols
-the link places (``D_800C3EB4 = D_800C3EB0 + 0x4``), and must define one.
+the link places (``battle_area_slots = battle_area + 0x4``), and must define one.
 ``warn`` reports and passes; ``strict`` fails.
 
 ``--relocations`` (also run by ``verify``) fails on each address of the

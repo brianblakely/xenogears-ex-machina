@@ -11,8 +11,8 @@
  * 800B3358-800B3F04), and the shattered screen (800B3F04's unit 800B6F0C,
  * 800B7134's to 800B7424). */
 
-/* The camera quake task (D_800C3548): an amplitude easing from one to
- * another, applied with alternating signs to the view offset D_800C354C. */
+/* The camera quake task (battle_current_quake): an amplitude easing from one to
+ * another, applied with alternating signs to the view offset battle_quake_view_offset. */
 typedef struct {
     Task task;
     SVECTOR amplitude; /* 0x1C */
@@ -23,7 +23,7 @@ typedef struct {
     s32 total;         /* 0x3C */
 } Quake;
 
-/* The screen fade (D_800C3558): a full-screen blended rectangle whose
+/* The screen fade (battle_current_screen_fade): a full-screen blended rectangle whose
  * colour eases to a target, drawn by a second task. */
 typedef struct {
     Task task;
@@ -37,7 +37,7 @@ typedef struct {
     u8 colour[3];     /* 0x48 */
 } ScreenFade;
 
-/* The stage light fade (D_800C3560): light slot 0 (800A6444) with its green
+/* The stage light fade (battle_current_light_fade): light slot 0 (800A6444) with its green
  * at 32 less a level easing to a target. */
 typedef struct {
     Task task;
@@ -76,25 +76,25 @@ typedef struct {
     ScreenShard shards[2][14][20];   /* 0x3C */
 } ScreenShatter;
 
-extern Quake *D_800C3548;
-extern SVECTOR D_800C354C; /* the quake's view offset */
-extern ScreenFade *D_800C3554;
-extern ScreenFade *D_800C3558;
-extern u8 D_800C355C; /* fade on the second screen fade */
-extern LightFade *D_800C3560;
-extern u8 D_800D3638;
+extern Quake *battle_current_quake;
+extern SVECTOR battle_quake_view_offset; /* the quake's view offset */
+extern ScreenFade *battle_current_second_screen_fade;
+extern ScreenFade *battle_current_screen_fade;
+extern u8 battle_screen_fade_use_second; /* fade on the second screen fade */
+extern LightFade *battle_current_light_fade;
+extern u8 battle_screen_fade_blocked;
 
-extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
-extern SVECTOR D_800C35AC[3];
+extern SVECTOR battle_shatter_upper_left_triangle[3]; /* the shards' triangles, per layer */
+extern SVECTOR battle_shatter_lower_right_triangle[3];
 
 /* The shattered screen's set-up (800B7424). */
-extern VECTOR D_800C35C4; /* a shard's launch velocity before turning */
+extern VECTOR battle_shatter_launch_velocity; /* a shard's launch velocity before turning */
 
 /* Fade light slot 0; defined without a prototype (to, frames, red, blue,
  * field4C, field4E). */
-void func_800B3CD4();
-void func_800B3E04(void);        /* save the three VRAM columns at 0x200-0x2BF */
-void func_800B6F0C(Task *task);  /* the shattered screen's update */
-void func_800B73A0(void);        /* shatter the screen copied to VRAM */
+void battle_light_fade_start();
+void battle_save_vram_columns(void);        /* save the three VRAM columns at 0x200-0x2BF */
+void battle_shatter_update(Task *task);  /* the shattered screen's update */
+void battle_shatter_start(void);        /* shatter the screen copied to VRAM */
 
 #endif

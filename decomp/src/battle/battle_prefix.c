@@ -3,4 +3,4 @@
  * (docs/matching.md). */
 #include "common.h"
 
-const s32 D_8006FAF0 = 6;
+const s32 battle_overlay_number = 6; /* 8006FAF0 */

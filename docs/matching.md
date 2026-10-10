@@ -69,7 +69,7 @@ rest on the stack after 16 bytes the caller reserves for those four, results in
 
 Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay out
 of the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to
-old-gcc 2.6.3 for saved whole units of movie, battle_8009E53C, slot39 and sound;
+old-gcc 2.6.3 for saved whole units of movie, battle_scene, slot39 and sound;
 CC1PSX 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
 field_8007A44C, menu5, worldmap_80083A00 and worldmap_80090A84; Psy-Q ASPSX 2.34
 assembles movie 800737ec, battle 800a7064 and sound 8003b424 to the text that
@@ -222,13 +222,13 @@ address the C spells as a number, which neither this check nor the relocation sc
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
 other target's address a link holds without a relocation, outside asset and
 included bytes and the mode table); in the 26 links they are battle's three reads of
-the boot word mode_disc_mode (battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45,
-battle_800BFE48.c func_800C0FAC), a number in the original too: its CDK units load
+the boot word mode_disc_mode (battle_sprite_commands.c battle_sprite_command_run sprite commands 0x44/0x45,
+battle_settle.c battle_install_command_file_parts), a number in the original too: its CDK units load
 it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
 compile `lui v0,%hi(mode_disc_mode); lw v1,%lo(mode_disc_mode)(v0)` and the battle link
 fails its BSS bounds; and the load addresses of overlays and the heap's end
-(resident main.c:87, mode_battle_and_menu.c:189/437/445; battle_80070E2C.c:323/386/399/500,
-battle_800BD3AC.c:765; field.c:2906), which no check ties to the images loaded
+(resident main.c:87, mode_battle_and_menu.c:189/437/445; battle_turns_and_hud.c:323/386/399/500,
+battle_frame.c:765; field.c:2906), which no check ties to the images loaded
 there. In data the only such words are the mode table's, compared below, and five
 in each resident's packed boot logo and console font, asset bytes that merely look
 like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the
@@ -341,7 +341,7 @@ ones in `inline_c.h`; members no library signature names under the PsyQ name the
 callers give them, else their library's prefix, `libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types, variables and
 calls; `gamedata.h` holds the game data game_data), `battle/` (one header per
 battle overlay subsystem whose types, variables or calls its modules and overlays
-use, with the battle area D_800C3EB0 and its work area D_800CCCE8; each function
+use, with the battle area battle_area and its work area battle_work_area; each function
 sits in the header of the subsystem that defines it; also the screen burst that
 ovl2615 and ovl3387 both carry; `model.h` and `effect.h` hold the records of the
 battle's model and effect library, which ovl2143 links a copy of, and declare no
@@ -758,8 +758,8 @@ converted to C per unit. What converting the targets' `.data` established:
   func_8007F8AC and func_8007F968; fill 65 79) and gear parameters D_8009B1A4 (3 s16
   for the members 0-2 func_8008C364 passes; fill 00 3c), slot39's sheet images
   D_801E97AC (13 rows of 5 u8, func_801E1544 for the rows of func_801E1AC8; fill 00 07
-  2e) and battle's combo flags D_800C34CC (15 u8: func_80086B88, func_80086C88 and
-  func_80086F98 index at most 14 from combo steps 0-2, or 0xff at attack level 4;
+  2e) and battle's combo flags battle_combo_step_flags (15 u8: battle_can_use_combo_step, battle_combo_chain_add_gear_step and
+  battle_combo_record_gear_step index at most 14 from combo steps 0-2, or 0xff at attack level 4;
   fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
   object whose last 1-3 bytes, whole byte or halfword elements as cc1 emitted them
   whatever the declared shape (a flat table's last elements, the end of a 2-D table's
@@ -781,13 +781,13 @@ converted to C per unit. What converting the targets' `.data` established:
   continuing both column curves, frame rates 60/n for n = 2-60 dividing 60, the party
   panels' per-member pattern, a pilot per gear of the 20, lamp frames, per-character
   and per-gear tables; the last rows of 2-D tables, battle's timer reloads and list
-  separators by AP and list size (D_800C31EC, D_800C3214: each row holds one value
+  separators by AP and list size (battle_ap_timer_reload_table, battle_separator_rows_by_list_size: each row holds one value
   more than the row before), the field compass grid's (rows 4-8 alike or stepping
   on), the menu wheel's offsets (the second row's slide -0x24 mirrors the first's)
   and the resident's sound programs per battle mode (mode_battle_sound_programs, 0xff absent as for
   modes 0 and 4); and the last members of whole records, battle's 26 command panel
-  pages D_800C2F98-D_800C2FFC (the lists each fills, 0xff none, and their glyph
-  sets, read through D_800C3000) and sound banks D_800C35DC, the field's panel
+  pages battle_command_panel_page_00-battle_command_panel_page_19 (the lists each fills, 0xff none, and their glyph
+  sets, read through battle_command_panel_pages) and sound banks battle_sound_table, the field's panel
   frames, particle sprites (the last corner closes the quad), portrait and text
   places (palette rows e0-e7), icon and strip origins, image pieces and style pages,
   the menu's shot kinds, animation rules (the last's next -1, as for the 17 before
@@ -798,30 +798,30 @@ converted to C per unit. What converting the targets' `.data` established:
   that continued its structure's pattern would pass this review too. The
   unreferenced ones are words, structures, strings, documented unread tables and
   copies, or tables read through a base formed before
-  them (`D_800C34B3`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
+  them (`battle_combo_next_step_table_by_paid`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
   D_801E96A4 and D_801E96A5 and the u16 masks D_801E96A8 (GCC 2.6.3 emits consecutive
   byte scalars back to back and aligns the arrays to a word), are taken as the flag's
-  padding by analogy with the flags closure D links with theirs, battle's D_800C2050
+  padding by analogy with the flags closure D links with theirs, battle's battle_applying_item_results
   (08 00 00) and ovl2596's D_801E44C0 (04 00 00): D_801E96A5 is linked with them, with
   INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). Neither the bytes nor
   the vendor tools decide it, here or for those two, which could as well each be a
   flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
-  801E96A6; battle's flag D_800C3444 before the same two mask tables (D_800C3448,
-  D_800C3468) is followed by zeros, as slot39's other byte groups are (801E977B,
+  801E96A6; battle's flag battle_paused before the same two mask tables (battle_slot_bits,
+  battle_flag_bits) is followed by zeros, as slot39's other byte groups are (801E977B,
   801E9786-87); and Psy-Q 3.5's CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the
   whole slot39 unit, with or without a byte 8 there, to the original .data but for
   zeros at every stray byte (08 without the byte, 07 2e after D_801E97AC in both).
-  Battle's D_800C204C and D_800C37C8 (00 08 00 71, 00 74 72 73) are no such analogue:
-  GCC would put the byte flag that follows each (D_800C2050, D_800C37CC) directly
+  Battle's battle_in_automatic_turn and battle_effects_disabled (00 08 00 71, 00 74 72 73) are no such analogue:
+  GCC would put the byte flag that follows each (battle_applying_item_results, battle_gear_objects_loaded) directly
   after it, so their three bytes need a unit boundary, unreferenced data or a
   word-aligned next flag.
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
   so: the strings D_8006FB80 and D_8006FC74 (field), D_800706D4 (menu6), D_8028007C
   (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects D_800925A4
-  (menu7, `ind` before menu2's .sbss) and D_800C3488 (battle), all of ASPSX 2.34
-  units, and D_800C35D4 (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
+  (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
+  units, and battle_music_lowered (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
   map's D_8009A68C and D_8009B1A4 of 2.79 units; so does the world map's cue sequence
   asset D_8009A6AC. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
   .data or a 5-byte .rdata stays that long, also when another section follows, and a
@@ -836,17 +836,17 @@ converted to C per unit. What converting the targets' `.data` established:
   the targets' links (resident 6, menu 1, slot39 2) are zero in the originals; the
   non-zero ones lie inside the included objects and the asset above.
 - One table's extent stays open. ovl2143's unread copy D_801E85A4 of battle's gear
-  file table D_800C3508 is battle's byte for byte, as its copy D_801E8590 of the
-  18-byte extra file bases D_800C3530 is, but for the last pair: 66 00 where battle's
+  file table battle_gear_file_table is battle's byte for byte, as its copy D_801E8590 of the
+  18-byte extra file bases battle_extra_file_bases is, but for the last pair: 66 00 where battle's
   has 00 00. The bases of gears 0-18 chain (each is the previous gear's base plus 2
-  plus that gear's variant count, the files func_800A9540 reads) and fill directory
+  plus that gear's variant count, the files battle_read_gear_files reads) and fill directory
   (0x28, 1) exactly: on both discs its file 1 heads a sub-directory of the 62 files
   2-63 that gears 0-18 take (tools/analysis/disc_index.py). Neither twentieth pair
   continues the chain or names gear files (base 0 reads that header, base 102 the
   `wds ` wave banks 103 and 104), but the game data holds 20 gear records (field's
-  func_80088198) and func_800A9540 indexes the table by a combatant's gear id without
+  func_80088198) and battle_read_gear_files indexes the table by a combatant's gear id without
   a range check. With 19 pairs, battle's 00 00 is GCC's zero fill before the
-  word-aligned D_800C3530, and ovl2143's 66 00 follow the unit's last .data object as
+  word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the unit's last .data object as
   `ind` follows menu7's D_800925A4 (above): both are ASPSX 2.34 units, and both files
   go on with zeros for the uninitialized variables after those bytes (ovl2143's .bss,
   the menu's .sbss). Neither the readers nor the vendor tools, which write zeros at
@@ -867,10 +867,10 @@ converted to C per unit. What converting the targets' `.data` established:
   camera's matrix), hundreds of times and also from CDK units, where one symbol's
   members share a `%hi`: `battle.data.ld` defines those names from the objects'
   linked addresses. It also names two tables from before them (the timer reload
-  rows, the combo step table one byte before D_800C34B4): GCC 2.6.3 forms such a
-  base with `la` only for a declared array, and `D_800C34B4[step][paid - 1]` puts
+  rows, the combo step table one byte before battle_combo_next_step_table): GCC 2.6.3 forms such a
+  base with `la` only for a declared array, and `battle_combo_next_step_table[step][paid - 1]` puts
   the -1 in the load instead. Where the index form compiles alike, C indexes the
-  object (battle's party panel name glyphs, `D_800C3068[member * 24 + 7 + i]`).
+  object (battle's party panel name glyphs, `battle_panel_glyph_x[member * 24 + 7 + i]`).
   The resident's `link.ld` (the window colour's last two bytes, the CD mix bytes,
   a base for the name slots' second bytes), `menu.bss.ld` (the
   opponent's command byte) and `worldmap.data.ld` (the read list's first
@@ -954,7 +954,7 @@ converted to C per unit. What converting the targets' `.data` established:
   extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
   80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC and at or before
   801DBDB4 (an earlier one moves the `.bss` boundary with it), and battle 800B7870's
-  unit at or before 800B7134, whose shatter draw shares its D_800C3CB4; the latest
+  unit at or before 800B7134, whose shatter draw shares its battle_shatter_ot; the latest
   is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last

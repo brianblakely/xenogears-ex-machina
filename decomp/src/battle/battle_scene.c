@@ -9,7 +9,7 @@
  * --expand-div for this unit). The text boundary lies after 8009DBFC and at
  * or before 8009E788; 8009E53C is where the gear formula functions end and
  * the part bookkeeping (8009E53C-8009E788) starts. The unit ends before
- * 800B15D8, where the code generation changes (see battle_800B15D8.c). */
+ * 800B15D8, where the code generation changes (see battle_tmd_screen_effects.c). */
 #include "common.h"
 #include "psyq/abs.h"
 #include "psyq/inline_c.h"
@@ -47,104 +47,104 @@
 #include "resident_views.h"
 
 /* This unit's functions, declared before their first use. */
-void func_8009F708(ModelPart *root);
-void func_800A22E8(EffectPool *pool);
-EffectEntry *func_800A2330(EffectPool *pool);
-s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
-void func_800A2ACC(EffectPool *pool, ModelPart *part);
-void func_800A2D5C(SpritePool *pool);
-s16 func_800A3E98(ImageAnim *anim, s32 ticks);
-void func_800A429C(ImageAnim *anim);
-void func_800A4348(ImageAnim *anim, s16 level);
-void func_800A43F8(ImageAnim *anim, s16 level);
-void func_800A48EC(ModelTable *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void battle_free_model_hierarchy(ModelPart *root);
+void battle_clear_effect_pool(EffectPool *pool);
+EffectEntry *battle_alloc_effect_entry(EffectPool *pool);
+s32 battle_free_effect_entry(EffectPool *pool, EffectEntry *entry);
+void battle_release_transient_effects(EffectPool *pool, ModelPart *part);
+void battle_reset_sprite_pool(SpritePool *pool);
+s16 battle_step_image_anim(ImageAnim *anim, s32 ticks);
+void battle_stop_image_anim(ImageAnim *anim);
+void battle_fade_image_anim_colors(ImageAnim *anim, s16 level);
+void battle_blend_image_anim_colors(ImageAnim *anim, s16 level);
+void battle_draw_stage_hierarchy(ModelTable *models, ModelPart *root, MATRIX *view, s32 unused_light, s32 unused_mode, u32 *ot, s32 buffer,
                    s32 depth);
-void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
-s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
-void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal);
-s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth);
-void func_800A6AE8(void);
-u8 func_800AA514(s16 a, s16 b, s32 c);
-s32 func_800AA650(s32 index);
-void func_800AA6E0(BattleObject *object);
-s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
-void func_800AAB34(BattleObject *object);
-void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
-void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z);
-void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x, s32 y,
+void battle_draw_stage_sky(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
+s32 battle_is_point_in_triangle(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
+void battle_compute_plane_height(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal);
+s32 battle_find_triangle_in_neighbors(SVECTOR *point, s32 triangle, s32 depth);
+void battle_relight_stage(void);
+u8 battle_add_scaled_capped(s16 a, s16 b, s32 c);
+s32 battle_get_object_radius(s32 index);
+void battle_alloc_object_color_fades(BattleObject *object);
+s32 battle_update_object(BattleObject *object, EffectPool *pool, s32 steps, s32 unused_buffer, s32 substeps);
+void battle_follow_parent_object(BattleObject *object);
+void battle_run_effect_script(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps);
+void battle_turn_part_to(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z);
+void battle_start_homing_turn(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x, s32 y,
                    s32 z);
-void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop);
-s32 func_800AE220(BattleObject *object, s32 source);
-void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2);
-void func_800AEEEC(BattleObject *object);
-s32 func_800AEEF8(BattleObject *object);
-void func_800AEF68(BattleObject *object);
-void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
-void func_800AF270(ModelPart *from, ModelPart *to);
-s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale);
-s32 func_800AF400(void);
-u8 func_800AF438(BattleObject *object, u8 slot, u16 *mask); /* the slot of a target code */
-u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag);
-void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
+void battle_start_object_animation(BattleObject *object, Animation *animation, s32 loop);
+s32 battle_get_sound_bank_id(BattleObject *object, s32 source);
+void battle_run_animation_events(BattleObject *object, EffectPool *pool, s32 unused_buffer);
+void battle_stop_object_animation(BattleObject *object);
+s32 battle_get_distance_to_position(BattleObject *object);
+void battle_place_object_at_target(BattleObject *object);
+void battle_detach_part_to_copy(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
+void battle_move_drawn_parts(ModelPart *from, ModelPart *to);
+s16 battle_dot_with_cross_normal(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale);
+s32 battle_get_first_selected_slot(void);
+u8 battle_resolve_target_code(BattleObject *object, u8 slot, u16 *mask); /* the slot of a target code */
+u8 *battle_get_object_animation(BattleObject *object, u8 index, s32 *flag);
+void battle_start_part_tween(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
                    s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration);
-void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
+void battle_show_part(BattleObject *object, ModelPart *part, s32 flags);
+void battle_create_event_sprite(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
                    BattleObject *object);
-void func_800AFC68(Task *node);
-void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z);
-void func_800AFF9C(BattleObject *object);
-void func_800B0060(BattleObject *object);
-void func_800B00D0(void);
-void func_800B00F4(EffectPool *pool);
+void battle_update_following_sprite(Task *node);
+void battle_set_part_transform(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z);
+void battle_put_object_on_ground(BattleObject *object);
+void battle_free_object_extra(BattleObject *object);
+void battle_clear_camera_channels(void);
+void battle_release_camera_channels(EffectPool *pool);
 /* Called unprototyped by the VM (its halfwords passed sign-extended). */
-void func_800B0164(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+void battle_start_camera_channel(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
                    u16 p5, u16 duration);
-void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
-s16 func_800B0B14(s32 key);
-s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
-void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
-s32 func_800B12D0(s32 slot, u8 mask);
+void battle_run_camera_channels(EffectPool *pool, s32 steps, s32 unused, s32 key);
+s16 battle_find_camera_ground_height(s32 key);
+s32 battle_keep_point_off_objects(SVECTOR *from, SVECTOR *point);
+void battle_keep_object_away_from_point(s32 index, s32 x, s32 z, s32 distance);
+s32 battle_can_animation_event_run_for_slot(s32 slot, u8 mask);
 
 /* The unit's own uninitialized variables (its .bss, after
- * battle_8008CCCC.c's), each in a slot of whole words (decomp/Makefile). */
-static LightSlot D_800C3AAC[4];
-static StageColors *D_800C3AC4; /* the stage's colours as loaded */
-static StageColors *D_800C3AC8; /* their working copy */
-static ModelTable D_800C3ACC[20]; /* the scene objects' model tables */
-static s32 D_800C3B6C; /* the model list slot being filled */
-static u8 *D_800C3B70; /* the model group being loaded */
-static u8 D_800C3B74;
-static FileRequest *D_800C3B78; /* the file list being read */
-static s16 D_800C3B7C;
-static s16 D_800C3B80; /* pulse level of the highlight colour */
+ * battle_menus_and_resolver.c's), each in a slot of whole words (decomp/Makefile). */
+static LightSlot battle_light_slots[4]; /* 800C3AAC */
+static StageColors *battle_stage_colors_saved; /* 800C3AC4: the stage's colours as loaded */
+static StageColors *battle_stage_colors_working; /* 800C3AC8: their working copy */
+static ModelTable battle_object_model_tables[20]; /* 800C3ACC: the scene objects' model tables */
+static s32 battle_model_table_slot; /* 800C3B6C: the model list slot being filled */
+static u8 *battle_model_group_being_loaded; /* 800C3B70: the model group being loaded */
+static u8 battle_object_drawing_on; /* 800C3B74 */
+static FileRequest *battle_object_file_list; /* 800C3B78: the file list being read */
+static s16 battle_highlight_pulse_phase; /* 800C3B7C */
+static s16 battle_highlight_pulse_level; /* 800C3B80: pulse level of the highlight colour */
 /* The camera. */
-static u8 D_800C3B84;  /* the channel tag reported in D_800C3B88 */
-static u8 D_800C3B88;  /* bit 0: that channel runs, bit 1: it finished */
-static u8 D_800C3B8C;  /* snap: channels 7 and 8 start at their targets */
-static s16 D_800C3B90; /* orbit yaw */
-static s16 D_800C3B94; /* orbit pitch */
-static s16 D_800C3B98; /* orbit distance */
-static s16 D_800C3B9C; /* orbit height */
-static s16 D_800C3BA0; /* look-at yaw */
-static s16 D_800C3BA4; /* look-at distance */
-static s16 D_800C3BA8; /* look-at height */
-static EffectEntry *D_800C3BAC[9];
+static u8 battle_camera_wait_kind;  /* 800C3B84: the channel tag reported in battle_camera_wait_state */
+static u8 battle_camera_wait_state;  /* 800C3B88: bit 0: that channel runs, bit 1: it finished */
+static u8 battle_camera_snap;  /* 800C3B8C: snap: channels 7 and 8 start at their targets */
+static s16 battle_camera_orbit_yaw; /* 800C3B90: orbit yaw */
+static s16 battle_camera_orbit_pitch; /* 800C3B94: orbit pitch */
+static s16 battle_camera_orbit_distance; /* 800C3B98: orbit distance */
+static s16 battle_camera_orbit_height; /* 800C3B9C: orbit height */
+static s16 battle_camera_look_yaw; /* 800C3BA0: look-at yaw */
+static s16 battle_camera_look_distance; /* 800C3BA4: look-at distance */
+static s16 battle_camera_look_height; /* 800C3BA8: look-at height */
+static EffectEntry *battle_camera_channels[9]; /* 800C3BAC */
 
 /* Per gear: its first extra file in directory 0x28 and its variant count.
- * The last pair, 0, 0, is a twentieth gear's or the fill before D_800C3530
+ * The last pair, 0, 0, is a twentieth gear's or the fill before battle_extra_file_bases
  * (open, docs/matching.md; ovl2143 holds a copy). */
-u8 D_800C3508[] = {
+u8 battle_gear_file_table[] = { /* 800C3508 */
     1,  0, 3,  0, 5,  6, 13, 0, 15, 3, 20, 4, 26, 0, 28, 0, 30, 0, 32, 0,
     34, 0, 36, 4, 42, 3, 47, 4, 53, 0, 55, 0, 57, 0, 59, 0, 61, 0, 0,   0,
 };
-u8 D_800C3530[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
-s16 D_800C3542 = -1;
-s16 D_800C3544 = 0x7D00;
-s16 D_800C3546 = -1;
+u8 battle_extra_file_bases[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0}; /* 800C3530 */
+s16 battle_camera_ground_triangle = -1; /* 800C3542 */
+s16 battle_camera_ground_height = 0x7D00; /* 800C3544 */
+s16 battle_camera_ground_key = -1; /* 800C3546 */
 
-/* Whether gear part 50 + index is one of the parts of character 4's gear. */
-s32 func_8009E53C(u8 index) {
-    BattlePart *part = &D_800C34B0->lists.parts.members[index];
+/* 8009E53C: Whether gear part 50 + index is one of the parts of character 4's gear. */
+s32 battle_is_character4_gear_part(u8 index) {
+    BattlePart *part = &battle_work_ptr->lists.parts.members[index];
 
     if (game_data.gears[game_data.characters[4].gearId].entries[0].id == part->id || game_data.gears[game_data.characters[4].gearId].entries[1].id == part->id) {
         return 1;
@@ -152,13 +152,13 @@ s32 func_8009E53C(u8 index) {
     return game_data.gears[game_data.characters[4].gearId].entries[2].id == part->id;
 }
 
-/* Put battle gear part index into character 4's gear entry holding its id
+/* 8009E5C8: Put battle gear part index into character 4's gear entry holding its id
  * (entry k when none does; the third entry's match selects entry 3): copy its
  * values, record the part slot, set the id's rounds from the part's +0xC (in
  * the characters' array, as 8009a854 does, not gearAmmo), and update the
  * battle copies of character 4's gear. No image calls it or 8009e53c. */
-void func_8009E5C8(u8 index, u8 k) {
-    BattlePart *part = &D_800C34B0->lists.parts.list[index];
+void battle_put_part_in_character4_gear(u8 index, u8 k) {
+    BattlePart *part = &battle_work_ptr->lists.parts.list[index];
     u8 gearId = game_data.characters[4].gearId;
     u8 i;
 
@@ -178,24 +178,24 @@ void func_8009E5C8(u8 index, u8 k) {
     game_data.gears[gearId].partItems[k] = index;
     game_data.ammo[index - 50] = part->rounds;
     for (i = 0; i < 3; i++) {
-        if ((D_800C34B0->records + i)->pilot.characterId == 4) {
-            D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;
-            D_800C34B0->records[i].gear.entries[k].value11 = part->value11;
-            D_800C34B0->records[i].gear.entries[k].value10 = part->value10;
-            D_800C34B0->records[i].gear.entries[k].value11 = part->value11;
-            D_800C34B0->records[i].gear.partItems[k] = index;
+        if ((battle_work_ptr->records + i)->pilot.characterId == 4) {
+            battle_work_ptr->records[i].gear.entries[k].valueE = part->valueE;
+            battle_work_ptr->records[i].gear.entries[k].value11 = part->value11;
+            battle_work_ptr->records[i].gear.entries[k].value10 = part->value10;
+            battle_work_ptr->records[i].gear.entries[k].value11 = part->value11;
+            battle_work_ptr->records[i].gear.partItems[k] = index;
         }
     }
 }
 
-/* Take a round of the attacker gear's ammo for the current command (none
+/* 8009E788: Take a round of the attacker gear's ammo for the current command (none
  * below 0): command 0 the first slot's, 2 and 17 the fourth's, 3-14 both, 15
  * the first's. */
-void func_8009E788(void) {
-    switch (D_800C34B0->commandIndex) {
+void battle_wear_down_attacker_gear_parts(void) {
+    switch (battle_work_ptr->commandIndex) {
     case 0:
-        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] += -1;
         }
         break;
     case 3:
@@ -210,119 +210,119 @@ void func_8009E788(void) {
     case 12:
     case 13:
     case 14:
-        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] += -1;
         }
-        if (game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
-            game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
+        if (game_data.gearAmmo[battle_attacker_gear->partItems[3] - 50] != 0) {
+            game_data.gearAmmo[battle_attacker_gear->partItems[3] - 50] += -1;
         }
         break;
     case 15:
-        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[battle_attacker_gear->partItems[0] - 50] += -1;
         }
         break;
     case 2:
     case 17:
-        if (game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
-            game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
+        if (game_data.gearAmmo[battle_attacker_gear->partItems[3] - 50] != 0) {
+            game_data.gearAmmo[battle_attacker_gear->partItems[3] - 50] += -1;
         }
         break;
     }
 }
 
-/* Show the message for a gear status that was applied, named by its kind and
+/* 8009E868: Show the message for a gear status that was applied, named by its kind and
  * flag bit (the gear counterpart of 8009B684). */
-void func_8009E868(u8 kind, u16 flag) {
+void battle_status_show_gear_message(u8 kind, u16 flag) {
     switch (kind) {
     case 0:
         switch (flag) {
         case 0x400:
-            D_800C34B0->message = 0x24;
+            battle_work_ptr->message = 0x24;
             break;
         case 0x200:
-            D_800C34B0->message = 0x25;
+            battle_work_ptr->message = 0x25;
             break;
         case 0x100:
-            D_800C34B0->message = 0x26;
+            battle_work_ptr->message = 0x26;
             break;
         case 0x80:
-            D_800C34B0->message = 0x27;
+            battle_work_ptr->message = 0x27;
             break;
         case 0x40:
-            D_800C34B0->message = 0x28;
+            battle_work_ptr->message = 0x28;
             break;
         case 0x20:
-            D_800C34B0->message = 0x29;
+            battle_work_ptr->message = 0x29;
             break;
         case 0x10:
-            D_800C34B0->message = 0x2A;
+            battle_work_ptr->message = 0x2A;
             break;
         case 0x4:
-            D_800C34B0->message = 0x2B;
+            battle_work_ptr->message = 0x2B;
             break;
         }
         break;
     case 1:
         switch (flag) {
         case 0x1000:
-            D_800C34B0->message = 0x2D;
+            battle_work_ptr->message = 0x2D;
             break;
         case 0x800:
-            D_800C34B0->message = 0x2E;
+            battle_work_ptr->message = 0x2E;
             break;
         case 0x400:
-            D_800C34B0->message = 0x2F;
+            battle_work_ptr->message = 0x2F;
             break;
         case 0x40:
-            D_800C34B0->message = 0x15;
+            battle_work_ptr->message = 0x15;
             break;
         case 0x20:
-            D_800C34B0->message = 0x16;
+            battle_work_ptr->message = 0x16;
             break;
         case 0x2:
         case 0x8:
-            D_800C34B0->message = 0x19;
+            battle_work_ptr->message = 0x19;
             break;
         case 0x1:
         case 0x4:
-            D_800C34B0->message = 0x1A;
+            battle_work_ptr->message = 0x1A;
             break;
         }
         break;
     case 3:
         switch (flag) {
         case 0x8000:
-            D_800C34B0->message = 0x1B;
+            battle_work_ptr->message = 0x1B;
             break;
         case 0x4000:
-            D_800C34B0->message = 0x1C;
+            battle_work_ptr->message = 0x1C;
             break;
         case 0x2000:
-            D_800C34B0->message = 0x1D;
+            battle_work_ptr->message = 0x1D;
             break;
         case 0x1000:
-            D_800C34B0->message = 0x1E;
+            battle_work_ptr->message = 0x1E;
             break;
         case 0x400:
-            D_800C34B0->message = 0x1F;
+            battle_work_ptr->message = 0x1F;
             break;
         case 0x800:
-            D_800C34B0->message = 0x20;
+            battle_work_ptr->message = 0x20;
             break;
         case 0x100:
-            D_800C34B0->message = 0x21;
+            battle_work_ptr->message = 0x21;
             break;
         case 0x200:
-            D_800C34B0->message = 0x22;
+            battle_work_ptr->message = 0x22;
             break;
         }
         break;
     }
 }
 
-/* Relocate a model group and list its models in a new table. */
-ModelTable *func_8009EBA8(u8 *group, ModelTable *list) {
+/* 8009EBA8: Relocate a model group and list its models in a new table. */
+ModelTable *battle_build_model_table(u8 *group, ModelTable *list) {
     u32 count;
     u32 i;
 
@@ -338,11 +338,11 @@ ModelTable *func_8009EBA8(u8 *group, ModelTable *list) {
     return list;
 }
 
-/* Build a model hierarchy from (model, parent) pairs, up to the first pair
+/* 8009EC4C: Build a model hierarchy from (model, parent) pairs, up to the first pair
  * naming neither a listed model nor 0xFFFF: a root part, then one part per
  * pair with its packets for both buffers (built with mode; offset by (x0, y0)
  * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
-ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+ModelPart *battle_build_model_hierarchy(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
                          s16 x1, s16 y1) {
     ModelPart *root;
     ModelPart *part;
@@ -413,7 +413,7 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
         if (id != 0xFFFF) {
             model_alloc_packet_buffers(list->models[id], &part->packets[0], &part->packets[1]);
             if (part->packets[0] == NULL) {
-                func_8009F708(root);
+                battle_free_model_hierarchy(root);
                 return NULL;
             }
             if (offset) {
@@ -444,12 +444,12 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
     return root;
 }
 
-/* Pose a model hierarchy: the root's rotation (YXZ order when yxz is set)
+/* 8009EF3C: Pose a model hierarchy: the root's rotation (YXZ order when yxz is set)
  * with its translation, scaled by scale (4.12) per axis into its transform;
  * each part to rotate (rotate) its rotation, and each dirty part (dirty, or
  * under a dirty parent) its translation and world matrix. Clears both marks
  * and returns the part count. */
-u16 func_8009EF3C(ModelPart *part, s32 scale) {
+u16 battle_pose_model_hierarchy(ModelPart *part, s32 scale) {
     MATRIX *diagonal = (MATRIX *)0x1F800000;
     ModelPart *root = part;
     u32 count = root->index;
@@ -507,11 +507,11 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     return count;
 }
 
-/* Pose a model hierarchy with per-part scales: as 8009EF3C, but a changed
+/* 8009F1C4: Pose a model hierarchy with per-part scales: as 8009EF3C, but a changed
  * part's transform is scaled by its own scale and by the inverse of its
  * parent's, and a part changes or is marked with its parent. Clears the marks
  * and returns the part count. */
-u16 func_8009F1C4(ModelPart *part, s32 scale) {
+u16 battle_pose_model_hierarchy_scaled(ModelPart *part, s32 scale) {
     MATRIX *diagonal = (MATRIX *)0x1F800000;
     MATRIX *scratch;
     ModelPart *root;
@@ -607,14 +607,14 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     return count;
 }
 
-/* Empty; nothing in the overlay calls it. */
-void func_8009F5B0(void) {
+/* 8009F5B0: Empty; nothing in the overlay calls it. */
+void battle_model_empty_unreferenced(void) {
 }
 
-/* Draw a posed hierarchy's parts into packet buffer `buffer`: each part's light
+/* 8009F5B8: Draw a posed hierarchy's parts into packet buffer `buffer`: each part's light
  * matrix from `light` and its world matrix, and its rotation and translation
  * composed with `view` and the root's transform, then its model (8002C700). */
-void func_8009F5B8(ModelTable *list, ModelPart *part, MATRIX *view, MATRIX *light, s32 mode, u32 *ot,
+void battle_draw_model_hierarchy(ModelTable *list, ModelPart *part, MATRIX *view, MATRIX *light, s32 mode, u32 *ot,
                    s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
     MATRIX *lighting = (MATRIX *)0x1F800020;
@@ -638,8 +638,8 @@ void func_8009F5B8(ModelTable *list, ModelPart *part, MATRIX *view, MATRIX *ligh
     }
 }
 
-/* Free a model hierarchy: every part's packets, then the parts. */
-void func_8009F708(ModelPart *root) {
+/* 8009F708: Free a model hierarchy: every part's packets, then the parts. */
+void battle_free_model_hierarchy(ModelPart *root) {
     ModelPart *part;
     s32 i;
 
@@ -657,9 +657,9 @@ void func_8009F708(ModelPart *root) {
     }
 }
 
-/* Free a model list's table, releasing its models first when release is
+/* 8009F794: Free a model list's table, releasing its models first when release is
  * set. */
-void func_8009F794(ModelTable *list, s32 release) {
+void battle_free_model_table(ModelTable *list, s32 release) {
     u32 i;
 
     if (list != NULL) {
@@ -676,16 +676,16 @@ void func_8009F794(ModelTable *list, s32 release) {
 }
 
 /* The in-place matrix product used to scale the shadow's rotation. */
-EffectSprite *func_800A2E88(SpritePool *pool, s16 abe);
-void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
+EffectSprite *battle_alloc_effect_sprite(SpritePool *pool, s16 abe);
+void battle_simulate_surface(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 
-/* Draw an active object: attenuate its two tracked lights, draw its ground
+/* 8009F844: Draw an active object: attenuate its two tracked lights, draw its ground
  * shadow and visible model parts, carry the cloth anchors/collision centres
  * with their model parts, step image animations and extend sprite trails.
  * When a trail's signed age becomes zero (including its initial -1 to 0),
  * it keeps the same channel cursor for the next iteration, matching the
  * original's conditional pointer advance. */
-void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
+void battle_draw_object(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
                    s32 buffer) {
     u32 count;
     ModelTable *models;
@@ -724,14 +724,14 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         root = part;
         count = part->index;
         for (i = 0; i < 2; i++) {
-            if (D_800D3304[i].active != 0) {
-                dx = D_800D3304[i].x - part->translation[0];
-                dy = D_800D3304[i].y - ((part->translation[1] - object->scale24 * (scale * part->scale[1] >> 12)) >> 13);
-                dz = D_800D3304[i].z - part->translation[2];
+            if (battle_light_trackers[i].active != 0) {
+                dx = battle_light_trackers[i].x - part->translation[0];
+                dy = battle_light_trackers[i].y - ((part->translation[1] - object->scale24 * (scale * part->scale[1] >> 12)) >> 13);
+                dz = battle_light_trackers[i].z - part->translation[2];
                 distance = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-                light->m[i + 1][0] = ((dx << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
-                light->m[i + 1][1] = ((dy << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
-                light->m[i + 1][2] = ((dz << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
+                light->m[i + 1][0] = ((dx << 12) / distance) * battle_light_trackers[i].active / (battle_light_trackers[i].active + distance);
+                light->m[i + 1][1] = ((dy << 12) / distance) * battle_light_trackers[i].active / (battle_light_trackers[i].active + distance);
+                light->m[i + 1][2] = ((dz << 12) / distance) * battle_light_trackers[i].active / (battle_light_trackers[i].active + distance);
             } else {
                 light->m[i + 1][0] = 0;
                 light->m[i + 1][1] = 0;
@@ -739,7 +739,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             }
         }
         CompMatrix(view, &part->transform, camera);
-        if (!(object->flags4A & 1) && D_800C3D6C != 0) {
+        if (!(object->flags4A & 1) && battle_shadows_enabled != 0) {
             CompMatrix(&part->transform, &object->hierarchy[1].world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
@@ -854,8 +854,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 VECTOR transformed;
                 SVECTOR wind;
 
-                wind.vx = -D_800D39E8 * gpu_get_cos(root->rotation.vy + 0x400) / 0x1000;
-                wind.vz = D_800D39E8 * gpu_get_sin(root->rotation.vy + 0x400) / 0x1000;
+                wind.vx = -battle_surface_wind_strength * gpu_get_cos(root->rotation.vy + 0x400) / 0x1000;
+                wind.vz = battle_surface_wind_strength * gpu_get_sin(root->rotation.vy + 0x400) / 0x1000;
                 wind.vy = OBJECT_FIELD3E(object);
                 CompMatrix(&root->transform, &root[(s16)surface->h0].world, scratch);
                 SetRotMatrix(scratch);
@@ -880,12 +880,12 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     entry->hA = transformed.vy;
                     entry->hC = transformed.vz;
                 }
-                func_800A7948(surface, &wind, view, ot, buffer, scale, object->groundY);
+                battle_simulate_surface(surface, &wind, view, ot, buffer, scale, object->groundY);
             }
         }
         image = object->images;
         for (i = 0; i < object->imageCount; i++, image++) {
-            func_800A3E98(image, skipped);
+            battle_step_image_anim(image, skipped);
         }
         channel = object->channels;
         for (i = 0; i < object->channelCount; i++) {
@@ -907,7 +907,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     }
                     if (channel->count > channel->max || channel->sprite == NULL) {
                         channel->count = 1;
-                        channel->sprite = func_800A2E88(channel->pool, channel->semiTrans);
+                        channel->sprite = battle_alloc_effect_sprite(channel->pool, channel->semiTrans);
                         channel->sprite->projected = 0;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -946,7 +946,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                     }
                     if (channel->count > channel->max || channel->sprite == NULL) {
                         channel->count = 1;
-                        channel->sprite = func_800A2E88(channel->pool, channel->semiTrans);
+                        channel->sprite = battle_alloc_effect_sprite(channel->pool, channel->semiTrans);
                         channel->sprite->projected = 1;
                         channel->sprite->age = 0;
                         channel->sprite->lifetime = channel->duration;
@@ -997,7 +997,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         }                                                                      \
     }
 
-/* Step the tweens attached to each node of a hierarchy: its rotation
+/* 800A0838: Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
  * spin, or turn toward a point within a growing limit), position
  * (attachment 1: the same, or a move in the node's frame scaled by `scale`)
@@ -1008,7 +1008,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
  * slot a computing kind used, which may belong to an earlier node. Tag and
  * scale remain full words; packed escapes advance the cursor before reading
  * each byte. Each approach case keeps its own steps. */
-s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
+s32 battle_step_part_tweens(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     Tween *slot;
     Tween *last;
     u8 *track;
@@ -1154,7 +1154,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                             result |= 2;
                         }
                         result |= 0x200;
-                        func_800A23E8(pool, (EffectEntry *)slot);
+                        battle_free_effect_entry(pool, (EffectEntry *)slot);
                         part->effects[0] = NULL;
                     } else {
                         if (slot->tag == tag) {
@@ -1290,7 +1290,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_800A23E8(pool, (EffectEntry *)slot);
+                    battle_free_effect_entry(pool, (EffectEntry *)slot);
                     part->effects[1] = NULL;
                 } else {
                     if (slot->tag == tag) {
@@ -1367,7 +1367,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_800A23E8(pool, (EffectEntry *)slot);
+                    battle_free_effect_entry(pool, (EffectEntry *)slot);
                     part->effects[2] = NULL;
                 } else {
                     if (slot->tag == tag) {
@@ -1394,13 +1394,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     return result;
 }
 
-/* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
+/* 800A1B50: Apply an animation frame to a hierarchy's parts: the listed rotations (unless
  * flag 1) and translations (unless flag 2), marking each changed part; parts
  * with a persistent effect attached keep theirs. The frame holds halfwords:
  * [2] flags, [3] base flag, [6] rotation count, [7] translation count, then
  * from [12] (x, y, z) triples, after the base rotations when [3] is 0.
  * Returns the part count less the root. */
-u16 func_800A1B50(ModelPart *root, s16 *data) {
+u16 battle_apply_animation_frame(ModelPart *root, s16 *data) {
     u16 rotations;
     u16 translations;
     u16 rotationCount;
@@ -1458,13 +1458,13 @@ u16 func_800A1B50(ModelPart *root, s16 *data) {
     return count;
 }
 
-/* Tween the parts after the root towards an animation frame over duration
+/* 800A1CF4: Tween the parts after the root towards an animation frame over duration
  * ticks (at least 1): each changed rotation gets an effect entry (type
  * mode + 3) of the shortest angle differences (mode 1: to the absolute
  * angles), each changed translation one of its movement (mode 1: to the
  * absolute translation); persistent entries (0xFF) stay, other parts lose
  * theirs. Returns the part count less the root. */
-u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+u16 battle_tween_to_animation_frame(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
                   s32 tag) {
     EffectEntry *entry;
     u16 rotationCount;
@@ -1508,7 +1508,7 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         goto translation;
                     }
                 } else {
-                    entry = func_800A2330(pool);
+                    entry = battle_alloc_effect_entry(pool);
                 }
                 if (entry != NULL) {
                     entry->used = 1;
@@ -1546,7 +1546,7 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             }
         }
         if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
-            func_800A23E8(pool, part->effects[0]);
+            battle_free_effect_entry(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
     translation:
@@ -1562,7 +1562,7 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         continue;
                     }
                 } else {
-                    entry = func_800A2330(pool);
+                    entry = battle_alloc_effect_entry(pool);
                 }
                 if (entry != NULL) {
                     entry->used = 1;
@@ -1589,35 +1589,35 @@ u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             }
         }
         if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
-            func_800A23E8(pool, part->effects[1]);
+            battle_free_effect_entry(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
     }
     return count;
 }
 
-/* Release the effects attached to part index of a hierarchy, those selected by
+/* 800A216C: Release the effects attached to part index of a hierarchy, those selected by
  * mask (bit n: attachment n). */
-void func_800A216C(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
+void battle_release_part_effects(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
     if (index < part->index) {
         part += index;
         if (part->effects[0] != NULL && (mask & 1)) {
-            func_800A23E8(pool, part->effects[0]);
+            battle_free_effect_entry(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
         if (part->effects[1] != NULL && (mask & 2)) {
-            func_800A23E8(pool, part->effects[1]);
+            battle_free_effect_entry(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
         if (part->effects[2] != NULL && (mask & 4)) {
-            func_800A23E8(pool, part->effects[2]);
+            battle_free_effect_entry(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
     }
 }
 
-/* Create a pool of count effect entries. */
-EffectPool *func_800A2234(EffectPool *pool, s32 count) {
+/* 800A2234: Create a pool of count effect entries. */
+EffectPool *battle_create_effect_pool(EffectPool *pool, s32 count) {
     if (count <= 0) {
         return NULL;
     }
@@ -1625,14 +1625,14 @@ EffectPool *func_800A2234(EffectPool *pool, s32 count) {
     heap_select_owner_tag(4, 0);
     pool->entries = heap_alloc(count * sizeof(EffectEntry), 0);
     if (pool->entries != NULL) {
-        func_800A22E8(pool);
+        battle_clear_effect_pool(pool);
         return pool;
     }
     return NULL;
 }
 
-/* Free a pool's entries. */
-void func_800A22A8(EffectPool *pool) {
+/* 800A22A8: Free a pool's entries. */
+void battle_free_effect_pool(EffectPool *pool) {
     pool->next = 0;
     if (pool->entries != NULL) {
         heap_free(pool->entries);
@@ -1640,8 +1640,8 @@ void func_800A22A8(EffectPool *pool) {
     pool->entries = NULL;
 }
 
-/* Mark every entry of a pool free. */
-void func_800A22E8(EffectPool *pool) {
+/* 800A22E8: Mark every entry of a pool free. */
+void battle_clear_effect_pool(EffectPool *pool) {
     EffectEntry *entry;
     s32 i;
 
@@ -1655,9 +1655,9 @@ void func_800A22E8(EffectPool *pool) {
     }
 }
 
-/* Take the first free entry of a pool (NULL when none), advancing the free
+/* 800A2330: Take the first free entry of a pool (NULL when none), advancing the free
  * index past the entries in use. */
-EffectEntry *func_800A2330(EffectPool *pool) {
+EffectEntry *battle_alloc_effect_entry(EffectPool *pool) {
     EffectEntry *entry;
     u32 count;
 
@@ -1676,8 +1676,8 @@ EffectEntry *func_800A2330(EffectPool *pool) {
     return NULL;
 }
 
-/* Return an entry to its pool; its index, or -1 for none. */
-s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
+/* 800A23E8: Return an entry to its pool; its index, or -1 for none. */
+s32 battle_free_effect_entry(EffectPool *pool, EffectEntry *entry) {
     s32 index;
 
     if (entry == NULL) {
@@ -1691,11 +1691,11 @@ s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
     return index;
 }
 
-/* Start an animation frame on a hierarchy through track entries (a packed
+/* 800A2434: Start an animation frame on a hierarchy through track entries (a packed
  * frame is applied at once, 800A1B50): each part with a track gets an entry
  * (unless it holds a persistent one), a part after the root without one loses
  * its entry. Returns 1 for a packed frame. */
-s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+s32 battle_start_animation_tracks(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *frame;
     u8 *types;
     Tween *entry;
@@ -1709,8 +1709,8 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
 
     frame = (AnimationFrame *)data;
     if (frame->packed != 0) {
-        func_800A2ACC(pool, part);
-        func_800A1B50(part, (s16 *)frame);
+        battle_release_transient_effects(pool, part);
+        battle_apply_animation_frame(part, (s16 *)frame);
         return 1;
     }
     rotationCount = frame->rotationCount;
@@ -1742,7 +1742,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                     goto translation;
                 }
             } else {
-                entry = (Tween *)func_800A2330(pool);
+                entry = (Tween *)battle_alloc_effect_entry(pool);
             }
             if (entry != NULL) {
                 entry->used = 1;
@@ -1756,7 +1756,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
             }
         } else {
             if (part->effects[0] != NULL && i != 0 && part->effects[0]->tag != 0xFF) {
-                func_800A23E8(pool, part->effects[0]);
+                battle_free_effect_entry(pool, part->effects[0]);
                 part->effects[0] = NULL;
             }
         }
@@ -1769,7 +1769,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                     goto next;
                 }
             } else {
-                entry = (Tween *)func_800A2330(pool);
+                entry = (Tween *)battle_alloc_effect_entry(pool);
             }
             if (entry != NULL) {
                 entry->used = 1;
@@ -1783,7 +1783,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
             }
         } else {
             if (part->effects[1] != NULL && i != 0 && part->effects[1]->tag != 0xFF) {
-                func_800A23E8(pool, part->effects[1]);
+                battle_free_effect_entry(pool, part->effects[1]);
                 part->effects[1] = NULL;
             }
         }
@@ -1794,9 +1794,9 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
     return 0;
 }
 
-/* As 800A2434, but each part after the root first takes the frame's start
+/* 800A2704: As 800A2434, but each part after the root first takes the frame's start
  * values of the tracks that are started. */
-s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+s32 battle_start_animation_tracks_from_start(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *frame;
     u8 *types;
     Tween *entry;
@@ -1813,8 +1813,8 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
 
     frame = (AnimationFrame *)data;
     if (frame->packed != 0) {
-        func_800A2ACC(pool, part);
-        func_800A1B50(part, (s16 *)frame);
+        battle_release_transient_effects(pool, part);
+        battle_apply_animation_frame(part, (s16 *)frame);
         return 1;
     }
     mode &= 1;
@@ -1849,7 +1849,7 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                     goto skipRotation;
                 }
             } else {
-                entry = (Tween *)func_800A2330(pool);
+                entry = (Tween *)battle_alloc_effect_entry(pool);
             }
             if (!(flags & 1) && i != 0 && rotations < rotationCount) {
                 part->rotation.vx = *values++;
@@ -1884,7 +1884,7 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                     goto skipTranslation;
                 }
             } else {
-                entry = (Tween *)func_800A2330(pool);
+                entry = (Tween *)battle_alloc_effect_entry(pool);
             }
             if (!(flags & 2) && i != 0 && translations < translationCount) {
                 part->translation[0] = *values++;
@@ -1916,63 +1916,63 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
     return 0;
 }
 
-/* Release every part's attached effects that are not persistent. */
-void func_800A2ACC(EffectPool *pool, ModelPart *part) {
+/* 800A2ACC: Release every part's attached effects that are not persistent. */
+void battle_release_transient_effects(EffectPool *pool, ModelPart *part) {
     u16 count = part->index;
     s32 i;
 
     for (i = 0; i < count; i++, part++) {
         if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
-            func_800A23E8(pool, part->effects[0]);
+            battle_free_effect_entry(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
         if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
-            func_800A23E8(pool, part->effects[1]);
+            battle_free_effect_entry(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
         if (part->effects[2] != NULL && part->effects[2]->tag != 0xFF) {
-            func_800A23E8(pool, part->effects[2]);
+            battle_free_effect_entry(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
     }
 }
 
-/* Release every part's attached effects tagged `tag`. */
-void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 tag) {
+/* 800A2BB8: Release every part's attached effects tagged `tag`. */
+void battle_release_effects_of_kind(EffectPool *pool, ModelPart *part, u8 tag) {
     u16 count = part->index;
     s32 i;
 
     for (i = 0; i < count; i++, part++) {
         if (part->effects[0] != NULL && part->effects[0]->tag == tag) {
-            func_800A23E8(pool, part->effects[0]);
+            battle_free_effect_entry(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
         if (part->effects[1] != NULL && part->effects[1]->tag == tag) {
-            func_800A23E8(pool, part->effects[1]);
+            battle_free_effect_entry(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
         if (part->effects[2] != NULL && part->effects[2]->tag == tag) {
-            func_800A23E8(pool, part->effects[2]);
+            battle_free_effect_entry(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
     }
 }
 
-/* Create a pool of count sprite records (and a spare). */
-SpritePool *func_800A2CA4(SpritePool *pool, s32 count) {
+/* 800A2CA4: Create a pool of count sprite records (and a spare). */
+SpritePool *battle_create_sprite_pool(SpritePool *pool, s32 count) {
     heap_select_owner_tag(4, 0);
     pool->count = count;
     pool->next = 0;
     pool->records = heap_alloc((count + 1) * sizeof(EffectSprite), 0);
     if (pool->records != NULL) {
-        func_800A2D5C(pool);
+        battle_reset_sprite_pool(pool);
         return pool;
     }
     return NULL;
 }
 
-/* Free a sprite pool's records. */
-void func_800A2D1C(SpritePool *pool) {
+/* 800A2D1C: Free a sprite pool's records. */
+void battle_free_sprite_pool(SpritePool *pool) {
     pool->count = 0;
     pool->next = 0;
     if (pool->records != NULL) {
@@ -1981,9 +1981,9 @@ void func_800A2D1C(SpritePool *pool) {
     pool->records = NULL;
 }
 
-/* Mark every record of a sprite pool free and set up both of its
+/* 800A2D5C: Mark every record of a sprite pool free and set up both of its
  * semi-transparent quadrilaterals. */
-void func_800A2D5C(SpritePool *pool) {
+void battle_reset_sprite_pool(SpritePool *pool) {
     EffectSprite *record = pool->records;
     s32 i;
     s32 j;
@@ -2009,10 +2009,10 @@ void func_800A2D5C(SpritePool *pool) {
     }
 }
 
-/* Take the first free record of a sprite pool with its quadrilaterals'
+/* 800A2E88: Take the first free record of a sprite pool with its quadrilaterals'
  * semi-transparency set to abe, advancing the free index past the records in
  * use; the spare record when none is free. */
-EffectSprite *func_800A2E88(SpritePool *pool, s16 abe) {
+EffectSprite *battle_alloc_effect_sprite(SpritePool *pool, s16 abe) {
     EffectSprite *record;
     s16 next = pool->next;
 
@@ -2031,8 +2031,8 @@ EffectSprite *func_800A2E88(SpritePool *pool, s16 abe) {
     return &pool->records[pool->count];
 }
 
-/* Return a record to its sprite pool; its index. */
-s32 func_800A2F94(SpritePool *pool, EffectSprite *record) {
+/* 800A2F94: Return a record to its sprite pool; its index. */
+s32 battle_free_effect_sprite(SpritePool *pool, EffectSprite *record) {
     s32 index = ((u32)record - (u32)pool->records) / sizeof(EffectSprite);
 
     if (index <= pool->next) {
@@ -2042,10 +2042,10 @@ s32 func_800A2F94(SpritePool *pool, EffectSprite *record) {
     return index;
 }
 
-/* Draw the live sprites of a pool into the ordering table (3D ones projected
+/* 800A2FD8: Draw the live sprites of a pool into the ordering table (3D ones projected
  * with the GTE at their depth, 2D ones at the front), free the expired ones
  * and fade the rest by steps ticks. */
-void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
+void battle_draw_sprite_pool(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
     EffectSprite *sprite;
     s32 otz;
     s32 i;
@@ -2058,7 +2058,7 @@ void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
             continue;
         }
         if (sprite->age >= sprite->lifetime) {
-            func_800A2F94(pool, sprite);
+            battle_free_effect_sprite(pool, sprite);
             continue;
         }
         sprite->packets[buffer].r0 = sprite->color[0] >> 6;
@@ -2092,10 +2092,10 @@ void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
     }
 }
 
-/* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
+/* 800A32D8: Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
  * ticks. Original calls use default argument promotion for the channel bytes
  * and signed event halfwords. */
-s32 func_800A32D8(fade, pool, id, solid, max, duration, r0, g0, b0, r1, g1, b1, x0, y0, z0, x1, y1, z1,
+s32 battle_start_color_fade(fade, pool, id, solid, max, duration, r0, g0, b0, r1, g1, b1, x0, y0, z0, x1, y1, z1,
                   semiTrans)
     ColorFade *fade;
     s32 pool;
@@ -2135,18 +2135,18 @@ s32 func_800A32D8(fade, pool, id, solid, max, duration, r0, g0, b0, r1, g1, b1, 
     }
 }
 
-/* Mark a colour fade idle. */
-void func_800A3484(ColorFade *fade, s32 arg1) {
+/* 800A3484: Mark a colour fade idle. */
+void battle_stop_color_fade(ColorFade *fade, s32 unused_buffer) {
     fade->id = -1;
 }
 
-/* A frame curve: base + (cos(angle) + 1.0) / divisor. */
-s16 func_800A3490(s16 angle, s16 divisor, s32 base) {
+/* 800A3490: A frame curve: base + (cos(angle) + 1.0) / divisor. */
+s16 battle_frame_curve_cosine(s16 angle, s16 divisor, s32 base) {
     return base + (gpu_get_cos(angle) + 0x1000) / divisor;
 }
 
-/* A frame curve: base + value / divisor, or -1 past 32. */
-s16 func_800A3514(s16 value, s16 divisor, s16 base) {
+/* 800A3514: A frame curve: base + value / divisor, or -1 past 32. */
+s16 battle_frame_curve_rise(s16 value, s16 divisor, s16 base) {
     base += value / divisor;
     if (base > 0x20) {
         return -1;
@@ -2154,13 +2154,13 @@ s16 func_800A3514(s16 value, s16 divisor, s16 base) {
     return base;
 }
 
-/* A frame curve: base - value / divisor. */
-s16 func_800A3578(s16 value, s16 divisor, s32 base) {
+/* 800A3578: A frame curve: base - value / divisor. */
+s16 battle_frame_curve_fall(s16 value, s16 divisor, s32 base) {
     return base - value / divisor;
 }
 
-/* A frame curve: 32 - value / divisor, at least minimum. */
-s16 func_800A35C8(s16 value, s16 divisor, s16 minimum) {
+/* 800A35C8: A frame curve: 32 - value / divisor, at least minimum. */
+s16 battle_frame_curve_fall_clamped(s16 value, s16 divisor, s16 minimum) {
     s16 result;
 
     result = 0x20 - value / divisor;
@@ -2170,14 +2170,14 @@ s16 func_800A35C8(s16 value, s16 divisor, s16 minimum) {
     return result;
 }
 
-/* Start an image animation (once): its target, curve and timing, the w x h
+/* 800A3640: Start an image animation (once): its target, curve and timing, the w x h
  * VRAM rectangle at (x3, y3) (256 by default; modes 0/1 use an even width),
  * the work and frame buffers `flags` bits 8-10 ask for, and each frame
  * buffer's first contents (flags nibbles 0 and 1): 1 the VRAM rectangle at
  * (x, y) / (x2, y2) (modes 4/5: rows of `colors` from there), 2 one colour
  * (modes 4/5: the three values cycling by row). Original calls promote the
  * event halfwords before speed is stored as an unsigned halfword. */
-ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2, x3, y3, w, h, speed,
+ImageAnim *battle_start_image_anim(anim, target, mode, flags, colors, x, y, z, x2, y2, z2, x3, y3, w, h, speed,
                          divisor, base, curve)
     ImageAnim *anim, *target;
     u16 mode, flags;
@@ -2346,11 +2346,11 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
     return anim;
 }
 
-/* Advance an image animation by `ticks` + 1: when its curve selects another
+/* 800A3E98: Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
  * once the animation ended. */
-s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
+s16 battle_step_image_anim(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
     ImageAnim *target;
@@ -2369,7 +2369,7 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     value = result = anim->curve(anim->time, anim->divisor, anim->base);
     frame = value;
     if (frame < 0) {
-        func_800A429C(anim);
+        battle_stop_image_anim(anim);
         return frame;
     }
     value = anim->frame;
@@ -2389,10 +2389,10 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
             }
             break;
         case 4:
-            func_800A4348(anim, frame);
+            battle_fade_image_anim_colors(anim, frame);
             break;
         case 5:
-            func_800A43F8(anim, frame);
+            battle_blend_image_anim_colors(anim, frame);
             break;
         }
         target = anim->target;
@@ -2441,9 +2441,9 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     return frame;
 }
 
-/* Stop an image animation: restore its original pixels to VRAM (resident
+/* 800A429C: Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */
-void func_800A429C(ImageAnim *anim) {
+void battle_stop_image_anim(ImageAnim *anim) {
     if (anim->active) {
         if (anim->pixels != NULL) {
             if (anim->mode < 4) {
@@ -2464,8 +2464,8 @@ void func_800A429C(ImageAnim *anim) {
     }
 }
 
-/* Fade an image animation's colours to `level` / 32 of its pixels. */
-void func_800A4348(ImageAnim *anim, s16 level) {
+/* 800A4348: Fade an image animation's colours to `level` / 32 of its pixels. */
+void battle_fade_image_anim_colors(ImageAnim *anim, s16 level) {
     u16 *pixel;
     s32 x;
     s32 y;
@@ -2481,9 +2481,9 @@ void func_800A4348(ImageAnim *anim, s16 level) {
     }
 }
 
-/* Blend an image animation's colours from its second pixels towards its
+/* 800A43F8: Blend an image animation's colours from its second pixels towards its
  * first by `level` / 32. */
-void func_800A43F8(ImageAnim *anim, s16 level) {
+void battle_blend_image_anim_colors(ImageAnim *anim, s16 level) {
     u16 *pixel;
     u16 *from;
     s32 x;
@@ -2502,41 +2502,41 @@ void func_800A43F8(ImageAnim *anim, s16 level) {
     }
 }
 
-/* Update the active trackers' positions: an offset from a part of a stage
+/* 800A44C0: Update the active trackers' positions: an offset from a part of a stage
  * object's hierarchy when the object exists, else the offset itself. */
-void func_800A44C0(BattleObject **objects) {
+void battle_update_light_trackers(BattleObject **objects) {
     MATRIX *m = (MATRIX *)0x1F800000;
     s32 i;
     ModelPart *root;
     VECTOR position;
 
     for (i = 0; i < 2; i++) {
-        if (D_800D3304[i].active != 0) {
-            if (D_800D3304[i].object >= 0 && objects[D_800D3304[i].object] != NULL) {
-                root = objects[D_800D3304[i].object]->hierarchy;
-                CompMatrix(&root->transform, &root[D_800D3304[i].part + 1].world, m);
+        if (battle_light_trackers[i].active != 0) {
+            if (battle_light_trackers[i].object >= 0 && objects[battle_light_trackers[i].object] != NULL) {
+                root = objects[battle_light_trackers[i].object]->hierarchy;
+                CompMatrix(&root->transform, &root[battle_light_trackers[i].part + 1].world, m);
                 SetRotMatrix(m);
                 SetTransMatrix(m);
-                gte_ldv0(&D_800D3304[i].offset);
+                gte_ldv0(&battle_light_trackers[i].offset);
                 gte_rtv0tr();
                 gte_stlvnl(&position);
-                D_800D3304[i].x = position.vx;
-                D_800D3304[i].y = position.vy;
-                D_800D3304[i].z = position.vz;
+                battle_light_trackers[i].x = position.vx;
+                battle_light_trackers[i].y = position.vy;
+                battle_light_trackers[i].z = position.vz;
             } else {
-                D_800D3304[i].x = D_800D3304[i].offset.vx;
-                D_800D3304[i].y = D_800D3304[i].offset.vy;
-                D_800D3304[i].z = D_800D3304[i].offset.vz;
+                battle_light_trackers[i].x = battle_light_trackers[i].offset.vx;
+                battle_light_trackers[i].y = battle_light_trackers[i].offset.vy;
+                battle_light_trackers[i].z = battle_light_trackers[i].offset.vz;
             }
         }
     }
 }
 
-/* Draw the stage: advance the stage object's image animations, run the
+/* 800A4654: Draw the stage: advance the stage object's image animations, run the
  * stage update (800A6AE8) on the scratchpad stack, step both resident
  * records, draw the stage hierarchy (800A48EC), both resident handles and
  * the sky (800A4DB8) seen from eye towards target into ot[depth - 1]. */
-void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
+void battle_draw_stage(MATRIX *view, MATRIX *light, s32 unused_mode, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth) {
     ImageAnim *anim;
     s32 i;
@@ -2544,57 +2544,57 @@ void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, S
     if (light != NULL) {
         SetLightMatrix(light);
     }
-    anim = D_800D3368[31]->images;
-    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
-        func_800A3E98(anim, D_800CCC5C);
+    anim = battle_objects[31]->images;
+    for (i = 0; i < battle_objects[31]->imageCount; i++, anim++) {
+        battle_step_image_anim(anim, battle_frame_ticks);
     }
     SPAD_STACK_ENTER();
-    func_800A6AE8();
+    battle_relight_stage();
     SPAD_STACK_LEAVE();
     for (i = 0; i < 2; i++) {
-        gpu_update_texture_scroll(&D_800C3DA0[i]);
+        gpu_update_texture_scroll(&battle_stage_texture_scrolls[i]);
     }
-    if (D_800C3E38 != 0) {
-        func_800A48EC(D_800C3E48, D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
+    if (battle_stage_model_parts != 0) {
+        battle_draw_stage_hierarchy(battle_stage_model_table, battle_stage_model_parts, view, (s32)light, unused_mode, ot, buffer, depth);
     }
     for (i = 0; i < 2; i++) {
-        gpu_draw_panorama(D_800C3D50[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);
+        gpu_draw_panorama(battle_stage_backdrops[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);
     }
-    func_800A4DB8(D_800C3EA0, eye, target, view, ot + depth - 1, buffer);
+    battle_draw_stage_sky(battle_stage_sky, eye, target, view, ot + depth - 1, buffer);
 }
 
-/* Free the battle scene's resources: the stage objects, the scene data, both
- * resident handles of D_800C3D50 (80027D40), the block D_800C3EA0 and both
- * records of D_800C3DA0 (8002800C). */
-void func_800A4820(void) {
+/* 800A4820: Free the battle scene's resources: the stage objects, the scene data, both
+ * resident handles of battle_stage_backdrops (80027D40), the block battle_stage_sky and both
+ * records of battle_stage_texture_scrolls (8002800C). */
+void battle_free_scene(void) {
     s32 i;
 
-    func_800A9FF0(31);
-    D_800C3E38 = 0;
+    battle_free_object(31);
+    battle_stage_model_parts = 0;
     if (mode_battle_scene_data != NULL) {
         heap_free(mode_battle_scene_data);
     }
     mode_battle_scene_data = NULL;
     for (i = 0; i < 2; i++) {
-        if (D_800C3D50[i] != NULL) {
-            gpu_free_panorama(D_800C3D50[i]);
+        if (battle_stage_backdrops[i] != NULL) {
+            gpu_free_panorama(battle_stage_backdrops[i]);
         }
-        D_800C3D50[i] = NULL;
+        battle_stage_backdrops[i] = NULL;
     }
-    if (D_800C3EA0 != NULL) {
-        heap_free(D_800C3EA0);
+    if (battle_stage_sky != NULL) {
+        heap_free(battle_stage_sky);
     }
-    D_800C3EA0 = NULL;
+    battle_stage_sky = NULL;
     for (i = 0; i < 2; i++) {
-        gpu_free_texture_scroll(&D_800C3DA0[i]);
+        gpu_free_texture_scroll(&battle_stage_texture_scrolls[i]);
     }
 }
 
-/* Draw the scene hierarchy's visible model parts under view: billboard parts
+/* 800A48EC: Draw the scene hierarchy's visible model parts under view: billboard parts
  * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
  * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
  * draw at ordering-table depth 16 into ot[depth - 1]. */
-void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void battle_draw_stage_hierarchy(ModelTable *models, ModelPart *part, MATRIX *view, s32 unused_light, s32 unused_mode, u32 *ot, s32 buffer,
                    s32 depth) {
     MATRIX *m;
     s32 shift;
@@ -2656,11 +2656,11 @@ void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, 
     model_ot_depth_shift = shift;
 }
 
-/* Push point (relative to origin, in the ground plane) out of the first
+/* 800A4B3C: Push point (relative to origin, in the ground plane) out of the first
  * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
  * pushed. */
-s32 func_800A4B3C(SVECTOR *origin, SVECTOR *point) {
-    u16 *circle = D_800D2FD0;
+s32 battle_push_point_out_of_circles(SVECTOR *origin, SVECTOR *point) {
+    u16 *circle = battle_stage_circles;
     s32 i;
     s32 pushed = 0;
     s16 cx;
@@ -2670,7 +2670,7 @@ s32 func_800A4B3C(SVECTOR *origin, SVECTOR *point) {
     s32 dz;
     s32 distance;
 
-    for (i = 0; i < D_800D2FC8; i++) {
+    for (i = 0; i < battle_stage_circle_count; i++) {
         cx = *circle++ - origin->vx;
         dx = point->vx - cx;
         cz = *circle++ - origin->vz;
@@ -2687,24 +2687,24 @@ s32 func_800A4B3C(SVECTOR *origin, SVECTOR *point) {
     return pushed;
 }
 
-/* Place a copy of stage object index (800B10EC) at every listed point, its
+/* 800A4CF8: Place a copy of stage object index (800B10EC) at every listed point, its
  * height raised by the object's size. */
-void func_800A4CF8(s32 index) {
-    u16 *point = D_800D2FD0;
+void battle_keep_object_out_of_circles(s32 index) {
+    u16 *point = battle_stage_circles;
     s32 i;
     s16 x;
     s16 z;
     s16 y;
 
-    for (i = 0; i < D_800D2FC8; i++) {
+    for (i = 0; i < battle_stage_circle_count; i++) {
         x = *point++;
         z = *point++;
         y = *point++;
-        func_800B10EC(index, x, z, func_800AA650(index) + y);
+        battle_keep_object_away_from_point(index, x, z, battle_get_object_radius(index) + y);
     }
 }
 
-/* Draw the stage sky seen from eye towards target: the horizon bands at the
+/* 800A4DB8: Draw the stage sky seen from eye towards target: the horizon bands at the
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
  * each front-facing tile textured from the scroll position. Each visible
@@ -2717,7 +2717,7 @@ void func_800A4CF8(s32 index) {
  * andi, a short u0 set before the loops a one-insn copy too short-lived to
  * move, a u8 u an extra insn that costs u0's term t8, and a short copy of v0
  * as well a fifth moved insn that keeps u's copy in the row body. */
-void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
+void battle_draw_stage_sky(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
     MATRIX camera;
@@ -2865,25 +2865,25 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     addPrim(ot, &sky->modes[buffer]);
 }
 
-/* The scene's points. */
-SVECTOR *func_800A577C(void) {
-    return D_800D3344;
+/* 800A577C: The scene's points. */
+SVECTOR *battle_get_scene_points(void) {
+    return battle_scene_points;
 }
 
-/* The scene's triangles. */
-SceneTriangle *func_800A578C(void) {
-    return D_800D39CC;
+/* 800A578C: The scene's triangles. */
+SceneTriangle *battle_get_scene_triangles(void) {
+    return battle_scene_triangles;
 }
 
-/* The first scene triangle containing point (800A5A48 gives -1), -1 for
+/* 800A579C: The first scene triangle containing point (800A5A48 gives -1), -1 for
  * none. */
-s32 func_800A579C(SVECTOR *point) {
+s32 battle_find_scene_triangle(SVECTOR *point) {
     s32 i;
 
-    if (D_800D3344 != NULL && D_800D39CC != NULL) {
-        for (i = 0; i < D_800D3348; i++) {
-            if (func_800A5A48(&D_800D3344[D_800D39CC[i].vertices[0]], &D_800D3344[D_800D39CC[i].vertices[1]],
-                              &D_800D3344[D_800D39CC[i].vertices[2]], point)
+    if (battle_scene_points != NULL && battle_scene_triangles != NULL) {
+        for (i = 0; i < battle_scene_triangle_count; i++) {
+            if (battle_is_point_in_triangle(&battle_scene_points[battle_scene_triangles[i].vertices[0]], &battle_scene_points[battle_scene_triangles[i].vertices[1]],
+                              &battle_scene_points[battle_scene_triangles[i].vertices[2]], point)
                 == -1) {
                 return i;
             }
@@ -2892,56 +2892,56 @@ s32 func_800A579C(SVECTOR *point) {
     return -1;
 }
 
-/* Relate point to scene triangle index (800A5BE8, into out); the triangle's
+/* 800A5870: Relate point to scene triangle index (800A5BE8, into out); the triangle's
  * id, or -1 without scene geometry. */
-s32 func_800A5870(SVECTOR *point, s32 index, void *out) {
+s32 battle_put_point_on_scene_triangle(SVECTOR *point, s32 index, void *out) {
     SceneTriangle *triangle;
 
-    if (D_800D3344 == NULL || D_800D39CC == NULL || index < 0) {
+    if (battle_scene_points == NULL || battle_scene_triangles == NULL || index < 0) {
         return -1;
     }
-    triangle = &D_800D39CC[index];
-    func_800A5BE8(&D_800D3344[triangle->vertices[0]], &D_800D3344[triangle->vertices[1]],
-                  &D_800D3344[triangle->vertices[2]], point, out);
-    return D_800D39CC[index].id;
+    triangle = &battle_scene_triangles[index];
+    battle_compute_plane_height(&battle_scene_points[triangle->vertices[0]], &battle_scene_points[triangle->vertices[1]],
+                  &battle_scene_points[triangle->vertices[2]], point, out);
+    return battle_scene_triangles[index].id;
 }
 
-/* The scene triangle containing point, searched from triangle through its
+/* 800A5914: The scene triangle containing point, searched from triangle through its
  * neighbours (800A5D54, depth levels, up to depth tries); -1 for none. Each
  * search uses a new visit stamp; when the stamp wraps the marks are cleared. */
-s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth) {
+s32 battle_find_scene_triangle_near(SVECTOR *point, s32 triangle, s32 depth) {
     s32 found;
     s32 i;
 
-    if (D_800D3344 == NULL) {
+    if (battle_scene_points == NULL) {
         return -1;
     }
-    if (D_800D39CC == NULL) {
+    if (battle_scene_triangles == NULL) {
         return -1;
     }
-    if (triangle >= D_800D3348) {
+    if (triangle >= battle_scene_triangle_count) {
         return -1;
     }
     for (i = 0; i < depth; i++) {
-        found = func_800A5D54(point, triangle, depth);
+        found = battle_find_triangle_in_neighbors(point, triangle, depth);
         if (found >= 0) {
             break;
         }
     }
-    D_800D2F64++;
-    if (D_800D2F64 == 0) {
-        D_800D2F64 = 1;
-        for (i = 0; i < D_800D3348; i++) {
-            D_800D39CC[i].visited = 0;
+    battle_triangle_visit_stamp++;
+    if (battle_triangle_visit_stamp == 0) {
+        battle_triangle_visit_stamp = 1;
+        for (i = 0; i < battle_scene_triangle_count; i++) {
+            battle_scene_triangles[i].visited = 0;
         }
     }
     return found;
 }
 
-/* Whether point lies within triangle (a, b, c) in the ground plane: -1 when
+/* 800A5A48: Whether point lies within triangle (a, b, c) in the ground plane: -1 when
  * it is on the inner side of all three edges (cross products, 8004A4D8),
  * otherwise 0. */
-s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point) {
+s32 battle_is_point_in_triangle(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point) {
     VECTOR edge;
     VECTOR toPoint;
     VECTOR cross;
@@ -2976,9 +2976,9 @@ s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point) {
     return -(cross.vy >= 0);
 }
 
-/* The ground height of point on the plane through triangle (a, b, c): the
+/* 800A5BE8: The ground height of point on the plane through triangle (a, b, c): the
  * plane's unit normal goes to normal; a vertical plane leaves height 0. */
-void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal) {
+void battle_compute_plane_height(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal) {
     VECTOR edgeB;
     VECTOR edgeC;
     VECTOR edge;
@@ -2999,33 +2999,33 @@ void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *n
     point->vy = a->vy + (-((point->vx - a->vx) * normal->vx) - (point->vz - a->vz) * normal->vz) / normal->vy;
 }
 
-/* Search triangle and, up to depth levels, its neighbours for the one
+/* 800A5D54: Search triangle and, up to depth levels, its neighbours for the one
  * containing point (800A5A48 gives -1), testing each triangle once per visit
  * stamp; -1 for none. */
-s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth) {
+s32 battle_find_triangle_in_neighbors(SVECTOR *point, s32 triangle, s32 depth) {
     s32 found;
 
     if (triangle < 0) {
         return -1;
     }
-    if (D_800D39CC[triangle].visited != D_800D2F64) {
-        D_800D39CC[triangle].visited = D_800D2F64;
-        if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]], &D_800D3344[D_800D39CC[triangle].vertices[1]],
-                          &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
+    if (battle_scene_triangles[triangle].visited != battle_triangle_visit_stamp) {
+        battle_scene_triangles[triangle].visited = battle_triangle_visit_stamp;
+        if (battle_is_point_in_triangle(&battle_scene_points[battle_scene_triangles[triangle].vertices[0]], &battle_scene_points[battle_scene_triangles[triangle].vertices[1]],
+                          &battle_scene_points[battle_scene_triangles[triangle].vertices[2]], point)
             == -1) {
             return triangle;
         }
     }
     if (depth > 0) {
-        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
+        found = battle_find_triangle_in_neighbors(point, battle_scene_triangles[triangle].neighbours[0], depth - 1);
         if (found >= 0) {
             return found;
         }
-        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
+        found = battle_find_triangle_in_neighbors(point, battle_scene_triangles[triangle].neighbours[1], depth - 1);
         if (found >= 0) {
             return found;
         }
-        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
+        found = battle_find_triangle_in_neighbors(point, battle_scene_triangles[triangle].neighbours[2], depth - 1);
         if (found >= 0) {
             return found;
         }
@@ -3033,202 +3033,202 @@ s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth) {
     return -1;
 }
 
-/* Set the two words D_800D2D40 and D_800D2D48. */
-void func_800A5E9C(s32 first, s32 second) {
-    D_800D2D40 = first;
-    D_800D2D48 = second;
+/* 800A5E9C: Set the two words battle_buffer0_background_color_ptr and battle_buffer1_background_color_ptr. */
+void battle_set_background_color_ptrs(s32 first, s32 second) {
+    battle_buffer0_background_color_ptr = first;
+    battle_buffer1_background_color_ptr = second;
 }
 
-/* Set up the stage lighting: turn the light slots off, make the stage image
+/* 800A5EB4: Set up the stage lighting: turn the light slots off, make the stage image
  * (the w x h VRAM rectangle at (x, y), with a working copy) the target of
  * the stage object's active image animations, and save the stage's colours
  * twice (as loaded and a working copy). */
-void func_800A5EB4(void) {
+void battle_init_stage_lighting(void) {
     CVECTOR *color;
     ImageAnim *anim;
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        D_800C3AAC[i].active = 0;
+        battle_light_slots[i].active = 0;
     }
-    anim = D_800D3368[31]->images;
-    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+    anim = battle_objects[31]->images;
+    for (i = 0; i < battle_objects[31]->imageCount; i++, anim++) {
         if (anim->active) {
-            anim->target = &D_800D3600;
+            anim->target = &battle_stage_image_anim;
         }
     }
-    func_800A3640(&D_800D3600, NULL, 1, 0x601, NULL, D_800D2D30, D_800D2D34, 0, 0, 0, 0, D_800D2D30, D_800D2D34,
-                  D_800D2D2C, D_800C3EA8, 0, 0, 0, NULL);
-    D_800D3600.work = NULL;
-    D_800C3AC4 = heap_alloc(sizeof(StageColors), 1);
-    D_800C3AC8 = heap_alloc(sizeof(StageColors), 1);
-    color = (CVECTOR *)D_800C3AC4;
+    battle_start_image_anim(&battle_stage_image_anim, NULL, 1, 0x601, NULL, battle_stage_image_x, battle_stage_image_y, 0, 0, 0, 0, battle_stage_image_x, battle_stage_image_y,
+                  battle_stage_image_width, battle_stage_image_height, 0, 0, 0, NULL);
+    battle_stage_image_anim.work = NULL;
+    battle_stage_colors_saved = heap_alloc(sizeof(StageColors), 1);
+    battle_stage_colors_working = heap_alloc(sizeof(StageColors), 1);
+    color = (CVECTOR *)battle_stage_colors_saved;
     for (i = 0; i < 4; i++) {
-        if (D_800C3EA0 != NULL) {
-            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r0;
-            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g0;
-            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b0;
+        if (battle_stage_sky != NULL) {
+            color->r = ((StageGeometry *)battle_stage_sky)->quads[i].r0;
+            color->g = ((StageGeometry *)battle_stage_sky)->quads[i].g0;
+            color->b = ((StageGeometry *)battle_stage_sky)->quads[i].b0;
             color++;
-            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r1;
-            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g1;
-            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b1;
+            color->r = ((StageGeometry *)battle_stage_sky)->quads[i].r1;
+            color->g = ((StageGeometry *)battle_stage_sky)->quads[i].g1;
+            color->b = ((StageGeometry *)battle_stage_sky)->quads[i].b1;
             color++;
-            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r2;
-            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g2;
-            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b2;
+            color->r = ((StageGeometry *)battle_stage_sky)->quads[i].r2;
+            color->g = ((StageGeometry *)battle_stage_sky)->quads[i].g2;
+            color->b = ((StageGeometry *)battle_stage_sky)->quads[i].b2;
             color++;
-            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r3;
-            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g3;
-            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b3;
+            color->r = ((StageGeometry *)battle_stage_sky)->quads[i].r3;
+            color->g = ((StageGeometry *)battle_stage_sky)->quads[i].g3;
+            color->b = ((StageGeometry *)battle_stage_sky)->quads[i].b3;
             color++;
-            color->r = ((StageGeometry *)D_800C3EA0)->flats[i].r0;
-            color->g = ((StageGeometry *)D_800C3EA0)->flats[i].g0;
-            color->b = ((StageGeometry *)D_800C3EA0)->flats[i].b0;
+            color->r = ((StageGeometry *)battle_stage_sky)->flats[i].r0;
+            color->g = ((StageGeometry *)battle_stage_sky)->flats[i].g0;
+            color->b = ((StageGeometry *)battle_stage_sky)->flats[i].b0;
             color++;
         } else {
             color += 5;
         }
-        if (D_800C3D50[0] != NULL) {
-            color->r = D_800C3D50[0]->fills[i].r0;
-            color->g = D_800C3D50[0]->fills[i].g0;
-            color->b = D_800C3D50[0]->fills[i].b0;
+        if (battle_stage_backdrops[0] != NULL) {
+            color->r = battle_stage_backdrops[0]->fills[i].r0;
+            color->g = battle_stage_backdrops[0]->fills[i].g0;
+            color->b = battle_stage_backdrops[0]->fills[i].b0;
         }
         color++;
     }
     for (i = 0; i < 2; i++) {
-        if (D_800C3D50[0] != NULL) {
-            color->r = D_800C3D50[0]->fades[i].r0;
-            color->g = D_800C3D50[0]->fades[i].g0;
-            color->b = D_800C3D50[0]->fades[i].b0;
+        if (battle_stage_backdrops[0] != NULL) {
+            color->r = battle_stage_backdrops[0]->fades[i].r0;
+            color->g = battle_stage_backdrops[0]->fades[i].g0;
+            color->b = battle_stage_backdrops[0]->fades[i].b0;
             color++;
-            color->r = D_800C3D50[0]->fades[i].r1;
-            color->g = D_800C3D50[0]->fades[i].g1;
-            color->b = D_800C3D50[0]->fades[i].b1;
+            color->r = battle_stage_backdrops[0]->fades[i].r1;
+            color->g = battle_stage_backdrops[0]->fades[i].g1;
+            color->b = battle_stage_backdrops[0]->fades[i].b1;
             color++;
-            color->r = D_800C3D50[0]->fades[i].r2;
-            color->g = D_800C3D50[0]->fades[i].g2;
-            color->b = D_800C3D50[0]->fades[i].b2;
+            color->r = battle_stage_backdrops[0]->fades[i].r2;
+            color->g = battle_stage_backdrops[0]->fades[i].g2;
+            color->b = battle_stage_backdrops[0]->fades[i].b2;
             color++;
-            color->r = D_800C3D50[0]->fades[i].r3;
-            color->g = D_800C3D50[0]->fades[i].g3;
-            color->b = D_800C3D50[0]->fades[i].b3;
+            color->r = battle_stage_backdrops[0]->fades[i].r3;
+            color->g = battle_stage_backdrops[0]->fades[i].g3;
+            color->b = battle_stage_backdrops[0]->fades[i].b3;
             color++;
         } else {
             color += 4;
         }
     }
-    color->r = ((u8 *)D_800D2D40)[0];
-    color->g = ((u8 *)D_800D2D40)[1];
-    color->b = ((u8 *)D_800D2D40)[2];
+    color->r = ((u8 *)battle_buffer0_background_color_ptr)[0];
+    color->g = ((u8 *)battle_buffer0_background_color_ptr)[1];
+    color->b = ((u8 *)battle_buffer0_background_color_ptr)[2];
     color++;
-    color->r = ((u8 *)D_800D2D48)[0];
-    color->g = ((u8 *)D_800D2D48)[1];
-    color->b = ((u8 *)D_800D2D48)[2];
+    color->r = ((u8 *)battle_buffer1_background_color_ptr)[0];
+    color->g = ((u8 *)battle_buffer1_background_color_ptr)[1];
+    color->b = ((u8 *)battle_buffer1_background_color_ptr)[2];
 }
 
-/* Set light slot index (0-3) to a color and two values; a negative red turns
+/* 800A6444: Set light slot index (0-3) to a color and two values; a negative red turns
  * it off. */
-void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
+void battle_set_light_slot(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
     if (index < 4) {
         if (r >= 0) {
-            D_800D3611 = 1;
-            D_800C3AAC[index].active = 1;
-            D_800C3AAC[index].r = r;
-            D_800C3AAC[index].g = g;
-            D_800C3AAC[index].b = b;
-            D_800C3AAC[index].field4 = field4;
-            D_800C3AAC[index].field5 = field5;
+            battle_stage_image_dirty = 1;
+            battle_light_slots[index].active = 1;
+            battle_light_slots[index].r = r;
+            battle_light_slots[index].g = g;
+            battle_light_slots[index].b = b;
+            battle_light_slots[index].field4 = field4;
+            battle_light_slots[index].field5 = field5;
         } else {
-            D_800C3AAC[index].active = 0;
+            battle_light_slots[index].active = 0;
         }
     }
 }
 
-/* Restore the stage's colours as loaded (saved by 800A5EB4). */
-void func_800A64E4(void) {
+/* 800A64E4: Restore the stage's colours as loaded (saved by 800A5EB4). */
+void battle_restore_stage_colors(void) {
     CVECTOR *color;
     s32 i;
 
-    color = (CVECTOR *)D_800C3AC4;
+    color = (CVECTOR *)battle_stage_colors_saved;
     for (i = 0; i < 4; i++) {
-        if (D_800C3EA0 != NULL) {
-            ((StageGeometry *)D_800C3EA0)->quads[i].r0 = color->r;
-            ((StageGeometry *)D_800C3EA0)->quads[i].g0 = color->g;
-            ((StageGeometry *)D_800C3EA0)->quads[i].b0 = color->b;
+        if (battle_stage_sky != NULL) {
+            ((StageGeometry *)battle_stage_sky)->quads[i].r0 = color->r;
+            ((StageGeometry *)battle_stage_sky)->quads[i].g0 = color->g;
+            ((StageGeometry *)battle_stage_sky)->quads[i].b0 = color->b;
             color++;
-            ((StageGeometry *)D_800C3EA0)->quads[i].r1 = color->r;
-            ((StageGeometry *)D_800C3EA0)->quads[i].g1 = color->g;
-            ((StageGeometry *)D_800C3EA0)->quads[i].b1 = color->b;
+            ((StageGeometry *)battle_stage_sky)->quads[i].r1 = color->r;
+            ((StageGeometry *)battle_stage_sky)->quads[i].g1 = color->g;
+            ((StageGeometry *)battle_stage_sky)->quads[i].b1 = color->b;
             color++;
-            ((StageGeometry *)D_800C3EA0)->quads[i].r2 = color->r;
-            ((StageGeometry *)D_800C3EA0)->quads[i].g2 = color->g;
-            ((StageGeometry *)D_800C3EA0)->quads[i].b2 = color->b;
+            ((StageGeometry *)battle_stage_sky)->quads[i].r2 = color->r;
+            ((StageGeometry *)battle_stage_sky)->quads[i].g2 = color->g;
+            ((StageGeometry *)battle_stage_sky)->quads[i].b2 = color->b;
             color++;
-            ((StageGeometry *)D_800C3EA0)->quads[i].r3 = color->r;
-            ((StageGeometry *)D_800C3EA0)->quads[i].g3 = color->g;
-            ((StageGeometry *)D_800C3EA0)->quads[i].b3 = color->b;
+            ((StageGeometry *)battle_stage_sky)->quads[i].r3 = color->r;
+            ((StageGeometry *)battle_stage_sky)->quads[i].g3 = color->g;
+            ((StageGeometry *)battle_stage_sky)->quads[i].b3 = color->b;
             color++;
-            ((StageGeometry *)D_800C3EA0)->flats[i].r0 = color->r;
-            ((StageGeometry *)D_800C3EA0)->flats[i].g0 = color->g;
-            ((StageGeometry *)D_800C3EA0)->flats[i].b0 = color->b;
+            ((StageGeometry *)battle_stage_sky)->flats[i].r0 = color->r;
+            ((StageGeometry *)battle_stage_sky)->flats[i].g0 = color->g;
+            ((StageGeometry *)battle_stage_sky)->flats[i].b0 = color->b;
             color++;
         } else {
             color += 5;
         }
-        if (D_800C3D50[0] != NULL) {
-            D_800C3D50[0]->fills[i].r0 = color->r;
-            D_800C3D50[0]->fills[i].g0 = color->g;
-            D_800C3D50[0]->fills[i].b0 = color->b;
+        if (battle_stage_backdrops[0] != NULL) {
+            battle_stage_backdrops[0]->fills[i].r0 = color->r;
+            battle_stage_backdrops[0]->fills[i].g0 = color->g;
+            battle_stage_backdrops[0]->fills[i].b0 = color->b;
         }
         color++;
     }
     for (i = 0; i < 2; i++) {
-        if (D_800C3D50[0] != NULL) {
-            D_800C3D50[0]->fades[i].r0 = color->r;
-            D_800C3D50[0]->fades[i].g0 = color->g;
-            D_800C3D50[0]->fades[i].b0 = color->b;
+        if (battle_stage_backdrops[0] != NULL) {
+            battle_stage_backdrops[0]->fades[i].r0 = color->r;
+            battle_stage_backdrops[0]->fades[i].g0 = color->g;
+            battle_stage_backdrops[0]->fades[i].b0 = color->b;
             color++;
-            D_800C3D50[0]->fades[i].r1 = color->r;
-            D_800C3D50[0]->fades[i].g1 = color->g;
-            D_800C3D50[0]->fades[i].b1 = color->b;
+            battle_stage_backdrops[0]->fades[i].r1 = color->r;
+            battle_stage_backdrops[0]->fades[i].g1 = color->g;
+            battle_stage_backdrops[0]->fades[i].b1 = color->b;
             color++;
-            D_800C3D50[0]->fades[i].r2 = color->r;
-            D_800C3D50[0]->fades[i].g2 = color->g;
-            D_800C3D50[0]->fades[i].b2 = color->b;
+            battle_stage_backdrops[0]->fades[i].r2 = color->r;
+            battle_stage_backdrops[0]->fades[i].g2 = color->g;
+            battle_stage_backdrops[0]->fades[i].b2 = color->b;
             color++;
-            D_800C3D50[0]->fades[i].r3 = color->r;
-            D_800C3D50[0]->fades[i].g3 = color->g;
-            D_800C3D50[0]->fades[i].b3 = color->b;
+            battle_stage_backdrops[0]->fades[i].r3 = color->r;
+            battle_stage_backdrops[0]->fades[i].g3 = color->g;
+            battle_stage_backdrops[0]->fades[i].b3 = color->b;
             color++;
         } else {
             color += 4;
         }
     }
-    ((u8 *)D_800D2D40)[0] = color->r;
-    ((u8 *)D_800D2D40)[1] = color->g;
-    ((u8 *)D_800D2D40)[2] = color->b;
+    ((u8 *)battle_buffer0_background_color_ptr)[0] = color->r;
+    ((u8 *)battle_buffer0_background_color_ptr)[1] = color->g;
+    ((u8 *)battle_buffer0_background_color_ptr)[2] = color->b;
     color++;
-    ((u8 *)D_800D2D48)[0] = color->r;
-    ((u8 *)D_800D2D48)[1] = color->g;
-    ((u8 *)D_800D2D48)[2] = color->b;
+    ((u8 *)battle_buffer1_background_color_ptr)[0] = color->r;
+    ((u8 *)battle_buffer1_background_color_ptr)[1] = color->g;
+    ((u8 *)battle_buffer1_background_color_ptr)[2] = color->b;
 }
 
-/* Light a colour with light slot index: when active, its mode (field r)
+/* 800A6884: Light a colour with light slot index: when active, its mode (field r)
  * adds the colour (0), half (1) or a quarter (2) of it, its grey level (3),
  * or nothing (4) to the light's signed colour (b, field4, field5, times 8); the
  * colour then moves towards that by field g / 32, clamped to 0-255, and is
  * copied to out. */
-void func_800A6884(u8 *out, s32 index, u8 *color) {
+void battle_apply_light_to_color(u8 *out, s32 index, u8 *color) {
     s32 r;
     s32 g;
     s32 b;
     s32 grey;
 
-    r = (s8)D_800C3AAC[index].b * 8;
-    g = (s8)D_800C3AAC[index].field4 * 8;
-    b = (s8)D_800C3AAC[index].field5 * 8;
-    if (D_800C3AAC[index].active) {
-        switch (D_800C3AAC[index].r) {
+    r = (s8)battle_light_slots[index].b * 8;
+    g = (s8)battle_light_slots[index].field4 * 8;
+    b = (s8)battle_light_slots[index].field5 * 8;
+    if (battle_light_slots[index].active) {
+        switch (battle_light_slots[index].r) {
         case 0:
             r += color[0];
             g += color[1];
@@ -3257,9 +3257,9 @@ void func_800A6884(u8 *out, s32 index, u8 *color) {
             break;
         }
     }
-    r += (color[0] - r) * D_800C3AAC[index].g / 32;
-    g += (color[1] - g) * D_800C3AAC[index].g / 32;
-    b += (color[2] - b) * D_800C3AAC[index].g / 32;
+    r += (color[0] - r) * battle_light_slots[index].g / 32;
+    g += (color[1] - g) * battle_light_slots[index].g / 32;
+    b += (color[2] - b) * battle_light_slots[index].g / 32;
     if (r >= 0x100) {
         color[0] = 0xFF;
     } else if (r < 0) {
@@ -3286,96 +3286,96 @@ void func_800A6884(u8 *out, s32 index, u8 *color) {
     out[2] = color[2];
 }
 
-/* Relight the stage when its image is marked dirty (800A6444 marks it on a
- * light slot change, through D_800D3611): restart the stage image from
+/* 800A6AE8: Relight the stage when its image is marked dirty (800A6444 marks it on a
+ * light slot change, through battle_stage_image_dirty): restart the stage image from
  * its original pixels and the working colours from the loaded ones, then
  * apply each active light slot to the image (modes 0-3 through 80025D4C,
  * mode 4 through 80026F44) and to every stage colour (800A6884), and load
  * the image into VRAM. */
-void func_800A6AE8(void) {
+void battle_relight_stage(void) {
     CVECTOR *color;
     s32 i;
     s32 j;
 
-    if (D_800D3600.dirty && D_800D3600.active) {
-        D_800D3600.dirty = 0;
-        memcpy(D_800D3600.pixels2, D_800D3600.pixels, D_800D2D2C * D_800C3EA8 * 2);
-        *D_800C3AC8 = *D_800C3AC4;
+    if (battle_stage_image_anim.dirty && battle_stage_image_anim.active) {
+        battle_stage_image_anim.dirty = 0;
+        memcpy(battle_stage_image_anim.pixels2, battle_stage_image_anim.pixels, battle_stage_image_width * battle_stage_image_height * 2);
+        *battle_stage_colors_working = *battle_stage_colors_saved;
         for (i = 0; i < 4; i++) {
-            if (D_800C3AAC[i].active) {
-                switch (D_800C3AAC[i].r) {
+            if (battle_light_slots[i].active) {
+                switch (battle_light_slots[i].r) {
                 case 0:
                 case 1:
                 case 2:
                 case 3:
-                    sprite_tint_blend_pixels(D_800D2D2C * D_800C3EA8, D_800D3600.pixels2, D_800D3600.pixels2,
-                                  D_800D3600.pixels2, (s8)D_800C3AAC[i].b, (s8)D_800C3AAC[i].field4,
-                                  (s8)D_800C3AAC[i].field5, D_800C3AAC[i].r, D_800C3AAC[i].g);
+                    sprite_tint_blend_pixels(battle_stage_image_width * battle_stage_image_height, battle_stage_image_anim.pixels2, battle_stage_image_anim.pixels2,
+                                  battle_stage_image_anim.pixels2, (s8)battle_light_slots[i].b, (s8)battle_light_slots[i].field4,
+                                  (s8)battle_light_slots[i].field5, battle_light_slots[i].r, battle_light_slots[i].g);
                     break;
                 case 4:
-                    sprite_darken_pixels(D_800D2D2C * D_800C3EA8, D_800C3AAC[i].g, D_800D3600.pixels2,
-                                  D_800D3600.pixels);
+                    sprite_darken_pixels(battle_stage_image_width * battle_stage_image_height, battle_light_slots[i].g, battle_stage_image_anim.pixels2,
+                                  battle_stage_image_anim.pixels);
                     break;
                 }
-                color = (CVECTOR *)D_800C3AC8;
+                color = (CVECTOR *)battle_stage_colors_working;
                 for (j = 0; j < 4; j++) {
-                    if (D_800C3EA0 != NULL) {
-                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r0, i, (u8 *)color++);
-                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r1, i, (u8 *)color++);
-                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r2, i, (u8 *)color++);
-                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r3, i, (u8 *)color++);
-                        func_800A6884(&((StageGeometry *)D_800C3EA0)->flats[j].r0, i, (u8 *)color++);
+                    if (battle_stage_sky != NULL) {
+                        battle_apply_light_to_color(&((StageGeometry *)battle_stage_sky)->quads[j].r0, i, (u8 *)color++);
+                        battle_apply_light_to_color(&((StageGeometry *)battle_stage_sky)->quads[j].r1, i, (u8 *)color++);
+                        battle_apply_light_to_color(&((StageGeometry *)battle_stage_sky)->quads[j].r2, i, (u8 *)color++);
+                        battle_apply_light_to_color(&((StageGeometry *)battle_stage_sky)->quads[j].r3, i, (u8 *)color++);
+                        battle_apply_light_to_color(&((StageGeometry *)battle_stage_sky)->flats[j].r0, i, (u8 *)color++);
                     } else {
                         color += 5;
                     }
-                    if (D_800C3D50[0] != NULL) {
-                        func_800A6884(&D_800C3D50[0]->fills[j].r0, i, (u8 *)color++);
+                    if (battle_stage_backdrops[0] != NULL) {
+                        battle_apply_light_to_color(&battle_stage_backdrops[0]->fills[j].r0, i, (u8 *)color++);
                     } else {
                         color++;
                     }
                 }
                 for (j = 0; j < 2; j++) {
-                    if (D_800C3D50[0] != NULL) {
-                        func_800A6884(&D_800C3D50[0]->fades[j].r0, i, (u8 *)color++);
-                        func_800A6884(&D_800C3D50[0]->fades[j].r1, i, (u8 *)color++);
-                        func_800A6884(&D_800C3D50[0]->fades[j].r2, i, (u8 *)color++);
-                        func_800A6884(&D_800C3D50[0]->fades[j].r3, i, (u8 *)color++);
+                    if (battle_stage_backdrops[0] != NULL) {
+                        battle_apply_light_to_color(&battle_stage_backdrops[0]->fades[j].r0, i, (u8 *)color++);
+                        battle_apply_light_to_color(&battle_stage_backdrops[0]->fades[j].r1, i, (u8 *)color++);
+                        battle_apply_light_to_color(&battle_stage_backdrops[0]->fades[j].r2, i, (u8 *)color++);
+                        battle_apply_light_to_color(&battle_stage_backdrops[0]->fades[j].r3, i, (u8 *)color++);
                     } else {
                         color += 4;
                     }
                 }
-                func_800A6884((u8 *)D_800D2D40, i, (u8 *)color++);
-                func_800A6884((u8 *)D_800D2D48, i, (u8 *)color);
+                battle_apply_light_to_color((u8 *)battle_buffer0_background_color_ptr, i, (u8 *)color++);
+                battle_apply_light_to_color((u8 *)battle_buffer1_background_color_ptr, i, (u8 *)color);
             }
         }
-        LoadImage(&D_800D3600.rect, (u_long *)D_800D3600.pixels2);
+        LoadImage(&battle_stage_image_anim.rect, (u_long *)battle_stage_image_anim.pixels2);
     }
 }
 
-/* Release the stage image: detach the stage object's active image
+/* 800A6F98: Release the stage image: detach the stage object's active image
  * animations from their targets, restore the image's VRAM and stop it; then
  * restore the stage colours (800A64E4) and free their saved copies. */
-void func_800A6F98(void) {
+void battle_release_stage_image(void) {
     ImageAnim *anim;
     s32 i;
 
-    if (D_800D3600.active) {
-        anim = D_800D3368[31]->images;
-        for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+    if (battle_stage_image_anim.active) {
+        anim = battle_objects[31]->images;
+        for (i = 0; i < battle_objects[31]->imageCount; i++, anim++) {
             if (anim->active) {
                 anim->target = NULL;
             }
         }
-        LoadImage(&D_800D3600.rect, (u_long *)D_800D3600.pixels);
+        LoadImage(&battle_stage_image_anim.rect, (u_long *)battle_stage_image_anim.pixels);
         DrawSync(0);
-        func_800A429C(&D_800D3600);
+        battle_stop_image_anim(&battle_stage_image_anim);
     }
-    func_800A64E4();
-    heap_free(D_800C3AC4);
-    heap_free(D_800C3AC8);
+    battle_restore_stage_colors();
+    heap_free(battle_stage_colors_saved);
+    heap_free(battle_stage_colors_working);
 }
 
-/* Build a surface from `table`: a scaled centre per ring (offset by
+/* 800A7064: Build a surface from `table`: a scaled centre per ring (offset by
  * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
@@ -3387,7 +3387,7 @@ void func_800A6F98(void) {
  * On an allocation failure the surface is left empty; the original clears
  * centres before passing NULL to the free service, even when a centre block
  * was allocated. */
-void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void battle_build_surface(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
@@ -3553,14 +3553,14 @@ void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 
     }
 }
 
-/* Simulate and draw a surface (hair or cloth): each strand's
+/* 800A7948: Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
  * keep their length, stay above `floor` and are pushed out of the surface's
  * collision spheres; then the points' normals are averaged from their
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer. */
-void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
+void battle_simulate_surface(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
     SVECTOR normal;
@@ -3758,8 +3758,8 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     }
 }
 
-/* Free a surface's buffers (once). */
-void func_800A8A88(Surface *surface) {
+/* 800A8A88: Free a surface's buffers (once). */
+void battle_free_surface(Surface *surface) {
     if (surface->centres != NULL) {
         heap_free(surface->centres);
         heap_free(surface->strands[0]);
@@ -3772,42 +3772,42 @@ void func_800A8A88(Surface *surface) {
     }
 }
 
-/* Reset the battle scene: its flags, the effect and sprite pools sized by the
+/* 800A8B0C: Reset the battle scene: its flags, the effect and sprite pools sized by the
  * scene data, and the object and slot tables. */
-void func_800A8B0C(void) {
+void battle_reset_scene(void) {
     s32 i;
 
-    D_800C3E88 = 0;
-    D_800C3CF0 = 0;
-    D_800C3D6C = 0;
-    D_800C3D68 = 0;
-    D_800C3B7C = 0;
-    D_800C3B74 = 1;
-    func_800A2234(&D_800C3D0C, SCENE_DATA->effectCount);
-    func_800A2CA4(&D_800C3D04, SCENE_DATA->spriteCount);
-    func_800B00D0();
+    battle_stage_frame_remainder = 0;
+    battle_surface_wind_phase = 0;
+    battle_shadows_enabled = 0;
+    battle_unread_acting_object_started = 0;
+    battle_highlight_pulse_phase = 0;
+    battle_object_drawing_on = 1;
+    battle_create_effect_pool(&battle_effect_pool, SCENE_DATA->effectCount);
+    battle_create_sprite_pool(&battle_effect_sprite_pool, SCENE_DATA->spriteCount);
+    battle_clear_camera_channels();
     for (i = 0; i < 32; i++) {
-        D_800D3368[i] = NULL;
+        battle_objects[i] = NULL;
     }
     for (i = 0; i < 20; i++) {
-        D_800C3ACC[i].models = NULL;
+        battle_object_model_tables[i].models = NULL;
     }
     for (i = 0; i < 2; i++) {
-        D_800D3304[i].active = 0;
+        battle_light_trackers[i].active = 0;
     }
 }
 
 /* Read a stage object's description through a stream pointer. */
 #define OBJECT_DESC(p) ((ObjectDesc *)(p))
 
-/* Create stage object index (unless it exists) from its script and model
+/* 800A8BF0: Create stage object index (unless it exists) from its script and model
  * files with its images placed at x, y, z, w (flag 1: the model file is
  * already set up, no images; 4: no script file; 0x40: a plain object with no
  * scripts; 0x80: the script file is shared; 2: its models stay in the loaded
  * group), its root at position when given. One pointer reads the object's
  * description and then walks its mesh stream (the original keeps both in one
  * variable). */
-void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectModelFile *model_file, s16 x, s16 y,
+void battle_create_object(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectModelFile *model_file, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
     ObjectScripts *scripts;
@@ -3826,7 +3826,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
     s32 copySize;
 
     heap_select_owner_tag(4, 0);
-    if (index < 32 && D_800D3368[index] == NULL) {
+    if (index < 32 && battle_objects[index] == NULL) {
         object = heap_alloc(sizeof(BattleObject), 0);
         if (!(flags & 1)) {
             text_relocate_offset_table(model_file);
@@ -3851,7 +3851,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         images = model_file->images;
         models = model_file->models;
         hierarchy = model_file->hierarchy;
-        D_800D3368[index] = object;
+        battle_objects[index] = object;
         object->scale24 = OBJECT_DESC(stream)->size[0];
         object->scale26 = OBJECT_DESC(stream)->size[1];
         object->scale28 = OBJECT_DESC(stream)->size[2];
@@ -3869,24 +3869,24 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
                 i = !bit;
             }
             model_load_image_list(images, i, x, y, i, z, w);
-            D_800C3B70 = heap_alloc(size, 1);
-            memcpy(D_800C3B70, models, size);
-            for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
-                if (D_800C3ACC[D_800C3B6C].models == NULL) {
+            battle_model_group_being_loaded = heap_alloc(size, 1);
+            memcpy(battle_model_group_being_loaded, models, size);
+            for (battle_model_table_slot = 0; battle_model_table_slot < 20; battle_model_table_slot++) {
+                if (battle_object_model_tables[battle_model_table_slot].models == NULL) {
                     break;
                 }
             }
-            func_8009EBA8(D_800C3B70, &D_800C3ACC[D_800C3B6C]);
+            battle_build_model_table(battle_model_group_being_loaded, &battle_object_model_tables[battle_model_table_slot]);
         }
-        object->field0 = &D_800C3ACC[D_800C3B6C];
+        object->field0 = &battle_object_model_tables[battle_model_table_slot];
         if (!(flags & 0x40)) {
             if (object->flags4A & 4) {
-                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+                object->hierarchy = battle_build_model_hierarchy(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
             } else {
-                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+                object->hierarchy = battle_build_model_hierarchy(object->field0, hierarchy, 2, 1, x, y, z, w);
             }
         } else {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
+            object->hierarchy = battle_build_model_hierarchy(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
         }
         if (position != NULL) {
             object->hierarchy->translation[0] = position->vx;
@@ -3929,7 +3929,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
             object->scale1C = OBJECT_DESC(stream)->scale;
         }
         object->channelCount = OBJECT_DESC(stream)->channelCount;
-        func_800AA6E0(object);
+        battle_alloc_object_color_fades(object);
         object->imageCount = OBJECT_DESC(stream)->imageAnimCount;
         if (object->imageCount != 0) {
             object->images = heap_alloc(object->imageCount * sizeof(ImageAnim), 0);
@@ -3948,7 +3948,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
             for (i = 0; i < object->surfaceCount; i++, surface++) {
                 keyCount = stream[17];
                 surface->h0 = *stream++;
-                func_800A7064(surface, header->meshData[i], *stream++, *stream++, *stream++, *stream++, *stream++,
+                battle_build_surface(surface, header->meshData[i], *stream++, *stream++, *stream++, *stream++, *stream++,
                               keyCount, x + *stream++, y + *stream++, *stream++, *stream++, z + *stream++, w,
                               *stream++, *stream++, *stream++, *stream++, *stream++, *stream);
                 stream += 2;
@@ -3963,7 +3963,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         }
         object->slot = index;
         object->field22 = 0;
-        if (D_800C3EB4[index].hidden && index < 11) {
+        if (battle_area_slots[index].hidden && index < 11) {
             object->active = 0;
         } else {
             object->active = 1;
@@ -3971,19 +3971,19 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         if (!(flags & 0x40)) {
             scripts = script_file->scripts;
             object->model = script_file->data;
-            func_800AA898(object, &D_800C3D0C, scripts->scripts, scripts->animations);
-            func_800AA934(object, object, &D_800C3D0C, 0);
-            func_800AFF9C(object);
+            battle_reset_object(object, &battle_effect_pool, scripts->scripts, scripts->animations);
+            battle_start_effect_script(object, object, &battle_effect_pool, 0);
+            battle_put_object_on_ground(object);
         }
         if (!(flags & 2)) {
-            model_trim_group((ModelGroup *)D_800C3B70);
-            model_unrelocate_group((ModelGroup *)D_800C3B70);
-            copySize = heap_get_block_size(D_800C3B70);
+            model_trim_group((ModelGroup *)battle_model_group_being_loaded);
+            model_unrelocate_group((ModelGroup *)battle_model_group_being_loaded);
+            copySize = heap_get_block_size(battle_model_group_being_loaded);
             copy = heap_alloc(copySize, 0);
-            memcpy(copy, D_800C3B70, copySize);
-            heap_free(D_800C3B70);
-            func_8009F794(object->field0, 0);
-            func_8009EBA8(copy, object->field0);
+            memcpy(copy, battle_model_group_being_loaded, copySize);
+            heap_free(battle_model_group_being_loaded);
+            battle_free_model_table(object->field0, 0);
+            battle_build_model_table(copy, object->field0);
             object->modelBlock = copy;
         } else {
             object->modelBlock = NULL;
@@ -3991,10 +3991,10 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
     }
 }
 
-/* Read the files of combatant slot's gear from directory 0x28 (D_800C3508)
- * into new buffers, listed in D_800C3B78: base + 1, base + 2 and, when the
+/* 800A9540: Read the files of combatant slot's gear from directory 0x28 (battle_gear_file_table)
+ * into new buffers, listed in battle_object_file_list: base + 1, base + 2 and, when the
  * gear's variant is within the gear's count, base + 2 + variant. */
-void func_800A9540(s32 slot) {
+void battle_read_gear_files(s32 slot) {
     s32 saved0;
     s32 saved1;
     u8 gearId;
@@ -4007,14 +4007,14 @@ void func_800A9540(s32 slot) {
     cd_get_selected_directory(&saved0, &saved1);
     cd_select_directory(0x28, 1);
     heap_select_owner_tag(4, 0);
-    gearId = D_800CCCE8.records[slot].pilot.gearId;
-    variant = D_800CCCE8.records[slot].gear.fileVariant;
-    if (D_800C3508[gearId * 2 + 1] < variant) {
+    gearId = battle_work_area.records[slot].pilot.gearId;
+    variant = battle_work_area.records[slot].gear.fileVariant;
+    if (battle_gear_file_table[gearId * 2 + 1] < variant) {
         variant = 0;
     }
     files = heap_alloc(sizeof(FileRequest) * 4, 1);
-    D_800C3B78 = files;
-    base = D_800C3508[gearId * 2];
+    battle_object_file_list = files;
+    base = battle_gear_file_table[gearId * 2];
     file = base + 1;
     entry = files;
     entry->file = file;
@@ -4032,13 +4032,13 @@ void func_800A9540(s32 slot) {
     }
     entry->file = 0;
     entry->destination = NULL;
-    cd_read_file_list(D_800C3B78, 0, 0);
+    cd_read_file_list(battle_object_file_list, 0, 0);
     cd_select_directory(saved0, saved1);
 }
 
-/* Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
- * each with a buffer of its size (800288EC), into a new record D_800C3B78. */
-void func_800A96B4(s32 set) {
+/* 800A96B4: Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
+ * each with a buffer of its size (800288EC), into a new record battle_object_file_list. */
+void battle_read_object_set_files(s32 set) {
     s32 saved0;
     s32 saved1;
     FileRequest *banks;
@@ -4050,7 +4050,7 @@ void func_800A96B4(s32 set) {
     banks = heap_alloc(sizeof(FileRequest) * 3, 1);
     set *= 2;
     bank = set + 1;
-    D_800C3B78 = banks;
+    battle_object_file_list = banks;
     cd_get_pc_file_name(bank);
     banks[0].file = bank;
     banks[0].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
@@ -4059,11 +4059,11 @@ void func_800A96B4(s32 set) {
     banks[1].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
     banks[2].file = 0;
     banks[2].destination = NULL;
-    cd_read_file_list(D_800C3B78, 0, 0);
+    cd_read_file_list(battle_object_file_list, 0, 0);
     cd_select_directory(saved0, saved1);
 }
 
-/* Create stage gear object index from the files read by 800A9540, using
+/* 800A979C: Create stage gear object index from the files read by 800A9540, using
  * (texture_x, texture_y) and (clut_x, clut_y) as the VRAM placement bases
  * for its textures and CLUTs. With a variant file, also create its extra
  * parts as objects 2 * index + 13 + k attached to parts of the gear, then
@@ -4071,7 +4071,7 @@ void func_800A96B4(s32 set) {
  * part entries (parent part, then three offsets) follow two halfwords on.
  * A nonzero count copies the shared data even when negative; only positive
  * counts create child objects. */
-void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y) {
+void battle_create_object_from_files(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y) {
     GearPartFile *parts;
     s16 *entry;
     s16 count;
@@ -4081,11 +4081,11 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
     s32 flags;
     s32 slot;
 
-    func_800A8BF0(index, 0, D_800C3B78[1].destination, D_800C3B78[0].destination,
+    battle_create_object(index, 0, battle_object_file_list[1].destination, battle_object_file_list[0].destination,
                   texture_x, texture_y, clut_x, clut_y, NULL);
-    D_800D3368[index]->field38 = 1;
-    D_800D3368[index]->field22 = 1;
-    parts = D_800C3B78[2].destination;
+    battle_objects[index]->field38 = 1;
+    battle_objects[index]->field22 = 1;
+    parts = battle_object_file_list[2].destination;
     if (parts != NULL) {
         text_relocate_offset_table(parts);
         entry = parts->table;
@@ -4104,32 +4104,32 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
                     flags -= 2;
                 }
                 slot = index * 2 + 13 + k;
-                func_800A8BF0(slot, flags, model, (ObjectModelFile *)parts->end,
+                battle_create_object(slot, flags, model, (ObjectModelFile *)parts->end,
                               texture_x, texture_y, clut_x, clut_y, NULL);
-                D_800D3368[slot]->parentPart = *entry++;
-                D_800D3368[slot]->field5C = index;
-                D_800D3368[slot]->field5D = 2;
-                D_800D3368[slot]->field36 = 1;
-                D_800D3368[slot]->offset2[0] = *entry++;
-                D_800D3368[slot]->offset2[1] = *entry++;
-                D_800D3368[slot]->offset2[2] = *entry++;
+                battle_objects[slot]->parentPart = *entry++;
+                battle_objects[slot]->field5C = index;
+                battle_objects[slot]->field5D = 2;
+                battle_objects[slot]->field36 = 1;
+                battle_objects[slot]->offset2[0] = *entry++;
+                battle_objects[slot]->offset2[1] = *entry++;
+                battle_objects[slot]->offset2[2] = *entry++;
             }
         } else {
             model_load_image_list(parts->model, 1, texture_x, texture_y, 1, clut_x, clut_y);
         }
         heap_free(parts);
     }
-    heap_free(D_800C3B78);
+    heap_free(battle_object_file_list);
     DrawSync(0);
-    heap_free(D_800C3B78[0].destination);
+    heap_free(battle_object_file_list[0].destination);
 }
 
-/* Run the stage for the elapsed frames (two frames per step, at most three
+/* 800A9A50: Run the stage for the elapsed frames (two frames per step, at most three
  * steps): advance the waves and the highlight pulse, push the acting object
  * and the objects it overlaps apart (800B10EC), animate the objects, run the
  * effects, attach the child objects and draw the objects (the highlighted
  * slots in the pulse colour) and the sprites. */
-void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
+void battle_update_stage(MATRIX *m, s32 light, u32 *ot, s32 buffer) {
     u8 pulse[3];
     s32 steps;
     s32 i;
@@ -4141,63 +4141,63 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
     ModelPart *other;
     s32 extent;
 
-    D_800C3E88 += 1 + D_800CCC5C;
+    battle_stage_frame_remainder += 1 + battle_frame_ticks;
     steps = 0;
-    if (D_800C3E88 > 6) {
-        D_800C3E88 = 6;
+    if (battle_stage_frame_remainder > 6) {
+        battle_stage_frame_remainder = 6;
     }
-    while (D_800C3E88 >= 2) {
-        D_800C3E88 -= 2;
+    while (battle_stage_frame_remainder >= 2) {
+        battle_stage_frame_remainder -= 2;
         steps++;
     }
-    D_800C3CF0 += steps * 56;
-    D_800D39E8 = (gpu_get_cos(D_800C3CF0) + 0x1000) / 800 + 4;
-    D_800C3B7C += 0x80;
-    D_800C3B80 = (gpu_get_cos(D_800C3B7C) + 0x1000) / 32;
-    pulse[0] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[0]);
-    pulse[1] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[1]);
-    pulse[2] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[2]);
-    if (D_800D3368[D_800C3D40] != NULL && !(D_800D3368[D_800C3D40]->flags4A & 0x20)) {
-        for (index = 0, others = D_800D3368; index < 11; index++, others++) {
-            if (*others != NULL && D_800C3D40 != index && (*others)->field5C == 0xFF &&
-                !((D_800C3E30 >> index) & 1) && (*others)->active) {
-                self = D_800D3368[D_800C3D40]->hierarchy;
-                extent = func_800AA600(index);
+    battle_surface_wind_phase += steps * 56;
+    battle_surface_wind_strength = (gpu_get_cos(battle_surface_wind_phase) + 0x1000) / 800 + 4;
+    battle_highlight_pulse_phase += 0x80;
+    battle_highlight_pulse_level = (gpu_get_cos(battle_highlight_pulse_phase) + 0x1000) / 32;
+    pulse[0] = battle_add_scaled_capped(battle_highlight_pulse_level, 32, SCENE_DATA->ambient[0]);
+    pulse[1] = battle_add_scaled_capped(battle_highlight_pulse_level, 32, SCENE_DATA->ambient[1]);
+    pulse[2] = battle_add_scaled_capped(battle_highlight_pulse_level, 32, SCENE_DATA->ambient[2]);
+    if (battle_objects[battle_selected_object_index] != NULL && !(battle_objects[battle_selected_object_index]->flags4A & 0x20)) {
+        for (index = 0, others = battle_objects; index < 11; index++, others++) {
+            if (*others != NULL && battle_selected_object_index != index && (*others)->field5C == 0xFF &&
+                !((battle_selected_slot_mask >> index) & 1) && (*others)->active) {
+                self = battle_objects[battle_selected_object_index]->hierarchy;
+                extent = battle_get_object_height(index);
                 other = (*others)->hierarchy;
                 if (other->translation[1] - extent < self->translation[1]) {
-                    extent = func_800AA600(D_800C3D40);
-                    if (D_800D3368[D_800C3D40]->hierarchy->translation[1] - extent < other->translation[1]) {
-                        extent = func_800AA650(index);
-                        extent += func_800AA650(D_800C3D40);
-                        func_800B10EC(D_800C3D40, (*others)->hierarchy->translation[0],
+                    extent = battle_get_object_height(battle_selected_object_index);
+                    if (battle_objects[battle_selected_object_index]->hierarchy->translation[1] - extent < other->translation[1]) {
+                        extent = battle_get_object_radius(index);
+                        extent += battle_get_object_radius(battle_selected_object_index);
+                        battle_keep_object_away_from_point(battle_selected_object_index, (*others)->hierarchy->translation[0],
                                       (*others)->hierarchy->translation[2], extent);
                     }
                 }
             }
         }
-        func_800A4CF8(D_800C3D40);
+        battle_keep_object_out_of_circles(battle_selected_object_index);
     }
-    for (i = 0, objects = D_800D3368; i < 32; i++, objects++) {
+    for (i = 0, objects = battle_objects; i < 32; i++, objects++) {
         if (*objects != NULL) {
-            func_800AAA20(*objects, &D_800C3D0C, steps, buffer, D_800CCC5C);
+            battle_update_object(*objects, &battle_effect_pool, steps, buffer, battle_frame_ticks);
         }
     }
-    if (D_800C3DF8 != 0) {
-        func_800B026C(&D_800C3D0C, steps, 0, buffer);
+    if (battle_camera_channels_active != 0) {
+        battle_run_camera_channels(&battle_effect_pool, steps, 0, buffer);
     }
-    for (i = 0, objects = D_800D3368; i < 32; i++) {
+    for (i = 0, objects = battle_objects; i < 32; i++) {
         object = *objects++;
         if (object != NULL && object->field5C < 0xFF) {
-            func_800AAB34(object);
+            battle_follow_parent_object(object);
         }
     }
-    objects = D_800D3368;
-    func_800A44C0(objects);
-    SetColorMatrix(D_800D2FC0);
-    if (D_800C3B74 != 0) {
+    objects = battle_objects;
+    battle_update_light_trackers(objects);
+    SetColorMatrix(battle_stage_color_matrix);
+    if (battle_object_drawing_on != 0) {
         for (i = 0; i < 31; i++, objects++) {
             if (*objects != NULL) {
-                if ((D_800C3D14 >> i) & 1) {
+                if ((battle_highlight_slot_mask >> i) & 1) {
                     SetBackColor(pulse[0], pulse[1], pulse[2]);
                 } else {
                     SetBackColor(SCENE_DATA->ambient[0], SCENE_DATA->ambient[1], SCENE_DATA->ambient[2]);
@@ -4207,38 +4207,38 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
                 } else {
                     model_box_test_mode = 1;
                 }
-                func_8009F844(*objects, m, (MATRIX *)arg1, 1, D_800CCC5C, ot, buffer);
+                battle_draw_object(*objects, m, (MATRIX *)light, 1, battle_frame_ticks, ot, buffer);
                 model_box_test_mode = 0;
             }
         }
     }
-    func_800A2FD8(&D_800C3D04, m, steps, ot, buffer);
+    battle_draw_sprite_pool(&battle_effect_sprite_pool, m, steps, ot, buffer);
 }
 
-/* Free the stage objects (800A9FF0), the effect pool and the sprite pool. */
-void func_800A9F94(void) {
+/* 800A9F94: Free the stage objects (800A9FF0), the effect pool and the sprite pool. */
+void battle_free_objects(void) {
     s32 i;
 
     for (i = 0; i < 31; i++) {
-        func_800A9FF0(i);
+        battle_free_object(i);
     }
-    func_800A22A8(&D_800C3D0C);
-    func_800A2D1C(&D_800C3D04);
+    battle_free_effect_pool(&battle_effect_pool);
+    battle_free_sprite_pool(&battle_effect_sprite_pool);
 }
 
-/* Free stage object index: its images and model files, its hierarchy and
+/* 800A9FF0: Free stage object index: its images and model files, its hierarchy and
  * attached effects (or, for the gear part objects 19-30, the hierarchy
  * block), its image animations and meshes and the object; for a party slot
  * (0-2) also its part objects 2 * index + 13 and + 14. */
-void func_800A9FF0(s32 index) {
-    BattleObject **objects = D_800D3368;
+void battle_free_object(s32 index) {
+    BattleObject **objects = battle_objects;
     BattleObject **slot = &objects[index];
     s32 i;
 
     if (*slot != NULL) {
         if ((*slot)->modelBlock != NULL) {
             heap_free((*slot)->modelBlock);
-            func_8009F794((*slot)->field0, 1);
+            battle_free_model_table((*slot)->field0, 1);
         }
         if ((*slot)->ownSounds) {
             sound_remove_effect_bank((*slot)->model->sounds);
@@ -4248,94 +4248,94 @@ void func_800A9FF0(s32 index) {
         }
         if ((u32)(index - 19) >= 12) {
             if ((*slot)->hierarchy != NULL) {
-                func_800A2ACC(&D_800C3D0C, (*slot)->hierarchy);
-                func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
-                func_8009F708((*slot)->hierarchy);
+                battle_release_transient_effects(&battle_effect_pool, (*slot)->hierarchy);
+                battle_release_effects_of_kind(&battle_effect_pool, (*slot)->hierarchy, 0xFF);
+                battle_free_model_hierarchy((*slot)->hierarchy);
                 (*slot)->field0 = NULL;
                 (*slot)->hierarchy = NULL;
             }
-            func_800B0060(*slot);
+            battle_free_object_extra(*slot);
         } else if ((*slot)->hierarchy != NULL) {
-            func_800A2ACC(&D_800C3D0C, (*slot)->hierarchy);
-            func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
+            battle_release_transient_effects(&battle_effect_pool, (*slot)->hierarchy);
+            battle_release_effects_of_kind(&battle_effect_pool, (*slot)->hierarchy, 0xFF);
             heap_free((*slot)->hierarchy);
         }
-        if (D_800D3368[index]->channelCount) {
-            heap_free(D_800D3368[index]->channels);
+        if (battle_objects[index]->channelCount) {
+            heap_free(battle_objects[index]->channels);
         }
-        if (D_800D3368[index]->imageCount != 0) {
-            for (i = 0; i < D_800D3368[index]->imageCount; i++) {
-                func_800A429C(&D_800D3368[index]->images[i]);
+        if (battle_objects[index]->imageCount != 0) {
+            for (i = 0; i < battle_objects[index]->imageCount; i++) {
+                battle_stop_image_anim(&battle_objects[index]->images[i]);
             }
-            heap_free(D_800D3368[index]->images);
+            heap_free(battle_objects[index]->images);
         }
-        if (D_800D3368[index]->surfaceCount != 0) {
-            for (i = 0; i < D_800D3368[index]->surfaceCount; i++) {
-                func_800A8A88(&D_800D3368[index]->surfaces[i]);
+        if (battle_objects[index]->surfaceCount != 0) {
+            for (i = 0; i < battle_objects[index]->surfaceCount; i++) {
+                battle_free_surface(&battle_objects[index]->surfaces[i]);
             }
-            heap_free(D_800D3368[index]->surfaces);
+            heap_free(battle_objects[index]->surfaces);
         }
-        heap_free(D_800D3368[index]);
-        D_800D3368[index] = NULL;
+        heap_free(battle_objects[index]);
+        battle_objects[index] = NULL;
     }
     if (index < 3) {
-        func_800A9FF0(index * 2 + 13);
-        func_800A9FF0(index * 2 + 14);
+        battle_free_object(index * 2 + 13);
+        battle_free_object(index * 2 + 14);
     }
 }
 
-/* Select stage object index with slot mask, and start its effect (800AA934). */
-void func_800AA320(u16 index, s16 mask, s32 arg2) {
-    BattleObject *object = D_800D3368[index];
+/* 800AA320: Select stage object index with slot mask, and start its effect (800AA934). */
+void battle_start_object_script(u16 index, s16 mask, s32 script) {
+    BattleObject *object = battle_objects[index];
 
-    D_800C3D40 = index;
-    D_800C3E30 = mask;
+    battle_selected_object_index = index;
+    battle_selected_slot_mask = mask;
     object->field35 = 0;
-    if (D_800D3368[index] != NULL) {
-        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    if (battle_objects[index] != NULL) {
+        battle_start_effect_script(battle_objects[index], battle_objects[index], &battle_effect_pool, script);
     }
 }
 
-/* Make stage object index the acting object with slot mask: mark it, reset
+/* 800AA384: Make stage object index the acting object with slot mask: mark it, reset
  * the camera state (800BF85C) for the first selected slot, and start its
  * effect (800AA934). */
-void func_800AA384(u16 index, u16 mask, s32 arg2) {
+void battle_make_object_act(u16 index, u16 mask, s32 script) {
     BattleObject *object;
 
-    D_800C3D40 = index;
-    object = D_800D3368[index];
-    D_800C3E30 = mask;
-    D_800C3D68 = 1;
+    battle_selected_object_index = index;
+    object = battle_objects[index];
+    battle_selected_slot_mask = mask;
+    battle_unread_acting_object_started = 1;
     object->field35 = 1;
     task_active_main_count = 0;
     task_new_tasks_active = 1;
-    func_800BF85C(index, func_800AF400());
-    D_800C360C = 1;
-    D_800C4000[func_800AF400()] = 0;
-    if (D_800D3368[index] != NULL) {
-        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    battle_set_single_target(index, battle_get_first_selected_slot());
+    battle_area_event_index = 1;
+    battle_area_event0_codes[battle_get_first_selected_slot()] = 0;
+    if (battle_objects[index] != NULL) {
+        battle_start_effect_script(battle_objects[index], battle_objects[index], &battle_effect_pool, script);
     }
 }
 
-/* Select stage object index with slot mask and start its effect (800AA934)
+/* 800AA454: Select stage object index with slot mask and start its effect (800AA934)
  * unless it is the first selected slot's object; the selection is restored. */
-void func_800AA454(u16 index, u16 mask, s32 arg2) {
-    u16 savedIndex = D_800C3D40;
-    u16 savedMask = D_800C3E30;
-    BattleObject *object = D_800D3368[index];
+void battle_start_slot_object_own_script(u16 index, u16 mask, s32 script) {
+    u16 savedIndex = battle_selected_object_index;
+    u16 savedMask = battle_selected_slot_mask;
+    BattleObject *object = battle_objects[index];
 
-    D_800C3D40 = index;
-    D_800C3E30 = mask;
+    battle_selected_object_index = index;
+    battle_selected_slot_mask = mask;
     object->field35 = 0;
-    if (D_800D3368[index] != NULL && index != func_800AF400()) {
-        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    if (battle_objects[index] != NULL && index != battle_get_first_selected_slot()) {
+        battle_start_effect_script(battle_objects[index], battle_objects[index], &battle_effect_pool, script);
     }
-    D_800C3D40 = savedIndex;
-    D_800C3E30 = savedMask;
+    battle_selected_object_index = savedIndex;
+    battle_selected_slot_mask = savedMask;
 }
 
-/* c plus a * b / 256, capped at 255. */
-u8 func_800AA514(s16 a, s16 b, s32 c) {
+/* 800AA514: c plus a * b / 256, capped at 255. */
+u8 battle_add_scaled_capped(s16 a, s16 b, s32 c) {
     s16 value = c + b * a / 256;
 
     if (value > 255) {
@@ -4344,22 +4344,22 @@ u8 func_800AA514(s16 a, s16 b, s32 c) {
     return value;
 }
 
-/* Select stage object index with slot mask and start its effect on target
+/* 800AA564: Select stage object index with slot mask and start its effect on target
  * (800AA934) unless it is the first selected slot's object. */
-void func_800AA564(BattleObject *target, u16 index, u16 mask, s32 arg3) {
-    BattleObject *object = D_800D3368[index];
+void battle_start_script_on_slot_object(BattleObject *target, u16 index, u16 mask, s32 script) {
+    BattleObject *object = battle_objects[index];
 
-    D_800C3D40 = index;
-    D_800C3E30 = mask;
+    battle_selected_object_index = index;
+    battle_selected_slot_mask = mask;
     object->field35 = 0;
-    if (D_800D3368[index] != NULL && index != func_800AF400()) {
-        func_800AA934(D_800D3368[index], target, &D_800C3D0C, arg3);
+    if (battle_objects[index] != NULL && index != battle_get_first_selected_slot()) {
+        battle_start_effect_script(battle_objects[index], target, &battle_effect_pool, script);
     }
 }
 
-/* The scaled size of stage object index (0 when absent). */
-s32 func_800AA600(s32 index) {
-    BattleObject *object = D_800D3368[index];
+/* 800AA600: The scaled size of stage object index (0 when absent). */
+s32 battle_get_object_height(s32 index) {
+    BattleObject *object = battle_objects[index];
     s32 size = 0;
 
     if (object != NULL) {
@@ -4368,10 +4368,10 @@ s32 func_800AA600(s32 index) {
     return size;
 }
 
-/* The scaled size of stage object index along its hierarchy's first axis
+/* 800AA650: The scaled size of stage object index along its hierarchy's first axis
  * (flag 8) or its third; 0 when absent. */
-s32 func_800AA650(s32 index) {
-    BattleObject *object = D_800D3368[index];
+s32 battle_get_object_radius(s32 index) {
+    BattleObject *object = battle_objects[index];
     s32 size = 0;
     s32 scale;
     s32 axis;
@@ -4384,13 +4384,13 @@ s32 func_800AA650(s32 index) {
             scale = object->scale28;
             axis = object->hierarchy->scale[2];
         }
-        size = scale * (D_800D3368[index]->scale1C * axis >> 12) >> 12;
+        size = scale * (battle_objects[index]->scale1C * axis >> 12) >> 12;
     }
     return size;
 }
 
-/* Allocate object's script effect channels, all idle. */
-void func_800AA6E0(BattleObject *object) {
+/* 800AA6E0: Allocate object's script effect channels, all idle. */
+void battle_alloc_object_color_fades(BattleObject *object) {
     ColorFade *channels;
     s32 i;
 
@@ -4404,21 +4404,21 @@ void func_800AA6E0(BattleObject *object) {
     }
 }
 
-/* Set stage object index's byte 0x2A, when it exists. */
-void func_800AA760(s32 index, u8 value) {
-    if (D_800D3368[index] != NULL) {
-        D_800D3368[index]->field2A = value;
+/* 800AA760: Set stage object index's byte 0x2A, when it exists. */
+void battle_set_object_current_animation(s32 index, u8 value) {
+    if (battle_objects[index] != NULL) {
+        battle_objects[index]->field2A = value;
     }
 }
 
-/* Set the flag D_800C3B74 to the low bit of value. */
-void func_800AA788(s32 value) {
-    D_800C3B74 = value & 1;
+/* 800AA788: Set the flag battle_object_drawing_on to the low bit of value. */
+void battle_set_object_drawing(s32 value) {
+    battle_object_drawing_on = value & 1;
 }
 
-/* Swap stage objects a and b, deactivating a and activating b first. */
-void func_800AA79C(s32 a, s32 b) {
-    BattleObject **objects = D_800D3368;
+/* 800AA79C: Swap stage objects a and b, deactivating a and activating b first. */
+void battle_swap_objects(s32 a, s32 b) {
+    BattleObject **objects = battle_objects;
     BattleObject **first = &objects[a];
     BattleObject **second = &objects[b];
     BattleObject *swap;
@@ -4430,13 +4430,13 @@ void func_800AA79C(s32 a, s32 b) {
     *second = swap;
 }
 
-/* The type of the first event from index on that is not a continuation
+/* 800AA7DC: The type of the first event from index on that is not a continuation
  * (0xF7); 0xFE for the end (0xFF). */
-u8 func_800AA7DC(s32 index) {
+u8 battle_area_event_get_next_type(s32 index) {
     u8 type;
 
     do {
-        type = D_800C3FE8[index++].type;
+        type = battle_area_events[index++].type;
     } while (type == 0xF7);
     if (type == 0xFF) {
         type = 0xFE;
@@ -4444,23 +4444,23 @@ u8 func_800AA7DC(s32 index) {
     return type;
 }
 
-/* The frame curve of mode: 800A3514, 800A3578 or 800A35C8 for 1-3, any other
+/* 800AA820: The frame curve of mode: 800A3514, 800A3578 or 800A35C8 for 1-3, any other
  * the cosine curve 800A3490. */
-FrameCurve func_800AA820(s32 mode) {
+FrameCurve battle_get_frame_curve(s32 mode) {
     switch (mode) {
     case 1:
-        return (FrameCurve)func_800A3514;
+        return (FrameCurve)battle_frame_curve_rise;
     case 2:
-        return (FrameCurve)func_800A3578;
+        return (FrameCurve)battle_frame_curve_fall;
     case 3:
-        return (FrameCurve)func_800A35C8;
+        return (FrameCurve)battle_frame_curve_fall_clamped;
     default:
-        return (FrameCurve)func_800A3490;
+        return (FrameCurve)battle_frame_curve_cosine;
     }
 }
 
-/* Reset a battle object's state. */
-void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations) {
+/* 800AA898: Reset a battle object's state. */
+void battle_reset_object(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations) {
     object->scripts = scripts;
     object->extra = NULL;
     object->script = NULL;
@@ -4496,9 +4496,9 @@ void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **an
     object->field1E = -1;
 }
 
-/* Start target's effect script id on object (ids from 0x50 come from the
+/* 800AA934: Start target's effect script id on object (ids from 0x50 come from the
  * target's extra file), or queue it (up to five) while one is running. */
-void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 id) {
+void battle_start_effect_script(BattleObject *object, BattleObject *target, EffectPool *pool, s32 id) {
     if (object != NULL && target != NULL) {
         if (object->queueCount != 0) {
             if (object->queueCount < 5) {
@@ -4518,67 +4518,67 @@ void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool,
         object->field50 = 0;
         object->field54 = 0;
         object->field4C = 0;
-        object->slotMask = D_800C3E30;
+        object->slotMask = battle_selected_slot_mask;
         object->field23 = 0;
-        func_800AAD54(object, pool, -1, 1, 0);
+        battle_run_effect_script(object, pool, -1, 1, 0);
     }
 }
 
-/* Update a battle object for steps frames: put it on the ground, pose its
+/* 800AAA20: Update a battle object for steps frames: put it on the ground, pose its
  * hierarchy (per-part scales when field37 is set) and animate it (800A0838,
  * 800AE2A4) each step, then run its effects (800AAD54). Returns the combined
  * animation flags. */
-s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4) {
+s32 battle_update_object(BattleObject *object, EffectPool *pool, s32 steps, s32 unused_buffer, s32 substeps) {
     s32 flags;
     s32 i;
 
     if (object->field0 != 0) {
         flags = 0;
         if (object->active) {
-            func_800AFF9C(object);
+            battle_put_object_on_ground(object);
             if (object->field37) {
-                func_8009F1C4(object->hierarchy, object->scale1C);
+                battle_pose_model_hierarchy_scaled(object->hierarchy, object->scale1C);
             } else {
-                func_8009EF3C(object->hierarchy, object->scale1C);
+                battle_pose_model_hierarchy(object->hierarchy, object->scale1C);
             }
             for (i = 0; i < steps; i++) {
-                flags |= func_800A0838(pool, object->hierarchy, object->field3C, object->scale1C);
-                func_800AE2A4(object, pool, arg3);
+                flags |= battle_step_part_tweens(pool, object->hierarchy, object->field3C, object->scale1C);
+                battle_run_animation_events(object, pool, unused_buffer);
             }
         }
-        func_800AAD54(object, pool, flags, steps, arg4);
+        battle_run_effect_script(object, pool, flags, steps, substeps);
     }
     return flags;
 }
 
-/* Carry a battle object along with its parent object (index field5C; it
+/* 800AAB34: Carry a battle object along with its parent object (index field5C; it
  * becomes 0xFF once the parent is gone): take its active state unless flag
  * 0x10, turn it with the parent (or a part of the parent) when field5D is set,
  * and place its hierarchy's root at its offset from there. */
-void func_800AAB34(BattleObject *object) {
+void battle_follow_parent_object(BattleObject *object) {
     MATRIX *m = (MATRIX *)0x1F800000;
     SVECTOR offset;
 
-    if (D_800D3368[object->field5C] != NULL) {
+    if (battle_objects[object->field5C] != NULL) {
         if (!(object->flags4A & 0x10)) {
-            object->active = D_800D3368[object->field5C]->active;
+            object->active = battle_objects[object->field5C]->active;
         }
         if (object->active) {
             if (object->field5D) {
                 if (object->parentPart != 0) {
-                    MulMatrix0(&D_800D3368[object->field5C]->hierarchy->world,
-                                  &D_800D3368[object->field5C]->hierarchy[object->parentPart].world, m);
+                    MulMatrix0(&battle_objects[object->field5C]->hierarchy->world,
+                                  &battle_objects[object->field5C]->hierarchy[object->parentPart].world, m);
                 } else {
-                    m = &D_800D3368[object->field5C]->hierarchy->world;
+                    m = &battle_objects[object->field5C]->hierarchy->world;
                 }
                 MulMatrix2(m, &object->hierarchy->transform);
                 MulMatrix2(m, &object->hierarchy->world);
             }
             if (object->parentPart != 0) {
-                CompMatrix(&D_800D3368[object->field5C]->hierarchy->transform,
-                              &D_800D3368[object->field5C]->hierarchy[object->parentPart].world, m);
+                CompMatrix(&battle_objects[object->field5C]->hierarchy->transform,
+                              &battle_objects[object->field5C]->hierarchy[object->parentPart].world, m);
             } else {
-                m = &D_800D3368[object->field5C]->hierarchy->transform;
+                m = &battle_objects[object->field5C]->hierarchy->transform;
             }
             SetRotMatrix(m);
             SetTransMatrix(m);
@@ -4598,7 +4598,7 @@ void func_800AAB34(BattleObject *object) {
 /* A script jump: offset is in bytes from the command's start. */
 #define SCRIPT_JUMP(start, offset) ((u16 *)((u8 *)(start) + (offset)))
 
-/* Run a battle object's effect script for steps frames: first move it by its
+/* 800AAD54: Run a battle object's effect script for steps frames: first move it by its
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
  * its commands until one waits. flags are the animation flags of the step
@@ -4619,7 +4619,7 @@ void func_800AAB34(BattleObject *object) {
  * with 0x20 in b2) starts at the old angle plus angle, and its end starts
  * at the old angle: with 0x40 the turn ends at the old angle plus word,
  * otherwise at the computed or absolute end. */
-void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
+void battle_run_effect_script(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
     VECTOR ground;
@@ -4670,7 +4670,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
 
     running = 1;
     pc = (u16 *)object->script;
-    if (OBJECT_AT_SCRIPT(object) != NULL && func_800AEEF8(object) <= OBJECT_AT_DISTANCE(object)) {
+    if (OBJECT_AT_SCRIPT(object) != NULL && battle_get_distance_to_position(object) <= OBJECT_AT_DISTANCE(object)) {
         pc = OBJECT_AT_SCRIPT(object);
         OBJECT_AT_SCRIPT(object) = NULL;
     } else {
@@ -4678,11 +4678,11 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
             probe.vx = object->hierarchy->translation[0];
             probe.vy = 0;
             probe.vz = object->hierarchy->translation[2];
-            object->field1E = func_800A5914(&probe, object->field1E, 4);
+            object->field1E = battle_find_scene_triangle_near(&probe, object->field1E, 4);
             if (object->field1E < 0) {
-                object->field1E = func_800A579C(&probe);
+                object->field1E = battle_find_scene_triangle(&probe);
             }
-            func_800A5870(&probe, object->field1E, &ground);
+            battle_put_point_on_scene_triangle(&probe, object->field1E, &ground);
             if (probe.vy < object->hierarchy->translation[1]) {
                 object->hierarchy->translation[1] = probe.vy;
                 pc = OBJECT_GROUND_SCRIPT(object);
@@ -4700,7 +4700,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     }
 chosen:
     if (object->field58 != 0) {
-        func_800AEF68(object);
+        battle_place_object_at_target(object);
     }
 
     while (running) {
@@ -4730,7 +4730,7 @@ chosen:
             break;
         case 0x02:
             if (object->field35 != 0) {
-                if (func_800BF6F8() != 0) {
+                if (battle_count_active_tasks() != 0) {
                     pc = start;
                     running = 0;
                     break;
@@ -4738,14 +4738,14 @@ chosen:
                 task_active_main_count = 0;
                 task_new_tasks_active = 0;
                 object->field35 = 0;
-                func_80080C6C(object->slot);
+                battle_mark_event_thread_effect_done(object->slot);
             } else {
                 reloadScene = 1;
             }
             break;
         case 0x03:
             if (object->field35 != 0) {
-                if (func_800BF6F8() != 0) {
+                if (battle_count_active_tasks() != 0) {
                     pc = start;
                     running = 0;
                     break;
@@ -4753,7 +4753,7 @@ chosen:
                 task_active_main_count = 0;
                 task_new_tasks_active = 0;
                 object->field35 = 0;
-                func_80080C6C(object->slot);
+                battle_mark_event_thread_effect_done(object->slot);
             }
             break;
         case 0x04: /* load the extra file */
@@ -4763,7 +4763,7 @@ chosen:
 
                 cd_get_selected_directory(&savedA, &savedB);
                 cd_select_directory(0x28, 2);
-                file = arg + D_800C3530[(s16)word];
+                file = arg + battle_extra_file_bases[(s16)word];
                 object->extra = heap_alloc(cd_get_aligned_file_size(file), 0);
                 cd_read_file(file, object->extra, 0, 0);
                 cd_select_directory(savedA, savedB);
@@ -4823,20 +4823,20 @@ chosen:
             }
             break;
         case 0x06:
-            func_800B0060(object);
+            battle_free_object_extra(object);
             break;
         case 0x07:
             cd_stop_read(0);
             break;
         case 0x08:
-            func_800A2ACC(pool, object->hierarchy);
-            func_800AEEEC(object);
+            battle_release_transient_effects(pool, object->hierarchy);
+            battle_stop_object_animation(object);
             break;
         case 0x09:
-            func_800A2BB8(pool, object->hierarchy, arg);
+            battle_release_effects_of_kind(pool, object->hierarchy, arg);
             break;
         case 0x0A:
-            func_800A216C(pool, object->hierarchy, arg, 7);
+            battle_release_part_effects(pool, object->hierarchy, arg, 7);
             break;
         case 0x0B: /* stop the parts' effects and reset their transforms */
             {
@@ -4844,7 +4844,7 @@ chosen:
                 s32 count;
                 s32 k;
 
-                func_800A2ACC(pool, part);
+                battle_release_transient_effects(pool, part);
                 count = part->index - 1;
                 for (k = 0; k < count; k++) {
                     part++;
@@ -4874,42 +4874,42 @@ chosen:
             object->motion[11] = 0;
             break;
         case 0x0D:
-            func_800A216C(pool, object->hierarchy, arg, 1);
+            battle_release_part_effects(pool, object->hierarchy, arg, 1);
             break;
         case 0x0E:
-            func_800A216C(pool, object->hierarchy, arg, 2);
+            battle_release_part_effects(pool, object->hierarchy, arg, 2);
             break;
         case 0x0F:
-            func_800BCAD0();
-            func_800B00F4(pool);
-            D_800C3DF8 = 0;
+            battle_camera_track_slots();
+            battle_release_camera_channels(pool);
+            battle_camera_channels_active = 0;
             break;
         case 0x10: /* pose */
-            func_800A1B50(object->hierarchy, (s16 *)func_800AF518(object, arg, &i));
+            battle_apply_animation_frame(object->hierarchy, (s16 *)battle_get_object_animation(object, arg, &i));
             break;
         case 0x11: /* play an animation */
             {
                 u8 loop;
 
-                animation = (Animation *)func_800AF518(object, arg, &i);
+                animation = (Animation *)battle_get_object_animation(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
                     loop = word >> 8;
                     b0 = word;
-                    func_800A2434(pool, object->hierarchy, (u16 *)animation, loop, b0);
+                    battle_start_animation_tracks(pool, object->hierarchy, (u16 *)animation, loop, b0);
                     flags = -1;
                     object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, animation, loop);
+                    battle_start_object_animation(object, animation, loop);
                 }
             }
             break;
         case 0x12:
-            animation = (Animation *)func_800AF518(object, arg, &i);
+            animation = (Animation *)battle_get_object_animation(object, arg, &i);
             word = *pc++;
             if (i == 0) {
                 b1 = word >> 8;
                 b0 = word;
-                func_800A2704(pool, object->hierarchy, (u16 *)animation, b1, b0);
+                battle_start_animation_tracks_from_start(pool, object->hierarchy, (u16 *)animation, b1, b0);
                 flags = -1;
                 object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
@@ -4919,16 +4919,16 @@ chosen:
             b0 = word;
             b3 = (word = *pc++) >> 8;
             b2 = word;
-            func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, b0, &i), b3, arg, b2, b1);
+            battle_tween_to_animation_frame(pool, object->hierarchy, (s16 *)battle_get_object_animation(object, b0, &i), b3, arg, b2, b1);
             flags = -1;
-            func_800AEEEC(object);
+            battle_stop_object_animation(object);
             break;
         case 0x14: /* start a script on the objects of a mask */
             word = *pc++;
             b0 = word;
             b1 = word >> 8;
-            b3 = func_800AF438(object, b0, &word);
-            func_800AF438(object, arg, &word);
+            b3 = battle_resolve_target_code(object, b0, &word);
+            battle_resolve_target_code(object, arg, &word);
             b2 = object->queueCount;
             if (arg == 0xFD) {
                 object->queueCount = 0;
@@ -4936,9 +4936,9 @@ chosen:
             for (i = 0; i < 13; i++) {
                 if (((s16)word >> i) & 1) {
                     if (b0 == 0xFF) {
-                        func_800AA934(D_800D3368[i], D_800D3368[i], pool, b1);
+                        battle_start_effect_script(battle_objects[i], battle_objects[i], pool, b1);
                     } else {
-                        func_800AA934(D_800D3368[i], D_800D3368[b3], pool, b1);
+                        battle_start_effect_script(battle_objects[i], battle_objects[b3], pool, b1);
                     }
                 }
             }
@@ -4954,13 +4954,13 @@ chosen:
 
                 word = *pc++;
                 for (i = 0x13; i < 0x1F; i++) {
-                    if (D_800D3368[i] == NULL) {
+                    if (battle_objects[i] == NULL) {
                         created = heap_alloc(sizeof(BattleObject), 1);
                         break;
                     }
                 }
                 *created = *object;
-                D_800D3368[i] = created;
+                battle_objects[i] = created;
                 created->animation = -1;
                 created->field3C = 0xFFFF;
                 created->scriptWait = 0;
@@ -4976,7 +4976,7 @@ chosen:
                 created->slot = i;
                 created->surfaceCount = 0;
                 created->imageCount = 0;
-                func_800AA6E0(created);
+                battle_alloc_object_color_fades(created);
                 parts = heap_alloc(object->hierarchy->index * sizeof(ModelPart), 1);
                 created->hierarchy = parts;
                 for (i = 0; i < object->hierarchy->index; i++) {
@@ -4989,29 +4989,29 @@ chosen:
                     parts[i].effects[0] = NULL;
                     parts[i].effects[1] = NULL;
                 }
-                func_800AF180(pool, (s16)word, object->hierarchy, parts);
+                battle_detach_part_to_copy(pool, (s16)word, object->hierarchy, parts);
                 if (arg != 0xFF) {
-                    func_800AA934(created, created, pool, arg);
+                    battle_start_effect_script(created, created, pool, arg);
                 }
             }
             break;
         case 0x16:
-            func_800AF270(object->hierarchy, D_800D3368[object->slot2]->hierarchy);
-            func_800A9FF0(object->slot);
+            battle_move_drawn_parts(object->hierarchy, battle_objects[object->slot2]->hierarchy);
+            battle_free_object(object->slot);
             if (arg != 0xFF) {
-                func_800AA934(D_800D3368[object->slot2], D_800D3368[object->slot2], pool, arg);
+                battle_start_effect_script(battle_objects[object->slot2], battle_objects[object->slot2], pool, arg);
             }
             return;
         case 0x17:
-            func_800A9FF0(object->slot);
+            battle_free_object(object->slot);
             return;
         case 0x18:
             {
-                func_800AE1BC(object, (Animation *)func_800AF518(object, arg, &i), (s16)*pc++);
+                battle_start_object_animation(object, (Animation *)battle_get_object_animation(object, arg, &i), (s16)*pc++);
             }
             break;
         case 0x19:
-            func_800AEEEC(object);
+            battle_stop_object_animation(object);
             break;
         case 0x1A: /* move an image */
             {
@@ -5056,12 +5056,12 @@ chosen:
                 if (((m1 = (s16)word >> 8) & 0x7F) < 4) {
                     colors = NULL;
                 } else {
-                    colors = (ColorRow *)D_800D2FC0;
+                    colors = (ColorRow *)battle_stage_color_matrix;
                 }
                 word = *pc++;
                 b2 = word;
                 b3 = word >> 8;
-                curve = func_800AA820(b3);
+                curve = battle_get_frame_curve(b3);
                 x = *pc++;
                 y = *pc++;
                 z = *pc++;
@@ -5086,7 +5086,7 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
+                battle_start_image_anim(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
@@ -5095,7 +5095,7 @@ chosen:
             break;
         case 0x1C:
             if (arg < object->imageCount) {
-                func_800A429C(&object->images[arg]);
+                battle_stop_image_anim(&object->images[arg]);
             }
             break;
         case 0x1D: /* start a tween of a part */
@@ -5106,7 +5106,7 @@ chosen:
                 mode = (word = *pc++) >> 8;
                 b0 = word;
                 smooth = (word = *pc++) >> 8;
-                func_800AF678(object, pool, &object->hierarchy[arg], b0, mode, (u8)word, smooth, *pc++, *pc++,
+                battle_start_part_tween(object, pool, &object->hierarchy[arg], b0, mode, (u8)word, smooth, *pc++, *pc++,
                               *pc++, *pc++, *pc++, *pc++, *pc++);
                 flags = -1;
             }
@@ -5115,9 +5115,9 @@ chosen:
             object->field37 = arg;
             break;
         case 0x1F: /* continue on another object (the slot reuses op) */
-            op = func_800AF438(self, arg, &word);
-            if (D_800D3368[op] != NULL) {
-                object = D_800D3368[op];
+            op = battle_resolve_target_code(self, arg, &word);
+            if (battle_objects[op] != NULL) {
+                object = battle_objects[op];
             }
             break;
         case 0x20: /* wait for the animation to loop */
@@ -5180,7 +5180,7 @@ chosen:
             }
             break;
         case 0x23:
-            func_800AFA98(object, &object->hierarchy[(s16)*pc++], arg);
+            battle_show_part(object, &object->hierarchy[(s16)*pc++], arg);
             break;
         case 0x24:
             if (object != NULL) {
@@ -5200,17 +5200,17 @@ chosen:
                 word = *pc++;
                 m1 = word >> 8;
                 b0 = word;
-                func_800AF438(object, b0, &word);
+                battle_resolve_target_code(object, b0, &word);
                 ax = *pc++;
                 ay = *pc++;
                 az = *pc++;
                 for (i = 0; i < 13; i++) {
                     if (((s16)word >> i) & 1) {
-                        if (D_800D3368[i] != NULL) {
-                            D_800D3368[i]->parentPart = m1;
-                            D_800D3368[i]->field5C = object->slot;
-                            D_800D3368[i]->field5D = arg & 2;
-                            D_800D3368[i]->field36 = 1;
+                        if (battle_objects[i] != NULL) {
+                            battle_objects[i]->parentPart = m1;
+                            battle_objects[i]->field5C = object->slot;
+                            battle_objects[i]->field5D = arg & 2;
+                            battle_objects[i]->field36 = 1;
                             if (arg & 1) {
                                 ModelPart *at = &object->hierarchy[m1];
 
@@ -5235,16 +5235,16 @@ chosen:
                                 gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisZ);
-                                offset.vx = D_800D3368[i]->hierarchy->translation[0] - at->world.t[0];
-                                offset.vy = D_800D3368[i]->hierarchy->translation[1] - at->world.t[1];
-                                offset.vz = D_800D3368[i]->hierarchy->translation[2] - at->world.t[2];
-                                D_800D3368[i]->offset2[0] = func_800AF2C4(&offset, &axisY, &axisZ, object->scale1C);
-                                D_800D3368[i]->offset2[1] = func_800AF2C4(&offset, &axisZ, &axisX, object->scale1C);
-                                D_800D3368[i]->offset2[2] = func_800AF2C4(&offset, &axisX, &axisY, object->scale1C);
+                                offset.vx = battle_objects[i]->hierarchy->translation[0] - at->world.t[0];
+                                offset.vy = battle_objects[i]->hierarchy->translation[1] - at->world.t[1];
+                                offset.vz = battle_objects[i]->hierarchy->translation[2] - at->world.t[2];
+                                battle_objects[i]->offset2[0] = battle_dot_with_cross_normal(&offset, &axisY, &axisZ, object->scale1C);
+                                battle_objects[i]->offset2[1] = battle_dot_with_cross_normal(&offset, &axisZ, &axisX, object->scale1C);
+                                battle_objects[i]->offset2[2] = battle_dot_with_cross_normal(&offset, &axisX, &axisY, object->scale1C);
                             } else {
-                                D_800D3368[i]->offset2[0] = ax;
-                                D_800D3368[i]->offset2[1] = ay;
-                                D_800D3368[i]->offset2[2] = az;
+                                battle_objects[i]->offset2[0] = ax;
+                                battle_objects[i]->offset2[1] = ay;
+                                battle_objects[i]->offset2[2] = az;
                             }
                         }
                     }
@@ -5252,26 +5252,26 @@ chosen:
             }
             break;
         case 0x26: /* detach the objects of a mask */
-            func_800AF438(object, arg, &word);
+            battle_resolve_target_code(object, arg, &word);
             for (i = 0; i < 13; i++) {
                 if (((s16)word >> i) & 1) {
-                    if (D_800D3368[i] != NULL) {
-                        D_800D3368[i]->field5C = 0xFF;
+                    if (battle_objects[i] != NULL) {
+                        battle_objects[i]->field5C = 0xFF;
                     }
                 }
             }
             break;
         case 0x27:
             if (object->field37) {
-                func_8009F1C4(object->hierarchy, object->scale1C);
+                battle_pose_model_hierarchy_scaled(object->hierarchy, object->scale1C);
             } else {
-                func_8009EF3C(object->hierarchy, object->scale1C);
+                battle_pose_model_hierarchy(object->hierarchy, object->scale1C);
             }
             break;
         case 0x28:
         case 0x29: /* wait for a part's effect over a distance */
             {
-                s32 distance = func_800AEEF8(object);
+                s32 distance = battle_get_distance_to_position(object);
                 ModelPart *part;
                 s32 frames;
                 s32 found;
@@ -5307,13 +5307,13 @@ chosen:
             }
             break;
         case 0x2A:
-            if (func_800AEEF8(object) >= object->field8E) {
+            if (battle_get_distance_to_position(object) >= object->field8E) {
                 pc = start;
                 running = 0;
             }
             break;
         case 0x2B:
-            if (func_800AEEF8(object) <= object->field8E) {
+            if (battle_get_distance_to_position(object) <= object->field8E) {
                 pc = start;
                 running = 0;
             }
@@ -5348,7 +5348,7 @@ chosen:
             }
             break;
         case 0x2F:
-            if (func_800BF6F8() != 0) {
+            if (battle_count_active_tasks() != 0) {
                 pc = start;
                 running = 0;
             }
@@ -5378,7 +5378,7 @@ chosen:
             break;
         case 0x33:
             word = *pc++;
-            if (D_800D36B8 != 0) {
+            if (battle_start_mode != 0) {
                 pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
@@ -5416,25 +5416,25 @@ chosen:
             word = *pc++;
             b0 = word;
             b1 = word >> 8;
-            func_800AE098(pool, object->hierarchy, 0, arg, b0, b1, object->position[0], object->position[1],
+            battle_start_homing_turn(pool, object->hierarchy, 0, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x39:
             word = *pc++;
             b0 = word;
             b1 = word >> 8;
-            func_800AE098(pool, object->hierarchy, 1, arg, b0, b1, object->position[0], object->position[1],
+            battle_start_homing_turn(pool, object->hierarchy, 1, arg, b0, b1, object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x3A:
-            if ((func_800AA7DC(2) == 0xFE || object->field22 == 0 || object->field35 != 0) && func_800BF6F8() != 0) {
+            if ((battle_area_event_get_next_type(2) == 0xFE || object->field22 == 0 || object->field35 != 0) && battle_count_active_tasks() != 0) {
                 pc = start;
                 running = 0;
             }
             break;
         case 0x3B:
             word = *pc++;
-            if ((D_800C48E8 >> object->slot) & 1) {
+            if ((battle_area_knocked_out >> object->slot) & 1) {
                 pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
@@ -5442,7 +5442,7 @@ chosen:
             word = *pc++;
             b0 = word;
             b1 = word >> 8;
-            sound_slide_effect_volume(b0 + func_800AE220(object, arg), 0, b1);
+            sound_slide_effect_volume(b0 + battle_get_sound_bank_id(object, arg), 0, b1);
             break;
         case 0x3D: /* replay the queued scripts when one is arg */
             word = object->queueCount;
@@ -5457,8 +5457,8 @@ chosen:
         case 0x3E: /* jump when the targets were all hit so */
             b0 = 1;
             for (i = 0; i < 13; i++) {
-                if ((D_800C3E30 >> i) & 1) {
-                    switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
+                if ((battle_selected_slot_mask >> i) & 1) {
+                    switch (battle_area_events[battle_area_event_index - 1].codes[i]) {
                     case 0:
                     case 1:
                         b1 = 0;
@@ -5475,7 +5475,7 @@ chosen:
                     if (b1 != arg && arg < 8) {
                         b0 = 0;
                     }
-                    if (arg == 8 && (D_800D3368[i] == NULL || !(D_800D3368[i]->flags4A & 2))) {
+                    if (arg == 8 && (battle_objects[i] == NULL || !(battle_objects[i]->flags4A & 2))) {
                         b0 = 0;
                     }
                 }
@@ -5486,7 +5486,7 @@ chosen:
             }
             break;
         case 0x3F:
-            func_800BF6CC();
+            battle_show_results_if_menu_open();
             break;
         case 0x40: /* turn to angles */
             {
@@ -5494,7 +5494,7 @@ chosen:
                 s16 y = *pc++;
                 s16 z = *pc++;
 
-                func_800ADF1C(pool, object->hierarchy, arg, x, y, z);
+                battle_turn_part_to(pool, object->hierarchy, arg, x, y, z);
                 flags = -1;
             }
             break;
@@ -5507,7 +5507,7 @@ chosen:
                 x = (s16)(object->hierarchy->rotation.vx + x);
                 y = (s16)(object->hierarchy->rotation.vy + y);
                 z = (s16)(object->hierarchy->rotation.vz + z);
-                func_800ADF1C(pool, object->hierarchy, arg, (s16)x, (s16)y, (s16)z);
+                battle_turn_part_to(pool, object->hierarchy, arg, (s16)x, (s16)y, (s16)z);
                 flags = -1;
             }
             break;
@@ -5531,7 +5531,7 @@ chosen:
                 yaw = ratan2(-dx, -dz);
                 roll = 0;
                 if (dx != 0 || dy != 0 || dz != 0) {
-                    func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, roll);
+                    battle_turn_part_to(pool, object->hierarchy, arg, pitch, yaw, roll);
                     flags = -1;
                 }
             }
@@ -5575,10 +5575,10 @@ chosen:
                 object->hierarchy->translation[1] = object->position[1] + dy * object->field8E / distance;
                 object->hierarchy->translation[2] = object->position[2] + dz * object->field8E / distance;
             } else {
-                u8 slot = func_800AF438(object, arg, &word);
+                u8 slot = battle_resolve_target_code(object, arg, &word);
 
-                object->hierarchy->translation[0] = (u16)D_800C3EB4[slot].x;
-                object->hierarchy->translation[2] = (u16)D_800C3EB4[slot].z;
+                object->hierarchy->translation[0] = (u16)battle_area_slots[slot].x;
+                object->hierarchy->translation[2] = (u16)battle_area_slots[slot].z;
             }
             break;
         case 0x4B:
@@ -5629,10 +5629,10 @@ chosen:
                 u8 slot;
 
                 object->field58 = 0;
-                slot = func_800AF438(object, arg, &word);
-                object->position[0] = D_800C3EB4[slot].x;
-                object->position[1] = D_800C3EB4[slot].y;
-                object->position[2] = D_800C3EB4[slot].z;
+                slot = battle_resolve_target_code(object, arg, &word);
+                object->position[0] = battle_area_slots[slot].x;
+                object->position[1] = battle_area_slots[slot].y;
+                object->position[2] = battle_area_slots[slot].z;
             }
             break;
         case 0x52: /* follow a target */
@@ -5642,7 +5642,7 @@ chosen:
             object->offset[1] = *pc++;
             object->offset[2] = *pc++;
             if (arg != 0) {
-                func_800AEF68(object);
+                battle_place_object_at_target(object);
             }
             break;
         case 0x53: /* put the position on the ground */
@@ -5653,7 +5653,7 @@ chosen:
                 point.vx = object->position[0];
                 point.vy = 0;
                 point.vz = object->position[2];
-                func_800A5870(&point, func_800A579C(&point), &hit);
+                battle_put_point_on_scene_triangle(&point, battle_find_scene_triangle(&point), &hit);
                 object->position[1] = point.vy;
             }
             break;
@@ -5667,8 +5667,8 @@ chosen:
             object->field8E += *pc++;
             break;
         case 0x57:
-            i = func_800AF438(object, arg, &word);
-            object->field8E += func_800AA650(i);
+            i = battle_resolve_target_code(object, arg, &word);
+            object->field8E += battle_get_object_radius(i);
             break;
         case 0x58:
             object->field58 = arg;
@@ -5677,7 +5677,7 @@ chosen:
             object->offset[1] = 0;
             object->offset[2] = 0;
             if (arg != 0) {
-                func_800AEF68(object);
+                battle_place_object_at_target(object);
             }
             break;
         case 0x59:
@@ -5707,7 +5707,7 @@ chosen:
                 break;
             }
             for (i = 1; i < (s16)word; i++) {
-                func_800AA934(object, D_800D3368[object->queueTargets[i - 1]], pool, object->queueScripts[i - 1]);
+                battle_start_effect_script(object, battle_objects[object->queueTargets[i - 1]], pool, object->queueScripts[i - 1]);
             }
             return;
         case 0x5C:
@@ -5732,7 +5732,7 @@ chosen:
             break;
         case 0x60: /* the centre of the slot's area */
             {
-                s32 group = D_800C3EB4[object->slot].group;
+                s32 group = battle_area_slots[object->slot].group;
 
                 object->position[0] = (SCENE_DATA->areas[group].x0 + SCENE_DATA->areas[group].x1) >> 1;
                 object->position[1] = 0;
@@ -5741,12 +5741,12 @@ chosen:
             break;
         case 0x61:
             word = *pc++;
-            if (func_800885D0(object->slot)) {
+            if (battle_count_enemy_gear_group_members(object->slot)) {
                 pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x62:
-            func_800AFD98(object, &object->hierarchy[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
+            battle_set_part_transform(object, &object->hierarchy[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
         case 0x63: /* start the object's own animation */
             word = *pc++;
@@ -5774,15 +5774,15 @@ chosen:
                 b3 = word >> 8;
                 b2 = word;
                 if (op == 0x65) {
-                    camX = D_800D335C.vx;
-                    camY = D_800D335C.vy;
-                    camZ = D_800D335C.vz;
+                    camX = battle_camera_view_target.vx;
+                    camY = battle_camera_view_target.vy;
+                    camZ = battle_camera_view_target.vz;
                 } else {
-                    camX = D_800D3354.vx;
-                    camY = D_800D3354.vy;
-                    camZ = D_800D3354.vz;
+                    camX = battle_camera_view_eye.vx;
+                    camY = battle_camera_view_eye.vy;
+                    camZ = battle_camera_view_eye.vz;
                 }
-                x = func_800AF438(object, m1, &value);
+                x = battle_resolve_target_code(object, m1, &value);
                 value = *pc++;
                 mode = 2;
                 if (m1 == 0xF6) {
@@ -5797,13 +5797,13 @@ chosen:
                     x = SCENE_DATA->cameras[b2].eye[0];
                     y = SCENE_DATA->cameras[b2].eye[2];
                     value += SCENE_DATA->cameras[b2].eye[1];
-                } else if (D_800D3368[x] != NULL) {
-                    value = func_800AA600(x) * (s16)value / 4096;
+                } else if (battle_objects[x] != NULL) {
+                    value = battle_get_object_height(x) * (s16)value / 4096;
                     mode = 0;
                     y = -1;
                     if (m1 == 0xF9) {
                         for (y = 0; y < 13; y++) {
-                            if ((D_800C3E30 >> y) & 1) {
+                            if ((battle_selected_slot_mask >> y) & 1) {
                                 break;
                             }
                         }
@@ -5813,7 +5813,7 @@ chosen:
                     mode = 0;
                     y = -1;
                 }
-                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, b0, camX, camY, camZ, x, (s16)value, y, (s16)b3);
+                ((void (*)())battle_start_camera_channel)(pool, op - 0x5E, arg + mode, b0, camX, camY, camZ, x, (s16)value, y, (s16)b3);
             }
             break;
         case 0x67: /* start a camera turn */
@@ -5838,20 +5838,20 @@ chosen:
                 }
                 arg &= 0x1F;
                 if (m1 == 0) {
-                    from = D_800C3B90 & 0xFFF;
+                    from = battle_camera_orbit_yaw & 0xFFF;
                 } else if (m1 == 1) {
-                    from = D_800C3BA0 & 0xFFF;
+                    from = battle_camera_look_yaw & 0xFFF;
                 } else if (m1 == 2) {
-                    from = D_800C3B94 & 0xFFF;
+                    from = battle_camera_orbit_pitch & 0xFFF;
                 } else {
                     if (m1 == 3) {
-                        from = D_800C3B98;
+                        from = battle_camera_orbit_distance;
                     } else if (m1 == 4) {
-                        from = D_800C3BA4;
+                        from = battle_camera_look_distance;
                     } else if (m1 == 5) {
-                        from = D_800C3BA8;
+                        from = battle_camera_look_height;
                     } else if (m1 == 6) {
-                        from = D_800C3B9C;
+                        from = battle_camera_orbit_height;
                     }
                     angle = (s16)angle * SCENE_DATA->objectScale >> 12;
                     word = (s16)word * SCENE_DATA->objectScale >> 12;
@@ -5889,43 +5889,43 @@ chosen:
                 } else {
                     to = (u16)word;
                 }
-                ((void (*)())func_800B0164)(pool, m1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, (s16)b3);
+                ((void (*)())battle_start_camera_channel)(pool, m1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, (s16)b3);
             }
             break;
         case 0x68: /* start the camera */
             {
-                s32 dx = D_800D335C.vx - D_800D3354.vx;
-                s32 dz = D_800D335C.vz - D_800D3354.vz;
+                s32 dx = battle_camera_view_target.vx - battle_camera_view_eye.vx;
+                s32 dz = battle_camera_view_target.vz - battle_camera_view_eye.vz;
 
-                func_800B00F4(pool);
-                func_800BCAA4();
-                D_800C3DF8 = 1;
-                D_800C3B84 = 0xFF;
-                D_800C3BA0 = D_800C3B90 = ratan2(dx, dz) & 0xFFF;
-                D_800C3B94 = 0;
-                D_800C3B98 = 0;
-                D_800C3B9C = 0;
-                D_800C3B8C = 0;
-                D_800C3BA8 = 0;
-                D_800C3BA4 = 0;
+                battle_release_camera_channels(pool);
+                battle_camera_hold();
+                battle_camera_channels_active = 1;
+                battle_camera_wait_kind = 0xFF;
+                battle_camera_look_yaw = battle_camera_orbit_yaw = ratan2(dx, dz) & 0xFFF;
+                battle_camera_orbit_pitch = 0;
+                battle_camera_orbit_distance = 0;
+                battle_camera_orbit_height = 0;
+                battle_camera_snap = 0;
+                battle_camera_look_height = 0;
+                battle_camera_look_distance = 0;
             }
             break;
         case 0x69:
-            if (D_800C3B84 != 0xFF) {
-                if (D_800C3B88 & 1) {
+            if (battle_camera_wait_kind != 0xFF) {
+                if (battle_camera_wait_state & 1) {
                     pc = start;
                     running = 0;
                 } else {
-                    D_800C3B84 = 0xFF;
+                    battle_camera_wait_kind = 0xFF;
                 }
             } else {
-                D_800C3B84 = arg;
+                battle_camera_wait_kind = arg;
                 pc = start;
                 running = 0;
             }
             break;
         case 0x6A:
-            D_800C3B8C = 1;
+            battle_camera_snap = 1;
             break;
         case 0x6B:
             word = *pc++;
@@ -5942,11 +5942,11 @@ chosen:
             break;
         case 0x6E:
             {
-                u8 index = func_800AF438(object, arg, &word);
+                u8 index = battle_resolve_target_code(object, arg, &word);
                 BattleObject *other;
 
                 word = *pc++;
-                other = D_800D3368[index];
+                other = battle_objects[index];
                 if (other != NULL && other->field38 == (word & 1)) {
                     pc = start;
                     running = 0;
@@ -5955,14 +5955,14 @@ chosen:
             break;
         case 0x6F:
             if (arg) {
-                object->field3A = D_800C3E30;
+                object->field3A = battle_selected_slot_mask;
             } else {
                 object->field3A = -1;
             }
             break;
         case 0x70:
             word = *pc++;
-            if (object->field3A == D_800C3E30) {
+            if (object->field3A == battle_selected_slot_mask) {
                 pc = SCRIPT_JUMP(start, (s16)word);
                 running = 0;
             }
@@ -5970,7 +5970,7 @@ chosen:
         case 0x71:
             word = *pc++;
             if (arg == 0) {
-                D_800D39E4 = word;
+                battle_requested_single_action = word;
             }
             break;
         case 0x72:
@@ -5981,10 +5981,10 @@ chosen:
             break;
         case 0x73:
             running = 0;
-            func_800B8054((s16)D_800D39E4);
+            battle_single_action_request((s16)battle_requested_single_action);
             break;
         case 0x74:
-            func_800BF998();
+            battle_count_effect_hit();
             return;
         case 0x75: /* jump when facing the object's position */
             word = *pc++;
@@ -6003,14 +6003,14 @@ chosen:
     }
     object->script = (u8 *)pc;
     if (reloadScene) {
-        func_800B9258();
+        battle_menu_add_step();
     }
 }
 
-/* Turn a part to rotation (x, y, z): at once for a duration below 2, else by
+/* 800ADF1C: Turn a part to rotation (x, y, z): at once for a duration below 2, else by
  * a turning effect (kind 0xFE) over duration frames along the shortest way
  * (x, y, z become the turns). */
-void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z) {
+void battle_turn_part_to(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z) {
     EffectEntry *entry;
 
     if (duration < 2) {
@@ -6024,7 +6024,7 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
         if (part->effects[0] != NULL) {
             entry = part->effects[0];
         } else {
-            entry = func_800A2330(pool);
+            entry = battle_alloc_effect_entry(pool);
         }
         if (entry != NULL) {
             entry->used = 1;
@@ -6056,11 +6056,11 @@ void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y
     }
 }
 
-/* Attach a homing turn (kind 0xFE) toward (x, y, z) to a part's rotation: type
+/* 800AE098: Attach a homing turn (kind 0xFE) toward (x, y, z) to a part's rotation: type
  * 0 (step type 7) turns pitch and yaw, 1 (8) the yaw only. Each frame 800A0838
  * turns by at most param1 + (distance + time) * param2 / params[0] (the first
  * distance plus one), time growing by duration; it runs until released. */
-void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x,
+void battle_start_homing_turn(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 duration, s32 x,
                    s32 y, s32 z) {
     EffectEntry *entry;
     s32 dx;
@@ -6070,7 +6070,7 @@ void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 
     if (part->effects[0] != NULL) {
         entry = part->effects[0];
     } else {
-        entry = func_800A2330(pool);
+        entry = battle_alloc_effect_entry(pool);
     }
     if (entry != NULL) {
         entry->used = 1;
@@ -6092,9 +6092,9 @@ void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 
     }
 }
 
-/* Start an animation on a battle object (looping when loop is set); an empty
+/* 800AE1BC: Start an animation on a battle object (looping when loop is set); an empty
  * animation stops it. */
-void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop) {
+void battle_start_object_animation(BattleObject *object, Animation *animation, s32 loop) {
     u8 *data;
 
     if (animation->length != 0) {
@@ -6114,9 +6114,9 @@ void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop) {
     }
 }
 
-/* The sound bank id (in the high half) of source: 0 the system bank, 1 the
- * object's model data, 2 its extra data, 3 the bank D_800C4924. */
-s32 func_800AE220(BattleObject *object, s32 source) {
+/* 800AE220: The sound bank id (in the high half) of source: 0 the system bank, 1 the
+ * object's model data, 2 its extra data, 3 the bank battle_sound_bank_of_event_script. */
+s32 battle_get_sound_bank_id(BattleObject *object, s32 source) {
     if (source == 0) {
         return sprite_script_sound_bank->bank << 16;
     }
@@ -6127,18 +6127,18 @@ s32 func_800AE220(BattleObject *object, s32 source) {
         return object->extraData->sounds->id << 16;
     }
     if (source == 3) {
-        return D_800C4924->id << 16;
+        return battle_sound_bank_of_event_script->id << 16;
     }
 }
 
-/* Run the events of object's animation for its current frame (sprites,
+/* 800AE2A4: Run the events of object's animation for its current frame (sprites,
  * lights, effect channels, sounds, part flags, the slots' effect scripts and
  * image animations), then advance the frame, looping at its loop length.
  * An event is an s16 frame time and a type byte, then the type's fields
  * (AnimEvent); an animation (800AE1BC) or effect command 63 supplies the
  * list and its count. Each case steps over its event; a type without a case
  * is not stepped over (tools/analysis/battle_effect_vm.py decodes them). */
-void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
+void battle_run_animation_events(BattleObject *object, EffectPool *pool, s32 unused_buffer) {
     AnimEvent *event;
     SpriteCommand *sprite;
     LightEvent *light;
@@ -6160,7 +6160,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     s16 volume;
     s32 i;
     s32 one = 1;
-    BattleObject **stage = D_800D3368;
+    BattleObject **stage = battle_objects;
     BattleObject **objects;
     u16 savedMask;
     s16 savedIndex;
@@ -6189,15 +6189,15 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     m = (MATRIX *)0x1F800000;
                     sprite = &event->sprite;
                     if (sprite->flags & 0x80) {
-                        offset = D_800CCCE8.records[object->slot].gear.spriteVariants[sprite->kind] - 1;
+                        offset = battle_work_area.records[object->slot].gear.spriteVariants[sprite->kind] - 1;
                         kind = sprite->kind + offset;
                     } else {
                         kind = sprite->kind;
                     }
                     if ((sprite->mode & 0x80) || (sprite->flags & 0x80)) {
-                        target = stage[func_800AF400()];
+                        target = stage[battle_get_first_selected_slot()];
                         if (target == NULL) {
-                            slot = func_800AF400() + 1;
+                            slot = battle_get_first_selected_slot() + 1;
                             target = object;
                         }
                     } else {
@@ -6210,9 +6210,9 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             *m = target->hierarchy->transform;
                         }
                         if (slot != 0) {
-                            m->t[0] = (u16)D_800C3EB4[slot - 1].x;
-                            m->t[1] = (u16)D_800C3EB4[slot - 1].y;
-                            m->t[2] = (u16)D_800C3EB4[slot - 1].z;
+                            m->t[0] = (u16)battle_area_slots[slot - 1].x;
+                            m->t[1] = (u16)battle_area_slots[slot - 1].y;
+                            m->t[2] = (u16)battle_area_slots[slot - 1].z;
                         }
                         SetRotMatrix(m);
                         SetTransMatrix(m);
@@ -6230,7 +6230,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             point.vx = SCENE_DATA->centre.vx;
                             point.vy = SCENE_DATA->centre.vy;
                             point.vz = SCENE_DATA->centre.vz;
-                            func_800A5870(&point, func_800A579C(&point), &ground);
+                            battle_put_point_on_scene_triangle(&point, battle_find_scene_triangle(&point), &ground);
                         } else {
                             point.vy = out.vy;
                         }
@@ -6246,8 +6246,8 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         if (sprite->resource) {
                             resource = sprite_effect_source;
                         }
-                        if (func_800B12D0(func_800AF400(), sprite->flags)) {
-                            func_800AFB4C(resource, kind, &point, angle, scale, sprite, object);
+                        if (battle_can_animation_event_run_for_slot(battle_get_first_selected_slot(), sprite->flags)) {
+                            battle_create_event_sprite(resource, kind, &point, angle, scale, sprite, object);
                         }
                     }
                     object->animationStart += sizeof(SpriteCommand);
@@ -6257,32 +6257,32 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         if (event->light.light < 2) {
                             light = &event->light;
                             if (light->free) {
-                                D_800D3304[light->light].object = -1;
+                                battle_light_trackers[light->light].object = -1;
                             } else {
-                                D_800D3304[light->light].object = object->slot;
+                                battle_light_trackers[light->light].object = object->slot;
                             }
-                            D_800D3304[light->light].part = light->part;
-                            D_800D2FC0->m[0][light->light + 1] = light->r * 16;
-                            D_800D2FC0->m[1][light->light + 1] = light->g * 16;
-                            D_800D2FC0->m[2][light->light + 1] = light->b * 16;
-                            D_800D3304[light->light].offset.vx = light->offset[0];
-                            D_800D3304[light->light].offset.vy = light->offset[1];
-                            D_800D3304[light->light].offset.vz = light->offset[2];
-                            D_800D3304[light->light].active = light->active;
+                            battle_light_trackers[light->light].part = light->part;
+                            battle_stage_color_matrix->m[0][light->light + 1] = light->r * 16;
+                            battle_stage_color_matrix->m[1][light->light + 1] = light->g * 16;
+                            battle_stage_color_matrix->m[2][light->light + 1] = light->b * 16;
+                            battle_light_trackers[light->light].offset.vx = light->offset[0];
+                            battle_light_trackers[light->light].offset.vy = light->offset[1];
+                            battle_light_trackers[light->light].offset.vz = light->offset[2];
+                            battle_light_trackers[light->light].active = light->active;
                         }
                         object->animationStart += sizeof(LightEvent);
                     } else {
-                        D_800D3304[event->light.light].active = 0;
+                        battle_light_trackers[event->light.light].active = 0;
                         object->animationStart += 6;
                     }
                     break;
                 case 3:
                 case 4: /* stop a colour fade channel; on: restart it in mode type - 3
                          * (ChannelEvent; 6 bytes off) */
-                    func_800A3484(&object->channels[event->channel.channel], arg2);
+                    battle_stop_color_fade(&object->channels[event->channel.channel], unused_buffer);
                     if (event->channel.on) {
                         if (event->channel.channel < object->channelCount) {
-                            func_800A32D8(&object->channels[event->channel.channel], (s32)&D_800C3D04,
+                            battle_start_color_fade(&object->channels[event->channel.channel], (s32)&battle_effect_sprite_pool,
                                           event->channel.field5, event->channel.type - 3, event->channel.bytes[0],
                                           event->channel.bytes[1], event->channel.bytes[2], event->channel.bytes[3],
                                           event->channel.bytes[4], event->channel.bytes[5], event->channel.bytes[6],
@@ -6298,12 +6298,12 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     break;
                 case 5: /* play a sound (SoundEvent) */
                     sound = &event->sound;
-                    if (func_800B12D0(func_800AF400(), sound->flags)) {
+                    if (battle_can_animation_event_run_for_slot(battle_get_first_selected_slot(), sound->flags)) {
                         variant = 0;
                         if (sound->kind == one && SCENE_DATA->soundMode != 0) {
                             sound_play_effect((object->model->sounds->id << 16) | (SCENE_DATA->soundMode + 10));
                         }
-                        base = func_800AE220(object, sound->source);
+                        base = battle_get_sound_bank_id(object, sound->source);
                         if (SCENE_DATA->soundMode == 3 && sound->kind == 2) {
                             variant = 8;
                         }
@@ -6323,7 +6323,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     object->animationStart += sizeof(SoundEvent);
                     break;
                 case 6: /* update the battle menu (4 bytes) */
-                    func_800BF6CC();
+                    battle_show_results_if_menu_open();
                     object->animationStart += 4;
                     break;
                 case 7: /* draw part (byte 4) = byte 5 bit 0 (ShowEvent, 6 bytes) */
@@ -6333,9 +6333,9 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                 case 8: /* start effect scripts on the object's slots (SlotEvent) */
                     slots = &event->slots;
                     i = 0;
-                    objects = D_800D3368;
-                    savedIndex = D_800C3D40;
-                    savedMask = D_800C3E30;
+                    objects = battle_objects;
+                    savedIndex = battle_selected_object_index;
+                    savedMask = battle_selected_slot_mask;
                     mask = one << savedIndex;
                     for (; i < 13; i++, objects++) {
                         if ((object->slotMask >> i) & 1) {
@@ -6344,7 +6344,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             if (*objects != NULL && ((*objects)->flags4A & 2)) {
                                 onTarget = 0;
                             }
-                            switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
+                            switch (battle_area_events[battle_area_event_index - 1].codes[i]) {
                             case 0:
                             case 1:
                                 if (*objects != NULL && ((*objects)->flags4A & 2)) {
@@ -6364,20 +6364,20 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                                 script = slots->scripts[4];
                                 break;
                             }
-                            if (!func_800B12D0(i, slots->kinds)) {
+                            if (!battle_can_animation_event_run_for_slot(i, slots->kinds)) {
                                 script = -1;
                             }
                             if (*objects != NULL && script > 0) {
                                 if (onTarget) {
-                                    func_800AA564(object, i, mask, script);
+                                    battle_start_script_on_slot_object(object, i, mask, script);
                                 } else {
-                                    func_800AA454(i, mask, script);
+                                    battle_start_slot_object_own_script(i, mask, script);
                                 }
                             }
                         }
                     }
-                    D_800C3D40 = savedIndex;
-                    D_800C3E30 = savedMask;
+                    battle_selected_object_index = savedIndex;
+                    battle_selected_slot_mask = savedMask;
                     object->animationStart += sizeof(SlotEvent);
                     break;
                 case 9: /* start or stop an image animation (ImageEvent; 6 bytes off) */
@@ -6390,9 +6390,9 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                             }
                             colour = NULL;
                             if ((event->image.mode & 0x7F) >= 4) {
-                                colour = (ColorRow *)D_800D2FC0;
+                                colour = (ColorRow *)battle_stage_color_matrix;
                             }
-                            curve = func_800AA820(event->image.curve);
+                            curve = battle_get_frame_curve(event->image.curve);
                             x = event->image.x;
                             y = event->image.y;
                             x2 = event->image.x2;
@@ -6409,14 +6409,14 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                                     y2 += object->placement[3];
                                 }
                             }
-                            func_800A3640(&object->images[event->image.anim], targetImage, event->image.mode & 0x7F,
+                            battle_start_image_anim(&object->images[event->image.anim], targetImage, event->image.mode & 0x7F,
                                           event->image.field12 | 0x700, colour, x, y, 0, x2, y2, field10, x, y,
                                           event->image.field13, event->image.field14, event->image.field16, event->image.field18,
                                           event->image.field1A, curve);
                         }
                         object->animationStart += sizeof(ImageEvent);
                     } else {
-                        func_800A429C(&object->images[event->image.anim]);
+                        battle_stop_image_anim(&object->images[event->image.anim]);
                         object->animationStart += 6;
                     }
                     break;
@@ -6432,13 +6432,13 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     }
 }
 
-/* Stop a battle object's animation. */
-void func_800AEEEC(BattleObject *object) {
+/* 800AEEEC: Stop a battle object's animation. */
+void battle_stop_object_animation(BattleObject *object) {
     object->animation = -1;
 }
 
-/* Distance from a battle object's position to its hierarchy's translation. */
-s32 func_800AEEF8(BattleObject *object) {
+/* 800AEEF8: Distance from a battle object's position to its hierarchy's translation. */
+s32 battle_get_distance_to_position(BattleObject *object) {
     ModelPart *root = object->hierarchy;
     s32 dx = object->position[0] - root->translation[0];
     s32 dy = object->position[1] - root->translation[1];
@@ -6447,12 +6447,12 @@ s32 func_800AEEF8(BattleObject *object) {
     return SquareRoot0(dx * dx + dy * dy + dz * dz);
 }
 
-/* Place a battle object at its offset from its target (code 0xFF the first
+/* 800AEF68: Place a battle object at its offset from its target (code 0xFF the first
  * slot of its mask, 0xFE the selected object, 0xFD/0xFC its own slots, 0xFA
  * slot 31, 1-127 the slot below): through the target's hierarchy (or a part
  * of it) when the target exists and is not the object's own slot, carrying a
  * following effect along; otherwise at the slot's battle position. */
-void func_800AEF68(BattleObject *object) {
+void battle_place_object_at_target(BattleObject *object) {
     s32 slot = 0;
     BattleObject *target;
     MATRIX *m;
@@ -6467,7 +6467,7 @@ void func_800AEF68(BattleObject *object) {
         }
     }
     if (object->field58 == 0xFE) {
-        slot = D_800C3D40;
+        slot = battle_selected_object_index;
     }
     if (object->field58 == 0xFD) {
         slot = object->slot;
@@ -6481,7 +6481,7 @@ void func_800AEF68(BattleObject *object) {
     if (object->field58 > 0 && object->field58 < 0x80) {
         slot = object->field58 - 1;
     }
-    target = D_800D3368[slot];
+    target = battle_objects[slot];
     if (target != NULL && slot != object->slot) {
         m = (MATRIX *)0x1F800000;
         if (object->targetPart != 0) {
@@ -6504,16 +6504,16 @@ void func_800AEF68(BattleObject *object) {
             entry->params[5] = position.vz;
         }
     } else {
-        object->position[0] = D_800C3EB4[slot].x;
-        object->position[1] = D_800C3EB4[slot].y;
-        object->position[2] = D_800C3EB4[slot].z;
+        object->position[0] = battle_area_slots[slot].x;
+        object->position[1] = battle_area_slots[slot].y;
+        object->position[2] = battle_area_slots[slot].z;
     }
 }
 
-/* Detach part index of a hierarchy and its descendants: move their marks to
+/* 800AF180: Detach part index of a hierarchy and its descendants: move their marks to
  * the same parts of another hierarchy and release their effects (the root
  * entry's index is the part count). */
-void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) {
+void battle_detach_part_to_copy(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) {
     ModelPart *child;
     s32 count;
     s32 i;
@@ -6522,23 +6522,23 @@ void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) 
     count = child->index;
     from[index].visible = 0;
     to[index].visible = 1;
-    func_800A23E8(pool, from[index].effects[0]);
+    battle_free_effect_entry(pool, from[index].effects[0]);
     from[index].effects[0] = NULL;
-    func_800A23E8(pool, from[index].effects[1]);
+    battle_free_effect_entry(pool, from[index].effects[1]);
     from[index].effects[1] = NULL;
-    func_800A23E8(pool, from[index].effects[2]);
+    battle_free_effect_entry(pool, from[index].effects[2]);
     from[index].effects[2] = NULL;
     for (i = 1; i < count; i++) {
         child++;
         if (child->parent == &from[index]) {
-            func_800AF180(pool, child->index, from, to);
+            battle_detach_part_to_copy(pool, child->index, from, to);
         }
     }
 }
 
-/* Move the parts' visible flags of a hierarchy to another of the same
+/* 800AF270: Move the parts' visible flags of a hierarchy to another of the same
  * shape. */
-void func_800AF270(ModelPart *from, ModelPart *to) {
+void battle_move_drawn_parts(ModelPart *from, ModelPart *to) {
     s32 count = from->index;
     s32 i;
 
@@ -6552,9 +6552,9 @@ void func_800AF270(ModelPart *from, ModelPart *to) {
     }
 }
 
-/* The dot product of direction with the unit normal (the cross product) of
+/* 800AF2C4: The dot product of direction with the unit normal (the cross product) of
  * a and b, in 4.12 through 16 << 8 / its length, divided by scale. */
-s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale) {
+s16 battle_dot_with_cross_normal(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale) {
     VECTOR normal;
     s32 dot;
     s32 length;
@@ -6565,26 +6565,26 @@ s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale) {
     return (dot * 16 / length << 8) / scale;
 }
 
-/* The lowest slot (0-12) set in the mask D_800C3E30; 13 when none. */
-s32 func_800AF400(void) {
+/* 800AF400: The lowest slot (0-12) set in the mask battle_selected_slot_mask; 13 when none. */
+s32 battle_get_first_selected_slot(void) {
     s32 slot;
 
     for (slot = 0; slot < 13; slot++) {
-        if ((D_800C3E30 >> slot) & 1) {
+        if ((battle_selected_slot_mask >> slot) & 1) {
             break;
         }
     }
     return slot;
 }
 
-/* The slot of a target code, and its mask: 0xFF the first selected slot, 0xFE the
+/* 800AF438: The slot of a target code, and its mask: 0xFF the first selected slot, 0xFE the
  * selected object, 0xFD/0xF9 and 0xFC the object's slots, 0xFA slot 31, 0xF8
  * and 0xF7 slots derived from the object's slot; any other code is a slot. */
-u8 func_800AF438(BattleObject *object, u8 slot, u16 *mask) {
+u8 battle_resolve_target_code(BattleObject *object, u8 slot, u16 *mask) {
     if (slot == 0xFF) {
-        slot = func_800AF400();
+        slot = battle_get_first_selected_slot();
     } else if (slot == 0xFE) {
-        slot = D_800C3D40;
+        slot = battle_selected_object_index;
     } else if (slot == 0xFD || slot == 0xF9) {
         slot = object->slot;
     } else if (slot == 0xFC) {
@@ -6600,20 +6600,20 @@ u8 func_800AF438(BattleObject *object, u8 slot, u16 *mask) {
     return slot;
 }
 
-/* The animation of a battle object for index; 0xFE repeats the object's
+/* 800AF518: The animation of a battle object for index; 0xFE repeats the object's
  * current one and 0xFF chooses it from the slot's gear warnings (0x1B, 6 or
  * 1; bit 0x80 when the gear status is on), reporting that bit in flag. */
-u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag) {
+u8 *battle_get_object_animation(BattleObject *object, u8 index, s32 *flag) {
     s32 warnings;
 
     *flag = 0;
     if (index >= 0xFE) {
         if (index == 0xFF) {
-            warnings = func_8009C050(object->slot);
+            warnings = battle_get_gear_warning_flags(object->slot);
             if ((warnings & 4) && (object->flags4A & 0x100)) {
                 object->field2A = 0x1B;
             } else if ((warnings & 2) && (object->flags4A & 0x80)) {
-                if (!(D_800CCCE8.records[object->slot].pilot.flags36 & 1)) {
+                if (!(battle_work_area.records[object->slot].pilot.flags36 & 1)) {
                     object->field2A = 6;
                 }
             } else if (!(object->flags4A & 0x400)) {
@@ -6632,12 +6632,12 @@ u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag) {
     return object->moreAnimations[index - 0x3F];
 }
 
-/* Start effect channel flags & 7 (0 rotation, 1 translation, 2 scale) on
+/* 800AF678: Start effect channel flags & 7 (0 rotation, 1 translation, 2 scale) on
  * part: from start to end over duration, each relative to the part's current
  * values with flag 0x20 (start) or 0x40 (end); mode 0 keeps the end as a
  * difference and modes 0 and 1 put the part at the start at once. With flag
  * 0x80 the part's children get the same effect. */
-void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
+void battle_start_part_tween(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag, u8 field1,
                    s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration) {
     EffectEntry *entry;
     u8 channel = flags & 7;
@@ -6657,7 +6657,7 @@ void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 f
     } else {
         entry = part->effects[2];
     }
-    if (entry != NULL || (entry = func_800A2330(pool)) != NULL) {
+    if (entry != NULL || (entry = battle_alloc_effect_entry(pool)) != NULL) {
         entry->used = 1;
         entry->field1 = field1;
         entry->kind = mode + 3;
@@ -6742,16 +6742,16 @@ void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 f
         for (i = 1; i < object->hierarchy->index; i++) {
             child++;
             if (child->parent == part) {
-                func_800AF678(object, pool, child, flags, mode, tag, field1, startX, startY, startZ, endX, endY, endZ,
+                battle_start_part_tween(object, pool, child, flags, mode, tag, field1, startX, startY, startZ, endX, endY, endZ,
                               duration);
             }
         }
     }
 }
 
-/* Mark (flags bit 0) or unmark part of a battle object's hierarchy, and with
+/* 800AFA98: Mark (flags bit 0) or unmark part of a battle object's hierarchy, and with
  * flags bit 0x80 its descendants. */
-void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
+void battle_show_part(BattleObject *object, ModelPart *part, s32 flags) {
     ModelPart *child;
     s32 i;
 
@@ -6761,15 +6761,15 @@ void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
         for (i = 1; i < object->hierarchy->index; i++) {
             child++;
             if (child->parent == part) {
-                func_800AFA98(object, child, flags);
+                battle_show_part(object, child, flags);
             }
         }
     }
 }
 
-/* Create a sprite of kind from resource at position with a direction and a
+/* 800AFB4C: Create a sprite of kind from resource at position with a direction and a
  * scale; when the command says so, it follows a part of object (800AFC68). */
-void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
+void battle_create_event_sprite(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
                    BattleObject *object) {
     SpriteTask *task;
     SpriteFollow *follow;
@@ -6783,7 +6783,7 @@ void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s
     follow->part = command->part;
     if (command->follow) {
         follow->update = task_get_update_callback(&task->task);
-        task_set_update_callback(&task->task, func_800AFC68);
+        task_set_update_callback(&task->task, battle_update_following_sprite);
         follow->offset.vx = command->offset[0];
         follow->offset.vy = command->offset[1];
         follow->offset.vz = command->offset[2];
@@ -6791,9 +6791,9 @@ void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s
     }
 }
 
-/* Update of a following sprite: place it at its offset from its object's
+/* 800AFC68: Update of a following sprite: place it at its offset from its object's
  * part (on the object's ground height when asked), then run its own update. */
-void func_800AFC68(Task *node) {
+void battle_update_following_sprite(Task *node) {
     SpriteTask *task = (SpriteTask *)node;
     SpriteFollow *follow = (SpriteFollow *)((u8 *)task + (s16)task->sprite.size);
     MATRIX *m = (MATRIX *)0x1F800000;
@@ -6818,10 +6818,10 @@ void func_800AFC68(Task *node) {
     follow->update(&task->task);
 }
 
-/* Set (or with mode bit 0x20 add to) a part's rotation (mode & 7 == 0),
+/* 800AFD98: Set (or with mode bit 0x20 add to) a part's rotation (mode & 7 == 0),
  * translation (1) or scale (other) and mark it changed; with mode bit 0x80
  * also its descendants. */
-void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z) {
+void battle_set_part_transform(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z) {
     ModelPart *child;
     s32 i;
 
@@ -6861,35 +6861,35 @@ void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y,
         for (i = 1; i < object->hierarchy->index; i++) {
             child++;
             if (child->parent == part) {
-                func_800AFD98(object, child, mode, x, y, z);
+                battle_set_part_transform(object, child, mode, x, y, z);
             }
         }
     }
 }
 
-/* Put a battle object on the ground: find the scene triangle under its
+/* 800AFF9C: Put a battle object on the ground: find the scene triangle under its
  * hierarchy's translation and take its height (into the translation unless
  * field36 is set). */
-void func_800AFF9C(BattleObject *object) {
+void battle_put_object_on_ground(BattleObject *object) {
     u8 out[16];
     SVECTOR point;
 
     point.vx = object->hierarchy->translation[0];
     point.vy = object->hierarchy->translation[1];
     point.vz = object->hierarchy->translation[2];
-    object->field1E = func_800A5914(&point, object->field1E, 4);
+    object->field1E = battle_find_scene_triangle_near(&point, object->field1E, 4);
     if (object->field1E < 0) {
-        object->field1E = func_800A579C(&point);
+        object->field1E = battle_find_scene_triangle(&point);
     }
-    func_800A5870(&point, object->field1E, out);
+    battle_put_point_on_scene_triangle(&point, object->field1E, out);
     object->groundY = point.vy;
     if (object->field36 == 0) {
         object->hierarchy->translation[1] = point.vy;
     }
 }
 
-/* Free a battle object's extra file (and its sound bank when loaded). */
-void func_800B0060(BattleObject *object) {
+/* 800B0060: Free a battle object's extra file (and its sound bank when loaded). */
+void battle_free_object_extra(BattleObject *object) {
     if (object->extra != NULL) {
         if (object->extraSounds) {
             sound_remove_effect_bank(object->extraData->sounds);
@@ -6901,40 +6901,40 @@ void func_800B0060(BattleObject *object) {
     }
 }
 
-/* Clear the words D_800C3BAC[0..8]. */
-void func_800B00D0(void) {
+/* 800B00D0: Clear the words battle_camera_channels[0..8]. */
+void battle_clear_camera_channels(void) {
     s32 i;
 
     for (i = 8; i >= 0; i--) {
-        D_800C3BAC[i] = NULL;
+        battle_camera_channels[i] = NULL;
     }
 }
 
-/* Release the nine effect entries of D_800C3BAC to pool, then clear them. */
-void func_800B00F4(EffectPool *pool) {
+/* 800B00F4: Release the nine effect entries of battle_camera_channels to pool, then clear them. */
+void battle_release_camera_channels(EffectPool *pool) {
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        if (D_800C3BAC[i] != NULL) {
-            func_800A23E8(pool, D_800C3BAC[i]);
+        if (battle_camera_channels[i] != NULL) {
+            battle_free_effect_entry(pool, battle_camera_channels[i]);
         }
     }
-    func_800B00D0();
+    battle_clear_camera_channels();
 }
 
-/* Start effect index (D_800C3BAC, taken from pool when unset) with its kind
- * and parameters, unless effects are disabled (D_800C37C8). */
-void func_800B0164(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+/* 800B0164: Start effect index (battle_camera_channels, taken from pool when unset) with its kind
+ * and parameters, unless effects are disabled (battle_effects_disabled). */
+void battle_start_camera_channel(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
                    u16 p5, u16 duration) {
     EffectEntry **slots;
     EffectEntry **slot;
     EffectEntry *entry;
 
-    if (D_800C37C8 == 0) {
-        slots = D_800C3BAC;
+    if (battle_effects_disabled == 0) {
+        slots = battle_camera_channels;
         slot = &slots[index];
         if (*slot == NULL) {
-            *slot = func_800A2330(pool);
+            *slot = battle_alloc_effect_entry(pool);
         }
         entry = *slot;
         if (entry != NULL) {
@@ -6954,16 +6954,16 @@ void func_800B0164(EffectPool *pool, s32 index, u8 mode, u8 tag, u16 p0, u16 p1,
     }
 }
 
-/* Run the camera channels (D_800C3BAC) for steps frames. Each channel moves
+/* 800B026C: Run the camera channels (battle_camera_channels) for steps frames. Each channel moves
  * a value towards its target (a stage object's or slot's position, halfway
  * to a second one when set, or given values), linearly over its duration
  * (mode bit 0 clear) or by a fraction of the rest each frame; channels 0-6
  * are the orbit and look-at parameters, 7 the look-at point (from the target
  * at the look-at distance, angle and height) and 8 the camera position (at
  * the orbit distance and angles, kept off the objects and above the
- * ground). Finished channels 0-6 are released; D_800C3B88 tells whether the
- * channel tagged D_800C3B84 is running (1) or has finished (2). */
-void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
+ * ground). Finished channels 0-6 are released; battle_camera_wait_state tells whether the
+ * channel tagged battle_camera_wait_kind is running (1) or has finished (2). */
+void battle_run_camera_channels(EffectPool *pool, s32 steps, s32 unused, s32 key) {
     s32 step;
     s32 i;
     EffectEntry *entry;
@@ -6986,37 +6986,37 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
     SVECTOR point;
     s16 ground;
 
-    D_800C3B88 = 0;
+    battle_camera_wait_state = 0;
     for (step = 0; step < steps; step++) {
         for (i = 0; i < 9; i++) {
-            if (D_800C3BAC[i] == NULL) {
+            if (battle_camera_channels[i] == NULL) {
                 continue;
             }
-            entry = D_800C3BAC[i];
+            entry = battle_camera_channels[i];
             channel = (CameraChannel *)entry;
             mode = entry->kind;
             if ((mode & 0xF) < 2) {
                 slot = (s16)entry->params[3];
-                if (D_800D3368[slot] != NULL) {
-                    x = D_800D3368[slot]->hierarchy->translation[0];
-                    y = D_800D3368[slot]->hierarchy->translation[1] - entry->params[4];
-                    z = D_800D3368[slot]->hierarchy->translation[2];
+                if (battle_objects[slot] != NULL) {
+                    x = battle_objects[slot]->hierarchy->translation[0];
+                    y = battle_objects[slot]->hierarchy->translation[1] - entry->params[4];
+                    z = battle_objects[slot]->hierarchy->translation[2];
                 } else {
-                    x = D_800C3EB4[slot].x;
-                    y = D_800C3EB4[slot].y - entry->params[4];
-                    z = D_800C3EB4[slot].z;
+                    x = battle_area_slots[slot].x;
+                    y = battle_area_slots[slot].y - entry->params[4];
+                    z = battle_area_slots[slot].z;
                 }
                 slot = channel->slot2;
                 if (slot >= 0) {
-                    if (D_800D3368[slot] != NULL) {
-                        root = D_800D3368[slot]->hierarchy;
+                    if (battle_objects[slot] != NULL) {
+                        root = battle_objects[slot]->hierarchy;
                         x = (x + root->translation[0]) / 2;
                         y = (y + root->translation[1] - channel->height) / 2;
                         z = (z + root->translation[2]) / 2;
                     } else {
-                        x = (x + (u16)D_800C3EB4[slot].x) / 2;
-                        y = (y + (u16)D_800C3EB4[slot].y - channel->height) / 2;
-                        z = (z + (u16)D_800C3EB4[slot].z) / 2;
+                        x = (x + (u16)battle_area_slots[slot].x) / 2;
+                        y = (y + (u16)battle_area_slots[slot].y - channel->height) / 2;
+                        z = (z + (u16)battle_area_slots[slot].z) / 2;
                     }
                 }
             } else {
@@ -7025,29 +7025,29 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
                 z = entry->params[5];
             }
             if (i == 7) {
-                y -= D_800C3BA8;
-                x += -D_800C3BA4 * gpu_get_sin(D_800C3BA0) / 4096;
-                z += -D_800C3BA4 * gpu_get_cos(D_800C3BA0) / 4096;
+                y -= battle_camera_look_height;
+                x += -battle_camera_look_distance * gpu_get_sin(battle_camera_look_yaw) / 4096;
+                z += -battle_camera_look_distance * gpu_get_cos(battle_camera_look_yaw) / 4096;
             }
             if (i == 8) {
-                vertical = D_800C3B98 * gpu_get_sin(D_800C3B94) / 4096;
-                horizontal = D_800C3B98 * gpu_get_cos(D_800C3B94) / 4096;
-                x += -horizontal * gpu_get_sin(D_800C3B90) / 4096;
-                y += -vertical - D_800C3B9C;
-                z += -horizontal * gpu_get_cos(D_800C3B90) / 4096;
+                vertical = battle_camera_orbit_distance * gpu_get_sin(battle_camera_orbit_pitch) / 4096;
+                horizontal = battle_camera_orbit_distance * gpu_get_cos(battle_camera_orbit_pitch) / 4096;
+                x += -horizontal * gpu_get_sin(battle_camera_orbit_yaw) / 4096;
+                y += -vertical - battle_camera_orbit_height;
+                z += -horizontal * gpu_get_cos(battle_camera_orbit_yaw) / 4096;
                 point.vx = x;
                 point.vy = y;
                 point.vz = z;
-                if (func_800B0FF4(&D_800D335C, &point)) {
+                if (battle_keep_point_off_objects(&battle_camera_view_target, &point)) {
                     x = point.vx;
                     z = point.vz;
                 }
-                ground = func_800B0B14(key);
+                ground = battle_find_camera_ground_height(key);
                 if (y > ground) {
                     y = ground;
                 }
             }
-            if (D_800C3B8C != 0 && i >= 7) {
+            if (battle_camera_snap != 0 && i >= 7) {
                 channel->current[0] = x;
                 channel->current[1] = y;
                 channel->current[2] = z;
@@ -7083,56 +7083,56 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
                 if (i >= 7) {
                     entry->time = (s16)entry->duration - 1;
                 } else {
-                    if (entry->tag == D_800C3B84) {
-                        D_800C3B88 |= 2;
+                    if (entry->tag == battle_camera_wait_kind) {
+                        battle_camera_wait_state |= 2;
                     }
-                    func_800A23E8(pool, entry);
-                    D_800C3BAC[i] = NULL;
+                    battle_free_effect_entry(pool, entry);
+                    battle_camera_channels[i] = NULL;
                 }
-            } else if (entry->tag == D_800C3B84) {
-                D_800C3B88 |= 1;
+            } else if (entry->tag == battle_camera_wait_kind) {
+                battle_camera_wait_state |= 1;
             }
             switch (i) {
             case 0:
-                D_800C3B90 = valueX;
+                battle_camera_orbit_yaw = valueX;
                 break;
             case 1:
-                D_800C3BA0 = valueX;
+                battle_camera_look_yaw = valueX;
                 break;
             case 2:
-                D_800C3B94 = valueX;
+                battle_camera_orbit_pitch = valueX;
                 break;
             case 3:
-                D_800C3B98 = valueX;
+                battle_camera_orbit_distance = valueX;
                 break;
             case 4:
-                D_800C3BA4 = valueX;
+                battle_camera_look_distance = valueX;
                 break;
             case 5:
-                D_800C3BA8 = valueX;
+                battle_camera_look_height = valueX;
                 break;
             case 6:
-                D_800C3B9C = valueX;
+                battle_camera_orbit_height = valueX;
                 break;
             case 7:
-                D_800D335C.vx = valueX;
-                D_800D335C.vy = valueY;
-                D_800D335C.vz = valueZ;
+                battle_camera_view_target.vx = valueX;
+                battle_camera_view_target.vy = valueY;
+                battle_camera_view_target.vz = valueZ;
                 break;
             case 8:
-                D_800D3354.vx = valueX;
-                D_800D3354.vy = valueY;
-                D_800D3354.vz = valueZ;
+                battle_camera_view_eye.vx = valueX;
+                battle_camera_view_eye.vy = valueY;
+                battle_camera_view_eye.vz = valueZ;
                 break;
             }
         }
     }
-    D_800C3B8C = 0;
+    battle_camera_snap = 0;
 }
 
-/* Whether a point (x at [0], z at [2]) lies strictly inside the scene's
+/* 800B0AB4: Whether a point (x at [0], z at [2]) lies strictly inside the scene's
  * bounds. */
-s16 func_800B0AB4(s16 *point) {
+s16 battle_is_point_in_scene_bounds(s16 *point) {
     BattleSceneData *scene = SCENE_DATA;
     s16 x = point[0];
     s16 z;
@@ -7146,10 +7146,10 @@ s16 func_800B0AB4(s16 *point) {
     return 0;
 }
 
-/* The ground height 512 units in front of the camera (towards its look-at
+/* 800B0B14: The ground height 512 units in front of the camera (towards its look-at
  * point, the height difference quartered) for view key; the previous height
  * when the point is off the stage or the key is unchanged. */
-s16 func_800B0B14(s32 key) {
+s16 battle_find_camera_ground_height(s32 key) {
     VECTOR out;
     SVECTOR point;
     s16 dx;
@@ -7161,41 +7161,41 @@ s16 func_800B0B14(s32 key) {
     s32 stepZ;
     s16 triangle;
 
-    dx = D_800D335C.vx - D_800D3354.vx;
-    dy = (D_800D335C.vy - D_800D3354.vy) / 4;
-    dz = D_800D335C.vz - D_800D3354.vz;
+    dx = battle_camera_view_target.vx - battle_camera_view_eye.vx;
+    dy = (battle_camera_view_target.vy - battle_camera_view_eye.vy) / 4;
+    dz = battle_camera_view_target.vz - battle_camera_view_eye.vz;
     length = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
     stepX = (dx << 9) / length;
     stepY = (dy << 9) / length;
     stepZ = (dz << 9) / length;
     triangle = -1;
-    point.vx = D_800D3354.vx + stepX;
-    point.vy = D_800D3354.vy + stepY;
-    point.vz = D_800D3354.vz + stepZ;
-    if (func_800B0AB4(&point.vx) && key != D_800C3546) {
-        D_800C3546 = key;
-        triangle = func_800A5914(&point, D_800C3542, 5);
+    point.vx = battle_camera_view_eye.vx + stepX;
+    point.vy = battle_camera_view_eye.vy + stepY;
+    point.vz = battle_camera_view_eye.vz + stepZ;
+    if (battle_is_point_in_scene_bounds(&point.vx) && key != battle_camera_ground_key) {
+        battle_camera_ground_key = key;
+        triangle = battle_find_scene_triangle_near(&point, battle_camera_ground_triangle, 5);
         if (triangle < 0) {
-            triangle = func_800A579C(&point);
+            triangle = battle_find_scene_triangle(&point);
         }
         if (triangle >= 0) {
-            D_800C3542 = triangle;
+            battle_camera_ground_triangle = triangle;
         }
     }
     if (triangle >= 0) {
-        func_800A5870(&point, D_800C3542, &out);
-        D_800C3544 = point.vy;
+        battle_put_point_on_scene_triangle(&point, battle_camera_ground_triangle, &out);
+        battle_camera_ground_height = point.vy;
     } else {
-        point.vy = D_800C3544;
+        point.vy = battle_camera_ground_height;
     }
     return point.vy;
 }
 
-/* The party or enemy object (1 + slot, 0 none) whose footprint (its size
+/* 800B0D70: The party or enemy object (1 + slot, 0 none) whose footprint (its size
  * plus 0x80, centred at its position less a sixth of motion) point is inside
  * and above the foot of, the largest such; point is pushed out to its
  * edge. */
-s32 func_800B0D70(SVECTOR *motion, SVECTOR *point) {
+s32 battle_push_point_out_of_footprints(SVECTOR *motion, SVECTOR *point) {
     s16 best = -1;
     s32 i;
     s16 radius;
@@ -7210,9 +7210,9 @@ s32 func_800B0D70(SVECTOR *motion, SVECTOR *point) {
     ModelPart *root;
 
     for (i = 0; i < 11; i++) {
-        radius = func_800AA650(i) + 0x80;
-        if (D_800D3368[i] != NULL && D_800D3368[i]->active) {
-            if (point->vy > (root = D_800D3368[i]->hierarchy)->translation[1] - func_800AA600(i) &&
+        radius = battle_get_object_radius(i) + 0x80;
+        if (battle_objects[i] != NULL && battle_objects[i]->active) {
+            if (point->vy > (root = battle_objects[i]->hierarchy)->translation[1] - battle_get_object_height(i) &&
                 (best < 0 || radius > bestRadius)) {
                 centreX = root->translation[0] - motion->vx / 6;
                 dx = point->vx - centreX;
@@ -7236,9 +7236,9 @@ s32 func_800B0D70(SVECTOR *motion, SVECTOR *point) {
     return 0;
 }
 
-/* Push point out of the objects' footprints (800B0D70) moving from from
+/* 800B0FF4: Push point out of the objects' footprints (800B0D70) moving from from
  * (the motion is the direction from from, 512 long); the object hit. */
-s32 func_800B0FF4(SVECTOR *from, SVECTOR *point) {
+s32 battle_keep_point_off_objects(SVECTOR *from, SVECTOR *point) {
     SVECTOR motion;
     s32 length;
 
@@ -7247,14 +7247,14 @@ s32 func_800B0FF4(SVECTOR *from, SVECTOR *point) {
     length = SquareRoot0(motion.vx * motion.vx + motion.vz * motion.vz) + 1;
     motion.vx = (motion.vx << 9) / length;
     motion.vz = (motion.vz << 9) / length;
-    return func_800B0D70(&motion, point);
+    return battle_push_point_out_of_footprints(&motion, point);
 }
 
-/* Keep stage object index at least distance from point (x, z): when closer,
+/* 800B10EC: Keep stage object index at least distance from point (x, z): when closer,
  * move it back to that distance, along the line from the point but shifted
  * sideways to the side it is facing. */
-void func_800B10EC(s32 index, s32 x, s32 z, s32 distance) {
-    BattleObject **objects = D_800D3368;
+void battle_keep_object_away_from_point(s32 index, s32 x, s32 z, s32 distance) {
+    BattleObject **objects = battle_objects;
     BattleObject **slot = &objects[index];
     s32 dx = x - (*slot)->hierarchy->translation[0];
     s32 dz = z - (*slot)->hierarchy->translation[2];
@@ -7273,15 +7273,15 @@ void func_800B10EC(s32 index, s32 x, s32 z, s32 distance) {
     }
 }
 
-/* Whether slot's code in the current presentation event is not allowed by
+/* 800B12D0: Whether slot's code in the current presentation event is not allowed by
  * the kinds in mask (1: codes 0-1, 2: code 5, 4: code 4, 8: codes 2-3), or
  * mask is empty. */
-s32 func_800B12D0(s32 slot, u8 mask) {
+s32 battle_can_animation_event_run_for_slot(s32 slot, u8 mask) {
     s32 result;
     s32 allowed;
 
     result = 0;
-    switch (D_800C3FE8[D_800C360C - 1].codes[slot]) {
+    switch (battle_area_events[battle_area_event_index - 1].codes[slot]) {
     case 0:
     case 1:
         allowed = mask & 1;
@@ -7309,10 +7309,10 @@ empty:
     return result;
 }
 
-/* Wait frames (800BE790) until no stage object is busy (field38) and 800BF6F8
+/* 800B136C: Wait frames (800BE790) until no stage object is busy (field38) and 800BF6F8
  * reports nothing pending; then, when an object holds packets, stop the
  * resident transfer (8002A498) and free their packets once it is idle. */
-void func_800B136C(void) {
+void battle_wait_objects_idle(void) {
     s32 i;
     s32 busy;
     s32 loaded = 0;
@@ -7320,22 +7320,22 @@ void func_800B136C(void) {
     for (;;) {
         busy = 0;
         for (i = 0; i < 11; i++) {
-            if (D_800D3368[i] != NULL) {
-                if (D_800D3368[i]->field38) {
+            if (battle_objects[i] != NULL) {
+                if (battle_objects[i]->field38) {
                     busy = 1;
                 }
-                if (D_800D3368[i]->extra != NULL) {
+                if (battle_objects[i]->extra != NULL) {
                     loaded = 1;
                 }
             }
         }
-        if (func_800BF6F8() != 0) {
+        if (battle_count_active_tasks() != 0) {
             busy = 1;
         }
         if (!busy) {
             break;
         }
-        func_800BE790();
+        battle_run_frame();
     }
     if (loaded) {
         cd_stop_read(0);
@@ -7343,8 +7343,8 @@ void func_800B136C(void) {
         for (;;) {
             if (cd_get_pending_read_count() == 0) {
                 for (i = 0; i < 11; i++) {
-                    if (D_800D3368[i] != NULL && D_800D3368[i]->extra != NULL) {
-                        func_800B0060(D_800D3368[i]);
+                    if (battle_objects[i] != NULL && battle_objects[i]->extra != NULL) {
+                        battle_free_object_extra(battle_objects[i]);
                     }
                 }
                 busy = 0;
@@ -7352,41 +7352,41 @@ void func_800B136C(void) {
             if (!busy) {
                 break;
             }
-            func_800BE790();
+            battle_run_frame();
         }
     }
 }
 
-/* Set the flag D_800C3D6C. */
-void func_800B14B8(void) {
-    D_800C3D6C = 1;
+/* 800B14B8: Set the flag battle_shadows_enabled. */
+void battle_enable_shadows(void) {
+    battle_shadows_enabled = 1;
 }
 
-/* End the party members' stage objects other than keep: start their exit
+/* 800B14CC: End the party members' stage objects other than keep: start their exit
  * effect (5), wait frames (800BE790) until none is active or busy and one more,
  * then free them. */
-void func_800B14CC(s32 keep) {
+void battle_end_party_objects(s32 keep) {
     s32 i;
     s32 busy;
 
     for (i = 0; i < 3; i++) {
         if (i != keep) {
-            func_800AA934(D_800D3368[i], D_800D3368[i], &D_800C3D0C, 5);
+            battle_start_effect_script(battle_objects[i], battle_objects[i], &battle_effect_pool, 5);
         }
     }
     do {
         busy = 0;
         for (i = 0; i < 3; i++) {
-            if (i != keep && D_800D3368[i] != NULL && (D_800D3368[i]->active || D_800D3368[i]->field38)) {
+            if (i != keep && battle_objects[i] != NULL && (battle_objects[i]->active || battle_objects[i]->field38)) {
                 busy = 1;
             }
         }
-        func_800BE790();
+        battle_run_frame();
     } while (busy);
-    func_800BE790();
+    battle_run_frame();
     for (i = 0; i < 3; i++) {
         if (i != keep) {
-            func_800A9FF0(i);
+            battle_free_object(i);
         }
     }
 }

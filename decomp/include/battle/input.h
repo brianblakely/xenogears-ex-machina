@@ -9,10 +9,10 @@
 
 /* The pressed key, dequeued each frame: 0-3 right/down/left/up, 4 Circle,
  * 5 Cross, 7 Triangle, 13, 14 Start. */
-extern u8 D_800D3014;
-extern u8 D_800C3E28[2];  /* direction input: [0] the previous, [1] the current */
-extern u8 D_800C3444;     /* the battle is paused */
+extern u8 battle_pressed_key;
+extern u8 battle_direction_input[2];  /* direction input: [0] the previous, [1] the current */
+extern u8 battle_paused;     /* the battle is paused */
 
-void func_80089CCC(s32 mode); /* read the battle input into D_800D3014 */
+void battle_read_input(s32 mode); /* read the battle input into battle_pressed_key */
 
 #endif

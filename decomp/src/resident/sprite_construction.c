@@ -330,7 +330,7 @@ void sprite_move_vertically(Sprite *sprite) {
     s32 gravity;
 
     if (!((sprite->render.word >> 26) & 1)) {
-        func_800BA8F4(sprite);
+        battle_sprite_update_ground(sprite);
         if (sprite->speed_y > 0 && sprite->gravity > 0) {
             if ((sprite->y >> 16) == sprite->ground) {
                 return;
@@ -937,7 +937,7 @@ SpriteTask *sprite_create_effect(s32 index, SpriteSource *source, SVECTOR *posit
     source = child->image; /* kept across the actor copy */
     child->parent = 0;
     child->partner = 0;
-    if (sprite_in_battle != 0 && (actor = D_800C3E1C) != NULL) {
+    if (sprite_in_battle != 0 && (actor = battle_acting_sprite) != NULL) {
         child->resource_block = actor->resource_block;
         child->animations = actor->animations;
         child->partner = actor->partner;
@@ -1095,14 +1095,14 @@ void sprite_task_init_by_kind(SpriteTask *task) {
     case 12:
         sprite->frame = 1;
         kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
-        func_800BC158(task);
+        battle_camera_register_sprite(task);
         sprite->x = sprite_camera_eye.vx;
         sprite->y = sprite_camera_eye.vy;
         sprite->z = sprite_camera_eye.vz;
         break;
     case 10:
         sprite->frame = 0;
-        func_800BC158(task);
+        battle_camera_register_sprite(task);
         sprite->x = sprite_camera_eye.vx;
         sprite->y = sprite_camera_eye.vy;
         sprite->z = sprite_camera_eye.vz;
@@ -1110,14 +1110,14 @@ void sprite_task_init_by_kind(SpriteTask *task) {
     case 13:
         sprite->frame = 1;
         kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
-        func_800BC158(task);
+        battle_camera_register_sprite(task);
         sprite->x = sprite_camera_eye.vx;
         sprite->y = sprite_camera_eye.vy;
         sprite->z = sprite_camera_eye.vz;
         break;
     case 11:
         sprite->frame = 0;
-        func_800BC158(task);
+        battle_camera_register_sprite(task);
         sprite->x = sprite_camera_look_at.vx;
         sprite->y = sprite_camera_look_at.vy;
         sprite->z = sprite_camera_look_at.vz;

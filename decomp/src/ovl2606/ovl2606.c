@@ -44,10 +44,10 @@ void func_801E0124(void) {
     s32 i;
     s32 j;
 
-    PutDrawEnv(&D_800C3EB0.buffers[0].drawEnv);
-    PutDrawEnv(&D_800C3EB0.buffers[1].drawEnv);
-    PutDispEnv(&D_800C3EB0.buffers[0].dispEnv);
-    PutDispEnv(&D_800C3EB0.buffers[1].dispEnv);
+    PutDrawEnv(&battle_area.buffers[0].drawEnv);
+    PutDrawEnv(&battle_area.buffers[1].drawEnv);
+    PutDispEnv(&battle_area.buffers[0].dispEnv);
+    PutDispEnv(&battle_area.buffers[1].dispEnv);
     SetDispMask(1);
     game_data.party[1] = 1;
     game_data.party[2] = 2;
@@ -89,14 +89,14 @@ void func_801E0238(void) {
     row = 0;
     col = 0;
     do {
-        func_80089CCC(0);
-        frame = D_800C3EB0.buffers;
-        if (D_800C3EB0.current == frame) {
+        battle_read_input(0);
+        frame = battle_area.buffers;
+        if (battle_area.current == frame) {
             frame++;
         }
-        D_800C3EB0.current = frame;
+        battle_area.current = frame;
         ClearOTagR((u_long *)frame->ot, 0x1000);
-        switch (D_800D3014) {
+        switch (battle_pressed_key) {
         case 14: /* Start */
             running = 0;
             break;
@@ -279,12 +279,12 @@ void func_801E0238(void) {
         console_printf("\n\n     LU       Start  to Battle");
         console_printf("\n   LL  LR     Maru   +");
         console_printf("\n     LD       Batsu  -");
-        console_flush((u_long *)D_800C3EB0.current->ot);
+        console_flush((u_long *)battle_area.current->ot);
         DrawSync(0);
         VSync(0);
-        PutDrawEnv(&D_800C3EB0.current->drawEnv);
-        PutDispEnv(&D_800C3EB0.current->dispEnv);
-        DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
+        PutDrawEnv(&battle_area.current->drawEnv);
+        PutDispEnv(&battle_area.current->dispEnv);
+        DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     } while (running);
 }
 
@@ -335,20 +335,20 @@ void func_801E0A34(void) {
     }
     size = cd_get_aligned_file_size(i);
     heap_select_owner_tag(2, 0);
-    data = func_8008ABB8(size, 1);
+    data = battle_heap_alloc(size, 1);
     cd_read_file(i, data, 0, 0x80);
     cd_sync_reads(0);
     memmove(&formation_encounter_set, data, sizeof(EncounterSet));
     heap_free(data);
     mode_stop_music();
-    func_8008AB70();
+    battle_cd_select_music_directory();
     size = cd_get_aligned_file_size(4);
-    D_800D39D8 = func_8008ABB8(size, 1);
-    cd_read_file(4, D_800D39D8, 0, 0x80);
+    battle_music_file_block = battle_heap_alloc(size, 1);
+    cd_read_file(4, battle_music_file_block, 0, 0x80);
     cd_sync_reads(0);
-    memmove(mode_music_buffer, D_800D39D8, size);
-    heap_free(D_800D39D8);
-    func_8009B1E4();
+    memmove(mode_music_buffer, battle_music_file_block, size);
+    heap_free(battle_music_file_block);
+    battle_grant_debug_items_and_skills();
     for (i = 0; i < 11; i++) {
         game_data.characters[i].hp = 999;
         game_data.characters[i].maxHp = 999;

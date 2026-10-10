@@ -7,9 +7,9 @@
 
 #include "common.h"
 
-extern u8 D_800D2DB8;             /* resolve status returned to the caller */
-extern void (*D_800C348C[])(void); /* formula table */
+extern u8 battle_resolve_status;             /* resolve status returned to the caller */
+extern void (*battle_formula_table[])(void); /* formula table */
 
-u8 func_800941A4(void); /* resolve the committed action */
+u8 battle_resolve_action(void); /* resolve the committed action */
 
 #endif

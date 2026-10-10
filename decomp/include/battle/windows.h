@@ -34,13 +34,13 @@ typedef struct WindowBlock {
     u8 unk5A5[3];
 } WindowBlock;
 
-extern WindowBlock *D_800D2E38[7];
-extern WindowRect *D_800D2D90[7];
+extern WindowBlock *battle_window_blocks[7];
+extern WindowRect *battle_window_rects[7];
 
 /* Texture page coordinates of window texture `t` (8-bit mode: two texels
  * per VRAM halfword). */
-#define WINDOW_TEX_U(t) (((u8)D_800C3EA4->sprites[t].pageX & 0x3F) * 2)
-#define WINDOW_TEX_V(t) (D_800C3EA4->sprites[t].pageY)
+#define WINDOW_TEX_U(t) (((u8)battle_graphics->sprites[t].pageX & 0x3F) * 2)
+#define WINDOW_TEX_V(t) (battle_graphics->sprites[t].pageY)
 
 /* The battle message image (800d39b8): upload rectangle and pixels. */
 typedef struct {
@@ -50,9 +50,9 @@ typedef struct {
     s8 width;          /* +0xE */
 } MessageImage;
 
-extern MessageImage D_800D39B8;
-extern void *D_800D39F0;   /* battle message table */
-extern u8 D_800C3E8C;      /* pending battle message + 1 */
+extern MessageImage battle_message_image;
+extern void *battle_message_table;   /* battle message table */
+extern u8 battle_pending_message;      /* pending battle message + 1 */
 
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct BattleMessage {
@@ -65,14 +65,14 @@ typedef struct BattleMessage {
     u8 unk5F;
 } BattleMessage;
 
-extern BattleMessage D_800D36C8[8];
+extern BattleMessage battle_message_entries[8];
 
-extern Window *D_800D2DAC; /* the message text window */
+extern Window *battle_message_text_window; /* the message text window */
 
-void func_80077454(u8 window); /* set up a window's primitives */
-void func_80079E18(u8 index); /* show battle message window `index` */
-void func_80079E4C(u8 index); /* hide it */
+void battle_window_init_prims(u8 window); /* set up a window's primitives */
+void battle_show_message_window(u8 index); /* show battle message window `index` */
+void battle_hide_message_window(u8 index); /* hide it */
 
-void func_8008FAD8(void);    /* grow the opening windows */
+void battle_window_grow_opening(void);    /* grow the opening windows */
 
 #endif

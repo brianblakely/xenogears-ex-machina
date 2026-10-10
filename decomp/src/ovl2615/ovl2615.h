@@ -22,6 +22,6 @@ void model_load_image_list(void *images, s32 mode, s32 x, s32 y, s32 mode2, s32 
 
 /* The battle overlay's model setup (stage.c places the stage model with it,
  * battle_loader.c the enemy models). */
-void func_800A8BF0(s32 a0, s32 a1, void *a2, void *a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8);
+void battle_create_object(s32 index, s32 flags, void *script_file, void *model_file, s32 x, s32 y, s32 z, s32 w, s32 position);
 
 #endif
