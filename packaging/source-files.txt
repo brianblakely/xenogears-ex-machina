@@ -123,6 +123,7 @@ decomp/include/battle/flow.h
 decomp/include/battle/formation.h
 decomp/include/battle/frame.h
 decomp/include/battle/graphics.h
+decomp/include/battle/groups.h
 decomp/include/battle/highlight.h
 decomp/include/battle/input.h
 decomp/include/battle/item_command.h

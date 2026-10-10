@@ -86,17 +86,17 @@ void func_801E4160(void) {
     }
     for (i = 0; i < 32; i++) {
         D_800D301C[i].count = 0;
-        D_800D301C[i].mask = 0;
+        D_800D301C[i].members = 0;
     }
     for (i = 0; i < 3; i++) {
         if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
             if (D_800C3EB0.slots[i].gear == 0) {
                 D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group].count;
-                D_800D301C[D_800C3EB0.slots[i].group].mask |= func_80089C08(D_800C3EB0.slots[i].member);
+                D_800D301C[D_800C3EB0.slots[i].group].members |= func_80089C08(D_800C3EB0.slots[i].member);
                 D_800D301C[D_800C3EB0.slots[i].group].count++;
             } else {
                 D_800C3EB0.slots[i].member = 0;
-                D_800D301C[D_800C3EB0.slots[i].group + 16].mask = 1;
+                D_800D301C[D_800C3EB0.slots[i].group + 16].members = 1;
                 D_800D301C[D_800C3EB0.slots[i].group + 16].count = 1;
             }
         }
@@ -105,11 +105,11 @@ void func_801E4160(void) {
         if (D_800C3EB0.slots[i].field2 != NO_COMBATANT) {
             if (D_800C3EB0.slots[i].gear == 0) {
                 D_800C3EB0.slots[i].member = D_800D301C[D_800C3EB0.slots[i].group + 8].count;
-                D_800D301C[D_800C3EB0.slots[i].group + 8].mask |= func_80089C08(D_800C3EB0.slots[i].member);
+                D_800D301C[D_800C3EB0.slots[i].group + 8].members |= func_80089C08(D_800C3EB0.slots[i].member);
                 D_800D301C[D_800C3EB0.slots[i].group + 8].count++;
             } else {
                 D_800C3EB0.slots[i].member = 0;
-                D_800D301C[D_800C3EB0.slots[i].group + 24].mask = 1;
+                D_800D301C[D_800C3EB0.slots[i].group + 24].members = 1;
                 D_800D301C[D_800C3EB0.slots[i].group + 24].count = 1;
             }
         }

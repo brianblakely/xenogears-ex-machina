@@ -20,6 +20,7 @@
 #include "battle/enemy_ai.h"
 #include "battle/event_script.h"
 #include "battle/graphics.h"
+#include "battle/groups.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"
 #include "battle/menu_pages.h"
@@ -133,19 +134,8 @@ u8 func_80085310(u8 slot, u8 target); /* facing towards the target */
 
 /* The formation data D_800D3364 is the scene data (the resident's 8005949c)
  * to the setup, which reads its positions unsigned (the battle's Formation,
- * battle/formation.h, reads them signed), and the formation groups beside
- * it as the battle's GroupEntry. */
+ * battle/formation.h, reads them signed). */
 extern BattleScene *D_800D3364;
-
-/* Formation groups: member count and member bits (party 0-7, enemies 8-15,
- * members placed alone 16-23 and 24-31). */
-typedef struct {
-    u8 count;
-    u8 mask;
-    u8 pad2[2];
-} FormationGroup;
-
-extern FormationGroup D_800D301C[32];
 extern u8 D_800C3E3D[SLOT_COUNT];
 
 u16 func_80089C08(s32 index); /* bit of a group member index */

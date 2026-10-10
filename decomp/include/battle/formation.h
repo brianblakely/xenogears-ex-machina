@@ -4,8 +4,9 @@
 #include "common.h"
 
 /* The battle formation: its areas, group positions and the route points
- * between groups (the formation data D_800D3364), the slots' formation
- * groups, and the approach routes (battle.c 80085310-80088490). */
+ * between groups (the formation data D_800D3364) and the approach routes
+ * (battle.c 80085310-80088490), which move the slots between the formation
+ * groups (battle/groups.h). */
 
 /* Formation data (*800d3364). */
 typedef struct {
@@ -42,16 +43,6 @@ typedef struct Formation {
 } Formation;
 
 extern Formation *D_800D3364;
-
-/* Formation group entries (4 bytes from 800d301c): four eight-group
- * sets, with flagged slots using bases 0x10 and 0x18. */
-typedef struct GroupEntry {
-    u8 count;
-    u8 members;        /* member bits */
-    u8 unk2[2];
-} GroupEntry;
-
-extern GroupEntry D_800D301C[32];
 
 /* Plan the approach route into the battle area's path (BattleArea): the
  * actor's position, then up to seven formation points; unused points are

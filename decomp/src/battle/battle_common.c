@@ -215,6 +215,7 @@ void *D_800D39F0; /* battle message table */
 #include "battle/formation.h"
 #include "battle/frame.h"
 #include "battle/graphics.h"
+#include "battle/groups.h"
 #include "battle/input.h"
 #include "battle/item_command.h"
 #include "battle/lists.h"

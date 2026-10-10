@@ -11,6 +11,7 @@
 #include "psyq/libgpu.h"
 #include "psyq/libetc.h"
 #include "resident/console.h"
+#include "resident/formation.h"
 #include "resident/gamedata.h"
 #include "resident/gpu.h"
 #include "resident/heap.h"
