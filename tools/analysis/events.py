@@ -397,9 +397,10 @@ _PRIMARY = """
 73/1=00 emitter_skip field_event_emitter 2 next u8@1
     continue
 73/1=01 emitter_start field_event_emitter 8 next u8@1 iv@2 iv@4 iv@6
-    reset the emitter templates for the running actor, make template 0
-    spawn 16 particles for 0x1000 frames from node 0x20 (operand 4 0x27,
-    else 0x22) of 801e layer actor 0 and start the effect
+    reset the emitter templates for the running actor, give template 0 16
+    particles, 0x1000 frames of spawning and node 0x20 (operand 4 0x27,
+    else 0x22) of 801e layer actor 0 as its launch frame, and start the
+    effect
 73/1=* emitter_halt field_event_emitter 2 hang u8@1
     no case: never advances
 74 play_sound field_event_play_sound 3 next iv@1
@@ -1095,7 +1096,8 @@ _EXTENDED = """
     aims up to that far from the end point)
 93 set_template_56 field_event_set_template_56 11 next iv@1 iv@3 iv@5 iv@7 iv@9
     set the selected emitter template's launch interval (operand 1, +56:
-    frames between the particles a frame spawns), particle life (3, +58),
+    frames between the launches of the particles one frame spawns),
+    particle life (3, +58),
     particle sprite (5, +54: an entry of the 21 field_effect_particle_sprites)
     and flags (+2a, replaced): operand 7 (bit 0 a random angle per particle),
     operand 9 as the draw depth (bits 1-2: 0 in front of all, 1 16 nearer, 2
