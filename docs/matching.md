@@ -372,24 +372,26 @@ counts it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
-hand; the game's own is not identified) for 170 of the 187 functions both declare,
-compared by cc1 `-aux-info`. The other 17 differ in parameter types (memmove and
-memchr take `void *` where MEMORY.H has `unsigned char *` and memchr's byte is an
-`int`, SpuReadDecodedData takes a `void *`, DrawSyncCallback and VSyncCallback a
-`void (*)()`), in result types (CdDataCallback, DrawSyncCallback,
-EnterCriticalSection, InitCARD, InitPAD, StartPAD, VectorNormalSS) or in having a
-prototype (strlen, strcpy, InitGeom, PushMatrix, PopMatrix, ReadGeomScreen). Every
-unit compiles to the same code under 4.6's declarations, which would warn at 23
-memmove calls and both SpuReadDecodedData calls. Data the SDK names has its type
-where the code handles it only in that form: VRAM words saved and reloaded through
-StoreImage and LoadImage `u_long` (battle's CLUT strips, the field's saved VRAM
-areas and the pixel buffers it edits as words), the GTE's depth, flag and screen
-outputs `long`, a `CdlLOC`, a `CdlCB`. Data the code holds in another type keeps
-it, and the call casts as the SDK's samples do: `(long *)&poly->x0`, `(u_char *)`
-for bzero, and `(u_long *)` for image data in bytes or halfwords, for TIMs inside
-larger buffers and for words that `u32` views hold, among them the ordering tables
-of the battle's and the menu's shared views and drawing code and the field's packed
-screen words.
+hand; the game's own is not identified) for 184 of the 202 functions both declare,
+compared by cc1 `-aux-info` (and, for the 15 libgte, libsn and libspu members that
+took their PsyQ names with the renaming, against LIBGTE.H, LIBSN.H and LIBSPU.H by
+reading). The other 18 differ in parameter types (memmove and memchr take `void *`
+where MEMORY.H has `unsigned char *` and memchr's byte is an `int`, SpuReadDecodedData
+takes a `void *`, DrawSyncCallback and VSyncCallback a `void (*)()`), in result types
+(CdDataCallback, DrawSyncCallback, EnterCriticalSection, InitCARD, InitPAD, Square0,
+StartPAD, VectorNormalSS) or in having a prototype (strlen, strcpy, InitGeom,
+PushMatrix, PopMatrix, ReadGeomScreen). Every unit compiles to the same code under
+4.6's declarations (Square0's `VECTOR *` result as well: battle_settle.c, its one
+user, discards it), which would warn at 23 memmove calls and both SpuReadDecodedData
+calls. Data the SDK names has its type where the code handles it only in that form:
+VRAM words saved and reloaded through StoreImage and LoadImage `u_long` (battle's CLUT
+strips, the field's saved VRAM areas and the pixel buffers it edits as words), the
+GTE's depth, flag and screen outputs `long`, a `CdlLOC`, a `CdlCB`. Data the code
+holds in another type keeps it, and the call casts as the SDK's samples do:
+`(long *)&poly->x0`, `(u_char *)` for bzero, and `(u_long *)` for image data in bytes
+or halfwords, for TIMs inside larger buffers and for words that `u32` views hold,
+among them the ordering tables of the battle's and the menu's shared views and drawing
+code and the field's packed screen words.
 
 `psyq/libc.h` declares memcpy and memset unprototyped, as MEMORY.H does "to avoid
 conflicting" with GCC's built-ins, which they keep: field 800AB808's copy needs the
