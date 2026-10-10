@@ -284,15 +284,16 @@ deciding gameplay (on-screen tests, culling).
 | `xem-xr` | the OpenXR adapter |
 | `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
-| `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (scene and settings panel) |
+| `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (game display or test scene, and settings panel), the game paced at 60 frames a second with its sound (`Game`) |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
 FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
-test scene without a disc), placed by the presentation settings, under the Slint settings panel (F1, Escape or a
-gamepad's Start/Back toggles it). One `xem_render::Gpu` (instance, adapter,
+test scene without a disc), placed by the presentation settings, under the
+Slint settings panel (F1, Escape or a gamepad's Guide toggles it, and its
+Start/Back while no game runs). One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
 only when it asks for a redraw. Settings live in
@@ -302,7 +303,8 @@ With a disc, the game runs paced by the wall clock at 60 frames a second (a
 stalled host drops time rather than catching up), pad 1 follows the keyboard
 and the first gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
-master volume. Memory cards default to `cards/` beside the settings file.
+master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
+browser's mix too). Memory cards default to `cards/` beside the settings file.
 
 From `src/runtime/` in `nix develop path:./nix/runtime`:
 
@@ -583,14 +585,27 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   ContentResolver, its file descriptor is duplicated into a Rust `File` and
   `xem-disc` (`open_reader`, `identify`) reads it in place on a worker thread.
   The URI is kept in the app's files directory and reopened on start.
+- **Game.** An identified Xenogears disc boots the game from the same
+  descriptor (`xem_game::boot_source` over `xem_disc::open_reader`), with the
+  memory cards in `<files dir>/cards`; the settings panel hides. Like the
+  desktop, `xem_host::Game` runs the frames due at 60 per second of wall time
+  (at most two per rendered frame, never catching up), the GPU device's
+  display becomes the game image and the SPU's output plays through an SDL3
+  audio stream (AAudio) at the master volume and audio output; pad 1 is the keyboard (arrows,
+  Z/X/A/S, Enter Start) or the first gamepad (its Guide button toggles the
+  panel while the game runs). A trap stops the game and shows the panel.
+  wasm2c's output compiles with the NDK clang for both ABIs; game memory is
+  one 2 GiB private anonymous mapping (the module's whole linear memory, made
+  read-write at once), committed only as pages are touched.
 - **Settings.** `xem_settings::FileStore` at `<files dir>/settings.json`.
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
   `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the
-  simulation clock, SDL then blocks the thread until the activity resumes,
+  simulation clock and the game (its audio paused and flushed), SDL then blocks the thread until the activity resumes,
   and after `DID_ENTER_FOREGROUND` the surface is recreated on the new native
-  window and the clock restarts where it stopped (a frame never advances it
-  by more than 100 ms, so there is no catch-up). A replaced native window
+  window and the clocks restart where they stopped (a frame never advances
+  the simulation clock by more than 100 ms nor runs more than two game
+  frames, so there is no catch-up). A replaced native window
   (configuration changes) is detected by identity and the surface recreated.
   `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
   (changes outside `configChanges`, such as density or asset paths) runs
@@ -603,7 +618,13 @@ In `nix develop path:./nix/runtime#android`:
   → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
 - emulator smoke test: `src/runtime/scripts/android-smoke.sh` (headless API-34
   x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
-  screenshots in `build/android/smoke`)
+  screenshots in `build/android/smoke`). With the user's disc 1 at
+  `discs/Xenogears disc 1.chd` (or `XEM_DISC1`) it imports it through the
+  picker and plays the game: boot logo, opening movie and title screenshots,
+  frame rates, a pad press, and a background and return across which the
+  game's vertical-blank count stays put. `XEM_SMOKE_GAME_ONLY=1` skips the
+  synthetic-disc and lifecycle sections. The game module must be built first
+  (`python3 tools/game_module.py --stubs` in the default shell).
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
   shared crates alone (Slint compiles its FemtoVG module out on Android, so
   `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)

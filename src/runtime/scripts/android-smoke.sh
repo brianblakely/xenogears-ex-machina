@@ -12,8 +12,12 @@
 # XEM_DISC1 or discs/"Xenogears disc 1.chd" exists), background and return
 # (surface dropped and recreated, simulation time not advanced), low memory,
 # rotation, activity recreation (teardown and a new SDL_main run) and restart
-# (settings and the persisted document grant survive). Touch coordinates are
-# those of the AVD's pixel_6 profile in portrait.
+# (settings and the persisted document grant survive). With the user's disc
+# 1 the game boots from it and plays for ~25 s (screenshots), with its frame
+# rate measured, a pad press, and a background and return during which the
+# game's frame count does not move. XEM_SMOKE_GAME_ONLY=1 runs only the
+# start and the game. Touch coordinates are those of the AVD's pixel_6
+# profile in portrait.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
@@ -146,6 +150,7 @@ wait_for "xem: frame rendered frame=1 " 60
 wait_for "xem: frame rendered frame=120 " 60
 shot 01-started
 
+if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 echo "== settings change by touch (Show FPS)"
 mark
 tap 73 1260
@@ -234,19 +239,71 @@ wait_for "xem: settings .*: .*show_fps: true"
 wait_for "xem: reopening imported disc content://"
 wait_for "xem: disc identified source=content://.*sha256=$synthetic_sha" 60
 wait_for "xem: frame rendered frame=1 " 60
+fi
 
+vblank_of() { sed -E 's/.*game_vblank=([0-9]+).*/\1/'; }
 if [ -f "$disc1" ]; then
-    echo "== the user's disc 1 (local only; removed from the emulator afterwards)"
+    echo "== the user's disc 1 (local only; removed from the emulator afterwards): the game"
     "${adb[@]}" push "$disc1" /sdcard/Download/xem-disc1.chd >/dev/null
     mark
+    game_start=$mark
     "${adb[@]}" shell am force-stop "$package"
     "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
     wait_for "xem: disc picker opened" 60
     pick_document disc1 "xem-disc1\.chd"
     wait_for "xem: disc identified source=content://.*boot=SLUS_006\.64;1 sha256=dc0b2dd7[0-9a-f]* disc=Xenogears disc 1 \(SLUS-00664\)" 180
-    wait_for "xem: frame rendered"
-    sleep 2
-    shot 07-disc1
+    booted=$(wait_for "xem: game booted source=content://.*boot=SLUS_006\.64;1" 60)
+    echo "$booted"
+    [[ $booted == *"audio=stream opened"* ]] || fail "no audio stream for the game"
+    wait_for "xem: frame rendered .*game_vblank=" 60
+    for at in 03 08 15 25; do
+        sleep $((10#$at - ${previous:-0}))
+        previous=$((10#$at))
+        shot "07-game-${at}s"
+    done
+    grep -E "xem: (fps|frame rendered .*game_vblank)" "$log" | tail -12 | sed 's/^/  /'
+    # Game memory is one 2 GiB linear-memory mapping, committed as touched.
+    pid=$("${adb[@]}" shell pidof "$package" | tr -d '\r')
+    echo "  memory: $("${adb[@]}" shell grep -E "'^(VmSize|VmRSS)'" "/proc/$pid/status" | tr -s ' \t\r\n' ' ')" \
+        "$("${adb[@]}" shell dumpsys meminfo "$package" | grep -E 'TOTAL PSS' | tr -s ' ' | tr -d '\r')"
+
+    echo "== a pad press (Enter is Start)"
+    mark
+    "${adb[@]}" shell input keyevent --longpress KEYCODE_ENTER
+    wait_for "xem: pad buttons 0x0008 "
+    wait_for "xem: pad buttons 0x0000 "
+    sleep 3
+    shot 08-game-start-pressed
+
+    echo "== background and return: the game's clock stops"
+    mark
+    "${adb[@]}" shell input keyevent KEYCODE_HOME
+    background=$(wait_for "xem: lifecycle WILL_ENTER_BACKGROUND .*game_vblank=")
+    echo "$background"
+    wait_for "xem: game paused"
+    wait_for "xem: lifecycle DID_ENTER_BACKGROUND"
+    sleep 10
+    mark
+    "${adb[@]}" shell am start -n "$activity" >/dev/null
+    foreground=$(wait_for "xem: lifecycle DID_ENTER_FOREGROUND .*game_vblank=")
+    echo "$foreground"
+    wait_for "xem: game resumed"
+    resumed=$(wait_for "xem: frame rendered .*game_vblank=")
+    echo "$resumed"
+    before=$(echo "$background" | vblank_of)
+    during=$(echo "$foreground" | vblank_of)
+    after=$(echo "$resumed" | vblank_of)
+    echo "  game vblank: $before at background, $during at foreground, $after at the first frame back"
+    [ "$during" = "$before" ] || fail "the game ran in the background ($before -> $during)"
+    [ $((after - during)) -le 2 ] || fail "a burst of $((after - during)) game frames on return"
+    sleep 5
+    shot 09-game-resumed
+    wait_for "xem: fps rendered=.* game=" 15
+
+    if tail -n "+$game_start" "$log" |
+        grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then
+        fail "crash or game trap in the log"
+    fi
     "${adb[@]}" shell rm -f /sdcard/Download/xem-disc1.chd
 else
     echo "== no local disc 1 image: skipped the real-disc import"

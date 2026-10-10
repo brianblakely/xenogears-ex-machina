@@ -1,6 +1,6 @@
 [package]
 name = "xem-host"
-description = "What the SDL3 hosts share: the window, its wgpu surface and the presented view (scene and Slint settings panel)"
+description = "What the SDL3 hosts share: the window, its wgpu surface, the presented view (game display and Slint settings panel) and the paced game with its sound"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -15,3 +15,5 @@ pollster.workspace = true
 xem-render = { path = "../xem-render" }
 xem-ui = { path = "../xem-ui" }
 xem-settings = { path = "../xem-settings" }
+xem-core = { path = "../xem-core" }
+xem-game = { path = "../xem-game" }

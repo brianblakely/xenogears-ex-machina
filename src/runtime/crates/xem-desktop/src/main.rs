@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Instant;
-use xem_host::{Presenter, View, sdl};
+use xem_host::{Game, Presenter, View, sdl};
 use xem_render::{Gpu, read_rgba8, wgpu};
 use xem_settings::{FileStore, MemoryStore, SettingsService};
 
@@ -55,7 +55,7 @@ fn options() -> Result<Options, String> {
                      [--exit-after-frames N] [--screenshot out.png]\n\
                      F1 or Escape toggles the settings panel. Pad: arrows, Z cross, X circle, \
                      A square, S triangle, Q/W L1/R1, 1/2 L2/R2, Enter start, right Shift select, \
-                     or a gamepad."
+                     or a gamepad (its Guide button toggles the panel while the game runs)."
                 );
                 std::process::exit(0);
             }
@@ -104,95 +104,28 @@ struct Host {
     game: Option<Game>,
 }
 
-/// The game, paced at the console's 60 frames a second, with its sound.
-struct Game {
-    session: xem_core::control::Session<xem_game::NativeModule>,
-    audio: *mut SDL_AudioStream,
-    paced: Instant,
-    samples: Vec<i16>,
-}
-
-const FRAME: std::time::Duration = std::time::Duration::from_nanos(1_000_000_000 / 60);
-
-impl Game {
-    fn open(options: &Options, disc: &std::path::Path) -> Result<Self, String> {
-        let cards = options.cards.clone().or_else(|| {
-            FileStore::default_path().and_then(|p| p.parent().map(|d| d.join("cards")))
-        });
-        if let Some(dir) = &cards {
-            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-        }
-        let boot = xem_game::BootOptions {
-            cards,
-            bios: options.bios.clone(),
-            audio_output: true,
-            ..Default::default()
-        };
-        let (session, identity) = xem_game::boot(disc, &boot).map_err(|e| e.to_string())?;
-        eprintln!("xem-desktop: {}", identity.boot_path);
-        let spec = SDL_AudioSpec { format: SDL_AUDIO_S16LE, channels: 2, freq: 44100 };
-        // SAFETY: SDL is initialised with audio; a null callback queues data.
-        let audio = unsafe {
-            SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, None, std::ptr::null_mut())
-        };
-        if audio.is_null() {
-            eprintln!("xem-desktop: no audio device; the game runs silent");
-        } else {
-            unsafe { SDL_ResumeAudioStreamDevice(audio) };
-        }
-        Ok(Game { session, audio, paced: Instant::now(), samples: Vec::new() })
+/// Boots the user's disc and plays it, with cards under the settings'
+/// directory unless `--cards` names one.
+fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> {
+    let cards = options.cards.clone().or_else(|| {
+        FileStore::default_path().and_then(|p| p.parent().map(|d| d.join("cards")))
+    });
+    if let Some(dir) = &cards {
+        std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
-
-    /// Run the frames due by the wall clock (at most two per call: a stalled
-    /// host drops time rather than catching up), then queue their sound.
-    fn update(&mut self, buttons: u16, settings: &xem_settings::Settings) -> Result<(), String> {
-        let mut due = 0;
-        while self.paced + FRAME <= Instant::now() && due < 2 {
-            self.paced += FRAME;
-            due += 1;
-        }
-        if self.paced + FRAME <= Instant::now() {
-            self.paced = Instant::now();
-        }
-        for _ in 0..due {
-            self.session.runtime.services().pads.0[0].buttons = buttons;
-            self.session.frame().map_err(|trap| trap.to_string())?;
-        }
-        let spu = &mut self.session.runtime.services().spu;
-        self.samples.resize(spu.audio_queued(), 0);
-        spu.take_audio(&mut self.samples);
-        if !self.audio.is_null() && !self.samples.is_empty() {
-            let gain = f32::from(settings.master_volume.min(xem_settings::MAX_VOLUME))
-                / f32::from(xem_settings::MAX_VOLUME);
-            for frame in self.samples.chunks_exact_mut(2) {
-                let (left, right) = settings.audio_output.mix(f32::from(frame[0]), f32::from(frame[1]));
-                frame[0] = (left * gain) as i16;
-                frame[1] = (right * gain) as i16;
-            }
-            // SAFETY: an open stream; SDL copies the bytes.
-            unsafe {
-                SDL_PutAudioStreamData(
-                    self.audio,
-                    self.samples.as_ptr().cast(),
-                    (self.samples.len() * 2) as i32,
-                );
-            }
-        }
-        Ok(())
+    let boot = xem_game::BootOptions {
+        cards,
+        bios: options.bios.clone(),
+        audio_output: true,
+        ..Default::default()
+    };
+    let (session, identity) = xem_game::boot(disc, &boot).map_err(|e| e.to_string())?;
+    eprintln!("xem-desktop: {}", identity.boot_path);
+    let game = Game::new(session);
+    if !game.has_audio() {
+        eprintln!("xem-desktop: no audio device; the game runs silent");
     }
-
-    fn display(&mut self) -> (u32, u32, Vec<u8>) {
-        self.session.runtime.services().gpu.display_rgba8()
-    }
-}
-
-impl Drop for Game {
-    fn drop(&mut self) {
-        if !self.audio.is_null() {
-            // SAFETY: opened by SDL_OpenAudioDeviceStream, destroyed once.
-            unsafe { SDL_DestroyAudioStream(self.audio) };
-        }
-    }
+    Ok(game)
 }
 
 impl Host {
@@ -221,7 +154,7 @@ impl Host {
             options.show_settings,
         )?;
         window.set_text_input(options.show_settings);
-        let game = options.disc.as_deref().map(|disc| Game::open(options, disc)).transpose()?;
+        let game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
         Ok(Self {
             view,
             presenter,

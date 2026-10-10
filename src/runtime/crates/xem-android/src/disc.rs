@@ -28,6 +28,8 @@ static PICKED: Mutex<Vec<String>> = Mutex::new(Vec::new());
 pub struct Identified {
     pub source: String,
     pub result: Result<String, String>,
+    /// The document, open, when it is a Xenogears disc: the game boots from it.
+    pub disc: Option<File>,
 }
 
 pub struct DiscImport {
@@ -81,6 +83,7 @@ impl DiscImport {
                 let _ = self.sender.send(Identified {
                     source: source.into(),
                     result: Err(error),
+                    disc: None,
                 });
                 return;
             }
@@ -88,8 +91,15 @@ impl DiscImport {
         let sender = self.sender.clone();
         let source = source.to_string();
         std::thread::spawn(move || {
-            let result = identify_file(file);
-            let _ = sender.send(Identified { source, result });
+            let (result, disc) = match identify_file(file) {
+                Ok((summary, disc)) => (Ok(summary), disc),
+                Err(error) => (Err(error), None),
+            };
+            let _ = sender.send(Identified {
+                source,
+                result,
+                disc,
+            });
         });
     }
 
@@ -200,19 +210,22 @@ fn open_document(source: &str) -> Result<File, String> {
     file
 }
 
-fn identify_file(file: File) -> Result<String, String> {
+/// The identification summary, and the file again when it is a Xenogears disc.
+fn identify_file(file: File) -> Result<(String, Option<File>), String> {
+    let again = file.try_clone().map_err(|error| error.to_string())?;
     let reader = FileReadAt::new(file).map_err(|error| error.to_string())?;
     let bytes = xem_disc::ReadAt::len(&reader);
     let mut source = open_reader(reader).map_err(|error| error.to_string())?;
     let sectors = source.sector_count();
     let id = identify(&mut source).map_err(|error| error.to_string())?;
-    let disc = match id.disc {
+    let disc = match &id.disc {
         Some(disc) => format!("Xenogears disc {} ({})", disc.number(), disc.serial()),
         None => "not a Xenogears disc".into(),
     };
-    Ok(format!(
+    let summary = format!(
         "bytes={bytes} sectors={sectors} boot={} sha256={} disc={disc}",
         id.boot_path,
         hex(&id.sha256)
-    ))
+    );
+    Ok((summary, id.disc.is_some().then_some(again)))
 }

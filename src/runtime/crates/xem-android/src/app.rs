@@ -1,15 +1,17 @@
 //! The Android host loop: SDL3 window, wgpu surface (Vulkan, GLES only when
 //! Vulkan is unavailable), the shared view, settings in the app's files
-//! directory, disc import and the activity lifecycle.
+//! directory, disc import, the game (booted from an imported Xenogears disc,
+//! its memory cards in the files directory) and the activity lifecycle.
 
 use sdl3_sys::everything::*;
 use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
+use std::fs::File;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use std::time::Instant;
-use xem_host::{Presenter, View, sdl};
+use std::time::{Duration, Instant};
+use xem_host::{Game, Presenter, View, sdl};
 use xem_render::{Gpu, wgpu};
 use xem_settings::{FileStore, SettingsService};
 
@@ -20,6 +22,8 @@ use crate::disc::DiscImport;
 const BUNDLED_ASSET: &CStr = c"xem-asset-check.txt";
 /// Frames between progress lines in the log.
 const LOG_EVERY: u64 = 120;
+/// The span over which the rendered and game frame rates are measured.
+const FPS_SPAN: Duration = Duration::from_secs(5);
 /// SDL_main runs so far in this process.
 static RUNS: AtomicU32 = AtomicU32::new(0);
 
@@ -158,19 +162,36 @@ fn open_gpu(window: &sdl::Window) -> Result<(Gpu, wgpu::Surface<'static>), Strin
 struct Live {
     presenter: Presenter,
     clock: SimClock,
+    /// The game, once an imported Xenogears disc booted it; its clock stops
+    /// with the simulation clock.
+    game: Option<Game>,
+    /// Pad 1's buttons last frame (changes are logged).
+    buttons: u16,
     frames: u64,
     background: bool,
     terminating: bool,
     log_next_frame: bool,
+    /// Start of the current frame-rate span: (time, rendered frames, game vblanks).
+    fps: (Instant, u64, u64),
 }
 
 impl Live {
-    fn status(&self) -> String {
+    fn status(&mut self) -> String {
+        let game = match &mut self.game {
+            Some(game) => format!(" game_vblank={}", game.vblanks()),
+            None => String::new(),
+        };
         format!(
-            "frame={} sim={:.3}s",
+            "frame={} sim={:.3}s{game}",
             self.frames,
             self.clock.time().as_secs_f64()
         )
+    }
+
+    /// Starts a frame-rate span now.
+    fn restart_fps(&mut self) {
+        let vblanks = self.game.as_mut().map_or(0, Game::vblanks);
+        self.fps = (Instant::now(), self.frames, vblanks);
     }
 }
 
@@ -217,6 +238,10 @@ unsafe extern "C" fn lifecycle_watch(userdata: *mut c_void, event: *mut SDL_Even
             ));
             live.background = true;
             live.clock.pause();
+            if let Some(game) = &mut live.game {
+                game.pause();
+                log("game paused");
+            }
             live.presenter.suspend();
             log("surface dropped");
         }
@@ -234,6 +259,11 @@ unsafe extern "C" fn lifecycle_watch(userdata: *mut c_void, event: *mut SDL_Even
             log(&format!("lifecycle DID_ENTER_FOREGROUND {}", live.status()));
             live.background = false;
             live.clock.resume(Instant::now());
+            if let Some(game) = &mut live.game {
+                game.resume();
+                log("game resumed");
+            }
+            live.restart_fps();
             live.log_next_frame = true;
         }
         SDL_EVENT_LOW_MEMORY => log(&format!("lifecycle LOW_MEMORY {}", live.status())),
@@ -252,6 +282,8 @@ struct Host {
     gpu: Gpu,
     discs: DiscImport,
     import_requested: Rc<Cell<bool>>,
+    /// The memory cards' directory (card1.mcd, card2.mcd).
+    cards: PathBuf,
 }
 
 impl Host {
@@ -340,10 +372,13 @@ impl Host {
         let live = Rc::new(RefCell::new(Live {
             presenter,
             clock: SimClock::start(Instant::now()),
+            game: None,
+            buttons: 0,
             frames: 0,
             background: false,
             terminating: false,
             log_next_frame: true,
+            fps: (Instant::now(), 0, 0),
         }));
         // SAFETY: a plain query; the watch is removed in Drop, before `live`
         // is released.
@@ -359,6 +394,7 @@ impl Host {
             gpu,
             discs: DiscImport::new(&files),
             import_requested,
+            cards: files.join("cards"),
         })
     }
 
@@ -424,8 +460,49 @@ impl Host {
                     }
                 };
                 self.view.ui().set_disc_status(&text);
+                if let Some(disc) = identified.disc {
+                    self.boot(disc, &identified.source);
+                }
             }
             self.frame(window)?;
+        }
+    }
+
+    /// Boots the game from an identified Xenogears disc (replacing a game
+    /// that runs) and hides the settings panel.
+    fn boot(&mut self, disc: File, source: &str) {
+        let booted = std::fs::create_dir_all(&self.cards)
+            .map_err(|error| format!("{}: {error}", self.cards.display()))
+            .and_then(|()| {
+                let reader = xem_disc::FileReadAt::new(disc).map_err(|e| e.to_string())?;
+                let disc = xem_disc::open_reader(reader).map_err(|e| e.to_string())?;
+                let options = xem_game::BootOptions {
+                    cards: Some(self.cards.clone()),
+                    audio_output: true,
+                    ..Default::default()
+                };
+                xem_game::boot_source(disc, &options).map_err(|e| e.to_string())
+            });
+        let mut live = self.live.borrow_mut();
+        live.game = None;
+        match booted {
+            Ok((session, identity)) => {
+                let game = Game::new(session);
+                log(&format!(
+                    "game booted source={source} boot={} cards={} audio={}",
+                    identity.boot_path,
+                    self.cards.display(),
+                    if game.has_audio() {
+                        "stream opened (S16LE stereo 44100 Hz)".to_string()
+                    } else {
+                        format!("none ({}); the game runs silent", sdl::error())
+                    }
+                ));
+                live.game = Some(game);
+                live.restart_fps();
+                self.view.set_panel_visible(false);
+            }
+            Err(error) => log(&format!("game not booted source={source}: {error}")),
         }
     }
 
@@ -454,7 +531,24 @@ impl Host {
             log(&format!("surface recreated {width}x{height}"));
         }
 
+        let live = &mut *live;
         let time = live.clock.tick(Instant::now());
+        if let Some(game) = &mut live.game {
+            let settings = self.view.settings().borrow().settings().clone();
+            let buttons = self.view.pad_buttons();
+            if buttons != live.buttons {
+                log(&format!("pad buttons {buttons:#06x} game_vblank={}", game.vblanks()));
+                live.buttons = buttons;
+            }
+            if let Err(trap) = game.update(buttons, &settings) {
+                log(&format!("game stopped: {trap}"));
+                live.game = None;
+                self.view.set_panel_visible(true);
+            } else {
+                let (width, height, rgba) = game.display();
+                self.view.set_game_image(&self.gpu, (width, height), &rgba);
+            }
+        }
         let Some(frame) = live.presenter.acquire(&self.gpu, window)? else {
             return Ok(());
         };
@@ -463,8 +557,20 @@ impl Host {
         self.gpu.queue.present(frame);
         live.frames += 1;
         if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) {
-            log(&format!("frame rendered {}", live.status()));
+            let status = live.status();
+            log(&format!("frame rendered {status}"));
             live.log_next_frame = false;
+        }
+        let elapsed = live.fps.0.elapsed();
+        if elapsed >= FPS_SPAN {
+            let seconds = elapsed.as_secs_f64();
+            let rendered = (live.frames - live.fps.1) as f64 / seconds;
+            let game = match live.game.as_mut() {
+                Some(game) => format!(" game={:.1}", (game.vblanks() - live.fps.2) as f64 / seconds),
+                None => String::new(),
+            };
+            log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s"));
+            live.restart_fps();
         }
         Ok(())
     }
