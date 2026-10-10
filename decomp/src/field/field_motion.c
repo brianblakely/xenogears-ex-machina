@@ -789,7 +789,7 @@ s32 field_collision_sweep_attribute_aware(VECTOR *delta, FieldActor *actor, SVEC
         goto push;
     }
     if (attribute & 0x420000) {
-        if (!(actor->unk014 & 0x420000)) {
+        if (!(actor->floor_attribute & 0x420000)) {
             goto restore;
         }
         goto push;
@@ -2284,7 +2284,7 @@ void field_actor_reset(s32 index) {
     actor->layer_flags = 0x800;
     actor->gravity.part.fraction = 0x10;
     actor->height = 0x60;
-    actor->unk074 = 0xFF;
+    actor->ridden_actor = 0xFF;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
     actor->unk40[2] = 0;
@@ -2377,7 +2377,7 @@ void field_actor_reset(s32 index) {
             (point + i)->vz = 0;
         }
     }
-    actor->unk014 = field_actor_get_floor_attribute(actor);
+    actor->floor_attribute = field_actor_get_floor_attribute(actor);
     actor->unk50[0] = (normal + actor->layer)->vx;
     actor->unk50[1] = (normal + actor->layer)->vy;
     actor->unk50[2] = (normal + actor->layer)->vz;
@@ -2453,7 +2453,7 @@ void field_update_events_and_actors(void) {
         if ((descriptor->flags & 0xF80) == 0x200) {
             if (!(actor->flags & 0x10001)) {
                 if ((actor->layer_flags & 0x600) != 0x200) {
-                    actor->unk014 = field_actor_get_floor_attribute(actor);
+                    actor->floor_attribute = field_actor_get_floor_attribute(actor);
                     field_actor_apply_additive_motion(i, descriptor, actor);
                     field_actor_move(i, descriptor, actor);
                 }
@@ -2558,7 +2558,7 @@ void field_party_move_followers(void) {
         index = &field_movement_history_indices[slot];
         field_actor_set_planar_velocity(sprite, field_movement_history_records[*index].heading, descriptor);
         recorded = field_movement_history_records[*index].flags;
-        motion = actor->unk014;
+        motion = actor->floor_attribute;
         if (field_work.forced_position == 1) {
             *index = (field_movement_history_indices[0] + 1) & 0x1F;
         } else {
@@ -2655,7 +2655,7 @@ void field_record_movement_history(s32 index) {
         field_movement_history_records[field_movement_history_indices[0]].position[1] = actor->position[1] >> 16;
         field_movement_history_records[field_movement_history_indices[0]].position[2] = actor->position[2] >> 16;
         field_movement_history_records[field_movement_history_indices[0]].unk12 = actor->unkE8;
-        field_movement_history_records[field_movement_history_indices[0]].unk40 = actor->unk014;
+        field_movement_history_records[field_movement_history_indices[0]].unk40 = actor->floor_attribute;
         field_movement_history_records[field_movement_history_indices[0]].flags = actor->flags;
         field_movement_history_records[field_movement_history_indices[0]].layer_flags = actor->layer_flags;
         for (i = 0; i < 4; i++) {
@@ -2671,7 +2671,7 @@ void field_record_movement_history(s32 index) {
 s32 field_actor_is_jump_blocked_by_floor(FieldActor *actor) {
     u32 bits = (actor->flags >> 9) & 3;
 
-    return -((bits & (actor->unk014 >> 3)) != 0);
+    return -((bits & (actor->floor_attribute >> 3)) != 0);
 }
 
 /* 80081F80: Set a sprite's planar velocity from `heading` (0-fff; bit 15 stops it):
@@ -2863,7 +2863,7 @@ void field_actor_apply_additive_motion(s32 index, FieldDescriptor *descriptor, F
     push_z = 0;
     terrain = 0;
     if (!((actor->layer_flags >> (actor->layer + 3)) & 1) && field_work.party_processing_mode == 0) {
-        terrain = actor->unk014;
+        terrain = actor->floor_attribute;
     }
     model = descriptor->model;
     motion_value = field_terrain_push_speeds[(terrain >> 9) & 3];
@@ -2910,7 +2910,7 @@ void field_actor_apply_additive_motion(s32 index, FieldDescriptor *descriptor, F
             actor->unk40[2] += push_z;
             actor->heading |= 0x8000;
         }
-        if (actor->unk074 != 0xFF) {
+        if (actor->ridden_actor != 0xFF) {
             goto linked;
         }
         if (terrain & 0x20000) {
@@ -2927,25 +2927,25 @@ void field_actor_apply_additive_motion(s32 index, FieldDescriptor *descriptor, F
     actor->unk40[1] += conveyor.vy;
     actor->unk40[2] += conveyor.vz;
 conveyed:
-    if (actor->unk074 != 0xFF) {
+    if (actor->ridden_actor != 0xFF) {
     linked:
-        if ((field_view.components.descriptors[actor->unk074].actor->layer_flags & 0xC0) == 0xC0) {
+        if ((field_view.components.descriptors[actor->ridden_actor].actor->layer_flags & 0xC0) == 0xC0) {
             if (!(actor->unk134 & 0x80)) {
                 actor->link = heap_alloc(sizeof(PlatformLink), 0);
                 actor->unk134 |= 0x80;
             }
-            turn.vx = field_view.components.descriptors[actor->unk074].rotation.vx - actor->link->rotation.vx;
-            turn.vy = rotation_delta = field_view.components.descriptors[actor->unk074].rotation.vy - actor->link->rotation.vy;
-            turn.vz = field_view.components.descriptors[actor->unk074].rotation.vz - actor->link->rotation.vz;
-            actor->link->rotation.vy = field_view.components.descriptors[actor->unk074].rotation.vy;
+            turn.vx = field_view.components.descriptors[actor->ridden_actor].rotation.vx - actor->link->rotation.vx;
+            turn.vy = rotation_delta = field_view.components.descriptors[actor->ridden_actor].rotation.vy - actor->link->rotation.vy;
+            turn.vz = field_view.components.descriptors[actor->ridden_actor].rotation.vz - actor->link->rotation.vz;
+            actor->link->rotation.vy = field_view.components.descriptors[actor->ridden_actor].rotation.vy;
             self_x = actor->position[0];
             self_z = actor->position[2];
-            platform = field_view.components.descriptors[actor->unk074].actor;
+            platform = field_view.components.descriptors[actor->ridden_actor].actor;
             other_x = platform->position[0];
             other_z = platform->position[2];
             angle = rotation_delta;
             if (!(actor->heading & 0x8000)) {
-                actor->link->radius = field_actor_get_planar_distance(index, actor->unk074);
+                actor->link->radius = field_actor_get_planar_distance(index, actor->ridden_actor);
             }
             radius = actor->link->radius;
             motion_value = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
@@ -2977,7 +2977,7 @@ conveyed:
                 (actor)->flags |= field_view.components.descriptors[mode_party_actors[2]].actor->flags & 0x600; \
             }                                                                                           \
         }                                                                                               \
-        if (!((actor)->flags & 0x41800) && (actor)->unk074 == 0xFF && field_ground_override_enabled == 0) {                \
+        if (!((actor)->flags & 0x41800) && (actor)->ridden_actor == 0xFF && field_ground_override_enabled == 0) {          \
             (result) = field_collision_sweep_attribute_aware((move), (actor), (edge), (heading));                               \
         } else {                                                                                        \
             (result) = field_collision_sweep((move), (actor), (edge), (heading));                               \
@@ -3107,7 +3107,7 @@ moved:
         actor->unkE8 = mode;
         field_actor_start_animation(model, mode, descriptor);
     }
-    if (actor->unk014 & 0x100) {
+    if (actor->floor_attribute & 0x100) {
         move.vx >>= 1;
         move.vz >>= 1;
     }
@@ -3346,7 +3346,7 @@ void field_actor_check_talk_and_touch(s32 index, FieldDescriptor *descriptor, Fi
     for (i = 0; i < field_event_actor_count; i++) {
         other = field_view.components.descriptors[i].actor;
         event = 0xFF;
-        if ((other->flags & 1) || player->unk074 == i) {
+        if ((other->flags & 1) || player->ridden_actor == i) {
             goto insert;
         }
         top = WHOLE(other->position[1]) + other->unk62;
@@ -3519,7 +3519,7 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
     lowest = 0x7FFFFFFF;
     linked = 0;
     entry_flags = actor->flags;
-    link = actor->unk074;
+    link = actor->ridden_actor;
     for (u = 0; u < field_event_actor_count; u++) {
         if (u == index) {
             continue;
@@ -3541,7 +3541,7 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
             }
             other->layer_flags |= 0x100;
             bottom = top + (u16)other->height;
-            if (actor->unk074 == u) {
+            if (actor->ridden_actor == u) {
                 actor->unk50[0] = normal.vx;
                 actor->unk50[1] = normal.vy;
                 actor->unk50[2] = normal.vz;
@@ -3564,7 +3564,7 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
                     continue;
                 }
             }
-            if (actor->unk014 & 0x400000) {
+            if (actor->floor_attribute & 0x400000) {
                 if (field_monitor_absent == 0) {
                     console_report_printf("HITOFF\n");
                 }
@@ -3579,7 +3579,7 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
             bottom = other->position[1] >> 16;
             top = bottom - (u16)other->height;
         owned:
-            if (actor->unk074 == u) {
+            if (actor->ridden_actor == u) {
                 if ((entry_flags & 0x40800) == 0) {
                     goto ride;
                 }
@@ -3595,7 +3595,7 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
                 status = 2;
                 actor->unk40[2] = other->unk030[2];
                 if ((entry_flags & 0x40800) == 0) {
-                    actor->unk074 = u;
+                    actor->ridden_actor = u;
                     linked = 1;
                 }
             } else {
@@ -3649,18 +3649,18 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
         status++;
     }
     if (!linked) {
-        actor->unk074 = 0xFF;
+        actor->ridden_actor = 0xFF;
     } else {
-        field_view.components.descriptors[actor->unk074].actor->layer_flags |= 0x8000;
+        field_view.components.descriptors[actor->ridden_actor].actor->layer_flags |= 0x8000;
         if (link == 0xFF) {
             if (!(actor->unk134 & 0x80)) {
                 actor->link = heap_alloc(sizeof(PlatformLink), 0);
                 actor->unk134 |= 0x80;
             }
-            actor->link->rotation.vx = field_view.components.descriptors[actor->unk074].rotation.vx;
-            actor->link->rotation.vy = field_view.components.descriptors[actor->unk074].rotation.vy;
-            actor->link->rotation.vz = field_view.components.descriptors[actor->unk074].rotation.vz;
-            actor->link->radius = field_actor_get_planar_distance(index, actor->unk074);
+            actor->link->rotation.vx = field_view.components.descriptors[actor->ridden_actor].rotation.vx;
+            actor->link->rotation.vy = field_view.components.descriptors[actor->ridden_actor].rotation.vy;
+            actor->link->rotation.vz = field_view.components.descriptors[actor->ridden_actor].rotation.vz;
+            actor->link->radius = field_actor_get_planar_distance(index, actor->ridden_actor);
         }
     }
     if (!(actor->flags & 0x10000) && !(actor->layer_flags & 0x200000)) {
@@ -3677,8 +3677,8 @@ void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldA
  * pending and none of its disabled layers (layer flag bits 0-2) is the
  * layer it stands on; -1 otherwise. */
 s32 field_actor_has_pending_motion(FieldActor *actor) {
-    if (!(actor->unk014 & 0x420000) && field_ground_override_enabled == 0 && actor->unk030[0] == 0 && actor->unk030[1] == 0 &&
-        actor->unk030[2] == 0 && field_update_ran == 1 && actor->unk074 == 0xFF && !(actor->flags & 0x401800)) {
+    if (!(actor->floor_attribute & 0x420000) && field_ground_override_enabled == 0 && actor->unk030[0] == 0 && actor->unk030[1] == 0 &&
+        actor->unk030[2] == 0 && field_update_ran == 1 && actor->ridden_actor == 0xFF && !(actor->flags & 0x401800)) {
         if ((actor->layer_flags & 1) && actor->layer == 0) {
             return -1;
         }
@@ -3843,7 +3843,7 @@ s32 field_actor_update_position(s32 index, s32 lowest, FieldDescriptor *descript
         }
     } else if (status != 0) {
         if (sprite->ground < lowest + 10) {
-            actor->unk074 = 0xFF;
+            actor->ridden_actor = 0xFF;
         }
         sprite->ground = lowest;
         actor->position[1] = lowest << 16;
@@ -3890,7 +3890,7 @@ s32 field_actor_update_position(s32 index, s32 lowest, FieldDescriptor *descript
             field_view.components.descriptors[index].matrix.t[0] = actor->position[0] >> 16;
             field_view.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
             field_view.components.descriptors[index].matrix.t[2] = actor->position[2] >> 16;
-            actor->unk014 = field_actor_get_floor_attribute(actor);
+            actor->floor_attribute = field_actor_get_floor_attribute(actor);
             goto done;
         }
     }

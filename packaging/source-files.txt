@@ -143,6 +143,7 @@ decomp/include/battle/ui.h
 decomp/include/battle/windows.h
 decomp/include/battle/work.h
 decomp/include/common.h
+decomp/include/field/actors.h
 decomp/include/field/monitor.h
 decomp/include/include_asm.h
 decomp/include/macro.inc

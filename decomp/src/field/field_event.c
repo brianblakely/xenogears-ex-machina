@@ -2888,7 +2888,7 @@ void field_actor_copy_placement(s32 to, s32 from) {
     target->position[2] = source->position[2];
     target->unkEC = source->unkEC;
     target->unk72 = source->unk72;
-    target->unk014 = source->unk014;
+    target->floor_attribute = source->floor_attribute;
     field_view.components.descriptors[to].model->ground = field_view.components.descriptors[from].model->ground;
     field_view.components.descriptors[to].model->x = field_view.components.descriptors[from].model->x;
     field_view.components.descriptors[to].model->y = field_view.components.descriptors[from].model->y;
@@ -9306,7 +9306,7 @@ void field_event_place_actor_on_floor(s32 x, s32 z) {
     for (layer = 0; layer < field_view.components.layer_count - 1; layer++) {
         field_current_event_actor->triangle[layer] = field_collision_find_floor_triangle(x, z, layer, &points[layer], &normals[layer]);
     }
-    field_current_event_actor->unk014 = field_actor_get_floor_attribute(field_current_event_actor);
+    field_current_event_actor->floor_attribute = field_actor_get_floor_attribute(field_current_event_actor);
     field_current_event_actor->unk50[0] = (normals + field_current_event_actor->layer)->vx;
     field_current_event_actor->unk50[1] = (normals + field_current_event_actor->layer)->vy;
     field_current_event_actor->unk50[2] = (normals + field_current_event_actor->layer)->vz;
@@ -9626,7 +9626,7 @@ void field_event_request_player_control(void) {
                 field_encounter_count_down();
             }
             field_player_control_polled = 1;
-            if (field_current_event_actor->unk014 & 0x400000) {
+            if (field_current_event_actor->floor_attribute & 0x400000) {
                 if (ACTOR_CACHED_POSITION(field_current_event_actor)[0] == WHOLE(field_current_event_actor->position[0])
                     && ACTOR_CACHED_POSITION(field_current_event_actor)[1] == WHOLE(field_current_event_actor->position[1])
                     && ACTOR_CACHED_POSITION(field_current_event_actor)[2] == WHOLE(field_current_event_actor->position[2])) {
@@ -9639,7 +9639,7 @@ void field_event_request_player_control(void) {
                 goto jump;
             }
             if (field_work.jump_mode == 0) {
-                if ((field_pad_port0_pressed & 0x80) && !(field_current_event_actor->flags & 0x1800) && !(field_current_event_actor->unk014 & 0x400000) && field_menu_request == 0xFF) {
+                if ((field_pad_port0_pressed & 0x80) && !(field_current_event_actor->flags & 0x1800) && !(field_current_event_actor->floor_attribute & 0x400000) && field_menu_request == 0xFF) {
                 jump:
                     if (field_actor_is_jump_blocked_by_floor(field_current_event_actor) == 0) {
                         field_current_event_actor->flags |= 0x800;
@@ -10666,7 +10666,7 @@ void field_finish_return_to_field(void) {
         for (i = 0; i < field_work.unk2264; i++) {
             gear_model_select_and_call_entry((u16)i, 0, field_work.unk21E4[i]);
         }
-        i = field_view.components.descriptors[field_work.controlled].actor->unk074;
+        i = field_view.components.descriptors[field_work.controlled].actor->ridden_actor;
         if (i != 0xFF) {
             field_view.components.descriptors[field_work.controlled].actor->position[1] -= 8;
         }

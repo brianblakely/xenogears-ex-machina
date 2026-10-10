@@ -3,7 +3,8 @@
 
 /* The field debug monitor: its debug lines, CPU-time marks and the field
  * overlay's objects it reads and edits. What it shares with the field is in
- * field/monitor.h; its views of the field's own objects are below. */
+ * field/monitor.h and field/actors.h; its views of the field's own objects
+ * are below. */
 
 #include "common.h"
 
@@ -18,6 +19,7 @@
 #include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/sound.h"
+#include "field/actors.h"
 #include "field/monitor.h"
 
 /* One debug line: a segment in its own frame, drawn in both buffers. */
@@ -30,7 +32,12 @@ typedef struct {
     LINE_G2 line[2]; /* 0x40: one per draw buffer */
 } DebugLine;         /* 0x68 */
 
-/* The part of a field actor the monitor reads. */
+/* The actor's box that 80281678 outlines, as the field's box test passes it
+ * (field_motion.c reads the actor record through a box view of its own): the
+ * halfwords at +0x18, +0x1a and +0x1c are the box's half width, height and
+ * half depth (field_actor_reset stores 0x10, 0x60 and 0x10), where FieldActor
+ * has two s16 and the low half of its Fixed gravity, and the position is read
+ * as 16.16 words. */
 typedef struct {
     u8 unk0[0x18];
     SVECTOR size; /* 0x18: collision half extents */
@@ -105,61 +112,9 @@ void field_debug_edit_emitter_field(s32 axis, u32 item);
  * ordering table words (FieldDrawBlock +0xcc), names the emitter templates
  * (the field's Record78) from its editor's labels, reading their flags as
  * bit-fields and their colour offsets as one s8 array (the field reads +0x70
- * as u8), and takes the actors and their descriptors as below (80281b90). */
+ * as u8). */
 extern u_long *field_current_draw_block;          /* the current draw block */
 extern ParticleEmitter field_effect_templates[8]; /* the eight template emitters */
-
-/* An event actor record; the members the monitor prints. */
-typedef struct {
-    u32 flags;         /* 00: MFflag; bits 8..10 the actor type */
-    u32 flags2;        /* 04: MFlag2; bit 26 talk off */
-    s16 triangle[4];   /* 08: current collision triangle per layer */
-    s16 layer;         /* 10 */
-    u8 unk12[2];
-    u32 id;            /* 14: bits 5..7 P/G/C clear */
-    u8 unk18[8];
-    Fixed pos[3];      /* 20 */
-    u8 unk2C[0x48];
-    u8 count;          /* 74 */
-    u8 unk75[0x17];
-    struct {
-        u16 pc;
-        u8 unk2[6];
-    } threads[8];      /* 8c: script threads */
-    u16 pc;            /* cc */
-    u8 thread;         /* ce: running thread */
-} MonitorActor;
-
-typedef struct {
-    u8 unk0[0x14];
-    s32 loaded;        /* 14 */
-} MonitorInstance;
-
-/* One 0x5c-byte field model descriptor per event actor. */
-typedef struct {
-    MonitorInstance *instance; /* 00 */
-    u8 unk4[0x48];
-    MonitorActor *actor;       /* 4c */
-    u8 unk50[8];
-    u16 flags;                 /* 58: 0x2000 mime */
-    u8 unk5A[2];
-} MonitorDescriptor;
-
-/* A 14-byte collision triangle. */
-typedef struct {
-    s16 unk0[6];
-    u8 attribute;      /* 0c */
-    u8 unkD;
-} MonitorTriangle;
-
-/* The field's object tables: descriptor count and list, and the walkmesh
- * triangles of each layer. */
-typedef struct {
-    s32 count;                       /* 800afb0c */
-    MonitorDescriptor *descriptors;  /* 800afb10 */
-    u8 unk8[0x10];
-    MonitorTriangle *triangles[4];   /* 800afb24 */
-} FieldObjects;
 
 /* FieldView members (800af880). */
 extern Fixed field_view[3];                    /* camera eye */
@@ -176,7 +131,7 @@ extern s32 field_view_projection;              /* screen distance */
 extern s16 field_view_elevation;
 extern u16 field_view_distance;
 extern MATRIX field_view_scaled_world;
-extern FieldObjects field_view_components;
+extern FieldComponents field_view_components;
 /* FieldWork members (800b2078). */
 extern s16 field_work_sprite_gate;
 extern u8 field_work_fog_color[3];          /* fog near colour */
