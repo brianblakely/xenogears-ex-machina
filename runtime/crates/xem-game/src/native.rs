@@ -24,6 +24,7 @@ unsafe extern "C" {
     fn xem_game_new(env: *mut Env) -> *mut Instance;
     fn xem_game_free(instance: *mut Instance);
     fn xem_game_run(instance: *mut Instance, kind: u32, arg: u32) -> c_int;
+    fn xem_game_run_task(instance: *mut Instance) -> c_int;
     fn xem_game_call(instance: *mut Instance, address: u32) -> c_int;
     fn xem_game_interrupt(instance: *mut Instance, irq: u32, detail: u32) -> c_int;
     fn xem_game_trap_description(code: c_int) -> *const c_char;
@@ -31,7 +32,7 @@ unsafe extern "C" {
     fn xem_game_stack_pointer(instance: *mut Instance) -> *mut u32;
     fn xem_game_async_state(instance: *mut Instance) -> u32;
     fn xem_game_stop_unwind(instance: *mut Instance);
-    fn xem_game_start_rewind(instance: *mut Instance);
+    fn xem_game_start_rewind(instance: *mut Instance, area: u32);
 }
 
 /// The handler pointer the glue's `host` carries.
@@ -149,6 +150,13 @@ impl GameModule for NativeModule {
         }
     }
 
+    fn run_task(&mut self) -> Result<(), Trap> {
+        match unsafe { xem_game_run_task(self.instance) } {
+            0 => Ok(()),
+            code => Err(Self::trap(code)),
+        }
+    }
+
     fn call(&mut self, address: u32) -> Result<(), Trap> {
         match unsafe { xem_game_call(self.instance, address) } {
             0 => Ok(()),
@@ -171,8 +179,12 @@ impl GameModule for NativeModule {
         unsafe { xem_game_stop_unwind(self.instance) }
     }
 
-    fn start_rewind(&mut self) {
-        unsafe { xem_game_start_rewind(self.instance) }
+    fn unwind_area(&mut self) -> u32 {
+        self.env.area
+    }
+
+    fn start_rewind(&mut self, area: u32) {
+        unsafe { xem_game_start_rewind(self.instance, area) }
     }
 
     fn stack_pointer(&mut self) -> u32 {

@@ -11,6 +11,11 @@ use crate::pad::Pads;
 pub const RESTART_BOOT: u32 = 0;
 pub const RESTART_DISPATCH: u32 = 1;
 
+/// The fibers (port/include/xem/port.h): the game, whose bottom frame is
+/// `xem_run`, and the arena task, whose bottom frame is `xem_task_run`.
+pub const FIBER_GAME: u32 = 0;
+pub const FIBER_TASK: u32 = 1;
+
 /// Interrupt sources (port/include/xem/port.h, the PS1's I_STAT bits).
 pub const IRQ_VBLANK: u32 = 0;
 pub const IRQ_DMA: u32 = 3;
@@ -47,10 +52,19 @@ pub enum Stop {
     Returned,
 }
 
+/// What the import that unwound the game asked for.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Pending {
+    Stop(Stop),
+    /// Suspend the running fiber and continue `fiber`, afresh on the shadow
+    /// stack ending at `stack_top` when that is nonzero.
+    Switch { fiber: u32, stack_top: u32 },
+}
+
 /// The services the imports reach: the console's devices and the clock.
 #[derive(Default)]
 pub struct Services {
-    pending: Option<Stop>,
+    pending: Option<Pending>,
     pub clock: Clock,
     pub pads: Pads,
     pub gpu: devices::gpu::Gpu,
@@ -115,11 +129,15 @@ impl ImportHandler for Services {
         let arg = |i: usize| import.args.get(i).copied().unwrap_or(0);
         match import.name {
             "yield" => {
-                self.pending = Some(Stop::Yield(YieldReason::from_raw(arg(0))));
+                self.pending = Some(Pending::Stop(Stop::Yield(YieldReason::from_raw(arg(0)))));
                 Action::Unwind
             }
             "restart" => {
-                self.pending = Some(Stop::Restart { kind: arg(0), arg: arg(1) });
+                self.pending = Some(Pending::Stop(Stop::Restart { kind: arg(0), arg: arg(1) }));
+                Action::Unwind
+            }
+            "task_switch" => {
+                self.pending = Some(Pending::Switch { fiber: arg(0), stack_top: arg(1) });
                 Action::Unwind
             }
             "rcnt_set" => {
@@ -190,14 +208,24 @@ pub struct FrameReport {
     pub interrupts: u64,
 }
 
+/// A fiber's state between steps: where it starts, or where it suspended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Fiber {
+    /// Not started: it starts on the shadow stack ending at `stack_top`.
+    Fresh { stack_top: u32 },
+    /// Unwound into the save area `area` with the shadow stack at `stack_pointer`.
+    Suspended { stack_pointer: u32, area: u32 },
+}
+
 /// The game module with its services.
 pub struct Runtime<M: GameModule> {
     module: M,
     services: *mut Services,
     entry: (u32, u32),
-    suspended: bool,
     stack_top: u32,
-    saved_stack_pointer: u32,
+    /// The game fiber and the arena task fiber (`FIBER_GAME`, `FIBER_TASK`).
+    fibers: [Option<Fiber>; 2],
+    current: u32,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -207,7 +235,14 @@ impl<M: GameModule> Runtime<M> {
         // export calls.
         unsafe { module.set_import_handler(services as *mut dyn ImportHandler) };
         let stack_top = module.stack_pointer();
-        Runtime { module, services, entry: (RESTART_BOOT, 0), suspended: false, stack_top, saved_stack_pointer: 0 }
+        Runtime {
+            module,
+            services,
+            entry: (RESTART_BOOT, 0),
+            stack_top,
+            fibers: [Some(Fiber::Fresh { stack_top }), None],
+            current: FIBER_GAME,
+        }
     }
 
     pub fn services(&mut self) -> &mut Services {
@@ -230,38 +265,65 @@ impl<M: GameModule> Runtime<M> {
         }
     }
 
-    /// Run the game until it waits, restarts or traps.
+    /// Run the game until it waits, restarts or traps. A switch between the
+    /// game and the arena task fiber continues the other fiber at once.
     pub fn step(&mut self) -> Result<Stop, Trap> {
-        let (kind, arg) = self.entry;
-        if self.suspended {
-            self.module.set_stack_pointer(self.saved_stack_pointer);
-            self.module.start_rewind();
-        } else {
-            self.module.set_stack_pointer(self.stack_top);
-        }
-        let result = self.module.run(kind, arg);
-        self.sync_devices();
-        if let Err(trap) = result {
-            return Err(self.host_trap(trap));
-        }
-        if self.module.async_state() != AsyncState::Unwinding {
-            self.suspended = false;
-            return Ok(Stop::Returned);
-        }
-        self.module.stop_unwind();
-        match self.services().pending.take() {
-            Some(Stop::Yield(reason)) => {
-                self.saved_stack_pointer = self.module.stack_pointer();
-                self.suspended = true;
-                self.module.set_resume_value(0);
-                Ok(Stop::Yield(reason))
+        loop {
+            let fiber = self.current;
+            match self.fibers[fiber as usize] {
+                Some(Fiber::Suspended { stack_pointer, area }) => {
+                    self.module.set_stack_pointer(stack_pointer);
+                    self.module.start_rewind(area);
+                }
+                Some(Fiber::Fresh { stack_top }) => self.module.set_stack_pointer(stack_top),
+                None => return Err(Trap::Host(format!("fiber {fiber} has no stack to run on"))),
             }
-            Some(Stop::Restart { kind, arg }) => {
-                self.suspended = false;
-                self.entry = (kind, arg);
-                Ok(Stop::Restart { kind, arg })
+            let result = if fiber == FIBER_GAME {
+                let (kind, arg) = self.entry;
+                self.module.run(kind, arg)
+            } else {
+                self.module.run_task()
+            };
+            self.sync_devices();
+            if let Err(trap) = result {
+                return Err(self.host_trap(trap));
             }
-            _ => Err(Trap::Host("the game unwound without a reason".into())),
+            if self.module.async_state() != AsyncState::Unwinding {
+                if fiber == FIBER_GAME {
+                    self.fibers[0] = Some(Fiber::Fresh { stack_top: self.stack_top });
+                    return Ok(Stop::Returned);
+                }
+                return Err(Trap::Host("the arena task returned from its entry, which the original re-enters".into()));
+            }
+            self.module.stop_unwind();
+            let suspended = Fiber::Suspended { stack_pointer: self.module.stack_pointer(), area: self.module.unwind_area() };
+            match self.services().pending.take() {
+                Some(Pending::Stop(Stop::Yield(reason))) => {
+                    self.fibers[fiber as usize] = Some(suspended);
+                    self.module.set_resume_value(0);
+                    return Ok(Stop::Yield(reason));
+                }
+                Some(Pending::Stop(Stop::Restart { kind, arg })) => {
+                    self.fibers = [Some(Fiber::Fresh { stack_top: self.stack_top }), None];
+                    self.current = FIBER_GAME;
+                    self.entry = (kind, arg);
+                    return Ok(Stop::Restart { kind, arg });
+                }
+                Some(Pending::Switch { fiber: target, stack_top }) => {
+                    if target as usize >= self.fibers.len() || target == fiber {
+                        return Err(Trap::Host(format!("fiber {fiber} switched to fiber {target}")));
+                    }
+                    self.fibers[fiber as usize] = Some(suspended);
+                    if stack_top != 0 {
+                        self.fibers[target as usize] = Some(Fiber::Fresh { stack_top });
+                    } else if !matches!(self.fibers[target as usize], Some(Fiber::Suspended { .. })) {
+                        return Err(Trap::Host(format!("fiber {fiber} switched to fiber {target}, which is not suspended")));
+                    }
+                    self.current = target;
+                    self.module.set_resume_value(0);
+                }
+                _ => return Err(Trap::Host("the game unwound without a reason".into())),
+            }
         }
     }
 
