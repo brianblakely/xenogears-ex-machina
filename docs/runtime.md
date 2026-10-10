@@ -158,6 +158,41 @@ input.
   clock. Headless runs are unlocked (as fast as the host computes) and
   reproducible.
 
+## Sound and memory cards
+
+- **libspu** (`port/libspu.c`) is the resident's libspu from its original
+  code: its state at the original addresses, its register writes through
+  `libspu_spu_registers` into the window at 0x1F801C00, where the sound
+  driver writes the voice registers too. The SPU device
+  (`xem_core::devices::spu`, over `xem_spu::Spu`) applies the window after
+  every step and interrupt and at each of libspu's hardware waits
+  (`xem.spu_sync`), the crate's register-window contract. DMA channel 4
+  (`xem.spu_transfer`) moves whole 64-byte blocks at once and raises the
+  channel's interrupt after 16 cycles per halfword (the rate the DuckStation
+  emulator models; a 64 KB bank takes about 15.5 ms); libetc runs libspu's
+  completion entry 0x8004CB3C for it, which calls the transfer callback or
+  delivers the transfer event. The SPU IRQ reaches InterruptCallback(9).
+  `advance` runs whole 44.1 kHz samples up to the clock (768 cycles each),
+  into an output ring when a host plays audio (`Spu::set_output`,
+  `take_audio`); headless runs advance the same state without output. CD
+  audio reaches the SPU's CD input from the CD device
+  (`Device::take_cd_audio`) before the SPU advances.
+- **Memory cards** (`xem_core::devices::card`) are two raw 128 KB images
+  (the `.mcd` layout) in a `CardStorage`: files natively (`xem-headless
+  --cards DIR` keeps `card1.mcd`, `card2.mcd`; a missing file is a fresh
+  formatted card), memory in tests. The BIOS file calls on "bu00:" and
+  "bu10:" (`port/bios.c`) and `_card_info` (`port/libcard.c`) run the BIOS's
+  card file system over them; each access costs one 140-byte card command at
+  250 kHz per 128-byte frame, during which the port suspends as the BIOS
+  blocks, and a check ends with the card interrupt and its event (done,
+  timeout without a card, new card for a card without a file system).
+  Snapshots hold the images.
+- **Kanji font.** Krom2RawAdd returns glyph addresses in the BIOS ROM's font
+  through its KUSEG mirror 0x1FC66000; the host places the font there from the
+  user's BIOS image (`--bios FILE`), or blank glyphs without one
+  (`xem_core::bios`).
+- The PC file server (libsn `PC*`) has no development host and fails.
+
 ## Crates
 
 | Crate | Role |
