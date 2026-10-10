@@ -74,6 +74,11 @@ impl Gpu {
         self.gpu.display_rgba8()
     }
 
+    /// The whole VRAM, for debugging views.
+    pub fn vram_rgba8(&self) -> Vec<u8> {
+        self.gpu.vram_rgba8()
+    }
+
     /// DMA2's CHCR (bit 24 while a transfer runs).
     pub fn dma_control(&self) -> u32 {
         self.chcr

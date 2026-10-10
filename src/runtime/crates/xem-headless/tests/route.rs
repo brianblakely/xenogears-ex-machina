@@ -31,7 +31,9 @@ fn disc() -> Option<PathBuf> {
 }
 
 fn session(disc: &std::path::Path) -> Session<NativeModule> {
-    boot(disc, &BootOptions::default()).expect("boot").0
+    let schema = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/game/schema.json");
+    let options = BootOptions { schema: Some(schema), ..Default::default() };
+    boot(disc, &options).expect("boot").0
 }
 
 /// Run frames `from..to` of the route.
@@ -72,4 +74,22 @@ fn outcome_ignores_presentation_and_snapshots() {
     restored.runtime.restore(&snapshot).unwrap();
     run(&mut restored, 2500, END);
     assert_eq!(restored.memory_hash().unwrap(), reference, "a restored snapshot diverged");
+}
+
+#[test]
+fn enter_field_reaches_the_forest_map() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut session = session(&disc);
+    let reply = session.execute(&serde_json::json!({ "cmd": "enter_field", "map": 23 }));
+    assert_eq!(reply["map"], 23, "{reply}");
+    for _ in 0..600 {
+        assert!(session.frame().expect("frame"));
+    }
+    assert_eq!(session.runtime.services().mode, Some(1));
+    // The map's opening dialogue window is up (field_dialogue_windows[0] has a message).
+    let window = session.execute(&serde_json::json!({ "cmd": "inspect", "path": "field_dialogue_windows[0].message", "depth": 0 }));
+    assert_ne!(window, serde_json::json!(0), "{window}");
 }

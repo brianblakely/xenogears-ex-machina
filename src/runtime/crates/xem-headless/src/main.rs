@@ -24,6 +24,8 @@ struct Options {
     /// Write the SPU's output as a 16-bit stereo 44.1 kHz WAV file.
     wav: Option<PathBuf>,
     screenshot: Option<PathBuf>,
+    /// The whole 1024x512 VRAM as a PNG at the end (15-bit colours).
+    vram: Option<PathBuf>,
     /// Report the drive's data sectors at the end (cd_trace.rs).
     cd_trace: bool,
     /// Pad 1 input by frame: the retained routes' format,
@@ -49,6 +51,7 @@ fn main() -> ExitCode {
         inputs: None,
         checkpoint_every: 0,
         checkpoint_dir: None,
+        vram: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -62,6 +65,7 @@ fn main() -> ExitCode {
             "--bios" => options.bios = args.next().map(PathBuf::from),
             "--wav" => options.wav = args.next().map(PathBuf::from),
             "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
+            "--vram" => options.vram = args.next().map(PathBuf::from),
             "--inputs" => options.inputs = args.next().map(PathBuf::from),
             "--checkpoint-every" => options.checkpoint_every = args.next().and_then(|v| v.parse().ok()).unwrap_or(0),
             "--checkpoint-dir" => options.checkpoint_dir = args.next().map(PathBuf::from),
@@ -123,6 +127,13 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
                 Err(error) => serde_json::json!({ "error": format!("bad json: {error}") }),
             };
             println!("{reply}");
+        }
+        if let Some(path) = &options.screenshot {
+            let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
+            write_png(path, width, height, &rgba)?;
+        }
+        if let Some(path) = &options.vram {
+            write_png(path, 1024, 512, &session.runtime.services().gpu.vram_rgba8())?;
         }
         return Ok(());
     }

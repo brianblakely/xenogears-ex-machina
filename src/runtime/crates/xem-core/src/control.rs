@@ -308,11 +308,13 @@ impl<M: GameModule> Session<M> {
                     "mode_name": services.mode.and_then(|m| MODES.get(m as usize)).copied(),
                     "dispatches": services.dispatches,
                     "waiting_for": services.last_wait.map(|w| format!("{w:?}")),
-                    "input_reads_last_frame": services.input_reads_last_frame,
-                    "accepts_input": services.input_reads_last_frame > 0,
+                    // Reads of the game's pad queue (pad_dequeue_state); the
+                    // field also reads the held buttons directly, so 0 does not
+                    // mean the game ignores the pad.
+                    "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "scenario", "record", "replay"],
+                                        "restore", "scenario", "enter_field", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -342,6 +344,28 @@ impl<M: GameModule> Session<M> {
                 }
                 Ok(self.status())
             }
+            "enter_field" => {
+                // Go anywhere in the field the way the original's development
+                // kernel menu does (tools/reference/scenario.py used the same
+                // recipe in the emulator): after boot, enter mode 0, put the
+                // map in the game data, select mode 1 and let the kernel menu
+                // finish into the original dispatcher.
+                let map = arg_u64("map").ok_or("enter_field needs map")?;
+                let budget = arg_u64("max_frames").unwrap_or(6000);
+                self.run_until_value("cd_movie_request_kind", 1, budget)?;
+                self.write_path("mode_next_mode", &json!(0))?;
+                self.runtime.restart(RESTART_DISPATCH, 0);
+                self.run_until_value("mode_kernel_menu_running", 1, budget)?;
+                self.write_path("game_data.map", &json!(map))?;
+                if let Some(entry) = command.get("entry") {
+                    self.write_path("game_data.entry[0]", entry)?;
+                }
+                self.write_path("mode_next_mode", &json!(1))?;
+                self.write_path("mode_kernel_menu_running", &json!(0))?;
+                self.write_path("mode_field_entered_once", &json!(0))?;
+                self.run_until_value("mode_field_entered_once", 1, budget)?;
+                Ok(json!({ "map": self.inspect("mode_field_map_id", 0)?, "status": self.status() }))
+            }
             "scenario" => {
                 // Typed go-anywhere setup: write values through the schema, then
                 // enter a mode through the original dispatcher on an empty stack.
@@ -367,6 +391,19 @@ impl<M: GameModule> Session<M> {
         self.stopped = None;
         self.scheduled.clear();
         Ok(())
+    }
+
+    /// Run frames until the global at `path` equals `value` (bounded).
+    fn run_until_value(&mut self, path: &str, value: i64, max_frames: u64) -> Result<(), String> {
+        for _ in 0..max_frames {
+            if self.inspect(path, 0)? == json!(value) {
+                return Ok(());
+            }
+            if !self.frame().map_err(|t| t.to_string())? {
+                return Err("a disc read is still being fetched; retry".into());
+            }
+        }
+        Err(format!("{path} did not become {value} within {max_frames} frames"))
     }
 
     /// FNV-1a over the PS1 RAM, the scratchpad and the I/O pages: the
