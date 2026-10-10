@@ -468,8 +468,15 @@ impl Host {
         }
     }
 
+    /// A build without the game module cannot play a disc.
+    #[cfg(not(has_game_module))]
+    fn boot(&mut self, _disc: File, source: &str) {
+        log(&format!("game not booted source={source}: this build has no game module"));
+    }
+
     /// Boots the game from an identified Xenogears disc (replacing a game
     /// that runs) and hides the settings panel.
+    #[cfg(has_game_module)]
     fn boot(&mut self, disc: File, source: &str) {
         let booted = std::fs::create_dir_all(&self.cards)
             .map_err(|error| format!("{}: {error}", self.cards.display()))

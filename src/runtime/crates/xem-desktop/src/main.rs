@@ -104,8 +104,15 @@ struct Host {
     game: Option<Game>,
 }
 
+/// A build without the game module cannot play a disc.
+#[cfg(not(has_game_module))]
+fn open_game(_options: &Options, _disc: &std::path::Path) -> Result<Game, String> {
+    Err("this build has no game module (python3 tools/game_module.py builds it)".into())
+}
+
 /// Boots the user's disc and plays it, with cards under the settings'
 /// directory unless `--cards` names one.
+#[cfg(has_game_module)]
 fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> {
     let cards = options.cards.clone().or_else(|| {
         FileStore::default_path().and_then(|p| p.parent().map(|d| d.join("cards")))

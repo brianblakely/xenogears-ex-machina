@@ -3,6 +3,11 @@
 //! into `$XEM_ANDROID_SDL3_LIBS/<abi>/libSDL3.so`.
 
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(has_game_module)");
+    // xem-game's build script sets DEP_XEM_GAME_* only when it compiled the module.
+    if std::env::var_os("DEP_XEM_GAME_MODULE").is_some() {
+        println!("cargo::rustc-cfg=has_game_module");
+    }
     println!("cargo::rerun-if-env-changed=XEM_ANDROID_SDL3_LIBS");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("android") {
         return;

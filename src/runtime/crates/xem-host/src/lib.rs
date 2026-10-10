@@ -5,6 +5,10 @@
 //! settings panel, and the game's pacing and sound ([`Game`]). One wgpu
 //! device and queue serve the scene, the compositor and Slint.
 
+#[cfg(has_game_module)]
+pub mod game;
+#[cfg(not(has_game_module))]
+#[path = "game_absent.rs"]
 pub mod game;
 pub mod sdl;
 
