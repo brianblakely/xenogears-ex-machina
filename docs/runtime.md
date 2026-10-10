@@ -76,6 +76,29 @@ original address.
   wrapped by the port) therefore runs each mode from an empty stack, as the
   original does. A snapshot at a yield point is game memory, the module's
   globals and the host services' state.
+- **Fibers.** The arena runs its mode task as a coroutine on its own MIPS
+  stack (`arena_task_resume.s`, `arena_task_yield.s`); the port cannot switch
+  stacks, so the game is two fibers (`port/fiber.c`): the game, whose bottom
+  frame is `xem_run`, and the arena task, whose bottom frame is the export
+  `xem_task_run`. Each has its own asyncify save area (`xem_unwind_area`
+  returns the running fiber's) and its own shadow stack (the task's is a port
+  array; the PS1 task stack at 0x801FE000 is never written). `arena_task_resume`
+  and `arena_task_yield` call the import `xem.task_switch(fiber, stack_top)`:
+  the runtime unwinds the running fiber, keeping its area and shadow stack
+  pointer, then starts the other on the shadow stack ending at `stack_top`
+  (nonzero for a TaskContext the task fiber does not run yet: it calls
+  entry(arg), the context's ra and a0) or rewinds it where it suspended, all
+  within one `Runtime::step`. Frame waits and polls inside the task unwind
+  only the task fiber, interrupts run below the suspended fiber's frames, and
+  a restart abandons both fibers (`xem_run` resets the port's fiber state when
+  it starts afresh). The original's register bank is not modelled: a yield
+  leaves the TaskContext untouched, `arena_current_task` stays set after it,
+  and `arena_task_caller_stack` holds the address of the resuming frame on
+  the game fiber's shadow stack. The task entry never returns
+  (`arena_mode_task` loops); the original would re-enter it through ra, the
+  runtime stops the game with a diagnostic. `tests/fiber_module/build.sh`
+  runs `port/fiber.c` and `port/arena_task.c` under asyncify, wasm2c and the
+  runtime end to end.
 - **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
   checks (no signal handlers). Nothing interprets or emulates a CPU.
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
